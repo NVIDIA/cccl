@@ -1,16 +1,24 @@
-# FROM_IMAGE needs to be a base image that contains CUDA, either:
+# SDK_TYPE needs to be a base image that contains CUDA, either:
 # - nvidia/cuda
 # - nvcr.io/nvidia/nvhpc
-ARG NVIDIA_IMAGE=nvidia/cuda
-ARG NVIDIA_VER=11.0
-ARG IMAGE_TYPE=devel
-ARG OS_VER=ubuntu18.04
-FROM ${NVIDIA_IMAGE}:${NVIDIA_VER}-${IMAGE_TYPE}-${OS_VER}
+ARG SDK_TYPE=nvidia/cuda
+ARG SDK_VER=11.0-devel
+ARG OS_TYPE=ubuntu
+ARG OS_VER=18.04
+# | CXX_TYPE | CXX_VER      |
+# | gcc      | 5 6 7 8 9 10 |
+# | clang    | 7 8 9 10     |
+ARG CXX_TYPE=gcc
+ARG CXX_VER=5
+FROM ${SDK_TYPE}:${SDK_VER}-${OS_TYPE}${OS_VER}
 
 # Pull arguments from build arguments.
-ARG NVIDIA_IMAGE
-ARG NVIDIA_VER
+ARG SDK_TYPE
+ARG SDK_VER
+ARG OS_TYPE
 ARG OS_VER
+ARG CXX_TYPE
+ARG CXX_VER
 
 ARG TINI_VER=v0.18.0
 ARG TINI_URL=https://github.com/krallin/tini/releases/download/${TINI_VER}/tini
@@ -21,17 +29,20 @@ ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
 
 # Update and add packages for Ubuntu.
-RUN if [[ "${OS_VER}" == "ubuntu"* ]]; then \
+RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       source /etc/os-release; \
       echo "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu ${UBUNTU_CODENAME} main" >> /etc/apt/sources.list; \
       APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 60C317803A41BA51845E371A1E9377A2BA9EF27F; \
       apt-get -y update; \
       apt-get -y --no-install-recommends install apt-utils; \
       apt-get -y --no-install-recommends install wget ca-certificates; \
-      apt-get -y --no-install-recommends install g++-5 g++-6 g++-7 g++-8 g++-9 g++-10; \
-      apt-get -y --no-install-recommends install clang-7 clang-8 clang-9 clang-10; \
       apt-get -y --no-install-recommends install python3-pip python3-setuptools python3-wheel; \
       apt-get -y --no-install-recommends install cmake; \
+      if   [[ "{CXX_TYPE}" == "gcc" ]]; then \
+        apt-get -y --no-install-recommends install g++-${CXX_VER}; \
+      elif [[ "{CXX_TYPE}" == "clang" ]]; then \
+        apt-get -y --no-install-recommends install clang-${CXX_VER}; \
+      fi; \
       apt-get clean; \
       rm -rf /var/lib/apt/lists/*; \
       python3 -m pip install lit; \
