@@ -1,0 +1,29 @@
+SDK_TYPE:
+  - nvidia/cuda
+
+SDK_VER:
+  - 11.0-devel
+
+OS_TYPE:
+  - ubuntu
+
+OS_VER:
+  - 18.04
+
+CXX_TYPE:
+  - clang
+  - gcc
+
+CXX_VER:
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+
+exclude:
+  - CXX_TYPE: clang
+    CXX_VER: 5
+  - CXX_TYPE: clang
+    CXX_VER: 6
