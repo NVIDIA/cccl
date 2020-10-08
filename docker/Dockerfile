@@ -38,9 +38,9 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install wget ca-certificates; \
       apt-get -y --no-install-recommends install python3-pip python3-setuptools python3-wheel; \
       apt-get -y --no-install-recommends install cmake; \
-      if   [[ "{CXX_TYPE}" == "gcc" ]]; then \
+      if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
         apt-get -y --no-install-recommends install g++-${CXX_VER}; \
-      elif [[ "{CXX_TYPE}" == "clang" ]]; then \
+      elif [[ "${CXX_TYPE}" == "clang" ]]; then \
         apt-get -y --no-install-recommends install clang-${CXX_VER}; \
       fi; \
       apt-get clean; \
