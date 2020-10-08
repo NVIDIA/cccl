@@ -40,8 +40,24 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install cmake; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
         apt-get -y --no-install-recommends install g++-${CXX_VER}; \
+        update-alternatives --install /usr/bin/cc gcc /usr/bin/gcc-${CXX_VER} ${CXX_VER}; \
+        update-alternatives --install /usr/bin/c++ g++ /usr/bin/g++-${CXX_VER} ${CXX_VER}; \
+        update-alternatives --set cc /usr/bin/gcc-${CXX_VER}; \
+        update-alternatives --set c++ /usr/bin/g++-${CXX_VER}; \
+        update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${CXX_VER} ${CXX_VER}; \
+        update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${CXX_VER} ${CXX_VER}; \
+        update-alternatives --set gcc /usr/bin/gcc-${CXX_VER}; \
+        update-alternatives --set g++ /usr/bin/g++-${CXX_VER}; \
       elif [[ "${CXX_TYPE}" == "clang" ]]; then \
         apt-get -y --no-install-recommends install clang-${CXX_VER}; \
+        update-alternatives --install /usr/bin/cc clang /usr/bin/clang-${CXX_VER} ${CXX_VER}; \
+        update-alternatives --install /usr/bin/c++ clang++ /usr/bin/clang++-${CXX_VER} ${CXX_VER}; \
+        update-alternatives --set cc /usr/bin/clang-${CXX_VER}; \
+        update-alternatives --set c++ /usr/bin/clang++-${CXX_VER}; \
+        update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${CXX_VER} ${CXX_VER}; \
+        update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-${CXX_VER} ${CXX_VER}; \
+        update-alternatives --set clang /usr/bin/clang-${CXX_VER}; \
+        update-alternatives --set clang++ /usr/bin/clang++-${CXX_VER}; \
       fi; \
       apt-get clean; \
       rm -rf /var/lib/apt/lists/*; \
