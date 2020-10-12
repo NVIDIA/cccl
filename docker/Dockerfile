@@ -23,6 +23,8 @@ ARG CXX_VER
 
 ARG TINI_VER=v0.18.0
 ARG TINI_URL=https://github.com/krallin/tini/releases/download/${TINI_VER}/tini
+ARG CMAKE_VER=3.18.4
+ARG CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-Linux-x86_64.sh
 
 ENV TZ=US/Pacific
 ENV DEBIAN_FRONTEND=noninteractive
@@ -49,10 +51,15 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       echo -e "\n\n>>>> SKIPPING: $${OS_VER} is not \"ubuntu\"\n\n"; \
     fi
 
+# Install cmake
+RUN wget ${CMAKE_URL} -O cmake.sh && \
+      chmod +x cmake.sh && \
+      ./cmake.sh --skip-license && \
+      rm cmake.sh
+
 # Install Debian packages for Ubuntu.
 RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install python3-pip python3-setuptools python3-wheel; \
-      apt-get -y --no-install-recommends install cmake; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
         apt-get -y --no-install-recommends install g++-${CXX_VER}; \
         update-alternatives --install /usr/bin/cc  cc  $(which gcc-${CXX_VER}) ${CXX_VER}; \
