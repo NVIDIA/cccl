@@ -35,7 +35,7 @@ SHELL ["/bin/bash", "-c"]
 RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y update; \
       apt-get -y --no-install-recommends install apt-utils; \
-      apt-get -y --no-install-recommends install wget ca-certificates; \
+      apt-get -y --no-install-recommends install wget ca-certificates curl; \
       if   [[ "${CXX_TYPE}" == "gcc" && "${CXX_VER}" > 8 ]]; then \
         source /etc/os-release; \
         echo "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu ${UBUNTU_CODENAME} main" >> /etc/apt/sources.list; \
