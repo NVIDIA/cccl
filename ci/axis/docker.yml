@@ -1,18 +1,24 @@
 SDK_TYPE:
   - nvidia/cuda
+  - nvcr.io/nvidia/nvhpc
 
 SDK_VER:
   - 11.0-devel
+  - 20.7-devel
 
 OS_TYPE:
   - ubuntu
+  - centos
 
 OS_VER:
   - 18.04
+  - 7
 
 CXX_TYPE:
   - clang
   - gcc
+  - icc
+  - nvcxx
 
 CXX_VER:
   - 5
@@ -21,9 +27,52 @@ CXX_VER:
   - 8
   - 9
   - 10
+  - 20.7
+  - latest
 
 exclude:
   - CXX_TYPE: clang
+    SDK_TYPE: nvcr.io/nvidia/nvhpc
+  - CXX_TYPE: gcc
+    SDK_TYPE: nvcr.io/nvidia/nvhpc
+  - CXX_TYPE: icc
+    SDK_TYPE: nvcr.io/nvidia/nvhpc
+  - CXX_TYPE: gcc
+    CXX_VER: 20.7
+  - CXX_TYPE: gcc
+    CXX_VER: latest
+  - CXX_TYPE: clang
     CXX_VER: 5
   - CXX_TYPE: clang
+    CXX_VER: 20.7
+  - CXX_TYPE: clang
+    CXX_VER: latest
+  - CXX_TYPE: icc
+    CXX_VER: 5
+  - CXX_TYPE: icc
     CXX_VER: 6
+  - CXX_TYPE: icc
+    CXX_VER: 7
+  - CXX_TYPE: icc
+    CXX_VER: 8
+  - CXX_TYPE: icc
+    CXX_VER: 9
+  - CXX_TYPE: icc
+    CXX_VER: 10
+  - CXX_TYPE: icc
+    CXX_VER: 20.7
+  - CXX_TYPE: nvc++
+    CXX_VER: 5
+  - CXX_TYPE: nvc++
+    CXX_VER: 6
+  - CXX_TYPE: nvc++
+    CXX_VER: 7
+  - CXX_TYPE: nvc++
+    CXX_VER: 8
+  - CXX_TYPE: nvc++
+    CXX_VER: 9
+  - CXX_TYPE: nvc++
+    CXX_VER: 10
+  - CXX_TYPE: nvc++
+    CXX_VER: 20.7
+

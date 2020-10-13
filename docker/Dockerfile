@@ -8,7 +8,8 @@ ARG OS_VER=18.04
 # | CXX_TYPE | CXX_VER      |
 # | gcc      | 5 6 7 8 9 10 |
 # | clang    | 7 8 9 10     |
-# | icc      |              |
+# | icc      | latest       |
+# | nvcxx    | 20.7         |
 ARG CXX_TYPE=gcc
 ARG CXX_VER=5
 FROM ${SDK_TYPE}:${SDK_VER}-${OS_TYPE}${OS_VER}
@@ -21,8 +22,19 @@ ARG OS_VER
 ARG CXX_TYPE
 ARG CXX_VER
 
-ARG TINI_VER=v0.18.0
-ARG TINI_URL=https://github.com/krallin/tini/releases/download/${TINI_VER}/tini
+# Ubuntu 18.04 doesn't have GCC 9 and 10 in its repos.
+ARG UBUNTU_TOOL_DEB_REPO=http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu
+ARG UBUNTU_TOOL_FINGER=60C317803A41BA51845E371A1E9377A2BA9EF27F
+
+ARG ICC_DEB_REPO=https://apt.repos.intel.com/oneapi
+ARG ICC_KEY=https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
+
+# CentOS 7 doesn't have a new enough version of CMake in its repos.
+ARG CMAKE_VER=3.18.4
+ARG CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-Linux-x86_64.sh
+
+ARG TINI_VER=0.18.0
+ARG TINI_URL=https://github.com/krallin/tini/releases/download/v${TINI_VER}/tini
 
 ENV TZ=US/Pacific
 ENV DEBIAN_FRONTEND=noninteractive
@@ -31,76 +43,91 @@ ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 
 SHELL ["/bin/bash", "-c"]
 
-# Add Debian repositories and fetch package data for Ubuntu.
 RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
+      export ALTERNATIVES=update-alternatives; \
       apt-get -y update; \
       apt-get -y --no-install-recommends install apt-utils; \
-      apt-get -y --no-install-recommends install wget ca-certificates; \
+      apt-get -y --no-install-recommends install curl; \
       if   [[ "${CXX_TYPE}" == "gcc" && "${CXX_VER}" > 8 ]]; then \
         source /etc/os-release; \
-        echo "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu ${UBUNTU_CODENAME} main" >> /etc/apt/sources.list; \
-        apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 60C317803A41BA51845E371A1E9377A2BA9EF27F; \
+        echo "deb ${UBUNTU_TOOL_DEB_REPO} ${UBUNTU_CODENAME} main" >> /etc/apt/sources.list; \
+        apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ${UBUNTU_TOOL_FINGER}; \
       elif [[ "${CXX_TYPE}" == "icc" ]]; then \
-        echo "deb https://apt.repos.intel.com/oneapi all main" >> /etc/apt/sources.list; \
-        wget -q https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB -O- | apt-key add -; \
+        echo "deb ${ICC_DEB_REPO} all main" >> /etc/apt/sources.list; \
+        curl --silent --show-error -L ${ICC_KEY} -o - | apt-key add -; \
       fi; \
       apt-get -y update; \
-    else \
-      echo -e "\n\n>>>> SKIPPING: $${OS_VER} is not \"ubuntu\"\n\n"; \
-    fi
-
-# Install Debian packages for Ubuntu.
-RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install python3-pip python3-setuptools python3-wheel; \
-      apt-get -y --no-install-recommends install cmake; \
+      ${ALTERNATIVES} --install /usr/bin/python python $(which python3) 3; \
+      ${ALTERNATIVES} --install /usr/bin/pip    pip    $(which pip3)    3; \
+      ${ALTERNATIVES} --set python $(which python3); \
+      ${ALTERNATIVES} --set pip    $(which pip3); \
+      apt-get -y --no-install-recommends install make; \
+      apt-get -y --no-install-recommends install gdb; \
+      apt-get -y --no-install-recommends install strace; \
+      apt-get -y --no-install-recommends install vim; \
+      apt-get -y --no-install-recommends install llvm-dev; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
         apt-get -y --no-install-recommends install g++-${CXX_VER}; \
-        update-alternatives --install /usr/bin/cc  cc  $(which gcc-${CXX_VER}) ${CXX_VER}; \
-        update-alternatives --install /usr/bin/c++ c++ $(which g++-${CXX_VER}) ${CXX_VER}; \
-        update-alternatives --set cc  $(which gcc-${CXX_VER}); \
-        update-alternatives --set c++ $(which g++-${CXX_VER}); \
-        update-alternatives --install /usr/bin/gcc gcc $(which gcc-${CXX_VER}) ${CXX_VER}; \
-        update-alternatives --install /usr/bin/g++ g++ $(which g++-${CXX_VER}) ${CXX_VER}; \
-        update-alternatives --set gcc $(which gcc-${CXX_VER}); \
-        update-alternatives --set g++ $(which g++-${CXX_VER}); \
+        export CC=$(which gcc-${CXX_VER}); \
+        export CXX=$(which g++-${CXX_VER}); \
       elif [[ "${CXX_TYPE}" == "clang" ]]; then \
         apt-get -y --no-install-recommends install clang-${CXX_VER}; \
-        update-alternatives --install /usr/bin/cc  cc  $(which clang-${CXX_VER})   ${CXX_VER}; \
-        update-alternatives --install /usr/bin/c++ c++ $(which clang++-${CXX_VER}) ${CXX_VER}; \
-        update-alternatives --set cc  $(which clang-${CXX_VER}); \
-        update-alternatives --set c++ $(which clang++-${CXX_VER}); \
-        update-alternatives --install /usr/bin/clang   clang   $(which clang-${CXX_VER})   ${CXX_VER}; \
-        update-alternatives --install /usr/bin/clang++ clang++ $(which clang++-${CXX_VER}) ${CXX_VER}; \
-        update-alternatives --set clang   $(which clang-${CXX_VER}); \
-        update-alternatives --set clang++ $(which clang++-${CXX_VER}); \
+        export CC=$(which clang-${CXX_VER}); \
+        export CXX=$(which clang++-${CXX_VER}); \
       elif [[ "${CXX_TYPE}" == "icc" ]]; then \
         apt-get -y --no-install-recommends install intel-oneapi-icc g++; \
         source /opt/intel/oneapi/setvars.sh; \
-        update-alternatives --install /usr/bin/cc  cc  $(which icc)  99; \
-        update-alternatives --install /usr/bin/c++ c++ $(which icpc) 99; \
-        update-alternatives --set cc  $(which icc); \
-        update-alternatives --set c++ $(which icpc); \
-        update-alternatives --install /usr/bin/icc  icc  $(which icc)  99; \
-        update-alternatives --install /usr/bin/icpc icpc $(which icpc) 99; \
-        update-alternatives --set icc  $(which icc); \
-        update-alternatives --set icpc $(which icpc); \
-      fi; \
-      if   [[ "${SDK_TYPE}" == "nvidia/cuda" ]]; then \
-        update-alternatives --install /usr/bin/cu++ nvcc $(which nvcc) 99; \
-      elif [[ "${SDK_TYPE}" == "nvcr.io/nvidia/nvhpc" ]]; then \
-        update-alternatives --install /usr/bin/cu++ nvc++ $(which nvc++) 99; \
+        export CC=$(which icc); \
+        export CXX=$(which icpc); \
+      elif [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
+        apt-get -y --no-install-recommends install g++; \
+        export CC=$(which nvc); \
+        export CXX=$(which nvc++); \
       fi; \
       apt-get clean; \
       rm -rf /var/lib/apt/lists/*; \
-    else \
-      echo -e "\n\n>>>> SKIPPING: $${OS_VER} is not \"ubuntu\"\n\n"; \
-    fi
-
-# Install lit.
-RUN python3 -m pip install lit
-
-# Install tini for init.
-RUN wget --quiet ${TINI_URL} -O /usr/bin/tini && chmod +x /usr/bin/tini
+    elif [[ "${OS_TYPE}" == "centos" ]]; then \
+      export ALTERNATIVES=alternatives; \
+      yum -y --enablerepo=extras install epel-release; \
+      yum -y updateinfo; \
+      yum -y install which; \
+      yum -y install python python-pip; \
+      yum -y install make; \
+      rm cmake.bash; \
+      yum -y install llvm-devel; \
+      yum -y install gdb; \
+      yum -y install strace; \
+      yum -y install vim; \
+      if [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
+        yum -y install gcc-c++ libstdc++-static; \
+        rm /usr/bin/cc; \
+        rm /usr/bin/c++; \
+        export CC=$(which nvc); \
+        export CXX=$(which nvc++); \
+      else \
+        echo -e "\n\n>>>> ERROR: ${CXX_TYPE} is not supported on ${OS_TYPE}.\n\n"; \
+        exit 1; \
+      fi; \
+    fi; \
+    curl --silent --show-error -L ${CMAKE_URL} -o cmake.bash; \
+    bash cmake.bash -- --skip-license --prefix=/usr; \
+    curl --silent --show-error -L ${TINI_URL} -o /usr/bin/tini; \
+    chmod +x /usr/bin/tini; \
+    pip install lit; \
+    ${ALTERNATIVES} --install /usr/bin/cc  cc  ${CC}  99; \
+    ${ALTERNATIVES} --install /usr/bin/c++ c++ ${CXX} 99; \
+    ${ALTERNATIVES} --set cc  ${CC}; \
+    ${ALTERNATIVES} --set c++ ${CXX}; \
+    if   [[ "${SDK_TYPE}" == "nvidia/cuda" ]]; then \
+      export CUDACXX=$(which nvcc); \
+      ${ALTERNATIVES} --install /usr/bin/cu++ cu++ $(which nvcc)  99; \
+      ${ALTERNATIVES} --set cu++ $(which nvcc); \
+    elif [[ "${SDK_TYPE}" == "nvcr.io/nvidia/nvhpc" ]]; then \
+      export CUDACXX=$(which nvc++); \
+      ${ALTERNATIVES} --install /usr/bin/cu++ cu++ $(which nvc++) 99; \
+      ${ALTERNATIVES} --set cu++ $(which nvc++); \
+    fi;
 
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
 CMD [ "/bin/bash" ]
