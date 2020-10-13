@@ -41,7 +41,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # apt-key complains about non-interactive usage.
 ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 
-SHELL ["/bin/bash", "-c"]
+SHELL ["/usr/bin/env", "bash", "-c"]
 
 RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       export ALTERNATIVES=update-alternatives; \
