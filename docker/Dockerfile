@@ -1,3 +1,8 @@
+# Copyright (c) 2018-2020 NVIDIA Corporation
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+# Released under the Apache License v2.0 with LLVM Exceptions.
+# See https://llvm.org/LICENSE.txt for license information.
+
 # SDK_TYPE needs to be a base image that contains CUDA, either:
 # - nvidia/cuda
 # - nvcr.io/nvidia/nvhpc
