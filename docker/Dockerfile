@@ -68,6 +68,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       ${ALTERNATIVES} --set python $(which python3); \
       ${ALTERNATIVES} --set pip    $(which pip3); \
       apt-get -y --no-install-recommends install make; \
+      apt-get -y --no-install-recommends install sudo; \
       apt-get -y --no-install-recommends install gdb; \
       apt-get -y --no-install-recommends install strace; \
       apt-get -y --no-install-recommends install vim; \
@@ -83,6 +84,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       elif [[ "${CXX_TYPE}" == "icc" ]]; then \
         apt-get -y --no-install-recommends install intel-oneapi-icc g++; \
         source /opt/intel/oneapi/setvars.sh; \
+        echo "source /opt/intel/oneapi/setvars.sh" >> /etc/cccl.bashrc; \
         export CC=$(which icc); \
         export CXX=$(which icpc); \
       elif [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
@@ -101,6 +103,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       yum -y install make; \
       rm cmake.bash; \
       yum -y install llvm-devel; \
+      yum -y install sudo; \
       yum -y install gdb; \
       yum -y install strace; \
       yum -y install vim; \
@@ -115,24 +118,25 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
         exit 1; \
       fi; \
     fi; \
-    curl --silent --show-error -L ${CMAKE_URL} -o cmake.bash; \
-    bash cmake.bash -- --skip-license --prefix=/usr; \
-    curl --silent --show-error -L ${TINI_URL} -o /usr/bin/tini; \
-    chmod +x /usr/bin/tini; \
-    pip install lit; \
     ${ALTERNATIVES} --install /usr/bin/cc  cc  ${CC}  99; \
     ${ALTERNATIVES} --install /usr/bin/c++ c++ ${CXX} 99; \
     ${ALTERNATIVES} --set cc  ${CC}; \
     ${ALTERNATIVES} --set c++ ${CXX}; \
     if   [[ "${SDK_TYPE}" == "nvidia/cuda" ]]; then \
       export CUDACXX=$(which nvcc); \
-      ${ALTERNATIVES} --install /usr/bin/cu++ cu++ $(which nvcc)  99; \
-      ${ALTERNATIVES} --set cu++ $(which nvcc); \
     elif [[ "${SDK_TYPE}" == "nvcr.io/nvidia/nvhpc" ]]; then \
       export CUDACXX=$(which nvc++); \
-      ${ALTERNATIVES} --install /usr/bin/cu++ cu++ $(which nvc++) 99; \
-      ${ALTERNATIVES} --set cu++ $(which nvc++); \
-    fi;
+    fi; \
+    echo "export CC=${CC}" >> /etc/cccl.bashrc; \
+    echo "export CXX=${CXX}" >> /etc/cccl.bashrc; \
+    echo "export CUDACXX=${CUDACXX}" >> /etc/cccl.bashrc; \
+    echo "source /etc/cccl.bashrc" >> /etc/bash.bashrc; \
+    echo "ALL ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
+    pip install lit; \
+    curl --silent --show-error -L ${CMAKE_URL} -o cmake.bash; \
+    bash cmake.bash -- --skip-license --prefix=/usr; \
+    curl --silent --show-error -L ${TINI_URL} -o /usr/bin/tini; \
+    chmod +x /usr/bin/tini;
 
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
 CMD [ "/bin/bash" ]
