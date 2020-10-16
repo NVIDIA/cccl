@@ -101,7 +101,6 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       yum -y install which; \
       yum -y install python python-pip; \
       yum -y install make; \
-      rm cmake.bash; \
       yum -y install llvm-devel; \
       yum -y install sudo; \
       yum -y install gdb; \
