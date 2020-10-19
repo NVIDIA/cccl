@@ -67,12 +67,13 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       ${ALTERNATIVES} --install /usr/bin/pip    pip    $(which pip3)    3; \
       ${ALTERNATIVES} --set python $(which python3); \
       ${ALTERNATIVES} --set pip    $(which pip3); \
-      apt-get -y --no-install-recommends install make; \
+      apt-get -y --no-install-recommends install make ninja-build; \
+      apt-get -y --no-install-recommends install llvm-dev; \
+      apt-get -y --no-install-recommends install libtbb-dev; \
       apt-get -y --no-install-recommends install sudo; \
       apt-get -y --no-install-recommends install gdb; \
       apt-get -y --no-install-recommends install strace; \
-      apt-get -y --no-install-recommends install vim; \
-      apt-get -y --no-install-recommends install llvm-dev; \
+      apt-get -y --no-install-recommends install vim emacs-nox; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
         apt-get -y --no-install-recommends install g++-${CXX_VER}; \
         export CC=$(which gcc-${CXX_VER}); \
@@ -100,12 +101,13 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       yum -y updateinfo; \
       yum -y install which; \
       yum -y install python python-pip; \
-      yum -y install make; \
+      yum -y install make ninja-build; \
       yum -y install llvm-devel; \
+      yum -y install tbb-devel; \
       yum -y install sudo; \
       yum -y install gdb; \
       yum -y install strace; \
-      yum -y install vim; \
+      yum -y install vim emacs-nox; \
       if [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
         yum -y install gcc-c++ libstdc++-static; \
         rm /usr/bin/cc; \
