@@ -76,18 +76,18 @@ exclude:
     CXX_VER: 10
   - CXX_TYPE: icc
     CXX_VER: 20.7
-  - CXX_TYPE: nvc++
+  - CXX_TYPE: nvcxx
     CXX_VER: 5
-  - CXX_TYPE: nvc++
+  - CXX_TYPE: nvcxx
     CXX_VER: 6
-  - CXX_TYPE: nvc++
+  - CXX_TYPE: nvcxx
     CXX_VER: 7
-  - CXX_TYPE: nvc++
+  - CXX_TYPE: nvcxx
     CXX_VER: 8
-  - CXX_TYPE: nvc++
+  - CXX_TYPE: nvcxx
     CXX_VER: 9
-  - CXX_TYPE: nvc++
+  - CXX_TYPE: nvcxx
     CXX_VER: 10
-  - CXX_TYPE: nvc++
+  - CXX_TYPE: nvcxx
     CXX_VER: latest
 
