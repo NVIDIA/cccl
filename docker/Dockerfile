@@ -136,6 +136,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
     pip install lit; \
     curl --silent --show-error -L ${CMAKE_URL} -o cmake.bash; \
     bash cmake.bash -- --skip-license --prefix=/usr; \
+    rm cmake.bash; \
     curl --silent --show-error -L ${TINI_URL} -o /usr/bin/tini; \
     chmod +x /usr/bin/tini;
 
