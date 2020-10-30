@@ -50,7 +50,7 @@ exclude:
     SDK_TYPE: nvcr.io/nvidia/nvhpc
   - CXX_TYPE: icc
     SDK_TYPE: nvcr.io/nvidia/nvhpc
-  - CXX_TYPE: nvxxx
+  - CXX_TYPE: nvcxx
     SDK_TYPE: nvidia/cuda
   - CXX_TYPE: gcc
     CXX_VER: 20.7
