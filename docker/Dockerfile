@@ -53,7 +53,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y update; \
       apt-get -y --no-install-recommends install apt-utils; \
       apt-get -y --no-install-recommends install curl; \
-      if   [[ "${CXX_TYPE}" == "gcc" && "${CXX_VER}" > 8 ]]; then \
+      if   [[ "${CXX_TYPE}" == "gcc" && "${CXX_VER}" -gt 8 ]]; then \
         source /etc/os-release; \
         echo "deb ${UBUNTU_TOOL_DEB_REPO} ${UBUNTU_CODENAME} main" >> /etc/apt/sources.list; \
         apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ${UBUNTU_TOOL_FINGER}; \
