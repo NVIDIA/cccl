@@ -59,6 +59,10 @@ exclude:
   - CXX_TYPE: clang
     CXX_VER: 5
   - CXX_TYPE: clang
+    CXX_VER: 6
+  - CXX_TYPE: clang
+    CXX_VER: 10
+  - CXX_TYPE: clang
     CXX_VER: 20.7
   - CXX_TYPE: clang
     CXX_VER: latest
