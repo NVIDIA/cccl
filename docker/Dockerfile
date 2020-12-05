@@ -3,18 +3,22 @@
 # Released under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 
-# SDK_TYPE needs to be a base image that contains CUDA, either:
-# - nvidia/cuda
-# - nvcr.io/nvidia/nvhpc
-ARG SDK_TYPE=nvidia/cuda
-ARG SDK_VER=11.0-devel
+# SDK_TYPE needs to be a base image that contains CUDA.
+# | SDK_TYPE             | SDK_VER    |
+# | nvcr.io/nvidia/cuda  | 11.1-devel |
+# | nvcr.io/nvidia/nvhpc | 20.9-devel |
+ARG SDK_TYPE=nvcr.io/nvidia/cuda
+ARG SDK_VER=11.1-devel
+# | OS_TYPE  | OS_VER |
+# | ubuntu   | 20.04  |
+# | centos   | 7      |
 ARG OS_TYPE=ubuntu
-ARG OS_VER=18.04
+ARG OS_VER=20.04
 # | CXX_TYPE | CXX_VER      |
 # | gcc      | 5 6 7 8 9 10 |
 # | clang    | 7 8 9 10     |
 # | icc      | latest       |
-# | nvcxx    | 20.7         |
+# | nvcxx    | 20.9         |
 ARG CXX_TYPE=gcc
 ARG CXX_VER=5
 FROM ${SDK_TYPE}:${SDK_VER}-${OS_TYPE}${OS_VER}
@@ -27,11 +31,10 @@ ARG OS_VER
 ARG CXX_TYPE
 ARG CXX_VER
 
-# Ubuntu 18.04 doesn't have GCC 9 and 10 in its repos.
-ARG UBUNTU_TOOL_DEB_REPO=http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu
-ARG UBUNTU_TOOL_FINGER=60C317803A41BA51845E371A1E9377A2BA9EF27F
+# Ubuntu 20.04 doesn't have GCC 5 and GCC 6, so get it from an older release.
+ARG UBUNTU_ARCHIVE_DEB_REPO="http://archive.ubuntu.com/ubuntu bionic main universe"
 
-ARG ICC_DEB_REPO=https://apt.repos.intel.com/oneapi
+ARG ICC_DEB_REPO="https://apt.repos.intel.com/oneapi all main"
 ARG ICC_KEY=https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
 
 # CentOS 7 doesn't have a new enough version of CMake in its repos.
@@ -53,12 +56,11 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y update; \
       apt-get -y --no-install-recommends install apt-utils; \
       apt-get -y --no-install-recommends install curl; \
-      if   [[ "${CXX_TYPE}" == "gcc" && "${CXX_VER}" -gt 8 ]]; then \
-        source /etc/os-release; \
-        echo "deb ${UBUNTU_TOOL_DEB_REPO} ${UBUNTU_CODENAME} main" >> /etc/apt/sources.list; \
-        apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ${UBUNTU_TOOL_FINGER}; \
+      apt-get -y --no-install-recommends install gnupg; \
+      if   [[ "${CXX_TYPE}" == "gcc" && "${CXX_VER}" -le 6 ]]; then \
+        echo "deb ${UBUNTU_ARCHIVE_DEB_REPO}" >> /etc/apt/sources.list.d/ubuntu-archive.list; \
       elif [[ "${CXX_TYPE}" == "icc" ]]; then \
-        echo "deb ${ICC_DEB_REPO} all main" >> /etc/apt/sources.list; \
+        echo "deb ${ICC_DEB_REPO}" > /etc/apt/sources.list.d/icc.list; \
         curl --silent --show-error -L ${ICC_KEY} -o - | apt-key add -; \
       fi; \
       apt-get -y update; \
@@ -74,6 +76,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install sudo; \
       apt-get -y --no-install-recommends install gdb; \
       apt-get -y --no-install-recommends install strace; \
+      apt-get -y --no-install-recommends install less; \
       apt-get -y --no-install-recommends install vim emacs-nox; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
         apt-get -y --no-install-recommends install g++-${CXX_VER}; \
@@ -84,22 +87,23 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
         export CC=$(which clang-${CXX_VER}); \
         export CXX=$(which clang++-${CXX_VER}); \
       elif [[ "${CXX_TYPE}" == "icc" ]]; then \
-        apt-get -y --no-install-recommends install intel-oneapi-icc g++; \
+        apt-get -y --no-install-recommends install intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic g++; \
         source /opt/intel/oneapi/setvars.sh; \
         echo "source /opt/intel/oneapi/setvars.sh" >> /etc/cccl.bashrc; \
         export CC=$(which icc); \
         export CXX=$(which icpc); \
       elif [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
-        apt-get -y --no-install-recommends install g++; \
         export CC=$(which nvc); \
         export CXX=$(which nvc++); \
       fi; \
       apt-get clean; \
       rm -rf /var/lib/apt/lists/*; \
+      echo "source /etc/cccl.bashrc" >> /etc/bash.bashrc; \
     elif [[ "${OS_TYPE}" == "centos" ]]; then \
       export ALTERNATIVES=alternatives; \
       yum -y --enablerepo=extras install epel-release; \
       yum -y updateinfo; \
+      yum -y install centos-release-scl; \
       yum -y install which; \
       yum -y install python python-pip; \
       yum -y install make ninja-build; \
@@ -109,17 +113,28 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       yum -y install sudo; \
       yum -y install gdb; \
       yum -y install strace; \
+      yum -y install less; \
       yum -y install vim emacs-nox; \
-      if [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
-        yum -y install gcc-c++ libstdc++-static; \
-        rm /usr/bin/cc; \
-        rm /usr/bin/c++; \
+      if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
+        yum -y install devtoolset-${CXX_VER}-gcc*; \
+        source scl_source enable devtoolset-${CXX_VER}; \
+        echo "source scl_source enable devtoolset-${CXX_VER}" >> /etc/cccl.bashrc; \
+        source /etc/cccl.bashrc; \
+        export CC=$(which gcc); \
+        export CXX=$(which g++); \
+      elif [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
+        yum -y install devtoolset-7-gcc*; \
+        echo "source scl_source enable devtoolset-7" >> /etc/cccl.bashrc; \
+        source /etc/cccl.bashrc; \
         export CC=$(which nvc); \
         export CXX=$(which nvc++); \
       else \
         echo -e "\n\n>>>> ERROR: ${CXX_TYPE} is not supported on ${OS_TYPE}.\n\n"; \
         exit 1; \
       fi; \
+      rm -f /usr/bin/cc; \
+      rm -f /usr/bin/c++; \
+      echo "source /etc/cccl.bashrc" >> /etc/bashrc; \
     fi; \
     ${ALTERNATIVES} --install /usr/bin/cc  cc  ${CC}  99; \
     ${ALTERNATIVES} --install /usr/bin/c++ c++ ${CXX} 99; \
@@ -133,7 +148,6 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
     echo "export CC=${CC}" >> /etc/cccl.bashrc; \
     echo "export CXX=${CXX}" >> /etc/cccl.bashrc; \
     echo "export CUDACXX=${CUDACXX}" >> /etc/cccl.bashrc; \
-    echo "source /etc/cccl.bashrc" >> /etc/bash.bashrc; \
     echo "ALL ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
     pip install lit; \
     curl --silent --show-error -L ${CMAKE_URL} -o cmake.bash; \
