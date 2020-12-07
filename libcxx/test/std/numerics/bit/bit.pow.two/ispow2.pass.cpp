@@ -9,7 +9,7 @@
 // UNSUPPORTED: c++98, c++03, c++11, c++14, c++17 
 
 // template <class T>
-//   constexpr bool ispow2(T x) noexcept;
+//   constexpr bool has_single_bit(T x) noexcept;
 
 // Remarks: This function shall not participate in overload resolution unless 
 //	T is an unsigned integer type
@@ -28,15 +28,15 @@ enum class E2 : unsigned char { red };
 template <typename T>
 constexpr bool constexpr_test()
 {
-	return  std::ispow2(T(1))
-	   &&   std::ispow2(T(2))
-	   &&  !std::ispow2(T(3))
-	   &&   std::ispow2(T(4))
-	   &&  !std::ispow2(T(5))
-	   &&  !std::ispow2(T(6))
-	   &&  !std::ispow2(T(7))
-	   &&   std::ispow2(T(8))
-	   &&  !std::ispow2(T(9))
+	return  std::has_single_bit(T(1))
+	   &&   std::has_single_bit(T(2))
+	   &&  !std::has_single_bit(T(3))
+	   &&   std::has_single_bit(T(4))
+	   &&  !std::has_single_bit(T(5))
+	   &&  !std::has_single_bit(T(6))
+	   &&  !std::has_single_bit(T(7))
+	   &&   std::has_single_bit(T(8))
+	   &&  !std::has_single_bit(T(9))
 	   ;
 }
 
@@ -44,26 +44,26 @@ constexpr bool constexpr_test()
 template <typename T>
 void runtime_test()
 {
-	ASSERT_SAME_TYPE(bool, decltype(std::ispow2(T(0))));
-	ASSERT_NOEXCEPT(                std::ispow2(T(0)));
+	ASSERT_SAME_TYPE(bool, decltype(std::has_single_bit(T(0))));
+	ASSERT_NOEXCEPT(                std::has_single_bit(T(0)));
 	
-	assert(!std::ispow2(T(121)));
-	assert(!std::ispow2(T(122)));
-	assert(!std::ispow2(T(123)));
-	assert(!std::ispow2(T(124)));
-	assert(!std::ispow2(T(125)));
-	assert(!std::ispow2(T(126)));
-	assert(!std::ispow2(T(127)));
-	assert( std::ispow2(T(128)));
-	assert(!std::ispow2(T(129)));
-	assert(!std::ispow2(T(130)));
+	assert(!std::has_single_bit(T(121)));
+	assert(!std::has_single_bit(T(122)));
+	assert(!std::has_single_bit(T(123)));
+	assert(!std::has_single_bit(T(124)));
+	assert(!std::has_single_bit(T(125)));
+	assert(!std::has_single_bit(T(126)));
+	assert(!std::has_single_bit(T(127)));
+	assert( std::has_single_bit(T(128)));
+	assert(!std::has_single_bit(T(129)));
+	assert(!std::has_single_bit(T(130)));
 }
 
 int main()
 {
 	
     {
-    auto lambda = [](auto x) -> decltype(std::ispow2(x)) {};
+    auto lambda = [](auto x) -> decltype(std::has_single_bit(x)) {};
     using L = decltype(lambda);
     
     static_assert( std::is_invocable_v<L, unsigned char>, "");
@@ -145,17 +145,17 @@ int main()
 	{
 	__uint128_t val = 128;
 	val <<= 32;
-	assert(!std::ispow2(val-1));
-	assert( std::ispow2(val));
-	assert(!std::ispow2(val+1));
+	assert(!std::has_single_bit(val-1));
+	assert( std::has_single_bit(val));
+	assert(!std::has_single_bit(val+1));
 	val <<= 2;
-	assert(!std::ispow2(val-1));
-	assert( std::ispow2(val));
-	assert(!std::ispow2(val+1));
+	assert(!std::has_single_bit(val-1));
+	assert( std::has_single_bit(val));
+	assert(!std::has_single_bit(val+1));
 	val <<= 3;
-	assert(!std::ispow2(val-1));
-	assert( std::ispow2(val));
-	assert(!std::ispow2(val+1));
+	assert(!std::has_single_bit(val-1));
+	assert( std::has_single_bit(val));
+	assert(!std::has_single_bit(val+1));
 	}
 #endif
 	

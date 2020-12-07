@@ -9,9 +9,9 @@
 // UNSUPPORTED: c++98, c++03, c++11, c++14, c++17 
 
 // template <class T>
-//   constexpr T floor2(T x) noexcept;
+//   constexpr T bit_floor(T x) noexcept;
 
-// Returns: If x == 0, 0; otherwise the maximal value y such that floor2(y) is true and y <= x.
+// Returns: If x == 0, 0; otherwise the maximal value y such that bit_floor(y) is true and y <= x.
 // Remarks: This function shall not participate in overload resolution unless 
 //	T is an unsigned integer type
 
@@ -29,16 +29,16 @@ enum class E2 : unsigned char { red };
 template <typename T>
 constexpr bool constexpr_test()
 {
-	return std::floor2(T(0)) == T(0)
-	   &&  std::floor2(T(1)) == T(1)
-	   &&  std::floor2(T(2)) == T(2)
-	   &&  std::floor2(T(3)) == T(2)
-	   &&  std::floor2(T(4)) == T(4)
-	   &&  std::floor2(T(5)) == T(4)
-	   &&  std::floor2(T(6)) == T(4)
-	   &&  std::floor2(T(7)) == T(4)
-	   &&  std::floor2(T(8)) == T(8)
-	   &&  std::floor2(T(9)) == T(8)
+	return std::bit_floor(T(0)) == T(0)
+	   &&  std::bit_floor(T(1)) == T(1)
+	   &&  std::bit_floor(T(2)) == T(2)
+	   &&  std::bit_floor(T(3)) == T(2)
+	   &&  std::bit_floor(T(4)) == T(4)
+	   &&  std::bit_floor(T(5)) == T(4)
+	   &&  std::bit_floor(T(6)) == T(4)
+	   &&  std::bit_floor(T(7)) == T(4)
+	   &&  std::bit_floor(T(8)) == T(8)
+	   &&  std::bit_floor(T(9)) == T(8)
 	   ;
 }
 
@@ -46,26 +46,26 @@ constexpr bool constexpr_test()
 template <typename T>
 void runtime_test()
 {
-	ASSERT_SAME_TYPE(T, decltype(std::floor2(T(0))));
-	ASSERT_NOEXCEPT(             std::floor2(T(0)));
+	ASSERT_SAME_TYPE(T, decltype(std::bit_floor(T(0))));
+	ASSERT_NOEXCEPT(             std::bit_floor(T(0)));
 	
-	assert( std::floor2(T(121)) == T(64));
-	assert( std::floor2(T(122)) == T(64));
-	assert( std::floor2(T(123)) == T(64));
-	assert( std::floor2(T(124)) == T(64));
-	assert( std::floor2(T(125)) == T(64));
-	assert( std::floor2(T(126)) == T(64));
-	assert( std::floor2(T(127)) == T(64));
-	assert( std::floor2(T(128)) == T(128));
-	assert( std::floor2(T(129)) == T(128));
-	assert( std::floor2(T(130)) == T(128));
+	assert( std::bit_floor(T(121)) == T(64));
+	assert( std::bit_floor(T(122)) == T(64));
+	assert( std::bit_floor(T(123)) == T(64));
+	assert( std::bit_floor(T(124)) == T(64));
+	assert( std::bit_floor(T(125)) == T(64));
+	assert( std::bit_floor(T(126)) == T(64));
+	assert( std::bit_floor(T(127)) == T(64));
+	assert( std::bit_floor(T(128)) == T(128));
+	assert( std::bit_floor(T(129)) == T(128));
+	assert( std::bit_floor(T(130)) == T(128));
 }
 
 int main()
 {
 	
     {
-    auto lambda = [](auto x) -> decltype(std::floor2(x)) {};
+    auto lambda = [](auto x) -> decltype(std::bit_floor(x)) {};
     using L = decltype(lambda);
     
     static_assert( std::is_invocable_v<L, unsigned char>, "");
@@ -147,17 +147,17 @@ int main()
 	{
 	__uint128_t val = 128;
 	val <<= 32;
-	assert( std::floor2(val-1) == val/2);
-	assert( std::floor2(val)   == val);
-	assert( std::floor2(val+1) == val);
+	assert( std::bit_floor(val-1) == val/2);
+	assert( std::bit_floor(val)   == val);
+	assert( std::bit_floor(val+1) == val);
 	val <<= 2;
-	assert( std::floor2(val-1) == val/2);
-	assert( std::floor2(val)   == val);
-	assert( std::floor2(val+1) == val);
+	assert( std::bit_floor(val-1) == val/2);
+	assert( std::bit_floor(val)   == val);
+	assert( std::bit_floor(val+1) == val);
 	val <<= 3;
-	assert( std::floor2(val-1) == val/2);
-	assert( std::floor2(val)   == val);
-	assert( std::floor2(val+1) == val);
+	assert( std::bit_floor(val-1) == val/2);
+	assert( std::bit_floor(val)   == val);
+	assert( std::bit_floor(val+1) == val);
 	}
 #endif
 
