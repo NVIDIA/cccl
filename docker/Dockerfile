@@ -72,7 +72,6 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install make ninja-build; \
       apt-get -y --no-install-recommends install llvm-dev; \
       apt-get -y --no-install-recommends install libtbb-dev; \
-      apt-get -y --no-install-recommends install libomp-dev; \
       apt-get -y --no-install-recommends install sudo; \
       apt-get -y --no-install-recommends install gdb; \
       apt-get -y --no-install-recommends install strace; \
@@ -109,7 +108,6 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       yum -y install make ninja-build; \
       yum -y install llvm-devel; \
       yum -y install tbb-devel; \
-      yum -y install omp-devel; \
       yum -y install sudo; \
       yum -y install gdb; \
       yum -y install strace; \
@@ -140,7 +138,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
     ${ALTERNATIVES} --install /usr/bin/c++ c++ ${CXX} 99; \
     ${ALTERNATIVES} --set cc  ${CC}; \
     ${ALTERNATIVES} --set c++ ${CXX}; \
-    if   [[ "${SDK_TYPE}" == "nvidia/cuda" ]]; then \
+    if   [[ "${SDK_TYPE}" == "nvcr.io/nvidia/cuda" ]]; then \
       export CUDACXX=$(which nvcc); \
     elif [[ "${SDK_TYPE}" == "nvcr.io/nvidia/nvhpc" ]]; then \
       export CUDACXX=$(which nvc++); \
