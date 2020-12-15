@@ -4,10 +4,10 @@
 # See https://llvm.org/LICENSE.txt for license information.
 
 # SDK_TYPE needs to be a base image that contains CUDA.
-# | SDK_TYPE             | SDK_VER    |
-# | nvcr.io/nvidia/cuda  | 11.1-devel |
-# | nvcr.io/nvidia/nvhpc | 20.9-devel |
-ARG SDK_TYPE=nvcr.io/nvidia/cuda
+# | SDK_TYPE | SDK_VER    |
+# | cuda     | 11.1-devel |
+# | nvhpc    | 20.9-devel |
+ARG SDK_TYPE=cuda
 ARG SDK_VER=11.1-devel
 # | OS_TYPE  | OS_VER |
 # | ubuntu   | 20.04  |
@@ -21,7 +21,7 @@ ARG OS_VER=20.04
 # | nvcxx    | 20.9         |
 ARG CXX_TYPE=gcc
 ARG CXX_VER=5
-FROM ${SDK_TYPE}:${SDK_VER}-${OS_TYPE}${OS_VER}
+FROM nvcr.io/nvidia/${SDK_TYPE}:${SDK_VER}-${OS_TYPE}${OS_VER}
 
 # Pull arguments from build arguments.
 ARG SDK_TYPE

@@ -4,8 +4,8 @@
 # See https://llvm.org/LICENSE.txt for license information.
 
 SDK_TYPE:
-  - nvcr.io/nvidia/cuda
-  - nvcr.io/nvidia/nvhpc
+  - cuda
+  - nvhpc
 
 SDK_VER:
   - 11.1-devel
@@ -38,13 +38,13 @@ CXX_VER:
 exclude:
   # Excludes by `SDK_TYPE`.
   - CXX_TYPE: clang
-    SDK_TYPE: nvcr.io/nvidia/nvhpc
+    SDK_TYPE: nvhpc
   - CXX_TYPE: icc
-    SDK_TYPE: nvcr.io/nvidia/nvhpc
+    SDK_TYPE: nvhpc
   # Excludes by `SDK_VER`.
-  - SDK_TYPE: nvcr.io/nvidia/cuda
+  - SDK_TYPE: cuda
     SDK_VER: 20.9-devel
-  - SDK_TYPE: nvcr.io/nvidia/nvhpc
+  - SDK_TYPE: nvhpc
     SDK_VER: 11.1-devel
   # Excludes by `OS_TYPE`.
   - CXX_TYPE: clang
