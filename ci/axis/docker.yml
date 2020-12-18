@@ -41,6 +41,8 @@ exclude:
     SDK_TYPE: nvhpc
   - CXX_TYPE: icc
     SDK_TYPE: nvhpc
+  - CXX_TYPE: nvcxx
+    SDK_TYPE: cuda
   # Excludes by `SDK_VER`.
   - SDK_TYPE: cuda
     SDK_VER: 20.9-devel
