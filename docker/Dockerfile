@@ -141,6 +141,8 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
     ${ALTERNATIVES} --set c++ ${CXX}; \
     if [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
       export CUDACXX=$(which nvc++); \
+      echo "source /usr/share/lmod/lmod/init/bash" >> /etc/cccl.bashrc; \
+      echo "module load nvhpc"                     >> /etc/cccl.bashrc; \
     else \
       export CUDACXX=$(which nvcc); \
     fi; \
