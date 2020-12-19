@@ -81,6 +81,10 @@ extern "C++" {
 #define _LIBCUDACXX_CXX03_LANG
 #endif
 
+#if defined(__PGIC__) && defined(__linux__)
+    #define __ELF__
+#endif
+
 #if defined(__ELF__)
 #  define _LIBCUDACXX_OBJECT_FORMAT_ELF   1
 #elif defined(__MACH__)
@@ -999,7 +1003,22 @@ typedef __char32_t char32_t;
 
 #define _LIBCUDACXX_HAS_NO_ASAN
 
+#define _LIBCUDACXX_ALWAYS_INLINE __attribute__ ((__always_inline__))
+#define _LIBCUDACXX_NORETURN __attribute__ ((noreturn))
+
+#define _GLIBCXX_INCLUDE_NEXT_C_HEADERS
+
 #endif // _LIBCUDACXX_COMPILER_[CLANG|GCC|MSVC|IBM|NVRTC]
+
+#if defined(_LIBCUDACXX_COMPILER_PGI) && !defined(__cuda_std__)
+// Forcefully disable visibility controls when used as the standard library with NVC++.
+// TODO: reevaluate.
+#define _LIBCUDACXX_HIDE_FROM_ABI
+#ifndef _LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
+#define _LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
+#endif
+#define _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
+#endif
 
 #if defined(_LIBCUDACXX_OBJECT_FORMAT_COFF)
 
@@ -1613,7 +1632,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 // #  define _LIBCUDACXX_HAS_C_ATOMIC_IMP
 #if defined(_LIBCUDACXX_COMPILER_CLANG)
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#elif defined(_LIBCUDACXX_COMPILER_GCC)
+#elif defined(_LIBCUDACXX_COMPILER_GCC) || defined(_LIBCUDACXX_COMPILER_PGI)
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
 #elif defined(_LIBCUDACXX_COMPILER_PGI)
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
@@ -1684,6 +1703,8 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_FALLTHROUGH() ((void)0)
 #elif __has_cpp_attribute(clang::fallthrough)
 #  define _LIBCUDACXX_FALLTHROUGH() [[clang::fallthrough]]
+#elif defined(_LIBCUDACXX_COMPILER_PGI)
+#  define _LIBCUDACXX_FALLTHROUGH()
 #elif __has_attribute(fallthough) || _GNUC_VER >= 700
 #  define _LIBCUDACXX_FALLTHROUGH() __attribute__((__fallthrough__))
 #else

@@ -16,9 +16,14 @@ set(LIBUNWIND_C_SOURCES
     UnwindLevel1-gcc-ext.c
     Unwind-sjlj.c
     )
+set(C99_FLAG "-std=c99")
+if (CMAKE_CXX_COMPILER_ID STREQUAL PGI)
+    set(C99_FLAG "-c99")
+endif()
+
 set_source_files_properties(${LIBUNWIND_C_SOURCES}
                             PROPERTIES
-                              COMPILE_FLAGS "-std=c99")
+                            COMPILE_FLAGS ${C99_FLAG})
 
 set(LIBUNWIND_ASM_SOURCES
     UnwindRegistersRestore.S
@@ -122,6 +127,9 @@ if (LIBUNWIND_ENABLE_SHARED)
   add_library(unwind_shared SHARED ${LIBUNWIND_SOURCES} ${LIBUNWIND_HEADERS})
   if(CMAKE_C_COMPILER_ID STREQUAL MSVC)
     target_compile_options(unwind_shared PRIVATE /GR-)
+  # Check the CXX ID because CMake is perplexed about NVCXX as the C compiler.
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL PGI)
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL NVCXX)
   else()
     target_compile_options(unwind_shared PRIVATE -fno-rtti)
   endif()
@@ -150,6 +158,9 @@ if (LIBUNWIND_ENABLE_STATIC)
   add_library(unwind_static STATIC ${LIBUNWIND_SOURCES} ${LIBUNWIND_HEADERS})
   if(CMAKE_C_COMPILER_ID STREQUAL MSVC)
     target_compile_options(unwind_static PRIVATE /GR-)
+  # Check the CXX ID because CMake is perplexed about NVCXX as the C compiler.
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL PGI)
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL NVCXX)
   else()
     target_compile_options(unwind_static PRIVATE -fno-rtti)
   endif()

@@ -9,7 +9,7 @@
 
 #include <cuda/std/cstddef>
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) && !defined(__NVCOMPILER)
 #define __exec_check_disable__ #pragma nv_exec_check_disable
 #else
 #define __exec_check_disable__

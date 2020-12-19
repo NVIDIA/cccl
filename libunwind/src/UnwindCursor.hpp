@@ -410,9 +410,9 @@ private:
 
 class _LIBUNWIND_HIDDEN AbstractUnwindCursor {
 public:
-  // NOTE: provide a class specific placement deallocation function (S5.3.4 p20)
-  // This avoids an unnecessary dependency to libc++abi.
-  void operator delete(void *, size_t) {}
+  static void * operator new(size_t, void *p) { return p; }
+  static void operator delete(void *, size_t) {}
+  static void operator delete(void *, void *) {}
 
   virtual ~AbstractUnwindCursor() {}
   virtual bool validReg(int) { _LIBUNWIND_ABORT("validReg not implemented"); }
@@ -482,10 +482,6 @@ public:
 
   DISPATCHER_CONTEXT *getDispatcherContext() { return &_dispContext; }
   void setDispatcherContext(DISPATCHER_CONTEXT *disp) { _dispContext = *disp; }
-
-  // libunwind does not and should not depend on C++ library which means that we
-  // need our own defition of inline placement new.
-  static void *operator new(size_t, UnwindCursor<A, R> *p) { return p; }
 
 private:
 
@@ -900,10 +896,6 @@ public:
 #ifdef __arm__
   virtual void        saveVFPAsX();
 #endif
-
-  // libunwind does not and should not depend on C++ library which means that we
-  // need our own defition of inline placement new.
-  static void *operator new(size_t, UnwindCursor<A, R> *p) { return p; }
 
 private:
 

@@ -762,7 +762,9 @@ bool CFI_Parser<A>::parseInstructions(A &addressSpace, pint_t instructions,
       }
       break;
 #else
+#ifndef __PGIC__
       (void)arch;
+#endif
 #endif
 
     default:

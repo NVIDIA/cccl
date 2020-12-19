@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define _LIBCPP_BUILDING_LIBRARY
+#define _LIBCUDACXX_BUILDING_LIBRARY
 #include <new>
 #include <exception>
 

@@ -1,17 +1,19 @@
-cmake_minimum_required(VERSION 3.8)
-project(libcudacxx CXX)
+# 3.15 is the minimum.
+# 3.17 for NVC++.
+# 3.18 for C++17 + CUDA.
+cmake_minimum_required(VERSION 3.15)
 
 # Determine whether libcudacxx is the top-level project or included into
 # another project via add_subdirectory().
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-  set(libcudacxx_TOPLEVEL_PROJECT ON)
+  set(LIBCUDACXX_TOPLEVEL_PROJECT ON)
 else()
-  set(libcudacxx_TOPLEVEL_PROJECT OFF)
+  set(LIBCUDACXX_TOPLEVEL_PROJECT OFF)
 endif()
 
 include(cmake/libcudacxxInstallRules.cmake)
 
-if (NOT libcudacxx_TOPLEVEL_PROJECT)
+if (NOT LIBCUDACXX_TOPLEVEL_PROJECT)
   include(cmake/libcudacxxAddSubdir.cmake)
   return()
 endif()
@@ -31,81 +33,198 @@ endif()
 set(PACKAGE_NAME libcudacxx)
 set(PACKAGE_VERSION 11.0)
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
+project(libcudacxx NONE)
 
-if (NOT CMAKE_C_COMPILER)
-  set(CMAKE_C_COMPILER ${CMAKE_CXX_COMPILER})
-  set(CMAKE_C_COMPILER_ARG1 ${CMAKE_CXX_COMPILER_ARG1})
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+set(LLVM_PATH "${CMAKE_SOURCE_DIR}" CACHE STRING "" FORCE)
+
+# Configuration options.
+option(LIBCUDACXX_ENABLE_CUDA "Enable the CUDA language support." ON)
+set(_libcudacxx_enable_static_library OFF)
+if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVCXX")
+  set(_libcudacxx_enable_static_library ON)
 endif ()
+option(LIBCUDACXX_ENABLE_STATIC_LIBRARY "Enable building the full C++ stdlib static library build."
+    ${_libcudacxx_enable_static_library})
+option(LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS "Enable libcu++ tests." ON)
+option(LIBCUDACXX_ENABLE_LIBCXX_TESTS "Enable upstream libc++ tests." OFF)
+option(LIBCUDACXX_ENABLE_LIBCXXABI_TESTS "Enable upstream libc++abi tests." OFF)
+option(LIBCUDACXX_ENABLE_LIBUNWIND_TESTS "Enable upstream libunwind tests." OFF)
 
-enable_language(C)
-
-set(LIBCXX_HIGHEST_COMPUTE_ARCH 80)
-set(LIBCXX_KNOWN_COMPUTE_ARCHS 35 50 52 53 60 61 62 70 72 75 80)
-
-option(LIBCXX_DISABLE_ARCH_BY_DEFAULT "If ON, then all CUDA architectures are disabled on the initial CMake run." OFF)
-set(OPTION_INIT ON)
-if (LIBCXX_DISABLE_ARCH_BY_DEFAULT)
-  set(OPTION_INIT OFF)
-endif ()
-if (NOT ${LIBCXX_HIGHEST_COMPUTE_ARCH} IN_LIST LIBCXX_KNOWN_COMPUTE_ARCHS)
-  message(FATAL_ERROR "When changing the highest compute version, don't forget to add it to the list!")
-endif ()
-
-foreach (COMPUTE_ARCH IN LISTS LIBCXX_KNOWN_COMPUTE_ARCHS)
-  option(LIBCXX_ENABLE_COMPUTE_${COMPUTE_ARCH} "Enable code generation for tests for sm_${COMPUTE_ARCH}" ${OPTION_INIT})
-  if (LIBCXX_ENABLE_COMPUTE_${COMPUTE_ARCH})
-    set(LIBCXX_COMPUTE_ARCHS "${LIBCXX_COMPUTE_ARCHS} ${COMPUTE_ARCH}")
-    set(COMPUTE_MESSAGE "${COMPUTE_MESSAGE} sm_${COMPUTE_ARCH}")
-  endif ()
-endforeach ()
-
-option(LIBCXX_ENABLE_COMPUTE_FUTURE "Enable code generation for tests for compute_${LIBCXX_HIGHEST_COMPUTE_ARCH}" ${OPTION_INIT})
-if (LIBCXX_ENABLE_COMPUTE_FUTURE)
-  set(COMPUTE_MESSAGE "${COMPUTE_MESSAGE} compute_${LIBCXX_HIGHEST_COMPUTE_ARCH}")
-endif ()
-
-message(STATUS "Enabled CUDA architectures:${COMPUTE_MESSAGE}")
-
-# additionally to the above options for controlling the enabled architectures,
-# we configure a project that will be used by the perform_test to find the SM architecture
-# of its first visible device
-
-# we do that here, because here it is easiest to determine what the _actual_ compiler that will
-# produce an executable to run on the host is (NVRTC makes this harder than it'd be otherwise)
-
-# this is used in automated and semi-automated testing
-
-if (NOT LIBCXX_TEST_WITH_NVRTC)
-    set(LIBCXX_FORCE_INCLUDE "-include ${CMAKE_SOURCE_DIR}/test/force_include.h")
+# This must be done before any languages are enabled:
+if (LIBCUDACXX_TOPLEVEL_PROJECT)
+  include(cmake/libcudacxxCompilerHacks.cmake)
 endif()
 
-# TODO: this has to be reconfigurable with other options
-# this has to land in cache, but has to be forced, and controlled by other variables
-set(LIBCXX_TEST_COMPILER_FLAGS
-    "${LIBCXX_FORCE_INCLUDE} -I${CMAKE_SOURCE_DIR}/include -I${CMAKE_SOURCE_DIR}/../cuda/tools/cooperative_groups -I${CMAKE_SOURCE_DIR}/../cuda/tools/libcudacxxext"
-    CACHE STRING "Flags for libcxx testing." FORCE)
+# This must appear after our Compiler Hacks or else CMake will delete the cache
+# and reconfigure from scratch.
+# This must also appear before the installation rules, as it is required by the
+# GNUInstallDirs CMake module.
+enable_language(CXX)
 
-foreach (PATH IN LISTS LIBCXX_TEST_LD_LIBRARY_PATHS)
-  if (LIBCXX_TEST_RPATH_FLAGS)
-    set(PREVIOUS "${LIBCXX_TEST_RPATH_FLAGS} ")
+if (LIBCUDACXX_ENABLE_CUDA)
+  enable_language(CUDA)
+endif ()
+
+set(_libcudacxx_enable_upstream_tests OFF)
+if (LIBCUDACXX_ENABLE_LIBCXX_TESTS
+    OR LIBCUDACXX_ENABLE_LIBCXXABI_TESTS
+    OR LIBCUDACXX_ENABLE_LIBUNWIND_TESTS)
+  set(_libcudacxx_enable_upstream_tests ON)
+endif ()
+
+set(_libcudacxx_enable_tests OFF)
+if (_libcudacxx_enable_upstream_tests OR LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS)
+  set(_libcudacxx_enable_tests ON)
+endif ()
+
+if (LIBCUDACXX_ENABLE_STATIC_LIBRARY OR _libcudacxx_enable_upstream_tests)
+  enable_language(C ASM)
+endif ()
+
+if (_libcudacxx_enable_tests OR LIBCUDACXX_ENABLE_STATIC_LIBRARY)
+  include(FindPythonInterp)
+  if (NOT PYTHONINTERP_FOUND)
+    message(FATAL_ERROR
+      "Failed to find python interpreter, which is required for running tests and "
+      "building a libcu++ static library.")
   endif ()
-  set(LIBCXX_TEST_RPATH_FLAGS "${PREVIOUS}-Xcompiler \\\\\\\"-Wl,-rpath,${PATH}\\\\\\\"")
-endforeach ()
+endif ()
 
-set(LIBCXX_TEST_LINKER_FLAGS
-    "${LIBCXX_TEST_RPATH_FLAGS}"
-    CACHE STRING "Flags for libcxx testing.")
+# Determine the host triple to avoid invoking `${CXX} -dumpmachine`.
+include(GetHostTriple)
+get_host_triple(LLVM_INFERRED_HOST_TRIPLE)
 
-set(LIBCXX_ENABLE_EXPERIMENTAL_LIBRARY OFF CACHE BOOL "")
-set(LIBCXX_ENABLE_EXCEPTIONS OFF CACHE BOOL "")
-set(LIBCXX_ENABLE_FILESYSTEM OFF CACHE BOOL "")
-set(LIBCXX_ENABLE_RTTI OFF CACHE BOOL "")
-set(LIBCXX_ENABLE_SHARED OFF CACHE BOOL "")
-set(LIBCXX_INCLUDE_TESTS ON CACHE BOOL "")
-set(LIBCXX_INCLUDE_BENCHMARKS OFF CACHE BOOL "")
-set(LIBCXX_HAS_ATOMIC_LIB OFF CACHE BOOL "")
-set(LIBCXX_CXX_ABI "none" CACHE STRING "")
+set(LLVM_HOST_TRIPLE "${LLVM_INFERRED_HOST_TRIPLE}" CACHE STRING
+    "Host on which LLVM binaries will run")
 
-set(LIBCXX_SOURCE_DIR ${CMAKE_SOURCE_DIR} CACHE STRING "")
+# By default, we target the host, but this can be overridden at CMake
+# invocation time.
+set(LLVM_DEFAULT_TARGET_TRIPLE "${LLVM_HOST_TRIPLE}" CACHE STRING
+  "Default target for which LLVM will generate code." )
+set(TARGET_TRIPLE "${LLVM_DEFAULT_TARGET_TRIPLE}")
+message(STATUS "LLVM host triple: ${LLVM_HOST_TRIPLE}")
+message(STATUS "LLVM default target triple: ${LLVM_DEFAULT_TARGET_TRIPLE}")
 
-add_subdirectory(libcxx)
+# Determine which of the components we need to add to the build.
+# By default, none.
+# These variables are overriden later on if they are determined to be needed.
+set(_libcudacxx_add_libcxx OFF)
+set(_libcudacxx_add_libcxxabi OFF)
+set(_libcudacxx_add_libunwind OFF)
+
+# Configure options needed to build the standalone static library.
+if (LIBCUDACXX_ENABLE_STATIC_LIBRARY)
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "PGI" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "NVCXX")
+    option(LIBUNWIND_ENABLE_PEDANTIC OFF)
+    add_definitions(-D__USER_LABEL_PREFIX__=)
+  endif()
+
+  option(LIBUNWIND_ENABLE_STATIC "" ON)
+  option(LIBUNWIND_ENABLE_SHARED "" OFF)
+
+  #set(HAVE_LIBUNWIND ON CACHE BOOL "")
+  option(LIBCXXABI_USE_LLVM_UNWINDER "" ON)
+  option(LIBCXXABI_ENABLE_STATIC "" ON)
+  option(LIBCXXABI_ENABLE_SHARED "" OFF)
+  option(LIBCXXABI_ENABLE_STATIC_UNWINDER "" ON)
+  option(LIBCXXABI_STATICALLY_LINK_UNWINDER_IN_STATIC_LIBRARY "" ON)
+
+  option(LIBCXX_ENABLE_STATIC "" ON)
+  option(LIBCXX_ENABLE_STATIC_ABI_LIBRARY "" ON)
+  option(LIBCXX_ENABLE_SHARED "" OFF)
+  option(LIBCXX_ENABLE_SHARED_ABI_LIBRARY "" OFF)
+  option(LIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY "" ON)
+
+  if (NOT "${LIBCXX_CXX_ABI}" STREQUAL "" AND NOT "${LIBCXX_CXX_ABI}" STREQUAL "libcxxabi")
+    unset(LIBCXX_CXX_ABI CACHE)
+    message(FATAL_ERROR
+      "When building a standalone libcu++ static library, manually setting the "
+      "C++ ABI library is not supported. Please unset the LIBCXX_CXX_ABI variable.")
+  endif ()
+
+  set(LIBCXX_CXX_ABI "libcxxabi" CACHE STRING "")
+  set(LIBCXX_CXX_ABI_INCLUDE_PATHS "${CMAKE_CURRENT_SOURCE_DIR}/libcxxabi/include" CACHE STRING "")
+  set(LIBCXX_CXX_ABI_INTREE 1)
+
+  set(_libcudacxx_add_libcxx ON)
+  set(_libcudacxx_add_libcxxabi ON)
+  set(_libcudacxx_add_libunwind ON)
+endif ()
+
+if ("${LIBCXX_CXX_ABI}" STREQUAL "")
+  set(LIBCXX_CXX_ABI "libstdc++" CACHE STRING "")
+endif ()
+
+# Configure options needed to run tests.
+if (_libcudacxx_enable_tests)
+  enable_testing()
+
+  find_program(LLVM_DEFAULT_EXTERNAL_LIT lit)
+  set(LLVM_LIT_ARGS "-sv")
+
+  if (LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS)
+    set(LIBCUDACXX_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+    add_subdirectory(test)
+  endif ()
+
+  if (LIBCUDACXX_ENABLE_LIBCXX_TESTS)
+    option(LIBCXX_INCLUDE_TESTS "" ON)
+
+    set(_libcudacxx_add_libcxx ON)
+  endif ()
+
+  if (LIBCUDACXX_ENABLE_LIBCXXABI_TESTS)
+    message(FATAL_ERROR "Running libc++abi tests is not supported yet.")
+
+    set(_libcudacxx_add_libcxxabi ON)
+  endif ()
+
+  if (LIBCUDACXX_ENABLE_LIBUNWIND_TESTS)
+    message(FATAL_ERROR "Running libunwind tests is not supported yet.")
+
+    set(_libcudacxx_add_libunwind ON)
+  endif ()
+endif ()
+
+# Configure the common options for the subdirections and add them.
+if (_libcudacxx_add_libunwind)
+  add_subdirectory(libunwind)
+endif ()
+
+if (_libcudacxx_add_libcxxabi)
+  add_subdirectory(libcxxabi)
+endif ()
+
+if (_libcudacxx_add_libcxx)
+  option(LIBCXX_INCLUDE_BENCHMARKS "" OFF)
+  option(LIBCXX_ENABLE_EXPERIMENTAL_LIBRARY "" OFF)
+
+  set(LIBCXX_HAVE_CXX_ATOMICS_WITHOUT_LIB ON)
+
+  add_subdirectory(libcxx)
+endif ()
+
+# Add a global check rule now that all subdirectories have been traversed
+# and we know the total set of lit testsuites.
+if (_libcudacxx_enable_tests)
+  include(AddLLVM)
+
+  get_property(LLVM_LIT_TESTSUITES GLOBAL PROPERTY LLVM_LIT_TESTSUITES)
+  get_property(LLVM_LIT_PARAMS GLOBAL PROPERTY LLVM_LIT_PARAMS)
+  get_property(LLVM_LIT_DEPENDS GLOBAL PROPERTY LLVM_LIT_DEPENDS)
+  get_property(LLVM_LIT_EXTRA_ARGS GLOBAL PROPERTY LLVM_LIT_EXTRA_ARGS)
+  get_property(LLVM_ADDITIONAL_TEST_TARGETS
+               GLOBAL PROPERTY LLVM_ADDITIONAL_TEST_TARGETS)
+  get_property(LLVM_ADDITIONAL_TEST_DEPENDS
+               GLOBAL PROPERTY LLVM_ADDITIONAL_TEST_DEPENDS)
+  add_lit_target(check-all
+    "Running all regression tests"
+    ${LLVM_LIT_TESTSUITES}
+    PARAMS ${LLVM_LIT_PARAMS}
+    DEPENDS ${LLVM_LIT_DEPENDS} ${LLVM_ADDITIONAL_TEST_TARGETS}
+    ARGS ${LLVM_LIT_EXTRA_ARGS}
+  )
+endif ()
+

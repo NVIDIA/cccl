@@ -17,8 +17,8 @@ import lit.TestRunner  # pylint: disable=import-error
 from lit.TestRunner import ParserKind, IntegratedTestKeywordParser  \
     # pylint: disable=import-error
 
-from libcxx.test.executor import LocalExecutor as LocalExecutor
-import libcxx.util
+from libcudacxx.test.executor import LocalExecutor as LocalExecutor
+import libcudacxx.util
 
 
 class LibcxxTestFormat(object):
@@ -168,7 +168,7 @@ class LibcxxTestFormat(object):
             assert False
 
     def _clean(self, exec_path):  # pylint: disable=no-self-use
-        libcxx.util.cleanFile(exec_path)
+        libcudacxx.util.cleanFile(exec_path)
 
     def _evaluate_pass_test(self, test, tmpBase, lit_config,
                             test_cxx, parsers):
@@ -177,7 +177,7 @@ class LibcxxTestFormat(object):
         exec_path = tmpBase + '.exe'
         object_path = tmpBase + '.o'
         # Create the output directory if it does not already exist.
-        libcxx.util.mkdir_p(os.path.dirname(tmpBase))
+        libcudacxx.util.mkdir_p(os.path.dirname(tmpBase))
         try:
             # Compile the test
             cmd, out, err, rc = test_cxx.compileLinkTwoSteps(
@@ -185,7 +185,7 @@ class LibcxxTestFormat(object):
                 cwd=execDir)
             compile_cmd = cmd
             if rc != 0:
-                report = libcxx.util.makeReport(cmd, out, err, rc)
+                report = libcudacxx.util.makeReport(cmd, out, err, rc)
                 report += "Compilation failed unexpectedly!"
                 return lit.Test.Result(lit.Test.FAIL, report)
             # Run the test
@@ -206,7 +206,7 @@ class LibcxxTestFormat(object):
                                                       local_cwd, data_files,
                                                       env)
                 report = "Compiled With: '%s'\n" % ' '.join(compile_cmd)
-                report += libcxx.util.makeReport(cmd, out, err, rc)
+                report += libcudacxx.util.makeReport(cmd, out, err, rc)
                 if rc == 0:
                     res = lit.Test.PASS if retry_count == 0 else lit.Test.FLAKYPASS
                     return lit.Test.Result(res, report)
@@ -218,7 +218,7 @@ class LibcxxTestFormat(object):
         finally:
             # Note that cleanup of exec_file happens in `_clean()`. If you
             # override this, cleanup is your reponsibility.
-            libcxx.util.cleanFile(object_path)
+            libcudacxx.util.cleanFile(object_path)
             self._clean(exec_path)
 
     def _evaluate_fail_test(self, test, test_cxx, parsers):
@@ -256,7 +256,7 @@ class LibcxxTestFormat(object):
                 test_cxx.flags += ['-Werror=unused-result']
         cmd, out, err, rc = test_cxx.compile(source_path, out=os.devnull)
         check_rc = lambda rc: rc == 0 if use_verify else rc != 0
-        report = libcxx.util.makeReport(cmd, out, err, rc)
+        report = libcudacxx.util.makeReport(cmd, out, err, rc)
         if check_rc(rc):
             return lit.Test.Result(lit.Test.PASS, report)
         else:

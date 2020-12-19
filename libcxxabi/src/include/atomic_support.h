@@ -28,19 +28,21 @@
                        && defined(__ATOMIC_ACQ_REL)                  \
                        && defined(__ATOMIC_SEQ_CST)
 #   define _LIBCXXABI_HAS_ATOMIC_BUILTINS
+#elif defined(_LIBCUDACXX_COMPILER_PGI)
+#   define _LIBCXXABI_HAS_ATOMIC_BUILTINS
 #elif !defined(__clang__) && defined(_GNUC_VER) && _GNUC_VER >= 407
 #   define _LIBCXXABI_HAS_ATOMIC_BUILTINS
 #endif
 
 #if !defined(_LIBCXXABI_HAS_ATOMIC_BUILTINS) && !defined(_LIBCXXABI_HAS_NO_THREADS)
-# if defined(_LIBCPP_WARNING)
-    _LIBCPP_WARNING("Building libc++ without __atomic builtins is unsupported")
+# if defined(_LIBCUDACXX_WARNING)
+    _LIBCUDACXX_WARNING("Building libc++ without __atomic builtins is unsupported")
 # else
-#   warning Building libc++ without __atomic builtins is unsupported
+#   error Building libc++ without __atomic builtins is unsupported
 # endif
 #endif
 
-_LIBCPP_BEGIN_NAMESPACE_STD
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace {
 
@@ -56,7 +58,7 @@ enum __libcpp_atomic_order {
 };
 
 template <class _ValueType, class _FromType>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCUDACXX_INLINE_VISIBILITY
 void __libcpp_atomic_store(_ValueType* __dest, _FromType __val,
                            int __order = _AO_Seq)
 {
@@ -64,14 +66,14 @@ void __libcpp_atomic_store(_ValueType* __dest, _FromType __val,
 }
 
 template <class _ValueType, class _FromType>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCUDACXX_INLINE_VISIBILITY
 void __libcpp_relaxed_store(_ValueType* __dest, _FromType __val)
 {
     __atomic_store_n(__dest, __val, _AO_Relaxed);
 }
 
 template <class _ValueType>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCUDACXX_INLINE_VISIBILITY
 _ValueType __libcpp_atomic_load(_ValueType const* __val,
                                 int __order = _AO_Seq)
 {
@@ -79,7 +81,7 @@ _ValueType __libcpp_atomic_load(_ValueType const* __val,
 }
 
 template <class _ValueType, class _AddType>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCUDACXX_INLINE_VISIBILITY
 _ValueType __libcpp_atomic_add(_ValueType* __val, _AddType __a,
                                int __order = _AO_Seq)
 {
@@ -87,7 +89,7 @@ _ValueType __libcpp_atomic_add(_ValueType* __val, _AddType __a,
 }
 
 template <class _ValueType>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCUDACXX_INLINE_VISIBILITY
 _ValueType __libcpp_atomic_exchange(_ValueType* __target,
                                     _ValueType __value, int __order = _AO_Seq)
 {
@@ -95,7 +97,7 @@ _ValueType __libcpp_atomic_exchange(_ValueType* __target,
 }
 
 template <class _ValueType>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCUDACXX_INLINE_VISIBILITY
 bool __libcpp_atomic_compare_exchange(_ValueType* __val,
     _ValueType* __expected, _ValueType __after,
     int __success_order = _AO_Seq,
@@ -105,7 +107,7 @@ bool __libcpp_atomic_compare_exchange(_ValueType* __val,
                                        __success_order, __fail_order);
 }
 
-#else // _LIBCPP_HAS_NO_THREADS
+#else // _LIBCUDACXX_HAS_NO_THREADS
 
 enum __libcpp_atomic_order {
     _AO_Relaxed,
@@ -117,7 +119,7 @@ enum __libcpp_atomic_order {
 };
 
 template <class _ValueType, class _FromType>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCUDACXX_INLINE_VISIBILITY
 void __libcpp_atomic_store(_ValueType* __dest, _FromType __val,
                            int = 0)
 {
@@ -125,14 +127,14 @@ void __libcpp_atomic_store(_ValueType* __dest, _FromType __val,
 }
 
 template <class _ValueType, class _FromType>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCUDACXX_INLINE_VISIBILITY
 void __libcpp_relaxed_store(_ValueType* __dest, _FromType __val)
 {
     *__dest = __val;
 }
 
 template <class _ValueType>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCUDACXX_INLINE_VISIBILITY
 _ValueType __libcpp_atomic_load(_ValueType const* __val,
                                 int = 0)
 {
@@ -140,7 +142,7 @@ _ValueType __libcpp_atomic_load(_ValueType const* __val,
 }
 
 template <class _ValueType, class _AddType>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCUDACXX_INLINE_VISIBILITY
 _ValueType __libcpp_atomic_add(_ValueType* __val, _AddType __a,
                                int = 0)
 {
@@ -148,7 +150,7 @@ _ValueType __libcpp_atomic_add(_ValueType* __val, _AddType __a,
 }
 
 template <class _ValueType>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCUDACXX_INLINE_VISIBILITY
 _ValueType __libcpp_atomic_exchange(_ValueType* __target,
                                     _ValueType __value, int  = _AO_Seq)
 {
@@ -158,7 +160,7 @@ _ValueType __libcpp_atomic_exchange(_ValueType* __target,
 }
 
 template <class _ValueType>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCUDACXX_INLINE_VISIBILITY
 bool __libcpp_atomic_compare_exchange(_ValueType* __val,
     _ValueType* __expected, _ValueType __after,
     int = 0, int = 0)
@@ -171,10 +173,10 @@ bool __libcpp_atomic_compare_exchange(_ValueType* __val,
     return false;
 }
 
-#endif // _LIBCPP_HAS_NO_THREADS
+#endif // _LIBCUDACXX_HAS_NO_THREADS
 
 } // end namespace
 
-_LIBCPP_END_NAMESPACE_STD
+_LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // ATOMIC_SUPPORT_H

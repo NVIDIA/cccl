@@ -8,7 +8,7 @@
 
 import platform
 import os
-import libcxx.util
+import libcudacxx.util
 
 
 class CXXCompiler(object):
@@ -203,26 +203,26 @@ class CXXCompiler(object):
 
     def preprocess(self, source_files, out=None, flags=[], cwd=None):
         cmd = self.preprocessCmd(source_files, out, flags)
-        out, err, rc = libcxx.util.executeCommand(cmd, env=self.compile_env,
+        out, err, rc = libcudacxx.util.executeCommand(cmd, env=self.compile_env,
                                                   cwd=cwd)
         return cmd, out, err, rc
 
     def compile(self, source_files, out=None, flags=[], cwd=None):
         cmd = self.compileCmd(source_files, out, flags)
-        out, err, rc = libcxx.util.executeCommand(cmd, env=self.compile_env,
+        out, err, rc = libcudacxx.util.executeCommand(cmd, env=self.compile_env,
                                                   cwd=cwd)
         return cmd, out, err, rc
 
     def link(self, source_files, out=None, flags=[], cwd=None):
         cmd = self.linkCmd(source_files, out, flags)
-        out, err, rc = libcxx.util.executeCommand(cmd, env=self.compile_env,
+        out, err, rc = libcudacxx.util.executeCommand(cmd, env=self.compile_env,
                                                   cwd=cwd)
         return cmd, out, err, rc
 
     def compileLink(self, source_files, out=None, flags=[],
                     cwd=None):
         cmd = self.compileLinkCmd(source_files, out, flags)
-        out, err, rc = libcxx.util.executeCommand(cmd, env=self.compile_env,
+        out, err, rc = libcudacxx.util.executeCommand(cmd, env=self.compile_env,
                                                   cwd=cwd)
         return cmd, out, err, rc
 
@@ -232,10 +232,10 @@ class CXXCompiler(object):
             raise TypeError('This function only accepts a single input file')
         if object_file is None:
             # Create, use and delete a temporary object file if none is given.
-            with_fn = lambda: libcxx.util.guardedTempFilename(suffix='.o')
+            with_fn = lambda: libcudacxx.util.guardedTempFilename(suffix='.o')
         else:
             # Otherwise wrap the filename in a context manager function.
-            with_fn = lambda: libcxx.util.nullContext(object_file)
+            with_fn = lambda: libcudacxx.util.nullContext(object_file)
         with with_fn() as object_file:
             cc_cmd, cc_stdout, cc_stderr, rc = self.compile(
                 source_file, object_file, flags=flags, cwd=cwd)
@@ -249,13 +249,13 @@ class CXXCompiler(object):
     def dumpVersion(self, flags=[], cwd=None):
         dumpversion_cpp = os.path.join(
           os.path.dirname(os.path.abspath(__file__)), "dumpversion.cpp")
-        with_fn = lambda: libcxx.util.guardedTempFilename(suffix=".exe")
+        with_fn = lambda: libcudacxx.util.guardedTempFilename(suffix=".exe")
         with with_fn() as exe:
           cmd, out, err, rc = self.compileLink([dumpversion_cpp], out=exe,
                                                flags=flags, cwd=cwd)
           if rc != 0:
             return ("unknown", (0, 0, 0), "c++03", False)
-          out, err, rc = libcxx.util.executeCommand(exe, env=self.compile_env,
+          out, err, rc = libcudacxx.util.executeCommand(exe, env=self.compile_env,
                                                     cwd=cwd)
           version = None
           try:
@@ -294,7 +294,7 @@ class CXXCompiler(object):
         if self.type == "msvc":
             return "x86_64-pc-windows-msvc"
         cmd = [self.path] + self.flags + ['-dumpmachine']
-        return libcxx.util.capture(cmd).strip()
+        return libcudacxx.util.capture(cmd).strip()
 
     def hasCompileFlag(self, flag):
         if isinstance(flag, list):
@@ -359,8 +359,8 @@ class CXXCompiler(object):
         # TODO(EricWF): Are there other flags we need to worry about?
         if '-v' in cmd:
             cmd.remove('-v')
-        out, err, rc = libcxx.util.executeCommand(
-            cmd, input=libcxx.util.to_bytes('#error\n'))
+        out, err, rc = libcudacxx.util.executeCommand(
+            cmd, input=libcudacxx.util.to_bytes('#error\n'))
 
         assert rc != 0
         if flag in err:

@@ -524,6 +524,19 @@ struct scan_results
 
 }  // unnamed namespace
 
+static constexpr int __builtin_eh_return_data_regno(int __i) {
+    switch (__i) {
+#ifdef __x86_64__
+        case 0: return 0;
+        case 1: return 1;
+#else
+#error Unsupported architecture.
+#endif
+        default:
+            return -1;
+    }
+}
+
 static
 void
 set_registers(_Unwind_Exception* unwind_exception, _Unwind_Context* context,

@@ -15,6 +15,10 @@
 #ifndef UNWIND_ASSEMBLY_H
 #define UNWIND_ASSEMBLY_H
 
+#if defined(__PGIC__) && defined(__linux__)
+  #define __ELF__
+#endif
+
 #if defined(__powerpc64__)
 #define SEPARATOR ;
 #define PPC64_OFFS_SRR0   0

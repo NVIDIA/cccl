@@ -49,12 +49,14 @@ DEFINE_ASYNC_TRAIT(_validate)
         } \
     } while (false)
 
+__host__
 inline std::vector<std::thread> & host_threads()
 {
     static std::vector<std::thread> threads;
     return threads;
 }
 
+__host__
 inline void sync_host_threads()
 {
     for (auto && thread : host_threads())
@@ -64,12 +66,14 @@ inline void sync_host_threads()
     host_threads().clear();
 }
 
+__host__
 inline std::vector<cudaStream_t> & device_streams()
 {
     static std::vector<cudaStream_t> streams;
     return streams;
 }
 
+__host__
 inline void sync_device_streams()
 {
     for (auto && stream : device_streams())
@@ -81,6 +85,7 @@ inline void sync_device_streams()
     device_streams().clear();
 }
 
+__host__
 void sync_all()
 {
     sync_host_threads();

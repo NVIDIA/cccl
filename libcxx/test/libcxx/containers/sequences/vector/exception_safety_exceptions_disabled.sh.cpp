@@ -6,7 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// RUN: %build -fno-exceptions
+// UNSUPPORTED: pgi
+// RUN: %build %noexceptions
 // RUN: %run
 
 // UNSUPPORTED: c++98, c++03

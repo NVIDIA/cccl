@@ -52,6 +52,11 @@
   #endif
 #endif
 
+#if defined(__PGIC__)
+  #undef _LIBUNWIND_DISABLE_VISIBILITY_ANNOTATIONS
+  #define _LIBUNWIND_DISABLE_VISIBILITY_ANNOTATIONS
+#endif
+
 #if defined(_LIBUNWIND_DISABLE_VISIBILITY_ANNOTATIONS)
   #define _LIBUNWIND_EXPORT
   #define _LIBUNWIND_HIDDEN
@@ -68,6 +73,10 @@
 #define STR(a) #a
 #define XSTR(a) STR(a)
 #define SYMBOL_NAME(name) XSTR(__USER_LABEL_PREFIX__) #name
+
+#if defined(__PGIC__) && defined(__linux__)
+  #define __ELF__
+#endif
 
 #if defined(__APPLE__)
 #define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \

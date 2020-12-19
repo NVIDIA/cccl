@@ -57,7 +57,7 @@ _LIBUNWIND_HIDDEN int __unw_init_local(unw_cursor_t *cursor,
 #elif defined(__mips64)
 # define REGISTER_KIND Registers_mips_newabi
 #elif defined(__mips__)
-# warning The MIPS architecture is not supported with this ABI and environment!
+# error The MIPS architecture is not supported with this ABI and environment!
 #elif defined(__sparc__)
 # define REGISTER_KIND Registers_sparc
 #elif defined(__riscv) && __riscv_xlen == 64
@@ -66,7 +66,7 @@ _LIBUNWIND_HIDDEN int __unw_init_local(unw_cursor_t *cursor,
 # error Architecture not supported
 #endif
   // Use "placement new" to allocate UnwindCursor in the cursor buffer.
-  new (reinterpret_cast<UnwindCursor<LocalAddressSpace, REGISTER_KIND> *>(cursor))
+  new (static_cast<void *>(cursor))
       UnwindCursor<LocalAddressSpace, REGISTER_KIND>(
           context, LocalAddressSpace::sThisAddressSpace);
 #undef REGISTER_KIND

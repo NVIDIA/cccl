@@ -10,7 +10,7 @@ import ast
 import distutils.spawn
 import sys
 import re
-import libcxx.util
+import libcudacxx.util
 from pprint import pformat
 
 
@@ -66,7 +66,7 @@ _cppfilt_exe = distutils.spawn.find_executable('c++filt')
 def demangle_symbol(symbol):
     if _cppfilt_exe is None:
         return symbol
-    out, _, exit_code = libcxx.util.executeCommandVerbose(
+    out, _, exit_code = libcudacxx.util.executeCommandVerbose(
         [_cppfilt_exe], input=symbol)
     if exit_code != 0:
         return symbol
@@ -100,9 +100,9 @@ def is_library_file(filename):
 
 
 def extract_or_load(filename):
-    import libcxx.sym_check.extract
+    import libcudacxx.sym_check.extract
     if is_library_file(filename):
-        return libcxx.sym_check.extract.extract_symbols(filename)
+        return libcudacxx.sym_check.extract.extract_symbols(filename)
     return read_syms_from_file(filename)
 
 def adjust_mangled_name(name):

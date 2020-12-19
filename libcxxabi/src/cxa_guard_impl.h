@@ -137,13 +137,13 @@ private:
 //                       PlatformGetThreadID
 //===----------------------------------------------------------------------===//
 
-#if defined(__APPLE__) && defined(_LIBCPP_HAS_THREAD_API_PTHREAD)
+#if defined(__APPLE__) && defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
 uint32_t PlatformThreadID() {
   static_assert(sizeof(mach_port_t) == sizeof(uint32_t), "");
   return static_cast<uint32_t>(
       pthread_mach_thread_np(std::__libcpp_thread_get_current_id()));
 }
-#elif defined(SYS_gettid) && defined(_LIBCPP_HAS_THREAD_API_PTHREAD)
+#elif defined(SYS_gettid) && defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
 uint32_t PlatformThreadID() {
   static_assert(sizeof(pid_t) == sizeof(uint32_t), "");
   return static_cast<uint32_t>(syscall(SYS_gettid));
@@ -271,7 +271,7 @@ struct LibcppMutex {
 
 private:
   friend struct LibcppCondVar;
-  std::__libcpp_mutex_t mutex = _LIBCPP_MUTEX_INITIALIZER;
+  std::__libcpp_mutex_t mutex = _LIBCUDACXX_MUTEX_INITIALIZER;
 };
 
 struct LibcppCondVar {
@@ -285,7 +285,7 @@ struct LibcppCondVar {
   bool broadcast() { return std::__libcpp_condvar_broadcast(&cond); }
 
 private:
-  std::__libcpp_condvar_t cond = _LIBCPP_CONDVAR_INITIALIZER;
+  std::__libcpp_condvar_t cond = _LIBCUDACXX_CONDVAR_INITIALIZER;
 };
 #else
 struct LibcppMutex {};
@@ -299,7 +299,7 @@ struct InitByteGlobalMutex
     : GuardObject<InitByteGlobalMutex<Mutex, CondVar, global_mutex, global_cond,
                                     GetThreadID>> {
 
-  using BaseT = typename InitByteGlobalMutex::GuardObject;
+  using BaseT = GuardObject<InitByteGlobalMutex<Mutex, CondVar, global_mutex, global_cond, GetThreadID>>;
   using BaseT::BaseT;
 
   explicit InitByteGlobalMutex(uint32_t *g)
@@ -540,7 +540,7 @@ struct GlobalStatic {
   static T instance;
 };
 template <class T>
-_LIBCPP_SAFE_STATIC T GlobalStatic<T>::instance = {};
+_LIBCUDACXX_SAFE_STATIC T GlobalStatic<T>::instance = {};
 
 enum class Implementation {
   NoThreads,

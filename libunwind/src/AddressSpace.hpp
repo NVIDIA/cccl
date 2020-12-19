@@ -593,7 +593,9 @@ inline bool LocalAddressSpace::findUnwindSections(pint_t targetAddr,
   return static_cast<bool>(found);
 #endif
 
+#ifndef __PGIC__
   return false;
+#endif
 }
 
 

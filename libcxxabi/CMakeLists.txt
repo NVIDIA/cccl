@@ -331,7 +331,7 @@ else()
 endif()
 # Static library
 if (NOT LIBCXXABI_ENABLE_SHARED)
-  list(APPEND LIBCXXABI_COMPILE_FLAGS -D_LIBCPP_BUILD_STATIC)
+  list(APPEND LIBCXXABI_COMPILE_FLAGS -D_LIBCUDACXX_BUILD_STATIC)
 endif()
 
 # Threading
@@ -352,7 +352,7 @@ if (NOT LIBCXXABI_ENABLE_THREADS)
                         " is also set to ON.")
   endif()
   add_definitions(-D_LIBCXXABI_HAS_NO_THREADS)
-  add_definitions(-D_LIBCPP_HAS_NO_THREADS)
+  add_definitions(-D_LIBCUDACXX_HAS_NO_THREADS)
 endif()
 
 if (LIBCXXABI_HAS_EXTERNAL_THREAD_API)
@@ -392,23 +392,23 @@ if (LIBCXXABI_HAS_UNDEFINED_SYMBOLS)
 endif()
 
 if (LIBCXXABI_HAS_PTHREAD_API)
-  add_definitions(-D_LIBCPP_HAS_THREAD_API_PTHREAD)
+  add_definitions(-D_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
 endif()
 
 if (LIBCXXABI_HAS_EXTERNAL_THREAD_API)
-  add_definitions(-D_LIBCPP_HAS_THREAD_API_EXTERNAL)
+  add_definitions(-D_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
 endif()
 
 if (LIBCXXABI_BUILD_EXTERNAL_THREAD_LIBRARY)
-  add_definitions(-D_LIBCPP_HAS_THREAD_LIBRARY_EXTERNAL)
+  add_definitions(-D_LIBCUDACXX_HAS_THREAD_LIBRARY_EXTERNAL)
 endif()
 
 # Prevent libc++abi from having library dependencies on libc++
-add_definitions(-D_LIBCPP_DISABLE_EXTERN_TEMPLATE)
+add_definitions(-D_LIBCUDACXX_DISABLE_EXTERN_TEMPLATE)
 
 # Bring back `std::unexpected`, which is removed in C++17, to support
 # pre-C++17.
-add_definitions(-D_LIBCPP_ENABLE_CXX17_REMOVED_UNEXPECTED_FUNCTIONS)
+add_definitions(-D_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNEXPECTED_FUNCTIONS)
 
 if (MSVC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -455,6 +455,7 @@ if (LIBCXXABI_USE_LLVM_UNWINDER OR LLVM_NATIVE_ARCH MATCHES ARM)
           ${LLVM_MAIN_SRC_DIR}/projects/libunwind/include
           ${LLVM_MAIN_SRC_DIR}/runtimes/libunwind/include
           ${LLVM_MAIN_SRC_DIR}/../libunwind/include
+          ${CMAKE_SOURCE_DIR}/../libunwind/include
     NO_DEFAULT_PATH
     NO_CMAKE_FIND_ROOT_PATH
   )

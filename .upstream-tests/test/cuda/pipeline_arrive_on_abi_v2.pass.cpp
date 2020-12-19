@@ -14,7 +14,9 @@
 // TODO: Remove pointless comparison suppression when compiler fixes short-circuiting
 #pragma nv_diag_suppress 186
 
+#ifndef __NVCOMPILER
 #pragma nv_diag_suppress static_var_with_dynamic_init
+#endif
 #pragma nv_diag_suppress declared_but_not_referenced
 
 #include <cuda_pipeline.h>

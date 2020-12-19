@@ -10,8 +10,8 @@
 // duplicating the file in libc++abi we should require that the libc++ sources
 // are available when building libc++abi.
 
-#ifndef _LIBCPPABI_REFSTRING_H
-#define _LIBCPPABI_REFSTRING_H
+#ifndef _LIBCUDACXXABI_REFSTRING_H
+#define _LIBCUDACXXABI_REFSTRING_H
 
 #include <__config>
 #include <stdexcept>
@@ -23,7 +23,7 @@
 #endif
 #include "atomic_support.h"
 
-_LIBCPP_BEGIN_NAMESPACE_STD
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace __refstring_imp { namespace {
 typedef int count_t;
@@ -126,6 +126,6 @@ bool __libcpp_refstring::__uses_refcount() const {
 #endif
 }
 
-_LIBCPP_END_NAMESPACE_STD
+_LIBCUDACXX_END_NAMESPACE_STD
 
-#endif //_LIBCPPABI_REFSTRING_H
+#endif //_LIBCUDACXXABI_REFSTRING_H

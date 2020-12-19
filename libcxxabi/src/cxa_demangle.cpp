@@ -59,6 +59,8 @@ const char *itanium_demangle::parse_discriminator(const char *first,
 
 #ifndef NDEBUG
 namespace {
+
+
 struct DumpVisitor {
   unsigned Depth = 0;
   bool PendingNewline = false;
@@ -67,7 +69,8 @@ struct DumpVisitor {
     return true;
   }
   static bool wantsNewline(NodeArray A) { return !A.empty(); }
-  static constexpr bool wantsNewline(...) { return false; }
+  template<typename ...Ts>
+  static constexpr bool wantsNewline(Ts...) { return false; }
 
   template<typename ...Ts> static bool anyWantNewline(Ts ...Vs) {
     for (bool B : {wantsNewline(Vs)...})
@@ -198,6 +201,11 @@ struct DumpVisitor {
     printWithPendingNewline(V);
   }
 
+  struct swallow {
+    template<typename ...Args>
+    swallow(Args &&...) {}
+  };
+
   struct CtorArgPrinter {
     DumpVisitor &Visitor;
 
@@ -205,8 +213,7 @@ struct DumpVisitor {
       if (Visitor.anyWantNewline(V, Vs...))
         Visitor.newLine();
       Visitor.printWithPendingNewline(V);
-      int PrintInOrder[] = { (Visitor.printWithComma(Vs), 0)..., 0 };
-      (void)PrintInOrder;
+      swallow{ (Visitor.printWithComma(Vs), 0)... };
     }
   };
 
@@ -303,7 +310,9 @@ class DefaultAllocator {
   BumpPointerAllocator Alloc;
 
 public:
+#ifndef __PGIC__
   void reset() { Alloc.reset(); }
+#endif
 
   template<typename T, typename ...Args> T *makeNode(Args &&...args) {
     return new (Alloc.allocate(sizeof(T)))

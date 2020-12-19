@@ -14,7 +14,7 @@ import re
 import subprocess
 import sys
 
-from libcxx.util import executeCommand
+from libcudacxx.util import executeCommand
 
 class DefaultTargetInfo(object):
     def __init__(self, full_config):
@@ -247,7 +247,7 @@ class WindowsLocalTI(DefaultTargetInfo):
 
 
 def make_target_info(full_config):
-    default = "libcxx.test.target_info.LocalTI"
+    default = "libcudacxx.test.target_info.LocalTI"
     info_str = full_config.get_lit_conf('target_info', default)
     if info_str != default:
         mod_path, _, info = info_str.rpartition('.')

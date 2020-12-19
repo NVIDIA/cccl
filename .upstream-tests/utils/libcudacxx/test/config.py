@@ -16,11 +16,11 @@ import shlex
 import shutil
 import sys
 
-from libcxx.compiler import CXXCompiler
-from libcxx.test.target_info import make_target_info
-from libcxx.test.executor import *
-from libcxx.test.tracing import *
-import libcxx.util
+from libcudacxx.compiler import CXXCompiler
+from libcudacxx.test.target_info import make_target_info
+from libcudacxx.test.executor import *
+from libcudacxx.test.tracing import *
+import libcudacxx.util
 
 def loadSiteConfig(lit_config, config, param_name, env_name):
     # We haven't loaded the site specific configuration (the user is
@@ -64,8 +64,8 @@ class Configuration(object):
         self.cxx_is_clang_cl = None
         self.cxx_stdlib_under_test = None
         self.project_obj_root = None
-        self.libcxx_src_root = None
-        self.libcxx_obj_root = None
+        self.libcudacxx_src_root = None
+        self.libcudacxx_obj_root = None
         self.cxx_library_root = None
         self.cxx_runtime_root = None
         self.abi_library_root = None
@@ -115,7 +115,7 @@ class Configuration(object):
     def get_modules_enabled(self):
         return self.get_lit_bool('enable_modules',
                                 default=False,
-                                env_var='LIBCXX_ENABLE_MODULES')
+                                env_var='LIBCUDACXX_ENABLE_MODULES')
 
     def make_static_lib_name(self, name):
         """Return the full filename for the specified library name"""
@@ -157,7 +157,7 @@ class Configuration(object):
 
     def print_config_info(self):
         # Print the final compile and link flags.
-        self.lit_config.note('Using compiler: %s' % self.cxx.path)
+        self.lit_config.note('Using compiler: %s %s' % (self.cxx.path, self.cxx.first_arg))
         self.lit_config.note('Using flags: %s' % self.cxx.flags)
         if self.cxx.use_modules:
             self.lit_config.note('Using modules flags: %s' %
@@ -178,7 +178,7 @@ class Configuration(object):
         sys.stderr.flush()  # Force flushing to avoid broken output on Windows
 
     def get_test_format(self):
-        from libcxx.test.format import LibcxxTestFormat
+        from libcudacxx.test.format import LibcxxTestFormat
         return LibcxxTestFormat(
             self.cxx,
             self.use_clang_verify,
@@ -219,7 +219,7 @@ class Configuration(object):
             search_paths = self.config.environment['PATH']
             if cxx is not None and os.path.isabs(cxx):
                 search_paths = os.path.dirname(cxx)
-            clangxx = libcxx.util.which('clang++', search_paths)
+            clangxx = libcudacxx.util.which('clang++', search_paths)
             if clangxx:
                 cxx = clangxx
                 self.lit_config.note(
@@ -256,7 +256,7 @@ class Configuration(object):
         # comments.
         self.cxx.compile_env['CCACHE_CPP2'] = '1'
 
-        if self.cxx.type == 'nvcc' and not self.cxx.is_nvrtc:
+        if self.cxx.type == 'nvcc':
           nvcc_host_compiler = self.get_lit_conf('nvcc_host_compiler')
           if len(nvcc_host_compiler.strip()) == 0:
             if platform.system() == 'Darwin':
@@ -310,7 +310,7 @@ class Configuration(object):
         macros_or_error = self.cxx.dumpMacros(*args, **kwargs)
         if isinstance(macros_or_error, tuple):
             cmd, out, err, rc = macros_or_error
-            report = libcxx.util.makeReport(cmd, out, err, rc)
+            report = libcudacxx.util.makeReport(cmd, out, err, rc)
             report += "Compiler failed unexpectedly when dumping macros!"
             self.lit_config.fatal(report)
             return None
@@ -318,28 +318,28 @@ class Configuration(object):
         return macros_or_error
 
     def configure_src_root(self):
-        self.libcxx_src_root = self.get_lit_conf(
-            'libcxx_src_root', os.path.dirname(self.config.test_source_root))
+        self.libcudacxx_src_root = self.get_lit_conf(
+            'libcudacxx_src_root', os.path.dirname(self.config.test_source_root))
 
     def configure_obj_root(self):
         self.project_obj_root = self.get_lit_conf('project_obj_root')
-        self.libcxx_obj_root = self.get_lit_conf('libcxx_obj_root')
-        if not self.libcxx_obj_root and self.project_obj_root is not None:
+        self.libcudacxx_obj_root = self.get_lit_conf('libcudacxx_obj_root')
+        if not self.libcudacxx_obj_root and self.project_obj_root is not None:
             possible_roots = [
-                os.path.join(self.project_obj_root, 'libcxx'),
-                os.path.join(self.project_obj_root, 'projects', 'libcxx'),
-                os.path.join(self.project_obj_root, 'runtimes', 'libcxx'),
+                os.path.join(self.project_obj_root, 'libcudacxx'),
+                os.path.join(self.project_obj_root, 'projects', 'libcudacxx'),
+                os.path.join(self.project_obj_root, 'runtimes', 'libcudacxx'),
             ]
             for possible_root in possible_roots:
                 if os.path.isdir(possible_root):
-                    self.libcxx_obj_root = possible_root
+                    self.libcudacxx_obj_root = possible_root
                     break
             else:
-                self.libcxx_obj_root = self.project_obj_root
+                self.libcudacxx_obj_root = self.project_obj_root
 
     def configure_cxx_library_root(self):
         self.cxx_library_root = self.get_lit_conf('cxx_library_root',
-                                                  self.libcxx_obj_root)
+                                                  self.libcudacxx_obj_root)
         self.cxx_runtime_root = self.get_lit_conf('cxx_runtime_root',
                                                    self.cxx_library_root)
 
@@ -417,7 +417,7 @@ class Configuration(object):
             self.config.available_features.add('no_execute')
 
     def configure_ccache(self):
-        use_ccache_default = os.environ.get('LIBCXX_USE_CCACHE') is not None
+        use_ccache_default = os.environ.get('LIBCUDACXX_USE_CCACHE') is not None
         use_ccache = self.get_lit_bool('use_ccache', use_ccache_default)
         if use_ccache:
             self.cxx.use_ccache = True
@@ -526,7 +526,7 @@ class Configuration(object):
                 # and fixed. This allows easier detection of new test failures
                 # and regressions. Note: New failures should not be suppressed
                 # using this feature. (Also see llvm.org/PR32730)
-                self.config.available_features.add('LIBCXX-WINDOWS-FIXME')
+                self.config.available_features.add('LIBCUDACXX-WINDOWS-FIXME')
 
         if 'msvc' not in self.config.available_features:
             # Attempt to detect the glibc version by querying for __GLIBC__
@@ -538,10 +538,10 @@ class Configuration(object):
                 self.config.available_features.add('glibc-%s' % maj_v)
                 self.config.available_features.add('glibc-%s.%s' % (maj_v, min_v))
 
-        libcxx_gdb = self.get_lit_conf('libcxx_gdb')
-        if libcxx_gdb and 'NOTFOUND' not in libcxx_gdb:
-            self.config.available_features.add('libcxx_gdb')
-            self.cxx.libcxx_gdb = libcxx_gdb
+        libcudacxx_gdb = self.get_lit_conf('libcudacxx_gdb')
+        if libcudacxx_gdb and 'NOTFOUND' not in libcudacxx_gdb:
+            self.config.available_features.add('libcudacxx_gdb')
+            self.cxx.libcudacxx_gdb = libcudacxx_gdb
 
         # Support Objective-C++ only on MacOS and if the compiler supports it.
         if self.target_info.platform() == "darwin" and \
@@ -704,7 +704,7 @@ class Configuration(object):
             self.cxx.flags += ['-m' + name + '-version-min=' + version]
 
         # Add includes for support headers used in the tests.
-        support_path = os.path.join(self.libcxx_src_root, 'test/support')
+        support_path = os.path.join(self.libcudacxx_src_root, 'test/support')
         self.cxx.compile_flags += ['-I' + support_path]
 
         # Add includes for the PSTL headers
@@ -721,7 +721,7 @@ class Configuration(object):
         self.cxx.addFlagIfSupported('-ftemplate-depth=270')
 
     def configure_compile_flags_header_includes(self):
-        support_path = os.path.join(self.libcxx_src_root, 'test', 'support')
+        support_path = os.path.join(self.libcudacxx_src_root, 'test', 'support')
         self.configure_config_site_header()
         if self.cxx_stdlib_under_test != 'libstdc++' and \
            not self.is_windows:
@@ -743,16 +743,16 @@ class Configuration(object):
                                  and self.cxx_stdlib_under_test != 'libc++'):
             self.lit_config.note('using the system cxx headers')
             return
-        if self.cxx.type != 'nvcc':
+        if self.cxx.type != 'nvcc' and self.cxx.type != 'pgi':
             self.cxx.compile_flags += ['-nostdinc++']
         if cxx_headers is None:
-            cxx_headers = os.path.join(self.libcxx_src_root, 'include')
+            cxx_headers = os.path.join(self.libcudacxx_src_root, 'include')
         if not os.path.isdir(cxx_headers):
             self.lit_config.fatal("cxx_headers='%s' is not a directory."
                                   % cxx_headers)
         self.cxx.compile_flags += ['-I' + cxx_headers]
-        if self.libcxx_obj_root is not None:
-            cxxabi_headers = os.path.join(self.libcxx_obj_root, 'include',
+        if self.libcudacxx_obj_root is not None:
+            cxxabi_headers = os.path.join(self.libcudacxx_obj_root, 'include',
                                           'c++build')
             if os.path.isdir(cxxabi_headers):
                 self.cxx.compile_flags += ['-I' + cxxabi_headers]
@@ -760,9 +760,9 @@ class Configuration(object):
     def configure_config_site_header(self):
         # Check for a possible __config_site in the build directory. We
         # use this if it exists.
-        if self.libcxx_obj_root is None:
+        if self.libcudacxx_obj_root is None:
             return
-        config_site_header = os.path.join(self.libcxx_obj_root, '__config_site')
+        config_site_header = os.path.join(self.libcudacxx_obj_root, '__config_site')
         if not os.path.isfile(config_site_header):
             return
         contained_macros = self.parse_config_site_and_add_features(
@@ -868,7 +868,7 @@ class Configuration(object):
         if not self.get_lit_bool('enable_filesystem', default=True):
             return
 
-        static_env = os.path.join(self.libcxx_src_root, 'test', 'std',
+        static_env = os.path.join(self.libcudacxx_src_root, 'test', 'std',
                                   'input.output', 'filesystems', 'Inputs', 'static_test_env')
         static_env = os.path.realpath(static_env)
         assert os.path.isdir(static_env)
@@ -882,7 +882,7 @@ class Configuration(object):
         self.cxx.compile_flags += ['-DLIBCXX_FILESYSTEM_DYNAMIC_TEST_ROOT="%s"' % dynamic_env]
         self.exec_env['LIBCXX_FILESYSTEM_DYNAMIC_TEST_ROOT'] = ("%s" % dynamic_env)
 
-        dynamic_helper = os.path.join(self.libcxx_src_root, 'test', 'support',
+        dynamic_helper = os.path.join(self.libcudacxx_src_root, 'test', 'support',
                                       'filesystem_dynamic_test_helper.py')
         assert os.path.isfile(dynamic_helper)
 
@@ -982,7 +982,7 @@ class Configuration(object):
             self.cxx.link_flags += ['-lc++experimental']
         if self.link_shared:
             self.cxx.link_flags += ['-lc++']
-        elif self.cxx.type != 'nvcc':
+        elif self.cxx.type != 'nvcc' and self.cxx.type != 'pgi':
             cxx_library_root = self.get_lit_conf('cxx_library_root')
             if cxx_library_root:
                 libname = self.make_static_lib_name('c++')
@@ -1145,12 +1145,12 @@ class Configuration(object):
             # Search for llvm-symbolizer along the compiler path first
             # and then along the PATH env variable.
             symbolizer_search_paths = os.environ.get('PATH', '')
-            cxx_path = libcxx.util.which(self.cxx.path)
+            cxx_path = libcudacxx.util.which(self.cxx.path)
             if cxx_path is not None:
                 symbolizer_search_paths = (
                     os.path.dirname(cxx_path) +
                     os.pathsep + symbolizer_search_paths)
-            llvm_symbolizer = libcxx.util.which('llvm-symbolizer',
+            llvm_symbolizer = libcudacxx.util.which('llvm-symbolizer',
                                                 symbolizer_search_paths)
 
             def add_ubsan():
@@ -1249,7 +1249,7 @@ class Configuration(object):
         cxx_path = pipes.quote(self.cxx.path)
         # Configure compiler substitutions
         sub.append(('%cxx', cxx_path))
-        sub.append(('%libcxx_src_root', self.libcxx_src_root))
+        sub.append(('%libcxx_src_root', self.libcudacxx_src_root))
         # Configure flags substitutions
         flags_str = ' '.join([pipes.quote(f) for f in self.cxx.flags])
         compile_flags_str = ' '.join([pipes.quote(f) for f in self.cxx.compile_flags])
@@ -1283,11 +1283,11 @@ class Configuration(object):
         # Configure run env substitution.
         sub.append(('%run', '%t.exe'))
         # Configure not program substitutions
-        not_py = os.path.join(self.libcxx_src_root, 'utils', 'not.py')
+        not_py = os.path.join(self.libcudacxx_src_root, 'utils', 'not.py')
         not_str = '%s %s ' % (pipes.quote(sys.executable), pipes.quote(not_py))
         sub.append(('not ', not_str))
-        if self.get_lit_conf('libcxx_gdb'):
-            sub.append(('%libcxx_gdb', self.get_lit_conf('libcxx_gdb')))
+        if self.get_lit_conf('libcudacxx_gdb'):
+            sub.append(('%libcxx_gdb', self.get_lit_conf('libcudacxx_gdb')))
 
     def can_use_deployment(self):
         # Check if the host is on an Apple platform using clang.

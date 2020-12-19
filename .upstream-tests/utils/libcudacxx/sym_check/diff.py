@@ -10,7 +10,7 @@
 diff - A set of functions for diff-ing two symbol lists.
 """
 
-from libcxx.sym_check import util
+from libcudacxx.sym_check import util
 
 
 def _symbol_difference(lhs, rhs):

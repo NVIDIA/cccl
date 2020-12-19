@@ -9,8 +9,8 @@
 import platform
 import os
 
-from libcxx.test import tracing
-from libcxx.util import executeCommand
+from libcudacxx.test import tracing
+from libcudacxx.util import executeCommand
 
 
 class Executor(object):

@@ -8,7 +8,7 @@
 // This file implements the new and delete operators.
 //===----------------------------------------------------------------------===//
 
-#define _LIBCPP_BUILDING_LIBRARY
+#define _LIBCUDACXX_BUILDING_LIBRARY
 #include "__cxxabi_config.h"
 #include <new>
 #include <cstdlib>
@@ -133,7 +133,7 @@ operator delete[] (void* ptr, size_t) _NOEXCEPT
     ::operator delete[](ptr);
 }
 
-#if !defined(_LIBCPP_HAS_NO_LIBRARY_ALIGNED_ALLOCATION)
+#if !defined(_LIBCUDACXX_HAS_NO_LIBRARY_ALIGNED_ALLOCATION)
 
 _LIBCXXABI_WEAK
 void *
@@ -144,7 +144,7 @@ operator new(std::size_t size, std::align_val_t alignment) _THROW_BAD_ALLOC
     if (static_cast<size_t>(alignment) < sizeof(void*))
       alignment = std::align_val_t(sizeof(void*));
     void* p;
-#if defined(_LIBCPP_WIN32API)
+#if defined(_LIBCUDACXX_WIN32API)
     while ((p = _aligned_malloc(size, static_cast<size_t>(alignment))) == nullptr)
 #else
     while (::posix_memalign(&p, static_cast<size_t>(alignment), size) != 0)
@@ -217,7 +217,7 @@ void
 operator delete(void* ptr, std::align_val_t) _NOEXCEPT
 {
     if (ptr)
-#if defined(_LIBCPP_WIN32API)
+#if defined(_LIBCUDACXX_WIN32API)
         ::_aligned_free(ptr);
 #else
         ::free(ptr);
@@ -259,4 +259,4 @@ operator delete[] (void* ptr, size_t, std::align_val_t alignment) _NOEXCEPT
     ::operator delete[](ptr, alignment);
 }
 
-#endif // !_LIBCPP_HAS_NO_LIBRARY_ALIGNED_ALLOCATION
+#endif // !_LIBCUDACXX_HAS_NO_LIBRARY_ALIGNED_ALLOCATION

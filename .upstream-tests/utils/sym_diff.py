@@ -12,7 +12,7 @@ sym_diff - Compare two symbol lists and output the differences.
 
 from argparse import ArgumentParser
 import sys
-from libcxx.sym_check import diff, util
+from libcudacxx.sym_check import diff, util
 
 
 def main():
