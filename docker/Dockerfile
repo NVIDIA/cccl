@@ -138,10 +138,10 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
     ${ALTERNATIVES} --install /usr/bin/c++ c++ ${CXX} 99; \
     ${ALTERNATIVES} --set cc  ${CC}; \
     ${ALTERNATIVES} --set c++ ${CXX}; \
-    if   [[ "${SDK_TYPE}" == "cuda" ]]; then \
-      export CUDACXX=$(which nvcc); \
-    elif [[ "${SDK_TYPE}" == "nvhpc" ]]; then \
+    if [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
       export CUDACXX=$(which nvc++); \
+    else \
+      export CUDACXX=$(which nvcc); \
     fi; \
     echo "export CC=${CC}"             >> /etc/cccl.bashrc; \
     echo "export CXX=${CXX}"           >> /etc/cccl.bashrc; \
