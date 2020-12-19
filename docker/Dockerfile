@@ -72,6 +72,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install make ninja-build; \
       apt-get -y --no-install-recommends install llvm-dev; \
       apt-get -y --no-install-recommends install libtbb-dev; \
+      apt-get -y --no-install-recommends install libomp-dev; \
       apt-get -y --no-install-recommends install sudo; \
       apt-get -y --no-install-recommends install gdb; \
       apt-get -y --no-install-recommends install strace; \
