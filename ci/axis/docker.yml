@@ -51,6 +51,8 @@ exclude:
   # Excludes by `OS_TYPE`.
   - CXX_TYPE: clang
     OS_TYPE: centos
+  - CXX_TYPE: icc
+    OS_TYPE: centos
   # Excludes by `OS_VER`.
   - OS_TYPE: ubuntu
     OS_VER: 7

@@ -5,10 +5,10 @@
 
 # SDK_TYPE needs to be a base image that contains CUDA.
 # | SDK_TYPE | SDK_VER    |
-# | cuda     | 11.1-devel |
+# | cuda     | 11.0-devel |
 # | nvhpc    | 20.9-devel |
 ARG SDK_TYPE=cuda
-ARG SDK_VER=11.1-devel
+ARG SDK_VER=11.0-devel
 # | OS_TYPE  | OS_VER |
 # | ubuntu   | 20.04  |
 # | centos   | 7      |
