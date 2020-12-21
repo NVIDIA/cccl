@@ -8,7 +8,7 @@ SDK_TYPE:
   - nvhpc
 
 SDK_VER:
-  - 11.1-devel
+  - 11.0-devel
   - 20.9-devel
 
 OS_TYPE:
@@ -47,7 +47,7 @@ exclude:
   - SDK_TYPE: cuda
     SDK_VER: 20.9-devel
   - SDK_TYPE: nvhpc
-    SDK_VER: 11.1-devel
+    SDK_VER: 11.0-devel
   # Excludes by `OS_TYPE`.
   - CXX_TYPE: clang
     OS_TYPE: centos
