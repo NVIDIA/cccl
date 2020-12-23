@@ -5,10 +5,8 @@
 
 #! /usr/bin/env bash
 
-if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 <image>"
-  exit 1
-fi
+docker container rm $(docker container ls -a | awk '{ print $1 }' | grep -v CONTAINER) > /dev/null 2>&1
+docker image rm $(docker image ls -a | awk '{ print $3 }'  | grep -v IMAGE) > /dev/null 2>&1
 
-curl -s -S "https://registry.hub.docker.com/v2/repositories/${@}/tags/?page_size=100" | jq '."results"[]["name"]' | sort
+exit 0
 
