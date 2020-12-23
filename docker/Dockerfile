@@ -89,9 +89,10 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       elif [[ "${CXX_TYPE}" == "icc" ]]; then \
         apt-get -y --no-install-recommends install intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic g++; \
         source /opt/intel/oneapi/setvars.sh; \
-        echo "bash_args=(\"\$@\")" >> /etc/cccl.bashrc; \
-        echo "source /opt/intel/oneapi/setvars.sh" >> /etc/cccl.bashrc; \
-        echo "set -- \"\${bash_args[@]}\"" >> /etc/cccl.bashrc; \
+        echo "bash_args=(\"\$@\")"                            >> /etc/cccl.bashrc; \
+        echo "source /opt/intel/oneapi/setvars.sh"            >> /etc/cccl.bashrc; \
+        echo "export CMAKE_LIBRARY_PATH=\"\${LIBRARY_PATH}\"" >> /etc/cccl.bashrc; \
+        echo "set -- \"\${bash_args[@]}\""                    >> /etc/cccl.bashrc; \
         export CC=$(which icc); \
         export CXX=$(which icpc); \
       elif [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
