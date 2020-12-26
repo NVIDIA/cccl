@@ -80,6 +80,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install gdb; \
       apt-get -y --no-install-recommends install strace; \
       apt-get -y --no-install-recommends install less; \
+      apt-get -y --no-install-recommends install git; \
       apt-get -y --no-install-recommends install vim emacs-nox; \
       curl --silent --show-error -L ${DOXYPRESS_URL} -o doxypress.tar.bz2; \
       mkdir -p /opt/copperspice; \
@@ -124,6 +125,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       yum -y install gdb; \
       yum -y install strace; \
       yum -y install less; \
+      yum -y install git; \
       yum -y install vim emacs-nox; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
         yum -y install devtoolset-${CXX_VER}-gcc*; \
