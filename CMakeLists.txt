@@ -156,12 +156,15 @@ if ("${LIBCXX_CXX_ABI}" STREQUAL "")
   set(LIBCXX_CXX_ABI "libstdc++" CACHE STRING "")
 endif ()
 
+
 # Configure options needed to run tests.
 if (_libcudacxx_enable_tests)
   enable_testing()
 
+  set(LIT_EXTRA_ARGS "" CACHE STRING "Use for additional options (e.g. -j12)")
+
   find_program(LLVM_DEFAULT_EXTERNAL_LIT lit)
-  set(LLVM_LIT_ARGS "-sv")
+  set(LLVM_LIT_ARGS "-sv ${LIT_EXTRA_ARGS}")
 
   if (LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS)
     set(LIBCUDACXX_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
