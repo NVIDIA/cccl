@@ -82,6 +82,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install less; \
       apt-get -y --no-install-recommends install git; \
       apt-get -y --no-install-recommends install vim emacs-nox; \
+      apt-get -y --no-install-recommends install ccache; \
       curl --silent --show-error -L ${DOXYPRESS_URL} -o doxypress.tar.bz2; \
       mkdir -p /opt/copperspice; \
       tar -xf doxypress.tar.bz2 -C /opt/copperspice; \
@@ -127,6 +128,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       yum -y install less; \
       yum -y install git; \
       yum -y install vim emacs-nox; \
+      yum -y install ccache; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
         yum -y install devtoolset-${CXX_VER}-gcc*; \
         source scl_source enable devtoolset-${CXX_VER}; \
