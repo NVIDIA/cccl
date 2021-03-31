@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 700
+#if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 700
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif
 
@@ -311,7 +311,7 @@ inline void __strided_memcpy(char * __destination, char const * __source, std::s
     }
 }
 
-#if __CUDA_ARCH__ >= 800
+#if __CUDA_MINIMUM_ARCH__ >= 800
 template<std::size_t _Alignment, bool _Large = (_Alignment > 16)>
 struct __memcpy_async_impl {
     __device__ static inline bool __copy(char * __destination, char const * __source, std::size_t __total_size, std::size_t __rank, std::size_t __stride) {

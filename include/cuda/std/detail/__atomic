@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if defined(__CUDA_ARCH__) && ((!defined(_MSC_VER) && __CUDA_ARCH__ < 600) || (defined(_MSC_VER) && __CUDA_ARCH__ < 700))
+#if defined(__CUDA_MINIMUM_ARCH__) && ((!defined(_MSC_VER) && __CUDA_MINIMUM_ARCH__ < 600) || (defined(_MSC_VER) && __CUDA_MINIMUM_ARCH__ < 700))
 #  error "CUDA atomics are only supported for sm_60 and up on *nix and sm_70 and up on Windows."
 #endif
 
