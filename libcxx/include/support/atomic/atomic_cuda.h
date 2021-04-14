@@ -96,7 +96,7 @@ __host__ __device__ auto constexpr __scope_tag() ->
 }
 // END TODO
 
-// Wrap atomic implementations into a sub-namespace
+// Wrap host atomic implementations into a sub-namespace
 namespace host {
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
 #  include "atomic_msvc.h"
@@ -150,40 +150,61 @@ __host__ __device__ inline void __cxx_atomic_signal_fence(int __order) {
     )
 }
 
-template <typename _Tp, typename = void>
-struct __cxx_atomic_alignment_wrapper_impl;
+// Atomic storage layouts:
 
-template <typename _Tp, typename>
-struct __cxx_atomic_alignment_wrapper_impl {
-  struct type {
+// Implement _Sco with https://godbolt.org/z/foWdeYjEs
+
+template <typename _Tp>
+struct type {
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    type() noexcept : __a_value() {
+    }
+
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    type(_Tp __held) noexcept : __a_value(__held) {
+    }
+
+    _ALIGNAS(sizeof(_Tp)) _Tp __a_value;
+
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _Tp* get() _NOEXCEPT {
+        return &__a_value;
+    }
+}
+
+template <typename _Tp, int _Sco>
+struct __cxx_atomic_base_storage_aligned<_Tp> {
+
+};
+
+template <typename _Tp, int _Sco>
+struct __cxx_atomic_base_storage_small {
     using __wrapped_type = _Tp;
-    __host__ __device__ constexpr type() noexcept : __a_held() {
+
+    __cxx_atomic_base_storage_small() noexcept = default;
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit
+      __cxx_atomic_base_storage_small(_Tp __value) : __a_held(__value) {
     }
-    __host__ __device__ constexpr type(_Tp __held) noexcept : __a_held(__held) {
+
+    __cxx_atomic_base_storage_aligned<uint32_t, _Sco> __a_held;
+
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+      __cxx_atomic_base_storage_aligned<uint32_t, _Sco>* get() _NOEXCEPT {
+        return &__a_held;
     }
-    _ALIGNAS(sizeof(_Tp)) _Tp __a_held;
-  };
 };
 
-template <typename _Tp>
-struct __cxx_atomic_alignment_wrapper_impl<_Tp, typename enable_if<_LIBCUDACXX_ALIGNOF(_Tp) == sizeof(_Tp)>::type> {
-  using type = _Tp;
-};
+template <typename _Tp, int _Sco>
+using __cxx_atomic_base_storage = typename conditional<sizeof(_Tp) < 4,
+                                    __cxx_atomic_base_storage_small<_Tp, _Sco>,
+                                    __cxx_atomic_base_storage_aligned<_Tp, _Sco> >::type;
 
 template <typename _Tp>
-using __cxx_atomic_alignment_wrapper_t = typename __cxx_atomic_alignment_wrapper_impl<_Tp>::type;
+using __cxx_atomic_alignment_wrapper_t = __cxx_atomic_base_storage<_Tp>;
 
-template <typename _Tp>
-__host__ __device__ __cxx_atomic_alignment_wrapper_t<_Tp> __cxx_atomic_alignment_wrap(_Tp __value, true_type) {
-    return __value;
-}
-template <typename _Tp>
-__host__ __device__ __cxx_atomic_alignment_wrapper_t<_Tp> __cxx_atomic_alignment_wrap(_Tp __value, false_type) {
-    return __cxx_atomic_alignment_wrapper_t<_Tp>(__value);
-}
 template <typename _Tp>
 __host__ __device__ __cxx_atomic_alignment_wrapper_t<_Tp> __cxx_atomic_alignment_wrap(_Tp __value) {
-    return __cxx_atomic_alignment_wrap(__value, integral_constant<bool, _LIBCUDACXX_ALIGNOF(_Tp) == sizeof(_Tp)>{});
+    return __cxx_atomic_alignment_wrapper_t(__value);
 }
 
 template <typename _Tp>
@@ -192,7 +213,7 @@ __host__ __device__ _Tp __cxx_atomic_alignment_unwrap(_Tp __value, true_type) {
 }
 template <typename _Tp>
 __host__ __device__ typename _Tp::__wrapped_type __cxx_atomic_alignment_unwrap(_Tp __value, false_type) {
-    return __value.__a_held;
+    return *__value.get();
 }
 template <typename _Tp>
 __host__ __device__ auto __cxx_atomic_alignment_unwrap(_Tp __value)
@@ -200,14 +221,6 @@ __host__ __device__ auto __cxx_atomic_alignment_unwrap(_Tp __value)
 {
     return __cxx_atomic_alignment_unwrap(__value, integral_constant<bool, _LIBCUDACXX_ALIGNOF(_Tp) == sizeof(_Tp)>{});
 }
-
-template <typename _Tp, int _Sco>
-struct __cxx_atomic_base_impl_default {
-  constexpr __cxx_atomic_base_impl_default() noexcept = default;
-  __host__ __device__ constexpr explicit __cxx_atomic_base_impl_default(_Tp __value) noexcept : __a_value(__value) {
-  }
-  __cxx_atomic_alignment_wrapper_t<_Tp> __a_value;
-};
 
 template<class _Tp, int _Sco>
 __host__ __device__ inline void __cxx_atomic_init(__cxx_atomic_base_impl_default<_Tp, _Sco> volatile* __a, _Tp __val) {
@@ -363,16 +376,6 @@ __host__ __device__ inline _Tp __cxx_atomic_fetch_xor(__cxx_atomic_base_impl_def
     )
 }
 
-template <typename _Tp, int _Sco>
-struct __cxx_atomic_base_impl_small {
-
-  __cxx_atomic_base_impl_small() noexcept = default;
-  __host__ __device__ constexpr explicit __cxx_atomic_base_impl_small(_Tp __value) : __a_value(__value) {
-  }
-
-  __cxx_atomic_base_impl_default<uint32_t, _Sco> __a_value;
-};
-
 template <typename _Tp>
 using __cxx_small_proxy = typename conditional<sizeof(_Tp) == 1,
                                                uint8_t,
@@ -470,8 +473,3 @@ template<class _Tp, int _Sco>
 __host__ __device__ inline _Tp __cxx_atomic_fetch_xor(__cxx_atomic_base_impl_small<_Tp, _Sco> volatile* __a, _Tp __pattern, int __order) {
     return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_xor(&__a->__a_value, __cxx_small_to_32(__pattern), __order));
 }
-
-template <typename _Tp, int _Sco>
-using __cxx_atomic_base_impl = typename conditional<sizeof(_Tp) < 4,
-                                    __cxx_atomic_base_impl_small<_Tp, _Sco>,
-                                    __cxx_atomic_base_impl_default<_Tp, _Sco> >::type;

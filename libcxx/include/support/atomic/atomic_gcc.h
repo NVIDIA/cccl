@@ -1,17 +1,18 @@
 //
 
 template <typename _Tp>
-struct __cxx_atomic_base_impl {
-
+struct __cxx_atomic_base_storage {
   _LIBCUDACXX_INLINE_VISIBILITY
-#ifndef _LIBCUDACXX_CXX03_LANG
-    __cxx_atomic_base_impl() _NOEXCEPT = default;
-#else
     __cxx_atomic_base_impl() _NOEXCEPT : __a_value() {}
-#endif // _LIBCUDACXX_CXX03_LANG
+
   _LIBCUDACXX_CONSTEXPR explicit __cxx_atomic_base_impl(_Tp value) _NOEXCEPT
     : __a_value(value) {}
+
   _ALIGNAS(sizeof(_Tp)) _Tp __a_value;
+
+  _LIBCUDACXX_CONSTEXPR _Tp* get() _NOEXCEPT {
+    return __a_value;
+  }
 };
 
 _LIBCUDACXX_INLINE_VISIBILITY inline _LIBCUDACXX_CONSTEXPR int __to_gcc_order(memory_order __order) {
@@ -36,14 +37,14 @@ _LIBCUDACXX_INLINE_VISIBILITY inline _LIBCUDACXX_CONSTEXPR int __to_gcc_failure_
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-void __cxx_atomic_init(volatile __cxx_atomic_base_impl<_Tp>* __a,  _Tp __val) {
-  __cxx_atomic_assign_volatile(__a->__a_value, __val);
+void __cxx_atomic_init(volatile _Tp* __a,  _Tp __val) {
+  __cxx_atomic_assign_volatile(*__a, __val);
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-void __cxx_atomic_init(__cxx_atomic_base_impl<_Tp>* __a,  _Tp __val) {
-  __a->__a_value = __val;
+void __cxx_atomic_init(_Tp* __a,  _Tp __val) {
+__a = __val;
 }
 
 _LIBCUDACXX_INLINE_VISIBILITY inline
@@ -58,55 +59,55 @@ void __cxx_atomic_signal_fence(memory_order __order) {
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-void __cxx_atomic_store(volatile __cxx_atomic_base_impl<_Tp>* __a,  _Tp __val,
+void __cxx_atomic_store(volatile _Tp* __a,  _Tp __val,
                         memory_order __order) {
-  __atomic_store(&__a->__a_value, &__val,
+  __atomic_store(__a, &__val,
                  __to_gcc_order(__order));
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-void __cxx_atomic_store(__cxx_atomic_base_impl<_Tp>* __a,  _Tp __val,
+void __cxx_atomic_store(_Tp* __a,  _Tp __val,
                         memory_order __order) {
-  __atomic_store(&__a->__a_value, &__val,
+  __atomic_store(__a, &__val,
                  __to_gcc_order(__order));
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_load(const volatile __cxx_atomic_base_impl<_Tp>* __a,
+_Tp __cxx_atomic_load(const volatile _Tp* __a,
                       memory_order __order) {
   _Tp __ret;
-  __atomic_load(&__a->__a_value, &__ret,
+  __atomic_load(__a, &__ret,
                 __to_gcc_order(__order));
   return __ret;
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_load(const __cxx_atomic_base_impl<_Tp>* __a, memory_order __order) {
+_Tp __cxx_atomic_load(const _Tp* __a, memory_order __order) {
   _Tp __ret;
-  __atomic_load(&__a->__a_value, &__ret,
+  __atomic_load(__a, &__ret,
                 __to_gcc_order(__order));
   return __ret;
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_exchange(volatile __cxx_atomic_base_impl<_Tp>* __a,
+_Tp __cxx_atomic_exchange(volatile _Tp* __a,
                           _Tp __value, memory_order __order) {
   _Tp __ret;
-  __atomic_exchange(&__a->__a_value, &__value, &__ret,
+  __atomic_exchange(__a, &__value, &__ret,
                     __to_gcc_order(__order));
   return __ret;
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_exchange(__cxx_atomic_base_impl<_Tp>* __a, _Tp __value,
+_Tp __cxx_atomic_exchange(_Tp* __a, _Tp __value,
                           memory_order __order) {
   _Tp __ret;
-  __atomic_exchange(&__a->__a_value, &__value, &__ret,
+  __atomic_exchange(__a, &__value, &__ret,
                     __to_gcc_order(__order));
   return __ret;
 }
@@ -114,9 +115,9 @@ _Tp __cxx_atomic_exchange(__cxx_atomic_base_impl<_Tp>* __a, _Tp __value,
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 bool __cxx_atomic_compare_exchange_strong(
-    volatile __cxx_atomic_base_impl<_Tp>* __a, _Tp* __expected, _Tp __value,
+    volatile _Tp* __a, _Tp* __expected, _Tp __value,
     memory_order __success, memory_order __failure) {
-  return __atomic_compare_exchange(&__a->__a_value, __expected, &__value,
+  return __atomic_compare_exchange(__a, __expected, &__value,
                                    false,
                                    __to_gcc_order(__success),
                                    __to_gcc_failure_order(__failure));
@@ -125,9 +126,9 @@ bool __cxx_atomic_compare_exchange_strong(
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 bool __cxx_atomic_compare_exchange_strong(
-    __cxx_atomic_base_impl<_Tp>* __a, _Tp* __expected, _Tp __value, memory_order __success,
+    _Tp* __a, _Tp* __expected, _Tp __value, memory_order __success,
     memory_order __failure) {
-  return __atomic_compare_exchange(&__a->__a_value, __expected, &__value,
+  return __atomic_compare_exchange(__a, __expected, &__value,
                                    false,
                                    __to_gcc_order(__success),
                                    __to_gcc_failure_order(__failure));
@@ -136,9 +137,9 @@ bool __cxx_atomic_compare_exchange_strong(
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 bool __cxx_atomic_compare_exchange_weak(
-    volatile __cxx_atomic_base_impl<_Tp>* __a, _Tp* __expected, _Tp __value,
+    volatile _Tp* __a, _Tp* __expected, _Tp __value,
     memory_order __success, memory_order __failure) {
-  return __atomic_compare_exchange(&__a->__a_value, __expected, &__value,
+  return __atomic_compare_exchange(__a, __expected, &__value,
                                    true,
                                    __to_gcc_order(__success),
                                    __to_gcc_failure_order(__failure));
@@ -147,9 +148,9 @@ bool __cxx_atomic_compare_exchange_weak(
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 bool __cxx_atomic_compare_exchange_weak(
-    __cxx_atomic_base_impl<_Tp>* __a, _Tp* __expected, _Tp __value, memory_order __success,
+    _Tp* __a, _Tp* __expected, _Tp __value, memory_order __success,
     memory_order __failure) {
-  return __atomic_compare_exchange(&__a->__a_value, __expected, &__value,
+  return __atomic_compare_exchange(__a, __expected, &__value,
                                    true,
                                    __to_gcc_order(__success),
                                    __to_gcc_failure_order(__failure));
@@ -170,81 +171,81 @@ struct __skip_amt<_Tp[n]> { };
 
 template <typename _Tp, typename _Td>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_fetch_add(volatile __cxx_atomic_base_impl<_Tp>* __a,
+_Tp __cxx_atomic_fetch_add(volatile _Tp* __a,
                            _Td __delta, memory_order __order) {
-  return __atomic_fetch_add(&__a->__a_value, __delta * __skip_amt<_Tp>::value,
+  return __atomic_fetch_add(__a, __delta * __skip_amt<_Tp>::value,
                             __to_gcc_order(__order));
 }
 
 template <typename _Tp, typename _Td>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_fetch_add(__cxx_atomic_base_impl<_Tp>* __a, _Td __delta,
+_Tp __cxx_atomic_fetch_add(_Tp* __a, _Td __delta,
                            memory_order __order) {
-  return __atomic_fetch_add(&__a->__a_value, __delta * __skip_amt<_Tp>::value,
+  return __atomic_fetch_add(__a, __delta * __skip_amt<_Tp>::value,
                             __to_gcc_order(__order));
 }
 
 template <typename _Tp, typename _Td>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_fetch_sub(volatile __cxx_atomic_base_impl<_Tp>* __a,
+_Tp __cxx_atomic_fetch_sub(volatile _Tp* __a,
                            _Td __delta, memory_order __order) {
-  return __atomic_fetch_sub(&__a->__a_value, __delta * __skip_amt<_Tp>::value,
+  return __atomic_fetch_sub(__a, __delta * __skip_amt<_Tp>::value,
                             __to_gcc_order(__order));
 }
 
 template <typename _Tp, typename _Td>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_fetch_sub(__cxx_atomic_base_impl<_Tp>* __a, _Td __delta,
+_Tp __cxx_atomic_fetch_sub(_Tp* __a, _Td __delta,
                            memory_order __order) {
-  return __atomic_fetch_sub(&__a->__a_value, __delta * __skip_amt<_Tp>::value,
+  return __atomic_fetch_sub(__a, __delta * __skip_amt<_Tp>::value,
                             __to_gcc_order(__order));
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_fetch_and(volatile __cxx_atomic_base_impl<_Tp>* __a,
+_Tp __cxx_atomic_fetch_and(volatile _Tp* __a,
                            _Tp __pattern, memory_order __order) {
-  return __atomic_fetch_and(&__a->__a_value, __pattern,
+  return __atomic_fetch_and(__a, __pattern,
                             __to_gcc_order(__order));
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_fetch_and(__cxx_atomic_base_impl<_Tp>* __a,
+_Tp __cxx_atomic_fetch_and(_Tp* __a,
                            _Tp __pattern, memory_order __order) {
-  return __atomic_fetch_and(&__a->__a_value, __pattern,
+  return __atomic_fetch_and(__a, __pattern,
                             __to_gcc_order(__order));
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_fetch_or(volatile __cxx_atomic_base_impl<_Tp>* __a,
+_Tp __cxx_atomic_fetch_or(volatile _Tp* __a,
                           _Tp __pattern, memory_order __order) {
-  return __atomic_fetch_or(&__a->__a_value, __pattern,
+  return __atomic_fetch_or(__a, __pattern,
                            __to_gcc_order(__order));
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_fetch_or(__cxx_atomic_base_impl<_Tp>* __a, _Tp __pattern,
+_Tp __cxx_atomic_fetch_or(_Tp* __a, _Tp __pattern,
                           memory_order __order) {
-  return __atomic_fetch_or(&__a->__a_value, __pattern,
+  return __atomic_fetch_or(__a, __pattern,
                            __to_gcc_order(__order));
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_fetch_xor(volatile __cxx_atomic_base_impl<_Tp>* __a,
+_Tp __cxx_atomic_fetch_xor(volatile _Tp* __a,
                            _Tp __pattern, memory_order __order) {
-  return __atomic_fetch_xor(&__a->__a_value, __pattern,
+  return __atomic_fetch_xor(__a, __pattern,
                             __to_gcc_order(__order));
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __cxx_atomic_fetch_xor(__cxx_atomic_base_impl<_Tp>* __a, _Tp __pattern,
+_Tp __cxx_atomic_fetch_xor(_Tp* __a, _Tp __pattern,
                            memory_order __order) {
-  return __atomic_fetch_xor(&__a->__a_value, __pattern,
+  return __atomic_fetch_xor(__a, __pattern,
                             __to_gcc_order(__order));
 }
 
