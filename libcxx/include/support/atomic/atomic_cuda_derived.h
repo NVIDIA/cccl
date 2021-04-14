@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-namespace detail {
-
 template<class _Type, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type) <= 2, int>::type = 0>
 bool __device__ __atomic_compare_exchange_cuda(_Type volatile *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, _Scope __s) {
 
@@ -151,7 +148,4 @@ _Type __device__ __atomic_exchange_n_cuda(_Type volatile *__ptr, _Type __val, in
 static inline __device__ void __atomic_signal_fence_cuda(int) {
     asm volatile("":::"memory");
 }
-
-}
-_LIBCUDACXX_END_NAMESPACE_CUDA
 

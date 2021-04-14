@@ -1600,6 +1600,13 @@ _LIBCUDACXX_FUNC_VIS extern "C" void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_HAS_C_ATOMIC_IMP
 #elif defined(_LIBCUDACXX_COMPILER_GCC)
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
+#elif defined(_LIBCUDACXX_COMPILER_MSVC)
+#  define _LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL
+#endif
+
+// CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
+#if defined(_LIBCUDACXX_COMPILER_NVCC) || defined(_LIBCUDACXX_COMPILER_PGI)
+#  define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
 #endif
 
 #if (!defined(_LIBCUDACXX_HAS_C_ATOMIC_IMP) && \

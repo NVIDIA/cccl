@@ -7,10 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-namespace detail {
-
 static inline __device__ void __cuda_membar_block() { asm volatile("membar.cta;":::"memory"); }
 static inline __device__ void __cuda_fence_acq_rel_block() { asm volatile("fence.acq_rel.cta;":::"memory"); }
 static inline __device__ void __cuda_fence_sc_block() { asm volatile("fence.sc.cta;":::"memory"); }
@@ -2199,5 +2195,3 @@ __device__ _Type* __atomic_fetch_sub_cuda(_Type *volatile *__ptr, ptrdiff_t __va
     return __ret;
 }
 
-}
-_LIBCUDACXX_END_NAMESPACE_CUDA
