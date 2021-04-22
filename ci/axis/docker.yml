@@ -35,6 +35,11 @@ CXX_VER:
   - 20.9
   - latest
 
+RDC_STATE:
+  - DEFAULT
+  - ON
+  - OFF
+
 exclude:
   # Excludes by `SDK_TYPE`.
   - CXX_TYPE: clang

@@ -30,6 +30,8 @@ ARG OS_TYPE
 ARG OS_VER
 ARG CXX_TYPE
 ARG CXX_VER
+# ON, OFF, or DEFAULT
+ARG RDC_STATE
 
 # Ubuntu 20.04 doesn't have GCC 5 and GCC 6, so get it from an older release.
 ARG UBUNTU_ARCHIVE_DEB_REPO="http://archive.ubuntu.com/ubuntu bionic main universe"
@@ -159,15 +161,16 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
     else \
       export CUDACXX=$(which nvcc); \
     fi; \
-    echo "export CC=${CC}"             >> /etc/cccl.bashrc; \
-    echo "export CXX=${CXX}"           >> /etc/cccl.bashrc; \
-    echo "export CUDACXX=${CUDACXX}"   >> /etc/cccl.bashrc; \
-    echo "export SDK_TYPE=${SDK_TYPE}" >> /etc/cccl.bashrc; \
-    echo "export SDK_VER=${SDK_VER}"   >> /etc/cccl.bashrc; \
-    echo "export OS_TYPE=${OS_TYPE}"   >> /etc/cccl.bashrc; \
-    echo "export OS_VER=${OS_VER}"     >> /etc/cccl.bashrc; \
-    echo "export CXX_TYPE=${CXX_TYPE}" >> /etc/cccl.bashrc; \
-    echo "export CXX_VER=${CXX_VER}"   >> /etc/cccl.bashrc; \
+    echo "export CC=${CC}"                 >> /etc/cccl.bashrc; \
+    echo "export CXX=${CXX}"               >> /etc/cccl.bashrc; \
+    echo "export CUDACXX=${CUDACXX}"       >> /etc/cccl.bashrc; \
+    echo "export SDK_TYPE=${SDK_TYPE}"     >> /etc/cccl.bashrc; \
+    echo "export SDK_VER=${SDK_VER}"       >> /etc/cccl.bashrc; \
+    echo "export OS_TYPE=${OS_TYPE}"       >> /etc/cccl.bashrc; \
+    echo "export OS_VER=${OS_VER}"         >> /etc/cccl.bashrc; \
+    echo "export CXX_TYPE=${CXX_TYPE}"     >> /etc/cccl.bashrc; \
+    echo "export CXX_VER=${CXX_VER}"       >> /etc/cccl.bashrc; \
+    echo "export RDC_STATE=${RDC_STATE}"   >> /etc/cccl.bashrc; \
     echo "ALL ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
     pip install lit; \
     curl --silent --show-error -L ${CMAKE_URL} -o cmake.bash; \
