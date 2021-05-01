@@ -37,6 +37,7 @@
     #undef ATOMIC_VAR_INIT
 #endif //__CUDACC_RTC__
 
+#include "cassert"
 #include "cstddef"
 #include "cstdint"
 #include "type_traits"
@@ -53,6 +54,10 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 using std::detail::thread_scope;
+using std::detail::thread_scope_system;
+using std::detail::thread_scope_device;
+using std::detail::thread_scope_block;
+using std::detail::thread_scope_thread;
 
 namespace detail {
 using std::detail::__thread_scope_block_tag;
@@ -93,15 +98,15 @@ struct atomic
     __host__ __device__
     _Tp fetch_max(const _Tp & __op, memory_order __m = memory_order_seq_cst) volatile noexcept
     {
-        return detail::__atomic_fetch_max_cuda(&this->__a_.__a_value, __op,
-                                              __m, detail::__scope_tag<_Sco>());
+        return std::detail::__atomic_fetch_max_cuda(&this->__a_.__a_value, __op,
+                                              __m, std::detail::__scope_tag<_Sco>());
     }
 
     __host__ __device__
     _Tp fetch_min(const _Tp & __op, memory_order __m = memory_order_seq_cst) volatile noexcept
     {
-        return detail::__atomic_fetch_min_cuda(&this->__a_.__a_value, __op,
-                                              __m, detail::__scope_tag<_Sco>());
+        return std::detail::__atomic_fetch_min_cuda(&this->__a_.__a_value, __op,
+                                              __m, std::detail::__scope_tag<_Sco>());
     }
 };
 

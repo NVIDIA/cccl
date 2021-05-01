@@ -10,6 +10,8 @@
 #ifndef _LIBCUDACXX_CONFIG
 #define _LIBCUDACXX_CONFIG
 
+#include <nv/target>
+
 #if defined(_MSC_VER) && !defined(__clang__)
   #define _LIBCUDACXX_HAS_PRAGMA_MSVC_WARNING
   #if !defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)

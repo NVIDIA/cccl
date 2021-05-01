@@ -687,6 +687,17 @@ namespace detail {
 using detail::__cxx_atomic_base_impl;
 using detail::__cxx_atomic_thread_fence;
 using detail::__cxx_atomic_signal_fence;
+using detail::__cxx_atomic_load;
+using detail::__cxx_atomic_store;
+using detail::__cxx_atomic_exchange;
+using detail::__cxx_atomic_compare_exchange_weak;
+using detail::__cxx_atomic_compare_exchange_strong;
+using detail::__cxx_atomic_fetch_add;
+using detail::__cxx_atomic_fetch_sub;
+using detail::__cxx_atomic_fetch_or;
+using detail::__cxx_atomic_fetch_and;
+using detail::__cxx_atomic_fetch_xor;
+using detail::__cxx_atomic_is_lock_free;
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
@@ -1028,7 +1039,7 @@ template <typename _Tp, int _Sco,
                                                 __cxx_atomic_lock_impl<_Tp, _Sco> >::type>
 #else
 template <typename _Tp, int _Sco,
-          typename _Base = __cxx_atomic_base_impl<_Tp> >
+          typename _Base = __cxx_atomic_base_impl<_Tp, _Sco> >
 #endif //_LIBCUDACXX_ATOMIC_ONLY_USE_BUILTINS
 struct __cxx_atomic_impl : public _Base {
 
