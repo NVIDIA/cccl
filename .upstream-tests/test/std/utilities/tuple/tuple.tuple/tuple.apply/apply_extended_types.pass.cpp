@@ -8,7 +8,7 @@
 
 
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14 
+// UNSUPPORTED: c++98, c++03, c++11, c++14
 
 // <cuda/std/tuple>
 
@@ -31,18 +31,16 @@
 #include "test_macros.h"
 #include "disable_missing_braces_warning.h"
 
-#ifdef __CUDA_ARCH__
-__device__ int count = 0;
-#else
-int count = 0;
-#endif
+struct global_state {
+    STATIC_MEMBER_VAR(count, int)
+};
 
 struct A_int_0
 {
     __host__ __device__ A_int_0() : obj1(0){}
     __host__ __device__ A_int_0(int x) : obj1(x) {}
-    __host__ __device__ int mem1() { return ++count; }
-    __host__ __device__ int mem2() const { return ++count; }
+    __host__ __device__ int mem1() { return ++global_state::count(); }
+    __host__ __device__ int mem2() const { return ++global_state::count(); }
     int const obj1;
 };
 
@@ -50,16 +48,16 @@ struct A_int_1
 {
     __host__ __device__ A_int_1() {}
     __host__ __device__ A_int_1(int) {}
-    __host__ __device__ int mem1(int x) { return count += x; }
-    __host__ __device__ int mem2(int x) const { return count += x; }
+    __host__ __device__ int mem1(int x) { return global_state::count() += x; }
+    __host__ __device__ int mem2(int x) const { return global_state::count() += x; }
 };
 
 struct A_int_2
 {
     __host__ __device__ A_int_2() {}
     __host__ __device__ A_int_2(int) {}
-    __host__ __device__ int mem1(int x, int y) { return count += (x + y); }
-    __host__ __device__ int mem2(int x, int y) const { return count += (x + y); }
+    __host__ __device__ int mem1(int x, int y) { return global_state::count() += (x + y); }
+    __host__ __device__ int mem2(int x, int y) const { return global_state::count() += (x + y); }
 };
 
 template <class A>
@@ -98,7 +96,7 @@ template <
 __host__ __device__
 void test_ext_int_0()
 {
-    count = 0;
+    global_state::count() = 0;
     typedef A_int_0 T;
     typedef A_wrap_0 Wrap;
     typedef A_base_0 Base;
@@ -117,63 +115,63 @@ void test_ext_int_0()
         T a;
         Tuple t{a};
         assert(1 == cuda::std::apply(mem1, t));
-        assert(count == 1);
+        assert(global_state::count() == 1);
     }
-    count = 0;
+    global_state::count() = 0;
     // member function w/pointer
     {
         T a;
         TuplePtr t{&a};
         assert(1 == cuda::std::apply(mem1, t));
-        assert(count == 1);
+        assert(global_state::count() == 1);
     }
-    count = 0;
+    global_state::count() = 0;
     // member function w/base
     {
         Base a;
         TupleBase t{a};
         assert(1 == cuda::std::apply(mem1, t));
-        assert(count == 1);
+        assert(global_state::count() == 1);
     }
-    count = 0;
+    global_state::count() = 0;
     // member function w/wrap
     {
         Wrap a;
         TupleWrap t{a};
         assert(1 == cuda::std::apply(mem1, t));
-        assert(count == 1);
+        assert(global_state::count() == 1);
     }
-    count = 0;
+    global_state::count() = 0;
     // const member function w/ref
     {
         T const a;
         ConstTuple t{a};
         assert(1 == cuda::std::apply(mem2, t));
-        assert(count == 1);
+        assert(global_state::count() == 1);
     }
-    count = 0;
+    global_state::count() = 0;
     // const member function w/pointer
     {
         T const a;
         ConstTuplePtr t{&a};
         assert(1 == cuda::std::apply(mem2, t));
-        assert(count == 1);
+        assert(global_state::count() == 1);
     }
-    count = 0;
+    global_state::count() = 0;
     // const member function w/base
     {
         Base const a;
         ConstTupleBase t{a};
         assert(1 == cuda::std::apply(mem2, t));
-        assert(count == 1);
+        assert(global_state::count() == 1);
     }
-    count = 0;
+    global_state::count() = 0;
     // const member function w/wrapper
     {
         Wrap const a;
         ConstTupleWrap t{a};
         assert(1 == cuda::std::apply(mem2, t));
-        assert(1 == count);
+        assert(1 == global_state::count());
     }
     // member object w/ref
     {
@@ -211,7 +209,7 @@ template <
 __host__ __device__
 void test_ext_int_1()
 {
-    count = 0;
+    global_state::count() = 0;
     typedef A_int_1 T;
     typedef A_wrap_1 Wrap;
     typedef A_base_1 Base;
@@ -227,63 +225,63 @@ void test_ext_int_1()
         T a;
         Tuple t{a, 2};
         assert(2 == cuda::std::apply(mem1, t));
-        assert(count == 2);
+        assert(global_state::count() == 2);
     }
-    count = 0;
+    global_state::count() = 0;
     // member function w/pointer
     {
         T a;
         TuplePtr t{&a, 3};
         assert(3 == cuda::std::apply(mem1, t));
-        assert(count == 3);
+        assert(global_state::count() == 3);
     }
-    count = 0;
+    global_state::count() = 0;
     // member function w/base
     {
         Base a;
         TupleBase t{a, 4};
         assert(4 == cuda::std::apply(mem1, t));
-        assert(count == 4);
+        assert(global_state::count() == 4);
     }
-    count = 0;
+    global_state::count() = 0;
     // member function w/wrap
     {
         Wrap a;
         TupleWrap t{a, 5};
         assert(5 == cuda::std::apply(mem1, t));
-        assert(count == 5);
+        assert(global_state::count() == 5);
     }
-    count = 0;
+    global_state::count() = 0;
     // const member function w/ref
     {
         T const a;
         ConstTuple t{a, 6};
         assert(6 == cuda::std::apply(mem2, t));
-        assert(count == 6);
+        assert(global_state::count() == 6);
     }
-    count = 0;
+    global_state::count() = 0;
     // const member function w/pointer
     {
         T const a;
         ConstTuplePtr t{&a, 7};
         assert(7 == cuda::std::apply(mem2, t));
-        assert(count == 7);
+        assert(global_state::count() == 7);
     }
-    count = 0;
+    global_state::count() = 0;
     // const member function w/base
     {
         Base const a;
         ConstTupleBase t{a, 8};
         assert(8 == cuda::std::apply(mem2, t));
-        assert(count == 8);
+        assert(global_state::count() == 8);
     }
-    count = 0;
+    global_state::count() = 0;
     // const member function w/wrapper
     {
         Wrap const a;
         ConstTupleWrap t{a, 9};
         assert(9 == cuda::std::apply(mem2, t));
-        assert(9 == count);
+        assert(9 == global_state::count());
     }
 }
 
@@ -297,7 +295,7 @@ template <
 __host__ __device__
 void test_ext_int_2()
 {
-    count = 0;
+    global_state::count() = 0;
     typedef A_int_2 T;
     typedef A_wrap_2 Wrap;
     typedef A_base_2 Base;
@@ -313,63 +311,63 @@ void test_ext_int_2()
         T a;
         Tuple t{a, 1, 1};
         assert(2 == cuda::std::apply(mem1, t));
-        assert(count == 2);
+        assert(global_state::count() == 2);
     }
-    count = 0;
+    global_state::count() = 0;
     // member function w/pointer
     {
         T a;
         TuplePtr t{&a, 1, 2};
         assert(3 == cuda::std::apply(mem1, t));
-        assert(count == 3);
+        assert(global_state::count() == 3);
     }
-    count = 0;
+    global_state::count() = 0;
     // member function w/base
     {
         Base a;
         TupleBase t{a, 2, 2};
         assert(4 == cuda::std::apply(mem1, t));
-        assert(count == 4);
+        assert(global_state::count() == 4);
     }
-    count = 0;
+    global_state::count() = 0;
     // member function w/wrap
     {
         Wrap a;
         TupleWrap t{a, 2, 3};
         assert(5 == cuda::std::apply(mem1, t));
-        assert(count == 5);
+        assert(global_state::count() == 5);
     }
-    count = 0;
+    global_state::count() = 0;
     // const member function w/ref
     {
         T const a;
         ConstTuple t{a, 3, 3};
         assert(6 == cuda::std::apply(mem2, t));
-        assert(count == 6);
+        assert(global_state::count() == 6);
     }
-    count = 0;
+    global_state::count() = 0;
     // const member function w/pointer
     {
         T const a;
         ConstTuplePtr t{&a, 3, 4};
         assert(7 == cuda::std::apply(mem2, t));
-        assert(count == 7);
+        assert(global_state::count() == 7);
     }
-    count = 0;
+    global_state::count() = 0;
     // const member function w/base
     {
         Base const a;
         ConstTupleBase t{a, 4, 4};
         assert(8 == cuda::std::apply(mem2, t));
-        assert(count == 8);
+        assert(global_state::count() == 8);
     }
-    count = 0;
+    global_state::count() = 0;
     // const member function w/wrapper
     {
         Wrap const a;
         ConstTupleWrap t{a, 4, 5};
         assert(9 == cuda::std::apply(mem2, t));
-        assert(9 == count);
+        assert(9 == global_state::count());
     }
 }
 

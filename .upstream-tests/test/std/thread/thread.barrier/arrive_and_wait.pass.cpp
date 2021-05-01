@@ -24,7 +24,7 @@ __host__ __device__
 void test()
 {
   Selector<Barrier, Initializer> sel;
-  SHARED Barrier * b;
+  Barrier*& b = maybe_shared_mem<Barrier*>();
   b = sel.construct(2);
 
   auto worker = LAMBDA (){

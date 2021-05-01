@@ -14,7 +14,7 @@
 
 // tuple& operator=(tuple&& u);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
 
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -41,19 +41,15 @@ struct MoveAssignable {
   MoveAssignable& operator=(MoveAssignable&&) = default;
 };
 
-#ifdef __CUDA_ARCH__
-__device__ static int copied = 0;
-__device__ static int moved = 0;
-#else
-static int copied = 0;
-static int moved = 0;
-#endif
 
 struct CountAssign {
-  __host__ __device__ static void reset() { copied = moved = 0; }
+  STATIC_MEMBER_VAR(copied, int)
+  STATIC_MEMBER_VAR(moved, int)
+
+  __host__ __device__ static void reset() { copied() = moved() = 0; }
   CountAssign() = default;
-  __host__ __device__ CountAssign& operator=(CountAssign const&) { ++copied; return *this; }
-  __host__ __device__ CountAssign& operator=(CountAssign&&) { ++moved; return *this; }
+  __host__ __device__ CountAssign& operator=(CountAssign const&) { ++copied(); return *this; }
+  __host__ __device__ CountAssign& operator=(CountAssign&&) { ++moved(); return *this; }
 };
 
 int main(int, char**)
@@ -130,8 +126,8 @@ int main(int, char**)
         T t1;
         T t2;
         t1 = cuda::std::move(t2);
-        assert(copied == 1);
-        assert(moved == 0);
+        assert(CountAssign::copied() == 1);
+        assert(CountAssign::moved() == 0);
     }
 
   return 0;

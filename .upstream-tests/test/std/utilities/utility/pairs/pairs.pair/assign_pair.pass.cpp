@@ -45,6 +45,7 @@ struct MoveAssignable {
 struct CountAssign {
   STATIC_MEMBER_VAR(copied, int);
   STATIC_MEMBER_VAR(moved, int);
+
   __host__ __device__ static void reset() { copied() = moved() = 0; }
   CountAssign() = default;
   __host__ __device__ CountAssign& operator=(CountAssign const&) { ++copied(); return *this; }
@@ -52,11 +53,15 @@ struct CountAssign {
 };
 
 struct Incomplete;
-#ifdef __CUDA_ARCH__
-__device__ extern Incomplete inc_obj;
-#else
-extern Incomplete inc_obj;
-#endif
+
+#define STATIC_EXTERN_DECL(name, type) \
+  __device__ static type& name##_device(); \
+  __host__   static type& name##_host();   \
+  __host__ __device__ static type& name();
+
+struct global {
+    STATIC_EXTERN_DECL(inc_obj, Incomplete)
+};
 
 int main(int, char**)
 {
@@ -100,17 +105,34 @@ int main(int, char**)
     {
         using P = cuda::std::pair<int, Incomplete&>;
         static_assert(!cuda::std::is_copy_assignable<P>::value, "");
-        P p(42, inc_obj);
+        P p(42, global::inc_obj());
         unused(p);
-        assert(&p.second == &inc_obj);
+        assert(&p.second == &global::inc_obj());
     }
 
   return 0;
 }
 
 struct Incomplete {};
-#ifdef __CUDA_ARCH__
-__device__ Incomplete inc_obj;
-#else
-Incomplete inc_obj;
-#endif
+
+#define STATIC_EXTERN_IMPL(name, type) \
+  __device__ type& name##_device() {              \
+    __shared__ type v;                 \
+    return v;                          \
+  }                                    \
+  __host__ type& name##_host()   {              \
+    static type v;                     \
+    return v;                          \
+  }                                    \
+  type& name() {                       \
+    NV_DISPATCH_TARGET(                \
+      NV_IS_DEVICE, (                  \
+        return name##_device();        \
+      ),                               \
+      NV_IS_HOST, (                    \
+        return name##_host();          \
+      )                                \
+    )                                  \
+  }
+
+STATIC_EXTERN_IMPL(global::inc_obj, Incomplete)

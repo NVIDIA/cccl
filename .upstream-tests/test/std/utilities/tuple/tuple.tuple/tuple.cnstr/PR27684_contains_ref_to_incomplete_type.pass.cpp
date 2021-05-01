@@ -29,41 +29,66 @@
 #include "test_macros.h"
 
 struct IncompleteType;
-#ifdef __CUDA_ARCH__
-__device__ extern IncompleteType inc1;
-__device__ extern IncompleteType inc2;
-__device__ IncompleteType const& cinc1 = inc1;
-__device__ IncompleteType const& cinc2 = inc2;
-#else
-extern IncompleteType inc1;
-extern IncompleteType inc2;
-IncompleteType const& cinc1 = inc1;
-IncompleteType const& cinc2 = inc2;
-#endif
+
+#define STATIC_EXTERN_DECL(name, type) \
+  __device__ static type& name##_device(); \
+  __host__   static type& name##_host();   \
+  __host__ __device__ static type& name();
+
+struct global {
+    STATIC_EXTERN_DECL(inc1, IncompleteType)
+    STATIC_EXTERN_DECL(inc2, IncompleteType)
+    __host__ __device__ static const IncompleteType& cinc1();
+    __host__ __device__ static const IncompleteType& cinc2();
+};
 
 int main(int, char**) {
     using IT = IncompleteType;
     { // try calling tuple(Tp const&...)
         using Tup = cuda::std::tuple<const IT&, const IT&>;
-        Tup t(cinc1, cinc2);
-        assert(&cuda::std::get<0>(t) == &inc1);
-        assert(&cuda::std::get<1>(t) == &inc2);
+        Tup t(global::cinc1(), global::cinc2());
+        assert(&cuda::std::get<0>(t) == &global::inc1());
+        assert(&cuda::std::get<1>(t) == &global::inc2());
     }
     { // try calling tuple(Up&&...)
         using Tup = cuda::std::tuple<const IT&, const IT&>;
-        Tup t(inc1, inc2);
-        assert(&cuda::std::get<0>(t) == &inc1);
-        assert(&cuda::std::get<1>(t) == &inc2);
+        Tup t(global::inc1(), global::inc2());
+        assert(&cuda::std::get<0>(t) == &global::inc1());
+        assert(&cuda::std::get<1>(t) == &global::inc2());
     }
 
   return 0;
 }
 
 struct IncompleteType {};
-#ifdef __CUDA_ARCH__
-__device__ IncompleteType inc1;
-__device__ IncompleteType inc2;
-#else
-IncompleteType inc1;
-IncompleteType inc2;
-#endif
+
+#define STATIC_EXTERN_IMPL(name, type) \
+  __device__ type& name##_device() {              \
+    __shared__ type v;                 \
+    return v;                          \
+  }                                    \
+  __host__ type& name##_host()   {              \
+    static type v;                     \
+    return v;                          \
+  }                                    \
+  type& name() {                       \
+    NV_DISPATCH_TARGET(                \
+      NV_IS_DEVICE, (                  \
+        return name##_device();        \
+      ),                               \
+      NV_IS_HOST, (                    \
+        return name##_host();          \
+      )                                \
+    )                                  \
+  }
+
+STATIC_EXTERN_IMPL(global::inc1, IncompleteType)
+STATIC_EXTERN_IMPL(global::inc2, IncompleteType)
+
+__host__ __device__ const IncompleteType& global::cinc1() {
+    return inc1();
+}
+
+__host__ __device__ const IncompleteType& global::cinc2() {
+    return inc2();
+}

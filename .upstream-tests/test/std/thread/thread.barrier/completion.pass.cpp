@@ -24,13 +24,13 @@ __host__ __device__
 void test()
 {
   global_memory_selector<int> int_sel;
-  SHARED int * x;
+  int*& x = maybe_shared_mem<int*>();
   x = int_sel.construct(0);
 
   auto comp = LAMBDA () { *x += 1; };
 
   Selector<Barrier<decltype(comp)>, Initializer> sel;
-  SHARED Barrier<decltype(comp)> * b;
+  Barrier<decltype(comp)>*& b = maybe_shared_mem<Barrier<decltype(comp)>*>();
   b = sel.construct(2, comp);
 
   auto worker = LAMBDA () {

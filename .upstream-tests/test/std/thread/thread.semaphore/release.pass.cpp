@@ -24,7 +24,7 @@ __host__ __device__
 void test()
 {
   Selector<Semaphore, Initializer> sel;
-  SHARED Semaphore * s;
+  Semaphore*& s = maybe_shared_mem<Semaphore*>();
   s = sel.construct(2);
 
 #ifdef __CUDA_ARCH__

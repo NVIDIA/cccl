@@ -24,7 +24,7 @@ __host__ __device__
 void test()
 {
   Selector<Latch, Initializer> sel;
-  SHARED Latch * l;
+  Latch*& l = maybe_shared_mem<Latch*>();
   l = sel.construct(1);
 
   l->count_down();
