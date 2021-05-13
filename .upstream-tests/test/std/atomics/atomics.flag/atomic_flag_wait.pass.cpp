@@ -9,6 +9,8 @@
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: c++98, c++03
 // UNSUPPORTED: pre-sm-70
+// NVC++ does not support GPU function pointers
+// UNSUPPORTED: pgi
 
 // <cuda/std/atomic>
 

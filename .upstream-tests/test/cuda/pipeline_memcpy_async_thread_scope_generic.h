@@ -35,13 +35,7 @@ void test_fully_specialized()
     T * dest = dest_sel.construct(static_cast<T>(0));
     cuda::pipeline_shared_state<Scope, PipelineStages> * pipe_state = pipe_state_sel.construct();
 
-#ifdef __CUDA_ARCH__
-    auto group = cooperative_groups::this_thread_block();
-#else
-    auto group = cuda::__single_thread_group{};
-#endif
-
-    auto pipe = make_pipeline(group, pipe_state);
+    auto pipe = cuda::make_pipeline(group, pipe_state);
 
     assert(*source == 12);
     assert(*dest == 0);
@@ -91,11 +85,16 @@ __host__ __device__ __noinline__
 void test_select_pipeline()
 {
     constexpr uint8_t stages_count = 2;
-    test_fully_specialized<Scope, T, SourceSelector, DestSelector, local_memory_selector, stages_count>();
-#ifdef __CUDA_ARCH__
-    test_fully_specialized<Scope, T, SourceSelector, DestSelector, shared_memory_selector, stages_count>();
-    test_fully_specialized<Scope, T, SourceSelector, DestSelector, global_memory_selector, stages_count>();
-#endif
+
+    auto singleGroup = cuda::__single_thread_group{};
+    test_fully_specialized<decltype(singleGroup), Scope, T, SourceSelector, DestSelector, local_memory_selector, stages_count>(singleGroup);
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            auto group = cooperative_groups::this_thread_block();
+            test_fully_specialized<decltype(group), Scope, T, SourceSelector, DestSelector, shared_memory_selector, stages_count>(group);
+            test_fully_specialized<decltype(group), Scope, T, SourceSelector, DestSelector, global_memory_selector, stages_count>(group);
+        )
+    )
 }
 
 template <
@@ -107,10 +106,12 @@ __host__ __device__ __noinline__
 void test_select_destination()
 {
     test_select_pipeline<Scope, T, SourceSelector, local_memory_selector>();
-#ifdef __CUDA_ARCH__
-    test_select_pipeline<Scope, T, SourceSelector, shared_memory_selector>();
-    test_select_pipeline<Scope, T, SourceSelector, global_memory_selector>();
-#endif
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            test_select_pipeline<Scope, T, SourceSelector, shared_memory_selector>();
+            test_select_pipeline<Scope, T, SourceSelector, global_memory_selector>();
+        )
+    )
 }
 
 template <cuda::thread_scope Scope, class T>
@@ -118,8 +119,10 @@ __host__ __device__ __noinline__
 void test_select_source()
 {
     test_select_destination<Scope, T, local_memory_selector>();
-#ifdef __CUDA_ARCH__
-    test_select_destination<Scope, T, shared_memory_selector>();
-    test_select_destination<Scope, T, global_memory_selector>();
-#endif
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            // test_select_destination<Scope, T, shared_memory_selector>();
+            // test_select_destination<Scope, T, global_memory_selector>();
+        )
+    )
 }

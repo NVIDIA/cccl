@@ -176,19 +176,30 @@ public:
         return ptr;
     }
 
+    __device__ void destruct_device() {
+        if (threadIdx.x == 0) {
+            ptr->~T();
+        }
+        __syncthreads();
+    }
+
+    __host__ void destruct_host() {
+        ptr->~T();
+    }
+
 #ifndef __CUDACC_RTC__
     __exec_check_disable__
 #endif
     __host__ __device__
     ~memory_selector() {
-#ifdef __CUDA_ARCH__
-        if (threadIdx.x == 0) {
-#endif
-        ptr->~T();
-#ifdef __CUDA_ARCH__
-        }
-        __syncthreads();
-#endif
+        NV_DISPATCH_TARGET(
+            NV_IS_DEVICE, (
+                destruct_device();
+            ),
+            NV_IS_HOST, (
+                destruct_host();
+            )
+        )
     }
 };
 
