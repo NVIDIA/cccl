@@ -44,9 +44,6 @@
 #define __ATOMIC_THREAD 10
 #endif //__ATOMIC_BLOCK
 
-// TODO:
-// How to get this into cuda::???
-
 inline __host__ __device__ int __stronger_order_cuda(int __a, int __b) {
     int const __max = __a > __b ? __a : __b;
     if(__max != __ATOMIC_RELEASE)
@@ -225,7 +222,7 @@ using __cxx_atomic_base_impl = typename conditional<sizeof(_Tp) < 4,
 
 
 template <typename _Tp, int _Sco>
-using __cxx_atomic_base_ref_impl = __cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, true>;
+using __cxx_atomic_ref_base_impl = __cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, true>;
 
 template <typename _Tp, int _Sco, bool _Ref>
 __host__ __device__
