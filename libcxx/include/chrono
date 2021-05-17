@@ -1013,7 +1013,7 @@ round(const duration<_Rep, _Period>& __d)
         return __upper;
     return __lower.count() & 1 ? __upper : __lower;
 }
-#endif // _LIBCUDACXX_STD_VER > 11 
+#endif // _LIBCUDACXX_STD_VER > 11
 
 // duration
 
@@ -2539,7 +2539,7 @@ inline constexpr days year_month_day::__to_days() const noexcept
     static_assert(std::numeric_limits<unsigned>::digits >= 18, "");
     static_assert(std::numeric_limits<int>::digits >= 20     , "");
 
-    // nvcc doesn't allow ODR using constexpr globals. Therefore, 
+    // nvcc doesn't allow ODR using constexpr globals. Therefore,
     // make a temporary initialized from the global
     auto constexpr __Feb = February;
     const int      __yr  = static_cast<int>(__y) - (__m <= __Feb);
@@ -2705,7 +2705,7 @@ chrono::day year_month_day_last::day() const noexcept
         chrono::day(31), chrono::day(30), chrono::day(31)
     };
 
-    // nvcc doesn't allow ODR using constexpr globals. Therefore, 
+    // nvcc doesn't allow ODR using constexpr globals. Therefore,
     // make a temporary initialized from the global
     auto constexpr __Feb = February;
     return month() != __Feb || !__y.is_leap() ?
@@ -3184,7 +3184,6 @@ constexpr hours make24(const hours& __h, bool __is_pm) noexcept
 }
 #endif // _LIBCUDACXX_STD_VER > 11
 } // chrono
-
 #if _LIBCUDACXX_STD_VER > 11
 
 // GCC 5 and 6 warn (and then error) on us using the standard reserved UDL names,
@@ -3208,9 +3207,9 @@ inline namespace literals
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr chrono::duration<long double, ratio<3600,1>> operator""h(long double __h)
+    constexpr chrono::duration<double, ratio<3600,1>> operator""h(long double __h)
     {
-        return chrono::duration<long double, ratio<3600,1>>(__h);
+        return chrono::duration<double, ratio<3600,1>>(__h);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -3220,9 +3219,9 @@ inline namespace literals
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr chrono::duration<long double, ratio<60,1>> operator""min(long double __m)
+    constexpr chrono::duration<double, ratio<60,1>> operator""min(long double __m)
     {
-        return chrono::duration<long double, ratio<60,1>> (__m);
+        return chrono::duration<double, ratio<60,1>> (__m);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -3232,9 +3231,9 @@ inline namespace literals
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr chrono::duration<long double> operator""s(long double __s)
+    constexpr chrono::duration<double> operator""s(long double __s)
     {
-        return chrono::duration<long double> (__s);
+        return chrono::duration<double> (__s);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -3244,9 +3243,9 @@ inline namespace literals
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr chrono::duration<long double, milli> operator""ms(long double __ms)
+    constexpr chrono::duration<double, milli> operator""ms(long double __ms)
     {
-        return chrono::duration<long double, milli>(__ms);
+        return chrono::duration<double, milli>(__ms);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -3256,9 +3255,9 @@ inline namespace literals
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr chrono::duration<long double, micro> operator""us(long double __us)
+    constexpr chrono::duration<double, micro> operator""us(long double __us)
     {
-        return chrono::duration<long double, micro> (__us);
+        return chrono::duration<double, micro> (__us);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -3268,9 +3267,9 @@ inline namespace literals
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr chrono::duration<long double, nano> operator""ns(long double __ns)
+    constexpr chrono::duration<double, nano> operator""ns(long double __ns)
     {
-        return chrono::duration<long double, nano> (__ns);
+        return chrono::duration<double, nano> (__ns);
     }
 
 #if _LIBCUDACXX_STD_VER > 17 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
