@@ -843,6 +843,12 @@ struct _FilesystemClock;
 _LIBCUDACXX_END_NAMESPACE_FILESYSTEM
 #endif // !_LIBCUDACXX_CXX03_LANG
 
+# if _LIBCUDACXX_CUDA_ABI_VERSION > 3
+#  define _LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T double
+# else
+#  define _LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T long double
+# endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace chrono
@@ -3207,9 +3213,9 @@ inline namespace literals
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr chrono::duration<double, ratio<3600,1>> operator""h(long double __h)
+    constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, ratio<3600,1>> operator""h(long double __h)
     {
-        return chrono::duration<double, ratio<3600,1>>(__h);
+        return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, ratio<3600,1>>(__h);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -3219,9 +3225,9 @@ inline namespace literals
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr chrono::duration<double, ratio<60,1>> operator""min(long double __m)
+    constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, ratio<60,1>> operator""min(long double __m)
     {
-        return chrono::duration<double, ratio<60,1>> (__m);
+        return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, ratio<60,1>> (__m);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -3243,9 +3249,9 @@ inline namespace literals
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr chrono::duration<double, milli> operator""ms(long double __ms)
+    constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, milli> operator""ms(long double __ms)
     {
-        return chrono::duration<double, milli>(__ms);
+        return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, milli>(__ms);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -3255,9 +3261,9 @@ inline namespace literals
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr chrono::duration<double, micro> operator""us(long double __us)
+    constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, micro> operator""us(long double __us)
     {
-        return chrono::duration<double, micro> (__us);
+        return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, micro> (__us);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -3267,9 +3273,9 @@ inline namespace literals
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr chrono::duration<double, nano> operator""ns(long double __ns)
+    constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, nano> operator""ns(long double __ns)
     {
-        return chrono::duration<double, nano> (__ns);
+        return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, nano> (__ns);
     }
 
 #if _LIBCUDACXX_STD_VER > 17 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
