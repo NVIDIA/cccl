@@ -32,6 +32,7 @@ CXX_VER:
   - 8
   - 9
   - 10
+  - 11
   - 21.5
   - latest
 
@@ -72,13 +73,15 @@ exclude:
   - CXX_TYPE: nvcxx
     CXX_VER: 10
   - CXX_TYPE: nvcxx
+    CXX_VER: 11
+  - CXX_TYPE: nvcxx
     CXX_VER: latest
   - OS_TYPE: centos
     CXX_VER: 5
   - OS_TYPE: centos
     CXX_VER: 6
   - CXX_TYPE: gcc
-    CXX_VER: 10
+    CXX_VER: 11
   - CXX_TYPE: gcc
     CXX_VER: 21.5
   - CXX_TYPE: gcc
@@ -87,8 +90,6 @@ exclude:
     CXX_VER: 5
   - CXX_TYPE: clang
     CXX_VER: 6
-  - CXX_TYPE: clang
-    CXX_VER: 10
   - CXX_TYPE: clang
     CXX_VER: 21.5
   - CXX_TYPE: clang
@@ -105,6 +106,8 @@ exclude:
     CXX_VER: 9
   - CXX_TYPE: icc
     CXX_VER: 10
+  - CXX_TYPE: icc
+    CXX_VER: 11
   - CXX_TYPE: icc
     CXX_VER: 21.5
 

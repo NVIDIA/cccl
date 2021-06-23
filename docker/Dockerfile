@@ -14,11 +14,11 @@ ARG SDK_VER=11.3.1-devel
 # | centos   | 7      |
 ARG OS_TYPE=ubuntu
 ARG OS_VER=20.04
-# | CXX_TYPE | CXX_VER      |
-# | gcc      | 5 6 7 8 9 10 |
-# | clang    | 7 8 9 10     |
-# | icc      | latest       |
-# | nvcxx    | 21.5         |
+# | CXX_TYPE | CXX_VER         |
+# | gcc      | 5 6 7 8 9 10 11 |
+# | clang    | 7 8 9 10 11     |
+# | icc      | latest          |
+# | nvcxx    | 21.5            |
 ARG CXX_TYPE=gcc
 ARG CXX_VER=7
 FROM nvcr.io/nvidia/${SDK_TYPE}:${SDK_VER}-${OS_TYPE}${OS_VER}
@@ -30,6 +30,10 @@ ARG OS_TYPE
 ARG OS_VER
 ARG CXX_TYPE
 ARG CXX_VER
+
+# Ubuntu 20.04 doesn't have GCC 11 in its repos, so get it from the toolchain PPA.
+ARG UBUNTU_TOOL_DEB_REPO=http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu
+ARG UBUNTU_TOOL_FINGER=60C317803A41BA51845E371A1E9377A2BA9EF27F
 
 # Ubuntu 20.04 doesn't have GCC 5 and GCC 6, so get it from an older release.
 ARG UBUNTU_ARCHIVE_DEB_REPO="http://archive.ubuntu.com/ubuntu bionic main universe"
@@ -60,6 +64,10 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install gnupg; \
       if   [[ "${CXX_TYPE}" == "gcc" && "${CXX_VER}" -le 6 ]]; then \
         echo "deb ${UBUNTU_ARCHIVE_DEB_REPO}" >> /etc/apt/sources.list.d/ubuntu-archive.list; \
+      elif [[ "${CXX_TYPE}" == "gcc" && "${CXX_VER}" -ge 6 ]]; then \
+        source /etc/os-release; \
+        echo "deb ${UBUNTU_TOOL_DEB_REPO} ${UBUNTU_CODENAME} main" >> /etc/apt/sources.list; \
+        apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ${UBUNTU_TOOL_FINGER} 2>&1; \
       elif [[ "${CXX_TYPE}" == "icc" ]]; then \
         echo "deb ${ICC_DEB_REPO}" > /etc/apt/sources.list.d/icc.list; \
         curl --silent --show-error -L ${ICC_KEY} -o - | apt-key add -; \
@@ -163,7 +171,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
     bash cmake.bash -- --skip-license --prefix=/usr; \
     rm cmake.bash; \
     curl --silent --show-error -L ${TINI_URL} -o /usr/bin/tini; \
-    chmod +x /usr/bin/tini;
+    chmod +x /usr/bin/tini
 
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
 CMD [ "/bin/bash" ]
