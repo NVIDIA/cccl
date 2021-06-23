@@ -54,7 +54,8 @@ SHELL ["/usr/bin/env", "bash", "-c"]
 RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       export ALTERNATIVES=update-alternatives; \
       apt-get -y update; \
-      apt-get -y --no-install-recommends install apt-utils; \
+      apt-get -y --no-install-recommends install apt-utils \
+        2> >(grep -v 'debconf: delaying package configuration, since apt-utils is not installed' >&2); \
       apt-get -y --no-install-recommends install curl; \
       apt-get -y --no-install-recommends install gnupg; \
       if   [[ "${CXX_TYPE}" == "gcc" && "${CXX_VER}" -le 6 ]]; then \
