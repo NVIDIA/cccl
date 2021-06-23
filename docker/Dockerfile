@@ -69,11 +69,11 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       ${ALTERNATIVES} --install /usr/bin/pip pip $(which pip3) 3; \
       ${ALTERNATIVES} --set python $(which python3); \
       ${ALTERNATIVES} --set pip $(which pip3); \
+      apt-get -y --no-install-recommends install sudo; \
       apt-get -y --no-install-recommends install make ninja-build; \
       apt-get -y --no-install-recommends install llvm-dev; \
       apt-get -y --no-install-recommends install libtbb-dev; \
       apt-get -y --no-install-recommends install libomp-dev; \
-      apt-get -y --no-install-recommends install sudo; \
       apt-get -y --no-install-recommends install gdb; \
       apt-get -y --no-install-recommends install strace; \
       apt-get -y --no-install-recommends install less; \
@@ -110,10 +110,10 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       yum -y install centos-release-scl; \
       yum -y install which; \
       yum -y install python python-pip; \
+      yum -y install sudo; \
       yum -y install make ninja-build; \
       yum -y install llvm-devel; \
       yum -y install tbb-devel; \
-      yum -y install sudo; \
       yum -y install gdb; \
       yum -y install strace; \
       yum -y install less; \
