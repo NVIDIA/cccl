@@ -87,7 +87,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install git; \
       apt-get -y --no-install-recommends install vim emacs-nox; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
-        apt-get -y --no-install-recommends install g++-${CXX_VER}; \
+        apt-get -y --no-install-recommends install g++-${CXX_VER} gcc-${CXX_VER}; \
         export CC=$(which gcc-${CXX_VER}); \
         export CXX=$(which g++-${CXX_VER}); \
       elif [[ "${CXX_TYPE}" == "clang" ]]; then \
