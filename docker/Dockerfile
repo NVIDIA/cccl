@@ -4,11 +4,11 @@
 # See https://llvm.org/LICENSE.txt for license information.
 
 # SDK_TYPE needs to be a base image that contains CUDA.
-# | SDK_TYPE | SDK_VER    |
-# | cuda     | 11.0-devel |
-# | nvhpc    | 20.9-devel |
+# | SDK_TYPE | SDK_VER             |
+# | cuda     | 11.3.1-devel        |
+# | nvhpc    | 21.5-devel-cuda11.3 |
 ARG SDK_TYPE=cuda
-ARG SDK_VER=11.0-devel
+ARG SDK_VER=11.3.1-devel
 # | OS_TYPE  | OS_VER |
 # | ubuntu   | 20.04  |
 # | centos   | 7      |
@@ -18,7 +18,7 @@ ARG OS_VER=20.04
 # | gcc      | 5 6 7 8 9 10 |
 # | clang    | 7 8 9 10     |
 # | icc      | latest       |
-# | nvcxx    | 20.9         |
+# | nvcxx    | 21.5         |
 ARG CXX_TYPE=gcc
 ARG CXX_VER=7
 FROM nvcr.io/nvidia/${SDK_TYPE}:${SDK_VER}-${OS_TYPE}${OS_VER}
@@ -66,9 +66,9 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y update; \
       apt-get -y --no-install-recommends install python3-pip python3-setuptools python3-wheel; \
       ${ALTERNATIVES} --install /usr/bin/python python $(which python3) 3; \
-      ${ALTERNATIVES} --install /usr/bin/pip    pip    $(which pip3)    3; \
+      ${ALTERNATIVES} --install /usr/bin/pip pip $(which pip3) 3; \
       ${ALTERNATIVES} --set python $(which python3); \
-      ${ALTERNATIVES} --set pip    $(which pip3); \
+      ${ALTERNATIVES} --set pip $(which pip3); \
       apt-get -y --no-install-recommends install make ninja-build; \
       apt-get -y --no-install-recommends install llvm-dev; \
       apt-get -y --no-install-recommends install libtbb-dev; \
@@ -146,8 +146,6 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
     ${ALTERNATIVES} --set c++ ${CXX}; \
     if [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
       export CUDACXX=$(which nvc++); \
-      echo "source /usr/share/lmod/lmod/init/bash" >> /etc/cccl.bashrc; \
-      echo "module load nvhpc"                     >> /etc/cccl.bashrc; \
     else \
       export CUDACXX=$(which nvcc); \
     fi; \
