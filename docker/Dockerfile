@@ -37,9 +37,6 @@ ARG UBUNTU_ARCHIVE_DEB_REPO="http://archive.ubuntu.com/ubuntu bionic main univer
 ARG ICC_DEB_REPO="https://apt.repos.intel.com/oneapi all main"
 ARG ICC_KEY=https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
 
-ARG DOXYPRESS_VER=1.4.0
-ARG DOXYPRESS_URL=https://download.copperspice.com/doxypress/binary/doxypress-${DOXYPRESS_VER}-${OS_TYPE}${OS_VER}-x64.tar.bz2
-
 # CentOS 7 doesn't have a new enough version of CMake in its repos.
 ARG CMAKE_VER=3.18.4
 ARG CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-Linux-x86_64.sh
@@ -82,11 +79,6 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install less; \
       apt-get -y --no-install-recommends install git; \
       apt-get -y --no-install-recommends install vim emacs-nox; \
-      curl --silent --show-error -L ${DOXYPRESS_URL} -o doxypress.tar.bz2; \
-      mkdir -p /opt/copperspice; \
-      tar -xf doxypress.tar.bz2 -C /opt/copperspice; \
-      echo "export PATH=\"/opt/copperspice:\${PATH}\"" >> /etc/cccl.bashrc; \
-      rm doxypress.tar.bz2; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
         apt-get -y --no-install-recommends install g++-${CXX_VER}; \
         export CC=$(which gcc-${CXX_VER}); \
