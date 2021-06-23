@@ -171,7 +171,8 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
     bash cmake.bash -- --skip-license --prefix=/usr; \
     rm cmake.bash; \
     curl --silent --show-error -L ${TINI_URL} -o /usr/bin/tini; \
-    chmod +x /usr/bin/tini
+    chmod +x /usr/bin/tini; \
+    ${CXX} --version
 
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
 CMD [ "/bin/bash" ]
