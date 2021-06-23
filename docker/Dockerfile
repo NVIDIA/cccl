@@ -66,9 +66,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y update; \
       apt-get -y --no-install-recommends install python3-pip python3-setuptools python3-wheel; \
       ${ALTERNATIVES} --install /usr/bin/python python $(which python3) 3; \
-      ${ALTERNATIVES} --install /usr/bin/pip pip $(which pip3) 3; \
       ${ALTERNATIVES} --set python $(which python3); \
-      ${ALTERNATIVES} --set pip $(which pip3); \
       apt-get -y --no-install-recommends install sudo; \
       apt-get -y --no-install-recommends install make ninja-build; \
       apt-get -y --no-install-recommends install llvm-dev; \
