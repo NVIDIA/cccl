@@ -1,0 +1,332 @@
+/*
+ * Copyright 1993-2019 NVIDIA Corporation.  All rights reserved.
+ *
+ * NOTICE TO LICENSEE:
+ *
+ * This source code and/or documentation ("Licensed Deliverables") are
+ * subject to NVIDIA intellectual property rights under U.S. and
+ * international Copyright laws.
+ *
+ * These Licensed Deliverables contained herein is PROPRIETARY and
+ * CONFIDENTIAL to NVIDIA and is being provided under the terms and
+ * conditions of a form of NVIDIA software license agreement by and
+ * between NVIDIA and Licensee ("License Agreement") or electronically
+ * accepted by Licensee.  Notwithstanding any terms or conditions to
+ * the contrary in the License Agreement, reproduction or disclosure
+ * of the Licensed Deliverables to any third party without the express
+ * written consent of NVIDIA is prohibited.
+ *
+ * NOTWITHSTANDING ANY TERMS OR CONDITIONS TO THE CONTRARY IN THE
+ * LICENSE AGREEMENT, NVIDIA MAKES NO REPRESENTATION ABOUT THE
+ * SUITABILITY OF THESE LICENSED DELIVERABLES FOR ANY PURPOSE.  IT IS
+ * PROVIDED "AS IS" WITHOUT EXPRESS OR IMPLIED WARRANTY OF ANY KIND.
+ * NVIDIA DISCLAIMS ALL WARRANTIES WITH REGARD TO THESE LICENSED
+ * DELIVERABLES, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY,
+ * NONINFRINGEMENT, AND FITNESS FOR A PARTICULAR PURPOSE.
+ * NOTWITHSTANDING ANY TERMS OR CONDITIONS TO THE CONTRARY IN THE
+ * LICENSE AGREEMENT, IN NO EVENT SHALL NVIDIA BE LIABLE FOR ANY
+ * SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, OR ANY
+ * DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+ * WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
+ * ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+ * OF THESE LICENSED DELIVERABLES.
+ *
+ * U.S. Government End Users.  These Licensed Deliverables are a
+ * "commercial item" as that term is defined at 48 C.F.R. 2.101 (OCT
+ * 1995), consisting of "commercial computer software" and "commercial
+ * computer software documentation" as such terms are used in 48
+ * C.F.R. 12.212 (SEPT 1995) and is provided to the U.S. Government
+ * only as a commercial end item.  Consistent with 48 C.F.R.12.212 and
+ * 48 C.F.R. 227.7202-1 through 227.7202-4 (JUNE 1995), all
+ * U.S. Government End Users acquire the Licensed Deliverables with
+ * only those rights set forth herein.
+ *
+ * Any use of the Licensed Deliverables in individual and commercial
+ * software must include, in the user documentation and internal
+ * comments to the code, the above Disclaimer and U.S. Government End
+ * Users Notice.
+ */
+
+#ifndef _CUDA_ANNOTATED_PTR
+#define _CUDA_ANNOTATED_PTR
+
+#include <cuda/std/cstdint>
+#include <cuda/barrier>
+
+#include "std/detail/__access_property"
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+class access_property {
+  private:
+    std::uint64_t __descriptor = 0;
+
+  public:
+    struct shared {};
+    struct global {};
+    struct persisting {
+      __host__ __device__ constexpr operator cudaAccessProperty() const noexcept {
+        return cudaAccessProperty::cudaAccessPropertyPersisting;
+      }
+    };
+    struct streaming {
+      __host__ __device__ constexpr operator cudaAccessProperty() const noexcept {
+        return cudaAccessProperty::cudaAccessPropertyStreaming;
+      }
+    };
+    struct normal {
+      __host__ __device__ constexpr operator cudaAccessProperty() const noexcept {
+        return cudaAccessProperty::cudaAccessPropertyNormal;
+      }
+    };
+
+    __host__ __device__ constexpr access_property(global) noexcept : __descriptor(__detail_ap::__sm_80::__interleave_normal()) {}
+    __host__ __device__ constexpr access_property() noexcept : __descriptor(__detail_ap::__sm_80::__interleave_normal()) {}
+    constexpr access_property(access_property const&) noexcept = default;
+    access_property& operator=(const access_property& other) noexcept = default;
+
+    __host__ __device__ constexpr access_property(normal, float __fraction) : __descriptor(__detail_ap::__interleave(normal{}, __fraction)) {}
+    __host__ __device__ constexpr access_property(streaming, float __fraction) : __descriptor(__detail_ap::__interleave(streaming{}, __fraction)) {}
+    __host__ __device__ constexpr access_property(persisting, float __fraction) : __descriptor(__detail_ap::__interleave(persisting{}, __fraction)) {}
+    __host__ __device__ constexpr access_property(normal, float __fraction, streaming) : __descriptor(__detail_ap::__interleave(normal{}, __fraction, streaming{})) {}
+    __host__ __device__ constexpr access_property(persisting, float __fraction, streaming) : __descriptor(__detail_ap::__interleave(persisting{}, __fraction, streaming{})) {}
+
+    __host__ __device__ constexpr access_property(normal) noexcept : access_property(normal{}, 1.0) {}
+    __host__ __device__ constexpr access_property(streaming) noexcept : access_property(streaming{}, 1.0) {}
+    __host__ __device__ constexpr access_property(persisting) noexcept : access_property(persisting{}, 1.0) {}
+
+    __host__ __device__ constexpr access_property(void* __ptr, std::size_t __hit_bytes, std::size_t __total_bytes, normal)
+      : __descriptor(__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{})) {}
+    __host__ __device__ constexpr access_property(void* __ptr, std::size_t __hit_bytes, std::size_t __total_bytes, streaming)
+      : __descriptor(__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, streaming{})) {}
+    __host__ __device__ constexpr access_property(void* __ptr, std::size_t __hit_bytes, std::size_t __total_bytes, persisting)
+      : __descriptor(__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{})) {}
+    __host__ __device__ constexpr access_property(void* __ptr, std::size_t __hit_bytes, std::size_t __total_bytes, normal, streaming)
+      : __descriptor(__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{}, streaming{})) {}
+    __host__ __device__ constexpr access_property(void* __ptr, std::size_t __hit_bytes, std::size_t __total_bytes, persisting, streaming)
+      : __descriptor(__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{}, streaming{})) {}
+
+    __host__ __device__ constexpr explicit operator std::uint64_t() const noexcept { return __descriptor; }
+};
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include "std/detail/__annotated_ptr"
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+template <class _Tp, class _Property>
+__host__ __device__
+_Tp* associate_access_property(_Tp* __ptr, _Property __prop) {
+  static_assert(
+    std::is_same<_Property, access_property>::value ||
+    std::is_same<_Property, access_property::persisting>::value ||
+    std::is_same<_Property, access_property::streaming>::value ||
+    std::is_same<_Property, access_property::normal>::value ||
+    std::is_same<_Property, access_property::shared>::value
+      , "property is not convertible to cuda::access_property");
+  return __detail_ap::__associate(__ptr, __prop);      
+}
+
+template <class _Shape>
+__host__ __device__
+void apply_access_property(const volatile void* __ptr, const _Shape __shape, access_property::persisting __prop) noexcept {
+#if __CUDA_ARCH__ >= 800
+  if (!__isGlobal((void*)__ptr)) return;
+
+  char* __p = reinterpret_cast<char*>(const_cast<void*>(__ptr));
+  static constexpr std::size_t _LINE_SIZE = 128;
+  std::size_t __nbytes = static_cast<std::size_t>(__shape);
+  std::size_t __end = ((std::uintptr_t)(__p + __nbytes) % _LINE_SIZE) ? __nbytes + _LINE_SIZE : __nbytes;
+  __end /= _LINE_SIZE;
+
+  //Apply to all 128 bytes aligned cache lines inclusive of __p
+  for (std::size_t __i = 0; __i < __end; __i += _LINE_SIZE) {
+    asm volatile ("prefetch.global.L2::evict_last [%0];" ::"l"(__p + (__i * _LINE_SIZE)) :);
+  }
+#endif
+}
+
+template <class _Shape>
+__host__ __device__
+void apply_access_property(const volatile void* __ptr, const _Shape __shape, access_property::normal __prop) noexcept {
+#if __CUDA_ARCH__ >= 800
+  if (!__isGlobal((void*)__ptr)) return;
+
+  char* __p = reinterpret_cast<char*>(const_cast<void*>(__ptr));
+  static constexpr std::size_t _LINE_SIZE = 128;
+  std::size_t __nbytes = static_cast<std::size_t>(__shape);
+  std::size_t __end = ((std::uintptr_t)(__p + __nbytes) % _LINE_SIZE) ? __nbytes + _LINE_SIZE : __nbytes;
+  __end /= _LINE_SIZE;
+
+  //Apply to all 128 bytes aligned cache lines inclusive of __p
+  for (std::size_t __i = 0; __i < __end; __i += _LINE_SIZE) {
+    asm volatile ("prefetch.global.L2::evict_normal [%0];" ::"l"(__p + (__i * _LINE_SIZE)) :);
+  }
+#endif
+}
+
+__host__ __device__
+void discard_memory(volatile void* __ptr, std::size_t __nbytes) noexcept {
+#if __CUDA_ARCH__ >= 800
+  if (!__isGlobal((void*)__ptr)) return;
+
+  char* __p = reinterpret_cast<char*>(const_cast<void*>(__ptr));
+  static constexpr std::size_t _LINE_SIZE = 128;
+  std::size_t __start = (reinterpret_cast<std::uintptr_t>(__p) % _LINE_SIZE) ? 1 : 0;
+  std::size_t __end = (reinterpret_cast<std::uintptr_t>(__p + __nbytes) % _LINE_SIZE) ? __nbytes - _LINE_SIZE : __nbytes;
+  __end /= _LINE_SIZE;
+
+  //Trim the first block and last block if they're not 128 bytes aligned
+  for (std::size_t __i = __start; __i < __end; __i += _LINE_SIZE) {
+    asm volatile ("discard.global.L2 [%0], 128;" ::"l"(__p + (__i * _LINE_SIZE)) :);
+  }
+#endif
+}
+
+template<class _Tp, class _Property>
+class annotated_ptr: public __detail_ap::__annotated_ptr_base<_Property> {
+  public:
+    using value_type = _Tp;
+    using size_type = std::size_t;
+    using reference = value_type&;
+    using pointer = value_type*;
+    using const_pointer = value_type const*;
+    using difference_type = std::ptrdiff_t;
+
+  private:
+    using __self = annotated_ptr<_Tp, _Property>;
+
+    // Converting from a 64-bit to 32-bit shared pointer and maybe back just for storage might or might not be profitable.
+    pointer __repr = (pointer)((size_type)nullptr);
+
+    __host__ __device__ pointer __get(bool __skip_prop = false, difference_type __n = 0) const {
+#ifdef __CUDA_ARCH__
+      if (__skip_prop == false) {
+        return static_cast<pointer>(this->__apply_prop(static_cast<void*>(__repr + __n)));
+      } else {
+        return __repr + __n;
+      }
+#else
+      return __repr + __n;
+#endif
+    }
+    __host__ __device__ pointer __offset(difference_type __n, bool __skip_prop = false) const {
+      return __get(__skip_prop, __n);
+    }
+
+  public:
+    __host__ __device__ pointer operator->() const {
+      return __get();
+    }
+
+    __host__ __device__ reference operator*() const {
+      return *__get();
+    }
+
+    __host__ __device__ reference operator[](difference_type __n) const {
+      return *__offset(__n);
+    }
+
+    __host__ __device__ __self operator+(difference_type __n) const {
+      return __self{__offset(__n, true)};
+    }
+
+    __host__ __device__ __self operator-(difference_type __n) const {
+      return *this + (-__n);
+    }
+
+    __host__ __device__ constexpr difference_type operator-(annotated_ptr o) const {
+      return __repr - o.__repr;
+    }
+
+    constexpr annotated_ptr() noexcept = default;
+    constexpr annotated_ptr(annotated_ptr const&) noexcept = default;
+    // No constexpr for c11 as the method can't be const
+    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
+
+    __host__ __device__ explicit annotated_ptr(pointer __p)
+      : __repr(__p)
+      {
+#if _LIBCUDACXX_DEBUG_LEVEL >= 2 && defined(__CUDA_ARCH__)
+      _LIBCUDACXX_DEBUG_ASSERT(std::is_same<_Property, shared>::value && __isShared(__p) || __isGlobal(__p));
+#endif
+    }
+
+    template <typename _RuntimeProperty>
+    __host__ __device__ annotated_ptr(pointer __p, _RuntimeProperty __prop)
+      : __detail_ap::__annotated_ptr_base<_RuntimeProperty>(static_cast<std::uint64_t>(__prop)), __repr(__p)
+    {
+      static_assert(std::is_same<_Property, access_property>::value, "This method requires Property=cuda::access_property");
+      static_assert(std::is_same<_RuntimeProperty, access_property::global>::value ||
+                    std::is_same<_RuntimeProperty, access_property::normal>::value ||
+                    std::is_same<_RuntimeProperty, access_property::streaming>::value ||
+                    std::is_same<_RuntimeProperty, access_property::persisting>::value ||
+                    std::is_same<_RuntimeProperty, access_property>::value,
+                    "This method requires RuntimeProperty=global|normal|streaming|persisting|access_property");
+
+#if _LIBCUDACXX_DEBUG_LEVEL >= 2 && defined(__CUDA_ARCH__)
+      _LIBCUDACXX_DEBUG_ASSERT(__isGlobal(__p) == true);
+#endif
+    }
+
+    template<class _TTp, class _Prop>
+      __host__ __device__ annotated_ptr(const annotated_ptr<_TTp,_Prop>& __other)
+      : annotated_ptr<_TTp, _Prop>(__other.prop_), __repr(__other.__repr)
+      {
+      static_assert(std::is_assignable<pointer, _TTp*>::value, "pointer must be assignable from other pointer");
+      static_assert((std::is_same<_Property, access_property>::value && !std::is_same<_Prop, access_property::shared>::value) ||
+                    std::is_same<_Property, _Prop>::value, "Property must be either access_property or other property, and both properties must have same address space");
+      // note: precondition "__other.__rep must be compatible with _Property" currently always holds
+    }
+
+    __host__ __device__ constexpr explicit operator bool() const noexcept {
+      return __repr != nullptr;
+    }
+
+    __host__ __device__ pointer get() const noexcept {
+      constexpr bool __is_shared = std::is_same<_Property, access_property::shared>::value;
+      return __is_shared ? __repr : &(*annotated_ptr<value_type, access_property::global>(__repr));
+    }
+};
+
+template<class _Dst, class _Src, class _SrcProperty, class _Shape, class _Sync>
+__host__ __device__
+void memcpy_async(_Dst* __dst,
+    annotated_ptr<_Src,_SrcProperty> __src,
+    _Shape __shape, _Sync & __sync) {
+  memcpy_async(__dst, &(*__src), __shape, __sync);
+}
+
+template<class _Dst, class _DstProperty, class _Src, class _SrcProperty,
+  class _Shape, class _Sync>
+__host__ __device__
+void memcpy_async(annotated_ptr<_Dst,_DstProperty> __dst,
+    annotated_ptr<_Src,_SrcProperty> __src,
+    _Shape __shape, _Sync & __sync){
+  memcpy_async(&(*__dst), &(*__src), __shape, __sync);
+}
+
+template<class _Group, class _Dst, class _Src, class _SrcProperty,
+  class _Shape, class _Sync>
+__host__ __device__
+void memcpy_async(const _Group & __group,
+    _Dst * __dst,
+    annotated_ptr<_Src,_SrcProperty> __src,
+    _Shape __shape, _Sync & __sync) {
+  memcpy_async(__group, __dst, &(*__src), __shape, __sync);
+}
+
+template<class _Group, class _Dst, class _DstProperty, class _Src, class _SrcProperty,
+  class _Shape, class _Sync>
+__host__ __device__
+void memcpy_async(const _Group & __group,
+    annotated_ptr<_Dst,_DstProperty> __dst,
+    annotated_ptr<_Src,_SrcProperty> __src,
+    _Shape __shape, _Sync & __sync) {
+  memcpy_async(__group, &(*__dst), &(*__src), __shape, __sync);
+}
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif // _CUDA_ANNOTATED_PTR

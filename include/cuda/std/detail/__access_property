@@ -1,0 +1,299 @@
+/*
+ * Copyright 1993-2019 NVIDIA Corporation.  All rights reserved.
+ *
+ * NOTICE TO LICENSEE:
+ *
+ * This source code and/or documentation ("Licensed Deliverables") are
+ * subject to NVIDIA intellectual property rights under U.S. and
+ * international Copyright laws.
+ *
+ * These Licensed Deliverables contained herein is PROPRIETARY and
+ * CONFIDENTIAL to NVIDIA and is being provided under the terms and
+ * conditions of a form of NVIDIA software license agreement by and
+ * between NVIDIA and Licensee ("License Agreement") or electronically
+ * accepted by Licensee.  Notwithstanding any terms or conditions to
+ * the contrary in the License Agreement, reproduction or disclosure
+ * of the Licensed Deliverables to any third party without the express
+ * written consent of NVIDIA is prohibited.
+ *
+ * NOTWITHSTANDING ANY TERMS OR CONDITIONS TO THE CONTRARY IN THE
+ * LICENSE AGREEMENT, NVIDIA MAKES NO REPRESENTATION ABOUT THE
+ * SUITABILITY OF THESE LICENSED DELIVERABLES FOR ANY PURPOSE.  IT IS
+ * PROVIDED "AS IS" WITHOUT EXPRESS OR IMPLIED WARRANTY OF ANY KIND.
+ * NVIDIA DISCLAIMS ALL WARRANTIES WITH REGARD TO THESE LICENSED
+ * DELIVERABLES, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY,
+ * NONINFRINGEMENT, AND FITNESS FOR A PARTICULAR PURPOSE.
+ * NOTWITHSTANDING ANY TERMS OR CONDITIONS TO THE CONTRARY IN THE
+ * LICENSE AGREEMENT, IN NO EVENT SHALL NVIDIA BE LIABLE FOR ANY
+ * SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, OR ANY
+ * DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+ * WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
+ * ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+ * OF THESE LICENSED DELIVERABLES.
+ *
+ * U.S. Government End Users.  These Licensed Deliverables are a
+ * "commercial item" as that term is defined at 48 C.F.R. 2.101 (OCT
+ * 1995), consisting of "commercial computer software" and "commercial
+ * computer software documentation" as such terms are used in 48
+ * C.F.R. 12.212 (SEPT 1995) and is provided to the U.S. Government
+ * only as a commercial end item.  Consistent with 48 C.F.R.12.212 and
+ * 48 C.F.R. 227.7202-1 through 227.7202-4 (JUNE 1995), all
+ * U.S. Government End Users acquire the Licensed Deliverables with
+ * only those rights set forth herein.
+ *
+ * Any use of the Licensed Deliverables in individual and commercial
+ * software must include, in the user documentation and internal
+ * comments to the code, the above Disclaimer and U.S. Government End
+ * Users Notice.
+ */
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+namespace __detail_ap {
+
+  __host__ __device__
+  constexpr unsigned __floor_log2(unsigned __x) {
+    return (__x == 1 | __x == 0) ? 0 : 1 + __floor_log2(__x >> 1);
+  }
+
+  __host__ __device__
+  constexpr unsigned __ceil_log2(unsigned __x) {
+    return (__x == 1 | __x == 0) ? 0 : __floor_log2(__x - 1) + 1;
+  }
+
+  __host__ __device__
+  constexpr unsigned __min(unsigned __a, unsigned __b) noexcept {
+    return (__a < __b) ? __a : __b;
+  }
+
+  __host__ __device__
+  constexpr unsigned __max(unsigned __a, unsigned __b) noexcept {
+    return (__a > __b) ? __a : __b;
+  }
+
+  namespace __sm_80 {
+    namespace __off {
+      enum __l2_cop_off_t {
+        _L2_EVICT_NORMAL = 0,
+        _L2_EVICT_FIRST = 1,
+      };
+    } // namespace __off
+
+    namespace __on {
+      enum __l2_cop_on_t {
+        _L2_EVICT_NORMAL = 0,
+        _L2_EVICT_FIRST = 1,
+        _L2_EVICT_LAST = 2,
+        _L2_EVICT_NORMAL_DEMOTE = 3,
+      };
+    } // namespace __on
+
+    enum __l2_descriptor_mode_t {
+      _DESC_IMPLICIT = 0,
+      _DESC_INTERLEAVED = 2,
+      _DESC_BLOCK_TYPE = 3,
+    };
+
+    enum __l2_eviction_max_way_t {
+      _CUDA_AMPERE_MAX_L2_WAYS = std::uint32_t{16},
+    };
+
+    enum __block_size_t {
+      _BLOCKSIZE_4K   = 0,
+      _BLOCKSIZE_8K   = 1,
+      _BLOCKSIZE_16K  = 2,
+      _BLOCKSIZE_32K  = 3,
+      _BLOCKSIZE_64K  = 4,
+      _BLOCKSIZE_128K = 5,
+      _BLOCKSIZE_256K = 6,
+      _BLOCKSIZE_512K = 7,
+      _BLOCKSIZE_1M   = 8,
+      _BLOCKSIZE_2M   = 9,
+      _BLOCKSIZE_4M   = 10,
+      _BLOCKSIZE_8M   = 11,
+      _BLOCKSIZE_16M  = 12,
+      _BLOCKSIZE_32M  = 13,
+    };
+
+    struct __block_desc_t {
+      unsigned long __reserved : 37;
+      unsigned __block_count: 7;
+      unsigned __block_start: 7;
+      unsigned __reserved2 : 1;
+      __block_size_t __block_size : 4;
+      __off::__l2_cop_off_t __l2_cop_off : 1;
+      __on::__l2_cop_on_t __l2_cop_on : 2;
+      __l2_descriptor_mode_t __l2_descriptor_mode : 2;
+      bool __l1_inv_dont_allocate : 1;
+      bool __l2_sector_promote_256B : 1;
+      unsigned __reserved3 : 1;
+
+      __host__ __device__
+      constexpr std::uint64_t __get_descriptor_cexpr() const noexcept {
+        return
+          std::uint64_t(__reserved)               << 0  |
+          std::uint64_t(__block_count)            << 37 |
+          std::uint64_t(__block_start)            << 44 |
+          std::uint64_t(__reserved2)              << 51 |
+          std::uint64_t(__block_size)             << 52 |
+          std::uint64_t(__l2_cop_off)             << 56 |
+          std::uint64_t(__l2_cop_on)              << 57 |
+          std::uint64_t(__l2_descriptor_mode)     << 59 |
+          std::uint64_t(__l1_inv_dont_allocate)   << 61 |
+          std::uint64_t(__l2_sector_promote_256B) << 62 |
+          std::uint64_t(__reserved3)              << 63;
+      }
+
+      __host__ __device__
+      std::uint64_t __get_descriptor_non_cexpr() const noexcept { return *reinterpret_cast<const std::uint64_t*>(this); }
+
+      __host__ __device__
+      constexpr std::uint64_t __get_descriptor() const noexcept {
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+        return cuda::std::is_constant_evaluated() ?
+                    __get_descriptor_cexpr() :
+                    __get_descriptor_non_cexpr();
+#else
+        return __get_descriptor_cexpr();
+#endif
+      }
+    };
+    static_assert(sizeof(__block_desc_t) == 8, "__block_desc_t should be 8 bytes");
+    static_assert(sizeof(__block_desc_t) == sizeof(std::uint64_t), "");
+    static_assert(
+      __block_desc_t{1, 1, 1, 1, _BLOCKSIZE_8K, __off::_L2_EVICT_FIRST, __on::_L2_EVICT_FIRST, __l2_descriptor_mode_t::_DESC_INTERLEAVED, 1, 1, 1}.__get_descriptor()
+         == 0xF318102000000001, "");
+
+    /* Factory like struct to build a __block_desc_t due to constexpr C++11
+     */
+    struct __block_descriptor_builder { //variable declaration order matters == usage order
+      std::uint32_t __offset;
+      __block_size_t __block_size;
+      std::uint32_t __block_start, __end_hit;
+      std::uint32_t __block_count;
+      __off::__l2_cop_off_t __l2_cop_off;
+      __on::__l2_cop_on_t __l2_cop_on;
+      __l2_descriptor_mode_t __l2_descriptor_mode;
+      bool __l1_inv_dont_allocate, __l2_sector_promote_256B;
+
+      __host__ __device__ static constexpr std::uint32_t __calc_offset(std::size_t __total_bytes) {
+          return __max(std::uint32_t{12}, static_cast<std::uint32_t>(__ceil_log2(__total_bytes)) - std::uint32_t{7});
+      }
+
+      __host__ __device__ static constexpr std::uint32_t __calc_block_start(std::uintptr_t __ptr, std::size_t __total_bytes) {
+          return __ptr >> __calc_offset(__total_bytes);
+      }
+
+      __host__ __device__ static constexpr std::uint32_t __calc_end_hit(std::uintptr_t __ptr, std::size_t __hit_bytes, std::size_t __total_bytes) {
+          return (__ptr + __hit_bytes + (std::uintptr_t{1} << (__calc_offset(__total_bytes))) - 1) >> __calc_offset(__total_bytes);
+      }
+
+      __host__ __device__ constexpr __block_descriptor_builder(std::uintptr_t __ptr, std::size_t __hit_bytes, std::size_t __total_bytes, __on::__l2_cop_on_t __hit_prop, __off::__l2_cop_off_t __miss_prop)
+        : __offset(__calc_offset(__total_bytes))
+        , __block_size(static_cast<__block_size_t>(__calc_offset(__total_bytes) - std::uint32_t{12}))
+        , __block_start(__calc_block_start(__ptr, __total_bytes))
+        , __end_hit(__calc_end_hit(__ptr, __hit_bytes, __total_bytes))
+        , __block_count(__calc_end_hit(__ptr, __hit_bytes, __total_bytes) - __calc_block_start(__ptr, __total_bytes))
+        , __l2_cop_off(__miss_prop)
+        , __l2_cop_on(__hit_prop)
+        , __l2_descriptor_mode(_DESC_BLOCK_TYPE)
+        , __l1_inv_dont_allocate(false)
+        , __l2_sector_promote_256B(false)
+        {}
+
+      __host__ __device__
+      constexpr __block_desc_t __get_block() const noexcept {
+        return __block_desc_t { 0, __min(std::uint32_t{0x7f}, __block_count), (__block_start & std::uint32_t{0x7f}), 0, __block_size, __l2_cop_off, __l2_cop_on, _DESC_BLOCK_TYPE, false, false, 0 };
+      }
+    };
+    static_assert(sizeof(std::uintptr_t) > 4, "std::uintptr_t needs at least 5 bytes for this code to work");
+
+    struct __interleave_descriptor_t {
+      unsigned long __reserved : 52;
+      unsigned __fraction : 4;
+      __off::__l2_cop_off_t __l2_cop_off : 1;
+      __on::__l2_cop_on_t __l2_cop_on : 2;
+      __l2_descriptor_mode_t __l2_descriptor_mode : 2;
+      bool __l1_inv_dont_allocate : 1;
+      bool __l2_sector_promote_256B : 1;
+      unsigned __reserved2 : 1;
+
+      __host__ __device__
+      constexpr __interleave_descriptor_t(__on::__l2_cop_on_t __hit_prop, std::uint32_t __hit_ratio, __off::__l2_cop_off_t __miss_prop) noexcept : __fraction(__hit_ratio), __l2_cop_off(__miss_prop), __l2_cop_on(__hit_prop), __l2_descriptor_mode(_DESC_INTERLEAVED), __l1_inv_dont_allocate(0x0), __l2_sector_promote_256B(0x0), __reserved(0x0), __reserved2(0x0) {}
+
+      __host__ __device__
+      constexpr std::uint64_t __get_descriptor_cexpr() const {
+        return
+          std::uint64_t(__reserved)               << 0  |
+          std::uint64_t(__fraction)               << 52 |
+          std::uint64_t(__l2_cop_off)             << 56 |
+          std::uint64_t(__l2_cop_on)              << 57 |
+          std::uint64_t(__l2_descriptor_mode)     << 59 |
+          std::uint64_t(__l1_inv_dont_allocate)   << 61 |
+          std::uint64_t(__l2_sector_promote_256B) << 62 |
+          std::uint64_t(__reserved2)              << 63;
+      }
+
+      __host__ __device__
+      std::uint64_t __get_descriptor_non_cexpr() const noexcept { return *reinterpret_cast<const std::uint64_t*>(this); }
+
+
+      __host__ __device__
+      constexpr std::uint64_t __get_descriptor() const noexcept {
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+        return cuda::std::is_constant_evaluated() ?
+                    __get_descriptor_cexpr() :
+                    __get_descriptor_non_cexpr();
+#else
+        return __get_descriptor_cexpr();
+#endif
+      }
+    };
+    static_assert(sizeof(__interleave_descriptor_t) == 8, "__interleave_descriptor_t should be 8 bytes");
+    static_assert(sizeof(__interleave_descriptor_t) == sizeof(std::uint64_t), "");
+
+    __host__ __device__
+    static constexpr std::uint64_t __interleave_normal() noexcept {
+      return 0x10F0000000000000;
+    }
+
+    __host__ __device__
+    static constexpr std::uint64_t __interleave_streaming() noexcept {
+      return 0x12F0000000000000;
+    }
+
+    __host__ __device__
+    static constexpr std::uint64_t __interleave_persisting() noexcept {
+      return 0x14F0000000000000;
+    }
+
+    __host__ __device__
+    static constexpr std::uint64_t __interleave_normal_demote() noexcept {
+      return 0x16F0000000000000;
+    }
+
+  } // namespace __sm_80
+
+  __host__ __device__
+  constexpr std::uint64_t __interleave(cudaAccessProperty __hit_prop, float __hit_ratio, cudaAccessProperty __miss_prop = cudaAccessPropertyNormal) {
+      return __sm_80::__interleave_descriptor_t(
+          ((__hit_prop == cudaAccessPropertyNormal) ? __sm_80::__on::__l2_cop_on_t::_L2_EVICT_NORMAL_DEMOTE : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop)),
+          __min((static_cast<std::uint32_t>(__hit_ratio) * __sm_80::__l2_eviction_max_way_t::_CUDA_AMPERE_MAX_L2_WAYS), static_cast<std::uint32_t>(__sm_80::__l2_eviction_max_way_t::_CUDA_AMPERE_MAX_L2_WAYS - 1)),
+          static_cast<__sm_80::__off::__l2_cop_off_t>(__miss_prop)
+          ).__get_descriptor();
+  }
+
+  __host__ __device__
+  constexpr std::uint64_t __block(void* __ptr, std::size_t __hit_bytes, std::size_t __total_bytes, cudaAccessProperty __hit_prop, cudaAccessProperty __miss_prop = cudaAccessPropertyNormal) {
+      return (__total_bytes <= (size_t{0xFFFFFFFF}) & __total_bytes != 0 & __hit_bytes <= __total_bytes) ? __sm_80::__block_descriptor_builder(
+          reinterpret_cast<std::uintptr_t>(__ptr),
+          __hit_bytes,
+          __total_bytes,
+          (__hit_prop == cudaAccessPropertyNormal) ? __sm_80::__on::_L2_EVICT_NORMAL_DEMOTE : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop),
+          static_cast<__sm_80::__off::__l2_cop_off_t>(__miss_prop)
+          ).__get_block().__get_descriptor()
+        : __sm_80::__interleave_normal();
+  }
+} // namespace __detail_ap
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
