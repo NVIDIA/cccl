@@ -10,5 +10,6 @@ if [[ $# -ne 1 ]]; then
   exit 1
 fi
 
+
 curl -s -S "https://registry.hub.docker.com/v2/repositories/${@}/tags/?page_size=100" | jq '."results"[]["name"]' | sort
 
