@@ -156,16 +156,18 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
     else \
       export CUDACXX=$(which nvcc); \
     fi; \
-    echo "export CC=${CC}"             >> /etc/cccl.bashrc; \
-    echo "export CXX=${CXX}"           >> /etc/cccl.bashrc; \
-    echo "export CUDACXX=${CUDACXX}"   >> /etc/cccl.bashrc; \
-    echo "export SDK_TYPE=${SDK_TYPE}" >> /etc/cccl.bashrc; \
-    echo "export SDK_VER=${SDK_VER}"   >> /etc/cccl.bashrc; \
-    echo "export OS_TYPE=${OS_TYPE}"   >> /etc/cccl.bashrc; \
-    echo "export OS_VER=${OS_VER}"     >> /etc/cccl.bashrc; \
-    echo "export CXX_TYPE=${CXX_TYPE}" >> /etc/cccl.bashrc; \
-    echo "export CXX_VER=${CXX_VER}"   >> /etc/cccl.bashrc; \
-    echo "ALL ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
+    echo "export PATH=${PATH}"            >> /etc/cccl.bashrc; \
+    echo "export LD_LIBRARY_PATH=${PATH}" >> /etc/cccl.bashrc; \
+    echo "export CC=${CC}"                >> /etc/cccl.bashrc; \
+    echo "export CXX=${CXX}"              >> /etc/cccl.bashrc; \
+    echo "export CUDACXX=${CUDACXX}"      >> /etc/cccl.bashrc; \
+    echo "export SDK_TYPE=${SDK_TYPE}"    >> /etc/cccl.bashrc; \
+    echo "export SDK_VER=${SDK_VER}"      >> /etc/cccl.bashrc; \
+    echo "export OS_TYPE=${OS_TYPE}"      >> /etc/cccl.bashrc; \
+    echo "export OS_VER=${OS_VER}"        >> /etc/cccl.bashrc; \
+    echo "export CXX_TYPE=${CXX_TYPE}"    >> /etc/cccl.bashrc; \
+    echo "export CXX_VER=${CXX_VER}"      >> /etc/cccl.bashrc; \
+    echo "ALL ALL=(ALL) NOPASSWD:ALL"     >> /etc/sudoers; \
     pip install lit; \
     curl --silent --show-error -L ${CMAKE_URL} -o cmake.bash; \
     bash cmake.bash -- --skip-license --prefix=/usr; \
