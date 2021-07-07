@@ -16,6 +16,7 @@
 #include "large_type.h"
 
 template <
+    class Group,
     cuda::thread_scope Scope,
     class T,
     template<typename, typename> class SourceSelector,
@@ -24,7 +25,7 @@ template <
     uint8_t PipelineStages
 >
 __host__ __device__ __noinline__
-void test_fully_specialized()
+void test_fully_specialized(Group &group)
 {
     SourceSelector<T, constructor_initializer> source_sel;
     typename DestSelector<T, constructor_initializer>

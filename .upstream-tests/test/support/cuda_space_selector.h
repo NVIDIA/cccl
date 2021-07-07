@@ -21,6 +21,12 @@
 #define LAMBDA [=] __host__ __device__
 #endif
 
+#ifdef __CUDA_ARCH__
+#define SHARED __shared__
+#else
+#define SHARED
+#endif
+
 #pragma diag_suppress 941
 #pragma diag_suppress 1057
 
