@@ -679,7 +679,7 @@ namespace detail {
 #elif defined(_LIBCUDACXX_HAS_GCC_ATOMIC_IMP)
 #  include "support/atomic/atomic_gcc.h"
 #elif defined(_LIBCUDACXX_HAS_C_ATOMIC_IMP)
-// TODO:
+// TODO: Maybe support C11 atomics?
 // #include "support/atomic/atomic_c11.h"
 #endif // _LIBCUDACXX_HAS_GCC_ATOMIC_IMP, _LIBCUDACXX_HAS_C_ATOMIC_IMP
 }

@@ -1598,9 +1598,10 @@ _LIBCUDACXX_FUNC_VIS extern "C" void __sanitizer_annotate_contiguous_container(
 #define _LIBCUDACXX_HAS_NO_THREAD_UNSAFE_C_FUNCTIONS
 #endif
 
-#if __has_feature(cxx_atomic) || __has_extension(c_atomic) || __has_keyword(_Atomic)
-#  define _LIBCUDACXX_HAS_C_ATOMIC_IMP
-#elif defined(_LIBCUDACXX_COMPILER_GCC)
+// TODO: Support C11 Atomics?
+// #if __has_feature(cxx_atomic) || __has_extension(c_atomic) || __has_keyword(_Atomic)
+// #  define _LIBCUDACXX_HAS_C_ATOMIC_IMP
+#if defined(_LIBCUDACXX_COMPILER_GCC) || defined(_LIBCUDACXX_COMPILER_CLANG)
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
 #elif defined(_LIBCUDACXX_COMPILER_MSVC)
 #  define _LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL

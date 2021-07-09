@@ -60,7 +60,7 @@ struct __cxx_atomic_ref_base_impl {
 
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-_Tp* __cxx_get_underlying_atomic(__cxx_atomic_ref_base_impl<_Tp, _Sco> * __a) _NOEXCEPT {
+_Tp* __cxx_get_underlying_atomic(__cxx_atomic_ref_base_impl<_Tp, _Sco>* __a) _NOEXCEPT {
   return __a->__a_value;
 }
 
@@ -119,7 +119,7 @@ inline void __cxx_atomic_init(volatile _Tp* __a,  _Up __val) {
 template <typename _Tp, typename _Up>
 inline void __cxx_atomic_init(_Tp* __a,  _Up __val) {
   auto __a_tmp = __cxx_atomic_base_unwrap(__a);
-  __a = __val;
+  *__a_tmp = __val;
 }
 
 inline
