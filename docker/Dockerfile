@@ -88,8 +88,28 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       apt-get -y --no-install-recommends install vim emacs-nox; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
         apt-get -y --no-install-recommends install g++-${CXX_VER} gcc-${CXX_VER}; \
-        export CC=$(which gcc-${CXX_VER}); \
-        export CXX=$(which g++-${CXX_VER}); \
+        if [[ "${CXX_VER}" == "10" ]]; then \
+          GCC_VERSION=10.2.0; \
+          apt-get -y --no-install-recommends install wget; \
+          cd /opt; \
+          wget -q ftp://gcc.gnu.org/pub/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz; \
+          tar xf gcc-${GCC_VERSION}.tar.gz; \
+          cd gcc-${GCC_VERSION}; \
+          ./contrib/download_prerequisites; \
+          cd ..; \
+          mkdir gcc-build-${GCC_VERSION}; \
+          mkdir gcc-bin-${GCC_VERSION}; \
+          cd gcc-build-${GCC_VERSION}; \
+          ../gcc-${GCC_VERSION}/configure --prefix=$(readlink -f ../gcc-bin-${GCC_VERSION}) --enable-languages=c,c++ --disable-multilib; \
+          make -j &>/dev/null;  \
+          make install &>/dev/null; \
+          cd ..; \
+          export CC=$(readlink -f gcc-bin-${GCC_VERSION}/bin/gcc); \
+          export CXX=$(readlink -f gcc-bin-${GCC_VERSION}/bin/g++); \
+        else \
+          export CC=$(which gcc-${CXX_VER}); \
+          export CXX=$(which g++-${CXX_VER}); \
+        fi \
       elif [[ "${CXX_TYPE}" == "clang" ]]; then \
         apt-get -y --no-install-recommends install clang-${CXX_VER}; \
         export CC=$(which clang-${CXX_VER}); \
