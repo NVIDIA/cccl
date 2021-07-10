@@ -236,5 +236,9 @@ inline auto __cxx_atomic_fetch_xor(_Tp* __a, _Td __pattern,
 
 inline constexpr
  bool __cxx_atomic_is_lock_free(size_t __x) {
+  #if defined(_LIBCUDACXX_NO_RUNTIME_LOCK_FREE)
+    return __x <= 8;
+  #else
     return __atomic_is_lock_free(__x, 0);
+  #endif
 }
