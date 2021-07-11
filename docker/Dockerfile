@@ -101,7 +101,7 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
           mkdir gcc-bin-${GCC_VERSION}; \
           cd gcc-build-${GCC_VERSION}; \
           ../gcc-${GCC_VERSION}/configure --prefix=$(readlink -f ../gcc-bin-${GCC_VERSION}) --enable-languages=c,c++ --disable-multilib; \
-          make -j &>/dev/null;  \
+          make &>/dev/null;  \
           make install &>/dev/null; \
           cd ..; \
           export CC=$(readlink -f gcc-bin-${GCC_VERSION}/bin/gcc); \
