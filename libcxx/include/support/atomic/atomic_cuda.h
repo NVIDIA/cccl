@@ -159,16 +159,16 @@ struct __cxx_atomic_base_heterogeneous_impl {
     __cxx_atomic_base_heterogeneous_storage<_Tp, _Sco, _Ref> __a_value;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-      auto __get_device() const volatile _NOEXCEPT  -> decltype(__a_value.__get_atom()) {
-        return __a_value.__get_atom();
+      auto __get_device() const volatile _NOEXCEPT  -> decltype(__cxx_atomic_base_unwrap(&__a_value)) {
+        return __cxx_atomic_base_unwrap(&__a_value);
     }
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-      auto __get_device() volatile _NOEXCEPT  -> decltype(__a_value.__get_atom()) {
-        return __a_value.__get_atom();
+      auto __get_device() volatile _NOEXCEPT  -> decltype(__cxx_atomic_base_unwrap(&__a_value)) {
+        return __cxx_atomic_base_unwrap(&__a_value);
     }
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-      auto __get_device() const _NOEXCEPT  -> decltype(__a_value.__get_atom()) {
-        return __a_value.__get_atom();
+      auto __get_device() const _NOEXCEPT  -> decltype(__cxx_atomic_base_unwrap(&__a_value)) {
+        return __cxx_atomic_base_unwrap(&__a_value);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
@@ -193,19 +193,6 @@ struct __cxx_atomic_base_small_impl {
     }
 
     __cxx_atomic_base_heterogeneous_impl<uint32_t, _Sco, false> __a_value;
-
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-      auto __get_atom() const volatile _NOEXCEPT -> decltype(&__a_value) {
-        return &__a_value;
-    }
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-      auto __get_atom() volatile _NOEXCEPT -> decltype(&__a_value) {
-        return &__a_value;
-    }
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-      auto __get_atom() const _NOEXCEPT -> decltype(&__a_value) {
-        return &__a_value;
-    }
 };
 
 template <typename _Tp>
@@ -416,22 +403,22 @@ __host__ __device__ inline _Tp __cxx_small_from_32(uint32_t __val) {
 
 template <typename _Tp, int _Sco>
 __host__ __device__ inline void __cxx_atomic_init(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Tp __val) {
-    __cxx_atomic_init(__a->__get_atom(), __cxx_small_to_32(__val));
+    __cxx_atomic_init(&__a->__a_value, __cxx_small_to_32(__val));
 }
 
 template <typename _Tp, int _Sco>
 __host__ __device__ inline void __cxx_atomic_store(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Tp __val, memory_order __order) {
-    __cxx_atomic_store(__a->__get_atom(), __cxx_small_to_32(__val), __order);
+    __cxx_atomic_store(&__a->__a_value, __cxx_small_to_32(__val), __order);
 }
 
 template <typename _Tp, int _Sco>
 __host__ __device__ inline _Tp __cxx_atomic_load(__cxx_atomic_base_small_impl<_Tp, _Sco> const volatile* __a, memory_order __order) {
-    return __cxx_small_from_32<_Tp>(__cxx_atomic_load(__a->__get_atom(), __order));
+    return __cxx_small_from_32<_Tp>(__cxx_atomic_load(&__a->__a_value, __order));
 }
 
 template <typename _Tp, int _Sco>
 __host__ __device__ inline _Tp __cxx_atomic_exchange(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Tp __value, memory_order __order) {
-    return __cxx_small_from_32<_Tp>(__cxx_atomic_exchange(__a->__get_atom(), __cxx_small_to_32(__value), __order));
+    return __cxx_small_from_32<_Tp>(__cxx_atomic_exchange(&__a->__a_value, __cxx_small_to_32(__value), __order));
 }
 __host__ __device__
 inline int __cuda_memcmp(void const * __lhs, void const * __rhs, size_t __count) {
@@ -453,11 +440,11 @@ inline int __cuda_memcmp(void const * __lhs, void const * __rhs, size_t __count)
 template <typename _Tp, int _Sco>
 __host__ __device__ inline bool __cxx_atomic_compare_exchange_weak(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Tp* __expected, _Tp __value, memory_order __success, memory_order __failure) {
     auto __temp = __cxx_small_to_32(*__expected);
-    auto const __ret = __cxx_atomic_compare_exchange_weak(__a->__get_atom(), &__temp, __cxx_small_to_32(__value), __success, __failure);
+    auto const __ret = __cxx_atomic_compare_exchange_weak(&__a->__a_value, &__temp, __cxx_small_to_32(__value), __success, __failure);
     auto const __actual = __cxx_small_from_32<_Tp>(__temp);
     if(!__ret) {
         if(0 == __cuda_memcmp(&__actual, __expected, sizeof(_Tp)))
-            __cxx_atomic_fetch_and(__a->__get_atom(), (1u << (8*sizeof(_Tp))) - 1, memory_order::memory_order_relaxed);
+            __cxx_atomic_fetch_and(&__a->__a_value, (1u << (8*sizeof(_Tp))) - 1, memory_order::memory_order_relaxed);
         else
             *__expected = __actual;
     }
@@ -477,25 +464,25 @@ __host__ __device__ inline bool __cxx_atomic_compare_exchange_strong(__cxx_atomi
 
 template <typename _Tp, int _Sco>
 __host__ __device__ inline _Tp __cxx_atomic_fetch_add(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Tp __delta, memory_order __order) {
-    return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_add(__a->__get_atom(), __cxx_small_to_32(__delta), __order));
+    return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_add(&__a->__a_value, __cxx_small_to_32(__delta), __order));
 }
 
 template <typename _Tp, int _Sco>
 __host__ __device__ inline _Tp __cxx_atomic_fetch_sub(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Tp __delta, memory_order __order) {
-    return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_sub(__a->__get_atom(), __cxx_small_to_32(__delta), __order));
+    return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_sub(&__a->__a_value, __cxx_small_to_32(__delta), __order));
 }
 
 template <typename _Tp, int _Sco>
 __host__ __device__ inline _Tp __cxx_atomic_fetch_and(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Tp __pattern, memory_order __order) {
-    return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_and(__a->__get_atom(), __cxx_small_to_32(__pattern), __order));
+    return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_and(&__a->__a_value, __cxx_small_to_32(__pattern), __order));
 }
 
 template <typename _Tp, int _Sco>
 __host__ __device__ inline _Tp __cxx_atomic_fetch_or(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Tp __pattern, memory_order __order) {
-    return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_or(__a->__get_atom(), __cxx_small_to_32(__pattern), __order));
+    return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_or(&__a->__a_value, __cxx_small_to_32(__pattern), __order));
 }
 
 template <typename _Tp, int _Sco>
 __host__ __device__ inline _Tp __cxx_atomic_fetch_xor(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Tp __pattern, memory_order __order) {
-    return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_xor(__a->__get_atom(), __cxx_small_to_32(__pattern), __order));
+    return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_xor(&__a->__a_value, __cxx_small_to_32(__pattern), __order));
 }
