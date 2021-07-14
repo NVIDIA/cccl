@@ -122,8 +122,8 @@ void test_select_source()
     test_select_destination<Scope, T, local_memory_selector>();
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            // test_select_destination<Scope, T, shared_memory_selector>();
-            // test_select_destination<Scope, T, global_memory_selector>();
+            test_select_destination<Scope, T, shared_memory_selector>();
+            test_select_destination<Scope, T, global_memory_selector>();
         )
     )
 }
