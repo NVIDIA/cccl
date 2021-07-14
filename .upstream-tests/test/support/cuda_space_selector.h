@@ -27,9 +27,6 @@
 #define SHARED
 #endif
 
-#pragma diag_suppress 941
-#pragma diag_suppress 1057
-
 template<typename T, cuda::std::size_t SharedOffset>
 struct malloc_memory_provider {
     static const constexpr cuda::std::size_t prefix_size
@@ -39,20 +36,6 @@ struct malloc_memory_provider {
     static const constexpr cuda::std::size_t shared_offset = prefix_size + sizeof(T *);
 
 private:
-
-    __device__ char* device_static_storage() {
-        __shared__ alignas(T*) char storage[shared_offset];
-        return storage;
-    }
-
-
-#if !defined(__CUDACC_RTC__)
-    __host__ char* host_static_storage() {
-        alignas(T*) static char storage[shared_offset];
-        return storage;
-    }
-#endif
-
     __host__ __device__
     T *& get_pointer() {
         alignas(T*)
@@ -182,30 +165,19 @@ public:
         return ptr;
     }
 
-    __device__ void destruct_device() {
-        if (threadIdx.x == 0) {
-            ptr->~T();
-        }
-        __syncthreads();
-    }
-
-    __host__ void destruct_host() {
-        ptr->~T();
-    }
-
 #ifndef __CUDACC_RTC__
     __exec_check_disable__
 #endif
     __host__ __device__
     ~memory_selector() {
-        NV_DISPATCH_TARGET(
-            NV_IS_DEVICE, (
-                destruct_device();
-            ),
-            NV_IS_HOST, (
-                destruct_host();
-            )
-        )
+#ifdef __CUDA_ARCH__
+        if (threadIdx.x == 0) {
+#endif
+        ptr->~T();
+#ifdef __CUDA_ARCH__
+        }
+        __syncthreads();
+#endif
     }
 };
 

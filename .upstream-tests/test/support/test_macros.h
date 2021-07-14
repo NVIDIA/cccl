@@ -346,47 +346,18 @@ inline void DoNotOptimize(Tp const& value) {
 #define TEST_NOINLINE
 #endif
 
-template <typename _Tp>
-__device__ _Tp& maybe_shared_mem_device() {
-  __shared__ _Tp v;
-  return v;
-}
+// NVCC can't handle static member variables, so with a little care
+// a function returning a reference will result in the same thing
+#ifdef __CUDA_ARCH__
+# define _STATIC_MEMBER_IMPL(type) __shared__ type v;
+#else
+# define _STATIC_MEMBER_IMPL(type) static type v;
+#endif
 
-template <typename _Tp>
-__host__ _Tp& maybe_shared_mem_host()   {
-  static _Tp v;
-  return v;
-}
-
-template <typename _Tp>
-__host__ __device__ _Tp& maybe_shared_mem() {
-  NV_DISPATCH_TARGET(
-      NV_IS_DEVICE, (
-        return maybe_shared_mem_device<_Tp>();
-      ),
-      NV_IS_HOST, (
-        return maybe_shared_mem_host<_Tp>();
-      )
-    )
-}
 #define STATIC_MEMBER_VAR(name, type) \
-  __device__ static type& name##_device() { \
-    __shared__ type v;                      \
-    return v;                               \
-  }                                         \
-  __host__   static type& name##_host()   { \
-    static type v;                          \
-    return v;                               \
-  }                                         \
   __host__ __device__ static type& name() { \
-    NV_DISPATCH_TARGET(                     \
-      NV_IS_DEVICE, (                       \
-        return name##_device();             \
-      ),                                    \
-      NV_IS_HOST, (                         \
-        return name##_host();               \
-      )                                     \
-    )                                       \
+    _STATIC_MEMBER_IMPL(type); \
+    return v; \
   }
 
 #if defined(__GNUC__)

@@ -23,9 +23,11 @@
 
 #include "test_macros.h"
 
-struct global {
-  STATIC_MEMBER_VAR(count, int)
-};
+#ifdef __CUDA_ARCH__
+__device__ int count = 0;
+#else
+int count = 0;
+#endif
 
 struct Explicit {
   Explicit() = default;
@@ -41,7 +43,7 @@ template<class T>
 struct Derived : cuda::std::tuple<T> {
   using cuda::std::tuple<T>::tuple;
   template<class U>
-  __host__ __device__ operator cuda::std::tuple<U>() && { ++global::count(); return {}; }
+  __host__ __device__ operator cuda::std::tuple<U>() && { ++count; return {}; }
 };
 
 
@@ -49,31 +51,31 @@ template<class T>
 struct ExplicitDerived : cuda::std::tuple<T> {
   using cuda::std::tuple<T>::tuple;
   template<class U>
-  __host__ __device__ explicit operator cuda::std::tuple<U>() && { ++global::count(); return {}; }
+  __host__ __device__ explicit operator cuda::std::tuple<U>() && { ++count; return {}; }
 };
 
 int main(int, char**) {
   {
     cuda::std::tuple<Explicit> foo = Derived<int>{42}; ((void)foo);
-    assert(global::count() == 1);
+    assert(count == 1);
     cuda::std::tuple<Explicit> bar(Derived<int>{42}); ((void)bar);
-    assert(global::count() == 2);
+    assert(count == 2);
   }
-  global::count() = 0;
+  count = 0;
   {
     cuda::std::tuple<Implicit> foo = Derived<int>{42}; ((void)foo);
-    assert(global::count() == 1);
+    assert(count == 1);
     cuda::std::tuple<Implicit> bar(Derived<int>{42}); ((void)bar);
-    assert(global::count() == 2);
+    assert(count == 2);
   }
-  global::count() = 0;
+  count = 0;
   {
     static_assert(!cuda::std::is_convertible<
         ExplicitDerived<int>, cuda::std::tuple<Explicit>>::value, "");
     cuda::std::tuple<Explicit> bar(ExplicitDerived<int>{42}); ((void)bar);
-    assert(global::count() == 1);
+    assert(count == 1);
   }
-  global::count() = 0;
+  count = 0;
   {
     // FIXME: Libc++ incorrectly rejects this code.
 #ifndef _LIBCUDACXX_VERSION
@@ -86,11 +88,11 @@ int main(int, char**) {
         ExplicitDerived<int>, cuda::std::tuple<Implicit>>::value,
         "libc++ incorrectly rejects this");
 #endif
-    assert(global::count() == 0);
+    assert(count == 0);
     cuda::std::tuple<Implicit> bar(ExplicitDerived<int>{42}); ((void)bar);
-    assert(global::count() == 1);
+    assert(count == 1);
   }
-  global::count() = 0;
+  count = 0;
 
 
   return 0;

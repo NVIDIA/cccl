@@ -166,9 +166,16 @@ inline constexpr CallType operator|(CallType LHS, CallType RHS) {
 
 #if 0
 
+#ifdef __CUDA_ARCH__
+__device__
+#endif
+CallType      ForwardingCallObject_last_call_type = CT_None;
+#ifdef __CUDA_ARCH__
+__device__
+#endif
+TypeID const* ForwardingCallObject_last_call_args = nullptr;
+
 struct ForwardingCallObject {
-  STATIC_MEMBER_VAR(ForwardingCallObject_last_call_type, CallType)
-  STATIC_MEMBER_VAR(ForwardingCallObject_last_call_args, TypeID const*)
 
   template <class ...Args>
   __host__ __device__
@@ -202,21 +209,21 @@ struct ForwardingCallObject {
   template <class ...Args>
   __host__ __device__
   static void set_call(CallType type) {
-      assert(ForwardingCallObject_last_call_type() == CT_None);
-      assert(ForwardingCallObject_last_call_args() == nullptr);
-      ForwardingCallObject_last_call_type() = type;
-      ForwardingCallObject_last_call_args() = &makeArgumentID<Args...>();
+      assert(ForwardingCallObject_last_call_type == CT_None);
+      assert(ForwardingCallObject_last_call_args == nullptr);
+      ForwardingCallObject_last_call_type = type;
+      ForwardingCallObject_last_call_args = &makeArgumentID<Args...>();
   }
 
   template <class ...Args>
   __host__ __device__
   static bool check_call(CallType type) {
       bool result =
-           ForwardingCallObject_last_call_type() == type
-        && ForwardingCallObject_last_call_args()
-        && *ForwardingCallObject_last_call_args() == makeArgumentID<Args...>();
-      ForwardingCallObject_last_call_type() = CT_None;
-      ForwardingCallObject_last_call_args() = nullptr;
+           ForwardingCallObject_last_call_type == type
+        && ForwardingCallObject_last_call_args
+        && *ForwardingCallObject_last_call_args == makeArgumentID<Args...>();
+      ForwardingCallObject_last_call_type = CT_None;
+      ForwardingCallObject_last_call_args = nullptr;
       return result;
   }
 };
@@ -228,15 +235,18 @@ struct ForwardingCallObject {
 //                        BOOL TEST TYPES
 ///////////////////////////////////////////////////////////////////////////////
 
-struct EvilBool {
-  STATIC_MEMBER_VAR(EvilBool_bang_called, int)
+#ifdef __CUDA_ARCH__
+__device__
+#endif
+int EvilBool_bang_called = 0;
 
+struct EvilBool {
   EvilBool(EvilBool const&) = default;
   EvilBool(EvilBool&&) = default;
 
   __host__ __device__
   friend EvilBool operator!(EvilBool const& other) {
-    ++EvilBool_bang_called();
+    ++EvilBool_bang_called;
     return EvilBool{!other.value};
   }
 
@@ -399,12 +409,12 @@ void return_type_tests()
         using T = CopyCallable<EvilBool>;
         auto ret = cuda::std::not_fn(T{false});
         static_assert(is_same<decltype(ret()), EvilBool>::value, "");
-        EvilBool::EvilBool_bang_called() = 0;
+        EvilBool_bang_called = 0;
         auto value_ret = ret();
-        assert(EvilBool::EvilBool_bang_called() == 1);
+        assert(EvilBool_bang_called == 1);
         assert(value_ret.value == true);
         ret();
-        assert(EvilBool::EvilBool_bang_called() == 2);
+        assert(EvilBool_bang_called == 2);
     }
 }
 
@@ -517,8 +527,6 @@ void call_operator_sfinae_test() {
 __host__ __device__
 void call_operator_forwarding_test()
 {
-    ForwardingCallObject::ForwardingCallObject_last_call_type() = CT_None;
-    ForwardingCallObject::ForwardingCallObject_last_call_args() = nullptr;
     using Fn = ForwardingCallObject;
     auto obj = cuda::std::not_fn(Fn{});
     const auto& c_obj = obj;

@@ -25,7 +25,7 @@ __host__ __device__
 void test()
 {
   Selector<Barrier, Initializer> sel;
-  Barrier*& b = maybe_shared_mem<Barrier*>();
+  SHARED Barrier * b;
   b = sel.construct(2);
 
 #ifdef __CUDA_ARCH__

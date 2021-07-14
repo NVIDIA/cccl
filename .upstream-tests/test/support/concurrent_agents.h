@@ -11,15 +11,16 @@
     #include <thread>
 #endif
 
-#if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 350
-    #error "This test requires CUDA dynamic parallelism to work."
-#endif
-
 template<typename... Fs>
 __host__ __device__
 void concurrent_agents_launch(Fs ...fs)
 {
 #ifdef __CUDA_ARCH__
+
+    #if __CUDA_ARCH__ < 350
+        #error "This test requires CUDA dynamic parallelism to work."
+    #endif
+
     assert(blockDim.x == sizeof...(Fs));
 
     using fptr = void (*)(void *);

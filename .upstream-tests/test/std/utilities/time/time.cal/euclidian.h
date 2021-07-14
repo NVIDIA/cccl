@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/type_traits>
+#include <type_traits>
 
 
 //  Assumption: minValue < maxValue
@@ -24,33 +24,6 @@ T euclidian_addition(T rhs, T lhs)
     return ret;
 }
 
-template <typename T, T minValue, T maxValue, bool sign = cuda::std::is_signed<T>::value, T zero = 0>
-struct signed_euclidean_subtraction {
-    static constexpr T modulus = maxValue - minValue + 1;
-    __host__ __device__ T operator()(T lhs, T rhs) {
-        T ret = lhs - rhs;
-        if (ret < minValue) {
-            ret += modulus;
-        }
-        if (ret > maxValue) {
-            ret += modulus;
-        }
-        return ret;
-    }
-};
-
-template <typename T, T maxValue, T zero>
-struct signed_euclidean_subtraction<T, zero, maxValue, false, zero> {
-    static constexpr T modulus = maxValue + 1;
-    __host__ __device__ T operator()(T lhs, T rhs) {
-        T ret = lhs - rhs;
-        if (ret > maxValue) {
-            ret += modulus;
-        }
-        return ret;
-    }
-};
-
 //  Assumption: minValue < maxValue
 //  Assumption: minValue <= rhs <= maxValue
 //  Assumption: minValue <= lhs <= maxValue
@@ -59,7 +32,11 @@ template <typename T, T minValue, T maxValue>
 __host__ __device__
 T euclidian_subtraction(T lhs, T rhs)
 {
-    signed_euclidean_subtraction<T, minValue, maxValue> op;
-
-    return op(lhs, rhs);
+    const T modulus = maxValue - minValue + 1;
+    T ret = lhs - rhs;
+    if (std::is_signed<T>::value and (ret < minValue)) // avoids warning about comparison with zero if T is unsigned
+        ret += modulus;
+    if (ret > maxValue)     // this can happen if T is unsigned
+        ret += modulus;
+    return ret;
 }
