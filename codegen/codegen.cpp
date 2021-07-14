@@ -88,10 +88,6 @@ int main() {
         return "__cuda_fence_" + sem + "_" + scope;
     };
 
-    out << "_LIBCUDACXX_BEGIN_NAMESPACE_CUDA\n";
-    out << "namespace detail {\n";
-    out << "\n";
-
     for(auto& s : scopes) {
         out << "static inline __device__ void __cuda_membar_" << s.first << "() { asm volatile(\"membar" << membar_scopes[s.first] << ";\":::\"memory\"); }\n";
         for(auto& sem : fence_semantics)
@@ -316,8 +312,6 @@ int main() {
     }
 
     out << "\n";
-    out << "}\n";
-    out << "_LIBCUDACXX_END_NAMESPACE_CUDA\n";
 
     return 0;
 }
