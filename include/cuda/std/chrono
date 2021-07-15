@@ -31,7 +31,13 @@
 // fashion; if you include this header, the diagnostic will be suppressed
 // throughout the translation unit. The alternative is loosing (conforming)
 // chrono user-defined literals; this seems like the lesser of two evils, so...
-#pragma diag_suppress cuda_demote_unsupported_floating_point
+#if defined(_LIBCUDACXX_COMPILER_NVCC)
+#  if (CUDART_VERSION >= 11050)
+#    pragma nv_diag_suppress cuda_demote_unsupported_floating_point
+#  else
+#    pragma diag_suppress cuda_demote_unsupported_floating_point
+#  endif
+#endif
 
 #include "detail/libcxx/include/chrono"
 
