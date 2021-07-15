@@ -8,10 +8,13 @@
 //===----------------------------------------------------------------------===//
 
 #include <nv/target>
-#include <stdio.h>
-#include <assert.h>
 
-#if defined(__NVCC__)
+#if !defined(__CUDACC_RTC__)
+#include <assert.h>
+#include <stdio.h>
+#endif
+
+#if defined(__NVCC__) || defined(__CUDACC_RTC__)
 #  define TEST_NVCC
 #elif defined(__NVCOMPILER)
 #  define TEST_NVCXX
