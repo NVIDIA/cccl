@@ -1674,7 +1674,7 @@ _LIBCUDACXX_FUNC_VIS extern "C" void __sanitizer_annotate_contiguous_container(
 
 #ifndef _LIBCUDACXX_NODEBUG_TYPE
 #if __has_attribute(__nodebug__) && \
-    (defined(_LIBCUDACXX_CLANG_VER) && _LIBCUDACXX_CLANG_VER >= 1200)
+    (defined(_LIBCUDACXX_CLANG_VER) && _LIBCUDACXX_CLANG_VER >= 1210)
 #define _LIBCUDACXX_NODEBUG_TYPE __attribute__((nodebug))
 #else
 #define _LIBCUDACXX_NODEBUG_TYPE

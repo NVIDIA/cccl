@@ -96,9 +96,11 @@ __host__ __device__ void test_primary_template()
     cuda::std::tuple t1(T{});
     ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<T>);
 
+#if defined(__GNUC__) && (__GNUC__ < 11)
     const T v{};
     cuda::std::tuple t2(T{}, 101l, v);
     ASSERT_SAME_TYPE(decltype(t2), cuda::std::tuple<T, long, T>);
+#endif
   }
   // cuda::std::allocator not supported
   /*
