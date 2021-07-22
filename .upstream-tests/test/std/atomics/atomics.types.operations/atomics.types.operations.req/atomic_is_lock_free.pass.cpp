@@ -31,9 +31,9 @@ struct TestFn {
   __host__ __device__
   void operator()() const {
     typedef cuda::std::atomic<T> A;
-    A t;
+    A t{};
     bool b1 = cuda::std::atomic_is_lock_free(static_cast<const A*>(&t));
-    volatile A vt;
+    volatile A vt{};
     bool b2 = cuda::std::atomic_is_lock_free(static_cast<const volatile A*>(&vt));
     assert(b1 == b2);
   }
