@@ -298,6 +298,24 @@ struct __barrier_poll_tester {
     }
 };
 
+template<class __Barrier>
+struct __barrier_poll_tester_parity {
+    __Barrier const* __this;
+    bool __parity;
+
+    _LIBCUDACXX_INLINE_VISIBILITY
+    __barrier_poll_tester_parity(__Barrier const* __this_, bool __parity_)
+        : __this(__this_)
+        , __parity(__parity_)
+    {}
+
+    inline _LIBCUDACXX_INLINE_VISIBILITY
+    bool operator()() const
+    {
+        return __this->try_wait_parity(__parity);
+    }
+};
+
 template<int _Sco>
 class __barrier_base<__empty_completion, _Sco> {
 
@@ -325,6 +343,11 @@ private:
         uint64_t const __current = __phase_arrived_expected.load(memory_order_acquire);
         return ((__current & __phase_bit) != __phase);
     }
+    _LIBCUDACXX_INLINE_VISIBILITY
+    bool __try_wait_parity(bool __parity) const
+    {
+        return __try_wait_phase(__parity ? __phase_bit : 0);
+    }
 
 public:
     __barrier_base() = default;
@@ -340,9 +363,9 @@ public:
     __barrier_base& operator=(__barrier_base const&) = delete;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool __try_wait_parity(bool __parity) const
+    bool try_wait_parity(bool __parity) const
     {
-        return __try_wait_phase(__parity ? __phase_bit : 0);
+        return __try_wait_parity(__parity);
     }
     _LIBCUDACXX_INLINE_VISIBILITY
     bool try_wait(arrival_token __old) const
@@ -364,7 +387,12 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     void wait(arrival_token&& __phase) const
     {
-        __libcpp_thread_poll_with_backoff(__barrier_poll_tester<__barrier_base<__empty_completion, _Sco>>(this, _CUDA_VSTD::move(__phase)));
+        __libcpp_thread_poll_with_backoff(__barrier_poll_tester<__barrier_base>(this, _CUDA_VSTD::move(__phase)));
+    }
+    _LIBCUDACXX_INLINE_VISIBILITY
+    void wait_parity(bool __parity) const
+    {
+        __libcpp_thread_poll_with_backoff(__barrier_poll_tester_parity<__barrier_base>(this, __parity));
     }
     _LIBCUDACXX_INLINE_VISIBILITY
     void arrive_and_wait()

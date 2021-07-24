@@ -49,7 +49,7 @@ struct barrier_arrive_and_wait
 };
 
 template <bool Phase>
-struct barrier_arrive_parity_wait
+struct barrier_parity_wait
 {
     using async = cuda::std::true_type;
 
@@ -59,7 +59,7 @@ struct barrier_arrive_parity_wait
     {
         data.parity_waiting.store(true, cuda::std::memory_order_release);
         data.parity_waiting.notify_all();
-        cuda::barrier_wait_parity(&data.barrier, Phase);
+        data.barrier.wait_parity(Phase);
     }
 };
 
@@ -74,9 +74,14 @@ struct clear_token
 };
 
 using aw_aw_pw = performer_list<
+    barrier_parity_wait<false>,
     barrier_arrive_and_wait,
     barrier_arrive_and_wait,
-    barrier_arrive_parity_wait<false>,
+    async_tester_fence,
+    clear_token,
+    barrier_parity_wait<true>,
+    barrier_arrive_and_wait,
+    barrier_arrive_and_wait,
     async_tester_fence,
     clear_token
 >;

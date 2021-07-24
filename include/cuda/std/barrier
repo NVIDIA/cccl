@@ -75,38 +75,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template<class __Barrier>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool barrier_try_wait_parity(__Barrier const* __this, bool __parity)
-{
-    return __this->__try_wait_parity(__parity);
-}
-
-template<class __Barrier>
-struct __barrier_poll_tester_parity {
-    __Barrier const* __this;
-    bool __parity;
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    __barrier_poll_tester_parity(__Barrier const* __this_, bool __parity_)
-        : __this(__this_)
-        , __parity(__parity_)
-    {}
-
-    inline _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator()() const
-    {
-        return barrier_try_wait_parity(__this, __parity);
-    }
-};
-
-template<class __Barrier>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void barrier_wait_parity(__Barrier const* __this, bool __parity)
-{
-    _CUDA_VSTD::__libcpp_thread_poll_with_backoff(__barrier_poll_tester_parity<__Barrier>(__this, __parity));
-}
-
 template<>
 class barrier<thread_scope_block, std::__empty_completion> : public __block_scope_barrier_base {
     using __barrier_base = std::__barrier_base<std::__empty_completion, (int)thread_scope_block>;
@@ -161,7 +129,7 @@ public:
         else
 #endif
         {
-            return __barrier.__try_wait_parity(__parity);
+            return __barrier.try_wait_parity(__parity);
         }
     }
 
@@ -250,6 +218,18 @@ public:
     void wait(arrival_token && __phase) const
     {
         _CUDA_VSTD::__libcpp_thread_poll_with_backoff(std::__barrier_poll_tester<barrier>(this, _CUDA_VSTD::move(__phase)));
+    }
+
+    inline _LIBCUDACXX_INLINE_VISIBILITY
+    bool try_wait_parity(bool __parity) const
+    {
+        return __try_wait_parity(__parity);
+    }
+
+    inline _LIBCUDACXX_INLINE_VISIBILITY
+    void wait_parity(bool __parity) const
+    {
+        _CUDA_VSTD::__libcpp_thread_poll_with_backoff(std::__barrier_poll_tester_parity<barrier>(this, __parity));
     }
 
     inline _LIBCUDACXX_INLINE_VISIBILITY
