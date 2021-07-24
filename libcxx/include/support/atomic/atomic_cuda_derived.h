@@ -52,16 +52,22 @@ _Type __host__ __device__ __atomic_fetch_max_cuda(_Type volatile *__ptr, _Delta 
 
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     _Type __desired = __expected > __val ? __expected : __val;
-#ifdef __CUDA_ARCH__
-    while(__desired == __val &&
-          !__atomic_compare_exchange_cuda(__ptr, &__expected, &__desired, true, __memorder, __memorder, __s)) {
-#else
-    while(__desired == __val &&
-          !__atomic_compare_exchange(__ptr, &__expected, &__desired, true, __memorder, __memorder)) {
-#endif
-        __desired = __expected > __val ? __expected : __val;
-    }
-    return __expected;
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            while(__desired == __val &&
+                  !__atomic_compare_exchange_cuda(__ptr, &__expected, &__desired, true, __memorder, __memorder, __s)) {
+               __desired = __expected > __val ? __expected : __val;
+            }
+            return __expected;
+        ),
+        NV_IS_HOST, (
+            while(__desired == __val &&
+                  !__atomic_compare_exchange(__ptr, &__expected, &__desired, true, __memorder, __memorder)) {
+                __desired = __expected > __val ? __expected : __val;
+            }
+            return __expected;
+        )
+    )
 }
 
 template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2, int>::type = 0>
@@ -69,16 +75,22 @@ _Type __host__ __device__ __atomic_fetch_min_cuda(_Type volatile *__ptr, _Delta 
 
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     _Type __desired = __expected < __val ? __expected : __val;
-#ifdef __CUDA_ARCH__
-    while(__desired != __val &&
-          !__atomic_compare_exchange_cuda(__ptr, &__expected, &__desired, true, __memorder, __memorder, __s)) {
-#else
-    while(__desired != __val &&
-          !__atomic_compare_exchange(__ptr, &__expected, &__desired, true, __memorder, __memorder)) {
-#endif
-        __desired = __expected < __val ? __expected : __val;
-    }
-    return __expected;
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            while(__desired != __val &&
+                  !__atomic_compare_exchange_cuda(__ptr, &__expected, &__desired, true, __memorder, __memorder, __s)) {
+                __desired = __expected < __val ? __expected : __val;
+            }
+            return __expected;
+        ),
+        NV_IS_HOST, (
+            while(__desired != __val &&
+                  !__atomic_compare_exchange(__ptr, &__expected, &__desired, true, __memorder, __memorder)) {
+                __desired = __expected < __val ? __expected : __val;
+            }
+            return __expected;
+        )
+    )
 }
 
 template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2, int>::type = 0>

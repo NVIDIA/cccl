@@ -422,19 +422,22 @@ __host__ __device__ inline _Tp __cxx_atomic_exchange(__cxx_atomic_base_small_imp
 }
 __host__ __device__
 inline int __cuda_memcmp(void const * __lhs, void const * __rhs, size_t __count) {
-#ifdef __CUDA_ARCH__
-    auto __lhs_c = reinterpret_cast<unsigned char const *>(__lhs);
-    auto __rhs_c = reinterpret_cast<unsigned char const *>(__rhs);
-    while (__count--) {
-        auto const __lhs_v = *__lhs_c++;
-        auto const __rhs_v = *__rhs_c++;
-        if (__lhs_v < __rhs_v) { return -1; }
-        if (__lhs_v > __rhs_v) { return 1; }
-    }
-    return 0;
-#else
-    return memcmp(__lhs, __rhs, __count);
-#endif
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            auto __lhs_c = reinterpret_cast<unsigned char const *>(__lhs);
+            auto __rhs_c = reinterpret_cast<unsigned char const *>(__rhs);
+            while (__count--) {
+                auto const __lhs_v = *__lhs_c++;
+                auto const __rhs_v = *__rhs_c++;
+                if (__lhs_v < __rhs_v) { return -1; }
+                if (__lhs_v > __rhs_v) { return 1; }
+            }
+            return 0;
+        ),
+        NV_IS_HOST, (
+            return memcmp(__lhs, __rhs, __count);
+        )
+    )
 }
 
 template <typename _Tp, int _Sco>

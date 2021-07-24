@@ -193,11 +193,14 @@ inline __host__ __device__ void atomic_thread_fence(memory_order __m, thread_sco
 }
 
 inline __host__ __device__ void atomic_signal_fence(memory_order __m) {
-#ifdef __CUDA_ARCH__
-    detail::__atomic_signal_fence_cuda((int)__m);
-#else
-    ::std::atomic_signal_fence((::std::memory_order)__m);
-#endif
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            detail::__atomic_signal_fence_cuda((int)__m);
+        ),
+        NV_IS_HOST, (
+            ::std::atomic_signal_fence((::std::memory_order)__m);
+        )
+    )
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
