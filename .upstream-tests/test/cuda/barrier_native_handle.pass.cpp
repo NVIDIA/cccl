@@ -9,8 +9,8 @@
 
 // UNSUPPORTED: pre-sm-70
 
-#pragma diag_suppress static_var_with_dynamic_init
-#pragma diag_suppress set_but_not_used
+#pragma nv_diag_suppress static_var_with_dynamic_init
+#pragma nv_diag_suppress set_but_not_used
 
 #include <cuda/barrier>
 

@@ -42,7 +42,7 @@
 #include <cuda/std/utility> // for cuda::std::move
 #include <cuda/std/cassert>
 
-#pragma diag_suppress set_but_not_used
+#pragma nv_diag_suppress set_but_not_used
 
 struct NonCopyable {
     __host__ __device__
