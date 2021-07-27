@@ -261,7 +261,7 @@ template<class T, class charT, class traits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template<class _Tp> class _LIBCUDACXX_TEMPLATE_VIS complex;
+template<class _Tp> class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(_Tp)) complex;
 
 template<class _Tp> _LIBCUDACXX_INLINE_VISIBILITY
 complex<_Tp> operator*(const complex<_Tp>& __z, const complex<_Tp>& __w);
@@ -270,7 +270,7 @@ template<class _Tp> _LIBCUDACXX_INLINE_VISIBILITY
 complex<_Tp> operator/(const complex<_Tp>& __x, const complex<_Tp>& __y);
 
 template<class _Tp>
-class _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(_Tp))_LIBCUDACXX_TEMPLATE_VIS complex
+class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(_Tp)) complex
 {
 public:
     typedef _Tp value_type;
@@ -334,7 +334,7 @@ template<> class complex<long double>;
 #endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
 template<>
-class _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(float))_LIBCUDACXX_TEMPLATE_VIS complex<float>
+class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(float)) complex<float>
 {
     float __re_;
     float __im_;
@@ -392,7 +392,7 @@ public:
 };
 
 template<>
-class _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(double))_LIBCUDACXX_TEMPLATE_VIS complex<double>
+class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(double)) complex<double>
 {
     double __re_;
     double __im_;
@@ -450,7 +450,7 @@ public:
 };
 
 template<>
-class _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(long double))_LIBCUDACXX_TEMPLATE_VIS complex<long double>
+class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(long double)) complex<long double>
 {
 #ifndef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 public:
