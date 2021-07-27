@@ -183,22 +183,22 @@ inline bool __cxx_atomic_compare_exchange_weak(
 }
 
 template <typename _Tp>
-struct __skip_amt { enum {value = 1}; };
+struct __atomic_ptr_inc { enum {value = 1}; };
 
 template <typename _Tp>
-struct __skip_amt<_Tp*> { enum {value = sizeof(_Tp)}; };
+struct __atomic_ptr_inc<_Tp*> { enum {value = sizeof(_Tp)}; };
 
 // FIXME: Haven't figured out what the spec says about using arrays with
 // atomic_fetch_add. Force a failure rather than creating bad behavior.
 template <typename _Tp>
-struct __skip_amt<_Tp[]> { };
+struct __atomic_ptr_inc<_Tp[]> { };
 template <typename _Tp, int n>
-struct __skip_amt<_Tp[n]> { };
+struct __atomic_ptr_inc<_Tp[n]> { };
 
 template <typename _Tp, typename _Td>
 inline auto __cxx_atomic_fetch_add(_Tp* __a, _Td __delta,
                            memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
-  constexpr auto __skip_v = __skip_amt<__cxx_atomic_underlying_t<_Tp>>::value;
+  constexpr auto __skip_v = __atomic_ptr_inc<__cxx_atomic_underlying_t<_Tp>>::value;
   auto __a_tmp = __cxx_atomic_base_unwrap(__a);
   return __atomic_fetch_add(__a_tmp, __delta * __skip_v,
                             __to_gcc_order(__order));
@@ -207,7 +207,7 @@ inline auto __cxx_atomic_fetch_add(_Tp* __a, _Td __delta,
 template <typename _Tp, typename _Td>
 inline auto __cxx_atomic_fetch_sub(_Tp* __a, _Td __delta,
                            memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
-  constexpr auto __skip_v = __skip_amt<__cxx_atomic_underlying_t<_Tp>>::value;
+  constexpr auto __skip_v = __atomic_ptr_inc<__cxx_atomic_underlying_t<_Tp>>::value;
   auto __a_tmp = __cxx_atomic_base_unwrap(__a);
   return __atomic_fetch_sub(__a_tmp, __delta * __skip_v,
                             __to_gcc_order(__order));
