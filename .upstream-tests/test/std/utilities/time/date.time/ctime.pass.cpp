@@ -31,7 +31,7 @@
 #pragma GCC diagnostic ignored "-Wformat-zero-length"
 #endif
 
-#pragma diag_suppress set_but_not_used
+#pragma nv_diag_suppress set_but_not_used
 
 int main(int, char**)
 {

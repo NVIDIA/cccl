@@ -23,7 +23,7 @@
 #include "test_macros.h"
 // #include "type_id.h"
 
-#pragma diag_suppress set_but_not_used
+#pragma nv_diag_suppress set_but_not_used
 
 ///////////////////////////////////////////////////////////////////////////////
 //                       CALLABLE TEST TYPES

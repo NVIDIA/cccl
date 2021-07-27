@@ -9,8 +9,8 @@
 
 // UNSUPPORTED: pre-sm-70
 
-#pragma diag_suppress static_var_with_dynamic_init
-#pragma diag_suppress declared_but_not_referenced
+#pragma nv_diag_suppress static_var_with_dynamic_init
+#pragma nv_diag_suppress declared_but_not_referenced
 
 #include <cuda_pipeline.h>
 #include <cuda/barrier>

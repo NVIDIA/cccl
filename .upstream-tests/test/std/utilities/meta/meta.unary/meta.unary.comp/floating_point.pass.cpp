@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-#pragma diag_suppress cuda_demote_unsupported_floating_point
+#pragma nv_diag_suppress cuda_demote_unsupported_floating_point
 
 template <class T>
 __host__ __device__
