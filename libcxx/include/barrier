@@ -363,6 +363,12 @@ public:
     __barrier_base& operator=(__barrier_base const&) = delete;
 
     _LIBCUDACXX_INLINE_VISIBILITY
+    bool __try_wait(arrival_token __old) const
+    {
+        return __try_wait_phase(__old & __phase_bit);
+    }
+
+    _LIBCUDACXX_INLINE_VISIBILITY
     bool try_wait_parity(bool __parity) const
     {
         return __try_wait_parity(__parity);
@@ -370,7 +376,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     bool try_wait(arrival_token __old) const
     {
-        return __try_wait_phase(__old & __phase_bit);
+        return __try_wait(__old);
     }
 
     _LIBCUDACXX_NODISCARD_ATTRIBUTE inline _LIBCUDACXX_INLINE_VISIBILITY

@@ -87,7 +87,7 @@ public:
     using arrival_token = typename __barrier_base::arrival_token;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool try_wait(arrival_token __phase) const {
+    bool __try_wait(arrival_token __phase) const {
 #if __CUDA_ARCH__ >= 800
         if (__isShared(&__barrier)) {
             int __ready = 0;
@@ -218,6 +218,11 @@ public:
     void wait(arrival_token && __phase) const
     {
         _CUDA_VSTD::__libcpp_thread_poll_with_backoff(std::__barrier_poll_tester<barrier>(this, _CUDA_VSTD::move(__phase)));
+    }
+
+    _LIBCUDACXX_INLINE_VISIBILITY
+    bool try_wait(arrival_token __phase) const {
+        return __try_wait(_CUDA_VSTD::move(__phase));
     }
 
     inline _LIBCUDACXX_INLINE_VISIBILITY
