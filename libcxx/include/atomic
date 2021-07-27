@@ -671,7 +671,7 @@ __cxx_atomic_assign_volatile(_Tp volatile& __a_value, _Tv volatile const& __val)
 #endif
 
 // Headers are wrapped like so: (cuda::std::|std::)detail
-namespace detail {
+namespace __detail {
 #if defined(_LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL)
 #  include "support/atomic/atomic_cuda.h"
 #elif defined(_LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL)
@@ -684,20 +684,20 @@ namespace detail {
 #endif // _LIBCUDACXX_HAS_GCC_ATOMIC_IMP, _LIBCUDACXX_HAS_C_ATOMIC_IMP
 }
 
-using detail::__cxx_atomic_base_impl;
-using detail::__cxx_atomic_thread_fence;
-using detail::__cxx_atomic_signal_fence;
-using detail::__cxx_atomic_load;
-using detail::__cxx_atomic_store;
-using detail::__cxx_atomic_exchange;
-using detail::__cxx_atomic_compare_exchange_weak;
-using detail::__cxx_atomic_compare_exchange_strong;
-using detail::__cxx_atomic_fetch_add;
-using detail::__cxx_atomic_fetch_sub;
-using detail::__cxx_atomic_fetch_or;
-using detail::__cxx_atomic_fetch_and;
-using detail::__cxx_atomic_fetch_xor;
-using detail::__cxx_atomic_is_lock_free;
+using __detail::__cxx_atomic_base_impl;
+using __detail::__cxx_atomic_thread_fence;
+using __detail::__cxx_atomic_signal_fence;
+using __detail::__cxx_atomic_load;
+using __detail::__cxx_atomic_store;
+using __detail::__cxx_atomic_exchange;
+using __detail::__cxx_atomic_compare_exchange_weak;
+using __detail::__cxx_atomic_compare_exchange_strong;
+using __detail::__cxx_atomic_fetch_add;
+using __detail::__cxx_atomic_fetch_sub;
+using __detail::__cxx_atomic_fetch_or;
+using __detail::__cxx_atomic_fetch_and;
+using __detail::__cxx_atomic_fetch_xor;
+using __detail::__cxx_atomic_is_lock_free;
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY

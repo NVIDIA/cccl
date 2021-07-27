@@ -93,7 +93,7 @@ _LIBCUDACXX_INLINE_VISIBILITY auto constexpr __scope_tag() ->
 // END TODO
 
 // Wrap host atomic implementations into a sub-namespace
-namespace host {
+namespace __host {
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
 #  include "atomic_msvc.h"
 #elif defined (_LIBCUDACXX_HAS_GCC_ATOMIC_IMP)
@@ -107,12 +107,6 @@ namespace host {
 #include "atomic_cuda_generated.h"
 #include "atomic_cuda_derived.h"
 
-template <typename _Tp>
-struct __skip_amt { enum {value = 1}; };
-
-template <typename _Tp>
-struct __skip_amt<_Tp*> { enum {value = sizeof(_Tp)}; };
-
 _LIBCUDACXX_INLINE_VISIBILITY
  bool __cxx_atomic_is_lock_free(size_t __x) {
     return __x <= 8;
@@ -122,10 +116,10 @@ _LIBCUDACXX_INLINE_VISIBILITY
  void __cxx_atomic_thread_fence(memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            detail::__atomic_thread_fence_cuda(__order, detail::__thread_scope_system_tag());
+            __atomic_thread_fence_cuda(__order, __thread_scope_system_tag());
         ),
         NV_IS_HOST, (
-            host::__cxx_atomic_thread_fence(__order);
+            __host::__cxx_atomic_thread_fence(__order);
         )
     )
 }
@@ -134,10 +128,10 @@ _LIBCUDACXX_INLINE_VISIBILITY
  void __cxx_atomic_signal_fence(memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            detail::__atomic_signal_fence_cuda(__order);
+            __atomic_signal_fence_cuda(__order);
         ),
         NV_IS_HOST, (
-            host::__cxx_atomic_signal_fence(__order);
+            __host::__cxx_atomic_signal_fence(__order);
         )
     )
 }
@@ -145,8 +139,8 @@ _LIBCUDACXX_INLINE_VISIBILITY
 template <typename _Tp, int _Sco, bool _Ref>
 using __cxx_atomic_base_heterogeneous_storage
             = typename conditional<_Ref,
-                    host::__cxx_atomic_ref_base_impl<_Tp, _Sco>,
-                    host::__cxx_atomic_base_impl<_Tp, _Sco> >::type;
+                    __host::__cxx_atomic_ref_base_impl<_Tp, _Sco>,
+                    __host::__cxx_atomic_base_impl<_Tp, _Sco> >::type;
 
 
 template <typename _Tp, int _Sco, bool _Ref = false>
@@ -224,10 +218,10 @@ __host__ __device__
     alignas(_Tp) auto __tmp = __val;
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            detail::__atomic_store_n_cuda(__a->__get_device(), __tmp, __order, detail::__scope_tag<_Sco>());
+            __atomic_store_n_cuda(__a->__get_device(), __tmp, __order, __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
-            host::__cxx_atomic_store(__a->__get_host(), __tmp, __order);
+            __host::__cxx_atomic_store(__a->__get_host(), __tmp, __order);
         )
     )
 }
@@ -237,10 +231,10 @@ __host__ __device__
  _Tp __cxx_atomic_load(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> const volatile* __a, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return detail::__atomic_load_n_cuda(__a->__get_device(), __order, detail::__scope_tag<_Sco>());
+            return __atomic_load_n_cuda(__a->__get_device(), __order, __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
-            return host::__cxx_atomic_load(__a->__get_host(), __order);
+            return __host::__cxx_atomic_load(__a->__get_host(), __order);
         )
     )
 }
@@ -251,10 +245,10 @@ __host__ __device__
     alignas(_Tp) auto __tmp = __val;
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return detail::__atomic_exchange_n_cuda(__a->__get_device(), __tmp, __order, detail::__scope_tag<_Sco>());
+            return __atomic_exchange_n_cuda(__a->__get_device(), __tmp, __order, __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
-            return host::__cxx_atomic_exchange(__a->__get_host(), __tmp, __order);
+            return __host::__cxx_atomic_exchange(__a->__get_host(), __tmp, __order);
         )
     )
 }
@@ -267,10 +261,10 @@ __host__ __device__
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
             alignas(_Tp) auto __tmp_v = __val;
-            __result = detail::__atomic_compare_exchange_cuda(__a->__get_device(), &__tmp, &__tmp_v, false, __success, __failure, detail::__scope_tag<_Sco>());
+            __result = __atomic_compare_exchange_cuda(__a->__get_device(), &__tmp, &__tmp_v, false, __success, __failure, __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
-            __result = host::__cxx_atomic_compare_exchange_strong(__a->__get_host(), &__tmp, __val, __success, __failure);
+            __result = __host::__cxx_atomic_compare_exchange_strong(__a->__get_host(), &__tmp, __val, __success, __failure);
         )
     )
     *__expected = __tmp;
@@ -285,10 +279,10 @@ __host__ __device__
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
             alignas(_Tp) auto __tmp_v = __val;
-            __result = detail::__atomic_compare_exchange_cuda(__a->__get_device(), &__tmp, &__tmp_v, true, __success, __failure, detail::__scope_tag<_Sco>());
+            __result = __atomic_compare_exchange_cuda(__a->__get_device(), &__tmp, &__tmp_v, true, __success, __failure, __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
-            __result = host::__cxx_atomic_compare_exchange_weak(__a->__get_host(), &__tmp, __val, __success, __failure);
+            __result = __host::__cxx_atomic_compare_exchange_weak(__a->__get_host(), &__tmp, __val, __success, __failure);
         )
     )
     *__expected = __tmp;
@@ -300,10 +294,10 @@ __host__ __device__
  _Tp __cxx_atomic_fetch_add(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __delta, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return detail::__atomic_fetch_add_cuda(__a->__get_device(), __delta, __order, detail::__scope_tag<_Sco>());
+            return __atomic_fetch_add_cuda(__a->__get_device(), __delta, __order, __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
-            return host::__cxx_atomic_fetch_add(__a->__get_host(), __delta, __order);
+            return __host::__cxx_atomic_fetch_add(__a->__get_host(), __delta, __order);
         )
     )
 }
@@ -313,10 +307,10 @@ __host__ __device__
  _Tp* __cxx_atomic_fetch_add(__cxx_atomic_base_heterogeneous_impl<_Tp*, _Sco, _Ref> volatile* __a, ptrdiff_t __delta, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return detail::__atomic_fetch_add_cuda(__a->__get_device(), __delta, __order, detail::__scope_tag<_Sco>());
+            return __atomic_fetch_add_cuda(__a->__get_device(), __delta, __order, __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
-            return host::__cxx_atomic_fetch_add(__a->__get_host(), __delta, __order);
+            return __host::__cxx_atomic_fetch_add(__a->__get_host(), __delta, __order);
         )
     )
 }
@@ -326,10 +320,10 @@ __host__ __device__
  _Tp __cxx_atomic_fetch_sub(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __delta, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return detail::__atomic_fetch_sub_cuda(__a->__get_device(), __delta, __order, detail::__scope_tag<_Sco>());
+            return __atomic_fetch_sub_cuda(__a->__get_device(), __delta, __order, __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
-            return host::__cxx_atomic_fetch_sub(__a->__get_host(), __delta, __order);
+            return __host::__cxx_atomic_fetch_sub(__a->__get_host(), __delta, __order);
         )
     )
 }
@@ -339,10 +333,10 @@ __host__ __device__
  _Tp* __cxx_atomic_fetch_sub(__cxx_atomic_base_heterogeneous_impl<_Tp*, _Sco, _Ref> volatile* __a, ptrdiff_t __delta, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return detail::__atomic_fetch_sub_cuda(__a->__get_device(), __delta, __order, detail::__scope_tag<_Sco>());
+            return __atomic_fetch_sub_cuda(__a->__get_device(), __delta, __order, __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
-            return host::__cxx_atomic_fetch_sub(__a->__get_host(), __delta, __order);
+            return __host::__cxx_atomic_fetch_sub(__a->__get_host(), __delta, __order);
         )
     )
 }
@@ -352,10 +346,10 @@ __host__ __device__
  _Tp __cxx_atomic_fetch_and(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __pattern, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return detail::__atomic_fetch_and_cuda(__a->__get_device(), __pattern, __order, detail::__scope_tag<_Sco>());
+            return __atomic_fetch_and_cuda(__a->__get_device(), __pattern, __order, __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
-            return host::__cxx_atomic_fetch_and(__a->__get_host(), __pattern, __order);
+            return __host::__cxx_atomic_fetch_and(__a->__get_host(), __pattern, __order);
         )
     )
 }
@@ -365,10 +359,10 @@ __host__ __device__
  _Tp __cxx_atomic_fetch_or(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __pattern, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return detail::__atomic_fetch_or_cuda(__a->__get_device(), __pattern, __order, detail::__scope_tag<_Sco>());
+            return __atomic_fetch_or_cuda(__a->__get_device(), __pattern, __order, __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
-            return host::__cxx_atomic_fetch_or(__a->__get_host(), __pattern, __order);
+            return __host::__cxx_atomic_fetch_or(__a->__get_host(), __pattern, __order);
         )
     )
 }
@@ -378,10 +372,10 @@ __host__ __device__
  _Tp __cxx_atomic_fetch_xor(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __pattern, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return detail::__atomic_fetch_xor_cuda(__a->__get_device(), __pattern, __order, detail::__scope_tag<_Sco>());
+            return __atomic_fetch_xor_cuda(__a->__get_device(), __pattern, __order, __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
-            return host::__cxx_atomic_fetch_xor(__a->__get_host(), __pattern, __order);
+            return __host::__cxx_atomic_fetch_xor(__a->__get_host(), __pattern, __order);
         )
     )
 }
