@@ -48,6 +48,17 @@ ARG CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/c
 ARG TINI_VER=0.18.0
 ARG TINI_URL=https://github.com/krallin/tini/releases/download/v${TINI_VER}/tini
 
+# `--silent --show-error` disables non-error output.
+# `--fail` causes `curl` to return an error code on HTTP errors.
+ARG CURL="curl --silent --show-error --fail"
+
+# `-y` answers yes to any interactive prompts.
+# `--no-install-recommends` avoids unnecessary packages, keeping the image smaller.
+ARG APT_GET="apt-get -y --no-install-recommends"
+
+# `-y` answers yes to any interactive prompts.
+ARG YUM="yum -y"
+
 ENV TZ=US/Pacific
 ENV DEBIAN_FRONTEND=noninteractive
 # apt-key complains about non-interactive usage.
@@ -55,13 +66,14 @@ ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 
 SHELL ["/usr/bin/env", "bash", "-c"]
 
-RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
+RUN function comment() { :; }; \
+    if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       export ALTERNATIVES=update-alternatives; \
-      apt-get -y update; \
-      apt-get -y --no-install-recommends install apt-utils \
+      ${APT_GET} update; \
+      ${APT_GET} install apt-utils \
         2> >(grep -v 'debconf: delaying package configuration, since apt-utils is not installed' >&2); \
-      apt-get -y --no-install-recommends install curl; \
-      apt-get -y --no-install-recommends install gnupg; \
+      ${APT_GET} install curl; \
+      ${APT_GET} install gnupg; \
       if   [[ "${CXX_TYPE}" == "gcc" && "${CXX_VER}" -le 6 ]]; then \
         echo "deb ${UBUNTU_ARCHIVE_DEB_REPO}" >> /etc/apt/sources.list.d/ubuntu-archive.list; \
       elif [[ "${CXX_TYPE}" == "gcc" && "${CXX_VER}" -ge 6 ]]; then \
@@ -70,32 +82,39 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
         apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ${UBUNTU_TOOL_FINGER} 2>&1; \
       elif [[ "${CXX_TYPE}" == "icc" ]]; then \
         echo "deb ${ICC_DEB_REPO}" > /etc/apt/sources.list.d/icc.list; \
-        curl --silent --show-error -L ${ICC_KEY} -o - | apt-key add -; \
+        ${CURL} -L ${ICC_KEY} -o - | apt-key add -; \
       fi; \
-      apt-get -y update; \
-      apt-get -y --no-install-recommends install python3-pip python3-setuptools python3-wheel; \
+      ${APT_GET} update; \
+      ${APT_GET} install python3-pip python3-setuptools python3-wheel; \
       ${ALTERNATIVES} --install /usr/bin/python python $(which python3) 3; \
       ${ALTERNATIVES} --set python $(which python3); \
-      apt-get -y --no-install-recommends install sudo; \
-      apt-get -y --no-install-recommends install make ninja-build; \
-      apt-get -y --no-install-recommends install llvm-dev; \
-      apt-get -y --no-install-recommends install libtbb-dev; \
-      apt-get -y --no-install-recommends install libomp-dev; \
-      apt-get -y --no-install-recommends install gdb; \
-      apt-get -y --no-install-recommends install strace; \
-      apt-get -y --no-install-recommends install less; \
-      apt-get -y --no-install-recommends install git; \
-      apt-get -y --no-install-recommends install vim emacs-nox; \
+      ${APT_GET} install zip unzip tar; \
+      ${APT_GET} install sudo; \
+      ${APT_GET} install openssh-client; \
+      ${APT_GET} install llvm-dev; \
+      ${APT_GET} install libtbb-dev; \
+      ${APT_GET} install libomp-dev; \
+      ${APT_GET} install make ninja-build; \
+      ${APT_GET} install pkg-config; \
+      ${APT_GET} install gdb; \
+      ${APT_GET} install strace; \
+      ${APT_GET} install less; \
+      ${APT_GET} install git; \
+      ${APT_GET} install vim emacs-nox; \
+      comment "For Thrust/CUB documentation."; \
+      ${APT_GET} install bundler ruby-dev; \
+      ${APT_GET} install doxygen; \
+      ${APT_GET} install g++-9; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
-        apt-get -y --no-install-recommends install g++-${CXX_VER} gcc-${CXX_VER}; \
+        ${APT_GET} install g++-${CXX_VER} gcc-${CXX_VER}; \
         export CC=$(which gcc-${CXX_VER}); \
         export CXX=$(which g++-${CXX_VER}); \
       elif [[ "${CXX_TYPE}" == "clang" ]]; then \
-        apt-get -y --no-install-recommends install clang-${CXX_VER}; \
+        ${APT_GET} install clang-${CXX_VER}; \
         export CC=$(which clang-${CXX_VER}); \
         export CXX=$(which clang++-${CXX_VER}); \
       elif [[ "${CXX_TYPE}" == "icc" ]]; then \
-        apt-get -y --no-install-recommends install intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic g++; \
+        ${APT_GET} install intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic g++; \
         source /opt/intel/oneapi/setvars.sh; \
         echo "bash_args=(\"\$@\")"                            >> /etc/cccl.bashrc; \
         echo "source /opt/intel/oneapi/setvars.sh"            >> /etc/cccl.bashrc; \
@@ -107,34 +126,37 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
         export CC=$(which nvc); \
         export CXX=$(which nvc++); \
       fi; \
-      apt-get clean; \
+      ${APT_GET} clean; \
       rm -rf /var/lib/apt/lists/*; \
       echo "source /etc/cccl.bashrc" >> /etc/bash.bashrc; \
     elif [[ "${OS_TYPE}" == "centos" ]]; then \
       export ALTERNATIVES=alternatives; \
-      yum -y --enablerepo=extras install epel-release; \
-      yum -y updateinfo; \
-      yum -y install centos-release-scl; \
-      yum -y install which; \
-      yum -y install python python-pip; \
-      yum -y install sudo; \
-      yum -y install make ninja-build; \
-      yum -y install llvm-devel; \
-      yum -y install tbb-devel; \
-      yum -y install gdb; \
-      yum -y install strace; \
-      yum -y install less; \
-      yum -y install git; \
-      yum -y install vim emacs-nox; \
+      ${YUM} --enablerepo=extras install epel-release; \
+      ${YUM} updateinfo; \
+      ${YUM} install centos-release-scl; \
+      ${YUM} install which; \
+      ${YUM} install python python-pip; \
+      ${YUM} install zip unzip tar; \
+      ${YUM} install sudo; \
+      ${YUM} install openssh-clients; \
+      ${YUM} install pkgconfig; \
+      ${YUM} install make ninja-build; \
+      ${YUM} install llvm-devel; \
+      ${YUM} install tbb-devel; \
+      ${YUM} install gdb; \
+      ${YUM} install strace; \
+      ${YUM} install less; \
+      ${YUM} install git; \
+      ${YUM} install vim emacs-nox; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
-        yum -y install devtoolset-${CXX_VER}-gcc*; \
+        ${YUM} install devtoolset-${CXX_VER}-gcc*; \
         source scl_source enable devtoolset-${CXX_VER}; \
         echo "source scl_source enable devtoolset-${CXX_VER}" >> /etc/cccl.bashrc; \
         source /etc/cccl.bashrc; \
         export CC=$(which gcc); \
         export CXX=$(which g++); \
       elif [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
-        yum -y install devtoolset-7-gcc*; \
+        ${YUM} install devtoolset-7-gcc*; \
         echo "source scl_source enable devtoolset-7" >> /etc/cccl.bashrc; \
         source /etc/cccl.bashrc; \
         export CC=$(which nvc); \
@@ -169,10 +191,38 @@ RUN if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
     echo "export CXX_VER=${CXX_VER}"      >> /etc/cccl.bashrc; \
     echo "ALL ALL=(ALL) NOPASSWD:ALL"     >> /etc/sudoers; \
     pip install lit; \
-    curl --silent --show-error -L ${CMAKE_URL} -o cmake.bash; \
+    ${CURL} -L ${CMAKE_URL} -o cmake.bash; \
     bash cmake.bash -- --skip-license --prefix=/usr; \
     rm cmake.bash; \
-    curl --silent --show-error -L ${TINI_URL} -o /usr/bin/tini; \
+    if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
+      git clone https://github.com/microsoft/vcpkg /tmp/vcpkg 2>&1; \
+      /tmp/vcpkg/bootstrap-vcpkg.sh -disableMetrics -useSystemBinaries; \
+      git clone https://github.com/pantor/inja.git /tmp/inja 2>&1; \
+      mkdir /tmp/inja/build; \
+      cmake -B /tmp/inja/build \
+            -DCMAKE_CXX_COMPILER=g++-9 \
+            -DCMAKE_BUILD_TYPE=MinSizeRel \
+            /tmp/inja; \
+      cmake --build /tmp/inja/build --config MinSizeRel; \
+      git clone https://github.com/matusnovak/doxybook2.git /tmp/doxybook2 2>&1; \
+      comment "--no-binarycaching avoids zipping up and storing stuff we're "; \
+      comment "just going to delete later."; \
+      /tmp/vcpkg/vcpkg --no-binarycaching install argagg catch2 fmt dirent fmt nlohmann-json rang; \
+      mkdir /tmp/doxybook2/build; \
+      cmake -B /tmp/doxybook2/build \
+            -DCMAKE_CXX_COMPILER=g++-9 \
+            -DCMAKE_BUILD_TYPE=MinSizeRel \
+            -DCMAKE_PREFIX_PATH=/tmp/inja/build \
+            -DCMAKE_TOOLCHAIN_FILE=/tmp/vcpkg/scripts/buildsystems/vcpkg.cmake \
+            /tmp/doxybook2; \
+      cmake --build /tmp/doxybook2/build --config MinSizeRel; \
+      cmake --install /tmp/doxybook2/build --config MinSizeRel; \
+      rm -rf /tmp/vcpkg; \
+      rm -rf ~/.vcpkg; \
+      rm -rf /tmp/inja; \
+      rm -rf /tmp/doxybook2; \
+    fi; \
+    ${CURL} -L ${TINI_URL} -o /usr/bin/tini; \
     chmod +x /usr/bin/tini; \
     ${CXX} --version
 
