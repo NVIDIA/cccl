@@ -139,6 +139,7 @@ template <typename _Tp, typename _Up>
 inline void __cxx_atomic_store(_Tp* __a,  _Up __val,
                         memory_order __order) {
   auto __a_tmp = __cxx_atomic_base_unwrap(__a);
+  (void)__a_tmp;
   __atomic_store(__a_tmp, &__val, __to_gcc_order(__order));
 }
 
@@ -146,6 +147,7 @@ template <typename _Tp>
 inline auto __cxx_atomic_load(const _Tp* __a,
                        memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   auto __a_tmp = __cxx_atomic_base_unwrap(__a);
+  (void)__a_tmp;
   __cxx_atomic_underlying_t<_Tp> __ret;
   __atomic_load(__a_tmp, &__ret, __to_gcc_order(__order));
   return __ret;
@@ -155,6 +157,7 @@ template <typename _Tp, typename _Up>
 inline auto __cxx_atomic_exchange(_Tp* __a, _Up __value,
                           memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   auto __a_tmp = __cxx_atomic_base_unwrap(__a);
+  (void)__a_tmp;
   __cxx_atomic_underlying_t<_Tp> __ret;
   __atomic_exchange(__a_tmp, &__value, &__ret, __to_gcc_order(__order));
   return __ret;
@@ -165,6 +168,8 @@ inline bool __cxx_atomic_compare_exchange_strong(
     _Tp* __a, _Up* __expected, _Up __value, memory_order __success,
     memory_order __failure) {
   auto __a_tmp = __cxx_atomic_base_unwrap(__a);
+  (void)__a_tmp;
+  (void)__expected;
   return __atomic_compare_exchange(__a_tmp, __expected, &__value,
                                    false,
                                    __to_gcc_order(__success),
@@ -176,6 +181,8 @@ inline bool __cxx_atomic_compare_exchange_weak(
     _Tp* __a, _Up* __expected, _Up __value, memory_order __success,
     memory_order __failure) {
   auto __a_tmp = __cxx_atomic_base_unwrap(__a);
+  (void)__a_tmp;
+  (void)__expected;
   return __atomic_compare_exchange(__a_tmp, __expected, &__value,
                                    true,
                                    __to_gcc_order(__success),
