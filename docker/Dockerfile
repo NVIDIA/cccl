@@ -116,10 +116,6 @@ RUN function comment() { :; }; \
       elif [[ "${CXX_TYPE}" == "icc" ]]; then \
         ${APT_GET} install intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic g++; \
         source /opt/intel/oneapi/setvars.sh; \
-        echo "bash_args=(\"\$@\")"                            >> /etc/cccl.bashrc; \
-        echo "source /opt/intel/oneapi/setvars.sh"            >> /etc/cccl.bashrc; \
-        echo "export CMAKE_LIBRARY_PATH=\"\${LIBRARY_PATH}\"" >> /etc/cccl.bashrc; \
-        echo "set -- \"\${bash_args[@]}\""                    >> /etc/cccl.bashrc; \
         export CC=$(which icc); \
         export CXX=$(which icpc); \
       elif [[ "${CXX_TYPE}" == "nvcxx" ]]; then \
@@ -189,6 +185,12 @@ RUN function comment() { :; }; \
     echo "export OS_VER=${OS_VER}"        >> /etc/cccl.bashrc; \
     echo "export CXX_TYPE=${CXX_TYPE}"    >> /etc/cccl.bashrc; \
     echo "export CXX_VER=${CXX_VER}"      >> /etc/cccl.bashrc; \
+    if [[ "${CXX_TYPE}" == "icc" ]]; then \
+      echo "bash_args=(\"\$@\")"                            >> /etc/cccl.bashrc; \
+      echo "source /opt/intel/oneapi/setvars.sh --force"    >> /etc/cccl.bashrc; \
+      echo "export CMAKE_LIBRARY_PATH=\"\${LIBRARY_PATH}\"" >> /etc/cccl.bashrc; \
+      echo "set -- \"\${bash_args[@]}\""                    >> /etc/cccl.bashrc; \
+    fi; \
     echo "ALL ALL=(ALL) NOPASSWD:ALL"     >> /etc/sudoers; \
     pip install lit; \
     ${CURL} -L ${CMAKE_URL} -o cmake.bash; \
