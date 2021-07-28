@@ -10,7 +10,7 @@ For details on specific releases, please see the [changelog].
 
 ## Usage Requirements
 
-To use the NVIDIA C++ Standard Library, you must follow meet the following
+To use the NVIDIA C++ Standard Library, you must meet the following
   requirements.
 
 ### System Software
