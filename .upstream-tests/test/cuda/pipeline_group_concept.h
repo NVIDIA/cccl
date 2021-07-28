@@ -9,6 +9,9 @@
 
 // UNSUPPORTED: pre-sm-70
 
+// TODO: Remove pointless comparison suppression when compiler fixes short-circuiting
+#pragma nv_diag_suppress 186
+
 #include <cuda/pipeline>
 
 template <typename T_size, typename T_thread_rank>
