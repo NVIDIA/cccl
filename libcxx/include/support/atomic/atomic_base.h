@@ -142,18 +142,14 @@ void __cxx_atomic_signal_fence(memory_order __order) {
 template <typename _Tp, typename _Up>
 inline void __cxx_atomic_store(_Tp* __a,  _Up __val,
                         memory_order __order) {
-  auto __a_tmp = __cxx_atomic_base_unwrap(__a);
-  (void)__a_tmp;
-  __cxx_atomic_base_impl<__cxx_atomic_underlying_t<_Tp>, _Tp::__sco> __v_temp(__val);
+  typename _CUDA_VSTD::remove_cv<_Tp>::type __v_temp(__val);
   __atomic_store(__a, &__v_temp, __to_gcc_order(__order));
 }
 
 template <typename _Tp>
 inline auto __cxx_atomic_load(const _Tp* __a,
                        memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
-  auto __a_tmp = __cxx_atomic_base_unwrap(__a);
-  (void)__a_tmp;
-  __cxx_atomic_base_impl<__cxx_atomic_underlying_t<_Tp>, _Tp::__sco> __ret;
+  typename _CUDA_VSTD::remove_cv<_Tp>::type __ret;
   __atomic_load(__a, &__ret, __to_gcc_order(__order));
   return __ret.__a_value;
 }
@@ -161,10 +157,8 @@ inline auto __cxx_atomic_load(const _Tp* __a,
 template <typename _Tp, typename _Up>
 inline auto __cxx_atomic_exchange(_Tp* __a, _Up __value,
                           memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
-  auto __a_tmp = __cxx_atomic_base_unwrap(__a);
-  (void)__a_tmp;
-  __cxx_atomic_base_impl<__cxx_atomic_underlying_t<_Tp>, _Tp::__sco> __v_temp(__value);
-  __cxx_atomic_base_impl<__cxx_atomic_underlying_t<_Tp>, _Tp::__sco> __ret;
+  typename _CUDA_VSTD::remove_cv<_Tp>::type __v_temp(__value);
+  typename _CUDA_VSTD::remove_cv<_Tp>::type __ret;
   __atomic_exchange(__a, &__v_temp, &__ret, __to_gcc_order(__order));
   return __ret.__a_value;
 }
