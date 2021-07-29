@@ -109,11 +109,11 @@
   (_LIBCUDACXX_CUDA_API_VERSION % 1000)
 
 #ifndef _LIBCUDACXX_CUDA_ABI_VERSION_LATEST
-#  define _LIBCUDACXX_CUDA_ABI_VERSION_LATEST 3
+#  define _LIBCUDACXX_CUDA_ABI_VERSION_LATEST 4
 #endif
 
 #ifdef _LIBCUDACXX_CUDA_ABI_VERSION
-#  if _LIBCUDACXX_CUDA_ABI_VERSION != 2 && _LIBCUDACXX_CUDA_ABI_VERSION != 3
+#  if _LIBCUDACXX_CUDA_ABI_VERSION != 2 && _LIBCUDACXX_CUDA_ABI_VERSION != 3 && _LIBCUDACXX_CUDA_ABI_VERSION != 4
 #    error Unsupported libcu++ ABI version requested. Please define _LIBCUDACXX_CUDA_ABI_VERSION to either 2 or 3.
 #  endif
 #else
@@ -121,9 +121,9 @@
 #endif
 
 #ifdef _LIBCUDACXX_PIPELINE_ASSUMED_ABI_VERSION
-#if _LIBCUDACXX_PIPELINE_ASSUMED_ABI_VERSION != _LIBCUDACXX_CUDA_ABI_VERSION
-#error cuda_pipeline.h has assumed a different libcu++ ABI version than provided by this library. To fix this, please include a libcu++ header before including cuda_pipeline.h, or upgrade to a version of the toolkit this version of libcu++ shipped in.
-#endif
+#  if _LIBCUDACXX_PIPELINE_ASSUMED_ABI_VERSION != _LIBCUDACXX_CUDA_ABI_VERSION
+#    error cuda_pipeline.h has assumed a different libcu++ ABI version than provided by this library. To fix this, please include a libcu++ header before including cuda_pipeline.h, or upgrade to a version of the toolkit this version of libcu++ shipped in.
+#  endif
 #endif
 
 #ifndef _LIBCUDACXX_CUDA_ABI_NAMESPACE
