@@ -11,9 +11,12 @@
 #ifndef _LIBCUDACXX_ATOMIC_BASE_H
 #define _LIBCUDACXX_ATOMIC_BASE_H
 
+#include <type_traits>
+
 template <typename _Tp, int _Sco>
 struct __cxx_atomic_base_impl {
-  using __cxx_underlying_type = _Tp;
+  using __underlying_t = _Tp;
+  static constexpr int __sco = _Sco;
 
   _LIBCUDACXX_CONSTEXPR
   __cxx_atomic_base_impl() _NOEXCEPT = default;
@@ -50,7 +53,8 @@ const volatile _Tp* __cxx_get_underlying_atomic(__cxx_atomic_base_impl<_Tp, _Sco
 
 template <typename _Tp, int _Sco>
 struct __cxx_atomic_ref_base_impl {
-  using __cxx_underlying_type = _Tp;
+  using __underlying_t = _Tp;
+  static constexpr int __sco = _Sco;
 
   _LIBCUDACXX_CONSTEXPR
   __cxx_atomic_ref_base_impl() _NOEXCEPT = default;
@@ -91,7 +95,7 @@ _LIBCUDACXX_INLINE_VISIBILITY auto __cxx_atomic_base_unwrap(_Tp* __a) _NOEXCEPT 
 }
 
 template <typename _Tp>
-using __cxx_atomic_underlying_t = typename _Tp::__cxx_underlying_type;
+using __cxx_atomic_underlying_t = typename _Tp::__underlying_t;
 
 _LIBCUDACXX_INLINE_VISIBILITY inline _LIBCUDACXX_CONSTEXPR int __to_gcc_order(memory_order __order) {
   // Avoid switch statement to make this a constexpr.
@@ -140,7 +144,8 @@ inline void __cxx_atomic_store(_Tp* __a,  _Up __val,
                         memory_order __order) {
   auto __a_tmp = __cxx_atomic_base_unwrap(__a);
   (void)__a_tmp;
-  __atomic_store(__a_tmp, &__val, __to_gcc_order(__order));
+  __cxx_atomic_base_impl<__cxx_atomic_underlying_t<_Tp>, _Tp::__sco> __v_temp(__val);
+  __atomic_store(__a, &__v_temp, __to_gcc_order(__order));
 }
 
 template <typename _Tp>
@@ -148,9 +153,9 @@ inline auto __cxx_atomic_load(const _Tp* __a,
                        memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   auto __a_tmp = __cxx_atomic_base_unwrap(__a);
   (void)__a_tmp;
-  __cxx_atomic_underlying_t<_Tp> __ret;
-  __atomic_load(__a_tmp, &__ret, __to_gcc_order(__order));
-  return __ret;
+  __cxx_atomic_base_impl<__cxx_atomic_underlying_t<_Tp>, _Tp::__sco> __ret;
+  __atomic_load(__a, &__ret, __to_gcc_order(__order));
+  return __ret.__a_value;
 }
 
 template <typename _Tp, typename _Up>
@@ -158,9 +163,10 @@ inline auto __cxx_atomic_exchange(_Tp* __a, _Up __value,
                           memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   auto __a_tmp = __cxx_atomic_base_unwrap(__a);
   (void)__a_tmp;
-  __cxx_atomic_underlying_t<_Tp> __ret;
-  __atomic_exchange(__a_tmp, &__value, &__ret, __to_gcc_order(__order));
-  return __ret;
+  __cxx_atomic_base_impl<__cxx_atomic_underlying_t<_Tp>, _Tp::__sco> __v_temp(__value);
+  __cxx_atomic_base_impl<__cxx_atomic_underlying_t<_Tp>, _Tp::__sco> __ret;
+  __atomic_exchange(__a, &__v_temp, &__ret, __to_gcc_order(__order));
+  return __ret.__a_value;
 }
 
 template <typename _Tp, typename _Up>
