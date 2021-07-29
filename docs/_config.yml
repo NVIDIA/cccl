@@ -13,7 +13,8 @@ search.heading_level: 4
 # just-the-docs ignores these filenames by default.
 include: [ "contributing.md", "code_of_conduct.md" ]
 
-plugins:
+plugins_dir:
+  - jekyll-remote-theme
   - jekyll-optional-front-matter # GitHub Pages.
   - jekyll-default-layout        # GitHub Pages.
   - jekyll-titles-from-headings  # GitHub Pages.
@@ -81,6 +82,14 @@ defaults:
       has_children: true
       has_toc: false
       nav_order: 4
+  -
+    scope:
+      path: extended_api/memory_access_properties.md
+    values:
+      parent: Extended API
+      has_children: true
+      has_toc: false
+      nav_order: 5
   -
     scope:
       path: releases/changelog.md

@@ -17,6 +17,7 @@ nav_order: 3
 
 {% include_relative extended_api/asynchronous_operations.md %}
 
+{% include_relative extended_api/memory_access_properties.md %}
 
 [Thread Scopes]: ./extended_api/thread_groups.md
 [Thread Groups]: ./extended_api/thread_scopes.md
