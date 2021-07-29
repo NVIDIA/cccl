@@ -3237,9 +3237,9 @@ inline namespace literals
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr chrono::duration<double> operator""s(long double __s)
+    constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T> operator""s(long double __s)
     {
-        return chrono::duration<double> (__s);
+        return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T> (__s);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
