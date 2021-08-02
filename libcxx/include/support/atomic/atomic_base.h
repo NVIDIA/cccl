@@ -143,6 +143,7 @@ template <typename _Tp, typename _Up>
 inline void __cxx_atomic_store(_Tp* __a,  _Up __val,
                         memory_order __order) {
   typename _CUDA_VSTD::remove_cv<_Tp>::type __v_temp(__val);
+  (void)__a;
   __atomic_store(__a, &__v_temp, __to_gcc_order(__order));
 }
 
@@ -150,6 +151,7 @@ template <typename _Tp>
 inline auto __cxx_atomic_load(const _Tp* __a,
                        memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   typename _CUDA_VSTD::remove_cv<_Tp>::type __ret;
+  (void)__a;
   __atomic_load(__a, &__ret, __to_gcc_order(__order));
   return __ret.__a_value;
 }
@@ -159,6 +161,7 @@ inline auto __cxx_atomic_exchange(_Tp* __a, _Up __value,
                           memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   typename _CUDA_VSTD::remove_cv<_Tp>::type __v_temp(__value);
   typename _CUDA_VSTD::remove_cv<_Tp>::type __ret;
+  (void)__a;
   __atomic_exchange(__a, &__v_temp, &__ret, __to_gcc_order(__order));
   return __ret.__a_value;
 }
