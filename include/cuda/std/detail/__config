@@ -25,6 +25,7 @@
     #define _LIBCUDACXX_CUDACC_VER                                                 \
     __LIBCUDACXX_CUDACC_VER_MAJOR * 10000 + _LIBCUDACXX_CUDACC_VER_MINOR * 100 + \
       _LIBCUDACXX_CUDACC_VER_BUILD
+    #define _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 #else
     #ifndef __host__
         #define __host__
