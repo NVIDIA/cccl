@@ -19,6 +19,12 @@
         #include <cuda_fp16.h>
         #define _Float16 __half
     #endif
+    #define _LIBCUDACXX_CUDACC_VER_MAJOR __CUDACC_VER_MAJOR__
+    #define _LIBCUDACXX_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
+    #define _LIBCUDACXX_CUDACC_VER_BUILD __CUDACC_VER_BUILD__
+    #define _LIBCUDACXX_CUDACC_VER                                                 \
+    __LIBCUDACXX_CUDACC_VER_MAJOR * 10000 + _LIBCUDACXX_CUDACC_VER_MINOR * 100 + \
+      _LIBCUDACXX_CUDACC_VER_BUILD
 #else
     #ifndef __host__
         #define __host__
