@@ -407,7 +407,7 @@ protected:
 template <>
 class __libcpp_numeric_limits<long double, true>
 {
-#ifndef __CUDACC__
+#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE 
 protected:
     typedef long double type;
 
