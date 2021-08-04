@@ -11,8 +11,6 @@
 #ifndef _LIBCUDACXX_ATOMIC_BASE_H
 #define _LIBCUDACXX_ATOMIC_BASE_H
 
-#include <type_traits>
-
 template <typename _Tp, int _Sco>
 struct __cxx_atomic_base_impl {
   using __underlying_t = _Tp;

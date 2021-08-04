@@ -12,8 +12,6 @@
 #error "This file is only for CL.EXE's benefit"
 #endif
 
-#include <intrin.h>
-
 #define _Compiler_barrier() _ReadWriteBarrier()
 
 #if defined(_M_ARM) || defined(_M_ARM64)

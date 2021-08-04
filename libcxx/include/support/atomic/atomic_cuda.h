@@ -11,10 +11,6 @@
 #  error "CUDA atomics are only supported for sm_60 and up on *nix and sm_70 and up on Windows."
 #endif
 
-#ifndef __CUDACC_RTC__
-#include <string.h>
-#endif // __CUDACC_RTC__
-
 #if !defined(__CLANG_ATOMIC_BOOL_LOCK_FREE) && !defined(__GCC_ATOMIC_BOOL_LOCK_FREE)
 #define ATOMIC_BOOL_LOCK_FREE      2
 #define ATOMIC_CHAR_LOCK_FREE      2

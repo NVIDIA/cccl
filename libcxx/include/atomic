@@ -588,6 +588,14 @@ void atomic_signal_fence(memory_order m) noexcept;
                            __f == memory_order_acq_rel,   \
                         "memory order argument to atomic operation is invalid")
 
+#if defined(_LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL)
+#  include <intrin.h>
+#endif
+
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  include <string.h>
+#endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Figure out what the underlying type for `memory_order` would be if it were
