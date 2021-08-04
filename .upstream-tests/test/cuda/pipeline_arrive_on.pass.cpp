@@ -11,6 +11,8 @@
 
 // Remove after bump to version 4
 #define _LIBCUDACXX_CUDA_ABI_VERSION 3
+// TODO: Remove pointless comparison suppression when compiler fixes short-circuiting
+#pragma nv_diag_suppress 186
 
 #pragma nv_diag_suppress static_var_with_dynamic_init
 #pragma nv_diag_suppress declared_but_not_referenced
