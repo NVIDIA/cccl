@@ -11,9 +11,39 @@ It pulls in the latest version of upstream libc++ and marks the beginning of
 
 !-->
 
+## libcu++ 1.6.0 (CUDA Toolkit 11.5)
+
+libcu++ 1.6.0 is a major release. It adds two new functions to the `cuda::std::barrier` API and
+uses `<nv/target>` as the primary dispatch mechanism for `cuda::std::atomic`.
+
+This release introduces ABI version 4, which is now the default.
+
+Supported ABI Versions: 4 (default), 3, and 2.
+
+Included in: CUDA Toolkit 11.5.
+
+### New Features
+
+- #111: Adds two APIs to `cuda::std::barrier` for waiting on the parity of the barrier.
+  - Thanks to Olivier Giroux for this contribution.
+
+### Issues Fixed
+
+- #179: Refactors the atomic layer to allow for layering the host device/host abstractions.
+- #189: Changed pragmas for silencing chrono long double warnings.
+- #186: Allows `<nv/target>` to be used under NVRTC.
+- #177: Allows `<nv/target>` to build when compiled under C and C++98.
+  - Thanks to David Olsen for this contribution.
+- #172: Introduces ABI version 4.
+  - Forces `cuda::std::complex` alignment for enhanced performance.
+  - Sets the internal representation of `cuda::std::chrono` literals to `double`.
+- #165: For tests on some older distributions keep using Python 3, but downgrade lit.
+- #164: Fixes testing issues related to Python 2/3 switch for lit.
+  - Thanks to Royil Damer for this contribution.
+
 ## libcu++ 1.5.0 (CUDA Toolkit 11.4)
 
-libcu++ 1.5.0 is a major release.  It adds `<nv/target>`, 
+libcu++ 1.5.0 is a major release.  It adds `<nv/target>`,
 the library support header for the new `if target`
 target specialization mechanism.
 
