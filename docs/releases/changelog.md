@@ -22,11 +22,6 @@ Supported ABI Versions: 4 (default), 3, and 2.
 
 Included in: CUDA Toolkit 11.5.
 
-### New Features
-
-- #111: Adds two APIs to `cuda::std::barrier` for waiting on the parity of the barrier.
-  - Thanks to Olivier Giroux for this contribution.
-
 ### Issues Fixed
 
 - #179: Refactors the atomic layer to allow for layering the host device/host abstractions.
