@@ -40,6 +40,8 @@ class barrier : public std::__barrier_base<_CompletionF, _Sco> {
     template<thread_scope>
     friend class pipeline;
 
+    using std::__barrier_base<_CompletionF, _Sco>::__try_wait;
+
 public:
     barrier() = default;
 
@@ -86,6 +88,24 @@ class barrier<thread_scope_block, std::__empty_completion> : public __block_scop
 public:
     using arrival_token = typename __barrier_base::arrival_token;
 
+private:
+    struct __poll_tester {
+        barrier const* __this;
+        arrival_token __phase;
+
+        _LIBCUDACXX_INLINE_VISIBILITY
+        __poll_tester(barrier const* __this_, arrival_token&& __phase_)
+          : __this(__this_)
+          , __phase(_CUDA_VSTD::move(__phase_))
+        {}
+
+        inline _LIBCUDACXX_INLINE_VISIBILITY
+        bool operator()() const
+        {
+            return __this->__try_wait(__phase);
+        }
+    };
+
     _LIBCUDACXX_INLINE_VISIBILITY
     bool __try_wait(arrival_token __phase) const {
 #if __CUDA_ARCH__ >= 800
@@ -104,35 +124,14 @@ public:
         else
 #endif
         {
-            return __barrier.try_wait(std::move(__phase));
+            return __barrier.__try_wait(std::move(__phase));
         }
     }
 
     template<thread_scope>
     friend class pipeline;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    bool __try_wait_parity(bool __parity) const {
-#if __CUDA_ARCH__ >= 800
-        if (__isShared(&__barrier)) {
-            int __ready = 0;
-            asm volatile ("{\n\t"
-                    ".reg .pred p;\n\t"
-                    "mbarrier.test_wait.parity.shared.b64 p, [%1], %2;\n\t"
-                    "selp.b32 %0, 1, 0, p;\n\t"
-                    "}"
-                : "=r"(__ready)
-                : "r"(static_cast<std::uint32_t>(__cvta_generic_to_shared(&__barrier))), "r"(static_cast<std::uint32_t>(__parity))
-                : "memory");
-            return bool(__ready);
-        }
-        else
-#endif
-        {
-            return __barrier.try_wait_parity(__parity);
-        }
-    }
-
+public:
     barrier() = default;
 
     barrier(const barrier &) = delete;
@@ -217,24 +216,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     void wait(arrival_token && __phase) const
     {
-        _CUDA_VSTD::__libcpp_thread_poll_with_backoff(std::__barrier_poll_tester<barrier>(this, _CUDA_VSTD::move(__phase)));
-    }
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    bool try_wait(arrival_token __phase) const {
-        return __try_wait(_CUDA_VSTD::move(__phase));
-    }
-
-    inline _LIBCUDACXX_INLINE_VISIBILITY
-    bool try_wait_parity(bool __parity) const
-    {
-        return __try_wait_parity(__parity);
-    }
-
-    inline _LIBCUDACXX_INLINE_VISIBILITY
-    void wait_parity(bool __parity) const
-    {
-        _CUDA_VSTD::__libcpp_thread_poll_with_backoff(std::__barrier_poll_tester_parity<barrier>(this, __parity));
+        _CUDA_VSTD::__libcpp_thread_poll_with_backoff(__poll_tester(this, _CUDA_VSTD::move(__phase)));
     }
 
     inline _LIBCUDACXX_INLINE_VISIBILITY
