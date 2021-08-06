@@ -13,8 +13,8 @@ It pulls in the latest version of upstream libc++ and marks the beginning of
 
 ## libcu++ 1.6.0 (CUDA Toolkit 11.5)
 
-libcu++ 1.6.0 is a major release. It adds two new functions to the `cuda::std::barrier` API and
-uses `<nv/target>` as the primary dispatch mechanism for `cuda::std::atomic`.
+libcu++ 1.6.0 is a major release. It changes the default alignment of `cuda::std::complex` for
+better code generation and changes `cuda::std::atomic` to use `<nv/target>` as the primary dispatch mechanism.
 
 This release introduces ABI version 4, which is now the default.
 
