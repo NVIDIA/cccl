@@ -414,6 +414,12 @@ extern "C++" {
 
 #define _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
 
+#if defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type *)0)->member))
+#else
+#define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !offsetof(type, member)
+#endif
+
 #if defined(_LIBCUDACXX_COMPILER_CLANG)
 
 // _LIBCUDACXX_ALTERNATE_STRING_LAYOUT is an old name for
