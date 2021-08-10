@@ -97,6 +97,8 @@ namespace __host {
 #elif defined (_LIBCUDACXX_HAS_C11_ATOMIC_IMP)
 //TODO
 // #  include "atomic_c11.h"
+#elif defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  include "atomic_nvrtc.h"
 #endif
 }
 
