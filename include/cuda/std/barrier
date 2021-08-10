@@ -139,7 +139,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     barrier(std::ptrdiff_t __expected, std::__empty_completion __completion = std::__empty_completion()) {
-        static_assert(offsetof(barrier<thread_scope_block>, __barrier) == 0, "fatal error: bad barrier layout");
+        static_assert(_LIBCUDACXX_OFFSET_IS_ZERO(barrier<thread_scope_block>, __barrier), "fatal error: bad barrier layout");
         init(this, __expected, __completion);
     }
 
