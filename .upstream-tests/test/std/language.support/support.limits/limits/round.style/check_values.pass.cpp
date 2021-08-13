@@ -17,8 +17,8 @@
 typedef char one;
 struct two {one _[2];};
 
-one test(cuda::std::float_denorm_style);
-two test(int);
+__host__ __device__ one test(cuda::std::float_denorm_style);
+__host__ __device__ two test(int);
 
 int main(int, char**)
 {

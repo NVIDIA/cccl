@@ -34,11 +34,13 @@ test(T expected)
 
 int main(int, char**)
 {
+#ifndef _LIBCUDACXX_COMPILER_NVRTC
+    test<wchar_t>(WCHAR_MAX);
+#endif
     test<bool>(true);
     test<char>(CHAR_MAX);
     test<signed char>(SCHAR_MAX);
     test<unsigned char>(UCHAR_MAX);
-    test<wchar_t>(WCHAR_MAX);
 #if TEST_STD_VER > 17 && defined(__cpp_char8_t)
     test<char8_t>(UCHAR_MAX); // ??
 #endif

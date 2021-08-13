@@ -140,6 +140,7 @@ echo '        "-I'"${libcudacxxdir}/test/support"'",' >> "${tempfile}"
 echo '        "-I'"${cudart_include_dir}"'",' >> "${tempfile}"
 echo '        "-I'"${cg_include_dir}"'",' >> "${tempfile}"
 echo '        "-I'"${ext_include_dir}"'",' >> "${tempfile}"
+echo '        "--pre-include='"${libcudacxxdir}/test/support/nvrtc_limit_macros.h"'",' >> "${tempfile}"
 # The line below intentionally only uses the first element of ${gpu_archs[@]}.
 # They are sorted numerically above, and this selects the lowest of the requested
 # values.

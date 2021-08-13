@@ -55,7 +55,7 @@ int main(int, char**)
 #endif
     test<float>(FLT_EPSILON);
     test<double>(DBL_EPSILON);
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE    
+#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
     test<long double>(LDBL_EPSILON);
 #endif
 
