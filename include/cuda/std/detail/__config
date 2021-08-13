@@ -56,7 +56,15 @@
     #define _LIBCUDACXX_NODEBUG_TYPE
 #endif
 
-#if !defined(__CUDACC_RTC_INT128__) or defined(_LIBCUDACXX_COMPILER_MSVC) or (_LIBCUDACXX_CUDACC_VER < 11500)
+#if defined(__CUDACC_RTC__)
+#  if defined(__CUDACC_RTC_INT128__)
+#    define __SIZEOF_INT128__ 16 // This macro is required in order to use int128 within the library
+#  else
+#    define _LIBCUDACXX_HAS_NO_INT128
+#  endif
+#endif
+
+#if defined(_LIBCUDACXX_COMPILER_MSVC) or (_LIBCUDACXX_CUDACC_VER < 11000)
 #  define _LIBCUDACXX_HAS_NO_INT128
 #endif
 
