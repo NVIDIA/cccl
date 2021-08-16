@@ -106,6 +106,7 @@ namespace __host {
 #include "atomic_cuda_derived.h"
 
 _LIBCUDACXX_INLINE_VISIBILITY
+inline constexpr
  bool __cxx_atomic_is_lock_free(size_t __x) {
     return __x <= 8;
 }
