@@ -13,6 +13,7 @@
 #ifndef __CUDACC_RTC__
     #include <climits>
     #include <limits.h>
+    #include <cstdint>
 #else
     #define CHAR_BIT 8
 
