@@ -379,29 +379,43 @@ __host__ __device__
 template <typename _Tp, typename _Delta, int _Sco, bool _Ref>
 __host__ __device__
  _Tp __cxx_atomic_fetch_max(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Delta __val, memory_order __order) {
-    _Tp __expected = __cxx_atomic_load(__a, memory_order_relaxed);
-    _Tp __desired = __expected > __val ? __expected : __val;
+    NV_IF_TARGET(
+        NV_IS_DEVICE, (
+            return __atomic_fetch_max_cuda(__cxx_get_underlying_device_atomic(__a), __val, __order, __scope_tag<_Sco>());
+        ), (
+            // IS_HOST
+            _Tp __expected = __cxx_atomic_load(__a, memory_order_relaxed);
+            _Tp __desired = __expected > __val ? __expected : __val;
 
-    while(__desired == __val &&
-            !__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
-        __desired = __expected > __val ? __expected : __val;
-    }
+            while(__desired == __val &&
+                    !__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
+                __desired = __expected > __val ? __expected : __val;
+            }
 
-    return __expected;
+            return __expected;
+        )
+    )
 }
 
 template <typename _Tp, typename _Delta, int _Sco, bool _Ref>
 __host__ __device__
  _Tp __cxx_atomic_fetch_min(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Delta __val, memory_order __order) {
-    _Tp __expected = __cxx_atomic_load(__a, memory_order_relaxed);
-    _Tp __desired = __expected < __val ? __expected : __val;
+    NV_IF_TARGET(
+        NV_IS_DEVICE, (
+            return __atomic_fetch_min_cuda(__cxx_get_underlying_device_atomic(__a), __val, __order, __scope_tag<_Sco>());
+        ), (
+            // IS_HOST
+            _Tp __expected = __cxx_atomic_load(__a, memory_order_relaxed);
+            _Tp __desired = __expected < __val ? __expected : __val;
 
-    while(__desired == __val &&
-            !__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
-        __desired = __expected < __val ? __expected : __val;
-    }
+            while(__desired == __val &&
+                    !__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
+                __desired = __expected < __val ? __expected : __val;
+            }
 
-    return __expected;
+            return __expected;
+        )
+    )
 }
 
 template<class _Tp>
