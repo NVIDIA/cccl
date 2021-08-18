@@ -98,15 +98,13 @@ struct atomic
     __host__ __device__
     _Tp fetch_max(const _Tp & __op, memory_order __m = memory_order_seq_cst) volatile noexcept
     {
-        return std::__detail::__atomic_fetch_max_cuda(&this->__a_.__a_value, __op,
-                                              __m, std::__detail::__scope_tag<_Sco>());
+        return std::__detail::__cxx_atomic_fetch_max(&this->__a_, __op, __m);
     }
 
     __host__ __device__
     _Tp fetch_min(const _Tp & __op, memory_order __m = memory_order_seq_cst) volatile noexcept
     {
-        return std::__detail::__atomic_fetch_min_cuda(&this->__a_.__a_value, __op,
-                                              __m, std::__detail::__scope_tag<_Sco>());
+        return std::__detail::__cxx_atomic_fetch_min(&this->__a_, __op, __m);
     }
 };
 
