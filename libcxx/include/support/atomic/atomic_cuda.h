@@ -396,7 +396,7 @@ __host__ __device__
     _Tp __expected = __cxx_atomic_load(__a, memory_order_relaxed);
     _Tp __desired = __expected < __val ? __expected : __val;
 
-    while(__desired != __val &&
+    while(__desired == __val &&
             !__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
         __desired = __expected < __val ? __expected : __val;
     }
