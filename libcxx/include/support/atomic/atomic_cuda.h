@@ -105,12 +105,13 @@ namespace __host {
 #include "atomic_cuda_generated.h"
 #include "atomic_cuda_derived.h"
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
  bool __cxx_atomic_is_lock_free(size_t __x) {
     return __x <= 8;
 }
 
 _LIBCUDACXX_INLINE_VISIBILITY
+inline
  void __cxx_atomic_thread_fence(memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -123,6 +124,7 @@ _LIBCUDACXX_INLINE_VISIBILITY
 }
 
 _LIBCUDACXX_INLINE_VISIBILITY
+inline
  void __cxx_atomic_signal_fence(memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
