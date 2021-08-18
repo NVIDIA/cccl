@@ -90,57 +90,57 @@ void test_access_property_interleave() {
     assert(cuda::access_property::streaming{} == cudaAccessPropertyStreaming);
     assert(cuda::access_property::normal{} == cudaAccessPropertyNormal);
 
-    const std::uint64_t INTERLEAVE_NORMAL           = std::uint64_t{0x10F0000000000000};
-    const std::uint64_t INTERLEAVE_NORMAL_DEMOTE    = std::uint64_t{0x16F0000000000000};
-    const std::uint64_t INTERLEAVE_PERSISTING       = std::uint64_t{0x14F0000000000000};
-    const std::uint64_t INTERLEAVE_STREAMING        = std::uint64_t{0x12F0000000000000};
+    const uint64_t INTERLEAVE_NORMAL           = uint64_t{0x10F0000000000000};
+    const uint64_t INTERLEAVE_NORMAL_DEMOTE    = uint64_t{0x16F0000000000000};
+    const uint64_t INTERLEAVE_PERSISTING       = uint64_t{0x14F0000000000000};
+    const uint64_t INTERLEAVE_STREAMING        = uint64_t{0x12F0000000000000};
     cuda::access_property ap(cuda::access_property::persisting{});
     cuda::access_property ap2;
 
-    assert(INTERLEAVE_PERSISTING == static_cast<std::uint64_t>(ap));
-    assert(static_cast<std::uint64_t>(ap2) == INTERLEAVE_NORMAL);
+    assert(INTERLEAVE_PERSISTING == static_cast<uint64_t>(ap));
+    assert(static_cast<uint64_t>(ap2) == INTERLEAVE_NORMAL);
 
     ap = cuda::access_property(cuda::access_property::normal());
-    assert(static_cast<std::uint64_t>(ap) == INTERLEAVE_NORMAL_DEMOTE);
+    assert(static_cast<uint64_t>(ap) == INTERLEAVE_NORMAL_DEMOTE);
 
     ap = cuda::access_property(cuda::access_property::streaming());
-    assert(static_cast<std::uint64_t>(ap) == INTERLEAVE_STREAMING);
+    assert(static_cast<uint64_t>(ap) == INTERLEAVE_STREAMING);
 
     ap = cuda::access_property(cuda::access_property::normal(), 2.0f);
-    assert(static_cast<std::uint64_t>(ap) == INTERLEAVE_NORMAL_DEMOTE);
+    assert(static_cast<uint64_t>(ap) == INTERLEAVE_NORMAL_DEMOTE);
 }
 
 __device__ __host__ __noinline__
 void test_access_property_block() {
     //assuming ptr address is 0;
-    const std::size_t TOTAL_BYTES = 0xFFFFFFFF;
-    const std::size_t HIT_BYTES = 0xFFFFFFFF;
-    const std::size_t BLOCK_0ADDR_PERSISTHIT_STREAMISS_MAXBYTES = std::size_t{0x1DD00FE000000000};
-    const std::uint64_t INTERLEAVE_NORMAL = std::uint64_t{0x10F0000000000000};
+    const size_t TOTAL_BYTES = 0xFFFFFFFF;
+    const size_t HIT_BYTES = 0xFFFFFFFF;
+    const size_t BLOCK_0ADDR_PERSISTHIT_STREAMISS_MAXBYTES = size_t{0x1DD00FE000000000};
+    const uint64_t INTERLEAVE_NORMAL = uint64_t{0x10F0000000000000};
 
     cuda::access_property ap(0x0, HIT_BYTES, TOTAL_BYTES, cuda::access_property::persisting{}, cuda::access_property::streaming{});
-    assert(static_cast<std::uint64_t>(ap) == BLOCK_0ADDR_PERSISTHIT_STREAMISS_MAXBYTES);
+    assert(static_cast<uint64_t>(ap) == BLOCK_0ADDR_PERSISTHIT_STREAMISS_MAXBYTES);
 
     ap = cuda::access_property(0x0, 0xFFFFFFFF, 0xFFFFFFFFF, cuda::access_property::persisting{}, cuda::access_property::streaming{});
-    assert(static_cast<std::uint64_t>(ap) == INTERLEAVE_NORMAL);
+    assert(static_cast<uint64_t>(ap) == INTERLEAVE_NORMAL);
 
     ap = cuda::access_property(0x0, 0xFFFFFFFFF, 0xFFFFFFFF, cuda::access_property::persisting{}, cuda::access_property::streaming{});
-    assert(static_cast<std::uint64_t>(ap) == INTERLEAVE_NORMAL);
+    assert(static_cast<uint64_t>(ap) == INTERLEAVE_NORMAL);
 
     ap = cuda::access_property(0x0, 0, 0, cuda::access_property::persisting{}, cuda::access_property::streaming{});
-    assert(static_cast<std::uint64_t>(ap) == INTERLEAVE_NORMAL);
+    assert(static_cast<uint64_t>(ap) == INTERLEAVE_NORMAL);
 
-    for (std::size_t ptr = 1; ptr < std::size_t{0xFFFFFFFF}; ptr <<= 1) {
-        for (std::size_t hit = 1; hit < std::size_t{0xFFFFFFFF}; hit <<= 1) {
+    for (size_t ptr = 1; ptr < size_t{0xFFFFFFFF}; ptr <<= 1) {
+        for (size_t hit = 1; hit < size_t{0xFFFFFFFF}; hit <<= 1) {
             ap = cuda::access_property((void*)ptr, hit, hit, cuda::access_property::persisting{}, cuda::access_property::streaming{});
-            DPRINTF("Block encoding PTR:%p, hit:%p, block encoding:%p\n", ptr, hit, static_cast<std::uint64_t>(ap));
+            DPRINTF("Block encoding PTR:%p, hit:%p, block encoding:%p\n", ptr, hit, static_cast<uint64_t>(ap));
         }
     }
 }
 
 __device__ __host__ __noinline__
 void test_access_property_functions() {
-    std::size_t ARR_SZ = 1 << 10;
+    size_t ARR_SZ = 1 << 10;
     int* arr0 = nullptr;
     int* arr1 = nullptr;
     cuda::access_property ap(cuda::access_property::persisting{});
@@ -176,7 +176,7 @@ void test_access_property_functions() {
 __device__ __host__ __noinline__
 void test_annotated_ptr_basic() {
     cuda::access_property ap(cuda::access_property::persisting{});
-    static const std::size_t ARR_SZ = 1 << 10;
+    static const size_t ARR_SZ = 1 << 10;
     int* array0 = new int[ARR_SZ];
     int* array1 = new int[ARR_SZ];
     cuda::annotated_ptr<int, cuda::access_property> array_anno_ptr{array0, ap};
@@ -198,7 +198,7 @@ void test_annotated_ptr_basic() {
 #endif
 
     //Fill the arrays
-    for (std::size_t i = 0; i < ARR_SZ; ++i) {
+    for (size_t i = 0; i < ARR_SZ; ++i) {
         array0[i] = i;
         array1[i] = ARR_SZ - i;
     }
@@ -207,7 +207,7 @@ void test_annotated_ptr_basic() {
     assert((bool)array0_anno_ptr0 == true);
     assert(array0_anno_ptr0.get() == array0);
 
-    for (std::size_t i = 0; i < ARR_SZ; ++i) {
+    for (size_t i = 0; i < ARR_SZ; ++i) {
         assert(array0_anno_ptr0[i] == static_cast<int>(i));
         assert(array0_anno_ptr2[i] == static_cast<int>(i));
         assert((array0_anno_ptr0 + i)[0] == array0[i]);
@@ -217,7 +217,7 @@ void test_annotated_ptr_basic() {
         assert((array0_anno_ptr3 -i)[0] == array0[ARR_SZ - 1 - i]);
     }
 
-    for (std::size_t i = 0; i < ARR_SZ; ++i) {
+    for (size_t i = 0; i < ARR_SZ; ++i) {
         assert(array1_anno_ptr[i] == array1[i]);
     }
 
@@ -228,13 +228,13 @@ void test_annotated_ptr_basic() {
 __device__ __host__ __noinline__
 void test_annotated_ptr_launch_kernel() {
 #ifndef __CUDA_ARCH__
-    static const std::size_t ARR_SZ          = 1 << 22;
-    static const std::size_t THREAD_CNT      = 128;
-    static const std::size_t BLOCK_CNT       = ARR_SZ / THREAD_CNT;
+    static const size_t ARR_SZ          = 1 << 22;
+    static const size_t THREAD_CNT      = 128;
+    static const size_t BLOCK_CNT       = ARR_SZ / THREAD_CNT;
     const dim3 threads(THREAD_CNT, 1, 1), blocks(BLOCK_CNT, 1, 1);
     cudaEvent_t start, stop;
 #else
-    static const std::size_t ARR_SZ     = 1 << 10;
+    static const size_t ARR_SZ     = 1 << 10;
 #endif
     int* arr0 = nullptr;
     int* arr1 = nullptr;
@@ -264,7 +264,7 @@ void test_annotated_ptr_launch_kernel() {
     assert_rt(cudaDeviceSynchronize());
 #endif
 
-    for (std::size_t i = 0; i < ARR_SZ; ++i) {
+    for (size_t i = 0; i < ARR_SZ; ++i) {
         arr0[i] = i;
         arr1[i] = 0;
     }
@@ -284,7 +284,7 @@ void test_annotated_ptr_launch_kernel() {
     assert_rt(cudaEventDestroy(stop));
     assert_rt(cudaDeviceSynchronize());
 
-    for (std::size_t i = 0; i < ARR_SZ; ++i) {
+    for (size_t i = 0; i < ARR_SZ; ++i) {
         if (arr1[i] != (int)i) {
             DPRINTF("arr1[%d] == %d, should be:%d\n", i, arr1[i], i);
             assert(arr1[i] == static_cast<int>(i));
@@ -302,7 +302,7 @@ void test_annotated_ptr_launch_kernel() {
     assert_rt(cudaDeviceSynchronize());
 #endif
 
-    for (std::size_t i = 0; i < ARR_SZ; ++i) {
+    for (size_t i = 0; i < ARR_SZ; ++i) {
         arr0[i] = i;
         arr1[i] = 0;
     }
@@ -322,7 +322,7 @@ void test_annotated_ptr_launch_kernel() {
     assert_rt(cudaEventDestroy(stop));
     assert_rt(cudaDeviceSynchronize());
 
-    for (std::size_t i = 0; i < ARR_SZ; ++i) {
+    for (size_t i = 0; i < ARR_SZ; ++i) {
         if (arr1[i] != (int)i) {
             DPRINTF("arr1[%d] == %d, should be:%d\n", i, arr1[i], i);
             assert(arr1[i] == static_cast<int>(i));
@@ -345,7 +345,7 @@ void test_annotated_ptr_launch_kernel() {
 
 __device__ __host__ __noinline__
 void test_annotated_ptr_functions() {
-    std::size_t ARR_SZ = 1 << 10;
+    size_t ARR_SZ = 1 << 10;
     int* arr0 = nullptr;
     int* arr1 = nullptr;
     cuda::access_property ap(cuda::access_property::persisting{});
@@ -369,7 +369,7 @@ void test_annotated_ptr_functions() {
     cuda::annotated_ptr<int, cuda::access_property> ann0{arr0, ap};
     cuda::annotated_ptr<int, cuda::access_property> ann1{arr1, ap};
 
-    for (std::size_t i = 0; i < ARR_SZ; ++i) {
+    for (size_t i = 0; i < ARR_SZ; ++i) {
         arr0[i] = i;
         arr1[i] = 0;
     }
@@ -377,7 +377,7 @@ void test_annotated_ptr_functions() {
     cuda::memcpy_async(ann1, ann0, ARR_SZ * sizeof(int), bar0);
     bar0.arrive_and_wait();
 
-    for (std::size_t i = 0; i < ARR_SZ; ++i) {
+    for (size_t i = 0; i < ARR_SZ; ++i) {
         if (arr1[i] != (int)i) {
             DPRINTF(stderr, "%p:&arr1[i] == %d, should be:%lu\n", &arr1[i], arr1[i], i);
             assert(arr1[i] == static_cast<int>(i));
@@ -389,7 +389,7 @@ void test_annotated_ptr_functions() {
     cuda::memcpy_async(arr1, ann0, ARR_SZ * sizeof(int), bar1);
     bar1.arrive_and_wait();
 
-    for (std::size_t i = 0; i < ARR_SZ; ++i) {
+    for (size_t i = 0; i < ARR_SZ; ++i) {
         if (arr1[i] != (int)i) {
             DPRINTF(stderr, "%p:&arr1[i] == %d, should be:%lu\n", &arr1[i], arr1[i], i);
             assert(arr1[i] == static_cast<int>(i));
@@ -402,7 +402,7 @@ void test_annotated_ptr_functions() {
     cuda::memcpy_async(group, ann1, ann0, ARR_SZ * sizeof(int), bar2);
     bar2.arrive_and_wait();
 
-    for (std::size_t i = 0; i < ARR_SZ; ++i) {
+    for (size_t i = 0; i < ARR_SZ; ++i) {
         if (arr1[i] != (int)i) {
             DPRINTF(stderr, "%p:&arr1[i] == %d, should be:%lu\n", &arr1[i], arr1[i], i);
             assert(arr1[i] == i);
@@ -414,7 +414,7 @@ void test_annotated_ptr_functions() {
     cuda::memcpy_async(group, arr1, ann0, ARR_SZ * sizeof(int), bar3);
     bar3.arrive_and_wait();
 
-    for (std::size_t i = 0; i < ARR_SZ; ++i) {
+    for (size_t i = 0; i < ARR_SZ; ++i) {
         if (arr1[i] != (int)i) {
             DPRINTF(stderr, "%p:&arr1[i] == %d, should be:%lu\n", &arr1[i], arr1[i], i);
             assert(arr1[i] == i);
