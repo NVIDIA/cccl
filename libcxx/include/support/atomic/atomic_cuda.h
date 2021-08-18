@@ -376,6 +376,34 @@ __host__ __device__
     )
 }
 
+template <typename _Tp, typename _Delta, int _Sco, bool _Ref>
+__host__ __device__
+ _Tp __cxx_atomic_fetch_max(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Delta __val, memory_order __order) {
+    _Tp __expected = __cxx_atomic_load(__a, memory_order_relaxed);
+    _Tp __desired = __expected > __val ? __expected : __val;
+
+    while(__desired == __val &&
+            !__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
+        __desired = __expected > __val ? __expected : __val;
+    }
+
+    return __expected;
+}
+
+template <typename _Tp, typename _Delta, int _Sco, bool _Ref>
+__host__ __device__
+ _Tp __cxx_atomic_fetch_min(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Delta __val, memory_order __order) {
+    _Tp __expected = __cxx_atomic_load(__a, memory_order_relaxed);
+    _Tp __desired = __expected < __val ? __expected : __val;
+
+    while(__desired != __val &&
+            !__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
+        __desired = __expected < __val ? __expected : __val;
+    }
+
+    return __expected;
+}
+
 template<class _Tp>
 __host__ __device__ inline uint32_t __cxx_small_to_32(_Tp __val) {
     __cxx_small_proxy<_Tp> __temp = 0;
@@ -478,4 +506,14 @@ __host__ __device__ inline _Tp __cxx_atomic_fetch_or(__cxx_atomic_base_small_imp
 template <typename _Tp, int _Sco>
 __host__ __device__ inline _Tp __cxx_atomic_fetch_xor(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Tp __pattern, memory_order __order) {
     return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_xor(&__a->__a_value, __cxx_small_to_32(__pattern), __order));
+}
+
+template <typename _Tp, typename _Delta, int _Sco>
+__host__ __device__ inline _Tp __cxx_atomic_fetch_max(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Delta __val, memory_order __order) {
+    return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_max(&__a->__a_value, __cxx_small_to_32(__val), __order));
+}
+
+template <typename _Tp, typename _Delta, int _Sco>
+__host__ __device__ inline _Tp __cxx_atomic_fetch_min(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Delta __val, memory_order __order) {
+    return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_min(&__a->__a_value, __cxx_small_to_32(__val), __order));
 }
