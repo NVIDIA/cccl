@@ -1614,6 +1614,8 @@ _LIBCUDACXX_FUNC_VIS extern "C" void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
 #elif defined(_LIBCUDACXX_COMPILER_GCC)
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
+#elif defined(_LIBCUDACXX_COMPILER_PGI)
+#  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
 #elif defined(_LIBCUDACXX_COMPILER_MSVC)
 #  define _LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL
 #endif

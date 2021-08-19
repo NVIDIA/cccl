@@ -24,6 +24,9 @@ Included in: CUDA Toolkit 11.5.
 
 ### Issues Fixed
 
+- #197: Rework `cuda::atomic::fetch_max/min` so that it is RMW and actually works.
+- #196: Fix missing path host atomic path for NVC++.
+- #195: Fix missing `inline` specifier on internal atomic functions.
 - #194: `<cuda/std/barrier>` and `<cuda/std/atomic>` failed to compile with NVRTC.
 - #179: Refactors the atomic layer to allow for layering the host device/host abstractions.
 - #189: Changed pragmas for silencing chrono long double warnings.
