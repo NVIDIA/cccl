@@ -191,7 +191,7 @@ void test_annotated_ptr_basic() {
     cuda::annotated_ptr<int, cuda::access_property::shared> shared_ptr2;
 
     shared_ptr1 = shared_ptr2;
-    (void)shared_ptr1;
+    unused(shared_ptr1);
 
     //Check on host the arrays through annotated_ptr ops
     std::array<int, 3> a1{ {3, 2, 1} };
