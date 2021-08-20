@@ -205,7 +205,6 @@ void test_annotated_ptr_basic() {
         array1[i] = ARR_SZ - i;
     }
 
-    assert(array0_anno_ptr3 - array0_anno_ptr3 == 0);
     assert((bool)array0_anno_ptr0 == true);
     assert(array0_anno_ptr0.get() == array0);
 
