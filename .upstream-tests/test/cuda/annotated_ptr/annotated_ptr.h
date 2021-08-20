@@ -76,7 +76,9 @@ void ptr_timing(int * in, int * out) {
 __device__ __host__
 void assert_rt_wrap(cudaError_t code, const char *file, int line) {
     if (code != cudaSuccess) {
+#ifndef __CUDACC_RTC__
         printf("assert: %s %s %d\n", cudaGetErrorString(code), file, line);
+#endif
         assert(code == cudaSuccess);
     }
 }

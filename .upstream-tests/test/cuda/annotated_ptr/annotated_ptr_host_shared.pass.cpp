@@ -9,6 +9,7 @@
 
 // UNSUPPORTED: pre-sm-70
 // UNSUPPORTED: !nvcc
+// UNSUPPORTED: nvrtc
 // XFAIL: nvcc
 
 #include "annotated_ptr.h"
