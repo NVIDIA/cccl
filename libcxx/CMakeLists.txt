@@ -831,6 +831,8 @@ endif()
 # Setup Source Code And Tests
 #===============================================================================
 include_directories(include)
+# Needed for <nv/target>
+include_directories(../include)
 add_subdirectory(include)
 add_subdirectory(src)
 
