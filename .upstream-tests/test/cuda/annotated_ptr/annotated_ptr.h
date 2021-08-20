@@ -185,7 +185,6 @@ void test_annotated_ptr_basic() {
     cuda::annotated_ptr<int, cuda::access_property> array0_anno_ptr0{array0, ap};
     cuda::annotated_ptr<int, cuda::access_property> array0_anno_ptr1 = array0_anno_ptr0;
     cuda::annotated_ptr<int, cuda::access_property> array0_anno_ptr2{array0_anno_ptr0};
-    cuda::annotated_ptr<int, cuda::access_property> array0_anno_ptr3{array0_anno_ptr0 + ARR_SZ - 1};
     cuda::annotated_ptr<int, cuda::access_property> array1_anno_ptr{array1, ap};
 #ifndef __CUDA_ARCH__
     cuda::annotated_ptr<int, cuda::access_property::shared> shared_ptr1;
@@ -213,11 +212,8 @@ void test_annotated_ptr_basic() {
     for (size_t i = 0; i < ARR_SZ; ++i) {
         assert(array0_anno_ptr0[i] == static_cast<int>(i));
         assert(array0_anno_ptr2[i] == static_cast<int>(i));
-        assert((array0_anno_ptr0 + i)[0] == array0[i]);
-        assert((array0_anno_ptr0 - (-i))[0] == array0[- (-i)]);
         assert(&array0[i] == &array0_anno_ptr0[i]);
         assert(&array0[i] == &array0_anno_ptr1[i]);
-        assert((array0_anno_ptr3 -i)[0] == array0[ARR_SZ - 1 - i]);
     }
 
     for (size_t i = 0; i < ARR_SZ; ++i) {
