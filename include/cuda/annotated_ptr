@@ -228,14 +228,6 @@ class annotated_ptr: public __detail_ap::__annotated_ptr_base<_Property> {
       return *__offset(__n);
     }
 
-    __host__ __device__ __self operator+(difference_type __n) const {
-      return __self{__offset(__n, true)};
-    }
-
-    __host__ __device__ __self operator-(difference_type __n) const {
-      return *this + (-__n);
-    }
-
     __host__ __device__ constexpr difference_type operator-(annotated_ptr o) const {
       return __repr - o.__repr;
     }
