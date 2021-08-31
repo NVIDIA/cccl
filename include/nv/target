@@ -31,7 +31,7 @@
 #  define _NV_BITSET_ATTRIBUTE
 #endif
 
-#if __cplusplus >= 201103L
+#if defined(__cplusplus) && __cplusplus >= 201103L
 
 namespace nv {
   namespace target {
