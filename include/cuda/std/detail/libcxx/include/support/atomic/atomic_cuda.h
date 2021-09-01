@@ -93,45 +93,53 @@ inline
     )
 }
 
-template <typename _Tp, int _Sco, bool _Ref>
-using __cxx_atomic_base_heterogeneous_storage
-            = typename conditional<_Ref,
-                    __host::__cxx_atomic_ref_base_impl<_Tp, _Sco>,
-                    __host::__cxx_atomic_base_impl<_Tp, _Sco> >::type;
-
-
 template <typename _Tp, int _Sco, bool _Ref = false>
 struct __cxx_atomic_base_heterogeneous_impl {
     __cxx_atomic_base_heterogeneous_impl() noexcept = default;
+
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit
       __cxx_atomic_base_heterogeneous_impl(_Tp __value) : __a_value(__value) {
     }
 
-    __cxx_atomic_base_heterogeneous_storage<_Tp, _Sco, _Ref> __a_value;
+    __host::__cxx_atomic_base_impl<_Tp, _Sco> __a_value;
+};
+
+template <typename _Tp, int _Sco>
+struct __cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, true> {
+    __cxx_atomic_base_heterogeneous_impl() noexcept = default;
+
+    static_assert(sizeof(_Tp) >= 4, "atomic_ref does not support 1 or 2 byte types");
+    static_assert(sizeof(_Tp) <= 8, "atomic_ref does not support types larger than 8 bytes");
+
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit
+      __cxx_atomic_base_heterogeneous_impl(_Tp& __value) : __a_value(__value) {
+    }
+
+    __host::__cxx_atomic_ref_base_impl<_Tp, _Sco> __a_value;
 };
 
 template <typename _Tp, int _Sco, bool _Ref>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
 _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> * __a) _NOEXCEPT {
-  return __cxx_atomic_base_unwrap(&__a->__a_value);
+  return __cxx_get_underlying_atomic(&__a->__a_value);
 }
 
 template <typename _Tp, int _Sco, bool _Ref>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
 volatile _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a) _NOEXCEPT {
-  return __cxx_atomic_base_unwrap(&__a->__a_value);
+  return __cxx_get_underlying_atomic(&__a->__a_value);
 }
 
 template <typename _Tp, int _Sco, bool _Ref>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
 const _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> const* __a) _NOEXCEPT {
-  return __cxx_atomic_base_unwrap(&__a->__a_value);
+  return __cxx_get_underlying_atomic(&__a->__a_value);
 }
 
 template <typename _Tp, int _Sco, bool _Ref>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
 const volatile _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> const volatile* __a) _NOEXCEPT {
-  return __cxx_atomic_base_unwrap(&__a->__a_value);
+  return __cxx_get_underlying_atomic(&__a->__a_value);
 }
 
 template <typename _Tp, int _Sco>
