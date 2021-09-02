@@ -71,16 +71,23 @@ namespace __detail_ap {
     return (__a > __b) ? __a : __b;
   }
 
+// GCC-4.8 and GCC-5 do not properly assume the required number of bits
+#if defined(__GNUC__) && __GNUC__ < 6
+# define _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
+#else
+# define _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION : uint64_t
+#endif
+
   namespace __sm_80 {
     namespace __off {
-      enum __l2_cop_off_t : uint64_t {
+      enum __l2_cop_off_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION {
         _L2_EVICT_NORMAL = 0,
         _L2_EVICT_FIRST = 1,
       };
     } // namespace __off
 
     namespace __on {
-      enum __l2_cop_on_t : uint64_t {
+      enum __l2_cop_on_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION {
         _L2_EVICT_NORMAL = 0,
         _L2_EVICT_FIRST = 1,
         _L2_EVICT_LAST = 2,
@@ -88,17 +95,17 @@ namespace __detail_ap {
       };
     } // namespace __on
 
-    enum __l2_descriptor_mode_t : uint64_t {
+    enum __l2_descriptor_mode_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION {
       _DESC_IMPLICIT = 0,
       _DESC_INTERLEAVED = 2,
       _DESC_BLOCK_TYPE = 3,
     };
 
-    enum __l2_eviction_max_way_t : uint64_t {
+    enum __l2_eviction_max_way_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION {
       _CUDA_AMPERE_MAX_L2_WAYS = std::uint32_t{16},
     };
 
-    enum __block_size_t : uint64_t {
+    enum __block_size_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION {
       _BLOCKSIZE_4K   = 0,
       _BLOCKSIZE_8K   = 1,
       _BLOCKSIZE_16K  = 2,
