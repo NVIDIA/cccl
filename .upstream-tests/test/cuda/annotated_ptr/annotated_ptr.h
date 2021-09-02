@@ -13,10 +13,18 @@
 #include <cuda/annotated_ptr>
 #include <cooperative_groups.h>
 
+#ifndef __CUDA_ARCH__
+#include <array>
+#endif
+
 #if defined(DEBUG)
     #define DPRINTF(...) { printf(__VA_ARGS__); }
 #else
     #define DPRINTF(...) do {} while (false)
+#endif
+
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#pragma warning(disable: 4505)
 #endif
 
 template <typename ... T>
@@ -194,15 +202,15 @@ void test_annotated_ptr_basic() {
     unused(shared_ptr1);
 
     //Check on host the arrays through annotated_ptr ops
-    std::array<int, 3> a1{ {3, 2, 1} };
+    std::array<int, 3> a1{3, 2, 1};
     cuda::annotated_ptr<std::array<int, 3>, cuda::access_property> anno_ptr{&a1, ap};
     assert(anno_ptr->at(0) == 3);
 #endif
 
     //Fill the arrays
     for (size_t i = 0; i < ARR_SZ; ++i) {
-        array0[i] = i;
-        array1[i] = ARR_SZ - i;
+        array0[i] = static_cast<int>(i);
+        array1[i] = static_cast<int>(ARR_SZ - i);
     }
 
     assert((bool)array0_anno_ptr0 == true);
@@ -263,7 +271,7 @@ void test_annotated_ptr_launch_kernel() {
 #endif
 
     for (size_t i = 0; i < ARR_SZ; ++i) {
-        arr0[i] = i;
+        arr0[i] = static_cast<int>(i);
         arr1[i] = 0;
     }
 
@@ -301,7 +309,7 @@ void test_annotated_ptr_launch_kernel() {
 #endif
 
     for (size_t i = 0; i < ARR_SZ; ++i) {
-        arr0[i] = i;
+        arr0[i] = static_cast<int>(i);
         arr1[i] = 0;
     }
 
@@ -368,7 +376,7 @@ void test_annotated_ptr_functions() {
     cuda::annotated_ptr<int, cuda::access_property> ann1{arr1, ap};
 
     for (size_t i = 0; i < ARR_SZ; ++i) {
-        arr0[i] = i;
+        arr0[i] = static_cast<int>(i);
         arr1[i] = 0;
     }
 
