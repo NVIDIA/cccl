@@ -23,7 +23,7 @@ The class template `cuda::aligned_size_t` is a _shape_ representing an extent
 *Preconditions*: 
 
 - The _address_ of the extent of bytes must be aligned to an `Alignment` alignment boundary.
-- The _size_ of the extent of bytes in bytes must be a multiple of the `Alignment`.
+- The _size_ of the extent of bytes must be a multiple of the `Alignment`.
 
 ## Template Parameters
 
