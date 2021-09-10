@@ -391,15 +391,19 @@
 #  define _NV_ARCH_COND_CAT1(cond) _NV_TARGET_BOOL_##cond
 #  define _NV_ARCH_COND_CAT(cond) _NV_EVAL(_NV_ARCH_COND_CAT1(cond))
 
+#    define _NV_TARGET_EMPTY_PARAM ;
+
 #  if defined(__cplusplus) && __cplusplus >= 201103L
 
 #    define _NV_BLOCK_EXPAND(...) { _NV_REMOVE_PAREN(__VA_ARGS__) }
-#    define _NV_TARGET_IF(cond, t, ...) _NV_IF(_NV_ARCH_COND_CAT(cond), t, __VA_ARGS__)
+#    define _NV_TARGET_IF(cond, t, ...) _NV_IF( _NV_ARCH_COND_CAT(cond), t, __VA_ARGS__)
 
 #  else // <C++11 fallback
 
 #    define _NV_BLOCK_EXPAND(x) { x }
-#    define _NV_TARGET_IF(cond, t, f) _NV_IF(_NV_ARCH_COND_CAT(cond), t, f)
+
+#    define _NV_TARGET_IF(cond, t)         _NV_IF(_NV_ARCH_COND_CAT(cond), t, _NV_TARGET_EMPTY_PARAM)
+#    define _NV_TARGET_IF_ELSE(cond, t, f) _NV_IF(_NV_ARCH_COND_CAT(cond), t, f)
 
 #  endif
 
@@ -425,13 +429,16 @@
 
 #  define _NV_TARGET_DISPATCH(...) _NV_BLOCK_EXPAND(_NV_DISPATCH_N_ARY(_NV_TARGET_DISPATCH_HANDLE, __VA_ARGS__))
 
-#  define NV_IF_TARGET(cond, t, ...) _NV_BLOCK_EXPAND(_NV_TARGET_IF(cond, t, __VA_ARGS__))
-#  define NV_DISPATCH_TARGET(...) _NV_TARGET_DISPATCH(__VA_ARGS__)
+// NV_IF_TARGET supports a false statement provided as a variadic macro
+#  define NV_IF_TARGET(cond, t, ...)    _NV_BLOCK_EXPAND(_NV_TARGET_IF(cond, t, __VA_ARGS__))
+#  define NV_IF_ELSE_TARGET(cond, t, f) _NV_BLOCK_EXPAND(_NV_TARGET_IF(cond, t, f))
+#  define NV_DISPATCH_TARGET(...)       _NV_TARGET_DISPATCH(__VA_ARGS__)
 
 #else // <C++11 fallback
 
-// We can't support variadics, C++03 TUs must specify an empty false argument for the macro
-#  define NV_IF_TARGET(cond, t, f) _NV_BLOCK_EXPAND(_NV_TARGET_IF(cond, t, f))
+// NV_IF_TARGET does not support a fallback false statement in C++03 or C dialects
+#  define NV_IF_TARGET(cond, t)         _NV_BLOCK_EXPAND(_NV_TARGET_IF(cond, t))
+#  define NV_IF_ELSE_TARGET(cond, t, f) _NV_BLOCK_EXPAND(_NV_TARGET_IF_ELSE(cond, t, f))
 
 #endif
 

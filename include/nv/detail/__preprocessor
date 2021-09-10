@@ -19,14 +19,14 @@
 //  _NV_REMOVE_PAREN
 
 #if defined(__cplusplus) && __cplusplus >= 201103L
-#define _NV_EVAL2(...) __VA_ARGS__
-#define _NV_EVAL(...) _NV_EVAL2(__VA_ARGS__)
+#  define _NV_EVAL1(...) __VA_ARGS__
+#  define _NV_EVAL(...) _NV_EVAL1(__VA_ARGS__)
 #else
-#define _NV_EVAL2(x) x
-#define _NV_EVAL(x) _NV_EVAL2(x)
-#endif
+#  define _NV_EVAL1(x) x
+#  define _NV_EVAL(x) _NV_EVAL1(x)
+#endif // defined(__cplusplus) && __cplusplus >= 201103L
+
 #define _NV_CONCAT_EVAL1(l, r) _NV_EVAL(l ## r)
-#define _NV_CONCAT_EVAL2(l, r) _NV_CONCAT_EVAL2(l, r)
 #define _NV_CONCAT_EVAL(l, r) _NV_CONCAT_EVAL1(l, r)
 
 #define _NV_IF_0(t, f) f
