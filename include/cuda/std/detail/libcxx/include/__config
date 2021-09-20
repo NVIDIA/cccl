@@ -1474,7 +1474,7 @@ typedef unsigned int   char32_t;
 #endif
 
 #ifndef _LIBCUDACXX_HAS_NO_ASAN
-_LIBCUDACXX_FUNC_VIS extern "C" void __sanitizer_annotate_contiguous_container(
+extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
   const void *, const void *, const void *, const void *);
 #endif
 
