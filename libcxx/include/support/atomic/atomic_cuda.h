@@ -33,13 +33,6 @@
 #define __ATOMIC_SEQ_CST 5
 #endif //__ATOMIC_RELAXED
 
-#ifndef __ATOMIC_BLOCK
-#define __ATOMIC_SYSTEM 0 // 0 indicates default
-#define __ATOMIC_DEVICE 1
-#define __ATOMIC_BLOCK 2
-#define __ATOMIC_THREAD 10
-#endif //__ATOMIC_BLOCK
-
 inline __host__ __device__ int __stronger_order_cuda(int __a, int __b) {
     int const __max = __a > __b ? __a : __b;
     if(__max != __ATOMIC_RELEASE)
@@ -51,42 +44,6 @@ inline __host__ __device__ int __stronger_order_cuda(int __a, int __b) {
         __ATOMIC_RELEASE };
     return __xform[__a < __b ? __a : __b];
 }
-
-enum thread_scope {
-    thread_scope_system = __ATOMIC_SYSTEM,
-    thread_scope_device = __ATOMIC_DEVICE,
-    thread_scope_block = __ATOMIC_BLOCK,
-    thread_scope_thread = __ATOMIC_THREAD
-};
-
-#define _LIBCUDACXX_ATOMIC_SCOPE_TYPE ::cuda::thread_scope
-#define _LIBCUDACXX_ATOMIC_SCOPE_DEFAULT ::cuda::thread_scope::system
-
-struct __thread_scope_thread_tag { };
-struct __thread_scope_block_tag { };
-struct __thread_scope_device_tag { };
-struct __thread_scope_system_tag { };
-
-template<int _Scope>  struct __scope_enum_to_tag { };
-/* This would be the implementation once an actual thread-scope backend exists.
-template<> struct __scope_enum_to_tag<(int)thread_scope_thread> {
-    using type = __thread_scope_thread_tag; };
-Until then: */
-template<> struct __scope_enum_to_tag<(int)thread_scope_thread> {
-    using type = __thread_scope_block_tag; };
-template<> struct __scope_enum_to_tag<(int)thread_scope_block> {
-    using type = __thread_scope_block_tag; };
-template<> struct __scope_enum_to_tag<(int)thread_scope_device> {
-    using type = __thread_scope_device_tag; };
-template<> struct __scope_enum_to_tag<(int)thread_scope_system> {
-    using type = __thread_scope_system_tag; };
-
-template <int _Scope>
-_LIBCUDACXX_INLINE_VISIBILITY auto constexpr __scope_tag() ->
-        typename __scope_enum_to_tag<_Scope>::type {
-    return typename __scope_enum_to_tag<_Scope>::type();
-}
-// END TODO
 
 // Wrap host atomic implementations into a sub-namespace
 namespace __host {
@@ -385,16 +342,7 @@ __host__ __device__
         NV_IS_DEVICE, (
             return __atomic_fetch_max_cuda(__cxx_get_underlying_device_atomic(__a), __val, __order, __scope_tag<_Sco>());
         ), (
-            // IS_HOST
-            _Tp __expected = __cxx_atomic_load(__a, memory_order_relaxed);
-            _Tp __desired = __expected > __val ? __expected : __val;
-
-            while(__desired == __val &&
-                    !__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
-                __desired = __expected > __val ? __expected : __val;
-            }
-
-            return __expected;
+            return __host::__cxx_atomic_fetch_max(&__a->__a_value, __val, __order);
         )
     )
 }
@@ -406,16 +354,7 @@ __host__ __device__
         NV_IS_DEVICE, (
             return __atomic_fetch_min_cuda(__cxx_get_underlying_device_atomic(__a), __val, __order, __scope_tag<_Sco>());
         ), (
-            // IS_HOST
-            _Tp __expected = __cxx_atomic_load(__a, memory_order_relaxed);
-            _Tp __desired = __expected < __val ? __expected : __val;
-
-            while(__desired == __val &&
-                    !__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
-                __desired = __expected < __val ? __expected : __val;
-            }
-
-            return __expected;
+            return __host::__cxx_atomic_fetch_min(&__a->__a_value, __val, __order);
         )
     )
 }

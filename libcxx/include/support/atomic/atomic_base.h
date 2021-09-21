@@ -163,6 +163,34 @@ inline auto __cxx_atomic_fetch_xor(_Tp* __a, _Td __pattern,
                             __cxx_atomic_order_to_int(__order));
 }
 
+template <typename _Tp, typename _Td>
+inline auto __cxx_atomic_fetch_max(_Tp* __a, _Td __val,
+                           memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
+  auto __expected = __cxx_atomic_load(__a, memory_order_relaxed);
+  auto __desired = __expected > __val ? __expected : __val;
+
+  while(__desired == __val &&
+          !__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
+      __desired = __expected > __val ? __expected : __val;
+  }
+
+  return __expected;
+}
+
+template <typename _Tp, typename _Td>
+inline auto __cxx_atomic_fetch_min(_Tp* __a, _Td __val,
+                           memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
+  auto __expected = __cxx_atomic_load(__a, memory_order_relaxed);
+  auto __desired = __expected < __val ? __expected : __val;
+
+  while(__desired == __val &&
+          !__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
+      __desired = __expected < __val ? __expected : __val;
+  }
+
+  return __expected;
+}
+
 inline constexpr
  bool __cxx_atomic_is_lock_free(size_t __x) {
   #if defined(_LIBCUDACXX_NO_RUNTIME_LOCK_FREE)
