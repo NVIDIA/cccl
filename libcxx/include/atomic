@@ -680,6 +680,10 @@ __cxx_atomic_assign_volatile(_Tp volatile& __a_value, _Tv volatile const& __val)
 
 // Headers are wrapped like so: (cuda::std::|std::)detail
 namespace __detail {
+#if defined(_LIBCUDACXX_HAS_CUDA_ATOMIC_EXT)
+#  include "support/atomic/atomic_scopes.h"
+#endif
+
 #if defined(_LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL)
 #  include "support/atomic/atomic_cuda.h"
 #elif defined(_LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL)

@@ -71,6 +71,8 @@
     #define __ELF__
 #endif
 
+#define _LIBCUDACXX_HAS_CUDA_ATOMIC_EXT
+
 #include "libcxx/include/__config"
 
 #if defined(__CUDA_ARCH__)

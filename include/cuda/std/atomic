@@ -37,6 +37,7 @@
     #undef ATOMIC_VAR_INIT
 #endif //__CUDACC_RTC__
 
+
 #include "cassert"
 #include "cstddef"
 #include "cstdint"
@@ -63,8 +64,6 @@ namespace __detail {
 using std::__detail::__thread_scope_block_tag;
 using std::__detail::__thread_scope_device_tag;
 using std::__detail::__thread_scope_system_tag;
-using std::__detail::__atomic_signal_fence_cuda;
-using std::__detail::__atomic_thread_fence_cuda;
 }
 
 using memory_order = std::memory_order;
@@ -173,32 +172,25 @@ inline __host__ __device__ void atomic_thread_fence(memory_order __m, thread_sco
         NV_IS_DEVICE, (
             switch(_Scope) {
             case thread_scope::thread_scope_system:
-                __detail::__atomic_thread_fence_cuda((int)__m, __detail::__thread_scope_system_tag());
+                std::__detail::__atomic_thread_fence_cuda((int)__m, __detail::__thread_scope_system_tag());
                 break;
             case thread_scope::thread_scope_device:
-                __detail::__atomic_thread_fence_cuda((int)__m, __detail::__thread_scope_device_tag());
+                std::__detail::__atomic_thread_fence_cuda((int)__m, __detail::__thread_scope_device_tag());
                 break;
             case thread_scope::thread_scope_block:
-                __detail::__atomic_thread_fence_cuda((int)__m, __detail::__thread_scope_block_tag());
+                std::__detail::__atomic_thread_fence_cuda((int)__m, __detail::__thread_scope_block_tag());
                 break;
             }
         ),
         NV_IS_HOST, (
             (void) _Scope;
-            ::std::atomic_thread_fence((::std::memory_order)__m);
+            std::atomic_thread_fence(__m);
         )
     )
 }
 
 inline __host__ __device__ void atomic_signal_fence(memory_order __m) {
-    NV_DISPATCH_TARGET(
-        NV_IS_DEVICE, (
-            __detail::__atomic_signal_fence_cuda((int)__m);
-        ),
-        NV_IS_HOST, (
-            ::std::atomic_signal_fence((::std::memory_order)__m);
-        )
-    )
+    std::atomic_signal_fence(__m);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
