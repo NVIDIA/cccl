@@ -1,3 +1,6 @@
+#ifndef __LIBCUDACXX_ATOMIC_SCOPES_H
+#define __LIBCUDACXX_ATOMIC_SCOPES_H
+
 #ifndef __ATOMIC_BLOCK
 #define __ATOMIC_SYSTEM 0 // 0 indicates default
 #define __ATOMIC_DEVICE 1
@@ -39,3 +42,5 @@ _LIBCUDACXX_INLINE_VISIBILITY auto constexpr __scope_tag() ->
         typename __scope_enum_to_tag<_Scope>::type {
     return typename __scope_enum_to_tag<_Scope>::type();
 }
+
+#endif // __LIBCUDACXX_ATOMIC_SCOPES_H
