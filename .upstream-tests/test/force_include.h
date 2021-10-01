@@ -74,7 +74,7 @@ int main(int argc, char** argv)
         return ret;
     }
 
-    int * cuda_ret = nullptr;
+    int * cuda_ret = 0;
     CUDA_CALL(err, cudaMalloc(&cuda_ret, sizeof(int)));
 
     fake_main_kernel<<<1, cuda_thread_count>>>(cuda_ret);

@@ -7,6 +7,40 @@
 //
 //===----------------------------------------------------------------------===//
 
+
+// For all compilers and dialects this header defines:
+//  _NV_EVAL
+//  _NV_IF
+//  _NV_CONCAT_EVAL
+// For C++11 and up it defines:
+//  _NV_STRIP_PAREN
+//  _NV_DISPATCH_N_ARY
+//  _NV_FIRST_ARG
+//  _NV_REMOVE_PAREN
+
+#if defined(__cplusplus) && __cplusplus >= 201103L
+#  define _NV_EVAL1(...) __VA_ARGS__
+#  define _NV_EVAL(...) _NV_EVAL1(__VA_ARGS__)
+#else
+#  define _NV_EVAL1(x) x
+#  define _NV_EVAL(x) _NV_EVAL1(x)
+#endif // defined(__cplusplus) && __cplusplus >= 201103L
+
+#define _NV_CONCAT_EVAL1(l, r) _NV_EVAL(l ## r)
+#define _NV_CONCAT_EVAL(l, r) _NV_CONCAT_EVAL1(l, r)
+
+#define _NV_IF_0(t, f) f
+#define _NV_IF_1(t, f) t
+
+#define _NV_IF_BIT(b) _NV_EVAL(_NV_IF_##b)
+#define _NV_IF__EVAL(fn, t, f) _NV_EVAL(fn(t, f))
+#define _NV_IF_EVAL(cond, t, f) _NV_IF__EVAL(_NV_IF_BIT(cond), t, f)
+
+#define _NV_IF1(cond, t, f) _NV_IF_EVAL(cond, t, f)
+#define _NV_IF(cond, t, f) _NV_IF1(_NV_EVAL(cond), _NV_EVAL(t), _NV_EVAL(f))
+
+#if defined(__cplusplus) && __cplusplus >= 201103L
+
 // The below mechanisms were derived from: https://gustedt.wordpress.com/2010/06/08/detect-empty-macro-arguments/
 
 #define _NV_ARG32(...) _NV_EVAL(_NV_ARG32_0(__VA_ARGS__))
@@ -40,12 +74,6 @@
 #define _NV_ISEMPTY0(_0, _1, _2, _3) _NV_HAS_COMMA(_NV_PASTE5(_NV_IS_EMPTY_CASE_, _0, _1, _2, _3))
 #define _NV_IS_EMPTY_CASE_0001 ,
 
-#define _NV_CONCAT_EVAL1(l, r) _NV_EVAL(l ## r)
-#define _NV_CONCAT_EVAL2(l, r) _NV_CONCAT_EVAL2(l, r)
-#define _NV_CONCAT_EVAL(l, r) _NV_CONCAT_EVAL1(l, r)
-
-#define _NV_EVAL2(...) __VA_ARGS__
-#define _NV_EVAL(...) _NV_EVAL2(__VA_ARGS__)
 
 #define _NV_REMOVE_PAREN(...) _NV_REMOVE_PAREN1(__VA_ARGS__)
 #define _NV_REMOVE_PAREN1(...) _NV_STRIP_PAREN(_NV_IF(_NV_TEST_PAREN(__VA_ARGS__), (_NV_STRIP_PAREN(__VA_ARGS__)), (__VA_ARGS__)))
@@ -71,16 +99,6 @@
 #define _NV_REMOVE_FIRST_ARGS1(...) __VA_ARGS__
 #define _NV_REMOVE_FIRST_ARGS(x, ...) _NV_REMOVE_FIRST_ARGS1(__VA_ARGS__)
 
-#define _NV_IF_0(t, f) f
-#define _NV_IF_1(t, ...) t
-
-#define _NV_IF_BIT(b) _NV_EVAL(_NV_IF_##b)
-#define _NV_IF__EVAL(fn, t, f) _NV_EVAL(fn(t, f))
-#define _NV_IF_EVAL(cond, t, f) _NV_IF__EVAL(_NV_IF_BIT(cond), t, f)
-
-#define _NV_IF1(cond, t, f) _NV_IF_EVAL(cond, t, f)
-#define _NV_IF(cond, t, f) _NV_IF1(_NV_EVAL(cond), _NV_EVAL(t), _NV_EVAL(f))
-
 #define _NV_NUM_ARGS(...) _NV_NUM_ARGS0(__VA_ARGS__)
 #define _NV_NUM_ARGS0(...) _NV_EVAL(_NV_NUM_ARGS1(__VA_ARGS__))
 #define _NV_NUM_ARGS1(...) _NV_IF(_NV_ISEMPTY(__VA_ARGS__), 0, _NV_NUM_ARGS2(__VA_ARGS__))
@@ -92,3 +110,5 @@
 #define _NV_DISPATCH_N_IMPL0(depth, name, ...) _NV_DISPATCH_N_IMPL1(_NV_CONCAT_EVAL(name, depth), __VA_ARGS__)
 #define _NV_DISPATCH_N_IMPL(name, ...) _NV_DISPATCH_N_IMPL0(_NV_NUM_ARGS(__VA_ARGS__), name, __VA_ARGS__)
 #define _NV_DISPATCH_N_ARY(name, ...) _NV_DISPATCH_N_IMPL(name, __VA_ARGS__)
+
+#endif // defined(__cplusplus) && __cplusplus >= 201103L

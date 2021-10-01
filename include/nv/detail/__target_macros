@@ -105,7 +105,7 @@
 #  if defined(_NV_TARGET_VAL)
 #    define _NV_DEVICE_CHECK(q) (q)
 #  else
-#    define _NV_DEVICE_CHECK(q) (false)
+#    define _NV_DEVICE_CHECK(q) (0)
 #  endif
 
 #  define _NV_TARGET_PROVIDES(q)   _NV_DEVICE_CHECK(_NV_TARGET_VAL >= q)
@@ -388,33 +388,58 @@
 #    define _NV_TARGET_BOOL___NV_PROVIDES_SM_86 0
 #  endif
 
-#  define _NV_INNER_BLOCK_EXPAND(...) __VA_ARGS__
-#  define _NV_BLOCK_EXPAND(...) { _NV_REMOVE_PAREN(__VA_ARGS__) }
 #  define _NV_ARCH_COND_CAT1(cond) _NV_TARGET_BOOL_##cond
 #  define _NV_ARCH_COND_CAT(cond) _NV_EVAL(_NV_ARCH_COND_CAT1(cond))
-#  define _NV_TARGET_IF(cond, t, ...) _NV_IF(_NV_ARCH_COND_CAT(cond), t, __VA_ARGS__)
+
+#    define _NV_TARGET_EMPTY_PARAM ;
+
+#  if defined(__cplusplus) && __cplusplus >= 201103L
+
+#    define _NV_BLOCK_EXPAND(...) { _NV_REMOVE_PAREN(__VA_ARGS__) }
+#    define _NV_TARGET_IF(cond, t, ...) _NV_IF( _NV_ARCH_COND_CAT(cond), t, __VA_ARGS__)
+
+#  else // <C++11 fallback
+
+#    define _NV_BLOCK_EXPAND(x) { x }
+
+#    define _NV_TARGET_IF(cond, t)         _NV_IF(_NV_ARCH_COND_CAT(cond), t, _NV_TARGET_EMPTY_PARAM)
+#    define _NV_TARGET_IF_ELSE(cond, t, f) _NV_IF(_NV_ARCH_COND_CAT(cond), t, f)
+
+#  endif
 
 #endif // _NV_COMPILER_NVCC
 
-#define _NV_TARGET_DISPATCH_HANDLE0()
-#define _NV_TARGET_DISPATCH_HANDLE2(q, fn)        _NV_TARGET_IF(q, fn)
-#define _NV_TARGET_DISPATCH_HANDLE4(q, fn, ...)   _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE2(__VA_ARGS__))
-#define _NV_TARGET_DISPATCH_HANDLE6(q, fn, ...)   _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE4(__VA_ARGS__))
-#define _NV_TARGET_DISPATCH_HANDLE8(q, fn, ...)   _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE6(__VA_ARGS__))
-#define _NV_TARGET_DISPATCH_HANDLE10(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE8(__VA_ARGS__))
-#define _NV_TARGET_DISPATCH_HANDLE12(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE10(__VA_ARGS__))
-#define _NV_TARGET_DISPATCH_HANDLE14(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE12(__VA_ARGS__))
-#define _NV_TARGET_DISPATCH_HANDLE16(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE14(__VA_ARGS__))
-#define _NV_TARGET_DISPATCH_HANDLE18(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE16(__VA_ARGS__))
-#define _NV_TARGET_DISPATCH_HANDLE20(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE18(__VA_ARGS__))
-#define _NV_TARGET_DISPATCH_HANDLE22(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE20(__VA_ARGS__))
-#define _NV_TARGET_DISPATCH_HANDLE24(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE22(__VA_ARGS__))
-#define _NV_TARGET_DISPATCH_HANDLE26(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE24(__VA_ARGS__))
-#define _NV_TARGET_DISPATCH_HANDLE28(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE26(__VA_ARGS__))
+#if defined(__cplusplus) && __cplusplus >= 201103L
 
-#define _NV_TARGET_DISPATCH(...) _NV_BLOCK_EXPAND(_NV_DISPATCH_N_ARY(_NV_TARGET_DISPATCH_HANDLE, __VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE0()
+#  define _NV_TARGET_DISPATCH_HANDLE2(q, fn)        _NV_TARGET_IF(q, fn)
+#  define _NV_TARGET_DISPATCH_HANDLE4(q, fn, ...)   _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE2(__VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE6(q, fn, ...)   _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE4(__VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE8(q, fn, ...)   _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE6(__VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE10(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE8(__VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE12(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE10(__VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE14(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE12(__VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE16(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE14(__VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE18(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE16(__VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE20(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE18(__VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE22(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE20(__VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE24(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE22(__VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE26(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE24(__VA_ARGS__))
+#  define _NV_TARGET_DISPATCH_HANDLE28(q, fn, ...)  _NV_TARGET_IF(q, fn, _NV_TARGET_DISPATCH_HANDLE26(__VA_ARGS__))
 
-#define NV_IF_TARGET(cond, t, ...) _NV_BLOCK_EXPAND(_NV_TARGET_IF(cond, t, __VA_ARGS__))
-#define NV_DISPATCH_TARGET(...) _NV_TARGET_DISPATCH(__VA_ARGS__)
+#  define _NV_TARGET_DISPATCH(...) _NV_BLOCK_EXPAND(_NV_DISPATCH_N_ARY(_NV_TARGET_DISPATCH_HANDLE, __VA_ARGS__))
+
+// NV_IF_TARGET supports a false statement provided as a variadic macro
+#  define NV_IF_TARGET(cond, t, ...)    _NV_BLOCK_EXPAND(_NV_TARGET_IF(cond, t, __VA_ARGS__))
+#  define NV_IF_ELSE_TARGET(cond, t, f) _NV_BLOCK_EXPAND(_NV_TARGET_IF(cond, t, f))
+#  define NV_DISPATCH_TARGET(...)       _NV_TARGET_DISPATCH(__VA_ARGS__)
+
+#else // <C++11 fallback
+
+// NV_IF_TARGET does not support a fallback false statement in C++03 or C dialects
+#  define NV_IF_TARGET(cond, t)         _NV_BLOCK_EXPAND(_NV_TARGET_IF(cond, t))
+#  define NV_IF_ELSE_TARGET(cond, t, f) _NV_BLOCK_EXPAND(_NV_TARGET_IF_ELSE(cond, t, f))
+
+#endif
 
 #endif // _NV__TARGET_MACROS
