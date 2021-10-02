@@ -167,7 +167,7 @@ struct atomic<_Tp*, _Sco>
     _Tp* operator-=(ptrdiff_t __op) noexcept          {return fetch_sub(__op) - __op;}
 };
 
-// atomic<T>
+// atomic_ref<T>
 
 template <class _Tp, thread_scope _Sco = thread_scope::thread_scope_system>
 struct atomic_ref
@@ -198,7 +198,7 @@ struct atomic_ref
     }
 };
 
-// atomic<T*>
+// atomic_ref<T*>
 
 template <class _Tp, thread_scope _Sco>
 struct atomic_ref<_Tp*, _Sco>

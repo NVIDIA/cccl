@@ -13,7 +13,7 @@
 // <cuda/std/atomic>
 
 // template <class T>
-// struct atomic<T*>
+// struct atomic_ref<T*>
 // {
 //     bool is_lock_free() const volatile;
 //     bool is_lock_free() const;
