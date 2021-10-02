@@ -31,7 +31,7 @@ int main(int argc, char ** argv)
       int32_t b;
     };
     static_assert(alignof(key) == 4, "");
-    cuda::atomic<key> k;
+    cuda::atomic<key> k(key{});
     auto r = k.load();
     k.store(r);
     (void)k.exchange(r);
@@ -44,7 +44,7 @@ int main(int argc, char ** argv)
       int32_t b;
     };
     static_assert(alignof(key) == 8, "");
-    cuda::atomic<key> k;
+    cuda::atomic<key> k(key{});
     auto r = k.load();
     k.store(r);
     (void)k.exchange(r);

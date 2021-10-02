@@ -12,6 +12,7 @@
 #define _LIBCUDACXX_ATOMIC_BASE_H
 
 #include "cxx_atomic.h"
+#include <type_traits>
 
 _LIBCUDACXX_INLINE_VISIBILITY inline _LIBCUDACXX_CONSTEXPR int __cxx_atomic_order_to_int(memory_order __order) {
   // Avoid switch statement to make this a constexpr.
@@ -35,13 +36,13 @@ _LIBCUDACXX_INLINE_VISIBILITY inline _LIBCUDACXX_CONSTEXPR int __cxx_atomic_fail
 
 template <typename _Tp, typename _Up>
 inline void __cxx_atomic_init(volatile _Tp* __a,  _Up __val) {
-  auto __a_tmp = __cxx_atomic_base_unwrap(__a);
+  auto __a_tmp = __cxx_get_underlying_atomic(__cxx_atomic_unwrap(__a));
   __cxx_atomic_assign_volatile(*__a_tmp, __val);
 }
 
 template <typename _Tp, typename _Up>
 inline void __cxx_atomic_init(_Tp* __a,  _Up __val) {
-  auto __a_tmp = __cxx_atomic_base_unwrap(__a);
+  auto __a_tmp = __cxx_get_underlying_atomic(__cxx_atomic_unwrap(__a));
   *__a_tmp = __val;
 }
 
@@ -58,39 +59,34 @@ void __cxx_atomic_signal_fence(memory_order __order) {
 template <typename _Tp, typename _Up>
 inline void __cxx_atomic_store(_Tp* __a,  _Up __val,
                         memory_order __order) {
-  typename _CUDA_VSTD::remove_cv<_Tp>::type __v_temp(__val);
-  (void)__a;
-  __atomic_store(__a, &__v_temp, __cxx_atomic_order_to_int(__order));
+  auto __v_temp = __cxx_atomic_wrap_to_base(__a, __val);
+  __atomic_store(__cxx_atomic_unwrap(__a), &__v_temp, __cxx_atomic_order_to_int(__order));
 }
 
 template <typename _Tp>
 inline auto __cxx_atomic_load(const _Tp* __a,
                        memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
-  typename _CUDA_VSTD::remove_cv<_Tp>::type __ret;
-  (void)__a;
-  __atomic_load(__a, &__ret, __cxx_atomic_order_to_int(__order));
-  return __ret.__a_value;
+  auto __ret = __cxx_atomic_base_temporary(__a);
+  __atomic_load(__cxx_atomic_unwrap(__a), &__ret, __cxx_atomic_order_to_int(__order));
+  return *__cxx_get_underlying_atomic(&__ret);
 }
 
 template <typename _Tp, typename _Up>
-inline auto __cxx_atomic_exchange(_Tp* __a, _Up __value,
+inline auto __cxx_atomic_exchange(_Tp* __a, _Up __val,
                           memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
-  typename _CUDA_VSTD::remove_cv<_Tp>::type __v_temp(__value);
-  typename _CUDA_VSTD::remove_cv<_Tp>::type __ret;
-  (void)__a;
-  __atomic_exchange(__a, &__v_temp, &__ret, __cxx_atomic_order_to_int(__order));
-  return __ret.__a_value;
+  auto __v_temp = __cxx_atomic_wrap_to_base(__a, __val);
+  auto __ret = __cxx_atomic_base_temporary(__a);
+  __atomic_exchange(__cxx_atomic_unwrap(__a), &__v_temp, &__ret, __cxx_atomic_order_to_int(__order));
+  return *__cxx_get_underlying_atomic(&__ret);
 }
 
 template <typename _Tp, typename _Up>
 inline bool __cxx_atomic_compare_exchange_strong(
     _Tp* __a, _Up* __expected, _Up __value, memory_order __success,
     memory_order __failure) {
-  auto __a_tmp = __cxx_atomic_base_unwrap(__a);
-  (void)__a_tmp;
   (void)__expected;
-  return __atomic_compare_exchange(__a_tmp, __expected, &__value,
-                                   false,
+  return __atomic_compare_exchange(__cxx_get_underlying_atomic(__cxx_atomic_unwrap(__a)),
+                                   __expected, &__value, false,
                                    __cxx_atomic_order_to_int(__success),
                                    __cxx_atomic_failure_order_to_int(__failure));
 }
@@ -99,11 +95,9 @@ template <typename _Tp, typename _Up>
 inline bool __cxx_atomic_compare_exchange_weak(
     _Tp* __a, _Up* __expected, _Up __value, memory_order __success,
     memory_order __failure) {
-  auto __a_tmp = __cxx_atomic_base_unwrap(__a);
-  (void)__a_tmp;
   (void)__expected;
-  return __atomic_compare_exchange(__a_tmp, __expected, &__value,
-                                   true,
+  return __atomic_compare_exchange(__cxx_get_underlying_atomic(__cxx_atomic_unwrap(__a)),
+                                   __expected, &__value, true,
                                    __cxx_atomic_order_to_int(__success),
                                    __cxx_atomic_failure_order_to_int(__failure));
 }
@@ -125,7 +119,7 @@ template <typename _Tp, typename _Td>
 inline auto __cxx_atomic_fetch_add(_Tp* __a, _Td __delta,
                            memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   constexpr auto __skip_v = __atomic_ptr_inc<__cxx_atomic_underlying_t<_Tp>>::value;
-  auto __a_tmp = __cxx_atomic_base_unwrap(__a);
+  auto __a_tmp = __cxx_get_underlying_atomic(__cxx_atomic_unwrap(__a));
   return __atomic_fetch_add(__a_tmp, __delta * __skip_v,
                             __cxx_atomic_order_to_int(__order));
 }
@@ -134,7 +128,7 @@ template <typename _Tp, typename _Td>
 inline auto __cxx_atomic_fetch_sub(_Tp* __a, _Td __delta,
                            memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   constexpr auto __skip_v = __atomic_ptr_inc<__cxx_atomic_underlying_t<_Tp>>::value;
-  auto __a_tmp = __cxx_atomic_base_unwrap(__a);
+  auto __a_tmp = __cxx_get_underlying_atomic(__cxx_atomic_unwrap(__a));
   return __atomic_fetch_sub(__a_tmp, __delta * __skip_v,
                             __cxx_atomic_order_to_int(__order));
 }
@@ -142,7 +136,7 @@ inline auto __cxx_atomic_fetch_sub(_Tp* __a, _Td __delta,
 template <typename _Tp, typename _Td>
 inline auto __cxx_atomic_fetch_and(_Tp* __a, _Td __pattern,
                             memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
-  auto __a_tmp = __cxx_atomic_base_unwrap(__a);
+  auto __a_tmp = __cxx_get_underlying_atomic(__cxx_atomic_unwrap(__a));
   return __atomic_fetch_and(__a_tmp, __pattern,
                             __cxx_atomic_order_to_int(__order));
 }
@@ -150,7 +144,7 @@ inline auto __cxx_atomic_fetch_and(_Tp* __a, _Td __pattern,
 template <typename _Tp, typename _Td>
 inline auto __cxx_atomic_fetch_or(_Tp* __a, _Td __pattern,
                           memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
-  auto __a_tmp = __cxx_atomic_base_unwrap(__a);
+  auto __a_tmp = __cxx_get_underlying_atomic(__cxx_atomic_unwrap(__a));
   return __atomic_fetch_or(__a_tmp, __pattern,
                            __cxx_atomic_order_to_int(__order));
 }
@@ -158,7 +152,7 @@ inline auto __cxx_atomic_fetch_or(_Tp* __a, _Td __pattern,
 template <typename _Tp, typename _Td>
 inline auto __cxx_atomic_fetch_xor(_Tp* __a, _Td __pattern,
                            memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
-  auto __a_tmp = __cxx_atomic_base_unwrap(__a);
+  auto __a_tmp = __cxx_get_underlying_atomic(__cxx_atomic_unwrap(__a));
   return __atomic_fetch_xor(__a_tmp, __pattern,
                             __cxx_atomic_order_to_int(__order));
 }

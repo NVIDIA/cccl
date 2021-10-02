@@ -78,5 +78,46 @@ struct TestEachAtomicType {
     }
 };
 
+template < template <class, template<typename, typename> class, cuda::thread_scope> class TestFunctor,
+    template<typename, typename> class Selector, cuda::thread_scope Scope
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
+    = cuda::thread_scope_system
+#endif
+>
+struct TestEachIntegralRefType {
+    __host__ __device__
+    void operator()() const {
+        TestFunctor<int, Selector, Scope>()();
+        TestFunctor<unsigned int, Selector, Scope>()();
+        TestFunctor<long, Selector, Scope>()();
+        TestFunctor<unsigned long, Selector, Scope>()();
+        TestFunctor<long long, Selector, Scope>()();
+        TestFunctor<unsigned long long, Selector, Scope>()();
+#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
+        TestFunctor<char32_t, Selector, Scope>()();
+#endif
+        TestFunctor< int32_t, Selector, Scope>()();
+        TestFunctor<uint32_t, Selector, Scope>()();
+        TestFunctor< int64_t, Selector, Scope>()();
+        TestFunctor<uint64_t, Selector, Scope>()();
+    }
+};
+
+template < template <class, template<typename, typename> class, cuda::thread_scope> class TestFunctor,
+    template<typename, typename> class Selector, cuda::thread_scope Scope
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
+    = cuda::thread_scope_system
+#endif
+>
+struct TestEachAtomicRefType {
+    __host__ __device__
+    void operator()() const {
+        TestEachIntegralRefType<TestFunctor, Selector, Scope>()();
+        TestFunctor<UserAtomicType, Selector, Scope>()();
+        TestFunctor<int*, Selector, Scope>()();
+        TestFunctor<const int*, Selector, Scope>()();
+    }
+};
+
 
 #endif // ATOMIC_HELPER_H

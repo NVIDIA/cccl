@@ -5,13 +5,12 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
-// UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
-// UNSUPPORTED: windows && pre-sm-70
 
-// NOTE: atomic<> of a TriviallyCopyable class is wrongly rejected by older
-// clang versions. It was fixed right before the llvm 3.5 release. See PR18097.
-// XFAIL: apple-clang-6.0, clang-3.4, clang-3.3
+// .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
+// UNSUPPORTED: nvrtc
+
+// trivially_copyable not supported on gcc4.8
+// UNSUPPORTED: gcc-4.8
 
 // <cuda/std/atomic>
 
@@ -55,29 +54,22 @@
 
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
-// #include <cuda/std/thread> // for thread_id
-// #include <cuda/std/chrono> // for nanoseconds
 
-#include "test_macros.h"
-
-struct TriviallyCopyable {
-    __host__ __device__
-    TriviallyCopyable ( int i ) : i_(i) {}
+struct NotTriviallyCopyable {
+    __host__ __device__ NotTriviallyCopyable ( int i ) : i_(i) {}
+    __host__ __device__ NotTriviallyCopyable ( const NotTriviallyCopyable &rhs) : i_(rhs.i_) {}
     int i_;
 };
 
 template <class T>
 __host__ __device__
 void test ( T t ) {
-    cuda::std::atomic<T> t0(t);
-    cuda::std::atomic_ref<T> t1(t);
+    cuda::std::atomic_ref<T> t0(t);
 }
 
 int main(int, char**)
 {
-    test(TriviallyCopyable(42));
-    // test(cuda::std::this_thread::get_id());
-    // test(cuda::std::chrono::nanoseconds(2));
+    test(NotTriviallyCopyable(42));
 
   return 0;
 }

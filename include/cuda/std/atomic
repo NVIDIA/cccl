@@ -82,8 +82,8 @@ struct atomic
     : public std::__atomic_base<_Tp, _Sco>
 {
     typedef std::__atomic_base<_Tp, _Sco> __base;
-    __host__ __device__
-    atomic() noexcept : __base() {}
+
+    constexpr atomic() noexcept = default;
     __host__ __device__
     constexpr atomic(_Tp __d) noexcept : __base(__d) {}
 
@@ -114,8 +114,8 @@ struct atomic<_Tp*, _Sco>
     : public std::__atomic_base<_Tp*, _Sco>
 {
     typedef std::__atomic_base<_Tp*, _Sco> __base;
-    __host__ __device__
-    atomic() noexcept : __base() {}
+
+    constexpr atomic() noexcept = default;
     __host__ __device__
     constexpr atomic(_Tp* __d) noexcept : __base(__d) {}
 
@@ -165,6 +165,98 @@ struct atomic<_Tp*, _Sco>
     _Tp* operator-=(ptrdiff_t __op) volatile noexcept {return fetch_sub(__op) - __op;}
     __host__ __device__
     _Tp* operator-=(ptrdiff_t __op) noexcept          {return fetch_sub(__op) - __op;}
+};
+
+// atomic_ref<T>
+
+template <class _Tp, thread_scope _Sco = thread_scope::thread_scope_system>
+struct atomic_ref
+    : public std::__atomic_base_ref<_Tp, _Sco>
+{
+    typedef std::__atomic_base_ref<_Tp, _Sco> __base;
+
+    __host__ __device__
+    constexpr atomic_ref(_Tp& __d) noexcept : __base(__d) {}
+
+    __host__ __device__
+    _Tp operator=(_Tp __d) const volatile noexcept
+        {__base::store(__d); return __d;}
+    __host__ __device__
+    _Tp operator=(_Tp __d) const noexcept
+        {__base::store(__d); return __d;}
+
+    __host__ __device__
+    _Tp fetch_max(const _Tp & __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
+    {
+        return std::__detail::__cxx_atomic_fetch_max(&this->__a_, __op, __m);
+    }
+
+    __host__ __device__
+    _Tp fetch_min(const _Tp & __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
+    {
+        return std::__detail::__cxx_atomic_fetch_min(&this->__a_, __op, __m);
+    }
+};
+
+// atomic_ref<T*>
+
+template <class _Tp, thread_scope _Sco>
+struct atomic_ref<_Tp*, _Sco>
+    : public std::__atomic_base_ref<_Tp*, _Sco>
+{
+    typedef std::__atomic_base_ref<_Tp*, _Sco> __base;
+
+    __host__ __device__
+    constexpr atomic_ref(_Tp*& __d) noexcept : __base(__d) {}
+
+    __host__ __device__
+    _Tp* operator=(_Tp* __d) const volatile noexcept
+        {__base::store(__d); return __d;}
+    __host__ __device__
+    _Tp* operator=(_Tp* __d) const noexcept
+        {__base::store(__d); return __d;}
+
+    __host__ __device__
+    _Tp* fetch_add(ptrdiff_t __op,
+                   memory_order __m = memory_order_seq_cst) const volatile noexcept
+        {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
+    __host__ __device__
+    _Tp* fetch_add(ptrdiff_t __op,
+                   memory_order __m = memory_order_seq_cst) const noexcept
+        {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
+    __host__ __device__
+    _Tp* fetch_sub(ptrdiff_t __op,
+                   memory_order __m = memory_order_seq_cst) const volatile noexcept
+        {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
+    __host__ __device__
+    _Tp* fetch_sub(ptrdiff_t __op,
+                   memory_order __m = memory_order_seq_cst) const noexcept
+        {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
+
+    __host__ __device__
+    _Tp* operator++(int) const volatile noexcept            {return fetch_add(1);}
+    __host__ __device__
+    _Tp* operator++(int) const noexcept                     {return fetch_add(1);}
+    __host__ __device__
+    _Tp* operator--(int) const volatile noexcept            {return fetch_sub(1);}
+    __host__ __device__
+    _Tp* operator--(int) const noexcept                     {return fetch_sub(1);}
+    __host__ __device__
+    _Tp* operator++() const volatile noexcept               {return fetch_add(1) + 1;}
+    __host__ __device__
+    _Tp* operator++() const noexcept                        {return fetch_add(1) + 1;}
+    __host__ __device__
+    _Tp* operator--() const volatile noexcept               {return fetch_sub(1) - 1;}
+    __host__ __device__
+    _Tp* operator--() const noexcept                        {return fetch_sub(1) - 1;}
+    __host__ __device__
+    _Tp* operator+=(ptrdiff_t __op) const volatile noexcept {return fetch_add(__op) + __op;}
+    __host__ __device__
+    _Tp* operator+=(ptrdiff_t __op) const noexcept          {return fetch_add(__op) + __op;}
+    __host__ __device__
+    _Tp* operator-=(ptrdiff_t __op) const volatile noexcept {return fetch_sub(__op) - __op;}
+    __host__ __device__
+    _Tp* operator-=(ptrdiff_t __op) const noexcept          {return fetch_sub(__op) - __op;}
 };
 
 inline __host__ __device__ void atomic_thread_fence(memory_order __m, thread_scope _Scope = thread_scope::thread_scope_system) {
