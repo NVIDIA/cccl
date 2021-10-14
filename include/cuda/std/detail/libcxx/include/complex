@@ -1126,23 +1126,18 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp>
 exp(const complex<_Tp>& __x)
 {
     _Tp __i = __x.imag();
-    if (__libcpp_isinf_or_builtin(__x.real()))
+    _Tp __e = exp(__x.real());
+    if (__libcpp_isinf_or_builtin(__e))
     {
-        if (__x.real() < _Tp(0))
-        {
-            if (!__libcpp_isfinite_or_builtin(__i))
-                __i = _Tp(1);
-        }
-        else if (__i == 0 || !__libcpp_isfinite_or_builtin(__i))
+        if (__i == 0 || !__libcpp_isfinite_or_builtin(__i))
         {
             if (__libcpp_isinf_or_builtin(__i))
                 __i = _Tp(NAN);
-            return complex<_Tp>(__x.real(), __i);
+            return complex<_Tp>(__e, __i);
         }
     }
     else if (__libcpp_isnan_or_builtin(__x.real()) && __x.imag() == 0)
         return __x;
-    _Tp __e = exp(__x.real());
     return complex<_Tp>(__e * cos(__i), __e * sin(__i));
 }
 
