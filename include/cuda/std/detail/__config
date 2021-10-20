@@ -19,6 +19,14 @@
         #include <cuda_fp16.h>
         #define _Float16 __half
     #endif
+    #define _LIBCUDACXX_CUDACC_VER_MAJOR __CUDACC_VER_MAJOR__
+    #define _LIBCUDACXX_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
+    #define _LIBCUDACXX_CUDACC_VER_BUILD __CUDACC_VER_BUILD__
+    #define _LIBCUDACXX_CUDACC_VER                                                  \
+        _LIBCUDACXX_CUDACC_VER_MAJOR * 10000 + _LIBCUDACXX_CUDACC_VER_MINOR * 100 + \
+        _LIBCUDACXX_CUDACC_VER_BUILD
+
+    #define _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 #else
     #ifndef __host__
         #define __host__
@@ -47,7 +55,19 @@
 #ifndef _LIBCUDACXX_NODEBUG_TYPE
     #define _LIBCUDACXX_NODEBUG_TYPE
 #endif
-#define _LIBCUDACXX_HAS_NO_INT128
+
+#if defined(__CUDACC_RTC__)
+#  if defined(__CUDACC_RTC_INT128__)
+#    define __SIZEOF_INT128__ 16 // This macro is required in order to use int128 within the library
+#  else
+#    define _LIBCUDACXX_HAS_NO_INT128
+#  endif
+#endif
+
+#if defined(_LIBCUDACXX_COMPILER_MSVC) || (defined(_LIBCUDACXX_CUDACC_VER) && (_LIBCUDACXX_CUDACC_VER < 110500))
+#  define _LIBCUDACXX_HAS_NO_INT128
+#endif
+
 #define _LIBCUDACXX_FREESTANDING
 #define _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
 #define _LIBCUDACXX_HAS_NO_PLATFORM_WAIT

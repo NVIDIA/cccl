@@ -16,6 +16,10 @@ It pulls in the latest version of upstream libc++ and marks the beginning of
 libcu++ 1.6.0 is a major release. It changes the default alignment of `cuda::std::complex` for
 better code generation and changes `cuda::std::atomic` to use `<nv/target>` as the primary dispatch mechanism.
 
+This release adds `cuda::annotated_ptr` and `cuda::access_property`, two APIs that allow associating an address
+space and an explicit caching policy with a pointer, and the related `cuda::apply_access_property`,
+`cuda::associate_access_property` and `cuda::discard_memory` APIs.
+
 This release introduces ABI version 4, which is now the default.
 
 Supported ABI Versions: 4 (default), 3, and 2.
