@@ -11,7 +11,8 @@
 // CUDA C++ development with NVC++, NVCC, and supported host compilers.
 // These interfaces are not guaranteed to be stable.
 
-#pragma once
+#ifndef __NV_TARGET_H
+#define __NV_TARGET_H
 
 #if defined(__NVCC__) || defined(__CUDACC_RTC__)
 #  define _NV_COMPILER_NVCC
@@ -31,7 +32,12 @@
 #  define _NV_BITSET_ATTRIBUTE
 #endif
 
-#if defined(__cplusplus) && __cplusplus >= 201103L
+#if (defined(__cplusplus) && __cplusplus >= 201103L) || \
+    (defined(_MSC_VER) && _MSVC_LANG >= 201103L)
+#  define _NV_TARGET_CPP11
+#endif
+
+#if defined(_NV_TARGET_CPP11)
 
 namespace nv {
   namespace target {
@@ -184,3 +190,4 @@ namespace nv {
 
 #include "detail/__target_macros"
 
+#endif // __NV_TARGET_H

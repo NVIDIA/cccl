@@ -393,7 +393,7 @@
 
 #    define _NV_TARGET_EMPTY_PARAM ;
 
-#  if defined(__cplusplus) && __cplusplus >= 201103L
+#  if defined(_NV_TARGET_CPP11)
 
 #    define _NV_BLOCK_EXPAND(...) { _NV_REMOVE_PAREN(__VA_ARGS__) }
 #    define _NV_TARGET_IF(cond, t, ...) _NV_IF( _NV_ARCH_COND_CAT(cond), t, __VA_ARGS__)
@@ -409,7 +409,7 @@
 
 #endif // _NV_COMPILER_NVCC
 
-#if defined(__cplusplus) && __cplusplus >= 201103L
+#if defined(_NV_TARGET_CPP11)
 
 #  define _NV_TARGET_DISPATCH_HANDLE0()
 #  define _NV_TARGET_DISPATCH_HANDLE2(q, fn)        _NV_TARGET_IF(q, fn)
