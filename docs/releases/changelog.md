@@ -11,6 +11,25 @@ It pulls in the latest version of upstream libc++ and marks the beginning of
 
 !-->
 
+## libcu++ 1.7.0
+
+libcu++ 1.7.0 is a major release. It adds `cuda::std::atomic_ref` for integral
+types. `cuda::std::atomic_ref` may potentially replace uses of CUDA specific
+`atomicOperator(_Scope)` calls and provides a singular API for host and device code.
+
+Supported ABI Versions: 4 (default), 3, and 2.
+
+### New Features
+
+- #203 Implements `cuda::std::atomic_ref`.
+
+### Issues Fixed
+
+- #204: Fallback macro backend in `<nv/target>` when C or pre-C++11 dialects are used.
+- #207: Fix compilation of `<cuda/std/atomic>` for GCC/Clang.
+- #208: Flip an internal directory symlink, fixes packaging issues for internal tools.
+- #212: Fix `<nv/target>` on MSVC, fallback macros would always choose pre-C++11 backend.
+
 ## libcu++ 1.6.0 (CUDA Toolkit 11.5)
 
 libcu++ 1.6.0 is a major release. It changes the default alignment of `cuda::std::complex` for
