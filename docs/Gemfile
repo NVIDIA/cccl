@@ -6,4 +6,5 @@ group :jekyll_plugins do
   gem "jekyll-default-layout"        # GitHub Pages.
   gem "jekyll-titles-from-headings"  # GitHub Pages.
   gem "jekyll-relative-links"        # GitHub Pages.
+  gem "jekyll-remote-theme"          # GitHub Pages.
 end

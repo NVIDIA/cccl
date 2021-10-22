@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+set -ex
+
+(
+    cd docs
+    docker build -f Dockerfile -t libcudacxx:docs .
+    docker run --rm -p 4000:4000 -v $(pwd):/srv/jekyll -u $(id -u):$(id -g) -it libcudacxx:docs bash -c "jekyll serve --watch --host 0.0.0.0"
+)

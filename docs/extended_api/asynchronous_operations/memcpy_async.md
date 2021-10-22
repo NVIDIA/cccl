@@ -28,14 +28,40 @@ Defined in header `<cuda/pipeline>`:
 ```cuda
 // (3)
 template <typename Shape, cuda::thread_scope Scope>
+__host__ __device__
 void cuda::memcpy_async(void* destination, void const* source, Shape size,
                         cuda::pipeline<Scope>& pipeline);
 
 // (4)
 template <typename Group, typename Shape, cuda::thread_scope Scope>
+__host__ __device__
 void cuda::memcpy_async(Group const& group,
-                        void * destination, void const* source, Shape size,
+                        void* destination, void const* source, Shape size,
                         cuda::pipeline<Scope>& pipeline);
+```
+
+Defined in header `<cuda/annotated_ptr>`:
+
+```cuda
+// (5)
+template <typename Dst, typename Src, typename SrcProperty, typename Shape, typename Sync>
+__host__ __device__
+void memcpy_async(Dst* dst, cuda::annotated_ptr<Src, SrcProperty> src, Shape size, Sync& sync);
+
+// (6)
+template<typename Dst, typename DstProperty, typename Src, typename SrcProperty, typename Shape, typename Sync>
+__host__ __device__
+void memcpy_async(cuda::annotated_ptr<Dst, DstProperty> dst, cuda::annotated_ptr<Src, SrcProperty> src, Shape size, Sync& sync);
+
+// (7)
+template<typename Group, typename Dst, typename Src, typename SrcProperty, typename Shape, typename Sync>
+__host__ __device__
+void memcpy_async(Group const& group, Dst* dst, cuda::annotated_ptr<Src, SrcProperty> src, Shape size, Sync& sync);
+
+// (8)
+template<typename Group, typename Dst, typename DstProperty, typename Src, typename SrcProperty, typename Shape, typename Sync>
+__host__ __device__
+void memcpy_async(Group const& group, cuda::annotated_ptr<Dst, DstProperty> dst, cuda::annotated_ptr<Src, SrcProperty> src, Shape size, Sync& sync);
 ```
 
 `cuda::memcpy_async` asynchronously copies `size` bytes from the memory
@@ -51,6 +77,8 @@ Both objects are reinterpreted as arrays of `unsigned char`.
    in the current thread.
 4. Binds the asynchronous copy completion to `cuda::pipeline` and cooperatively
    issues the copy across all threads in `group`.
+5. 5-8: convenience wrappers using `cuda::annotated_ptr` where `Sync` is 
+   either `cuda::barrier` or `cuda::pipeline`.
 
 ## Notes
 
