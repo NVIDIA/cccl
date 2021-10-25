@@ -36,6 +36,7 @@ __host__ __device__ void test() {
   // This test ensures that the fallthrough cases are not invoked.
   // SM_80 would imply that SM_72 is available, yet it should not be expanded by the macro
   NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_87, (static_assert(arch_val >= 870, "cuda arch expected 870");),
     NV_PROVIDES_SM_86, (static_assert(arch_val >= 860, "cuda arch expected 860");),
     NV_PROVIDES_SM_80, (static_assert(arch_val >= 800, "cuda arch expected 800");),
     NV_PROVIDES_SM_75, (static_assert(arch_val >= 750, "cuda arch expected 750");),
@@ -54,7 +55,8 @@ __host__ __device__ void test() {
 
   // This test is simpler and ensures that only the value matched is invoked, but is roughly the same as the above
   NV_DISPATCH_TARGET(
-    NV_IS_EXACTLY_SM_86, (static_assert(arch_val == 860, "cuda arch expected 800");),
+    NV_IS_EXACTLY_SM_87, (static_assert(arch_val == 870, "cuda arch expected 870");),
+    NV_IS_EXACTLY_SM_86, (static_assert(arch_val == 860, "cuda arch expected 860");),
     NV_IS_EXACTLY_SM_80, (static_assert(arch_val == 800, "cuda arch expected 800");),
     NV_IS_EXACTLY_SM_75, (static_assert(arch_val == 750, "cuda arch expected 750");),
     NV_IS_EXACTLY_SM_72, (static_assert(arch_val == 720, "cuda arch expected 720");),
