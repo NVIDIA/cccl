@@ -21,14 +21,20 @@ Supported ABI Versions: 4 (default), 3, and 2.
 
 ### New Features
 
-- #203 Implements `cuda::std::atomic_ref`.
+- #203 Implements `cuda::std::atomic_ref` for integral types.
 
 ### Issues Fixed
 
 - #204: Fallback macro backend in `<nv/target>` when C or pre-C++11 dialects are used.
+- #206: Fix compilation with ASAN enabled.
+    - Thanks Janusz Lisiecki for this contribution.
 - #207: Fix compilation of `<cuda/std/atomic>` for GCC/Clang.
 - #208: Flip an internal directory symlink, fixes packaging issues for internal tools.
 - #212: Fix `<nv/target>` on MSVC, fallback macros would always choose pre-C++11 backend.
+- #216: Annotated Pointer documentation.
+    - Thanks Gonzalo Brito for this contribution.
+- #215: Add SM87 awareness to `<nv/target>`.
+- #217: Fix how CUDACC version is calculated for `__int128` support.
 
 ## libcu++ 1.6.0 (CUDA Toolkit 11.5)
 
