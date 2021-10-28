@@ -1245,6 +1245,7 @@ struct __atomic_base {
     mutable __cxx_atomic_impl<_Tp, _Sco> __a_;
 
     __atomic_base() = default;
+    __atomic_base(const __atomic_base&) = delete;
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
     __atomic_base(const _Tp& __a) _NOEXCEPT : __a_(__a) {}
 
@@ -1364,6 +1365,7 @@ struct __atomic_base_ref {
     mutable __cxx_atomic_ref_impl<_Tp, _Sco> __a_;
 
     __atomic_base_ref() = default;
+    __atomic_base_ref(const __atomic_base_ref&) = default;
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
     __atomic_base_ref(_Tp& __a) _NOEXCEPT : __a_(__a) {}
 
@@ -1483,6 +1485,7 @@ struct __atomic_base_ref {
 template <class _Tp, int _Sco>
 struct __atomic_base<_Tp, _Sco, true> : public __atomic_base<_Tp, _Sco, false> {
     __atomic_base() = default;
+    __atomic_base(const __atomic_base&) = delete;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
     __atomic_base(const _Tp& __a) _NOEXCEPT : __atomic_base<_Tp, _Sco, false>(__a) {}
@@ -1559,6 +1562,7 @@ struct __atomic_base<_Tp, _Sco, true> : public __atomic_base<_Tp, _Sco, false> {
 template <class _Tp, int _Sco>
 struct __atomic_base_ref<_Tp, _Sco, true> : public __atomic_base_ref<_Tp, _Sco, false> {
     __atomic_base_ref() = default;
+    __atomic_base_ref(const __atomic_base_ref&) = default;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
     __atomic_base_ref(_Tp& __a) _NOEXCEPT : __atomic_base_ref<_Tp, _Sco, false>(__a) {}
