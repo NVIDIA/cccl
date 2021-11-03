@@ -1245,6 +1245,12 @@ struct __atomic_base {
     mutable __cxx_atomic_impl<_Tp, _Sco> __a_;
 
     __atomic_base() = default;
+    __atomic_base(const __atomic_base&) = delete;
+    __atomic_base(__atomic_base&&) = delete;
+
+    __atomic_base& operator=(const __atomic_base&) = delete;
+    __atomic_base& operator=(__atomic_base&&) = delete;
+
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
     __atomic_base(const _Tp& __a) _NOEXCEPT : __a_(__a) {}
 
@@ -1364,13 +1370,18 @@ struct __atomic_base_ref {
     mutable __cxx_atomic_ref_impl<_Tp, _Sco> __a_;
 
     __atomic_base_ref() = default;
+    __atomic_base_ref(const __atomic_base_ref&) = default;
+    __atomic_base_ref(__atomic_base_ref&&) = default;
+
+    __atomic_base_ref& operator=(const __atomic_base_ref&) = delete;
+    __atomic_base_ref& operator=(__atomic_base_ref&&) = delete;
+
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
     __atomic_base_ref(_Tp& __a) _NOEXCEPT : __a_(__a) {}
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
     static _LIBCUDACXX_CONSTEXPR bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(decltype(__a_)), 0);
 #endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-
 
     _LIBCUDACXX_INLINE_VISIBILITY
     bool is_lock_free() const volatile _NOEXCEPT
@@ -1483,6 +1494,11 @@ struct __atomic_base_ref {
 template <class _Tp, int _Sco>
 struct __atomic_base<_Tp, _Sco, true> : public __atomic_base<_Tp, _Sco, false> {
     __atomic_base() = default;
+    __atomic_base(const __atomic_base&) = delete;
+    __atomic_base(__atomic_base&&) = delete;
+
+    __atomic_base& operator=(const __atomic_base&) = delete;
+    __atomic_base& operator=(__atomic_base&&) = delete;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
     __atomic_base(const _Tp& __a) _NOEXCEPT : __atomic_base<_Tp, _Sco, false>(__a) {}
@@ -1559,6 +1575,11 @@ struct __atomic_base<_Tp, _Sco, true> : public __atomic_base<_Tp, _Sco, false> {
 template <class _Tp, int _Sco>
 struct __atomic_base_ref<_Tp, _Sco, true> : public __atomic_base_ref<_Tp, _Sco, false> {
     __atomic_base_ref() = default;
+    __atomic_base_ref(const __atomic_base_ref&) = default;
+    __atomic_base_ref(__atomic_base_ref&&) = default;
+
+    __atomic_base_ref& operator=(const __atomic_base_ref&) = delete;
+    __atomic_base_ref& operator=(__atomic_base_ref&&) = delete;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
     __atomic_base_ref(_Tp& __a) _NOEXCEPT : __atomic_base_ref<_Tp, _Sco, false>(__a) {}
@@ -1744,9 +1765,6 @@ template <class _Tp>
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit atomic_ref(_Tp& __ref) : __base(__ref) {}
 
-    atomic_ref(const atomic_ref&) noexcept = default;
-    atomic_ref& operator=(const atomic_ref&) = delete;
-
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator=(_Tp __v) const noexcept {__base::store(__v); return __v;}
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1768,9 +1786,6 @@ template <class _Tp>
 
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit atomic_ref(_Tp*& __ref) : __base(__ref) {}
-
-    atomic_ref(const atomic_ref&) noexcept = default;
-    atomic_ref& operator=(const atomic_ref&) = delete;
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp* operator=(_Tp* __v) const noexcept {__base::store(__v); return __v;}
