@@ -74,6 +74,23 @@ __host__ __device__ _testcases get_testcases() {
         cuda::std::complex<double>(-1.e+6, -1.e+6),
         cuda::std::complex<double>( 1.e+6, -1.e+6),
 
+        cuda::std::complex<double>(-0, -1.e-6),
+        cuda::std::complex<double>(-0,  1.e-6),
+        cuda::std::complex<double>(-0,  1.e+6),
+        cuda::std::complex<double>(-0, -1.e+6),
+        cuda::std::complex<double>( 0, -1.e-6),
+        cuda::std::complex<double>( 0,  1.e-6),
+        cuda::std::complex<double>( 0,  1.e+6),
+        cuda::std::complex<double>( 0, -1.e+6),
+
+        cuda::std::complex<double>(-1.e-6, -0),
+        cuda::std::complex<double>( 1.e-6, -0),
+        cuda::std::complex<double>( 1.e+6, -0),
+        cuda::std::complex<double>(-1.e+6, -0),
+        cuda::std::complex<double>(-1.e-6,  0),
+        cuda::std::complex<double>( 1.e-6,  0),
+        cuda::std::complex<double>( 1.e+6,  0),
+
         cuda::std::complex<double>(NAN, NAN),
         cuda::std::complex<double>(-INFINITY, NAN),
         cuda::std::complex<double>(-2, NAN),

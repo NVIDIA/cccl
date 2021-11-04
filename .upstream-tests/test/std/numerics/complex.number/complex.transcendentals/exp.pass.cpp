@@ -103,6 +103,10 @@ __host__ __device__ void test_edges()
             assert(!cuda::std::signbit(r.real()));
             assert(cuda::std::signbit(r.imag()) == cuda::std::signbit(testcases[i].imag()));
         }
+        else if (cuda::std::isinf(r.real()) && testcases[i].imag() == 0) {
+            assert(r.imag() == 0);
+            assert(cuda::std::signbit(testcases[i].imag()) == cuda::std::signbit(r.imag()));
+        }
     }
 }
 
