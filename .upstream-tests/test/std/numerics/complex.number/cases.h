@@ -16,7 +16,7 @@
 #include <cuda/std/complex>
 #include <cuda/std/cassert>
 
-using testcases_t = cuda::std::complex<double>[137];
+using testcases_t = cuda::std::complex<double>[152];
 
 struct _testcases {
     testcases_t _cases;
