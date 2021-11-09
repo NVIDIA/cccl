@@ -77,29 +77,38 @@ function report_and_exit {
   # treats empty variables as zero for the purposes of arithmetic, which is what
   # we want anyways, so we don't need to do anything else.
 
+  # Example parse target:
+  # |Testing Time: 19.78s
+  # |  Unsupported        : 1
+  # |  Passed             : 9
+  # |  Failed             : 2
+  # |  Unexpectedly Passed: 1
+
   if [ -e "${LIBCXX_LOG}" ]
   then
-    LIBCXX_EXPECTED_PASSES=$(    egrep 'Expected Passes'     ${LIBCXX_LOG} | sed 's/^  Expected Passes    : \([0-9]\+\)/\1/')
-    LIBCXX_EXPECTED_FAILURES=$(  egrep 'Expected Failures'   ${LIBCXX_LOG} | sed 's/^  Expected Failures  : \([0-9]\+\)/\1/')
-    LIBCXX_UNSUPPORTED_TESTS=$(  egrep 'Unsupported Tests'   ${LIBCXX_LOG} | sed 's/^  Unsupported Tests  : \([0-9]\+\)/\1/')
-    LIBCXX_UNEXPECTED_PASSES=$(  egrep 'Unexpected Passes'   ${LIBCXX_LOG} | sed 's/^  Unexpected Passes  : \([0-9]\+\)/\1/')
-    LIBCXX_UNEXPECTED_FAILURES=$(egrep 'Unexpected Failures' ${LIBCXX_LOG} | sed 's/^  Unexpected Failures: \([0-9]\+\)/\1/')
+    # White space is dynamic, capture first space on output lines to prevent
+    # grabbing lines like `Unexpectedly Passed Tests (1)`
+    LIBCXX_UNSUPPORTED_TESTS=$(  egrep '^ \s*Unsupported'         ${LIBCXX_LOG} | sed 's/^\s*Unsupported\s*:\s*\([0-9]\+\)/\1/')
+    LIBCXX_EXPECTED_PASSES=$(    egrep '^ \s*Passed'              ${LIBCXX_LOG} | sed 's/^\s*Passed\s*:\s*\([0-9]\+\)/\1/')
+    LIBCXX_UNEXPECTED_FAILURES=$(egrep '^ \s*Failed'              ${LIBCXX_LOG} | sed 's/^\s*Failed\s*:\s*\([0-9]\+\)/\1/')
+    LIBCXX_UNEXPECTED_PASSES=$(  egrep '^ \s*Unexpectedly Passed' ${LIBCXX_LOG} | sed 's/^\s*Unexpectedly Passed\s*:\s*\([0-9]\+\)/\1/')
   fi
 
   if [ -e "${LIBCUDACXX_LOG}" ]
   then
-    LIBCUDACXX_EXPECTED_PASSES=$(    egrep 'Expected Passes'     ${LIBCUDACXX_LOG} | sed 's/^  Expected Passes    : \([0-9]\+\)/\1/')
-    LIBCUDACXX_EXPECTED_FAILURES=$(  egrep 'Expected Failures'   ${LIBCUDACXX_LOG} | sed 's/^  Expected Failures  : \([0-9]\+\)/\1/')
-    LIBCUDACXX_UNSUPPORTED_TESTS=$(  egrep 'Unsupported Tests'   ${LIBCUDACXX_LOG} | sed 's/^  Unsupported Tests  : \([0-9]\+\)/\1/')
-    LIBCUDACXX_UNEXPECTED_PASSES=$(  egrep 'Unexpected Passes'   ${LIBCUDACXX_LOG} | sed 's/^  Unexpected Passes  : \([0-9]\+\)/\1/')
-    LIBCUDACXX_UNEXPECTED_FAILURES=$(egrep 'Unexpected Failures' ${LIBCUDACXX_LOG} | sed 's/^  Unexpected Failures: \([0-9]\+\)/\1/')
+    # White space is dynamic, capture first space on output lines to prevent
+    # grabbing lines like `Unexpectedly Passed Tests (1)`
+    LIBCUDACXX_UNSUPPORTED_TESTS=$(  egrep '^ \s*Unsupported'         ${LIBCUDACXX_LOG} | sed 's/^\s*Unsupported\s*:\s*\([0-9]\+\)/\1/')
+    LIBCUDACXX_EXPECTED_PASSES=$(    egrep '^ \s*Passed'              ${LIBCUDACXX_LOG} | sed 's/^\s*Passed\s*:\s*\([0-9]\+\)/\1/')
+    LIBCUDACXX_UNEXPECTED_FAILURES=$(egrep '^ \s*Failed'              ${LIBCUDACXX_LOG} | sed 's/^\s*Failed\s*:\s*\([0-9]\+\)/\1/')
+    LIBCUDACXX_UNEXPECTED_PASSES=$(  egrep '^ \s*Unexpectedly Passed' ${LIBCUDACXX_LOG} | sed 's/^\s*Unexpectedly Passed\s*:\s*\([0-9]\+\)/\1/')
   fi
 
-  LIBCXX_PASSES=$((  LIBCXX_EXPECTED_PASSES   + LIBCXX_EXPECTED_FAILURES))
+  LIBCXX_PASSES=$((  LIBCXX_EXPECTED_PASSES))
   LIBCXX_FAILURES=$((LIBCXX_UNEXPECTED_PASSES + LIBCXX_UNEXPECTED_FAILURES))
   LIBCXX_TOTAL=$((   LIBCXX_PASSES            + LIBCXX_FAILURES))
 
-  LIBCUDACXX_PASSES=$((  LIBCUDACXX_EXPECTED_PASSES   + LIBCUDACXX_EXPECTED_FAILURES))
+  LIBCUDACXX_PASSES=$((  LIBCUDACXX_EXPECTED_PASSES))
   LIBCUDACXX_FAILURES=$((LIBCUDACXX_UNEXPECTED_PASSES + LIBCUDACXX_UNEXPECTED_FAILURES))
   LIBCUDACXX_TOTAL=$((   LIBCUDACXX_PASSES            + LIBCUDACXX_FAILURES))
 
