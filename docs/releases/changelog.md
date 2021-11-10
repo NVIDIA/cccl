@@ -35,6 +35,12 @@ Supported ABI Versions: 4 (default), 3, and 2.
     - Thanks Gonzalo Brito for this contribution.
 - #215: Add SM87 awareness to `<nv/target>`.
 - #217: Fix how CUDACC version is calculated for `__int128` support.
+- #228: Fix LLVM lit pattern matching in test score calculation.
+- #227: Silence 4296 for type_traits.
+- #225: Fix calculation of `_LIBCUDACXX_CUDACC_VER` broken from #217.
+  -  Thanks Robert Maynard for this contribution.
+- #220: `memcpy_async` should cache only in L2 when possible.
+- #219: Change `atomic/atomic_ref` ctors to prevent copy construction.
 
 ## libcu++ 1.6.0 (CUDA Toolkit 11.5)
 
