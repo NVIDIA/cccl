@@ -16,6 +16,7 @@
 
 #include "detail/__pragma_push"
 
+#include <math.h>
 #include "detail/libcxx/include/cmath"
 
 #include "detail/__pragma_pop"

@@ -565,7 +565,7 @@ using ::tgammal;
 using ::truncl;
 #endif
 
-#if _LIBCUDACXX_STD_VER > 14 && (defined(_LIBCUDACXX_NO_HOST_CPP17_HYPOT) || !defined(_LIBCUDACXX_COMPILER_NVCC))
+#if _LIBCUDACXX_STD_VER > 14 && (defined(_LIBCUDACXX_NO_HOST_CPP17_HYPOT))
 inline _LIBCUDACXX_INLINE_VISIBILITY float       hypot(       float x,       float y,       float z ) { return sqrt(x*x + y*y + z*z); }
 inline _LIBCUDACXX_INLINE_VISIBILITY double      hypot(      double x,      double y,      double z ) { return sqrt(x*x + y*y + z*z); }
 #ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
