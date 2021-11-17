@@ -710,7 +710,6 @@ using __detail::__cxx_atomic_fetch_sub;
 using __detail::__cxx_atomic_fetch_or;
 using __detail::__cxx_atomic_fetch_and;
 using __detail::__cxx_atomic_fetch_xor;
-using __detail::__cxx_atomic_is_lock_free;
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
@@ -1260,7 +1259,7 @@ struct __atomic_base {
 
     _LIBCUDACXX_INLINE_VISIBILITY
     bool is_lock_free() const volatile _NOEXCEPT
-        {return __cxx_atomic_is_lock_free(sizeof(_Tp));}
+        {return _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(sizeof(_Tp));}
     _LIBCUDACXX_INLINE_VISIBILITY
     bool is_lock_free() const _NOEXCEPT
         {return static_cast<__atomic_base const volatile*>(this)->is_lock_free();}
@@ -1385,7 +1384,7 @@ struct __atomic_base_ref {
 
     _LIBCUDACXX_INLINE_VISIBILITY
     bool is_lock_free() const volatile _NOEXCEPT
-        {return __cxx_atomic_is_lock_free(sizeof(_Tp));}
+        {return _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(sizeof(_Tp));}
     _LIBCUDACXX_INLINE_VISIBILITY
     bool is_lock_free() const _NOEXCEPT
         {return static_cast<__atomic_base_ref const volatile*>(this)->is_lock_free();}

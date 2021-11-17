@@ -12,7 +12,11 @@
 #define _LIBCUDACXX_ATOMIC_BASE_H
 
 #include "cxx_atomic.h"
-#include <type_traits>
+
+// Guard ifdef for lock free query in case it is assigned elsewhere (MSVC/CUDA)
+#ifndef _LIBCUDACXX_ATOMIC_IS_LOCK_FREE
+#define _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(__x) __atomic_is_lock_free(__x, 0)
+#endif
 
 _LIBCUDACXX_INLINE_VISIBILITY inline _LIBCUDACXX_CONSTEXPR int __cxx_atomic_order_to_int(memory_order __order) {
   // Avoid switch statement to make this a constexpr.
@@ -183,15 +187,6 @@ inline auto __cxx_atomic_fetch_min(_Tp* __a, _Td __val,
   }
 
   return __expected;
-}
-
-inline constexpr
- bool __cxx_atomic_is_lock_free(size_t __x) {
-  #if defined(_LIBCUDACXX_NO_RUNTIME_LOCK_FREE)
-    return __x <= 8;
-  #else
-    return __atomic_is_lock_free(__x, 0);
-  #endif
 }
 
 #endif // _LIBCUDACXX_ATOMIC_BASE_H

@@ -45,6 +45,11 @@ inline __host__ __device__ int __stronger_order_cuda(int __a, int __b) {
     return __xform[__a < __b ? __a : __b];
 }
 
+// pre-define lock free query for heterogeneous compatibility
+#ifndef _LIBCUDACXX_ATOMIC_IS_LOCK_FREE
+#define _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(__x) (__x <= 8)
+#endif
+
 // Wrap host atomic implementations into a sub-namespace
 namespace __host {
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
@@ -61,11 +66,6 @@ namespace __host {
 
 #include "atomic_cuda_generated.h"
 #include "atomic_cuda_derived.h"
-
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
- bool __cxx_atomic_is_lock_free(size_t __x) {
-    return __x <= 8;
-}
 
 _LIBCUDACXX_INLINE_VISIBILITY
 inline

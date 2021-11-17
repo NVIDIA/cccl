@@ -1621,8 +1621,6 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL
 #endif
 
-#define _LIBCUDACXX_NO_RUNTIME_LOCK_FREE
-
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
 #if defined(_LIBCUDACXX_COMPILER_NVCC) || defined(_LIBCUDACXX_COMPILER_NVRTC) || defined(_LIBCUDACXX_COMPILER_PGI)
 #  define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL

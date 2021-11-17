@@ -24,7 +24,9 @@ struct __cxx_atomic_base_impl {
   _LIBCUDACXX_DISABLE_EXTENSION_WARNING _Atomic(_Tp) __a_value;
 };
 
-#define __cxx_atomic_is_lock_free(__s) __c11_atomic_is_lock_free(__s)
+#ifndef _LIBCUDACXX_ATOMIC_IS_LOCK_FREE
+#define _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(__x) __c11_atomic_is_lock_free(__x, 0)
+#endif
 
 _LIBCUDACXX_INLINE_VISIBILITY inline
 void __cxx_atomic_thread_fence(memory_order __order) _NOEXCEPT {

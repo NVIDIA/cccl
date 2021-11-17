@@ -37,6 +37,10 @@
     #undef ATOMIC_VAR_INIT
 #endif //__CUDACC_RTC__
 
+// pre-define lock free query for heterogeneous compatibility
+#ifndef _LIBCUDACXX_ATOMIC_IS_LOCK_FREE
+#define _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(__x) (__x <= 8)
+#endif
 
 #include "cassert"
 #include "cstddef"
