@@ -16,11 +16,12 @@
 
 #include "detail/__pragma_push"
 
+#ifndef _LIBCUDACXX_COMPILER_NVRTC
 #include <math.h>
+#endif
 #include "detail/libcxx/include/cmath"
 
 #include "detail/__pragma_pop"
 
 #endif //_CUDA_CMATH
-
 
