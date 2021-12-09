@@ -85,6 +85,7 @@ RUN function comment() { :; }; \
         ${CURL} -L ${ICC_KEY} -o - | apt-key add -; \
       fi; \
       ${APT_GET} update; \
+      comment "Build Tools"; \
       ${APT_GET} install python3-pip python3-setuptools python3-wheel; \
       ${ALTERNATIVES} --install /usr/bin/python python $(which python3) 3; \
       ${ALTERNATIVES} --set python $(which python3); \
@@ -96,14 +97,16 @@ RUN function comment() { :; }; \
       ${APT_GET} install libomp-dev; \
       ${APT_GET} install make ninja-build; \
       ${APT_GET} install pkg-config; \
+      comment "Developer Tools"; \
       ${APT_GET} install gdb; \
       ${APT_GET} install strace; \
       ${APT_GET} install less; \
       ${APT_GET} install git; \
       ${APT_GET} install vim emacs-nox; \
-      comment "For Thrust/CUB documentation."; \
+      comment "Documentation Tools."; \
       ${APT_GET} install bundler ruby-dev; \
       ${APT_GET} install doxygen; \
+      comment "Compilers."; \
       ${APT_GET} install g++-9; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
         ${APT_GET} install g++-${CXX_VER} gcc-${CXX_VER}; \
@@ -130,7 +133,7 @@ RUN function comment() { :; }; \
       ${YUM} --enablerepo=extras install epel-release; \
       ${YUM} updateinfo; \
       ${YUM} install centos-release-scl; \
-      ${YUM} install which; \
+      comment "Build Tools"; \
       ${YUM} install python python-pip; \
       ${YUM} install zip unzip tar; \
       ${YUM} install sudo; \
@@ -139,11 +142,14 @@ RUN function comment() { :; }; \
       ${YUM} install make ninja-build; \
       ${YUM} install llvm-devel; \
       ${YUM} install tbb-devel; \
+      comment "Developer Tools"; \
+      ${YUM} install which; \
       ${YUM} install gdb; \
       ${YUM} install strace; \
       ${YUM} install less; \
       ${YUM} install git; \
       ${YUM} install vim emacs-nox; \
+      comment "Compilers."; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
         ${YUM} install devtoolset-${CXX_VER}-gcc*; \
         source scl_source enable devtoolset-${CXX_VER}; \
@@ -186,6 +192,8 @@ RUN function comment() { :; }; \
     echo "export CXX_TYPE=${CXX_TYPE}"    >> /etc/cccl.bashrc; \
     echo "export CXX_VER=${CXX_VER}"      >> /etc/cccl.bashrc; \
     if [[ "${CXX_TYPE}" == "icc" ]]; then \
+      comment "ICC's setup script clobbers bash arguments, so we must"; \
+      comment "save them before calling it and restore them afterwards."; \
       echo "bash_args=(\"\$@\")"                            >> /etc/cccl.bashrc; \
       echo "source /opt/intel/oneapi/setvars.sh --force"    >> /etc/cccl.bashrc; \
       echo "export CMAKE_LIBRARY_PATH=\"\${LIBRARY_PATH}\"" >> /etc/cccl.bashrc; \
@@ -196,6 +204,7 @@ RUN function comment() { :; }; \
     ${CURL} -L ${CMAKE_URL} -o cmake.bash; \
     bash cmake.bash -- --skip-license --prefix=/usr; \
     rm cmake.bash; \
+    comment "Build Doxybook2."; \
     if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
       git clone https://github.com/microsoft/vcpkg /tmp/vcpkg 2>&1; \
       /tmp/vcpkg/bootstrap-vcpkg.sh -disableMetrics -useSystemBinaries; \
