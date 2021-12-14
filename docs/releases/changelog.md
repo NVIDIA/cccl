@@ -9,6 +9,17 @@ It adds `cuda::[std::]atomic_ref`, `<cuda/std/mutex>`, and
 It pulls in the latest version of upstream libc++ and marks the beginning of
   automatic tracking of upstream.
 
+## libcu++ 1.8.0
+
+libcu++ 1.8.0 is a major release.
+
+Supported ABI Versions: 4 (default), 3, and 2.
+
+### New Features
+
+
+### Issues Fixed
+
 !-->
 
 ## libcu++ 1.7.0
