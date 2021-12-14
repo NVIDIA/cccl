@@ -58,18 +58,18 @@ __host__ __device__ void test_edges()
         }
         else if (cuda::std::isinf(testcases[i].real()) && cuda::std::isfinite(testcases[i].imag()))
         {
-            assert(r.real() == 1);
+            assert(r.real() == (testcases[i].real() > 0 ? 1 : -1));
             assert(r.imag() == 0);
             assert(cuda::std::signbit(r.imag()) == cuda::std::signbit(sin(2*testcases[i].imag())));
         }
         else if (cuda::std::isinf(testcases[i].real()) && cuda::std::isinf(testcases[i].imag()))
         {
-            assert(r.real() == 1);
+            assert(r.real() == (testcases[i].real() > 0 ? 1 : -1));
             assert(r.imag() == 0);
         }
         else if (cuda::std::isinf(testcases[i].real()) && cuda::std::isnan(testcases[i].imag()))
         {
-            assert(r.real() == 1);
+            assert(r.real() == (testcases[i].real() > 0 ? 1 : -1));
             assert(r.imag() == 0);
         }
         else if (cuda::std::isnan(testcases[i].real()) && testcases[i].imag() == 0)
