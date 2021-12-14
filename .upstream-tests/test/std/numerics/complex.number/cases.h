@@ -16,7 +16,7 @@
 #include <cuda/std/complex>
 #include <cuda/std/cassert>
 
-using testcases_t = cuda::std::complex<double>[137];
+using testcases_t = cuda::std::complex<double>[152];
 
 struct _testcases {
     testcases_t _cases;
@@ -73,6 +73,23 @@ __host__ __device__ _testcases get_testcases() {
         cuda::std::complex<double>(-1.e+6,  1.e+6),
         cuda::std::complex<double>(-1.e+6, -1.e+6),
         cuda::std::complex<double>( 1.e+6, -1.e+6),
+
+        cuda::std::complex<double>(-0, -1.e-6),
+        cuda::std::complex<double>(-0,  1.e-6),
+        cuda::std::complex<double>(-0,  1.e+6),
+        cuda::std::complex<double>(-0, -1.e+6),
+        cuda::std::complex<double>( 0, -1.e-6),
+        cuda::std::complex<double>( 0,  1.e-6),
+        cuda::std::complex<double>( 0,  1.e+6),
+        cuda::std::complex<double>( 0, -1.e+6),
+
+        cuda::std::complex<double>(-1.e-6, -0),
+        cuda::std::complex<double>( 1.e-6, -0),
+        cuda::std::complex<double>( 1.e+6, -0),
+        cuda::std::complex<double>(-1.e+6, -0),
+        cuda::std::complex<double>(-1.e-6,  0),
+        cuda::std::complex<double>( 1.e-6,  0),
+        cuda::std::complex<double>( 1.e+6,  0),
 
         cuda::std::complex<double>(NAN, NAN),
         cuda::std::complex<double>(-INFINITY, NAN),
