@@ -14,6 +14,7 @@
 
 #include "detail/__pragma_push"
 
+#include "cstdint"
 #include "limits"
 #include "type_traits"
 #include "detail/libcxx/include/bit"
