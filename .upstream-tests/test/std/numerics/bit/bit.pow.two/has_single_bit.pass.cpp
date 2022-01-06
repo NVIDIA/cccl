@@ -61,7 +61,6 @@ __host__ __device__ void runtime_test()
 
 int main(int, char **)
 {
-#if !defined(__CUDA_ARCH__)
 	static_assert(constexpr_test<unsigned char>(),      "");
 	static_assert(constexpr_test<unsigned short>(),     "");
 	static_assert(constexpr_test<unsigned>(),           "");
@@ -78,7 +77,6 @@ int main(int, char **)
 
 #ifndef _LIBCUDACXX_HAS_NO_INT128
 	static_assert(constexpr_test<__uint128_t>(),        "");
-#endif
 #endif
 
 	runtime_test<unsigned char>();
