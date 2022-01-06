@@ -85,42 +85,42 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __binary_ctz2(uint64_t __x, int __c)           _NOEXCEPT {
-  return __c ^ (~__x & 0x1);
+  return (__x & 0x1) ? __c : __c + 1;
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __binary_ctz4(uint64_t __x, int __c)           _NOEXCEPT {
-  return (__x & 0x3) ?
-            __binary_ctz2(__x, __c) :
-            __binary_ctz2(__x >> 2, __c + 2);
+  return __binary_ctz2(
+            __x >> 2*!(__x & 0x3),
+            __c + 2*!(__x & 0x3));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __binary_ctz8(uint64_t __x, int __c)           _NOEXCEPT {
-  return (__x & 0x0F) ?
-            __binary_ctz4(__x, __c) :
-            __binary_ctz4(__x >> 4, __c + 4);
+  return __binary_ctz4(
+            __x >> 4*!(__x & 0x0F),
+            __c + 4*!(__x & 0x0F));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __binary_ctz16(uint64_t __x, int __c)           _NOEXCEPT {
-  return (__x & 0x00FF) ?
-            __binary_ctz8(__x, __c) :
-            __binary_ctz8(__x >> 8, __c + 8);
+  return __binary_ctz8(
+            __x >> 8*!(__x & 0x00FF),
+            __c + 8*!(__x & 0x00FF));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __binary_ctz32(uint64_t __x, int __c)           _NOEXCEPT {
-  return (__x & 0x0000FFFF) ?
-            __binary_ctz16(__x, __c) :
-            __binary_ctz16(__x >> 16, __c + 16);
+  return __binary_ctz16(
+            __x >> 16*!(__x & 0x0000FFFF),
+            __c + 16*!(__x & 0x0000FFFF));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __binary_ctz64(uint64_t __x)           _NOEXCEPT {
-  return (__x & 0x00000000FFFFFFFF) ?
-            __binary_ctz32(__x, 0) :
-            __binary_ctz32(__x >> 32, 32);
+  return __binary_ctz32(
+            __x >> 32*!(__x & 0x00000000FFFFFFFF),
+            32*!(__x & 0x00000000FFFFFFFF));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
@@ -158,36 +158,36 @@ int __binary_clz2(uint64_t __x, int __c) {
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __binary_clz4(uint64_t __x, int __c) {
   return __binary_clz2(
-      __x >> 2*!!(__x & 0xC), __c + 2*!(__x & 0xC)
-    );
+      __x >> 2*!!(__x & 0xC),
+      __c + 2*!(__x & 0xC));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __binary_clz8(uint64_t __x, int __c) {
   return __binary_clz4(
-      __x >> 4*!!(__x & 0xF0), __c + 4*!(__x & 0xF0)
-    );
+      __x >> 4*!!(__x & 0xF0),
+      __c + 4*!(__x & 0xF0));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __binary_clz16(uint64_t __x, int __c) {
   return __binary_clz8(
-      __x >> 8*!!(__x & 0xFF00), __c + 8*!(__x & 0xFF00)
-    );
+      __x >> 8*!!(__x & 0xFF00),
+      __c + 8*!(__x & 0xFF00));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __binary_clz32(uint64_t __x, int __c) {
   return __binary_clz16(
-      __x >> 16*!!(__x & 0xFFFF0000), __c + 16*!(__x & 0xFFFF0000)
-    );
+      __x >> 16*!!(__x & 0xFFFF0000),
+      __c + 16*!(__x & 0xFFFF0000));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __binary_clz64(uint64_t __x) {
   return __binary_clz32(
-      __x >> 32*!!(__x & 0xFFFFFFFF00000000), 32*!(__x & 0xFFFFFFFF00000000)
-    );
+      __x >> 32*!!(__x & 0xFFFFFFFF00000000),
+      32*!(__x & 0xFFFFFFFF00000000));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
