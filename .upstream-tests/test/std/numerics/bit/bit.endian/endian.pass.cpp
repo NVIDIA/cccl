@@ -26,20 +26,20 @@ int main(int, char**) {
     static_assert(!cuda::std::is_convertible<cuda::std::endian, UT>::value, "");
 
 // test that the enumeration values exist
-    static_assert( cuda::std::endian::little == cuda::std::endian::little );
-    static_assert( cuda::std::endian::big    == cuda::std::endian::big );
-    static_assert( cuda::std::endian::native == cuda::std::endian::native );
-    static_assert( cuda::std::endian::little != cuda::std::endian::big );
+    static_assert( cuda::std::endian::little == cuda::std::endian::little, "");
+    static_assert( cuda::std::endian::big    == cuda::std::endian::big, "");
+    static_assert( cuda::std::endian::native == cuda::std::endian::native, "");
+    static_assert( cuda::std::endian::little != cuda::std::endian::big, "");
 
 //  Technically not required, but true on all existing machines
     static_assert( cuda::std::endian::native == cuda::std::endian::little ||
-                   cuda::std::endian::native == cuda::std::endian::big );
+                   cuda::std::endian::native == cuda::std::endian::big, "" );
 
 //  Try to check at runtime
     {
     uint32_t i = 0x01020304;
     char c[4];
-    static_assert(sizeof(i) == sizeof(c));
+    static_assert(sizeof(i) == sizeof(c), "");
     memcpy(c, &i, sizeof(c));
 
     assert ((c[0] == 1) == (cuda::std::endian::native == cuda::std::endian::big));
