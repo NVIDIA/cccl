@@ -13,6 +13,7 @@
 // ostream_iterator& operator=(const T& value);
 
 #include <cuda/std/iterator>
+#if defined(_LIBCUDACXX_HAS_SSTREAM)
 #include <cuda/std/sstream>
 #include <cuda/std/cassert>
 
@@ -55,3 +56,9 @@ int main(int, char**)
 
   return 0;
 }
+#else
+int main(int, char**)
+{
+  return 0;
+}
+#endif
