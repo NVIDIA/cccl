@@ -104,8 +104,8 @@ RUN function comment() { :; }; \
       ${APT_GET} install git; \
       ${APT_GET} install vim emacs-nox; \
       comment "Documentation Tools."; \
+      ${APT_GET} install flex bison; \
       ${APT_GET} install bundler ruby-dev; \
-      ${APT_GET} install doxygen; \
       comment "Compilers."; \
       ${APT_GET} install g++-9; \
       if   [[ "${CXX_TYPE}" == "gcc" ]]; then \
@@ -204,33 +204,35 @@ RUN function comment() { :; }; \
     ${CURL} -L ${CMAKE_URL} -o cmake.bash; \
     bash cmake.bash -- --skip-license --prefix=/usr; \
     rm cmake.bash; \
-    comment "Build Doxybook2."; \
     if [[ "${OS_TYPE}" == "ubuntu"* ]]; then \
-      git clone https://github.com/microsoft/vcpkg /tmp/vcpkg 2>&1; \
-      /tmp/vcpkg/bootstrap-vcpkg.sh -disableMetrics -useSystemBinaries; \
-      git clone https://github.com/pantor/inja.git /tmp/inja 2>&1; \
-      mkdir /tmp/inja/build; \
-      cmake -B /tmp/inja/build \
+      comment "Build Doxygen."; \
+      git clone https://github.com/brycelelbach/doxygen.git /tmp/doxygen 2>&1; \
+      cmake -B /tmp/doxygen/build \
             -DCMAKE_CXX_COMPILER=g++-9 \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            /tmp/inja; \
-      cmake --build /tmp/inja/build --config MinSizeRel; \
-      git clone https://github.com/matusnovak/doxybook2.git /tmp/doxybook2 2>&1; \
+            /tmp/doxygen; \
+      cmake --build /tmp/doxygen/build --config MinSizeRel; \
+      cmake --install /tmp/doxygen/build --config MinSizeRel; \
+      comment "Install vcpkg for Doxybook2."; \
+      git clone https://github.com/microsoft/vcpkg /tmp/vcpkg 2>&1; \
+      /tmp/vcpkg/bootstrap-vcpkg.sh -disableMetrics -useSystemBinaries; \
+      comment "Build Doxybook2."; \
+      git clone https://github.com/brycelelbach/doxybook2.git /tmp/doxybook2 2>&1; \
       comment "--no-binarycaching avoids zipping up and storing stuff we're "; \
       comment "just going to delete later."; \
-      /tmp/vcpkg/vcpkg --no-binarycaching install argagg catch2 fmt dirent fmt nlohmann-json rang; \
+      /tmp/vcpkg/vcpkg --no-binarycaching install $(cat /tmp/doxybook2/vcpkg.txt); \
       mkdir /tmp/doxybook2/build; \
       cmake -B /tmp/doxybook2/build \
             -DCMAKE_CXX_COMPILER=g++-9 \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_PREFIX_PATH=/tmp/inja/build \
             -DCMAKE_TOOLCHAIN_FILE=/tmp/vcpkg/scripts/buildsystems/vcpkg.cmake \
             /tmp/doxybook2; \
       cmake --build /tmp/doxybook2/build --config MinSizeRel; \
       cmake --install /tmp/doxybook2/build --config MinSizeRel; \
+      comment "Cleanup documentation build environment."; \
+      rm -rf /tmp/doxygen; \
       rm -rf /tmp/vcpkg; \
       rm -rf ~/.vcpkg; \
-      rm -rf /tmp/inja; \
       rm -rf /tmp/doxybook2; \
     fi; \
     ${CURL} -L ${TINI_URL} -o /usr/bin/tini; \
