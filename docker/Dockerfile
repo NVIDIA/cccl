@@ -96,6 +96,7 @@ RUN function comment() { :; }; \
       ${APT_GET} install libtbb-dev; \
       ${APT_GET} install libomp-dev; \
       ${APT_GET} install make ninja-build; \
+      ${APT_GET} install ccache; \
       ${APT_GET} install pkg-config; \
       comment "Developer Tools"; \
       ${APT_GET} install gdb; \
@@ -140,6 +141,7 @@ RUN function comment() { :; }; \
       ${YUM} install openssh-clients; \
       ${YUM} install pkgconfig; \
       ${YUM} install make ninja-build; \
+      ${YUM} install ccache; \
       ${YUM} install llvm-devel; \
       ${YUM} install tbb-devel; \
       comment "Developer Tools"; \
