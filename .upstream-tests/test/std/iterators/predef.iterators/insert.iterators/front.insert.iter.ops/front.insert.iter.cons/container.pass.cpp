@@ -13,7 +13,9 @@
 // explicit front_insert_iterator(Cont& x);
 
 #include <cuda/std/iterator>
+#if defined(_LIBCUDACXX_HAS_LIST)
 #include <cuda/std/list>
+#endif
 #include "nasty_containers.h"
 
 #include "test_macros.h"
@@ -27,8 +29,10 @@ test(C c)
 
 int main(int, char**)
 {
+#if defined(_LIBCUDACXX_HAS_LIST)
     test(cuda::std::list<int>());
     test(nasty_list<int>());
+#endif
 
   return 0;
 }

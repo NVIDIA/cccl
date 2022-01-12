@@ -21,7 +21,9 @@
 
 
 #include <cuda/std/iterator>
+#if defined(_LIBCUDACXX_HAS_LIST)
 #include <cuda/std/list>
+#endif
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
@@ -81,6 +83,7 @@ int main(int, char**)
     A a;
     test(&a+1, A());
 
+#if defined(_LIBCUDACXX_HAS_LIST)
     {
     cuda::std::list<B> l;
     l.push_back(B(0));
@@ -103,6 +106,7 @@ int main(int, char**)
     assert ( ri == l.rend ());
     }
     }
+#endif
 
 #if TEST_STD_VER > 14
     {

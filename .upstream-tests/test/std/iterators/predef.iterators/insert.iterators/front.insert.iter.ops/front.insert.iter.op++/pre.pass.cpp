@@ -13,7 +13,9 @@
 // front_insert_iterator<Cont>& operator++();
 
 #include <cuda/std/iterator>
+#if defined(_LIBCUDACXX_HAS_LIST)
 #include <cuda/std/list>
+#endif
 #include <cuda/std/cassert>
 #include "nasty_containers.h"
 
@@ -30,8 +32,10 @@ test(C c)
 
 int main(int, char**)
 {
+#if defined(_LIBCUDACXX_HAS_LIST)
     test(cuda::std::list<int>());
     test(nasty_list<int>());
+#endif
 
   return 0;
 }

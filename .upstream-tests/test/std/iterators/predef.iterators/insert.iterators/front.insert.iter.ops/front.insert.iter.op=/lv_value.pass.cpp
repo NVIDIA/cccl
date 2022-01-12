@@ -14,7 +14,9 @@
 //   operator=(const Cont::value_type& value);
 
 #include <cuda/std/iterator>
+#if defined(_LIBCUDACXX_HAS_LIST)
 #include <cuda/std/list>
+#endif
 #include <cuda/std/cassert>
 #include "nasty_containers.h"
 
@@ -43,8 +45,10 @@ public:
 
 int main(int, char**)
 {
+#if defined(_LIBCUDACXX_HAS_LIST)
     test(cuda::std::list<Copyable>());
     test(nasty_list<Copyable>());
+#endif
 
   return 0;
 }
