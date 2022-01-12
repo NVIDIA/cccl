@@ -20,6 +20,7 @@
 
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#if defined(_LIBCUDACXX_HAS_STRING)
 #include <cuda/std/string>
 
 #include "test_macros.h"
@@ -64,3 +65,9 @@ int main(int, char**)
 
   return 0;
 }
+#else
+int main(int, char**)
+{
+  return 0;
+}
+#endif
