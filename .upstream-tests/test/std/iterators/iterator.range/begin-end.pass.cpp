@@ -33,9 +33,13 @@
 
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#if defined(_LIBCUDACXX_HAS_VECTOR)
 #include <cuda/std/vector>
+#endif
 #include <cuda/std/array>
+#if defined(_LIBCUDACXX_HAS_LIST)
 #include <cuda/std/list>
+#endif
 #include <cuda/std/initializer_list>
 
 // cuda::std::array is explicitly allowed to be initialized with A a = { init-list };.
@@ -136,18 +140,30 @@ void test_const_array( const T (&array)[Sz] ) {
     }
 
 int main(int, char**) {
+#if defined(_LIBCUDACXX_HAS_VECTOR)
     cuda::std::vector<int> v; v.push_back(1);
+#endif
+#if defined(_LIBCUDACXX_HAS_LIST)
     cuda::std::list<int> l;   l.push_back(2);
+#endif
     cuda::std::array<int, 1> a; a[0] = 3;
     cuda::std::initializer_list<int> il = { 4 };
 
+#if defined(_LIBCUDACXX_HAS_VECTOR)
     test_container ( v, 1 );
+#endif
+#if defined(_LIBCUDACXX_HAS_LIST)
     test_container ( l, 2 );
+#endif
     test_container ( a, 3 );
     test_container ( il, 4 );
 
+#if defined(_LIBCUDACXX_HAS_VECTOR)
     test_const_container ( v, 1 );
+#endif
+#if defined(_LIBCUDACXX_HAS_LIST)
     test_const_container ( l, 2 );
+#endif
     test_const_container ( a, 3 );
     test_const_container ( il, 4 );
 

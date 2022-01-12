@@ -15,11 +15,17 @@
 
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#if defined(_LIBCUDACXX_HAS_VECTOR)
 #include <cuda/std/vector>
+#endif
 #include <cuda/std/array>
+#if defined(_LIBCUDACXX_HAS_LIST)
 #include <cuda/std/list>
+#endif
 #include <cuda/std/initializer_list>
+#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
 #include <cuda/std/string_view>
+#endif
 
 #include "test_macros.h"
 
@@ -115,6 +121,6 @@ int main(int, char**)
     static_assert( cuda::std::numeric_limits<cuda::std::make_signed_t<decltype(cuda::std:: size(sc))>>::max() < 60000, "");
     assert (cuda::std::ssize(sc) == 60000);
     LIBCPP_ASSERT_NOT_NOEXCEPT(cuda::std::ssize(sc));
-    
+
   return 0;
 }

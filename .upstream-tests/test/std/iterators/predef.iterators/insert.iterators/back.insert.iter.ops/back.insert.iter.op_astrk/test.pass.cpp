@@ -13,6 +13,7 @@
 // back_insert_iterator<Cont>& operator*();
 
 #include <cuda/std/iterator>
+#if defined(_LIBCUDACXX_HAS_VECTOR)
 #include <cuda/std/vector>
 #include <cuda/std/cassert>
 #include "nasty_containers.h"
@@ -35,3 +36,9 @@ int main(int, char**)
 
   return 0;
 }
+#else
+int main(int, char**)
+{
+  return 0;
+}
+#endif

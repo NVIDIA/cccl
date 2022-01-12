@@ -10,6 +10,7 @@
 
 // template <class C> auto begin(C& c) -> decltype(c.begin());
 
+#if defined(_LIBCUDACXX_HAS_VECTOR)
 #include <cuda/std/vector>
 #include <cuda/std/cassert>
 
@@ -26,3 +27,9 @@ int main(int, char**)
 
   return 0;
 }
+#else
+int main(int, char**)
+{
+  return 0;
+}
+#endif

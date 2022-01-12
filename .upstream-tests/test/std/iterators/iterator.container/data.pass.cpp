@@ -16,14 +16,18 @@
 
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#if defined(_LIBCUDACXX_HAS_VECTOR)
 #include <cuda/std/vector>
+#endif
 #include <cuda/std/array>
 #include <cuda/std/initializer_list>
 
 #include "test_macros.h"
 
+#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
 #if TEST_STD_VER > 14
 #include <cuda/std/string_view>
+#endif
 #endif
 
 template<typename C>
@@ -63,18 +67,25 @@ void test_const_array( const T (&array)[Sz] )
 
 int main(int, char**)
 {
+#if defined(_LIBCUDACXX_HAS_VECTOR)
     cuda::std::vector<int> v; v.push_back(1);
+#endif
     cuda::std::array<int, 1> a; a[0] = 3;
     cuda::std::initializer_list<int> il = { 4 };
 
+#if defined(_LIBCUDACXX_HAS_VECTOR)
     test_container ( v );
+#endif
     test_container ( a );
     test_container ( il );
 
+#if defined(_LIBCUDACXX_HAS_VECTOR)
     test_const_container ( v );
+#endif
     test_const_container ( a );
     test_const_container ( il );
 
+#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
 #if TEST_STD_VER > 14
     cuda::std::string_view sv{"ABC"};
     test_container ( sv );
