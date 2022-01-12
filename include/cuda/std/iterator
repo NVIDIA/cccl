@@ -15,6 +15,7 @@
 
 #include "detail/__pragma_push"
 
+#include "detail/libcxx/include/iosfwd"
 #include "detail/libcxx/include/iterator"
 
 #include "detail/__pragma_pop"
