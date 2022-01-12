@@ -20,7 +20,7 @@ ARG OS_VER=20.04
 # | icc      | latest          |
 # | nvcxx    | 21.5            |
 ARG CXX_TYPE=gcc
-ARG CXX_VER=7
+ARG CXX_VER=9
 FROM nvcr.io/nvidia/${SDK_TYPE}:${SDK_VER}-${OS_TYPE}${OS_VER}
 
 # Pull arguments from build arguments.
