@@ -47,6 +47,7 @@
 #include "disable_missing_braces_warning.h"
 
 template<typename C>
+__host__ __device__
 void test_const_container( const C & c, typename C::value_type val ) {
     assert ( cuda::std::begin(c)   == c.begin());
     assert (*cuda::std::begin(c)   ==  val );
@@ -66,6 +67,7 @@ void test_const_container( const C & c, typename C::value_type val ) {
     }
 
 template<typename T>
+__host__ __device__
 void test_const_container( const cuda::std::initializer_list<T> & c, T val ) {
     assert ( cuda::std::begin(c)   == c.begin());
     assert (*cuda::std::begin(c)   ==  val );
@@ -87,6 +89,7 @@ void test_const_container( const cuda::std::initializer_list<T> & c, T val ) {
     }
 
 template<typename C>
+__host__ __device__
 void test_container( C & c, typename C::value_type val ) {
     assert ( cuda::std::begin(c)   == c.begin());
     assert (*cuda::std::begin(c)   ==  val );
@@ -106,6 +109,7 @@ void test_container( C & c, typename C::value_type val ) {
     }
 
 template<typename T>
+__host__ __device__
 void test_container( cuda::std::initializer_list<T> & c, T val ) {
     assert ( cuda::std::begin(c)   == c.begin());
     assert (*cuda::std::begin(c)   ==  val );
@@ -126,6 +130,7 @@ void test_container( cuda::std::initializer_list<T> & c, T val ) {
     }
 
 template<typename T, size_t Sz>
+__host__ __device__
 void test_const_array( const T (&array)[Sz] ) {
     assert ( cuda::std::begin(array)  == array );
     assert (*cuda::std::begin(array)  ==  array[0] );

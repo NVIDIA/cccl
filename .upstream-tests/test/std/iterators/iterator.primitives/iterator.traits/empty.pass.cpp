@@ -26,7 +26,9 @@ struct has_value_type
 {
 private:
     struct two {char lx; char lxx;};
+__host__ __device__
     template <class U> static two test(...);
+__host__ __device__
     template <class U> static char test(typename U::value_type* = 0);
 public:
     static const bool value = sizeof(test<T>(0)) == 1;

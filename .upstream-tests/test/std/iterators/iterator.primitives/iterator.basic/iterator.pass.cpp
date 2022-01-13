@@ -27,6 +27,7 @@
 struct A {};
 
 template <class T>
+__host__ __device__
 void
 test2()
 {
@@ -39,6 +40,7 @@ test2()
 }
 
 template <class T>
+__host__ __device__
 void
 test3()
 {
@@ -51,6 +53,7 @@ test3()
 }
 
 template <class T>
+__host__ __device__
 void
 test4()
 {
@@ -63,6 +66,7 @@ test4()
 }
 
 template <class T>
+__host__ __device__
 void
 test5()
 {

@@ -38,6 +38,7 @@ struct DummyIt {
 };
 
 template <class It>
+__host__ __device__
 void
 test()
 {

@@ -17,6 +17,7 @@
 #include <cuda/std/iterator>
 
 template <class It>
+__host__ __device__
 void
 test(It i)
 {

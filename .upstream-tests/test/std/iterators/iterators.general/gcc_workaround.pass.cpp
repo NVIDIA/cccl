@@ -12,12 +12,14 @@
 #include <cuda/std/string>
 #include "test_macros.h"
 
+__host__ __device__
 void f(const cuda::std::string &s) { TEST_IGNORE_NODISCARD s.begin(); }
 #endif
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
 #include <cuda/std/vector>
 
+__host__ __device__
 void AppendTo(const cuda::std::vector<char> &v) { TEST_IGNORE_NODISCARD v.begin(); }
 #endif
 

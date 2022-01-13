@@ -25,6 +25,7 @@
 #include "test_iterators.h"
 
 template <class It>
+__host__ __device__
 void
 test(It l, It r, typename cuda::std::iterator_traits<It>::difference_type x)
 {

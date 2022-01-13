@@ -34,10 +34,12 @@ template <class It>
 struct find_current
     : private cuda::std::reverse_iterator<It>
 {
+__host__ __device__
     void test() {++(this->current);}
 };
 
 template <class It>
+__host__ __device__
 void
 test()
 {

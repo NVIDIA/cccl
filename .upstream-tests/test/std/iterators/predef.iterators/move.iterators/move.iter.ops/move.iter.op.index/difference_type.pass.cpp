@@ -17,12 +17,15 @@
 
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#if defined(_LIBCUDACXX_HAS_MEMORY)
 #include <cuda/std/memory>
+#endif
 
 #include "test_macros.h"
 #include "test_iterators.h"
 
 template <class It>
+__host__ __device__
 void
 test(It i, typename cuda::std::iterator_traits<It>::difference_type n,
      typename cuda::std::iterator_traits<It>::value_type x)
@@ -35,6 +38,7 @@ test(It i, typename cuda::std::iterator_traits<It>::difference_type n,
 
 struct do_nothing
 {
+__host__ __device__
     void operator()(void*) const {}
 };
 
@@ -45,6 +49,7 @@ int main(int, char**)
         test(random_access_iterator<char*>(s+5), 4, '0');
         test(s+5, 4, '0');
     }
+#if defined(_LIBCUDACXX_HAS_MEMORY)
 #if TEST_STD_VER >= 11
     {
         int i[5];
@@ -54,6 +59,7 @@ int main(int, char**)
             p[j].reset(i+j);
         test(p, 3, Ptr(i+3));
     }
+#endif
 #endif
 #if TEST_STD_VER > 14
     {

@@ -28,14 +28,18 @@ class A
 {
     int data_;
 public:
+__host__ __device__
     A() : data_(1) {}
+__host__ __device__
     ~A() {data_ = -1;}
 
+__host__ __device__
     friend bool operator==(const A& x, const A& y)
         {return x.data_ == y.data_;}
 };
 
 template <class It>
+__host__ __device__
 void
 test(It i, typename cuda::std::iterator_traits<It>::value_type x)
 {

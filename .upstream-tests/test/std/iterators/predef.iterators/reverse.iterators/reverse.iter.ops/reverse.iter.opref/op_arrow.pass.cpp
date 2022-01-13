@@ -32,16 +32,21 @@ class A
 {
     int data_;
 public:
+__host__ __device__
     A() : data_(1) {}
+__host__ __device__
     ~A() {data_ = -1;}
 
+__host__ __device__
     int get() const {return data_;}
 
+__host__ __device__
     friend bool operator==(const A& x, const A& y)
         {return x.data_ == y.data_;}
 };
 
 template <class It>
+__host__ __device__
 void
 test(It i, typename cuda::std::iterator_traits<It>::value_type x)
 {
@@ -53,14 +58,20 @@ class B
 {
     int data_;
 public:
+__host__ __device__
     B(int d=1) : data_(d) {}
+__host__ __device__
     ~B() {data_ = -1;}
 
+__host__ __device__
     int get() const {return data_;}
 
+__host__ __device__
     friend bool operator==(const B& x, const B& y)
         {return x.data_ == y.data_;}
+__host__ __device__
     const B *operator&() const { return nullptr; }
+__host__ __device__
     B       *operator&()       { return nullptr; }
 };
 
@@ -68,10 +79,13 @@ class C
 {
     int data_;
 public:
+__host__ __device__
     TEST_CONSTEXPR C() : data_(1) {}
 
+__host__ __device__
     TEST_CONSTEXPR int get() const {return data_;}
 
+__host__ __device__
     friend TEST_CONSTEXPR bool operator==(const C& x, const C& y)
         {return x.data_ == y.data_;}
 };

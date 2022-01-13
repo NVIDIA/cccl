@@ -25,6 +25,7 @@
 #include "test_iterators.h"
 
 template <class It1, class It2>
+__host__ __device__
 void
 test(It1 l, It2 r, cuda::std::ptrdiff_t x)
 {

@@ -35,7 +35,9 @@ template <class C>
 struct find_members
     : private cuda::std::insert_iterator<C>
 {
+__host__ __device__
     explicit find_members(C& c) : cuda::std::insert_iterator<C>(c, c.begin()) {}
+__host__ __device__
     void test()
     {
         this->container = 0;
@@ -44,6 +46,7 @@ struct find_members
 };
 
 template <class C>
+__host__ __device__
 void
 test()
 {

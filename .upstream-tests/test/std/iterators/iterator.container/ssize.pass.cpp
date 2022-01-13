@@ -31,12 +31,14 @@
 
 
 struct short_container {
+__host__ __device__
     uint16_t size() const { return 60000; } // not noexcept
     };
 
 
 
 template<typename C>
+__host__ __device__
 void test_container(C& c)
 {
 //  Can't say noexcept here because the container might not be
@@ -45,6 +47,7 @@ void test_container(C& c)
 }
 
 template<typename C>
+__host__ __device__
 void test_const_container(const C& c)
 {
 //  Can't say noexcept here because the container might not be
@@ -53,6 +56,7 @@ void test_const_container(const C& c)
 }
 
 template<typename T>
+__host__ __device__
 void test_const_container(const cuda::std::initializer_list<T>& c)
 {
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::ssize(c)); // our cuda::std::ssize is conditionally noexcept
@@ -61,6 +65,7 @@ void test_const_container(const cuda::std::initializer_list<T>& c)
 }
 
 template<typename T>
+__host__ __device__
 void test_container(cuda::std::initializer_list<T>& c)
 {
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::ssize(c)); // our cuda::std::ssize is conditionally noexcept
@@ -69,6 +74,7 @@ void test_container(cuda::std::initializer_list<T>& c)
 }
 
 template<typename T, size_t Sz>
+__host__ __device__
 void test_const_array(const T (&array)[Sz])
 {
     ASSERT_NOEXCEPT(cuda::std::ssize(array));
@@ -78,28 +84,41 @@ void test_const_array(const T (&array)[Sz])
 
 int main(int, char**)
 {
+#if defined(_LIBCUDACXX_HAS_VECTOR)
     cuda::std::vector<int> v; v.push_back(1);
+#endif
+#if defined(_LIBCUDACXX_HAS_LIST)
     cuda::std::list<int>   l; l.push_back(2);
+#endif
     cuda::std::array<int, 1> a; a[0] = 3;
     cuda::std::initializer_list<int> il = { 4 };
+
+#if defined(_LIBCUDACXX_HAS_VECTOR)
     test_container ( v );
     ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(v)));
+#if defined(_LIBCUDACXX_HAS_LIST)
     test_container ( l );
     ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(l)));
+#endif
     test_container ( a );
     ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(a)));
     test_container ( il );
     ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(il)));
 
+#if defined(_LIBCUDACXX_HAS_VECTOR)
     test_const_container ( v );
+#if defined(_LIBCUDACXX_HAS_LIST)
     test_const_container ( l );
+#endif
     test_const_container ( a );
     test_const_container ( il );
 
+#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
     cuda::std::string_view sv{"ABC"};
     test_container ( sv );
     ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(sv)));
     test_const_container ( sv );
+#endif
 
     static constexpr int arrA [] { 1, 2, 3 };
     ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(arrA)));

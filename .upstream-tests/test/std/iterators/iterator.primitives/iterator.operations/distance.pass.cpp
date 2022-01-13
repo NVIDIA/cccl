@@ -23,6 +23,7 @@
 #include "test_iterators.h"
 
 template <class It>
+__host__ __device__
 void
 test(It first, It last, typename cuda::std::iterator_traits<It>::difference_type x)
 {
@@ -31,6 +32,7 @@ test(It first, It last, typename cuda::std::iterator_traits<It>::difference_type
 
 #if TEST_STD_VER > 14
 template <class It>
+__host__ __device__
 constexpr bool
 constexpr_test(It first, It last, typename cuda::std::iterator_traits<It>::difference_type x)
 {

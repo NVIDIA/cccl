@@ -35,11 +35,14 @@ template <class C>
 struct find_container
     : private cuda::std::back_insert_iterator<C>
 {
+__host__ __device__
     explicit find_container(C& c) : cuda::std::back_insert_iterator<C>(c) {}
+__host__ __device__
     void test() {this->container = 0;}
 };
 
 template <class C>
+__host__ __device__
 void
 test()
 {

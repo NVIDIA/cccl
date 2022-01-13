@@ -20,6 +20,7 @@
 #include "test_macros.h"
 
 template <class It>
+__host__ __device__
 void
 test(It i)
 {

@@ -16,7 +16,9 @@
 
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#if defined(_LIBCUDACXX_HAS_MEMORY)
 #include <cuda/std/memory>
+#endif
 
 #include "test_macros.h"
 
@@ -24,14 +26,18 @@ class A
 {
     int data_;
 public:
+__host__ __device__
     A() : data_(1) {}
+__host__ __device__
     ~A() {data_ = -1;}
 
+__host__ __device__
     friend bool operator==(const A& x, const A& y)
         {return x.data_ == y.data_;}
 };
 
 template <class It>
+__host__ __device__
 void
 test(It i, typename cuda::std::iterator_traits<It>::value_type x)
 {
@@ -43,6 +49,7 @@ test(It i, typename cuda::std::iterator_traits<It>::value_type x)
 
 struct do_nothing
 {
+__host__ __device__
     void operator()(void*) const {}
 };
 
@@ -53,12 +60,14 @@ int main(int, char**)
         A a;
         test(&a, A());
     }
+#if defined(_LIBCUDACXX_HAS_MEMORY)
 #if TEST_STD_VER >= 11
     {
         int i;
         cuda::std::unique_ptr<int, do_nothing> p(&i);
         test(&p, cuda::std::unique_ptr<int, do_nothing>(&i));
     }
+#endif
 #endif
 #if TEST_STD_VER > 14
     {
