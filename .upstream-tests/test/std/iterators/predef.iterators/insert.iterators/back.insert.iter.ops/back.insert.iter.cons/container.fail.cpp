@@ -27,6 +27,7 @@ int main(int, char**)
 #else
 int main(int, char**)
 {
+  assert();
   return 0;
 }
 #endif

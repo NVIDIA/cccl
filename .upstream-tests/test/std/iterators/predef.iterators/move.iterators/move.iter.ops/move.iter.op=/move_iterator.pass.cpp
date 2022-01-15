@@ -24,6 +24,7 @@
 #include "test_iterators.h"
 
 template <class It, class U>
+__host__ __device__
 void
 test(U u)
 {
