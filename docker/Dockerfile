@@ -42,7 +42,7 @@ ARG ICC_DEB_REPO="https://apt.repos.intel.com/oneapi all main"
 ARG ICC_KEY=https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
 
 # CentOS 7 doesn't have a new enough version of CMake in its repos.
-ARG CMAKE_VER=3.18.4
+ARG CMAKE_VER=3.22.1
 ARG CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-Linux-x86_64.sh
 
 ARG TINI_VER=0.18.0
