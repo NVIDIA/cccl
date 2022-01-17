@@ -9,7 +9,6 @@ SDK_TYPE:
 
 SDK_VER:
   - 11.5.1-devel
-  - 11.6.0-devel
   - 22.1-devel-cuda11.5
 
 OS_TYPE:
@@ -39,28 +38,27 @@ CXX_VER:
   - latest
 
 exclude:
-  # SDK and CXX type:
-  - SDK_TYPE: cuda
-    CXX_TYPE: nvcxx
-  - SDK_TYPE: nvhpc
-    CXX_TYPE:
-    - gcc
-    - clang
-    - icc
-  # SDK type / version
+  # Excludes by `SDK_TYPE`.
+  - CXX_TYPE: gcc
+    SDK_TYPE: nvhpc
+  - CXX_TYPE: clang
+    SDK_TYPE: nvhpc
+  - CXX_TYPE: icc
+    SDK_TYPE: nvhpc
+  - CXX_TYPE: nvcxx
+    SDK_TYPE: cuda
+  # Excludes by `SDK_VER`.
   - SDK_TYPE: cuda
     SDK_VER: 22.1-devel-cuda11.5
   - SDK_TYPE: nvhpc
-    SDK_VER:
-      - 11.5.1-devel
-      - 11.6.0-devel
-  # Excludes by `OS_TYPE`
-  - OS_TYPE: centos
-    SDK_TYPE: nvhpc
-  - OS_TYPE: centos
-    CXX_TYPE:
-      - clang
-      - icc
+    SDK_VER: 11.5.1-devel
+  # Excludes by `OS_TYPE`.
+  - SDK_TYPE: nvhpc
+    OS_TYPE: centos
+  - CXX_TYPE: clang
+    OS_TYPE: centos
+  - CXX_TYPE: icc
+    OS_TYPE: centos
   # Excludes by `OS_VER`.
   - OS_TYPE: ubuntu
     OS_VER: 7
@@ -68,38 +66,55 @@ exclude:
     OS_VER: 20.04
   # Excludes by `CXX_VER`.
   - CXX_TYPE: nvcxx
-    CXX_VER:
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - latest
-  - CXX_TYPE: gcc
-    CXX_VER:
-      - 22.1
-      - latest
-  - CXX_TYPE: clang
-    CXX_VER:
-      - 5
-      - 6
-      - 22.1
-      - latest
-  - CXX_TYPE: icc
-    CXX_VER:
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 22.1
+    CXX_VER: 5
+  - CXX_TYPE: nvcxx
+    CXX_VER: 6
+  - CXX_TYPE: nvcxx
+    CXX_VER: 7
+  - CXX_TYPE: nvcxx
+    CXX_VER: 8
+  - CXX_TYPE: nvcxx
+    CXX_VER: 9
+  - CXX_TYPE: nvcxx
+    CXX_VER: 10
+  - CXX_TYPE: nvcxx
+    CXX_VER: 11
+  - CXX_TYPE: nvcxx
+    CXX_VER: 12
+  - CXX_TYPE: nvcxx
+    CXX_VER: latest
   - OS_TYPE: centos
-    CXX_VER:
-      - 5
-      - 6
+    CXX_VER: 5
+  - OS_TYPE: centos
+    CXX_VER: 6
+  - CXX_TYPE: gcc
+    CXX_VER: 22.1
+  - CXX_TYPE: gcc
+    CXX_VER: latest
+  - CXX_TYPE: clang
+    CXX_VER: 5
+  - CXX_TYPE: clang
+    CXX_VER: 6
+  - CXX_TYPE: clang
+    CXX_VER: 22.1
+  - CXX_TYPE: clang
+    CXX_VER: latest
+  - CXX_TYPE: icc
+    CXX_VER: 5
+  - CXX_TYPE: icc
+    CXX_VER: 6
+  - CXX_TYPE: icc
+    CXX_VER: 7
+  - CXX_TYPE: icc
+    CXX_VER: 8
+  - CXX_TYPE: icc
+    CXX_VER: 9
+  - CXX_TYPE: icc
+    CXX_VER: 10
+  - CXX_TYPE: icc
+    CXX_VER: 11
+  - CXX_TYPE: icc
+    CXX_VER: 12
+  - CXX_TYPE: icc
+    CXX_VER: 22.1
+
