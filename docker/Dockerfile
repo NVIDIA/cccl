@@ -4,9 +4,9 @@
 # See https://llvm.org/LICENSE.txt for license information.
 
 # SDK_TYPE needs to be a base image that contains CUDA.
-# | SDK_TYPE | SDK_VER              |
-# | cuda     | 11.5.1-devel         |
-# | nvhpc    | 22.1-devel-cuda11.5  |
+# | SDK_TYPE | SDK_VER                   |
+# | cuda     | 11.5.1-devel 11.6.0-devel |
+# | nvhpc    | 22.1-devel-cuda11.5       |
 ARG SDK_TYPE=cuda
 ARG SDK_VER=11.5.1-devel
 # | OS_TYPE  | OS_VER |
