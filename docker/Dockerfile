@@ -95,6 +95,7 @@ RUN function comment() { :; }; \
       ${APT_GET} install llvm-dev; \
       ${APT_GET} install libtbb-dev; \
       ${APT_GET} install libomp-dev; \
+      ${APT_GET} install libomp-12-dev; \
       ${APT_GET} install make ninja-build; \
       ${APT_GET} install ccache; \
       ${APT_GET} install pkg-config; \
