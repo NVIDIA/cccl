@@ -9,7 +9,7 @@ SDK_TYPE:
 
 SDK_VER:
   - 11.5.1-devel
-  - 21.11-devel-cuda11.5
+  - 22.1-devel-cuda11.5
 
 OS_TYPE:
   - ubuntu
@@ -34,7 +34,7 @@ CXX_VER:
   - 10
   - 11
   - 12
-  - 21.11
+  - 22.1
   - latest
 
 exclude:
@@ -49,7 +49,7 @@ exclude:
     SDK_TYPE: cuda
   # Excludes by `SDK_VER`.
   - SDK_TYPE: cuda
-    SDK_VER: 21.11-devel-cuda11.5
+    SDK_VER: 22.1-devel-cuda11.5
   - SDK_TYPE: nvhpc
     SDK_VER: 11.5.1-devel
   # Excludes by `OS_TYPE`.
@@ -88,7 +88,7 @@ exclude:
   - OS_TYPE: centos
     CXX_VER: 6
   - CXX_TYPE: gcc
-    CXX_VER: 21.11
+    CXX_VER: 22.1
   - CXX_TYPE: gcc
     CXX_VER: latest
   - CXX_TYPE: clang
@@ -96,7 +96,7 @@ exclude:
   - CXX_TYPE: clang
     CXX_VER: 6
   - CXX_TYPE: clang
-    CXX_VER: 21.11
+    CXX_VER: 22.1
   - CXX_TYPE: clang
     CXX_VER: latest
   - CXX_TYPE: icc
@@ -116,5 +116,5 @@ exclude:
   - CXX_TYPE: icc
     CXX_VER: 12
   - CXX_TYPE: icc
-    CXX_VER: 21.11
+    CXX_VER: 22.1
 
