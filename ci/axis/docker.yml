@@ -8,8 +8,20 @@ SDK_TYPE:
   - nvhpc
 
 SDK_VER:
+  - 11.0.3-devel
+  - 11.1.1-devel
+  - 11.2.0-devel
+  - 11.3.1-devel
+  - 11.4.3-devel
   - 11.5.1-devel
   - 11.6.0-devel
+  - 20.9-devel-cuda11.0
+  - 21.1-devel-cuda11.2
+  - 21.3-devel-cuda11.2
+  - 21.5-devel-cuda11.3
+  - 21.7-devel-cuda11.4
+  - 21.9-devel-cuda11.4
+  - 21.11-devel-cuda11.5
   - 22.1-devel-cuda11.5
 
 OS_TYPE:
@@ -50,12 +62,37 @@ exclude:
     SDK_TYPE: cuda
   # Excludes by `SDK_VER`.
   - SDK_TYPE: cuda
+    SDK_VER: 20.9-devel-cuda11.0
+  - SDK_TYPE: cuda
+    SDK_VER: 21.1-devel-cuda11.2
+  - SDK_TYPE: cuda
+    SDK_VER: 21.3-devel-cuda11.2
+  - SDK_TYPE: cuda
+    SDK_VER: 21.5-devel-cuda11.3
+  - SDK_TYPE: cuda
+    SDK_VER: 21.7-devel-cuda11.4
+  - SDK_TYPE: cuda
+    SDK_VER: 21-9-devel-cuda11.4
+  - SDK_TYPE: cuda
+    SDK_VER: 21.11-devel-cuda11.5
+  - SDK_TYPE: cuda
     SDK_VER: 22.1-devel-cuda11.5
+  - SDK_TYPE: nvhpc
+    SDK_VER: 11.0.3-devel
+  - SDK_TYPE: nvhpc
+    SDK_VER: 11.1.1-devel
+  - SDK_TYPE: nvhpc
+    SDK_VER: 11.2.0-devel
+  - SDK_TYPE: nvhpc
+    SDK_VER: 11.3.1-devel
+  - SDK_TYPE: nvhpc
+    SDK_VER: 11.4.3-devel
   - SDK_TYPE: nvhpc
     SDK_VER: 11.5.1-devel
   - SDK_TYPE: nvhpc
     SDK_VER: 11.6.0-devel
   # Excludes by `OS_TYPE`.
+  - OS_TYPE centos        # CentOS is currently broken and unused
   - SDK_TYPE: nvhpc
     OS_TYPE: centos
   - CXX_TYPE: clang
@@ -90,6 +127,8 @@ exclude:
     CXX_VER: 5
   - OS_TYPE: centos
     CXX_VER: 6
+  - CXX_TYPE: gcc
+    CXX_VER: 12
   - CXX_TYPE: gcc
     CXX_VER: 22.1
   - CXX_TYPE: gcc
