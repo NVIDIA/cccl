@@ -77,7 +77,7 @@ exclude:
   - SDK_TYPE: cuda
     SDK_VER: 21.7-devel-cuda11.4
   - SDK_TYPE: cuda
-    SDK_VER: 21-9-devel-cuda11.4
+    SDK_VER: 21.9-devel-cuda11.4
   - SDK_TYPE: cuda
     SDK_VER: 21.11-devel-cuda11.5
   - SDK_TYPE: cuda
