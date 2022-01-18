@@ -26,11 +26,9 @@ SDK_VER:
 
 OS_TYPE:
   - ubuntu
-  - centos
 
 OS_VER:
   - 20.04
-  - 7
 
 CXX_TYPE:
   - nvcxx
@@ -91,19 +89,6 @@ exclude:
     SDK_VER: 11.5.1-devel
   - SDK_TYPE: nvhpc
     SDK_VER: 11.6.0-devel
-  # Excludes by `OS_TYPE`.
-  - OS_TYPE centos        # CentOS is currently broken and unused
-  - SDK_TYPE: nvhpc
-    OS_TYPE: centos
-  - CXX_TYPE: clang
-    OS_TYPE: centos
-  - CXX_TYPE: icc
-    OS_TYPE: centos
-  # Excludes by `OS_VER`.
-  - OS_TYPE: ubuntu
-    OS_VER: 7
-  - OS_TYPE: centos
-    OS_VER: 20.04
   # Excludes by `CXX_VER`.
   - CXX_TYPE: nvcxx
     CXX_VER: 5
