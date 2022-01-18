@@ -15,7 +15,7 @@ SDK_VER:
   - 11.4.3-devel
   - 11.5.1-devel
   - 11.6.0-devel
-  - 20.9-devel-cuda11.0
+  - 20.9-devel
   - 21.1-devel-cuda11.2
   - 21.3-devel-cuda11.2
   - 21.5-devel-cuda11.3
@@ -67,7 +67,7 @@ exclude:
     SDK_TYPE: cuda
   # Excludes by `SDK_VER`.
   - SDK_TYPE: cuda
-    SDK_VER: 20.9-devel-cuda11.0
+    SDK_VER: 20.9-devel
   - SDK_TYPE: cuda
     SDK_VER: 21.1-devel-cuda11.2
   - SDK_TYPE: cuda
@@ -207,7 +207,7 @@ exclude:
     SDK_VER: 22.1-devel-cuda11.5
   # nvc++ 21.1
   - CXX_VER: 21.1
-    SDK_VER: 20.9-devel-cuda11.0
+    SDK_VER: 20.9-devel
   - CXX_VER: 21.1
     SDK_VER: 21.3-devel-cuda11.2
   - CXX_VER: 21.1
@@ -222,7 +222,7 @@ exclude:
     SDK_VER: 22.1-devel-cuda11.5
   # nvc++ 21.3
   - CXX_VER: 21.3
-    SDK_VER: 20.9-devel-cuda11.0
+    SDK_VER: 20.9-devel
   - CXX_VER: 21.3
     SDK_VER: 21.1-devel-cuda11.2
   - CXX_VER: 21.3
@@ -237,7 +237,7 @@ exclude:
     SDK_VER: 22.1-devel-cuda11.5
   # nvc++ 21.5
   - CXX_VER: 21.5
-    SDK_VER: 20.9-devel-cuda11.0
+    SDK_VER: 20.9-devel
   - CXX_VER: 21.5
     SDK_VER: 21.1-devel-cuda11.2
   - CXX_VER: 21.5
@@ -252,7 +252,7 @@ exclude:
     SDK_VER: 22.1-devel-cuda11.5
   # nvc++ 21.7
   - CXX_VER: 21.7
-    SDK_VER: 20.9-devel-cuda11.0
+    SDK_VER: 20.9-devel
   - CXX_VER: 21.7
     SDK_VER: 21.1-devel-cuda11.2
   - CXX_VER: 21.7
@@ -267,7 +267,7 @@ exclude:
     SDK_VER: 22.1-devel-cuda11.5
   # nvc++ 21.9
   - CXX_VER: 21.9
-    SDK_VER: 20.9-devel-cuda11.0
+    SDK_VER: 20.9-devel
   - CXX_VER: 21.9
     SDK_VER: 21.1-devel-cuda11.2
   - CXX_VER: 21.9
@@ -282,7 +282,7 @@ exclude:
     SDK_VER: 22.1-devel-cuda11.5
   # nvc++ 21.11
   - CXX_VER: 21.11
-    SDK_VER: 20.9-devel-cuda11.0
+    SDK_VER: 20.9-devel
   - CXX_VER: 21.11
     SDK_VER: 21.1-devel-cuda11.2
   - CXX_VER: 21.11
@@ -297,7 +297,7 @@ exclude:
     SDK_VER: 22.1-devel-cuda11.5
   # nvc++ 22.1
   - CXX_VER: 22.1
-    SDK_VER: 20.9-devel-cuda11.0
+    SDK_VER: 20.9-devel
   - CXX_VER: 22.1
     SDK_VER: 21.1-devel-cuda11.2
   - CXX_VER: 22.1
