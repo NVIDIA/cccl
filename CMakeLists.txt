@@ -1,6 +1,33 @@
 cmake_minimum_required(VERSION 3.8)
 project(libcudacxx CXX)
 
+# Determine whether libcudacxx is the top-level project or included into
+# another project via add_subdirectory().
+if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
+  set(libcudacxx_TOPLEVEL_PROJECT ON)
+else()
+  set(libcudacxx_TOPLEVEL_PROJECT OFF)
+endif()
+
+include(cmake/libcudacxxInstallRules.cmake)
+
+if (NOT libcudacxx_TOPLEVEL_PROJECT)
+  include(cmake/libcudacxxAddSubdir.cmake)
+  return()
+endif()
+
+# Note that this currently returns and skips the rest of the build
+# system.
+option(libcudacxx_ENABLE_CMAKE_TESTS "Enable ctest-based testing." OFF)
+if (libcudacxx_ENABLE_CMAKE_TESTS)
+  # Might be able to lower this, but would need to do some testing:
+  cmake_minimum_required(VERSION 3.20.1)
+  include(CTest)
+  enable_testing() # Must be called in root CMakeLists.txt
+  add_subdirectory(cmake/test/)
+  return()
+endif()
+
 set(PACKAGE_NAME libcudacxx)
 set(PACKAGE_VERSION 11.0)
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
