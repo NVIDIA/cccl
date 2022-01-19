@@ -105,6 +105,9 @@ exclude:
     CXX_TYPE: clang
   - OS_TYPE: centos
     CXX_TYPE: icc
+  # Workaround -- the nvidia/cuda:1.15.1-devel-centos7 packages are currently missing
+  - OS_TYPE: centos
+    SDK_VER: 11.5.1-devel
   # Excludes by `OS_VER`.
   - OS_TYPE: ubuntu
     OS_VER: 7
