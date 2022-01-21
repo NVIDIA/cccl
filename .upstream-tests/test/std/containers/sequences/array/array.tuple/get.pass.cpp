@@ -24,10 +24,10 @@
 struct S {
    cuda::std::array<int, 3> a;
    int k;
-   constexpr S() : a{1,2,3}, k(cuda::std::get<2>(a)) {}
+   __host__ __device__  constexpr S() : a{1,2,3}, k(cuda::std::get<2>(a)) {}
 };
 
-constexpr cuda::std::array<int, 2> getArr () { return { 3, 4 }; }
+__host__ __device__  constexpr cuda::std::array<int, 2> getArr () { return { 3, 4 }; }
 #endif
 
 int main(int, char**)

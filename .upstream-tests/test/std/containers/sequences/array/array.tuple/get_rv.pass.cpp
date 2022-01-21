@@ -13,6 +13,7 @@
 // UNSUPPORTED: c++98, c++03
 
 #include <cuda/std/array>
+#if defined(_LIBCUDACXX_HAS_MEMORY)
 #include <cuda/std/memory>
 #include <cuda/std/utility>
 #include <cuda/std/cassert>
@@ -35,3 +36,9 @@ int main(int, char**)
 
   return 0;
 }
+#else
+int main(int, char**)
+{
+  return 0;
+}
+#endif

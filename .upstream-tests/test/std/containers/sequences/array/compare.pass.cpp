@@ -18,7 +18,9 @@
 
 
 #include <cuda/std/array>
+#if defined(_LIBCUDACXX_HAS_VECTOR)
 #include <cuda/std/vector>
+#endif
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

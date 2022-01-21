@@ -13,7 +13,9 @@
 // UNSUPPORTED: c++98, c++03
 
 #include <cuda/std/array>
+#if defined(_LIBCUDACXX_HAS_MEMORY)
 #include <cuda/std/memory>
+#endif
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/std/cassert>
@@ -27,6 +29,7 @@
 int main(int, char**)
 {
 
+#if defined(_LIBCUDACXX_HAS_MEMORY)
     {
     typedef cuda::std::unique_ptr<double> T;
     typedef cuda::std::array<T, 1> C;
@@ -36,6 +39,7 @@ int main(int, char**)
     const T&& t = cuda::std::get<0>(cuda::std::move(c));
     assert(*t == 3.5);
     }
+#endif
 
 #if TEST_STD_VER > 11
     {

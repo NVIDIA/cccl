@@ -28,6 +28,10 @@
 #define TEST_NOT_COPY_ASSIGNABLE(T) static_assert(!cuda::std::is_copy_assignable<T>::value, "")
 #endif
 
+template <typename T>
+__host__ __device__
+constexpr bool unused(T &&) {return true;}
+
 struct NoDefault {
   NoDefault(int) {}
 };
@@ -39,6 +43,7 @@ int main(int, char**) {
     C c = {1.1, 2.2, 3.3};
     C c2 = c;
     c2 = c;
+    unused(c2);
     static_assert(cuda::std::is_copy_constructible<C>::value, "");
     static_assert(cuda::std::is_copy_assignable<C>::value, "");
   }
@@ -47,7 +52,7 @@ int main(int, char**) {
     typedef cuda::std::array<const T, 3> C;
     C c = {1.1, 2.2, 3.3};
     C c2 = c;
-    ((void)c2);
+    unused(c2);
     static_assert(cuda::std::is_copy_constructible<C>::value, "");
     TEST_NOT_COPY_ASSIGNABLE(C);
   }
@@ -57,6 +62,7 @@ int main(int, char**) {
     C c = {};
     C c2 = c;
     c2 = c;
+    unused(c2);
     static_assert(cuda::std::is_copy_constructible<C>::value, "");
     static_assert(cuda::std::is_copy_assignable<C>::value, "");
   }
@@ -66,7 +72,7 @@ int main(int, char**) {
     typedef cuda::std::array<const T, 0> C;
     C c = {{}};
     C c2 = c;
-    ((void)c2);
+    unused(c2);
     static_assert(cuda::std::is_copy_constructible<C>::value, "");
     TEST_NOT_COPY_ASSIGNABLE(C);
   }
@@ -76,6 +82,7 @@ int main(int, char**) {
     C c = {};
     C c2 = c;
     c2 = c;
+    unused(c2);
     static_assert(cuda::std::is_copy_constructible<C>::value, "");
     static_assert(cuda::std::is_copy_assignable<C>::value, "");
   }
@@ -84,7 +91,7 @@ int main(int, char**) {
     typedef cuda::std::array<const T, 0> C;
     C c = {{}};
     C c2 = c;
-    ((void)c2);
+    unused(c2);
     static_assert(cuda::std::is_copy_constructible<C>::value, "");
     TEST_NOT_COPY_ASSIGNABLE(C);
   }
