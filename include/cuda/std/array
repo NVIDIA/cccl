@@ -6,10 +6,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_ITERATOR
-#define _CUDA_ITERATOR
+#ifndef _CUDA_ARRAY
+#define _CUDA_ARRAY
 
+#include "cassert"
+#include "cstdint"
+#include "limits"
 #include "type_traits"
+#include "iterator"
+#include "utility"
 
 #include <initializer_list>
 
@@ -17,11 +22,14 @@
 
 #include "detail/__pragma_push"
 
-#include "detail/libcxx/include/iosfwd"
-#include "detail/libcxx/include/iterator"
+#include "detail/libcxx/include/algorithm"
+#include "detail/libcxx/include/__tuple"
+#include "detail/libcxx/include/cstdlib"
+#include "detail/libcxx/include/stdexcept"
+#include "detail/libcxx/include/array"
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_ITERATOR
+#endif //_CUDA_ARRAY
 
 

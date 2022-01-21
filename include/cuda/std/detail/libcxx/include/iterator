@@ -1749,14 +1749,14 @@ reverse_iterator<_Tp*> rend(_Tp (&__array)[_Np])
 
 template <class _Ep>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-reverse_iterator<const _Ep*> rbegin(initializer_list<_Ep> __il)
+reverse_iterator<const _Ep*> rbegin(::std::initializer_list<_Ep> __il)
 {
     return reverse_iterator<const _Ep*>(__il.end());
 }
 
 template <class _Ep>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-reverse_iterator<const _Ep*> rend(initializer_list<_Ep> __il)
+reverse_iterator<const _Ep*> rend(::std::initializer_list<_Ep> __il)
 {
     return reverse_iterator<const _Ep*>(__il.begin());
 }
@@ -1909,7 +1909,7 @@ constexpr bool empty(const _Tp (&)[_Sz]) noexcept { return false; }
 
 template <class _Ep>
 _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
-constexpr bool empty(initializer_list<_Ep> __il) noexcept { return __il.size() == 0; }
+constexpr bool empty(::std::initializer_list<_Ep> __il) noexcept { return __il.size() == 0; }
 
 template <class _Cont> constexpr
 _LIBCUDACXX_INLINE_VISIBILITY
@@ -1931,7 +1931,7 @@ constexpr _Tp* data(_Tp (&__array)[_Sz]) noexcept { return __array; }
 
 template <class _Ep>
 _LIBCUDACXX_INLINE_VISIBILITY
-constexpr const _Ep* data(initializer_list<_Ep> __il) noexcept { return __il.begin(); }
+constexpr const _Ep* data(::std::initializer_list<_Ep> __il) noexcept { return __il.begin(); }
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
