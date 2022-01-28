@@ -96,6 +96,7 @@ int main(int, char**)
     test_container ( sv );
     test_const_container ( sv );
 #endif
+#endif
 
     static constexpr int arrA [] { 1, 2, 3 };
     test_const_array ( arrA );

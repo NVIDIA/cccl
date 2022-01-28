@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14 
+// UNSUPPORTED: c++98, c++03, c++11, c++14
 // UNSUPPORTED: nvrtc
 
 // <cuda/std/tuple>
@@ -16,7 +16,9 @@
 #include <cuda/std/tuple>
 #include <cuda/std/array>
 #include <cuda/std/utility>
+#if defined(_LIBCUDACXX_HAS_STRING)
 #include <cuda/std/string>
+#endif
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
@@ -29,7 +31,7 @@
 template <class Tuple>
 struct ConstexprConstructibleFromTuple {
   template <class ...Args>
-  explicit constexpr ConstexprConstructibleFromTuple(Args&&... xargs)
+  __host__ __device__ explicit constexpr ConstexprConstructibleFromTuple(Args&&... xargs)
       : args{std::forward<Args>(xargs)...} {}
   Tuple args;
 };
@@ -40,7 +42,7 @@ struct ConstructibleFromTuple;
 template <template <class ...> class Tuple, class ...Types>
 struct ConstructibleFromTuple<Tuple<Types...>> {
   template <class ...Args>
-  explicit ConstructibleFromTuple(Args&&... xargs)
+  __host__ __device__ explicit ConstructibleFromTuple(Args&&... xargs)
       : args(xargs...),
         arg_types(&makeArgumentID<Args&&...>())
   {}
@@ -51,7 +53,7 @@ struct ConstructibleFromTuple<Tuple<Types...>> {
 template <class Tp, size_t N>
 struct ConstructibleFromTuple<std::array<Tp, N>> {
 template <class ...Args>
-  explicit ConstructibleFromTuple(Args&&... xargs)
+  __host__ __device__ explicit ConstructibleFromTuple(Args&&... xargs)
       : args{xargs...},
         arg_types(&makeArgumentID<Args&&...>())
   {}
@@ -60,7 +62,7 @@ template <class ...Args>
 };
 
 template <class Tuple>
-constexpr bool do_constexpr_test(Tuple&& tup) {
+__host__ __device__ constexpr bool do_constexpr_test(Tuple&& tup) {
     using RawTuple = std::decay_t<Tuple>;
     using Tp = ConstexprConstructibleFromTuple<RawTuple>;
     return std::make_from_tuple<Tp>(std::forward<Tuple>(tup)).args == tup;
@@ -68,12 +70,12 @@ constexpr bool do_constexpr_test(Tuple&& tup) {
 
 // Needed by do_forwarding_test() since it compares pairs of different types.
 template <class T1, class T2, class U1, class U2>
-inline bool operator==(const std::pair<T1, T2>& lhs, const std::pair<U1, U2>& rhs) {
+__host__ __device__ inline bool operator==(const std::pair<T1, T2>& lhs, const std::pair<U1, U2>& rhs) {
     return lhs.first == rhs.first && lhs.second == rhs.second;
 }
 
 template <class ...ExpectTypes, class Tuple>
-bool do_forwarding_test(Tuple&& tup) {
+__host__ __device__ bool do_forwarding_test(Tuple&& tup) {
     using RawTuple = std::decay_t<Tuple>;
     using Tp = ConstructibleFromTuple<RawTuple>;
     const Tp value = std::make_from_tuple<Tp>(std::forward<Tuple>(tup));
@@ -81,7 +83,7 @@ bool do_forwarding_test(Tuple&& tup) {
         && value.arg_types == &makeArgumentID<ExpectTypes...>();
 }
 
-void test_constexpr_construction() {
+__host__ __device__ void test_constexpr_construction() {
     {
         constexpr std::tuple<> tup;
         static_assert(do_constexpr_test(tup), "");
@@ -108,7 +110,7 @@ void test_constexpr_construction() {
     }
 }
 
-void test_perfect_forwarding() {
+__host__ __device__ void test_perfect_forwarding() {
     {
         using Tup = std::tuple<>;
         Tup tup;
@@ -159,7 +161,7 @@ void test_perfect_forwarding() {
     }
 }
 
-void test_noexcept() {
+__host__ __device__ void test_noexcept() {
     struct NothrowMoveable {
       NothrowMoveable() = default;
       NothrowMoveable(NothrowMoveable const&) {}

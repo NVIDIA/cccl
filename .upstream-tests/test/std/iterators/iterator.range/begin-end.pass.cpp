@@ -29,8 +29,6 @@
 //
 //  All of these are constexpr in C++17
 
-#include "test_macros.h"
-
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
 #if defined(_LIBCUDACXX_HAS_VECTOR)
@@ -41,6 +39,8 @@
 #include <cuda/std/list>
 #endif
 #include <cuda/std/initializer_list>
+
+#include "test_macros.h"
 
 // cuda::std::array is explicitly allowed to be initialized with A a = { init-list };.
 // Disable the missing braces warning for this reason.

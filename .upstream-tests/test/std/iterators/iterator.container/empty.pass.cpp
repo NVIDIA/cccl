@@ -86,8 +86,8 @@ int main(int, char**)
     test_container ( v );
 #endif
 #if defined(_LIBCUDACXX_HAS_LIST)
-#endif
     test_container ( l );
+#endif
     test_container ( a );
     test_container ( il );
 
