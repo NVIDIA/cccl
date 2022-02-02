@@ -1315,9 +1315,9 @@ __equal(_RandomAccessIterator1 __first1, _RandomAccessIterator1 __last1,
 }
 
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
-_LIBCUDACXX_NODISCARD_EXT inline
+_LIBCUDACXX_NODISCARD_EXT
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-bool
+inline bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1,
       _InputIterator2 __first2, _InputIterator2 __last2, _BinaryPredicate __pred )
 {
@@ -1328,9 +1328,9 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1,
 }
 
 template <class _InputIterator1, class _InputIterator2>
-_LIBCUDACXX_NODISCARD_EXT inline
+_LIBCUDACXX_NODISCARD_EXT
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-bool
+inline bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1,
       _InputIterator2 __first2, _InputIterator2 __last2)
 {
@@ -1346,8 +1346,7 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1,
 // is_permutation
 
 template<class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-_LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
 is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
                _ForwardIterator2 __first2, _BinaryPredicate __pred)
 {
@@ -1394,9 +1393,9 @@ is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 }
 
 template<class _ForwardIterator1, class _ForwardIterator2>
-_LIBCUDACXX_NODISCARD_EXT inline
+_LIBCUDACXX_NODISCARD_EXT
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-bool
+inline bool
 is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
                _ForwardIterator2 __first2)
 {
@@ -1992,8 +1991,8 @@ replace_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __re
 // replace_copy_if
 
 template <class _InputIterator, class _OutputIterator, class _Predicate, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_OutputIterator
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _OutputIterator
 replace_copy_if(_InputIterator __first, _InputIterator __last, _OutputIterator __result,
                 _Predicate __pred, const _Tp& __new_value)
 {
@@ -2009,8 +2008,8 @@ replace_copy_if(_InputIterator __first, _InputIterator __last, _OutputIterator _
 #endif // __cuda_std__
 
 template <class _OutputIterator, class _Size, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_OutputIterator
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _OutputIterator
 __fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 {
     for (; __n > 0; ++__first, (void) --__n)
@@ -2019,8 +2018,8 @@ __fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 }
 
 template <class _OutputIterator, class _Size, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_OutputIterator
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _OutputIterator
 fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 {
    return _CUDA_VSTD::__fill_n(__first, __convert_to_integral(__n), __value_);
@@ -2082,8 +2081,8 @@ generate_n(_OutputIterator __first, _Size __orig_n, _Generator __gen)
 // remove
 
 template <class _ForwardIterator, class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 remove(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
     __first = _CUDA_VSTD::find(__first, __last, __value_);
@@ -2105,8 +2104,8 @@ remove(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 // remove_if
 
 template <class _ForwardIterator, class _Predicate>
-_LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 remove_if(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
     __first = _CUDA_VSTD::find_if<_ForwardIterator, typename add_lvalue_reference<_Predicate>::type>
@@ -2165,8 +2164,8 @@ remove_copy_if(_InputIterator __first, _InputIterator __last, _OutputIterator __
 // unique
 
 template <class _ForwardIterator, class _BinaryPredicate>
-_LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 unique(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicate __pred)
 {
     __first = _CUDA_VSTD::adjacent_find<_ForwardIterator, typename add_lvalue_reference<_BinaryPredicate>::type>
@@ -2684,8 +2683,8 @@ clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi)
 // minmax_element
 
 template <class _ForwardIterator, class _Compare>
-_LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 std::pair<_ForwardIterator, _ForwardIterator>
 minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
@@ -3231,8 +3230,8 @@ _LIBCUDACXX_INLINE_VISIBILITY
 }
 
 template <class _InputIterator, class _Predicate>
-_LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
 is_partitioned(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
     for (; __first != __last; ++__first)
@@ -3648,8 +3647,8 @@ stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate _
 // is_sorted_until
 
 template <class _ForwardIterator, class _Compare>
-_LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 is_sorted_until(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
     if (__first != __last)
