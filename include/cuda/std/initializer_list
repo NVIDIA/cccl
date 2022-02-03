@@ -13,11 +13,10 @@
 
 #include <initializer_list>
 
-namespace cuda {
-  namespace std {
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
     using ::std::initializer_list;
-  }
-}
+_LIBCUDACXX_END_NAMESPACE_STD
+
 
 #endif //_CUDA_INITIALIZER_LIST
 
