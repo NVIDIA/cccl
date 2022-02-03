@@ -30,6 +30,10 @@ __host__ __device__ constexpr bool check_idx( size_t idx, double val )
 }
 #endif
 
+template <typename T>
+__host__ __device__
+constexpr void unused(T &&) {}
+
 int main(int, char**)
 {
     {
@@ -73,6 +77,7 @@ int main(int, char**)
             assert(false);
         }
         catch (const cuda::std::out_of_range &) {}
+        unused(c);
     }
 #endif
     {
@@ -93,6 +98,7 @@ int main(int, char**)
         }
         catch (const cuda::std::out_of_range &) {}
 #endif
+        unused(c);
     }
 
 #if TEST_STD_VER > 11
@@ -109,6 +115,7 @@ int main(int, char**)
         constexpr T t2 = c.at(2);
         static_assert (t2 == 3.5, "");
 #endif
+        unused(c);
     }
 #endif
 

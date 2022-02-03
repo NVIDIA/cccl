@@ -168,13 +168,13 @@ __host__ __device__ void test_perfect_forwarding() {
 __host__ __device__ void test_noexcept() {
     struct NothrowMoveable {
       NothrowMoveable() = default;
-      NothrowMoveable(NothrowMoveable const&) {}
-      NothrowMoveable(NothrowMoveable&&) noexcept {}
+      __host__ __device__ NothrowMoveable(NothrowMoveable const&) {}
+      __host__ __device__ NothrowMoveable(NothrowMoveable&&) noexcept {}
     };
     struct TestType {
-      TestType(int, NothrowMoveable) noexcept {}
-      TestType(int, int, int) noexcept(false) {}
-      TestType(long, long, long) noexcept {}
+      __host__ __device__ TestType(int, NothrowMoveable) noexcept {}
+      __host__ __device__ TestType(int, int, int) noexcept(false) {}
+      __host__ __device__ TestType(long, long, long) noexcept {}
     };
     {
         using Tuple = cuda::std::tuple<int, NothrowMoveable>;
