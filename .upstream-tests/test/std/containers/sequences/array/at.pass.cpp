@@ -32,7 +32,7 @@ __host__ __device__ constexpr bool check_idx( size_t idx, double val )
 
 template <typename T>
 __host__ __device__
-constexpr void unused(T &&) {}
+constexpr bool unused(T &&) {return true;}
 
 int main(int, char**)
 {

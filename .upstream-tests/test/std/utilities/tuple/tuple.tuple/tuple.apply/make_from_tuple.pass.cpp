@@ -30,7 +30,7 @@
 
 template <typename T>
 __host__ __device__
-constexpr void unused(T &&) {}
+constexpr bool unused(T &&) {return true;}
 
 template <class Tuple>
 struct ConstexprConstructibleFromTuple {
