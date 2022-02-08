@@ -19,13 +19,17 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
+template <typename T>
+__host__ __device__
+constexpr bool unused(T &&) {return true;}
+
 template <class It>
 __host__ __device__
 void
 test()
 {
     cuda::std::reverse_iterator<It> r;
-    (void)r;
+    unused(r);
 }
 
 int main(int, char**)

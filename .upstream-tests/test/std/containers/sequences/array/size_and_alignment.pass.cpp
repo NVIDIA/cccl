@@ -20,6 +20,9 @@
 
 #include "test_macros.h"
 
+template <typename T>
+__host__ __device__
+constexpr bool unused(T &&) {return true;}
 
 template <class T, size_t Size>
 struct MyArray {
@@ -36,10 +39,12 @@ void test() {
   static_assert(sizeof(ArrayT) == sizeof(MyArrayT), "");
   static_assert(TEST_ALIGNOF(ArrayT) == TEST_ALIGNOF(MyArrayT), "");
 #if defined(_LIBCUDACXX_VERSION)
-  ArrayT a;
-  ((void)a);
+  ArrayT a{};
+  unused(a);
   static_assert(sizeof(ArrayT) == sizeof(a.__elems_), "");
+  #if !defined(_LIBCUDACXX_COMPILER_MSVC)
   static_assert(TEST_ALIGNOF(ArrayT) == __alignof__(a.__elems_), "");
+  #endif
 #endif
 }
 
