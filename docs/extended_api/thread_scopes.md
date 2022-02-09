@@ -84,7 +84,7 @@ An atomic operation is atomic at the scope it specifies if:
   `1`, or
 - it affects an object in CPU memory and [`hostNativeAtomicSupported`] is `1`,
   or
-- it affects an object in GPU peer memory and only GPU threads access it.
+- it affects an object in GPU memory and only GPU threads access it.
 
 Refer to the [CUDA programming guide] for more information on
   unified memory, CPU memory, and GPU peer memory.
@@ -112,7 +112,7 @@ Modify [thread.latch.class paragraph 2] of ISO/IEC IS 14882 (the C++ Standard)
   as follows:
 > 2. Concurrent invocations of the member functions of `latch`, other than its
 > destructor, do not introduce data races
-> ***as if they were atomic operations.***.
+> ***as if they were atomic operations***.
 
 Modify [thread.sema.cnt paragraph 3] of ISO/IEC IS 14882 (the C++ Standard) as
   follows:
