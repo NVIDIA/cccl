@@ -42,13 +42,9 @@ RUN echo "Contents of /sw:" && cd /sw/ && find
 # Build libc++ and configure libc++ tests.
 RUN set -o pipefail; cd /sw/gpgpu/libcudacxx/libcxx/build\
  && cmake ..\
- -DLIBCXX_INCLUDE_TESTS=ON\
- -DLIBCXX_INCLUDE_BENCHMARKS=OFF\
- -DLIBCXX_CXX_ABI=libsupc++\
- -DLIBCXX_TEST_STANDARD_VER=c++17\
- -DLIBCXX_ABI_UNSTABLE=ON\
- -DLLVM_CONFIG_PATH=$(which llvm-config-9)\
- -DCMAKE_C_COMPILER=clang-9\
+ -DLIBCUDACXX_ENABLE_STATIC_LIBRARY=ON\
+ -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=OFF\
+ -DLIBCUDACXX_ENABLE_LIBCXX_TESTS=ON\
  -DCMAKE_CXX_COMPILER=clang++-9\
  && make -j\
  2>&1 | tee /sw/gpgpu/libcudacxx/build/cmake_libcxx.log
@@ -56,10 +52,10 @@ RUN set -o pipefail; cd /sw/gpgpu/libcudacxx/libcxx/build\
 # Configure libcu++ tests.
 RUN set -o pipefail; cd /sw/gpgpu/libcudacxx/build\
  && cmake ..\
- -DLIBCXX_TEST_STANDARD_VER=c++17\
- -DLLVM_CONFIG_PATH=$(which llvm-config-9)\
- -DCMAKE_CXX_COMPILER=/sw/gpgpu/bin/x86_64_Linux_release/nvcc\
- -DLIBCXX_NVCC_HOST_COMPILER=clang++-9\
+ -DCMAKE_CXX_COMPILER=clang++-9\
+ -DCMAKE_CUDA_COMPILER=/sw/gpgpu/bin/x86_64_Linux_release/nvcc\
+ -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON\
+ -DLIBCUDACXX_ENABLE_LIBCXX_TESTS=OFF\
  2>&1 | tee /sw/gpgpu/libcudacxx/build/cmake_libcudacxx.log
 
 # Build tests if requested.
