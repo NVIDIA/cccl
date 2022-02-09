@@ -21,7 +21,7 @@ RUN yum -y --enablerepo=extras install epel-release\
 
 # The distro doesn't have CMake 3.8 in its repositories, so we need to install
 # it ourselves.
-ADD https://github.com/Kitware/CMake/releases/download/v3.8.2/cmake-3.8.2-Linux-x86_64.sh /tmp/cmake.sh
+ADD https://github.com/Kitware/CMake/releases/download/v3.18.5/cmake-3.18.5-Linux-x86_64.sh /tmp/cmake.sh
 RUN sh /tmp/cmake.sh --skip-license --prefix=/usr
 
 # For debugging.

@@ -13,12 +13,16 @@ ARG LIBCUDACXX_COMPUTE_ARCHS
 SHELL ["/usr/bin/env", "bash", "-c"]
 
 RUN apt-get -y update\
- && apt-get -y install g++-7 clang-6.0 python3 python3-pip cmake\
+ && apt-get -y install g++-7 clang-6.0 python3 python3-pip \
  && pip3 install lit\
  && mkdir -p /sw/gpgpu/libcudacxx/build\
  && mkdir -p /sw/gpgpu/libcudacxx/libcxx/build
 
-# For debugging.
+# Update CMake to 3.18
+ADD https://github.com/Kitware/CMake/releases/download/v3.18.5/cmake-3.18.5-Linux-x86_64.sh /tmp/cmake.sh
+RUN sh /tmp/cmake.sh --skip-license --prefix=/usr
+
+# For debugging\.
 #RUN apt-get -y install gdb strace vim
 
 # We use ADD here because it invalidates the cache for subsequent steps, which
