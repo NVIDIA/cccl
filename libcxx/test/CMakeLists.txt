@@ -13,7 +13,7 @@ set(LIBCXX_TEST_LINKER_FLAGS "" CACHE STRING
     "Additonal linker flags to pass when compiling the tests")
 # <nv/target> is found in the parent project, it is required in all headers now
 set(LIBCXX_TEST_COMPILER_FLAGS
-    "-I${CMAKE_SOURCE_DIR}/../include" CACHE STRING
+    "-I${CMAKE_SOURCE_DIR}/include" CACHE STRING
     "Additonal linker flags to pass when compiling the tests")
 
 # The tests shouldn't link to any ABI library when it has been linked into
