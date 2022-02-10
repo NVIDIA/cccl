@@ -147,8 +147,8 @@ LIBCUDACXX_PATH=$(realpath ${SCRIPT_PATH}/../../../../)
 
 LIT_PREFIX="time"
 
-LIBCXX_LIT_SITE_CONFIG=${LIBCUDACXX_PATH}/libcxx/build/test/lit.site.cfg
-LIBCUDACXX_LIT_SITE_CONFIG=${LIBCUDACXX_PATH}/build/libcxx/test/lit.site.cfg
+LIBCXX_LIT_SITE_CONFIG=${LIBCUDACXX_PATH}/libcxx/build/libcxx/test/lit.site.cfg
+LIBCUDACXX_LIT_SITE_CONFIG=${LIBCUDACXX_PATH}/build/test/lit.site.cfg
 
 RAW_TEST_TARGETS=""
 
@@ -332,7 +332,7 @@ then
 
   echo "# TEST libcu++"
   TIMEFORMAT="# WALLTIME libcu++: %R [sec]" \
-  LIBCXX_SITE_CONFIG=${LIBCUDACXX_LIT_SITE_CONFIG} \
+  LIBCUDACXX_SITE_CONFIG=${LIBCUDACXX_LIT_SITE_CONFIG} \
   bash -c "${LIT_PREFIX} lit ${LIT_FLAGS} ${LIT_COMPUTE_ARCHS_FLAG}${LIBCUDACXX_COMPUTE_ARCHS}${LIT_COMPUTE_ARCHS_SUFFIX} ${LIBCUDACXX_TEST_TARGETS}" \
   2>&1 | tee "${LIBCUDACXX_LOG}"
   if [ "${PIPESTATUS[0]}" != "0" ]; then report_and_exit 1; fi
