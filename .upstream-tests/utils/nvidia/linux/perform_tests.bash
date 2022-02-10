@@ -236,7 +236,7 @@ then
 
   ARCH_DETECTION_LOG=$(mktemp)
 
-  LIBCXX_SITE_CONFIG=${LIBCUDACXX_LIT_SITE_CONFIG} \
+  LIBCUDACXX_SITE_CONFIG=${LIBCUDACXX_LIT_SITE_CONFIG} \
   bash -c "lit -vv -a ${LIBCUDACXX_PATH}/test/nothing_to_do.pass.cpp" \
   > ${ARCH_DETECTION_LOG} 2>&1
   if [ "${PIPESTATUS[0]}" != "0" ]
