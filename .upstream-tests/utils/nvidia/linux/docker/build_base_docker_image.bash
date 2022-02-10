@@ -21,6 +21,7 @@ cp ${LIBCUDACXX_PATH}/docker/.dockerignore ${LIBCUDACXX_PATH}/..
 LIBCUDACXX_COMPUTE_ARCHS="${@}" docker -D build \
   --build-arg LIBCUDACXX_SKIP_BASE_TESTS_BUILD \
   --build-arg LIBCUDACXX_COMPUTE_ARCHS \
+  --build-arg COMPILER_CXX_DIALECT=$COMPILER_CXX_DIALECT \
   -t ${BASE_IMAGE} \
   -f ${BASE_DOCKERFILE} \
   ${LIBCUDACXX_PATH}/.. 2>&1 \
