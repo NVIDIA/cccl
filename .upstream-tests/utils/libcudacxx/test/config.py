@@ -598,6 +598,12 @@ class Configuration(object):
                 self.config.available_features.add("pre-sm-70")
             if pre_sm_80:
                 self.config.available_features.add("pre-sm-80")
+        else : # Default assume that no features are available
+            self.config.available_features.add("pre-sm-32")
+            self.config.available_features.add("pre-sm-60")
+            self.config.available_features.add("pre-sm-80")
+            self.config.available_features.add("pre-sm-70")
+
     def configure_default_compile_flags(self):
         nvcc_host_compiler = self.get_lit_conf('nvcc_host_compiler')
         if nvcc_host_compiler and self.cxx.type == 'nvcc':
