@@ -573,6 +573,10 @@ class Configuration(object):
             self.config.available_features.add("nvrtc")
         if self.cxx.type == 'nvcc':
             self.cxx.compile_flags += ['--extended-lambda']
+        pre_sm_32 = True
+        pre_sm_60 = True
+        pre_sm_70 = True
+        pre_sm_80 = True
         if compute_archs and self.cxx.type == 'nvcc':
             pre_sm_32 = False
             pre_sm_60 = False
@@ -590,19 +594,14 @@ class Configuration(object):
             if enable_compute_future:
                 arch_flag = '-gencode=arch=compute_{0},code=compute_{0}'.format(arch)
                 self.cxx.compile_flags += [arch_flag]
-            if pre_sm_32:
-                self.config.available_features.add("pre-sm-32")
-            if pre_sm_60:
-                self.config.available_features.add("pre-sm-60")
-            if pre_sm_70:
-                self.config.available_features.add("pre-sm-70")
-            if pre_sm_80:
-                self.config.available_features.add("pre-sm-80")
-        else : # Default assume that no features are available
+        if pre_sm_32:
             self.config.available_features.add("pre-sm-32")
+        if pre_sm_60:
             self.config.available_features.add("pre-sm-60")
-            self.config.available_features.add("pre-sm-80")
+        if pre_sm_70:
             self.config.available_features.add("pre-sm-70")
+        if pre_sm_80:
+            self.config.available_features.add("pre-sm-80")
 
     def configure_default_compile_flags(self):
         nvcc_host_compiler = self.get_lit_conf('nvcc_host_compiler')
