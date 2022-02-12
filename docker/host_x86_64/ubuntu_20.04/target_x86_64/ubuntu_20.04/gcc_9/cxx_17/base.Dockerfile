@@ -69,9 +69,6 @@ RUN set -o pipefail; cd /sw/gpgpu/libcudacxx/build\
  -DLIBCUDACXX_TEST_STANDARD_VER=c++$COMPILER_CXX_DIALECT\
  2>&1 | tee /sw/gpgpu/libcudacxx/build/cmake_libcudacxx.log
 
-RUN echo $LIBCUDACXX_COMPUTE_ARCHS
-RUN sleep 5
-
 # Build tests if requested.
 RUN set -o pipefail; cd /sw/gpgpu/libcudacxx\
  && LIBCUDACXX_COMPUTE_ARCHS=$LIBCUDACXX_COMPUTE_ARCHS\
