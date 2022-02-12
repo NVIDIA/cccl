@@ -39,3 +39,4 @@ compare_git_to_perforce.bash
 Output/
 compile_commands.json
 *~
+*lit_test_times.txt
