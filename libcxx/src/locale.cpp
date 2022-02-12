@@ -4236,7 +4236,7 @@ static bool checked_string_to_char_convert(char& dest,
   default:
     return false;
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _LIBCUDACXX_UNREACHABLE_AFTER_SWITCH();
 }
 
 

@@ -7,9 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <stdio.h>
 // We use <stdio.h> instead of <iostream> to avoid relying on the host system's
 // C++ standard library.
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <cuda_runtime.h>
 
 void list_devices()
 {
@@ -56,7 +59,7 @@ void fake_main_kernel(int * ret)
         { \
             printf("CUDA ERROR, line %d: %s: %s\n", __LINE__,\
                    cudaGetErrorName(err), cudaGetErrorString(err)); \
-            std::exit(1); \
+            exit(1); \
         } \
     } while (false)
 

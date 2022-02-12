@@ -12,7 +12,7 @@ sym_match - Match all symbols in a list against a list of regexes.
 """
 from argparse import ArgumentParser
 import sys
-from libcxx.sym_check import util, match, extract
+from libcudacxx.sym_check import util, match, extract
 
 
 def main():

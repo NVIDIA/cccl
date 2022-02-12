@@ -784,7 +784,7 @@ private:
     __compressed_pair<__rep, allocator_type> __r_;
 
 public:
-    static const size_type npos = -1;
+    static const size_type npos = static_cast<size_type>(-1);
 
     _LIBCUDACXX_INLINE_VISIBILITY basic_string()
         _NOEXCEPT_(is_nothrow_default_constructible<allocator_type>::value);

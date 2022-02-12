@@ -36,5 +36,7 @@ compare_git_to_perforce.bash
 *.log
 .clangd/
 .cache
+Output/
 compile_commands.json
 *~
+*lit_test_times.txt
