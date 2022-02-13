@@ -5,7 +5,7 @@ set -e
 nvrtcdir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 libcudacxxdir="$(cd "${nvrtcdir}/../../.." && pwd)"
 
-logdir=${FAUX_NVRTC_LOG_DIR:-.}
+logdir=$(mktemp --tmpdir=${XDG_RUNTIME_DIR} -d libcudacxx.build.XXXXXXXXXX)
 
 nvcc=$(echo $1 | sed 's/^[[:space:]]*//')
 shift
@@ -158,3 +158,8 @@ input_dir=$(dirname "${input}")
 
 echo "invoking: ${nvcc} -c ${input_type} ${tempfile} -I${input_dir} ${modified_flags[@]}" >> ${logdir}/log
 "${nvcc}" -c ${input_type} "${tempfile}" "-I${input_dir}" "${modified_flags[@]}" 2> >(tee -a ${logdir}/error_log)
+
+if [[ "${LIBCUDACXX_NVRTC_KEEP_LOG}" != "YES" ]]
+then
+    rm -rf $logdir
+fi

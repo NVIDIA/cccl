@@ -348,7 +348,10 @@ struct FileDescriptor {
   file_status get_status() const { return m_status; }
   StatT const& get_stat() const { return m_stat; }
 
+#ifndef _LIBCUDACXX_COMPILER_PGI
+  // NVC++ doesn't like static / unnamed namespace functions that aren't used, rather aggresively.
   bool status_known() const { return _CUDA_VSTD_FS::status_known(m_status); }
+#endif
 
   file_status refresh_status(error_code& ec);
 
@@ -927,6 +930,9 @@ path __current_path(error_code* ec) {
   char* ret;
   if ((ret = ::getcwd(buff.get(), static_cast<size_t>(size))) == nullptr)
     return err.report(capture_errno(), "call to getcwd failed");
+
+  // Trick NVC++ into thinking `ret` is used.
+  if (!ret) ;
 
   return {buff.get()};
 }

@@ -55,8 +55,11 @@
 // Test that libc++ doesn't use names reserved by WIN32 API Macros.
 // NOTE: Obviously we can only define these on non-windows platforms.
 #ifndef _WIN32
+// However, NVC++'s builtin OpenACC headers also define these.
+#ifndef __NVCOMPILER
 #define __allocator NASTY_MACRO
 #define __deallocate NASTY_MACRO
+#endif
 // GCC's c++locale.h
 // #define __out NASTY_MACRO
 #endif

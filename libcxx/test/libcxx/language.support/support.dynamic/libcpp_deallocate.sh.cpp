@@ -39,6 +39,9 @@
 // GCC doesn't support the aligned-allocation flags.
 // XFAIL: gcc
 
+// NVC++ doesn't support the aligned-allocation flags.
+// XFAIL: pgi
+
 // If we're just building the test and not executing it, it should pass.
 // UNSUPPORTED: no_execute
 

@@ -97,6 +97,12 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 #define _LIBCUDACXX_UNREACHABLE() _CUDA_VSTD::abort()
 #endif
 
+#ifdef _LIBCUDACXX_COMPILER_PGI
+#define _LIBCUDACXX_UNREACHABLE_AFTER_SWITCH()
+#else
+#define _LIBCUDACXX_UNREACHABLE_AFTER_SWITCH() _LIBCUDACXX_UNREACHABLE()
+#endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 using ::size_t;

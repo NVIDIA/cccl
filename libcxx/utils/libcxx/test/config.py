@@ -739,7 +739,7 @@ class Configuration(object):
                                  and self.cxx_stdlib_under_test != 'libc++'):
             self.lit_config.note('using the system cxx headers')
             return
-        if self.cxx.type != 'nvcc':
+        if self.cxx.type != 'nvcc' and self.cxx.type != 'pgi':
             self.cxx.compile_flags += ['-nostdinc++']
         if cxx_headers is None:
             cxx_headers = os.path.join(self.libcxx_src_root, 'include')
@@ -901,7 +901,8 @@ class Configuration(object):
                 if 'pgi' not in self.config.available_features or not self.cxx.is_nvrtc:
                     if self.cxx.type == 'nvcc':
                         self.cxx.link_flags += ['-Xcompiler']
-                    self.cxx.link_flags += ['-nodefaultlibs']
+                    if self.cxx.type != 'pgi':
+                        self.cxx.link_flags += ['-nodefaultlibs']
 
                     # FIXME: Handle MSVCRT as part of the ABI library handling.
                     if self.is_windows and 'msvc' not in self.config.available_features:
@@ -1262,6 +1263,9 @@ class Configuration(object):
         sub.append(('not ', not_str))
         if self.get_lit_conf('libcxx_gdb'):
             sub.append(('%libcxx_gdb', self.get_lit_conf('libcxx_gdb')))
+
+        sub.append(['%syntaxonly', '-fsyntax-only' if self.cxx.type != 'pgi' else ''])
+        sub.append(['%noexceptions', '-fno-exceptions' if self.cxx.type != 'pgi' else ''])
 
     def can_use_deployment(self):
         # Check if the host is on an Apple platform using clang.

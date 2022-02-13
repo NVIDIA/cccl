@@ -10,7 +10,7 @@
 sym_extract - Extract and output a list of symbols from a shared library.
 """
 from argparse import ArgumentParser
-from libcxx.sym_check import extract, util
+from libcudacxx.sym_check import extract, util
 
 
 def main():

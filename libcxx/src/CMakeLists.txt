@@ -142,7 +142,9 @@ endif()
 function(cxx_link_system_libraries target)
   target_add_link_flags_if_supported(${target} PRIVATE "-nodefaultlibs")
   target_add_compile_flags_if_supported(${target} PRIVATE "/Zl")
-  target_add_link_flags_if_supported(${target} PRIVATE "/nodefaultlib")
+  if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "PGI")
+    target_add_link_flags_if_supported(${target} PRIVATE "/nodefaultlib")
+  endif()
 
   if (LIBCXX_HAS_SYSTEM_LIB)
     target_link_libraries(${target} PUBLIC System)
@@ -372,7 +374,7 @@ if (LIBCXX_ENABLE_STATIC)
       ${PYTHON_EXECUTABLE} ${LIBCXX_SOURCE_DIR}/utils/merge_archives.py
     ARGS
       -o $<TARGET_LINKER_FILE:cxx_static>
-      --ar "${CMAKE_AR}"
+      --ar "${CMAKE_AR}" -v
       ${MERGE_ARCHIVES_LIBTOOL}
       "$<TARGET_LINKER_FILE:cxx_static>"
       "${MERGE_ARCHIVES_ABI_TARGET}"
