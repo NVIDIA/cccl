@@ -37,11 +37,13 @@ In a Bash shell:
 cd ${LIBCUDACXX_ROOT}
 mkdir -p build
 cd build
-cmake .. \
-  -DLLVM_CONFIG_PATH=$(which llvm-config) \
-  -DCMAKE_CXX_COMPILER=nvcc \
-  -DLIBCXX_NVCC_HOST_COMPILER=g++ \
-  -DLIBCXX_TEST_STANDARD_VER=c++11
+cmake \
+    -S ./ \
+    -B build \
+    -DCMAKE_CXX_COMPILER=$CXX \
+    -DCMAKE_CUDA_COMPILER=$TOOLKIT/bin/nvcc \
+    -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON \
+    -DLIBCUDACXX_ENABLE_LIBCXX_TESTS=OFF
 ```
 
 ### Step 2: Build & Run the Tests
@@ -75,10 +77,10 @@ cd ${LIBCUDACXX_ROOT}
 mkdir -p build
 cd build
 cmake .. \
-  -DLLVM_CONFIG_PATH=$(which llvm-config) \
-  -DCMAKE_CXX_COMPILER=nvcc \
-  -DLIBCXX_NVCC_HOST_COMPILER=aarch64-linux-gnu-g++ \
-  -DLIBCXX_TEST_STANDARD_VER=c++14 \
+  -DCMAKE_CUDA_COMPILER=$TOOLKIT/bin/nvcc \
+  -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+  -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON \
+  -DLIBCUDACXX_ENABLE_LIBCXX_TESTS=OFF
   -DLIBCXX_EXECUTOR="SSHExecutor(host='${HOST}', username='${USERNAME}')"
 ```
 
@@ -109,11 +111,11 @@ cd ${LIBCUDACXX_ROOT}
 mkdir -p build
 cd build
 cmake .. \
-  -DCMAKE_C_COMPILER_WORKS=ON \
-  -DLLVM_CONFIG_PATH=$(which llvm-config) \
-  -DLIBCXX_NVCC_HOST_COMPILER=g++ \
-  -DLIBCXX_TEST_STANDARD_VER=c++11 \
-  -DLIBCXX_TEST_WITH_NVRTC=ON
+  -DCMAKE_CXX_COMPILER=$CC \
+  -DCMAKE_CUDA_COMPILER=$TOOLKIT/bin/nvcc \
+  -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON \
+  -DLIBCUDACXX_ENABLE_LIBCXX_TESTS=OFF \
+  -DLIBCUDACXX_TEST_WITH_NVRTC=ON
 ```
 
 ### Step 2: Build & Run the Tests
