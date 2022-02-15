@@ -56,6 +56,7 @@ namespace std {
 #ifndef __cuda_std__
 
 #include <__config>
+#include <cstdint>
 #include <limits>
 #include <type_traits>
 #include <version>
