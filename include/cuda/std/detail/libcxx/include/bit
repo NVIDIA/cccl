@@ -821,7 +821,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 _EnableIf<__bitop_unsigned_integer<_Tp>::value, _Tp>
 bit_floor(_Tp __t) noexcept
 {
-    return __t == 0 ? 0 : _Tp{1} << __bit_log2(__t);
+    return __t == 0 ? 0 : static_cast<_Tp>(_Tp{1} << __bit_log2(__t));
 }
 
 template <class _Tp>
@@ -829,7 +829,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 _EnableIf<__bitop_unsigned_integer<_Tp>::value, _Tp>
 bit_ceil(_Tp __t) noexcept
 {
-    return (__t < 2) ? 1 : __ceil2(__t);
+    return (__t < 2) ? 1 : static_cast<_Tp>(__ceil2(__t));
 }
 
 template <class _Tp>
@@ -837,7 +837,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 _EnableIf<__bitop_unsigned_integer<_Tp>::value, _Tp>
 bit_width(_Tp __t) noexcept
 {
-    return __t == 0 ? 0 : __bit_log2(__t) + 1;
+    return __t == 0 ? 0 : static_cast<_Tp>(__bit_log2(__t) + 1);
 }
 
 
