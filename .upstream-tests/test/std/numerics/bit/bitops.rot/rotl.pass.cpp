@@ -58,13 +58,13 @@ __host__ __device__ void runtime_test()
     const T val = cuda::std::numeric_limits<T>::max() - 1;
 
     assert( cuda::std::rotl(val, 0) == val);
-    assert( cuda::std::rotl(val, 1) == T((val << 1) +   1));
-    assert( cuda::std::rotl(val, 2) == T((val << 2) +   3));
-    assert( cuda::std::rotl(val, 3) == T((val << 3) +   7));
-    assert( cuda::std::rotl(val, 4) == T((val << 4) +  15));
-    assert( cuda::std::rotl(val, 5) == T((val << 5) +  31));
-    assert( cuda::std::rotl(val, 6) == T((val << 6) +  63));
-    assert( cuda::std::rotl(val, 7) == T((val << 7) + 127));
+    assert( cuda::std::rotl(val, 1) == static_cast<T>((val << 1) +   1));
+    assert( cuda::std::rotl(val, 2) == static_cast<T>((val << 2) +   3));
+    assert( cuda::std::rotl(val, 3) == static_cast<T>((val << 3) +   7));
+    assert( cuda::std::rotl(val, 4) == static_cast<T>((val << 4) +  15));
+    assert( cuda::std::rotl(val, 5) == static_cast<T>((val << 5) +  31));
+    assert( cuda::std::rotl(val, 6) == static_cast<T>((val << 6) +  63));
+    assert( cuda::std::rotl(val, 7) == static_cast<T>((val << 7) + 127));
 }
 
 int main(int, char **)
