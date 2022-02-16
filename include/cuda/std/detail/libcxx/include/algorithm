@@ -13,7 +13,7 @@
 /*
     algorithm synopsis
 
-#include <::std::initializer_list>
+#include <initializer_list>
 
 namespace std
 {

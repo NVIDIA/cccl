@@ -714,7 +714,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     reference operator*() const {_Iter __tmp = current; return *--__tmp;}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-    pointer  operator->() const {return addressof(operator*());}
+    pointer  operator->() const {return _CUDA_VSTD::addressof(operator*());}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     reverse_iterator& operator++() {--current; return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
@@ -1168,7 +1168,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     move_iterator& operator-=(difference_type __n) {__i -= __n; return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-    reference operator[](difference_type __n) const { return move(__i[__n]); }
+    reference operator[](difference_type __n) const { return _CUDA_VSTD::move(__i[__n]); }
 };
 
 template <class _Iter1, class _Iter2>

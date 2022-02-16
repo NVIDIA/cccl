@@ -130,28 +130,28 @@ struct _LIBCUDACXX_TEMPLATE_VIS array
 {
     // types:
     typedef array __self;
-    typedef _Tp                                   value_type;
-    typedef value_type&                           reference;
-    typedef const value_type&                     const_reference;
-    typedef value_type*                           iterator;
-    typedef const value_type*                     const_iterator;
-    typedef value_type*                           pointer;
-    typedef const value_type*                     const_pointer;
-    typedef size_t                                size_type;
-    typedef ptrdiff_t                             difference_type;
-    typedef std::reverse_iterator<const_iterator>      const_reverse_iterator;
-    typedef std::reverse_iterator<iterator>            reverse_iterator;
+    typedef _Tp                                          value_type;
+    typedef value_type&                                  reference;
+    typedef const value_type&                            const_reference;
+    typedef value_type*                                  iterator;
+    typedef const value_type*                            const_iterator;
+    typedef value_type*                                  pointer;
+    typedef const value_type*                            const_pointer;
+    typedef size_t                                       size_type;
+    typedef ptrdiff_t                                    difference_type;
+    typedef _CUDA_VSTD::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef _CUDA_VSTD::reverse_iterator<iterator>       reverse_iterator;
 
     _Tp __elems_[_Size];
 
     // No explicit construct/copy/destroy for aggregate type
     _LIBCUDACXX_INLINE_VISIBILITY void fill(const value_type& __u) {
-      fill_n(__elems_, _Size, __u);
+      _CUDA_VSTD::fill_n(__elems_, _Size, __u);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(array& __a) _NOEXCEPT_(__is_nothrow_swappable<_Tp>::value) {
-      swap_ranges(__elems_, __elems_ + _Size, __a.__elems_);
+      _CUDA_VSTD::swap_ranges(__elems_, __elems_ + _Size, __a.__elems_);
     }
 
     // iterators:
