@@ -82,7 +82,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #define _LIBCUDACXX_BIT_CONSTEXPR constexpr
 
-#ifndef _LIBCUDACXX_COMPILER_MSVC
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __binary_ctz2(uint64_t __x, int __c)           _NOEXCEPT {
@@ -123,6 +122,71 @@ int __binary_ctz64(uint64_t __x)           _NOEXCEPT {
             __x >> 32*!(__x & 0x00000000FFFFFFFF),
             32*!(__x & 0x00000000FFFFFFFF));
 }
+
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
+int __binary_clz2(uint64_t __x, int __c) {
+  return !!(~__x & 0x2) ^ __c;
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
+int __binary_clz4(uint64_t __x, int __c) {
+  return __binary_clz2(
+      __x >> 2*!!(__x & 0xC),
+      __c + 2*!(__x & 0xC));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
+int __binary_clz8(uint64_t __x, int __c) {
+  return __binary_clz4(
+      __x >> 4*!!(__x & 0xF0),
+      __c + 4*!(__x & 0xF0));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
+int __binary_clz16(uint64_t __x, int __c) {
+  return __binary_clz8(
+      __x >> 8*!!(__x & 0xFF00),
+      __c + 8*!(__x & 0xFF00));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
+int __binary_clz32(uint64_t __x, int __c) {
+  return __binary_clz16(
+      __x >> 16*!!(__x & 0xFFFF0000),
+      __c + 16*!(__x & 0xFFFF0000));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
+int __binary_clz64(uint64_t __x) {
+  return __binary_clz32(
+      __x >> 32*!!(__x & 0xFFFFFFFF00000000),
+      32*!(__x & 0xFFFFFFFF00000000));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
+int __fallback_popc8(uint64_t __x) {
+  return static_cast<int>((__x * 0x0101010101010101) >> 56);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
+int __fallback_popc16(uint64_t __x) {
+  return __fallback_popc8(
+      __x + (__x >> 4) & 0x0f0f0f0f0f0f0f0f);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
+int __fallback_popc32(uint64_t __x) {
+  return __fallback_popc16(
+      (__x & 0x3333333333333333) + ((__x >> 2) & 0x3333333333333333));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
+int __fallback_popc64(uint64_t __x) {
+  return __fallback_popc32(
+      __x - ((__x >> 1) & 0x5555555555555555));
+}
+
+#ifndef _LIBCUDACXX_COMPILER_MSVC
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __libcpp_ctz(unsigned __x)           _NOEXCEPT {
@@ -179,46 +243,6 @@ int __libcpp_ctz(unsigned long long __x) _NOEXCEPT {
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __binary_clz2(uint64_t __x, int __c) {
-  return !!(~__x & 0x2) ^ __c;
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __binary_clz4(uint64_t __x, int __c) {
-  return __binary_clz2(
-      __x >> 2*!!(__x & 0xC),
-      __c + 2*!(__x & 0xC));
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __binary_clz8(uint64_t __x, int __c) {
-  return __binary_clz4(
-      __x >> 4*!!(__x & 0xF0),
-      __c + 4*!(__x & 0xF0));
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __binary_clz16(uint64_t __x, int __c) {
-  return __binary_clz8(
-      __x >> 8*!!(__x & 0xFF00),
-      __c + 8*!(__x & 0xFF00));
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __binary_clz32(uint64_t __x, int __c) {
-  return __binary_clz16(
-      __x >> 16*!!(__x & 0xFFFF0000),
-      __c + 16*!(__x & 0xFFFF0000));
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __binary_clz64(uint64_t __x) {
-  return __binary_clz32(
-      __x >> 32*!!(__x & 0xFFFFFFFF00000000),
-      32*!(__x & 0xFFFFFFFF00000000));
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __libcpp_clz(unsigned __x)           _NOEXCEPT {
 #if defined(__CUDA_ARCH__)
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
@@ -270,29 +294,6 @@ int __libcpp_clz(unsigned long long __x) _NOEXCEPT {
 #else
   return __builtin_clzll(__x);
 #endif
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __fallback_popc8(uint64_t __x) {
-  return static_cast<int>((__x * 0x0101010101010101) >> 56);
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __fallback_popc16(uint64_t __x) {
-  return __fallback_popc8(
-      __x + (__x >> 4) & 0x0f0f0f0f0f0f0f0f);
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __fallback_popc32(uint64_t __x) {
-  return __fallback_popc16(
-      (__x & 0x3333333333333333) + ((__x >> 2) & 0x3333333333333333));
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __fallback_popc64(uint64_t __x) {
-  return __fallback_popc32(
-      __x - ((__x >> 1) & 0x5555555555555555));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
@@ -353,84 +354,119 @@ int __libcpp_popcount(unsigned long long __x) _NOEXCEPT {
 
 // Precondition:  __x != 0
 inline _LIBCUDACXX_INLINE_VISIBILITY
-int __libcpp_ctz(unsigned __x) {
+constexpr int __libcpp_ctz(unsigned __x) {
   static_assert(sizeof(unsigned) == sizeof(unsigned long), "");
   static_assert(sizeof(unsigned long) == 4, "");
-  unsigned long __where;
-  if (_BitScanForward(&__where, __x))
-    return static_cast<int>(__where);
-  return 32;
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY
-int __libcpp_ctz(unsigned long __x) {
-    static_assert(sizeof(unsigned long) == sizeof(unsigned), "");
-    return __ctz(static_cast<unsigned>(__x));
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY
-int __libcpp_ctz(unsigned long long __x) {
-    unsigned long __where;
-#if defined(_LIBCUDACXX_HAS_BITSCAN64)
-    (defined(_M_AMD64) || defined(__x86_64__))
-  if (_BitScanForward64(&__where, __x))
-    return static_cast<int>(__where);
+#if !defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) || defined(__CUDA_ARCH__)
+    return __binary_ctz32(static_cast<uint64_t>(__x), 0);
 #else
-  // Win32 doesn't have _BitScanForward64 so emulate it with two 32 bit calls.
-  if (_BitScanForward(&__where, static_cast<unsigned long>(__x)))
-    return static_cast<int>(__where);
-  if (_BitScanForward(&__where, static_cast<unsigned long>(__x >> 32)))
-    return static_cast<int>(__where + 32);
+  if (__libcpp_is_constant_evaluated()) {
+    return __binary_ctz32(static_cast<uint64_t>(__x), 0);
+  }
+  else {
+    unsigned long __where = 0;
+    if (_BitScanForward(&__where, __x))
+      return static_cast<int>(__where);
+    return 32;
+  }
 #endif
-  return 64;
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+constexpr int __libcpp_ctz(unsigned long __x) {
+    static_assert(sizeof(unsigned long) == sizeof(unsigned), "");
+    return __libcpp_ctz(static_cast<unsigned>(__x));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+constexpr int __libcpp_ctz(unsigned long long __x) {
+#if !defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) || defined(__CUDA_ARCH__)
+    return __binary_ctz64(__x);
+#else
+  if (__libcpp_is_constant_evaluated()) {
+    return __binary_ctz64(__x);
+  }
+  else {
+    unsigned long __where = 0;
+#  if defined(_LIBCUDACXX_HAS_BITSCAN64) && (defined(_M_AMD64) || defined(__x86_64__))
+    if (_BitScanForward64(&__where, __x))
+      return static_cast<int>(__where);
+#  else
+    // Win32 doesn't have _BitScanForward64 so emulate it with two 32 bit calls.
+    if (_BitScanForward(&__where, static_cast<unsigned long>(__x)))
+      return static_cast<int>(__where);
+    if (_BitScanForward(&__where, static_cast<unsigned long>(__x >> 32)))
+      return static_cast<int>(__where + 32);
+#  endif
+    return 64;
+  }
+#endif
 }
 
 // Precondition:  __x != 0
 inline _LIBCUDACXX_INLINE_VISIBILITY
-int __libcpp_clz(unsigned __x) {
+constexpr int __libcpp_clz(unsigned __x) {
   static_assert(sizeof(unsigned) == sizeof(unsigned long), "");
   static_assert(sizeof(unsigned long) == 4, "");
-  unsigned long __where;
-  if (_BitScanReverse(&__where, __x))
-    return static_cast<int>(31 - __where);
-  return 32; // Undefined Behavior.
+#if !defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) || defined(__CUDA_ARCH__)
+    return __binary_clz32(static_cast<uint64_t>(__x), 0);
+#else
+  if (__libcpp_is_constant_evaluated()) {
+    return __binary_clz32(static_cast<uint64_t>(__x), 0);
+  }
+  else {
+    unsigned long __where = 0;
+    if (_BitScanReverse(&__where, __x))
+      return static_cast<int>(31 - __where);
+    return 32; // Undefined Behavior.
+  }
+#endif
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-int __libcpp_clz(unsigned long __x) {
+constexpr int __libcpp_clz(unsigned long __x) {
     static_assert(sizeof(unsigned) == sizeof(unsigned long), "");
     return __libcpp_clz(static_cast<unsigned>(__x));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-int __libcpp_clz(unsigned long long __x) {
-  unsigned long __where;
-#if defined(_LIBCUDACXX_HAS_BITSCAN64)
-  if (_BitScanReverse64(&__where, __x))
-    return static_cast<int>(63 - __where);
+constexpr int __libcpp_clz(unsigned long long __x) {
+#if !defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) || defined(__CUDA_ARCH__)
+    return __binary_clz64(static_cast<uint64_t>(__x));
 #else
-  // Win32 doesn't have _BitScanReverse64 so emulate it with two 32 bit calls.
-  if (_BitScanReverse(&__where, static_cast<unsigned long>(__x >> 32)))
-    return static_cast<int>(63 - (__where + 32));
-  if (_BitScanReverse(&__where, static_cast<unsigned long>(__x)))
-    return static_cast<int>(63 - __where);
+  if (__libcpp_is_constant_evaluated()) {
+    return __binary_clz64(static_cast<uint64_t>(__x));
+  }
+  else {
+    unsigned long __where = 0;
+#  if defined(_LIBCUDACXX_HAS_BITSCAN64)
+    if (_BitScanReverse64(&__where, __x))
+      return static_cast<int>(63 - __where);
+#  else
+    // Win32 doesn't have _BitScanReverse64 so emulate it with two 32 bit calls.
+    if (_BitScanReverse(&__where, static_cast<unsigned long>(__x >> 32)))
+      return static_cast<int>(63 - (__where + 32));
+    if (_BitScanReverse(&__where, static_cast<unsigned long>(__x)))
+      return static_cast<int>(63 - __where);
+#  endif
+    return 64; // Undefined Behavior.
+  }
 #endif
-  return 64; // Undefined Behavior.
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY int __libcpp_popcount(unsigned __x) {
   static_assert(sizeof(unsigned) == 4, "");
-  return __popcnt(__x);
+  return static_cast<int>(__popcnt(__x));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY int __libcpp_popcount(unsigned long __x) {
   static_assert(sizeof(unsigned long) == 4, "");
-  return __popcnt(__x);
+  return static_cast<int>(__popcnt(__x));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY int __libcpp_popcount(unsigned long long __x) {
   static_assert(sizeof(unsigned long long) == 8, "");
-  return __popcnt64(__x);
+  return static_cast<int>(__popcnt64(__x));
 }
 
 #endif // _LIBCUDACXX_COMPILER_MSVC
