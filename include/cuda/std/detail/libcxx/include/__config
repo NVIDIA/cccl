@@ -881,6 +881,10 @@ typedef __char32_t char32_t;
     #define _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
 #endif
 
+#if _MSC_VER > 1924
+#  define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
+#endif
+
 #define _LIBCUDACXX_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
 #define _LIBCUDACXX_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
 #define _LIBCUDACXX_IS_DESTRUCTIBLE(...) __is_destructible(__VA_ARGS__)

@@ -9,15 +9,15 @@
 // UNSUPPORTED: c++98, c++03, c++11, c++14, c++17 
 
 // template <class T>
-//   constexpr T log2p1(T x) noexcept;
+//   constexpr T bit_floor(T x) noexcept;
 
-// If x == 0, 0; otherwise one plus the base-2 logarithm of x, with any fractional part discarded.
-
+// Returns: If x == 0, 0; otherwise the maximal value y such that bit_floor(y) is true and y <= x.
 // Remarks: This function shall not participate in overload resolution unless 
 //	T is an unsigned integer type
 
 #include <bit>
 #include <cstdint>
+#include <type_traits>
 #include <cassert>
 
 #include "test_macros.h"
@@ -29,16 +29,16 @@ enum class E2 : unsigned char { red };
 template <typename T>
 constexpr bool constexpr_test()
 {
-	return std::log2p1(T(0)) == T(0)
-	   &&  std::log2p1(T(1)) == T(1)
-	   &&  std::log2p1(T(2)) == T(2)
-	   &&  std::log2p1(T(3)) == T(2)
-	   &&  std::log2p1(T(4)) == T(3)
-	   &&  std::log2p1(T(5)) == T(3)
-	   &&  std::log2p1(T(6)) == T(3)
-	   &&  std::log2p1(T(7)) == T(3)
-	   &&  std::log2p1(T(8)) == T(4)
-	   &&  std::log2p1(T(9)) == T(4)
+	return std::bit_floor(T(0)) == T(0)
+	   &&  std::bit_floor(T(1)) == T(1)
+	   &&  std::bit_floor(T(2)) == T(2)
+	   &&  std::bit_floor(T(3)) == T(2)
+	   &&  std::bit_floor(T(4)) == T(4)
+	   &&  std::bit_floor(T(5)) == T(4)
+	   &&  std::bit_floor(T(6)) == T(4)
+	   &&  std::bit_floor(T(7)) == T(4)
+	   &&  std::bit_floor(T(8)) == T(8)
+	   &&  std::bit_floor(T(9)) == T(8)
 	   ;
 }
 
@@ -46,38 +46,26 @@ constexpr bool constexpr_test()
 template <typename T>
 void runtime_test()
 {
-	ASSERT_SAME_TYPE(T, decltype(std::log2p1(T(0))));
-	ASSERT_NOEXCEPT(             std::log2p1(T(0)));
+	ASSERT_SAME_TYPE(T, decltype(std::bit_floor(T(0))));
+	ASSERT_NOEXCEPT(             std::bit_floor(T(0)));
 	
-	assert( std::log2p1(T(0)) == T(0));
-	assert( std::log2p1(T(1)) == T(1));
-	assert( std::log2p1(T(2)) == T(2));
-	assert( std::log2p1(T(3)) == T(2));
-	assert( std::log2p1(T(4)) == T(3));
-	assert( std::log2p1(T(5)) == T(3));
-	assert( std::log2p1(T(6)) == T(3));
-	assert( std::log2p1(T(7)) == T(3));
-	assert( std::log2p1(T(8)) == T(4));
-	assert( std::log2p1(T(9)) == T(4));
-
-
-	assert( std::log2p1(T(121)) == T(7));
-	assert( std::log2p1(T(122)) == T(7));
-	assert( std::log2p1(T(123)) == T(7));
-	assert( std::log2p1(T(124)) == T(7));
-	assert( std::log2p1(T(125)) == T(7));
-	assert( std::log2p1(T(126)) == T(7));
-	assert( std::log2p1(T(127)) == T(7));
-	assert( std::log2p1(T(128)) == T(8));
-	assert( std::log2p1(T(129)) == T(8));
-	assert( std::log2p1(T(130)) == T(8));
+	assert( std::bit_floor(T(121)) == T(64));
+	assert( std::bit_floor(T(122)) == T(64));
+	assert( std::bit_floor(T(123)) == T(64));
+	assert( std::bit_floor(T(124)) == T(64));
+	assert( std::bit_floor(T(125)) == T(64));
+	assert( std::bit_floor(T(126)) == T(64));
+	assert( std::bit_floor(T(127)) == T(64));
+	assert( std::bit_floor(T(128)) == T(128));
+	assert( std::bit_floor(T(129)) == T(128));
+	assert( std::bit_floor(T(130)) == T(128));
 }
 
 int main()
 {
 	
     {
-    auto lambda = [](auto x) -> decltype(std::log2p1(x)) {};
+    auto lambda = [](auto x) -> decltype(std::bit_floor(x)) {};
     using L = decltype(lambda);
     
     static_assert( std::is_invocable_v<L, unsigned char>, "");
@@ -139,7 +127,6 @@ int main()
 	static_assert(constexpr_test<__uint128_t>(),        "");
 #endif
 
-
 	runtime_test<unsigned char>();
 	runtime_test<unsigned>();
 	runtime_test<unsigned short>();
@@ -160,17 +147,17 @@ int main()
 	{
 	__uint128_t val = 128;
 	val <<= 32;
-	assert( std::log2p1(val-1) == 39);
-	assert( std::log2p1(val)   == 40);
-	assert( std::log2p1(val+1) == 40);
+	assert( std::bit_floor(val-1) == val/2);
+	assert( std::bit_floor(val)   == val);
+	assert( std::bit_floor(val+1) == val);
 	val <<= 2;
-	assert( std::log2p1(val-1) == 41);
-	assert( std::log2p1(val)   == 42);
-	assert( std::log2p1(val+1) == 42);
+	assert( std::bit_floor(val-1) == val/2);
+	assert( std::bit_floor(val)   == val);
+	assert( std::bit_floor(val+1) == val);
 	val <<= 3;
-	assert( std::log2p1(val-1) == 44);
-	assert( std::log2p1(val)   == 45);
-	assert( std::log2p1(val+1) == 45);
+	assert( std::bit_floor(val-1) == val/2);
+	assert( std::bit_floor(val)   == val);
+	assert( std::bit_floor(val+1) == val);
 	}
 #endif
 

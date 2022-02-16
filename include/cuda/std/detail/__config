@@ -91,6 +91,8 @@
     #define __ELF__
 #endif
 
+#define _LIBCUDACXX_ENABLE_BIT_BACKPORT
+
 #define _LIBCUDACXX_HAS_CUDA_ATOMIC_EXT
 
 #include "libcxx/include/__config"
