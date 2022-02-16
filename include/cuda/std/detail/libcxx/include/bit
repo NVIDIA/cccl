@@ -454,19 +454,49 @@ constexpr int __libcpp_clz(unsigned long long __x) {
 #endif
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY int __libcpp_popcount(unsigned __x) {
+inline _LIBCUDACXX_INLINE_VISIBILITY
+constexpr int __libcpp_popcount(unsigned __x) {
   static_assert(sizeof(unsigned) == 4, "");
-  return static_cast<int>(__popcnt(__x));
+#if !defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) || defined(__CUDA_ARCH__)
+    return __fallback_popc64(static_cast<uint64_t>(__x));
+#else
+  if (__libcpp_is_constant_evaluated()) {
+    return __fallback_popc64(static_cast<uint64_t>(__x));
+  }
+  else {
+    return static_cast<int>(__popcnt(__x));
+  }
+#endif
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY int __libcpp_popcount(unsigned long __x) {
+inline _LIBCUDACXX_INLINE_VISIBILITY
+constexpr int __libcpp_popcount(unsigned long __x) {
   static_assert(sizeof(unsigned long) == 4, "");
-  return static_cast<int>(__popcnt(__x));
+#if !defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) || defined(__CUDA_ARCH__)
+    return __fallback_popc64(static_cast<uint64_t>(__x));
+#else
+  if (__libcpp_is_constant_evaluated()) {
+    return __fallback_popc64(static_cast<uint64_t>(__x));
+  }
+  else {
+    return static_cast<int>(__popcnt(__x));
+  }
+#endif
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY int __libcpp_popcount(unsigned long long __x) {
+inline _LIBCUDACXX_INLINE_VISIBILITY
+constexpr int __libcpp_popcount(unsigned long long __x) {
   static_assert(sizeof(unsigned long long) == 8, "");
-  return static_cast<int>(__popcnt64(__x));
+#if !defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) || defined(__CUDA_ARCH__)
+    return __fallback_popc64(static_cast<uint64_t>(__x));
+#else
+  if (__libcpp_is_constant_evaluated()) {
+    return __fallback_popc64(static_cast<uint64_t>(__x));
+  }
+  else {
+    return static_cast<int>(__popcnt64(__x));
+  }
+#endif
 }
 
 #endif // _LIBCUDACXX_COMPILER_MSVC
