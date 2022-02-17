@@ -33,7 +33,7 @@ __host__ __device__
 constexpr bool unused(T &&) {return true;}
 
 struct NoDefault {
-  NoDefault(int) {}
+  __host__ __device__ NoDefault(int) {}
 };
 
 int main(int, char**) {

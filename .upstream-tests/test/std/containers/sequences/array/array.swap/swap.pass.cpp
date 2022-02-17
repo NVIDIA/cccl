@@ -21,10 +21,10 @@
 #include "disable_missing_braces_warning.h"
 
 struct NonSwappable {
-  NonSwappable() {}
+  __host__ __device__ NonSwappable() {}
 private:
-  NonSwappable(NonSwappable const&);
-  NonSwappable& operator=(NonSwappable const&);
+  __host__ __device__ NonSwappable(NonSwappable const&);
+  __host__ __device__ NonSwappable& operator=(NonSwappable const&);
 };
 
 int main(int, char**)

@@ -19,7 +19,7 @@
 #include "disable_missing_braces_warning.h"
 
 struct NoDefault {
-  NoDefault(int) {}
+  __host__ __device__ NoDefault(int) {}
 };
 
 int main(int, char**)

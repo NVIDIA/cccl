@@ -8,6 +8,8 @@
 
 // <cuda/std/array>
 
+// UNSUPPORTED: nvrtc
+
 // tuple_element<I, array<T, N> >::type
 
 // Prevent -Warray-bounds from issuing a diagnostic when testing with clang verify.

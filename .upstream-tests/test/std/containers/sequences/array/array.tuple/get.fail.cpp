@@ -8,6 +8,8 @@
 
 // <cuda/std/array>
 
+// UNSUPPORTED: nvrtc
+
 // template <size_t I, class T, size_t N> T& get(array<T, N>& a);
 
 // Prevent -Warray-bounds from issuing a diagnostic when testing with clang verify.
@@ -17,7 +19,6 @@
 
 #include <cuda/std/array>
 #include <cuda/std/cassert>
-
 
 // cuda::std::array is explicitly allowed to be initialized with A a = { init-list };.
 // Disable the missing braces warning for this reason.

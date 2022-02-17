@@ -19,18 +19,18 @@
 #include "disable_missing_braces_warning.h"
 
 struct NonSwappable {
-  NonSwappable() {}
+  __host__ __device__ NonSwappable() {}
 private:
-  NonSwappable(NonSwappable const&);
-  NonSwappable& operator=(NonSwappable const&);
+  __host__ __device__ NonSwappable(NonSwappable const&);
+  __host__ __device__ NonSwappable& operator=(NonSwappable const&);
 };
 
 template <class Tp>
-decltype(swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()))
+__host__ __device__ decltype(swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()))
 can_swap_imp(int);
 
 template <class Tp>
-cuda::std::false_type can_swap_imp(...);
+__host__ __device__ cuda::std::false_type can_swap_imp(...);
 
 template <class Tp>
 struct can_swap : cuda::std::is_same<decltype(can_swap_imp<Tp>(0)), void> {};

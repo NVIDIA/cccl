@@ -8,6 +8,9 @@
 
 // <cuda/std/array>
 
+// NVRTC won't be able to compile min_allocator
+// UNSUPPORTED: nvrtc
+
 // class array
 
 // bool empty() const noexcept;
