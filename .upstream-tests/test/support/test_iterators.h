@@ -449,6 +449,7 @@ __host__ __device__
     }
 
 //  iterator operations
+__host__ __device__
     reference operator*() const
     {
     if (action_ == TADereference)
@@ -465,6 +466,7 @@ __host__ __device__
     return *current_;
     }
 
+__host__ __device__
     ThrowingIterator & operator++()
     {
     if (action_ == TAIncrement)
@@ -482,6 +484,7 @@ __host__ __device__
     return *this;
     }
 
+__host__ __device__
     ThrowingIterator operator++(int)
     {
         ThrowingIterator temp = *this;
@@ -489,6 +492,7 @@ __host__ __device__
         return temp;
     }
 
+__host__ __device__
     ThrowingIterator & operator--()
     {
     if (action_ == TADecrement)
@@ -506,12 +510,14 @@ __host__ __device__
     return *this;
     }
 
+__host__ __device__
     ThrowingIterator operator--(int) {
         ThrowingIterator temp = *this;
         --(*this);
         return temp;
     }
 
+__host__ __device__
     bool operator== (const ThrowingIterator &rhs) const
     {
     if (action_ == TAComparison)
