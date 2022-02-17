@@ -11,7 +11,9 @@
 
 #include "type_traits"
 
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
 #include <initializer_list>
+#endif
 
 #include "detail/__config"
 
