@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if defined(_LIBCUDACXX_USE_MSVC_PRAGMA_WARNING)
+#if defined(_LIBCUDACXX_USE_PRAGMA_MSVC_WARNING)
   #pragma warning(pop)
 #endif
 
