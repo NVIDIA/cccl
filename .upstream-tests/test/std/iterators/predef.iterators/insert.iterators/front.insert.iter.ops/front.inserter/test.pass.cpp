@@ -8,6 +8,9 @@
 
 // <cuda/std/iterator>
 
+// nasty_containers is unsupported by nvrtc
+// UNSUPPORTED: nvrtc
+
 // template <BackInsertionContainer Cont>
 //   front_insert_iterator<Cont>
 //   front_inserter(Cont& x);

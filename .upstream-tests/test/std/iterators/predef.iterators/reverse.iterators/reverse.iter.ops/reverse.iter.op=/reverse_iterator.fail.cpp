@@ -8,6 +8,8 @@
 
 // <cuda/std/iterator>
 
+// UNSUPPORTED: nvrtc
+
 // reverse_iterator
 
 // template <class U>

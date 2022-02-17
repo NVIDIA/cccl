@@ -8,6 +8,8 @@
 
 // <cuda/std/iterator>
 
+// UNSUPPORTED: nvrtc
+
 // back_insert_iterator
 
 // explicit back_insert_iterator(Cont& x);
