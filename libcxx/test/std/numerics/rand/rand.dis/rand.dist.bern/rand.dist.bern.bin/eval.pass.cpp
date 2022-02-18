@@ -1,3 +1,4 @@
+
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -19,8 +20,6 @@
 #include <numeric>
 #include <vector>
 #include <cassert>
-
-#include "test_macros.h"
 
 template <class T>
 inline
@@ -188,24 +187,25 @@ test4()
         kurtosis += d2 * d2;
     }
     var /= u.size();
-    //double dev = std::sqrt(var);
+    double dev = std::sqrt(var);
     // In this case:
     //   skew     computes to 0./0. == nan
     //   kurtosis computes to 0./0. == nan
     //   x_skew     == inf
     //   x_kurtosis == inf
-    //   These tests are commented out because UBSan warns about division by 0
-//    skew /= u.size() * dev * var;
-//    kurtosis /= u.size() * var * var;
-//    kurtosis -= 3;
+    skew /= u.size() * dev * var;
+    kurtosis /= u.size() * var * var;
+    kurtosis -= 3;
     double x_mean = d.t() * d.p();
     double x_var = x_mean*(1-d.p());
-//    double x_skew = (1-2*d.p()) / std::sqrt(x_var);
-//    double x_kurtosis = (1-6*d.p()*(1-d.p())) / x_var;
+    double x_skew = (1-2*d.p()) / std::sqrt(x_var);
+    double x_kurtosis = (1-6*d.p()*(1-d.p())) / x_var;
     assert(mean == x_mean);
     assert(var == x_var);
-//    assert(skew == x_skew);
-//    assert(kurtosis == x_kurtosis);
+    // assert(skew == x_skew);
+    (void)skew; (void)x_skew;
+    // assert(kurtosis == x_kurtosis);
+    (void)kurtosis; (void)x_kurtosis;
 }
 
 void
@@ -237,24 +237,25 @@ test5()
         kurtosis += d2 * d2;
     }
     var /= u.size();
-//    double dev = std::sqrt(var);
+    double dev = std::sqrt(var);
     // In this case:
     //   skew     computes to 0./0. == nan
     //   kurtosis computes to 0./0. == nan
     //   x_skew     == -inf
     //   x_kurtosis == inf
-    //   These tests are commented out because UBSan warns about division by 0
-//    skew /= u.size() * dev * var;
-//    kurtosis /= u.size() * var * var;
-//    kurtosis -= 3;
+    skew /= u.size() * dev * var;
+    kurtosis /= u.size() * var * var;
+    kurtosis -= 3;
     double x_mean = d.t() * d.p();
     double x_var = x_mean*(1-d.p());
-//    double x_skew = (1-2*d.p()) / std::sqrt(x_var);
-//    double x_kurtosis = (1-6*d.p()*(1-d.p())) / x_var;
+    double x_skew = (1-2*d.p()) / std::sqrt(x_var);
+    double x_kurtosis = (1-6*d.p()*(1-d.p())) / x_var;
     assert(mean == x_mean);
     assert(var == x_var);
-//    assert(skew == x_skew);
-//    assert(kurtosis == x_kurtosis);
+    // assert(skew == x_skew);
+    (void)skew; (void)x_skew;
+    // assert(kurtosis == x_kurtosis);
+    (void)kurtosis; (void)x_kurtosis;
 }
 
 void
@@ -390,24 +391,25 @@ test9()
         kurtosis += d2 * d2;
     }
     var /= u.size();
-//    double dev = std::sqrt(var);
+    double dev = std::sqrt(var);
     // In this case:
     //   skew     computes to 0./0. == nan
     //   kurtosis computes to 0./0. == nan
     //   x_skew     == inf
     //   x_kurtosis == inf
-    //   These tests are commented out because UBSan warns about division by 0
-//    skew /= u.size() * dev * var;
-//    kurtosis /= u.size() * var * var;
-//    kurtosis -= 3;
+    skew /= u.size() * dev * var;
+    kurtosis /= u.size() * var * var;
+    kurtosis -= 3;
     double x_mean = d.t() * d.p();
     double x_var = x_mean*(1-d.p());
-//    double x_skew = (1-2*d.p()) / std::sqrt(x_var);
-//    double x_kurtosis = (1-6*d.p()*(1-d.p())) / x_var;
+    double x_skew = (1-2*d.p()) / std::sqrt(x_var);
+    double x_kurtosis = (1-6*d.p()*(1-d.p())) / x_var;
     assert(mean == x_mean);
     assert(var == x_var);
-//    assert(skew == x_skew);
-//    assert(kurtosis == x_kurtosis);
+    // assert(skew == x_skew);
+    (void)skew; (void)x_skew;
+    // assert(kurtosis == x_kurtosis);
+    (void)kurtosis; (void)x_kurtosis;
 }
 
 void
@@ -439,24 +441,25 @@ test10()
         kurtosis += d2 * d2;
     }
     var /= u.size();
-//    double dev = std::sqrt(var);
+    double dev = std::sqrt(var);
     // In this case:
     //   skew     computes to 0./0. == nan
     //   kurtosis computes to 0./0. == nan
     //   x_skew     == inf
     //   x_kurtosis == inf
-    //   These tests are commented out because UBSan warns about division by 0
-//    skew /= u.size() * dev * var;
-//    kurtosis /= u.size() * var * var;
-//    kurtosis -= 3;
+    skew /= u.size() * dev * var;
+    kurtosis /= u.size() * var * var;
+    kurtosis -= 3;
     double x_mean = d.t() * d.p();
     double x_var = x_mean*(1-d.p());
-//    double x_skew = (1-2*d.p()) / std::sqrt(x_var);
-//    double x_kurtosis = (1-6*d.p()*(1-d.p())) / x_var;
+    double x_skew = (1-2*d.p()) / std::sqrt(x_var);
+    double x_kurtosis = (1-6*d.p()*(1-d.p())) / x_var;
     assert(mean == x_mean);
     assert(var == x_var);
-//    assert(skew == x_skew);
-//    assert(kurtosis == x_kurtosis);
+    // assert(skew == x_skew);
+    (void)skew; (void)x_skew;
+    // assert(kurtosis == x_kurtosis);
+    (void)kurtosis; (void)x_kurtosis;
 }
 
 void
@@ -488,24 +491,25 @@ test11()
         kurtosis += d2 * d2;
     }
     var /= u.size();
-//    double dev = std::sqrt(var);
+    double dev = std::sqrt(var);
     // In this case:
     //   skew     computes to 0./0. == nan
     //   kurtosis computes to 0./0. == nan
     //   x_skew     == -inf
     //   x_kurtosis == inf
-    //   These tests are commented out because UBSan warns about division by 0
-//    skew /= u.size() * dev * var;
-//    kurtosis /= u.size() * var * var;
-//    kurtosis -= 3;
+    skew /= u.size() * dev * var;
+    kurtosis /= u.size() * var * var;
+    kurtosis -= 3;
     double x_mean = d.t() * d.p();
     double x_var = x_mean*(1-d.p());
-//    double x_skew = (1-2*d.p()) / std::sqrt(x_var);
-//    double x_kurtosis = (1-6*d.p()*(1-d.p())) / x_var;
+    double x_skew = (1-2*d.p()) / std::sqrt(x_var);
+    double x_kurtosis = (1-6*d.p()*(1-d.p())) / x_var;
     assert(mean == x_mean);
     assert(var == x_var);
-//    assert(skew == x_skew);
-//    assert(kurtosis == x_kurtosis);
+    // assert(skew == x_skew);
+    (void)skew; (void)x_skew;
+    // assert(kurtosis == x_kurtosis);
+    (void)kurtosis; (void)x_kurtosis;
 }
 
 int main(int, char**)
@@ -522,5 +526,5 @@ int main(int, char**)
     test10();
     test11();
 
-  return 0;
+    return 0;
 }

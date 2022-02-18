@@ -6102,6 +6102,7 @@ public:
         template<class _UnaryOperation>
             param_type(size_t __nw, result_type __xmin, result_type __xmax,
                        _UnaryOperation __fw);
+        param_type(param_type const&) = default;
         param_type & operator=(const param_type& __rhs);
 
         _LIBCUDACXX_INLINE_VISIBILITY
@@ -6425,6 +6426,7 @@ public:
         template<class _UnaryOperation>
             param_type(size_t __nw, result_type __xmin, result_type __xmax,
                        _UnaryOperation __fw);
+        param_type(param_type const&) = default;
         param_type & operator=(const param_type& __rhs);
 
         _LIBCUDACXX_INLINE_VISIBILITY
