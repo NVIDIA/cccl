@@ -177,7 +177,7 @@ RUN function comment() { :; }; \
       rm -f /usr/bin/c++; \
       echo "source /etc/cccl.bashrc" >> /etc/bashrc; \
     fi; \
-    curl -SsL ${SCCACHE_URL} | tar -C /usr/bin -zf - --wildcards --strip-components=1 -x */sccache; \
+    ${CURL} -L ${SCCACHE_URL} | tar -C /usr/bin -zf - --wildcards --strip-components=1 -x */sccache; \
     chmod +x /usr/bin/sccache; \
     ${ALTERNATIVES} --install /usr/bin/cc  cc  ${CC}  99; \
     ${ALTERNATIVES} --install /usr/bin/c++ c++ ${CXX} 99; \
