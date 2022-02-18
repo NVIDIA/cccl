@@ -231,11 +231,7 @@ void __throw_logic_error(const char*__msg)
     throw logic_error(__msg);
 #else
     ((void)__msg);
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-        __trap();,
-        _CUDA_VSTD::abort();
-    )
+    _LIBCUDACXX_UNREACHABLE
 #endif
 }
 
@@ -246,11 +242,7 @@ void __throw_domain_error(const char*__msg)
     throw domain_error(__msg);
 #else
     ((void)__msg);
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-        __trap();,
-        _CUDA_VSTD::abort();
-    )
+    _LIBCUDACXX_UNREACHABLE
 #endif
 }
 
@@ -261,11 +253,7 @@ void __throw_invalid_argument(const char*__msg)
     throw invalid_argument(__msg);
 #else
     ((void)__msg);
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-        __trap();,
-        _CUDA_VSTD::abort();
-    )
+    _LIBCUDACXX_UNREACHABLE
 #endif
 }
 
@@ -276,11 +264,7 @@ void __throw_length_error(const char*__msg)
     throw length_error(__msg);
 #else
     ((void)__msg);
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-        __trap();,
-        _CUDA_VSTD::abort();
-    )
+    _LIBCUDACXX_UNREACHABLE
 #endif
 }
 
@@ -291,11 +275,7 @@ void __throw_out_of_range(const char*__msg)
     throw out_of_range(__msg);
 #else
     ((void)__msg);
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-        __trap();,
-        _CUDA_VSTD::abort();
-    )
+    _LIBCUDACXX_UNREACHABLE
 #endif
 }
 
@@ -306,11 +286,7 @@ void __throw_range_error(const char*__msg)
     throw range_error(__msg);
 #else
     ((void)__msg);
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-        __trap();,
-        _CUDA_VSTD::abort();
-    )
+    _LIBCUDACXX_UNREACHABLE
 #endif
 }
 
@@ -321,11 +297,7 @@ void __throw_overflow_error(const char*__msg)
     throw overflow_error(__msg);
 #else
     ((void)__msg);
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-        __trap();,
-        _CUDA_VSTD::abort();
-    )
+    _LIBCUDACXX_UNREACHABLE
 #endif
 }
 
@@ -336,11 +308,7 @@ void __throw_underflow_error(const char*__msg)
     throw underflow_error(__msg);
 #else
     ((void)__msg);
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-        __trap();,
-        _CUDA_VSTD::abort();
-    )
+    _LIBCUDACXX_UNREACHABLE
 #endif
 }
 
