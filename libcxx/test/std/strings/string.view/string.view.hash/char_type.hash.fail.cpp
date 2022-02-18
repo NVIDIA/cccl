@@ -55,6 +55,10 @@ void test() {
     typedef std::basic_string_view<CharT, trait<CharT> > strv_t;
     std::hash<strv_t>
         h; // expected-error-re 4 {{{{call to implicitly-deleted default constructor of 'std::hash<strv_t>'|implicit instantiation of undefined template}} {{.+}}}}}}
+#if TEST_STD_VER > 17 && defined(__cpp_char8_t)
+    // expected-error-re@-2 {{{{call to implicitly-deleted default constructor of 'std::hash<strv_t>'|implicit instantiation of undefined template}} {{.+}}}}}}
+#endif
+    (void)h;
 }
 
 int main(int, char**) {
