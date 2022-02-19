@@ -1447,6 +1447,19 @@ typedef unsigned int   char32_t;
 #  define _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 #endif
 
+// Macros to enter and leave a state where deprecation warnings are suppressed.
+#if defined(_LIBCUDACXX_COMPILER_CLANG) || defined(_LIBCUDACXX_COMPILER_GCC)
+#   define _LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH \
+        _Pragma("GCC diagnostic push") \
+        _Pragma("GCC diagnostic ignored \"-Wdeprecated\"") \
+        _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+#   define _LIBCUDACXX_SUPPRESS_DEPRECATED_POP \
+        _Pragma("GCC diagnostic pop")
+#else
+#   define _LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
+#   define _LIBCUDACXX_SUPPRESS_DEPRECATED_POP
+#endif
+
 // The _LIBCUDACXX_NODISCARD_ATTRIBUTE should only be used to define other
 // NODISCARD macros to the correct attribute.
 #if __has_cpp_attribute(nodiscard) || (defined(_LIBCUDACXX_COMPILER_MSVC) && _LIBCUDACXX_STD_VER > 14)
