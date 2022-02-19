@@ -8,19 +8,32 @@ It adds `cuda::[std::]atomic_ref`, `<cuda/std/mutex>`, and
   `cuda::[std::]atomic` support for padding bits.
 It pulls in the latest version of upstream libc++ and marks the beginning of
   automatic tracking of upstream.
+-->
 
 ## libcu++ 1.8.0
 
-libcu++ 1.8.0 is a major release.
+libcu++ 1.8.0 is a major release. It adds several `constexpr` bit manipulation
+functions from C++20's `<bit>` to C++11 and up. Also added is `cuda::std::array`
+providing fixed size arrays and iterators for both host and device code.
 
 Supported ABI Versions: 4 (default), 3, and 2.
 
 ### New Features
 
+- #237: Add `<cuda/std/bit>` and enable backports to C++11.
+- #243: Add `<cuda/std/array>` and `<cuda/std/iterator>`.
 
 ### Issues Fixed
 
-!-->
+- #234: Fix building with GCC/Clang when NVCC was not being used.
+- #240: Create a config for lit to generate a JSON output of the build status.
+  - Thanks Royil Damer for this contribution.
+- #241: Fix octal notation of libcudacxx version number.
+- #242: Add support for `find_package` and `add_subdirectory` in CMake.
+- #244: Merge build system improvements from NVC++ branch.
+- #250: Fix pragma typo on MSVC.
+- #251: Add several new compilers versions to our docker suite.
+- #252: Fix several deprecations in Clang 13.
 
 ## libcu++ 1.7.0
 
