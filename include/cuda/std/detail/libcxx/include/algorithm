@@ -546,11 +546,11 @@ template <class T, class Compare>
 
 template<class T>
     T
-    min(initializer_list<T> t);  // constexpr in C++14
+    min(::std::initializer_list<T> t);  // constexpr in C++14
 
 template<class T, class Compare>
     T
-    min(initializer_list<T> t, Compare comp);  // constexpr in C++14
+    min(::std::initializer_list<T> t, Compare comp);  // constexpr in C++14
 
 template<class T>
     constexpr const T& clamp( const T& v, const T& lo, const T& hi );               // C++17
@@ -576,11 +576,11 @@ template <class T, class Compare>
 
 template<class T>
     T
-    max(initializer_list<T> t);  // constexpr in C++14
+    max(::std::initializer_list<T> t);  // constexpr in C++14
 
 template<class T, class Compare>
     T
-    max(initializer_list<T> t, Compare comp);  // constexpr in C++14
+    max(::std::initializer_list<T> t, Compare comp);  // constexpr in C++14
 
 template<class ForwardIterator>
     pair<ForwardIterator, ForwardIterator>
@@ -600,11 +600,11 @@ template<class T, class Compare>
 
 template<class T>
     pair<T, T>
-    minmax(initializer_list<T> t);  // constexpr in C++14
+    minmax(::std::initializer_list<T> t);  // constexpr in C++14
 
 template<class T, class Compare>
     pair<T, T>
-    minmax(initializer_list<T> t, Compare comp);  // constexpr in C++14
+    minmax(::std::initializer_list<T> t, Compare comp);  // constexpr in C++14
 
 template <class InputIterator1, class InputIterator2>
     constexpr bool     // constexpr in C++20
@@ -634,7 +634,7 @@ template <class BidirectionalIterator, class Compare>
 }  // std
 
 */
-
+#ifndef __cuda_std__
 #include <__config>
 #include <initializer_list>
 #include <type_traits>
@@ -655,6 +655,7 @@ template <class BidirectionalIterator, class Compare>
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
+#endif
 
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -728,6 +729,8 @@ struct __less<_T1, const _T1>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     bool operator()(const _T1& __x, const _T1& __y) const {return __x < __y;}
 };
+
+#ifndef __cuda_std__
 
 template <class _Predicate>
 class __invert // invert the sense of a comparison
@@ -822,6 +825,8 @@ struct __debug_less
 
 #endif // _LIBCUDACXX_DEBUG
 
+#endif // __cuda_std__
+
 template <class _Comp>
 struct __comp_ref_type {
   // Pass the comparator by lvalue reference. Or in debug mode, using a
@@ -833,6 +838,7 @@ struct __comp_ref_type {
 #endif
 };
 
+#ifndef __cuda_std__
 // all_of
 
 template <class _InputIterator, class _Predicate>
@@ -952,6 +958,7 @@ find_if_not(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 // find_end
 
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator1
 __find_end(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
            _ForwardIterator2 __first2, _ForwardIterator2 __last2, _BinaryPredicate __pred,
@@ -994,6 +1001,7 @@ __find_end(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 }
 
 template <class _BinaryPredicate, class _BidirectionalIterator1, class _BidirectionalIterator2>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _BidirectionalIterator1
 __find_end(_BidirectionalIterator1 __first1, _BidirectionalIterator1 __last1,
            _BidirectionalIterator2 __first2, _BidirectionalIterator2 __last2, _BinaryPredicate __pred,
@@ -1033,6 +1041,7 @@ __find_end(_BidirectionalIterator1 __first1, _BidirectionalIterator1 __last1,
 }
 
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _RandomAccessIterator1
 __find_end(_RandomAccessIterator1 __first1, _RandomAccessIterator1 __last1,
            _RandomAccessIterator2 __first2, _RandomAccessIterator2 __last2, _BinaryPredicate __pred,
@@ -1101,6 +1110,7 @@ find_end(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 // find_first_of
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _ForwardIterator1
 __find_first_of_ce(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
               _ForwardIterator2 __first2, _ForwardIterator2 __last2, _BinaryPredicate __pred)
@@ -1250,6 +1260,7 @@ mismatch(_InputIterator1 __first1, _InputIterator1 __last1,
 }
 #endif
 
+#endif //__cuda_std__
 // equal
 
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
@@ -1304,9 +1315,9 @@ __equal(_RandomAccessIterator1 __first1, _RandomAccessIterator1 __last1,
 }
 
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
-_LIBCUDACXX_NODISCARD_EXT inline
+_LIBCUDACXX_NODISCARD_EXT
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-bool
+inline bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1,
       _InputIterator2 __first2, _InputIterator2 __last2, _BinaryPredicate __pred )
 {
@@ -1317,9 +1328,9 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1,
 }
 
 template <class _InputIterator1, class _InputIterator2>
-_LIBCUDACXX_NODISCARD_EXT inline
+_LIBCUDACXX_NODISCARD_EXT
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-bool
+inline bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1,
       _InputIterator2 __first2, _InputIterator2 __last2)
 {
@@ -1331,10 +1342,11 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1,
 }
 #endif
 
+#ifndef __cuda_std__
 // is_permutation
 
 template<class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
 is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
                _ForwardIterator2 __first2, _BinaryPredicate __pred)
 {
@@ -1381,9 +1393,9 @@ is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 }
 
 template<class _ForwardIterator1, class _ForwardIterator2>
-_LIBCUDACXX_NODISCARD_EXT inline
+_LIBCUDACXX_NODISCARD_EXT
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-bool
+inline bool
 is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
                _ForwardIterator2 __first2)
 {
@@ -1394,6 +1406,7 @@ is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 
 #if _LIBCUDACXX_STD_VER > 11
 template<class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
 __is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
                  _ForwardIterator2 __first2, _ForwardIterator2 __last2,
@@ -1447,6 +1460,7 @@ __is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 }
 
 template<class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
 __is_permutation(_RandomAccessIterator1 __first1, _RandomAccessIterator2 __last1,
                _RandomAccessIterator1 __first2, _RandomAccessIterator2 __last2,
@@ -1530,6 +1544,7 @@ _ForwardIterator search(_ForwardIterator __f, _ForwardIterator __l, const _Searc
 // search_n
 
 template <class _BinaryPredicate, class _ForwardIterator, class _Size, class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 __search_n(_ForwardIterator __first, _ForwardIterator __last,
            _Size __count, const _Tp& __value_, _BinaryPredicate __pred, forward_iterator_tag)
@@ -1567,6 +1582,7 @@ __search_n(_ForwardIterator __first, _ForwardIterator __last,
 }
 
 template <class _BinaryPredicate, class _RandomAccessIterator, class _Size, class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _RandomAccessIterator
 __search_n(_RandomAccessIterator __first, _RandomAccessIterator __last,
            _Size __count, const _Tp& __value_, _BinaryPredicate __pred, random_access_iterator_tag)
@@ -1975,8 +1991,8 @@ replace_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __re
 // replace_copy_if
 
 template <class _InputIterator, class _OutputIterator, class _Predicate, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_OutputIterator
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _OutputIterator
 replace_copy_if(_InputIterator __first, _InputIterator __last, _OutputIterator __result,
                 _Predicate __pred, const _Tp& __new_value)
 {
@@ -1989,10 +2005,11 @@ replace_copy_if(_InputIterator __first, _InputIterator __last, _OutputIterator _
 }
 
 // fill_n
+#endif // __cuda_std__
 
 template <class _OutputIterator, class _Size, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_OutputIterator
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _OutputIterator
 __fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 {
     for (; __n > 0; ++__first, (void) --__n)
@@ -2001,8 +2018,8 @@ __fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 }
 
 template <class _OutputIterator, class _Size, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_OutputIterator
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _OutputIterator
 fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 {
    return _CUDA_VSTD::__fill_n(__first, __convert_to_integral(__n), __value_);
@@ -2035,6 +2052,7 @@ fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
     _CUDA_VSTD::__fill(__first, __last, __value_, typename iterator_traits<_ForwardIterator>::iterator_category());
 }
 
+#ifndef __cuda_std__
 // generate
 
 template <class _ForwardIterator, class _Generator>
@@ -2063,7 +2081,8 @@ generate_n(_OutputIterator __first, _Size __orig_n, _Generator __gen)
 // remove
 
 template <class _ForwardIterator, class _Tp>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 remove(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
     __first = _CUDA_VSTD::find(__first, __last, __value_);
@@ -2085,7 +2104,8 @@ remove(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 // remove_if
 
 template <class _ForwardIterator, class _Predicate>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 remove_if(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
     __first = _CUDA_VSTD::find_if<_ForwardIterator, typename add_lvalue_reference<_Predicate>::type>
@@ -2144,7 +2164,8 @@ remove_copy_if(_InputIterator __first, _InputIterator __last, _OutputIterator __
 // unique
 
 template <class _ForwardIterator, class _BinaryPredicate>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 unique(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicate __pred)
 {
     __first = _CUDA_VSTD::adjacent_find<_ForwardIterator, typename add_lvalue_reference<_BinaryPredicate>::type>
@@ -2175,6 +2196,7 @@ unique(_ForwardIterator __first, _ForwardIterator __last)
 // unique_copy
 
 template <class _BinaryPredicate, class _InputIterator, class _OutputIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _OutputIterator
 __unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryPredicate __pred,
               input_iterator_tag, output_iterator_tag)
@@ -2198,6 +2220,7 @@ __unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __r
 }
 
 template <class _BinaryPredicate, class _ForwardIterator, class _OutputIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _OutputIterator
 __unique_copy(_ForwardIterator __first, _ForwardIterator __last, _OutputIterator __result, _BinaryPredicate __pred,
               forward_iterator_tag, output_iterator_tag)
@@ -2221,6 +2244,7 @@ __unique_copy(_ForwardIterator __first, _ForwardIterator __last, _OutputIterator
 }
 
 template <class _BinaryPredicate, class _InputIterator, class _ForwardIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 __unique_copy(_InputIterator __first, _InputIterator __last, _ForwardIterator __result, _BinaryPredicate __pred,
               input_iterator_tag, forward_iterator_tag)
@@ -2305,6 +2329,7 @@ reverse_copy(_BidirectionalIterator __first, _BidirectionalIterator __last, _Out
 // rotate
 
 template <class _ForwardIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 _ForwardIterator
 __rotate_left(_ForwardIterator __first, _ForwardIterator __last)
 {
@@ -2316,6 +2341,7 @@ __rotate_left(_ForwardIterator __first, _ForwardIterator __last)
 }
 
 template <class _BidirectionalIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 _BidirectionalIterator
 __rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
@@ -2328,6 +2354,7 @@ __rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last)
 }
 
 template <class _ForwardIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 _ForwardIterator
 __rotate_forward(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last)
 {
@@ -2377,6 +2404,7 @@ __algo_gcd(_Integral __x, _Integral __y)
 }
 
 template<typename _RandomAccessIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 _RandomAccessIterator
 __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last)
 {
@@ -2540,7 +2568,7 @@ template<class _Tp, class _Compare>
 _LIBCUDACXX_NODISCARD_EXT inline
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _Tp
-min(initializer_list<_Tp> __t, _Compare __comp)
+min(::std::initializer_list<_Tp> __t, _Compare __comp)
 {
     return *_CUDA_VSTD::min_element(__t.begin(), __t.end(), __comp);
 }
@@ -2549,7 +2577,7 @@ template<class _Tp>
 _LIBCUDACXX_NODISCARD_EXT inline
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _Tp
-min(initializer_list<_Tp> __t)
+min(::std::initializer_list<_Tp> __t)
 {
     return *_CUDA_VSTD::min_element(__t.begin(), __t.end(), __less<_Tp>());
 }
@@ -2613,7 +2641,7 @@ template<class _Tp, class _Compare>
 _LIBCUDACXX_NODISCARD_EXT inline
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _Tp
-max(initializer_list<_Tp> __t, _Compare __comp)
+max(::std::initializer_list<_Tp> __t, _Compare __comp)
 {
     return *_CUDA_VSTD::max_element(__t.begin(), __t.end(), __comp);
 }
@@ -2622,7 +2650,7 @@ template<class _Tp>
 _LIBCUDACXX_NODISCARD_EXT inline
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _Tp
-max(initializer_list<_Tp> __t)
+max(::std::initializer_list<_Tp> __t)
 {
     return *_CUDA_VSTD::max_element(__t.begin(), __t.end(), __less<_Tp>());
 }
@@ -2655,7 +2683,8 @@ clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi)
 // minmax_element
 
 template <class _ForwardIterator, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 std::pair<_ForwardIterator, _ForwardIterator>
 minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
@@ -2741,9 +2770,9 @@ template<class _Tp, class _Compare>
 _LIBCUDACXX_NODISCARD_EXT inline
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 pair<_Tp, _Tp>
-minmax(initializer_list<_Tp> __t, _Compare __comp)
+minmax(::std::initializer_list<_Tp> __t, _Compare __comp)
 {
-    typedef typename initializer_list<_Tp>::const_iterator _Iter;
+    typedef typename ::std::initializer_list<_Tp>::const_iterator _Iter;
     _Iter __first = __t.begin();
     _Iter __last  = __t.end();
     std::pair<_Tp, _Tp> __result(*__first, *__first);
@@ -2779,7 +2808,7 @@ template<class _Tp>
 _LIBCUDACXX_NODISCARD_EXT inline
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 pair<_Tp, _Tp>
-minmax(initializer_list<_Tp> __t)
+minmax(::std::initializer_list<_Tp> __t)
 {
     return _CUDA_VSTD::minmax(__t, __less<_Tp>());
 }
@@ -3180,6 +3209,7 @@ _SampleIterator sample(_PopulationIterator __first,
 #endif // _LIBCUDACXX_STD_VER > 14
 
 template<class _RandomAccessIterator, class _UniformRandomNumberGenerator>
+_LIBCUDACXX_INLINE_VISIBILITY
     void shuffle(_RandomAccessIterator __first, _RandomAccessIterator __last,
                  _UniformRandomNumberGenerator&& __g)
 {
@@ -3200,7 +3230,8 @@ template<class _RandomAccessIterator, class _UniformRandomNumberGenerator>
 }
 
 template <class _InputIterator, class _Predicate>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
 is_partitioned(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
     for (; __first != __last; ++__first)
@@ -3218,6 +3249,7 @@ is_partitioned(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 // partition
 
 template <class _Predicate, class _ForwardIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 _ForwardIterator
 __partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred, forward_iterator_tag)
 {
@@ -3241,6 +3273,7 @@ __partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred
 }
 
 template <class _Predicate, class _BidirectionalIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 _BidirectionalIterator
 __partition(_BidirectionalIterator __first, _BidirectionalIterator __last, _Predicate __pred,
             bidirectional_iterator_tag)
@@ -3278,6 +3311,7 @@ partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 
 template <class _InputIterator, class _OutputIterator1,
           class _OutputIterator2, class _Predicate>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 pair<_OutputIterator1, _OutputIterator2>
 partition_copy(_InputIterator __first, _InputIterator __last,
                _OutputIterator1 __out_true, _OutputIterator2 __out_false,
@@ -3302,6 +3336,7 @@ partition_copy(_InputIterator __first, _InputIterator __last,
 // partition_point
 
 template<class _ForwardIterator, class _Predicate>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 partition_point(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
@@ -3326,6 +3361,7 @@ partition_point(_ForwardIterator __first, _ForwardIterator __last, _Predicate __
 // stable_partition
 
 template <class _Predicate, class _ForwardIterator, class _Distance, class _Pair>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 _ForwardIterator
 __stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred,
                    _Distance __len, _Pair __p, forward_iterator_tag __fit)
@@ -3418,6 +3454,7 @@ struct __return_temporary_buffer
 };
 
 template <class _Predicate, class _ForwardIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 _ForwardIterator
 __stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred,
                    forward_iterator_tag)
@@ -3449,6 +3486,7 @@ __stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate
 }
 
 template <class _Predicate, class _BidirectionalIterator, class _Distance, class _Pair>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 _BidirectionalIterator
 __stable_partition(_BidirectionalIterator __first, _BidirectionalIterator __last, _Predicate __pred,
                    _Distance __len, _Pair __p, bidirectional_iterator_tag __bit)
@@ -3557,6 +3595,7 @@ __second_half_done:
 }
 
 template <class _Predicate, class _BidirectionalIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 _BidirectionalIterator
 __stable_partition(_BidirectionalIterator __first, _BidirectionalIterator __last, _Predicate __pred,
                    bidirectional_iterator_tag)
@@ -3608,7 +3647,8 @@ stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate _
 // is_sorted_until
 
 template <class _ForwardIterator, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 is_sorted_until(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
     if (__first != __last)
@@ -3658,6 +3698,7 @@ is_sorted(_ForwardIterator __first, _ForwardIterator __last)
 // stable, 2-3 compares, 0-2 swaps
 
 template <class _Compare, class _ForwardIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 unsigned
 __sort3(_ForwardIterator __x, _ForwardIterator __y, _ForwardIterator __z, _Compare __c)
 {
@@ -3695,6 +3736,7 @@ __sort3(_ForwardIterator __x, _ForwardIterator __y, _ForwardIterator __z, _Compa
 // stable, 3-6 compares, 0-5 swaps
 
 template <class _Compare, class _ForwardIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 unsigned
 __sort4(_ForwardIterator __x1, _ForwardIterator __x2, _ForwardIterator __x3,
             _ForwardIterator __x4, _Compare __c)
@@ -3722,6 +3764,7 @@ __sort4(_ForwardIterator __x1, _ForwardIterator __x2, _ForwardIterator __x3,
 
 template <class _Compare, class _ForwardIterator>
 _LIBCUDACXX_HIDDEN
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 unsigned
 __sort5(_ForwardIterator __x1, _ForwardIterator __x2, _ForwardIterator __x3,
             _ForwardIterator __x4, _ForwardIterator __x5, _Compare __c)
@@ -3752,6 +3795,7 @@ __sort5(_ForwardIterator __x1, _ForwardIterator __x2, _ForwardIterator __x3,
 
 // Assumes size > 0
 template <class _Compare, class _BirdirectionalIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __selection_sort(_BirdirectionalIterator __first, _BirdirectionalIterator __last, _Compare __comp)
 {
@@ -3767,6 +3811,7 @@ __selection_sort(_BirdirectionalIterator __first, _BirdirectionalIterator __last
 }
 
 template <class _Compare, class _BirdirectionalIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __insertion_sort(_BirdirectionalIterator __first, _BirdirectionalIterator __last, _Compare __comp)
 {
@@ -3786,6 +3831,7 @@ __insertion_sort(_BirdirectionalIterator __first, _BirdirectionalIterator __last
 }
 
 template <class _Compare, class _RandomAccessIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __insertion_sort_3(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
@@ -3811,6 +3857,7 @@ __insertion_sort_3(_RandomAccessIterator __first, _RandomAccessIterator __last, 
 }
 
 template <class _Compare, class _RandomAccessIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 bool
 __insertion_sort_incomplete(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
@@ -3860,6 +3907,7 @@ __insertion_sort_incomplete(_RandomAccessIterator __first, _RandomAccessIterator
 }
 
 template <class _Compare, class _BirdirectionalIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __insertion_sort_move(_BirdirectionalIterator __first1, _BirdirectionalIterator __last1,
                       typename iterator_traits<_BirdirectionalIterator>::value_type* __first2, _Compare __comp)
@@ -3895,6 +3943,7 @@ __insertion_sort_move(_BirdirectionalIterator __first1, _BirdirectionalIterator 
 }
 
 template <class _Compare, class _RandomAccessIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
@@ -4167,6 +4216,7 @@ _LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS unsigned __sort5<__less<long do
 // lower_bound
 
 template <class _Compare, class _ForwardIterator, class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 __lower_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_, _Compare __comp)
 {
@@ -4211,6 +4261,7 @@ lower_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __valu
 // upper_bound
 
 template <class _Compare, class _ForwardIterator, class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 __upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_, _Compare __comp)
 {
@@ -4255,6 +4306,7 @@ upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __valu
 // equal_range
 
 template <class _Compare, class _ForwardIterator, class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 pair<_ForwardIterator, _ForwardIterator>
 __equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_, _Compare __comp)
 {
@@ -4342,6 +4394,7 @@ binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __va
 // merge
 
 template <class _Compare, class _InputIterator1, class _InputIterator2, class _OutputIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 _OutputIterator
 __merge(_InputIterator1 __first1, _InputIterator1 __last1,
         _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result, _Compare __comp)
@@ -4389,6 +4442,7 @@ merge(_InputIterator1 __first1, _InputIterator1 __last1,
 
 template <class _Compare, class _InputIterator1, class _InputIterator2,
           class _OutputIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void __half_inplace_merge(_InputIterator1 __first1, _InputIterator1 __last1,
                           _InputIterator2 __first2, _InputIterator2 __last2,
                           _OutputIterator __result, _Compare __comp)
@@ -4416,6 +4470,7 @@ void __half_inplace_merge(_InputIterator1 __first1, _InputIterator1 __last1,
 }
 
 template <class _Compare, class _BidirectionalIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __buffered_inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last,
                 _Compare __comp, typename iterator_traits<_BidirectionalIterator>::difference_type __len1,
@@ -4446,6 +4501,7 @@ __buffered_inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator 
 }
 
 template <class _Compare, class _BidirectionalIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last,
                 _Compare __comp, typename iterator_traits<_BidirectionalIterator>::difference_type __len1,
@@ -4563,6 +4619,7 @@ inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _
 // stable_sort
 
 template <class _Compare, class _InputIterator1, class _InputIterator2>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __merge_move_construct(_InputIterator1 __first1, _InputIterator1 __last1,
         _InputIterator2 __first2, _InputIterator2 __last2,
@@ -4603,6 +4660,7 @@ __merge_move_construct(_InputIterator1 __first1, _InputIterator1 __last1,
 }
 
 template <class _Compare, class _InputIterator1, class _InputIterator2, class _OutputIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __merge_move_assign(_InputIterator1 __first1, _InputIterator1 __last1,
         _InputIterator2 __first2, _InputIterator2 __last2,
@@ -4632,12 +4690,14 @@ __merge_move_assign(_InputIterator1 __first1, _InputIterator1 __last1,
 }
 
 template <class _Compare, class _RandomAccessIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp,
               typename iterator_traits<_RandomAccessIterator>::difference_type __len,
               typename iterator_traits<_RandomAccessIterator>::value_type* __buff, ptrdiff_t __buff_size);
 
 template <class _Compare, class _RandomAccessIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __stable_sort_move(_RandomAccessIterator __first1, _RandomAccessIterator __last1, _Compare __comp,
                    typename iterator_traits<_RandomAccessIterator>::difference_type __len,
@@ -4690,6 +4750,7 @@ struct __stable_sort_switch
 };
 
 template <class _Compare, class _RandomAccessIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp,
               typename iterator_traits<_RandomAccessIterator>::difference_type __len,
@@ -4823,6 +4884,7 @@ is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 // push_heap
 
 template <class _Compare, class _RandomAccessIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __sift_up(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp,
           typename iterator_traits<_RandomAccessIterator>::difference_type __len)
@@ -4869,6 +4931,7 @@ push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 // pop_heap
 
 template <class _Compare, class _RandomAccessIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __sift_down(_RandomAccessIterator __first, _RandomAccessIterator /*__last*/,
             _Compare __comp,
@@ -4924,7 +4987,7 @@ __sift_down(_RandomAccessIterator __first, _RandomAccessIterator /*__last*/,
 }
 
 template <class _Compare, class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+inline _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp,
            typename iterator_traits<_RandomAccessIterator>::difference_type __len)
@@ -4956,6 +5019,7 @@ pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 // make_heap
 
 template <class _Compare, class _RandomAccessIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 void
 __make_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
@@ -4991,6 +5055,7 @@ make_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 // sort_heap
 
 template <class _Compare, class _RandomAccessIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
@@ -5019,6 +5084,7 @@ sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 // partial_sort
 
 template <class _Compare, class _RandomAccessIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last,
              _Compare __comp)
@@ -5058,6 +5124,7 @@ partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Ran
 // partial_sort_copy
 
 template <class _Compare, class _InputIterator, class _RandomAccessIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 _RandomAccessIterator
 __partial_sort_copy(_InputIterator __first, _InputIterator __last,
                     _RandomAccessIterator __result_first, _RandomAccessIterator __result_last, _Compare __comp)
@@ -5103,6 +5170,7 @@ partial_sort_copy(_InputIterator __first, _InputIterator __last,
 // nth_element
 
 template <class _Compare, class _RandomAccessIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 void
 __nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomAccessIterator __last, _Compare __comp)
 {
@@ -5309,6 +5377,7 @@ nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomA
 // includes
 
 template <class _Compare, class _InputIterator1, class _InputIterator2>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
 __includes(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2,
            _Compare __comp)
@@ -5348,6 +5417,7 @@ includes(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __fi
 // set_union
 
 template <class _Compare, class _InputIterator1, class _InputIterator2, class _OutputIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 _OutputIterator
 __set_union(_InputIterator1 __first1, _InputIterator1 __last1,
             _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result, _Compare __comp)
@@ -5396,6 +5466,7 @@ set_union(_InputIterator1 __first1, _InputIterator1 __last1,
 // set_intersection
 
 template <class _Compare, class _InputIterator1, class _InputIterator2, class _OutputIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _OutputIterator
 __set_intersection(_InputIterator1 __first1, _InputIterator1 __last1,
                    _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result, _Compare __comp)
@@ -5442,6 +5513,7 @@ set_intersection(_InputIterator1 __first1, _InputIterator1 __last1,
 // set_difference
 
 template <class _Compare, class _InputIterator1, class _InputIterator2, class _OutputIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 _OutputIterator
 __set_difference(_InputIterator1 __first1, _InputIterator1 __last1,
                  _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result, _Compare __comp)
@@ -5490,6 +5562,7 @@ set_difference(_InputIterator1 __first1, _InputIterator1 __last1,
 // set_symmetric_difference
 
 template <class _Compare, class _InputIterator1, class _InputIterator2, class _OutputIterator>
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 _OutputIterator
 __set_symmetric_difference(_InputIterator1 __first1, _InputIterator1 __last1,
                            _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result, _Compare __comp)
@@ -5541,8 +5614,10 @@ set_symmetric_difference(_InputIterator1 __first1, _InputIterator1 __last1,
 }
 
 // lexicographical_compare
+#endif // __cuda_std__
 
 template <class _Compare, class _InputIterator1, class _InputIterator2>
+_LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
 __lexicographical_compare(_InputIterator1 __first1, _InputIterator1 __last1,
                           _InputIterator2 __first2, _InputIterator2 __last2, _Compare __comp)
@@ -5580,9 +5655,11 @@ lexicographical_compare(_InputIterator1 __first1, _InputIterator1 __last1,
                                                 typename iterator_traits<_InputIterator2>::value_type>());
 }
 
+#ifndef __cuda_std__
 // next_permutation
 
 template <class _Compare, class _BidirectionalIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 bool
 __next_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
 {
@@ -5630,6 +5707,7 @@ next_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
 // prev_permutation
 
 template <class _Compare, class _BidirectionalIterator>
+_LIBCUDACXX_INLINE_VISIBILITY
 bool
 __prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
 {
@@ -5674,9 +5752,12 @@ prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
                                   __less<typename iterator_traits<_BidirectionalIterator>::value_type>());
 }
 
+#endif
 _LIBCUDACXX_END_NAMESPACE_STD
 
+#ifndef __cuda_std__
 _LIBCUDACXX_POP_MACROS
+#endif
 
 #if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _LIBCUDACXX_STD_VER >= 17
 #   include <__pstl_algorithm>

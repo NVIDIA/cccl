@@ -18,7 +18,7 @@
 #ifndef TEST_COMPARISONS_H
 #define TEST_COMPARISONS_H
 
-#include <type_traits>
+#include <cuda/std/type_traits>
 #include "test_macros.h"
 
 //  Test all six comparison operations for sanity
@@ -90,24 +90,24 @@ template <class T, class U = T>
 __host__ __device__
 void AssertComparisons6AreNoexcept()
 {
-    ASSERT_NOEXCEPT(std::declval<const T&>() == std::declval<const U&>());
-    ASSERT_NOEXCEPT(std::declval<const T&>() != std::declval<const U&>());
-    ASSERT_NOEXCEPT(std::declval<const T&>() <  std::declval<const U&>());
-    ASSERT_NOEXCEPT(std::declval<const T&>() <= std::declval<const U&>());
-    ASSERT_NOEXCEPT(std::declval<const T&>() >  std::declval<const U&>());
-    ASSERT_NOEXCEPT(std::declval<const T&>() >= std::declval<const U&>());
+    ASSERT_NOEXCEPT(cuda::std::declval<const T&>() == cuda::std::declval<const U&>());
+    ASSERT_NOEXCEPT(cuda::std::declval<const T&>() != cuda::std::declval<const U&>());
+    ASSERT_NOEXCEPT(cuda::std::declval<const T&>() <  cuda::std::declval<const U&>());
+    ASSERT_NOEXCEPT(cuda::std::declval<const T&>() <= cuda::std::declval<const U&>());
+    ASSERT_NOEXCEPT(cuda::std::declval<const T&>() >  cuda::std::declval<const U&>());
+    ASSERT_NOEXCEPT(cuda::std::declval<const T&>() >= cuda::std::declval<const U&>());
 }
 
 template <class T, class U = T>
 __host__ __device__
 void AssertComparisons6ReturnBool()
 {
-    ASSERT_SAME_TYPE(decltype(std::declval<const T&>() == std::declval<const U&>()), bool);
-    ASSERT_SAME_TYPE(decltype(std::declval<const T&>() != std::declval<const U&>()), bool);
-    ASSERT_SAME_TYPE(decltype(std::declval<const T&>() <  std::declval<const U&>()), bool);
-    ASSERT_SAME_TYPE(decltype(std::declval<const T&>() <= std::declval<const U&>()), bool);
-    ASSERT_SAME_TYPE(decltype(std::declval<const T&>() >  std::declval<const U&>()), bool);
-    ASSERT_SAME_TYPE(decltype(std::declval<const T&>() >= std::declval<const U&>()), bool);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() <  cuda::std::declval<const U&>()), bool);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() <= cuda::std::declval<const U&>()), bool);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() >  cuda::std::declval<const U&>()), bool);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() >= cuda::std::declval<const U&>()), bool);
 }
 
 
@@ -115,12 +115,12 @@ template <class T, class U = T>
 __host__ __device__
 void AssertComparisons6ConvertibleToBool()
 {
-    static_assert((std::is_convertible<decltype(std::declval<const T&>() == std::declval<const U&>()), bool>::value), "");
-    static_assert((std::is_convertible<decltype(std::declval<const T&>() != std::declval<const U&>()), bool>::value), "");
-    static_assert((std::is_convertible<decltype(std::declval<const T&>() <  std::declval<const U&>()), bool>::value), "");
-    static_assert((std::is_convertible<decltype(std::declval<const T&>() <= std::declval<const U&>()), bool>::value), "");
-    static_assert((std::is_convertible<decltype(std::declval<const T&>() >  std::declval<const U&>()), bool>::value), "");
-    static_assert((std::is_convertible<decltype(std::declval<const T&>() >= std::declval<const U&>()), bool>::value), "");
+    static_assert((cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>::value), "");
+    static_assert((cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool>::value), "");
+    static_assert((cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() <  cuda::std::declval<const U&>()), bool>::value), "");
+    static_assert((cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() <= cuda::std::declval<const U&>()), bool>::value), "");
+    static_assert((cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() >  cuda::std::declval<const U&>()), bool>::value), "");
+    static_assert((cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() >= cuda::std::declval<const U&>()), bool>::value), "");
 }
 
 //  Test all two comparison operations for sanity
@@ -160,16 +160,16 @@ template <class T, class U = T>
 __host__ __device__
 void AssertComparisons2AreNoexcept()
 {
-    ASSERT_NOEXCEPT(std::declval<const T&>() == std::declval<const U&>());
-    ASSERT_NOEXCEPT(std::declval<const T&>() != std::declval<const U&>());
+    ASSERT_NOEXCEPT(cuda::std::declval<const T&>() == cuda::std::declval<const U&>());
+    ASSERT_NOEXCEPT(cuda::std::declval<const T&>() != cuda::std::declval<const U&>());
 }
 
 template <class T, class U = T>
 __host__ __device__
 void AssertComparisons2ReturnBool()
 {
-    ASSERT_SAME_TYPE(decltype(std::declval<const T&>() == std::declval<const U&>()), bool);
-    ASSERT_SAME_TYPE(decltype(std::declval<const T&>() != std::declval<const U&>()), bool);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool);
+    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool);
 }
 
 
@@ -177,8 +177,8 @@ template <class T, class U = T>
 __host__ __device__
 void AssertComparisons2ConvertibleToBool()
 {
-    static_assert((std::is_convertible<decltype(std::declval<const T&>() == std::declval<const U&>()), bool>::value), "");
-    static_assert((std::is_convertible<decltype(std::declval<const T&>() != std::declval<const U&>()), bool>::value), "");
+    static_assert((cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>::value), "");
+    static_assert((cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool>::value), "");
 }
 
 #endif // TEST_COMPARISONS_H

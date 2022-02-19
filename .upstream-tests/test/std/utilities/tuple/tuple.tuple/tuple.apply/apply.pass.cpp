@@ -33,7 +33,7 @@
 
 template <typename T>
 __host__ __device__
-constexpr void unused(T &&) {}
+constexpr bool unused(T &&) {return true;}
 
 __host__ __device__
 constexpr int constexpr_sum_fn() { return 0; }

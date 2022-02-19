@@ -94,7 +94,11 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 #ifdef __GNUC__
 #define _LIBCUDACXX_UNREACHABLE() __builtin_unreachable()
 #else
-#define _LIBCUDACXX_UNREACHABLE() _CUDA_VSTD::abort()
+#if defined(__CUDA_ARCH__)
+#  define _LIBCUDACXX_UNREACHABLE() __trap()
+#else
+#  define _LIBCUDACXX_UNREACHABLE() _CUDA_VSTD::abort()
+#endif
 #endif
 
 #ifdef _LIBCUDACXX_COMPILER_PGI
@@ -105,6 +109,7 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
 using ::size_t;
 using ::div_t;
 using ::ldiv_t;
@@ -166,6 +171,7 @@ using ::quick_exit;
 #if _LIBCUDACXX_STD_VER > 14 && defined(_LIBCUDACXX_HAS_C11_FEATURES)
 using ::aligned_alloc;
 #endif
+#endif // !defined(_LIBCUDACXX_COMPILER_NVRTC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -103,6 +103,7 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 
 */
 
+#ifndef __cuda_std__
 #include <__config>
 #include <__tuple>
 #include <type_traits>
@@ -113,6 +114,7 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #include <cstdlib> // for _LIBCUDACXX_UNREACHABLE
 #include <version>
 #include <__debug>
+#endif
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -128,17 +130,17 @@ struct _LIBCUDACXX_TEMPLATE_VIS array
 {
     // types:
     typedef array __self;
-    typedef _Tp                                   value_type;
-    typedef value_type&                           reference;
-    typedef const value_type&                     const_reference;
-    typedef value_type*                           iterator;
-    typedef const value_type*                     const_iterator;
-    typedef value_type*                           pointer;
-    typedef const value_type*                     const_pointer;
-    typedef size_t                                size_type;
-    typedef ptrdiff_t                             difference_type;
-    typedef std::reverse_iterator<iterator>       reverse_iterator;
-    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef _Tp                                          value_type;
+    typedef value_type&                                  reference;
+    typedef const value_type&                            const_reference;
+    typedef value_type*                                  iterator;
+    typedef const value_type*                            const_iterator;
+    typedef value_type*                                  pointer;
+    typedef const value_type*                            const_pointer;
+    typedef size_t                                       size_type;
+    typedef ptrdiff_t                                    difference_type;
+    typedef _CUDA_VSTD::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef _CUDA_VSTD::reverse_iterator<iterator>       reverse_iterator;
 
     _Tp __elems_[_Size];
 
@@ -149,7 +151,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(array& __a) _NOEXCEPT_(__is_nothrow_swappable<_Tp>::value) {
-      std::swap_ranges(__elems_, __elems_ + _Size, __a.__elems_);
+      _CUDA_VSTD::swap_ranges(__elems_, __elems_ + _Size, __a.__elems_);
     }
 
     // iterators:
@@ -194,8 +196,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS array
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     const_reference operator[](size_type __n) const _NOEXCEPT {return __elems_[__n];}
 
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX14       reference at(size_type __n);
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference at(size_type __n) const;
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14       reference at(size_type __n);
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference at(size_type __n) const;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 reference front()             _NOEXCEPT {return __elems_[0];}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference front() const _NOEXCEPT {return __elems_[0];}
@@ -244,8 +246,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
     typedef const value_type*                     const_pointer;
     typedef size_t                                size_type;
     typedef ptrdiff_t                             difference_type;
-    typedef std::reverse_iterator<iterator>       reverse_iterator;
-    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef _CUDA_VSTD::reverse_iterator<const_iterator>      const_reverse_iterator;
+    typedef _CUDA_VSTD::reverse_iterator<iterator>            reverse_iterator;
 
     typedef typename conditional<is_const<_Tp>::value, const char,
                                 char>::type _CharType;

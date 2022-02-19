@@ -2977,10 +2977,10 @@ __not_fn_imp<decay_t<_RawFunc>> not_fn(_RawFunc&& __fn) {
 
 // Searchers are not currently supported.
 
-#ifndef __cuda_std__
 
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-pair<_ForwardIterator1, _ForwardIterator1> _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+pair<_ForwardIterator1, _ForwardIterator1>
 __search(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
          _ForwardIterator2 __first2, _ForwardIterator2 __last2, _BinaryPredicate __pred,
          forward_iterator_tag, forward_iterator_tag)
@@ -3017,7 +3017,7 @@ __search(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 }
 
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 pair<_RandomAccessIterator1, _RandomAccessIterator1>
 __search(_RandomAccessIterator1 __first1, _RandomAccessIterator1 __last1,
          _RandomAccessIterator2 __first2, _RandomAccessIterator2 __last2, _BinaryPredicate __pred,
@@ -3061,6 +3061,7 @@ __search(_RandomAccessIterator1 __first1, _RandomAccessIterator1 __last1,
     }
 }
 
+#ifndef __cuda_std__
 #if _LIBCUDACXX_STD_VER > 14
 
 // default searcher

@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14 
+// UNSUPPORTED: c++98, c++03, c++11, c++14
 // UNSUPPORTED: nvrtc
 
 // <cuda/std/tuple>
@@ -16,7 +16,9 @@
 #include <cuda/std/tuple>
 #include <cuda/std/array>
 #include <cuda/std/utility>
+#if defined(_LIBCUDACXX_HAS_STRING)
 #include <cuda/std/string>
+#endif
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
@@ -26,11 +28,15 @@
 // Disable the missing braces warning for this reason.
 #include "disable_missing_braces_warning.h"
 
+template <typename T>
+__host__ __device__
+constexpr bool unused(T &&) {return true;}
+
 template <class Tuple>
 struct ConstexprConstructibleFromTuple {
   template <class ...Args>
-  explicit constexpr ConstexprConstructibleFromTuple(Args&&... xargs)
-      : args{std::forward<Args>(xargs)...} {}
+  __host__ __device__ explicit constexpr ConstexprConstructibleFromTuple(Args&&... xargs)
+      : args{cuda::std::forward<Args>(xargs)...} {}
   Tuple args;
 };
 
@@ -40,169 +46,173 @@ struct ConstructibleFromTuple;
 template <template <class ...> class Tuple, class ...Types>
 struct ConstructibleFromTuple<Tuple<Types...>> {
   template <class ...Args>
-  explicit ConstructibleFromTuple(Args&&... xargs)
+  __host__ __device__ explicit ConstructibleFromTuple(Args&&... xargs)
       : args(xargs...),
         arg_types(&makeArgumentID<Args&&...>())
   {}
-  Tuple<std::decay_t<Types>...> args;
+  Tuple<cuda::std::decay_t<Types>...> args;
   TypeID const* arg_types;
 };
 
 template <class Tp, size_t N>
-struct ConstructibleFromTuple<std::array<Tp, N>> {
+struct ConstructibleFromTuple<cuda::std::array<Tp, N>> {
 template <class ...Args>
-  explicit ConstructibleFromTuple(Args&&... xargs)
+  __host__ __device__ explicit ConstructibleFromTuple(Args&&... xargs)
       : args{xargs...},
         arg_types(&makeArgumentID<Args&&...>())
   {}
-  std::array<Tp, N> args;
+  cuda::std::array<Tp, N> args;
   TypeID const* arg_types;
 };
 
 template <class Tuple>
-constexpr bool do_constexpr_test(Tuple&& tup) {
-    using RawTuple = std::decay_t<Tuple>;
+__host__ __device__ constexpr bool do_constexpr_test(Tuple&& tup) {
+    using RawTuple = cuda::std::decay_t<Tuple>;
     using Tp = ConstexprConstructibleFromTuple<RawTuple>;
-    return std::make_from_tuple<Tp>(std::forward<Tuple>(tup)).args == tup;
+    return cuda::std::make_from_tuple<Tp>(cuda::std::forward<Tuple>(tup)).args == tup;
 }
 
 // Needed by do_forwarding_test() since it compares pairs of different types.
 template <class T1, class T2, class U1, class U2>
-inline bool operator==(const std::pair<T1, T2>& lhs, const std::pair<U1, U2>& rhs) {
+__host__ __device__ inline bool operator==(const cuda::std::pair<T1, T2>& lhs, const cuda::std::pair<U1, U2>& rhs) {
     return lhs.first == rhs.first && lhs.second == rhs.second;
 }
 
 template <class ...ExpectTypes, class Tuple>
-bool do_forwarding_test(Tuple&& tup) {
-    using RawTuple = std::decay_t<Tuple>;
+__host__ __device__ bool do_forwarding_test(Tuple&& tup) {
+    using RawTuple = cuda::std::decay_t<Tuple>;
     using Tp = ConstructibleFromTuple<RawTuple>;
-    const Tp value = std::make_from_tuple<Tp>(std::forward<Tuple>(tup));
+    const Tp value = cuda::std::make_from_tuple<Tp>(cuda::std::forward<Tuple>(tup));
     return value.args == tup
         && value.arg_types == &makeArgumentID<ExpectTypes...>();
 }
 
-void test_constexpr_construction() {
+__host__ __device__ void test_constexpr_construction() {
     {
-        constexpr std::tuple<> tup;
+        constexpr cuda::std::tuple<> tup;
         static_assert(do_constexpr_test(tup), "");
     }
     {
-        constexpr std::tuple<int> tup(42);
+        constexpr cuda::std::tuple<int> tup(42);
         static_assert(do_constexpr_test(tup), "");
     }
     {
-        constexpr std::tuple<int, long, void*> tup(42, 101, nullptr);
+        constexpr cuda::std::tuple<int, long, void*> tup(42, 101, nullptr);
         static_assert(do_constexpr_test(tup), "");
     }
     {
-        constexpr std::pair<int, const char*> p(42, "hello world");
+        constexpr cuda::std::pair<int, const char*> p(42, "hello world");
         static_assert(do_constexpr_test(p), "");
     }
     {
-        using Tuple = std::array<int, 3>;
+        using Tuple = cuda::std::array<int, 3>;
         using ValueTp = ConstexprConstructibleFromTuple<Tuple>;
         constexpr Tuple arr = {42, 101, -1};
-        constexpr ValueTp value = std::make_from_tuple<ValueTp>(arr);
+        constexpr ValueTp value = cuda::std::make_from_tuple<ValueTp>(arr);
         static_assert(value.args[0] == arr[0] && value.args[1] == arr[1]
             && value.args[2] == arr[2], "");
     }
 }
 
-void test_perfect_forwarding() {
+__host__ __device__ void test_perfect_forwarding() {
     {
-        using Tup = std::tuple<>;
+        using Tup = cuda::std::tuple<>;
         Tup tup;
         Tup const& ctup = tup;
         assert(do_forwarding_test<>(tup));
         assert(do_forwarding_test<>(ctup));
     }
     {
-        using Tup = std::tuple<int>;
+        using Tup = cuda::std::tuple<int>;
         Tup tup(42);
         Tup const& ctup = tup;
         assert(do_forwarding_test<int&>(tup));
         assert(do_forwarding_test<int const&>(ctup));
-        assert(do_forwarding_test<int&&>(std::move(tup)));
-        assert(do_forwarding_test<int const&&>(std::move(ctup)));
+        assert(do_forwarding_test<int&&>(cuda::std::move(tup)));
+        assert(do_forwarding_test<int const&&>(cuda::std::move(ctup)));
     }
     {
-        using Tup = std::tuple<int&, const char*, unsigned&&>;
+        using Tup = cuda::std::tuple<int&, const char*, unsigned&&>;
         int x = 42;
         unsigned y = 101;
-        Tup tup(x, "hello world", std::move(y));
+        Tup tup(x, "hello world", cuda::std::move(y));
         Tup const& ctup = tup;
         assert((do_forwarding_test<int&, const char*&, unsigned&>(tup)));
         assert((do_forwarding_test<int&, const char* const&, unsigned &>(ctup)));
-        assert((do_forwarding_test<int&, const char*&&, unsigned&&>(std::move(tup))));
-        assert((do_forwarding_test<int&, const char* const&&, unsigned &&>(std::move(ctup))));
+        assert((do_forwarding_test<int&, const char*&&, unsigned&&>(cuda::std::move(tup))));
+        assert((do_forwarding_test<int&, const char* const&&, unsigned &&>(cuda::std::move(ctup))));
     }
     // test with pair<T, U>
     {
-        using Tup = std::pair<int&, const char*>;
+        using Tup = cuda::std::pair<int&, const char*>;
         int x = 42;
         Tup tup(x, "hello world");
         Tup const& ctup = tup;
         assert((do_forwarding_test<int&, const char*&>(tup)));
         assert((do_forwarding_test<int&, const char* const&>(ctup)));
-        assert((do_forwarding_test<int&, const char*&&>(std::move(tup))));
-        assert((do_forwarding_test<int&, const char* const&&>(std::move(ctup))));
+        assert((do_forwarding_test<int&, const char*&&>(cuda::std::move(tup))));
+        assert((do_forwarding_test<int&, const char* const&&>(cuda::std::move(ctup))));
     }
     // test with array<T, I>
     {
-        using Tup = std::array<int, 3>;
+        using Tup = cuda::std::array<int, 3>;
         Tup tup = {42, 101, -1};
         Tup const& ctup = tup;
         assert((do_forwarding_test<int&, int&, int&>(tup)));
         assert((do_forwarding_test<int const&, int const&, int const&>(ctup)));
-        assert((do_forwarding_test<int&&, int&&, int&&>(std::move(tup))));
-        assert((do_forwarding_test<int const&&, int const&&, int const&&>(std::move(ctup))));
+        assert((do_forwarding_test<int&&, int&&, int&&>(cuda::std::move(tup))));
+        assert((do_forwarding_test<int const&&, int const&&, int const&&>(cuda::std::move(ctup))));
     }
 }
 
-void test_noexcept() {
+__host__ __device__ void test_noexcept() {
     struct NothrowMoveable {
       NothrowMoveable() = default;
-      NothrowMoveable(NothrowMoveable const&) {}
-      NothrowMoveable(NothrowMoveable&&) noexcept {}
+      __host__ __device__ NothrowMoveable(NothrowMoveable const&) {}
+      __host__ __device__ NothrowMoveable(NothrowMoveable&&) noexcept {}
     };
     struct TestType {
-      TestType(int, NothrowMoveable) noexcept {}
-      TestType(int, int, int) noexcept(false) {}
-      TestType(long, long, long) noexcept {}
+      __host__ __device__ TestType(int, NothrowMoveable) noexcept {}
+      __host__ __device__ TestType(int, int, int) noexcept(false) {}
+      __host__ __device__ TestType(long, long, long) noexcept {}
     };
     {
-        using Tuple = std::tuple<int, NothrowMoveable>;
+        using Tuple = cuda::std::tuple<int, NothrowMoveable>;
         Tuple tup; ((void)tup);
         Tuple const& ctup = tup; ((void)ctup);
-        ASSERT_NOT_NOEXCEPT(std::make_from_tuple<TestType>(ctup));
-        LIBCPP_ASSERT_NOEXCEPT(std::make_from_tuple<TestType>(std::move(tup)));
+        ASSERT_NOT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(ctup));
+        LIBCPP_ASSERT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(cuda::std::move(tup)));
     }
     {
-        using Tuple = std::pair<int, NothrowMoveable>;
+        using Tuple = cuda::std::pair<int, NothrowMoveable>;
         Tuple tup; ((void)tup);
         Tuple const& ctup = tup; ((void)ctup);
-        ASSERT_NOT_NOEXCEPT(std::make_from_tuple<TestType>(ctup));
-        LIBCPP_ASSERT_NOEXCEPT(std::make_from_tuple<TestType>(std::move(tup)));
+        ASSERT_NOT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(ctup));
+        LIBCPP_ASSERT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(cuda::std::move(tup)));
     }
     {
-        using Tuple = std::tuple<int, int, int>;
+        using Tuple = cuda::std::tuple<int, int, int>;
         Tuple tup; ((void)tup);
-        ASSERT_NOT_NOEXCEPT(std::make_from_tuple<TestType>(tup));
+        ASSERT_NOT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(tup));
+        unused(tup);
     }
     {
-        using Tuple = std::tuple<long, long, long>;
+        using Tuple = cuda::std::tuple<long, long, long>;
         Tuple tup; ((void)tup);
-        LIBCPP_ASSERT_NOEXCEPT(std::make_from_tuple<TestType>(tup));
+        LIBCPP_ASSERT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(tup));
+        unused(tup);
     }
     {
-        using Tuple = std::array<int, 3>;
+        using Tuple = cuda::std::array<int, 3>;
         Tuple tup; ((void)tup);
-        ASSERT_NOT_NOEXCEPT(std::make_from_tuple<TestType>(tup));
+        ASSERT_NOT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(tup));
+        unused(tup);
     }
     {
-        using Tuple = std::array<long, 3>;
+        using Tuple = cuda::std::array<long, 3>;
         Tuple tup; ((void)tup);
-        LIBCPP_ASSERT_NOEXCEPT(std::make_from_tuple<TestType>(tup));
+        LIBCPP_ASSERT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(tup));
+        unused(tup);
     }
 }
 

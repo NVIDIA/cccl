@@ -834,6 +834,8 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_TOSTRING(x) _LIBCUDACXX_TOSTRING2(x)
 #define _LIBCUDACXX_WARNING(x) __pragma(message(__FILE__ "(" _LIBCUDACXX_TOSTRING(__LINE__) ") : warning note: " x))
 
+#define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
+
 // https://github.com/microsoft/STL/blob/master/stl/inc/yvals_core.h#L353
 // warning C4100: 'quack': unreferenced formal parameter
 // warning C4127: conditional expression is constant
@@ -1205,6 +1207,8 @@ typedef __char32_t char32_t;
 
 // Just so we can migrate to the new macros gradually.
 #define _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI
+
+#define _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 
 // Inline namespaces are available in Clang/GCC/MSVC regardless of C++ dialect.
 #define _LIBCUDACXX_BEGIN_NAMESPACE_STD namespace std { inline namespace _LIBCUDACXX_ABI_NAMESPACE {

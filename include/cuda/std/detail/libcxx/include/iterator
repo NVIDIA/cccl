@@ -448,8 +448,8 @@ struct __has_iterator_typedefs
 {
 private:
     struct __two {char __lx; char __lxx;};
-    template <class _Up> static __two __test(...);
-    template <class _Up> static char __test(typename std::__void_t<typename _Up::iterator_category>::type* = 0,
+    template <class _Up> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER static __two __test(...);
+    template <class _Up> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER static char __test(typename std::__void_t<typename _Up::iterator_category>::type* = 0,
     										typename std::__void_t<typename _Up::difference_type>::type* = 0,
     										typename std::__void_t<typename _Up::value_type>::type* = 0,
     										typename std::__void_t<typename _Up::reference>::type* = 0,
@@ -465,8 +465,8 @@ struct __has_iterator_category
 {
 private:
     struct __two {char __lx; char __lxx;};
-    template <class _Up> static __two __test(...);
-    template <class _Up> static char __test(typename _Up::iterator_category* = 0);
+    template <class _Up> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER static __two __test(...);
+    template <class _Up> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER static char __test(typename _Up::iterator_category* = 0);
 public:
     static const bool value = sizeof(__test<_Tp>(0)) == 1;
 };
@@ -1110,7 +1110,7 @@ public:
 
     template <class _Ch, class _Tr>
     friend
-    _LIBCUDACXX_HIDDEN
+    _LIBCUDACXX_HIDDEN _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
     ostreambuf_iterator<_Ch, _Tr>
     __pad_and_output(ostreambuf_iterator<_Ch, _Tr> __s,
                      const _Ch* __ob, const _Ch* __op, const _Ch* __oe,
@@ -1168,7 +1168,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     move_iterator& operator-=(difference_type __n) {__i -= __n; return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-    reference operator[](difference_type __n) const { return static_cast<reference>(__i[__n]); }
+    reference operator[](difference_type __n) const { return _CUDA_VSTD::move(__i[__n]); }
 };
 
 template <class _Iter1, class _Iter2>
@@ -1466,65 +1466,65 @@ private:
 
     template <class _Up> friend class __wrap_iter;
     template <class _CharT, class _Traits, class _Alloc> friend class basic_string;
-    template <class _Tp, class _Alloc> friend class _LIBCUDACXX_TEMPLATE_VIS vector;
-    template <class _Tp, size_t> friend class _LIBCUDACXX_TEMPLATE_VIS span;
+    template <class _Tp, class _Alloc> friend class vector;
+    template <class _Tp, size_t> friend class span;
 
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     bool
     operator==(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     bool
     operator<(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     bool
     operator!=(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     bool
     operator>(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     bool
     operator>=(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     bool
     operator<=(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 
 #ifndef _LIBCUDACXX_CXX03_LANG
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     auto
     operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) _NOEXCEPT
     -> decltype(__x.base() - __y.base());
 #else
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     typename __wrap_iter<_Iter1>::difference_type
     operator-(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 #endif
 
     template <class _Iter1>
-    _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     __wrap_iter<_Iter1>
     operator+(typename __wrap_iter<_Iter1>::difference_type, __wrap_iter<_Iter1>) _NOEXCEPT;
 
-    template <class _Ip, class _Op> friend _Op copy(_Ip, _Ip, _Op);
-    template <class _B1, class _B2> friend _B2 copy_backward(_B1, _B1, _B2);
-    template <class _Ip, class _Op> friend _Op move(_Ip, _Ip, _Op);
-    template <class _B1, class _B2> friend _B2 move_backward(_B1, _B1, _B2);
+    template <class _Ip, class _Op> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER friend _Op copy(_Ip, _Ip, _Op);
+    template <class _B1, class _B2> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER friend _B2 copy_backward(_B1, _B1, _B2);
+    template <class _Ip, class _Op> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER friend _Op move(_Ip, _Ip, _Op);
+    template <class _B1, class _B2> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER friend _B2 move_backward(_B1, _B1, _B2);
 
 #if _LIBCUDACXX_DEBUG_LEVEL < 2
     template <class _Tp>
-    _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     typename enable_if
     <
         is_trivially_copy_assignable<_Tp>::value,
@@ -1749,14 +1749,14 @@ reverse_iterator<_Tp*> rend(_Tp (&__array)[_Np])
 
 template <class _Ep>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-reverse_iterator<const _Ep*> rbegin(initializer_list<_Ep> __il)
+reverse_iterator<const _Ep*> rbegin(::std::initializer_list<_Ep> __il)
 {
     return reverse_iterator<const _Ep*>(__il.end());
 }
 
 template <class _Ep>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-reverse_iterator<const _Ep*> rend(initializer_list<_Ep> __il)
+reverse_iterator<const _Ep*> rend(::std::initializer_list<_Ep> __il)
 {
     return reverse_iterator<const _Ep*>(__il.begin());
 }
@@ -1909,7 +1909,7 @@ constexpr bool empty(const _Tp (&)[_Sz]) noexcept { return false; }
 
 template <class _Ep>
 _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
-constexpr bool empty(initializer_list<_Ep> __il) noexcept { return __il.size() == 0; }
+constexpr bool empty(::std::initializer_list<_Ep> __il) noexcept { return __il.size() == 0; }
 
 template <class _Cont> constexpr
 _LIBCUDACXX_INLINE_VISIBILITY
@@ -1931,7 +1931,7 @@ constexpr _Tp* data(_Tp (&__array)[_Sz]) noexcept { return __array; }
 
 template <class _Ep>
 _LIBCUDACXX_INLINE_VISIBILITY
-constexpr const _Ep* data(initializer_list<_Ep> __il) noexcept { return __il.begin(); }
+constexpr const _Ep* data(::std::initializer_list<_Ep> __il) noexcept { return __il.begin(); }
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

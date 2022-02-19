@@ -22,6 +22,7 @@
 
 #include <crtdbg.h>
 #include <stdlib.h>
+#include <vcruntime.h>
 
 #if defined(_LIBCUDACXX_VERSION)
     #error This header may not be used when targeting libc++
