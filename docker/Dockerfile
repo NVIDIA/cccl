@@ -48,6 +48,9 @@ ARG CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/c
 ARG TINI_VER=0.18.0
 ARG TINI_URL=https://github.com/krallin/tini/releases/download/v${TINI_VER}/tini
 
+ARG SCCACHE_VERSION=0.2.15
+ARG SCCACHE_URL="https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/sccache-v${SCCACHE_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+
 # `--silent --show-error` disables non-error output.
 # `--fail` causes `curl` to return an error code on HTTP errors.
 ARG CURL="curl --silent --show-error --fail"
@@ -174,6 +177,8 @@ RUN function comment() { :; }; \
       rm -f /usr/bin/c++; \
       echo "source /etc/cccl.bashrc" >> /etc/bashrc; \
     fi; \
+    ${CURL} -L ${SCCACHE_URL} | tar -C /usr/bin -zf - --wildcards --strip-components=1 -x */sccache; \
+    chmod +x /usr/bin/sccache; \
     ${ALTERNATIVES} --install /usr/bin/cc  cc  ${CC}  99; \
     ${ALTERNATIVES} --install /usr/bin/c++ c++ ${CXX} 99; \
     ${ALTERNATIVES} --set cc  ${CC}; \
