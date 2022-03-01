@@ -21,7 +21,7 @@ using testcases_t = cuda::std::complex<double>[152];
 struct _testcases {
     testcases_t _cases;
 
-    static constexpr size_t count = sizeof(_cases) / sizeof(_cases[0]);
+    static constexpr size_t count = sizeof(testcases_t) / sizeof(cuda::std::complex<double>);
 
     __host__ __device__  const cuda::std::complex<double>* begin() const {
         return  &_cases[0];
