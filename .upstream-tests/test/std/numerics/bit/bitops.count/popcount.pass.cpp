@@ -23,6 +23,11 @@
 
 #include "test_macros.h"
 
+#if defined(_MSC_VER)
+// MSVC 14.12 erroneously notices an integer overflow
+# pragma warning( disable: 4307 )
+#endif
+
 class A{};
 enum       E1 : unsigned char { rEd };
 enum class E2 : unsigned char { red };
