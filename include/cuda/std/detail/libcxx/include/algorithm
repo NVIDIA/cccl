@@ -2512,6 +2512,7 @@ rotate_copy(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterato
     return _CUDA_VSTD::copy(__first, __middle, _CUDA_VSTD::copy(__middle, __last, __result));
 }
 
+#endif // __cuda_std__
 // min_element
 
 template <class _ForwardIterator, class _Compare>
@@ -2814,6 +2815,8 @@ minmax(::std::initializer_list<_Tp> __t)
 }
 
 #endif  // _LIBCUDACXX_CXX03_LANG
+
+#ifndef __cuda_std__
 
 // random_shuffle
 
