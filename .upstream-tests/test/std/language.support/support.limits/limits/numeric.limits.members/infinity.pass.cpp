@@ -14,6 +14,11 @@
 #include <cuda/std/cfloat>
 #include <cuda/std/cassert>
 
+// MSVC has issues with producing INF with divisions by zero.
+#if defined(_MSC_VER)
+#  include <cmath>
+#endif
+
 #include "test_macros.h"
 
 template <class T>
@@ -56,9 +61,16 @@ int main(int, char**)
 #if !defined(_MSC_VER)
     test<float>(1.f/0.f);
     test<double>(1./0.);
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
     test<long double>(1. / 0.);
-#endif
+#  endif
+// MSVC has issues with producing INF with divisions by zero.
+#else
+    test<float>(INFINITY);
+    test<double>(INFINITY);
+#  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+    test<long double>(INFINITY);
+#  endif
 #endif
 
     return 0;
