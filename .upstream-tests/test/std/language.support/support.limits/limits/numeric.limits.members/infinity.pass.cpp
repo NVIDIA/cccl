@@ -53,10 +53,12 @@ int main(int, char**)
     test<__int128_t>(0);
     test<__uint128_t>(0);
 #endif
+#if !defined(_MSC_VER)
     test<float>(1.f/0.f);
     test<double>(1./0.);
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
     test<long double>(1. / 0.);
+#endif
 #endif
 
     return 0;
