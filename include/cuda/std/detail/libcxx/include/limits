@@ -190,7 +190,7 @@ protected:
 template <class _Tp, int __digits, bool _IsSigned>
 struct __libcpp_compute_min
 {
-    static _LIBCUDACXX_CONSTEXPR const _Tp value = _Tp(_Tp(1) << __digits);
+    static _LIBCUDACXX_CONSTEXPR const _Tp value = static_cast<_Tp>(_Tp(1) << __digits);
 };
 
 template <class _Tp, int __digits>
