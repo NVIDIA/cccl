@@ -20,6 +20,10 @@
 
 #include "test_macros.h"
 
+#if defined(_MSC_VER)
+#pragma warning(disable: 4324)
+#endif
+
 template <typename T>
 __host__ __device__
 constexpr bool unused(T &&) {return true;}
