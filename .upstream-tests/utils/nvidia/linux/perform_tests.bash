@@ -71,7 +71,7 @@ function section_separator {
 LIBCXX_LOG=$(mktemp)
 LIBCUDACXX_LOG=$(mktemp)
 
-KNOWN_COMPUTE_ARCHS="35 50 52 53 60 61 62 70 72 75 80"
+KNOWN_COMPUTE_ARCHS="35 50 52 53 60 61 62 70 72 75 80 86 87"
 
 function report_and_exit {
   # If any of the lines searched for below aren't present in the log files, the
@@ -254,8 +254,8 @@ then
 
   LIBCUDACXX_SITE_CONFIG=${LIBCUDACXX_LIT_SITE_CONFIG} \
   bash -c "lit ${DETECTION_LIT_FLAGS} ${LIBCUDACXX_PATH}/test/nothing_to_do.pass.cpp -Dcompute_archs=\"${KNOWN_COMPUTE_ARCHS}\"" \
+    > ${ARCH_DETECTION_LOG} 2>&1
 
-  > ${ARCH_DETECTION_LOG} 2>&1
   if [ "${PIPESTATUS[0]}" != "0" ]
   then
     cat ${ARCH_DETECTION_LOG}
@@ -361,7 +361,7 @@ then
 
   LIBCUDACXX_SITE_CONFIG=${LIBCUDACXX_LIT_SITE_CONFIG} \
   bash -c "${LIT_PREFIX} lit ${LIT_FLAGS} ${LIT_COMPUTE_ARCHS_FLAG}${LIBCUDACXX_COMPUTE_ARCHS}${LIT_COMPUTE_ARCHS_SUFFIX} ${LIBCUDACXX_TEST_TARGETS} ${OUTPUT_STREAM_FLAG}" \
-  
+
   2>&1 | tee "${LIBCUDACXX_LOG}"
   if [ "${PIPESTATUS[0]}" != "0" ]; then report_and_exit 1; fi
 else
