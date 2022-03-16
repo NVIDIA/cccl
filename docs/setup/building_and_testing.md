@@ -35,13 +35,13 @@ In a Bash shell:
 
 ```bash
 cd ${LIBCUDACXX_ROOT}
-mkdir -p build
-cd build
-cmake .. \
-  -DLLVM_CONFIG_PATH=$(which llvm-config) \
-  -DCMAKE_CXX_COMPILER=nvcc \
-  -DLIBCXX_NVCC_HOST_COMPILER=g++ \
-  -DLIBCXX_TEST_STANDARD_VER=c++11
+cmake \
+    -S ./ \
+    -B build \
+    -DCMAKE_CXX_COMPILER=$CXX \
+    -DCMAKE_CUDA_COMPILER=$TOOLKIT/bin/nvcc \
+    -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON \
+    -DLIBCUDACXX_ENABLE_LIBCXX_TESTS=OFF
 ```
 
 ### Step 2: Build & Run the Tests
@@ -72,13 +72,13 @@ export HOST=executor.nvidia.com
 export USERNAME=ubuntu
 
 cd ${LIBCUDACXX_ROOT}
-mkdir -p build
-cd build
-cmake .. \
-  -DLLVM_CONFIG_PATH=$(which llvm-config) \
-  -DCMAKE_CXX_COMPILER=nvcc \
-  -DLIBCXX_NVCC_HOST_COMPILER=aarch64-linux-gnu-g++ \
-  -DLIBCXX_TEST_STANDARD_VER=c++14 \
+cmake \
+  -S ./ \
+  -B build \
+  -DCMAKE_CUDA_COMPILER=$TOOLKIT/bin/nvcc \
+  -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+  -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON \
+  -DLIBCUDACXX_ENABLE_LIBCXX_TESTS=OFF \
   -DLIBCXX_EXECUTOR="SSHExecutor(host='${HOST}', username='${USERNAME}')"
 ```
 
@@ -103,17 +103,15 @@ Follow Step 0 for \*nix native builds/tests.
 In a Bash shell:
 
 ```bash
-export CXX="${LIBCUDACXX_ROOT}/utils/nvidia/nvrtc/nvrtc.sh nvcc"
-
 cd ${LIBCUDACXX_ROOT}
-mkdir -p build
-cd build
-cmake .. \
-  -DCMAKE_C_COMPILER_WORKS=ON \
-  -DLLVM_CONFIG_PATH=$(which llvm-config) \
-  -DLIBCXX_NVCC_HOST_COMPILER=g++ \
-  -DLIBCXX_TEST_STANDARD_VER=c++11 \
-  -DLIBCXX_TEST_WITH_NVRTC=ON
+cmake \
+  -S ./ \
+  -B build \
+  -DCMAKE_CXX_COMPILER=$CC \
+  -DCMAKE_CUDA_COMPILER=$TOOLKIT/bin/nvcc \
+  -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON \
+  -DLIBCUDACXX_ENABLE_LIBCXX_TESTS=OFF \
+  -DLIBCUDACXX_TEST_WITH_NVRTC=ON
 ```
 
 ### Step 2: Build & Run the Tests
@@ -123,17 +121,6 @@ Follow Step 2 for \*nix native builds/tests.
 ## Windows, Native Build/Test
 
 ### Step 0: Install Build Requirements
-
-Install [Git for Windows](https://git-scm.com/download/win):
-
-Checkout [the LLVM Git mono repo](https://github.com/llvm/llvm-project) using a
-Git Bash shell:
-
-```bat
-export LLVM_ROOT=/path/to/llvm
-
-git clone https://github.com/llvm/llvm-project.git ${LLVM_ROOT}
-```
 
 [Install Python](https://www.python.org/downloads/windows).
 
@@ -158,29 +145,25 @@ If Powershell is desired, it would be best to launch it from within the native t
 In a Visual Studio command prompt:
 
 ```bat
-set LLVM_ROOT=\path\to\llvm
 set LIBCUDACXX_ROOT=\path\to\libcudacxx # Helpful env var pointing to the git repo root.
-
 cd %LIBCUDACXX_ROOT%
-mkdir build
-cd build
-cmake .. ^
+
+cmake ^
+  -S ./ ^
+  -B build ^
   -G "Ninja" ^
-  -DLLVM_PATH=%LLVM_ROOT%\llvm ^
-  -DCMAKE_CXX_COMPILER=nvcc ^
-  -DLIBCXX_NVCC_HOST_COMPILER=cl ^
-  -DCMAKE_CXX_COMPILER_FORCED=ON ^
-  -DCMAKE_C_COMPILER_FORCED=ON
+  -DCMAKE_CXX_COMPILER=cl ^
+  -DCMAKE_CUDA_COMPILER=nvcc ^
+  -DCMAKE_CUDA_COMPILER_FORCED=ON ^
+  -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON ^
+  -DLIBCUDACXX_ENABLE_LIBCXX_TESTS=OFF
 ```
 
 ### Step 2: Build & Run the Tests
 
-In a Visual Studio command prompt:
+`SM_ARCH` can be set to any integer value (Ex: "80", "86")
 
 ```bat
-set SM_ARCH=70
-
-cd %LIBCUDACXX_ROOT%\build
-set LIBCXX_SITE_CONFIG=libcxx\test\lit.site.cfg
-lit ..\test -Dcompute_archs=%SM_ARCH% -sv --no-progress-bar
+set LIBCUDACXX_SITE_CONFIG=%LIBCUDACXX_ROOT%\build\test\lit.site.cfg
+lit %LIBCUDACXX_ROOT%\test -Dcompute_archs=%SM_ARCH% -sv --no-progress-bar
 ```
