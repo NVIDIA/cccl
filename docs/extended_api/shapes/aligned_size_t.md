@@ -20,6 +20,11 @@ struct cuda::aligned_size_t {
 The class template `cuda::aligned_size_t` is a _shape_ representing an extent
   of bytes with a statically defined (address and size) alignment.
 
+*Preconditions*: 
+
+- The _address_ of the extent of bytes must be aligned to an `Alignment` alignment boundary.
+- The _size_ of the extent of bytes must be a multiple of the `Alignment`.
+
 ## Template Parameters
 
 | `Alignment` | The address and size alignement of the byte extent. |
@@ -52,8 +57,8 @@ __global__ void example_kernel(void* dst, void* src, size_t size) {
   // Implementation cannot make assumptions about alignment.
   cuda::memcpy_async(dst, src, size, bar);
 
-  // Implementation can assume that dst, src and size are 16-bytes aligned and
-  // may optimize accordingly.
+  // Implementation can assume that dst and src are 16-bytes aligned,
+  // and that size is a multiple of 16, and may optimize accordingly.
   cuda::memcpy_async(dst, src, cuda::aligned_size_t<16>(size), bar);
 
   bar.arrive_and_wait();
