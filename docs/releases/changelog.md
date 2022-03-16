@@ -34,6 +34,10 @@ Supported ABI Versions: 4 (default), 3, and 2.
 - #250: Fix pragma typo on MSVC.
 - #251: Add several new compilers versions to our docker suite.
 - #252: Fix several deprecations in Clang 13.
+- #253: Fix truncations and warnings in numerics.
+- #254: Fix warnings in `<array>` tests and move `__cuda_std__` escapes in `<algorithm>`
+- #255: Fix deprecated copy ctor warnings in `__annotated_ptr` for Clang 13.
+- #256: Fix SM detection in the `perform_tests` script.
 
 ## libcu++ 1.7.0
 
