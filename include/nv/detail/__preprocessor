@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC system_header
+#endif
 
 // For all compilers and dialects this header defines:
 //  _NV_EVAL

@@ -12,6 +12,10 @@
 
 #include "__preprocessor"
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC system_header
+#endif
+
 #  define _NV_TARGET_ARCH_TO_SELECTOR_350 nv::target::sm_35
 #  define _NV_TARGET_ARCH_TO_SELECTOR_370 nv::target::sm_37
 #  define _NV_TARGET_ARCH_TO_SELECTOR_500 nv::target::sm_50
