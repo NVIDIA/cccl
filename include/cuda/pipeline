@@ -301,7 +301,7 @@ NV_IF_TARGET(NV_IS_DEVICE,
 
     template<>
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool pipeline<thread_scope_block>::__barrier_try_wait_parity(barrier<thread_scope_block> & __barrier, bool __phase_parity)
+    inline bool pipeline<thread_scope_block>::__barrier_try_wait_parity(barrier<thread_scope_block> & __barrier, bool __phase_parity)
     {
 NV_IF_TARGET(NV_PROVIDES_SM_80,
         if (__isShared(&__barrier)) {
