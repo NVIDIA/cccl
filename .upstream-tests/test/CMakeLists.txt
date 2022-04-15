@@ -39,9 +39,7 @@ endif()
 
 set(LIBCUDACXX_TEST_COMPILER_FLAGS
   "${LIBCUDACXX_FORCE_INCLUDE} \
-  -I${CMAKE_SOURCE_DIR}/include \
-  -I${CMAKE_SOURCE_DIR}/../cuda/tools/cooperative_groups \
-  -I${CMAKE_SOURCE_DIR}/../cuda/tools/libcudacxxext"
+  -I${CMAKE_SOURCE_DIR}/include"
   CACHE INTERNAL "Flags for libcxx testing." FORCE)
 
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVCXX")
