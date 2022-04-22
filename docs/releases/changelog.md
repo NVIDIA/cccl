@@ -10,6 +10,29 @@ It pulls in the latest version of upstream libc++ and marks the beginning of
   automatic tracking of upstream.
 -->
 
+## libcu++ 1.8.1
+
+libcu++ 1.8.1 is a minor release. It fixes minor issues in source, tests, and documentation.
+
+Supported ABI Versions: 4 (default), 3, and 2.
+
+### Issues Fixed
+
+- #268: Remove NVIDIA internal paths from CMake includes.
+- #265: Move pipeline into libcudacxx. Previously was a seperate CTK component.
+- #264: Fix builds using NVHPC by adding a new line.
+    - Thanks Chengjie Wang and Royil Damer for this contribution.
+- #261: Fix extra line in perform_tests.bash causing invalid test results.
+    - Thanks Chengjie Wang and Royil Damer for this contribution.
+- #246: Documentation fixes regarding atomics in GPU memory.
+    - Thanks Daniel Lustig for this contribution.
+- #258: Lock contrast of our documenation's search text field.
+    - Thanks Bradley Dice for this contribution.
+- #259: Add system_header pragma to portions of <nv/target>
+- #249: Documentation update for building libcudacxx.
+- #247: Update godbolt links in examples.
+    - Thanks Asher Mancinelli for this contribution.
+ 
 ## libcu++ 1.8.0
 
 libcu++ 1.8.0 is a major release. It adds several `constexpr` bit manipulation
