@@ -25,6 +25,11 @@
 
 #include "test_macros.h"
 
+#if defined(_MSC_VER)
+# pragma warning( disable: 4307 )
+# pragma warning( disable: 4308 )
+#endif
+
 template <typename M, typename Ms>
 __host__ __device__
 constexpr bool testConstexpr()

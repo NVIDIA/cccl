@@ -29,6 +29,11 @@
 
 #include "test_macros.h"
 
+#if defined(_MSC_VER)
+# pragma warning( disable: 4307 )
+# pragma warning( disable: 4308 )
+#endif
+
 int main(int, char**)
 {
     using year               = cuda::std::chrono::year;
