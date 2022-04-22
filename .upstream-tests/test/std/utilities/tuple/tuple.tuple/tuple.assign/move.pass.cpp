@@ -14,7 +14,7 @@
 
 // tuple& operator=(tuple&& u);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
 
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -65,6 +65,7 @@ int main(int, char**)
         t = cuda::std::move(t0);
         unused(t);
     }
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
         typedef cuda::std::tuple<MoveOnly> T;
         T t0(MoveOnly(0));
@@ -104,6 +105,7 @@ int main(int, char**)
         assert(cuda::std::get<1>(t) == y2);
         assert(&cuda::std::get<1>(t) == &y);
     }
+#endif
     // cuda::std::unique_ptr not supported
     /*
     {

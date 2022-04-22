@@ -14,7 +14,7 @@
 
 // tuple& operator=(const tuple& u);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
 
 #include <cuda/std/tuple>
 #include <cuda/std/cassert>
@@ -75,6 +75,7 @@ int main(int, char**)
         assert(cuda::std::get<2>(t) == "some text");
     }
     */
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
         // test reference assignment.
         using T = cuda::std::tuple<int&, int&&>;
@@ -90,6 +91,7 @@ int main(int, char**)
         assert(cuda::std::get<1>(t) == y2);
         assert(&cuda::std::get<1>(t) == &y);
     }
+#endif
     // cuda::std::unique_ptr not supported
     /*
     {
