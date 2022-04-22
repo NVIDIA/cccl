@@ -12,7 +12,7 @@
 
 // void swap(tuple& rhs);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
 
 #include <cuda/std/tuple>
 #include <cuda/std/cassert>
@@ -28,6 +28,7 @@ int main(int, char**)
         T t1;
         t0.swap(t1);
     }
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
         typedef cuda::std::tuple<MoveOnly> T;
         T t0(MoveOnly(0));
@@ -58,6 +59,6 @@ int main(int, char**)
         assert(cuda::std::get<1>(t1) == 1);
         assert(cuda::std::get<2>(t1) == 2);
     }
-
+#endif
   return 0;
 }
