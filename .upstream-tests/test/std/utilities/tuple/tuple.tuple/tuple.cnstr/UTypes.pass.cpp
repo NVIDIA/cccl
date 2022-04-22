@@ -15,6 +15,8 @@
 
 // XFAIL: gcc-4.8, gcc-4.9
 // XFAIL: msvc-19.12, msvc-19.13
+// Internal compiler error in 14.24
+// XFAIL: msvc-19.24
 
 // UNSUPPORTED: c++98, c++03
 

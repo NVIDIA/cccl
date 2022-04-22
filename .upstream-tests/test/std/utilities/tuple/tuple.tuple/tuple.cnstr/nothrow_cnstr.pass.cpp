@@ -13,6 +13,8 @@
 // tuple(tuple&& u);
 
 // UNSUPPORTED: c++98, c++03
+// Internal compiler error in 14.24
+// XFAIL: msvc-19.24
 
 // XFAIL: gcc-8 && c++17
 // XFAIL: gcc-7 && c++17

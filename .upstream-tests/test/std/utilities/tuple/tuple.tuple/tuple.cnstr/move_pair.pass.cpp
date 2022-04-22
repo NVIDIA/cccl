@@ -12,7 +12,9 @@
 
 // template <class U1, class U2> tuple(pair<U1, U2>&& u);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
+// Internal compiler error in 14.24
+// XFAIL: msvc-19.24
 
 #include <cuda/std/tuple>
 #include <cuda/std/cassert>

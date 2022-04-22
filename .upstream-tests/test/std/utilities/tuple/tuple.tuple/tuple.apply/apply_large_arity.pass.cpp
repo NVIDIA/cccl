@@ -8,6 +8,8 @@
 
 // UNSUPPORTED: c++98, c++03, c++11, c++14
 // UNSUPPORTED: nvrtc
+// Internal compiler error in 14.24
+// XFAIL: msvc-19.24
 
 // <cuda/std/tuple>
 
