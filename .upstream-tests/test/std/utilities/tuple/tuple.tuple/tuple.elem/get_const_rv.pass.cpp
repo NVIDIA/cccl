@@ -16,7 +16,7 @@
 //   const typename tuple_element<I, tuple<Types...> >::type&&
 //   get(const tuple<Types...>&& t);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
 
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -64,6 +64,7 @@ int main(int, char**)
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(p))), "");
     }
 
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
     int x = 42;
     int const y = 43;
@@ -73,6 +74,7 @@ int main(int, char**)
     static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<1>(cuda::std::move(p)))>::value, "");
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(p))), "");
     }
+#endif
 
 #if TEST_STD_VER > 11
     {
