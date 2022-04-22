@@ -14,7 +14,7 @@
 
 // XFAIL: gcc-4.8, gcc-4.9
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
 
 #include <cuda/std/tuple>
 #include <cuda/std/cassert>
@@ -149,9 +149,11 @@ int main(int, char**)
         static_assert(cuda::std::is_convertible<ExplicitTwo&&, ExplicitTwo>::value, "");
         static_assert(cuda::std::is_convertible<cuda::std::tuple<ExplicitTwo&&>&&, const cuda::std::tuple<ExplicitTwo>&>::value, "");
 
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
         ExplicitTwo e;
         cuda::std::tuple<ExplicitTwo> t = cuda::std::tuple<ExplicitTwo&&>(cuda::std::move(e));
         ((void)t);
+#endif
     }
   return 0;
 }

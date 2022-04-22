@@ -12,7 +12,7 @@
 
 // tuple(tuple&& u);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
 
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -67,7 +67,9 @@ __host__ __device__ void test_sfinae() {
     }
     // args constructors
     {
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
         static_assert(cuda::std::is_constructible<Tup, Elem&&>::value, "");
+#endif
         static_assert(!cuda::std::is_constructible<Tup, Elem const&>::value, "");
         static_assert(!cuda::std::is_constructible<Tup, Elem&>::value, "");
     }
@@ -97,6 +99,7 @@ int main(int, char**)
         T t = cuda::std::move(t0);
         unused(t); // Prevent unused warning
     }
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
         typedef cuda::std::tuple<MoveOnly> T;
         T t0(MoveOnly(0));
@@ -127,6 +130,7 @@ int main(int, char**)
         d_t d2(static_cast<d_t &&>(d));
         unused(d2);
     }
+#endif
     {
         test_sfinae<move_only_ebo>();
         test_sfinae<move_only_large>();
