@@ -1699,7 +1699,7 @@ bool operator>=(const day& __lhs, const day& __rhs) noexcept
 _LIBCUDACXX_INLINE_VISIBILITY
 inline constexpr
 day operator+ (const day& __lhs, const days& __rhs) noexcept
-{ return day(static_cast<unsigned>(__lhs) + __rhs.count()); }
+{ return day(static_cast<unsigned>(__lhs) + static_cast<unsigned>(__rhs.count())); }
 
 _LIBCUDACXX_INLINE_VISIBILITY
 inline constexpr
@@ -2534,7 +2534,7 @@ year_month_day::__from_days(days __d) noexcept
     const unsigned __doy = __doe - (365 * __yoe + __yoe/4 - __yoe/100);              // [0, 365]
     const unsigned __mp = (5 * __doy + 2)/153;                                       // [0, 11]
     const unsigned __dy = __doy - (153 * __mp + 2)/5 + 1;                            // [1, 31]
-    const unsigned __mth = __mp + (__mp < 10 ? 3 : -9);                              // [1, 12]
+    const unsigned __mth = __mp + static_cast<unsigned>(__mp < 10 ? 3 : -9);       // [1, 12]
     return year_month_day{chrono::year{__yr + (__mth <= 2)}, chrono::month{__mth}, chrono::day{__dy}};
 }
 
@@ -2553,9 +2553,9 @@ inline constexpr days year_month_day::__to_days() const noexcept
     const unsigned __dy  = static_cast<unsigned>(__d);
 
     const int      __era = (__yr >= 0 ? __yr : __yr - 399) / 400;
-    const unsigned __yoe = static_cast<unsigned>(__yr - __era * 400);                // [0, 399]
-    const unsigned __doy = (153 * (__mth + (__mth > 2 ? -3 : 9)) + 2) / 5 + __dy-1;  // [0, 365]
-    const unsigned __doe = __yoe * 365 + __yoe/4 - __yoe/100 + __doy;                // [0, 146096]
+    const unsigned __yoe = static_cast<unsigned>(__yr - __era * 400);                  // [0, 399]
+    const unsigned __doy = static_cast<unsigned>((153 * (__mth + static_cast<unsigned>(__mth > 2 ? -3 : 9)) + 2) / 5 + __dy-1);  // [0, 365]
+    const unsigned __doe = __yoe * 365 + __yoe/4 - __yoe/100 + __doy;                  // [0, 146096]
     return days{__era * 146097 + static_cast<int>(__doe) - 719468};
 }
 
