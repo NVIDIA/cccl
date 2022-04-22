@@ -8,7 +8,7 @@
 
 // UNSUPPORTED: nvrtc
 // Internal compiler error in 14.24
-// XFAIL: msvc-19.24
+// XFAIL: msvc-19.20, msvc-19.21, msvc-19.22, msvc-19.23, msvc-19.24, msvc-19.25
 
 // uncomment for a really verbose output detailing what test steps are being launched
 // #define DEBUG_TESTERS
