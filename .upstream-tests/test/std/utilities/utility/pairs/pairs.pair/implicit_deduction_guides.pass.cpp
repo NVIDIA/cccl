@@ -18,7 +18,7 @@
 // XFAIL: gcc
 
 // Currently broken with Clang + NVCC.
-// XFAIL: clang-6, clang-7, clang-9, clang-10
+// XFAIL: clang-6, clang-7
 
 // <utility>
 
