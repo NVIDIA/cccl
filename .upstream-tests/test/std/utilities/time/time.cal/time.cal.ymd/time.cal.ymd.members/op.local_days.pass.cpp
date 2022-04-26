@@ -35,6 +35,13 @@
 
 #include "test_macros.h"
 
+// MSVC warns about unsigned/signed comparisons and addition/subtraction
+// Silence these warnings, but not the ones within the header itself.
+#if defined(_MSC_VER)
+# pragma warning( disable: 4307 )
+# pragma warning( disable: 4308 )
+#endif
+
 __host__ __device__
 void RunTheExample()
 {
@@ -42,7 +49,7 @@ void RunTheExample()
 
     static_assert(year_month_day{local_days{year{2017}/January/0}}  == year{2016}/December/31,"");
     static_assert(year_month_day{local_days{year{2017}/January/31}} == year{2017}/January/31,"");
-    static_assert(year_month_day{local_days{year{2017}/January/32}} == year{2017}/February/1,"");  
+    static_assert(year_month_day{local_days{year{2017}/January/32}} == year{2017}/February/1,"");
 }
 
 int main(int, char**)

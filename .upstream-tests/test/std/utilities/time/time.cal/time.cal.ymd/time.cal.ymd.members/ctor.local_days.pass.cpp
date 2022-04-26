@@ -29,6 +29,13 @@
 
 #include "test_macros.h"
 
+// MSVC warns about unsigned/signed comparisons and addition/subtraction
+// Silence these warnings, but not the ones within the header itself.
+#if defined(_MSC_VER)
+# pragma warning( disable: 4307 )
+# pragma warning( disable: 4308 )
+#endif
+
 int main(int, char**)
 {
     using year           = cuda::std::chrono::year;

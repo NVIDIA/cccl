@@ -14,7 +14,9 @@
 //   typename tuple_element<I, tuple<Types...> >::type&&
 //   get(tuple<Types...>&& t);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
+// Internal compiler error in 14.24
+// XFAIL: msvc-19.20, msvc-19.21, msvc-19.22, msvc-19.23, msvc-19.24, msvc-19.25
 
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -36,10 +38,12 @@ int main(int, char**)
         assert(*p == 3);
     }
     */
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
         cuda::std::tuple<MoveOnly> t(3);
         MoveOnly _m = cuda::std::get<0>(cuda::std::move(t));
         assert(_m.get() == 3);
     }
+#endif
   return 0;
 }

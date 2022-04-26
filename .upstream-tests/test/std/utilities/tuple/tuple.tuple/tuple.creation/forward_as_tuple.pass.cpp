@@ -13,7 +13,9 @@
 // template<class... Types>
 //     tuple<Types&&...> forward_as_tuple(Types&&... t);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
+// Internal compiler error in 14.24
+// XFAIL: msvc-19.20, msvc-19.21, msvc-19.22, msvc-19.23, msvc-19.24, msvc-19.25
 
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
@@ -66,9 +68,11 @@ int main(int, char**)
     {
         test0(cuda::std::forward_as_tuple());
     }
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
         test1a(cuda::std::forward_as_tuple(1));
     }
+#endif
     {
         int i = 2;
         test1b(cuda::std::forward_as_tuple(i));

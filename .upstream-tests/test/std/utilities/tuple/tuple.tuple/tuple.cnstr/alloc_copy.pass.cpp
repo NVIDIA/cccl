@@ -13,7 +13,9 @@
 // template <class Alloc>
 //   tuple(allocator_arg_t, const Alloc& a, const tuple&);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
+// Internal compiler error in 14.24
+// XFAIL: msvc-19.20, msvc-19.21, msvc-19.22, msvc-19.23, msvc-19.24, msvc-19.25
 
 #include <cuda/std/tuple>
 #include <cuda/std/cassert>

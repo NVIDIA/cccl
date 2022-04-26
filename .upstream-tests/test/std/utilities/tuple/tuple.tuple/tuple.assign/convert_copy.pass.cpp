@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-
-
 // <cuda/std/tuple>
 
 // template <class... Types> class tuple;
@@ -15,7 +13,9 @@
 // template <class... UTypes>
 //   tuple& operator=(const tuple<UTypes...>& u);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
+// Internal compiler error in 14.24
+// XFAIL: msvc-19.20, msvc-19.21, msvc-19.22, msvc-19.23, msvc-19.24, msvc-19.25
 
 #include <cuda/std/tuple>
 #include <cuda/std/cassert>
@@ -76,6 +76,7 @@ int main(int, char**)
         assert(cuda::std::get<1>(t1) == int('a'));
         assert(cuda::std::get<2>(t1).id_ == 2);
     }
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
         // Test that tuple evaluates correctly applies an lvalue reference
         // before evaluating is_assignable (ie 'is_assignable<int&, int&>')
@@ -88,6 +89,6 @@ int main(int, char**)
         assert(cuda::std::get<0>(t) == 43);
         assert(&cuda::std::get<0>(t) == &x);
     }
-
+#endif
   return 0;
 }

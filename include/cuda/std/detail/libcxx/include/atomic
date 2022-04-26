@@ -1239,7 +1239,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_wait(__cxx_atomic_impl<_Tp, _Sco
 }
 
 // general atomic<T>/atomic_ref<T>
-template <class _Tp, int _Sco = 0, bool = is_integral<_Tp>() && !is_same<_Tp, bool>()>
+template <class _Tp, int _Sco = 0, bool = is_integral<_Tp>::value && !is_same<_Tp, bool>::value>
 struct __atomic_base {
     mutable __cxx_atomic_impl<_Tp, _Sco> __a_;
 

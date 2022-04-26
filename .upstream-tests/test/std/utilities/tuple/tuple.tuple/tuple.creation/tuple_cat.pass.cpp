@@ -14,7 +14,9 @@
 
 // template <class... Tuples> tuple<CTypes...> tuple_cat(Tuples&&... tpls);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
+// Internal compiler error in 14.24
+// XFAIL: msvc-19.20, msvc-19.21, msvc-19.22, msvc-19.23, msvc-19.24, msvc-19.25
 
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -80,6 +82,7 @@ int main(int, char**)
         unused(t); // Prevent unused warning
     }
     */
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
         constexpr cuda::std::tuple<int> t1(1);
         constexpr cuda::std::tuple<int> t = cuda::std::tuple_cat(t1);
@@ -92,12 +95,15 @@ int main(int, char**)
         static_assert(cuda::std::get<1>(t) == 1, "");
     }
 #endif
+#endif
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
         cuda::std::tuple<int, MoveOnly> t =
                                 cuda::std::tuple_cat(cuda::std::tuple<int, MoveOnly>(1, 2));
         assert(cuda::std::get<0>(t) == 1);
         assert(cuda::std::get<1>(t) == 2);
     }
+#endif
     // cuda::std::array not supported
     /*
     {
@@ -107,12 +113,13 @@ int main(int, char**)
         assert(cuda::std::get<2>(t) == 0);
     }
     */
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
         cuda::std::tuple<int, MoveOnly> t = cuda::std::tuple_cat(cuda::std::pair<int, MoveOnly>(2, 1));
         assert(cuda::std::get<0>(t) == 2);
         assert(cuda::std::get<1>(t) == 1);
     }
-
+#endif
     {
         cuda::std::tuple<> t1;
         cuda::std::tuple<> t2;
@@ -161,6 +168,7 @@ int main(int, char**)
         assert(cuda::std::get<1>(t3) == 3.5);
         assert(cuda::std::get<2>(t3) == nullptr);
     }
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
         cuda::std::tuple<int*, MoveOnly> t1(nullptr, 1);
         cuda::std::tuple<int, double> t2(2, 3.5);
@@ -271,5 +279,6 @@ int main(int, char**)
             int, const int, int&, const int&>);
         unused(r);
     }
+#endif
   return 0;
 }

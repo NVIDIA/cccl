@@ -8,7 +8,9 @@
 
 
 
-// UNSUPPORTED: c++98, c++03, c++11 
+// UNSUPPORTED: c++98, c++03, c++11
+// Internal compiler error in 14.24
+// XFAIL: msvc-19.20, msvc-19.21, msvc-19.22, msvc-19.23, msvc-19.24, msvc-19.25
 
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -88,6 +90,7 @@ int main(int, char**)
     static_assert(noexcept(cuda::std::get<int const&>(cuda::std::move(t))), "");
     }
 
+#if !(defined(_MSC_VER) && _MSC_VER < 1916)
     {
     int x = 42;
     int y = 43;
@@ -97,7 +100,7 @@ int main(int, char**)
     static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<int const&&>(cuda::std::move(t)))>::value, "");
     static_assert(noexcept(cuda::std::get<int const&&>(cuda::std::move(t))), "");
     }
-
+#endif
     {
     constexpr const cuda::std::tuple<int, const int, double, double> t { 1, 2, 3.4, 5.6 };
     static_assert(cuda::std::get<int>(cuda::std::move(t)) == 1, "");
