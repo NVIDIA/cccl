@@ -18,6 +18,9 @@
 #  define _NV_COMPILER_NVCC
 #elif defined(__NVCOMPILER) && __cplusplus >= 201103L
 #  define _NV_COMPILER_NVCXX
+#elif defined(__clang__) && defined(__CUDA__) && defined(__CUDA_ARCH__)
+// clang compiling CUDA code, device mode.
+#  define _NV_COMPILER_CLANG_CUDA
 #endif
 
 #if defined(__CUDACC_RTC__)

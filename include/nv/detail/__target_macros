@@ -78,7 +78,7 @@
 #  define _NV_TARGET_PROVIDES(q)   nv::target::provides(q)
 #  define _NV_TARGET_IS_EXACTLY(q) nv::target::is_exactly(q)
 
-#elif defined(_NV_COMPILER_NVCC)
+#elif defined(_NV_COMPILER_NVCC) || defined (_NV_COMPILER_CLANG_CUDA)
 
 #  define _NV_TARGET_VAL_SM_35 350
 #  define _NV_TARGET_VAL_SM_37 370
@@ -229,7 +229,7 @@
       _NV_BLOCK_EXPAND(t)        \
     } else { _NV_BLOCK_EXPAND(__VA_ARGS__) })
 
-#elif defined(_NV_COMPILER_NVCC)
+#elif defined(_NV_COMPILER_NVCC) || defined (_NV_COMPILER_CLANG_CUDA)
 
 #  if (_NV_TARGET___NV_IS_EXACTLY_SM_35)
 #    define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_35 1
