@@ -35,8 +35,9 @@
 #  define _NV_BITSET_ATTRIBUTE
 #endif
 
-#if (defined(__cplusplus) && __cplusplus >= 201103L) || \
-    (defined(_MSC_VER) && _MSVC_LANG >= 201103L)
+#if (!defined(__ibmxl__)) && \
+    ((defined(__cplusplus) && __cplusplus >= 201103L) || \
+     (defined(_MSC_VER) && _MSVC_LANG >= 201103L))
 #  define _NV_TARGET_CPP11
 #endif
 
