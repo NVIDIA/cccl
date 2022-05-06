@@ -456,7 +456,7 @@
 #  define _NV_TARGET_DISPATCH(...) _NV_BLOCK_EXPAND(_NV_DISPATCH_N_ARY(_NV_TARGET_DISPATCH_HANDLE, __VA_ARGS__))
 
 // NV_IF_TARGET supports a false statement provided as a variadic macro
-#  define NV_IF_TARGET(cond, t, ...)    _NV_BLOCK_EXPAND(_NV_TARGET_IF(cond, t, __VA_ARGS__))
+#  define NV_IF_TARGET(cond, ...)    _NV_BLOCK_EXPAND(_NV_TARGET_IF(cond, __VA_ARGS__))
 #  define NV_IF_ELSE_TARGET(cond, t, f) _NV_BLOCK_EXPAND(_NV_TARGET_IF(cond, t, f))
 #  define NV_DISPATCH_TARGET(...)       _NV_TARGET_DISPATCH(__VA_ARGS__)
 
