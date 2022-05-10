@@ -170,6 +170,7 @@ void apply_access_property(const volatile void* __ptr, const _Shape __shape, acc
 #endif
 }
 
+inline
 __host__ __device__
 void discard_memory(volatile void* __ptr, std::size_t __nbytes) noexcept {
 #if __CUDA_ARCH__ >= 800
