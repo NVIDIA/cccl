@@ -155,6 +155,7 @@ namespace __detail_ap {
           std::uint64_t(__ap_reserved3)           << 63;
       }
 
+      inline
       __host__ __device__
       std::uint64_t __get_descriptor_non_cexpr() const noexcept { return *reinterpret_cast<const std::uint64_t*>(this); }
 
@@ -256,6 +257,7 @@ namespace __detail_ap {
           std::uint64_t(__ap_reserved2)           << 63;
       }
 
+      inline
       __host__ __device__
       std::uint64_t __get_descriptor_non_cexpr() const noexcept { return *reinterpret_cast<const std::uint64_t*>(this); }
 
