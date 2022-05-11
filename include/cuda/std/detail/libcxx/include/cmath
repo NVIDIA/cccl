@@ -691,10 +691,10 @@ _LIBCUDACXX_CONSTEXPR _IntT __max_representable_int_for_float() _NOEXCEPT {
   static_assert(numeric_limits<_FloatT>::radix == 2, "FloatT has incorrect radix");
 #ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
   static_assert((_IsSame<_FloatT, float>::value || _IsSame<_FloatT, double>::value
-                      || _IsSame<_FloatT,long double>::value), "unsupported floating point type");
+                 || _IsSame<_FloatT,long double>::value), "unsupported floating point type");
 #else
-static_assert((_IsSame<_FloatT, float>::value || _IsSame<_FloatT, double>::value),
-                "unsupported floating point type");
+  static_assert((_IsSame<_FloatT, float>::value || _IsSame<_FloatT, double>::value),
+                 "unsupported floating point type");
 #endif
   return _FloatBigger ? numeric_limits<_IntT>::max() :  (numeric_limits<_IntT>::max() >> _Bits << _Bits);
 }
