@@ -29,12 +29,10 @@
 
 #include "test_macros.h"
 
-
 struct short_container {
 __host__ __device__
     uint16_t size() const { return 60000; } // not noexcept
     };
-
 
 
 template<typename C>
@@ -96,6 +94,7 @@ int main(int, char**)
 #if defined(_LIBCUDACXX_HAS_VECTOR)
     test_container ( v );
     ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(v)));
+#endif
 #if defined(_LIBCUDACXX_HAS_LIST)
     test_container ( l );
     ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(l)));
@@ -107,6 +106,7 @@ int main(int, char**)
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
     test_const_container ( v );
+#endif
 #if defined(_LIBCUDACXX_HAS_LIST)
     test_const_container ( l );
 #endif
