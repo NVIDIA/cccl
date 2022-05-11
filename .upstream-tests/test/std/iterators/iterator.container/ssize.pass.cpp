@@ -29,12 +29,10 @@
 
 #include "test_macros.h"
 
-
 struct short_container {
 __host__ __device__
     uint16_t size() const { return 60000; } // not noexcept
     };
-
 
 
 template<typename C>

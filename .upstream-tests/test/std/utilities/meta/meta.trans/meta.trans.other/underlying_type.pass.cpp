@@ -80,7 +80,9 @@ int main(int, char**)
 //  SFINAE-able underlying_type
 #if TEST_STD_VER > 17
     static_assert( has_type_member<E>::value, "");
+#ifdef TEST_UNSIGNED_UNDERLYING_TYPE
     static_assert( has_type_member<F>::value, "");
+#endif // TEST_UNSIGNED_UNDERLYING_TYPE
     static_assert( has_type_member<G>::value, "");
 
     static_assert(!has_type_member<void>::value, "");
