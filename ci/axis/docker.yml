@@ -3,6 +3,10 @@
 # Released under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 
+# Base container tag lookup:
+# - CTK:   https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags
+# - NVHPC: https://catalog.ngc.nvidia.com/orgs/nvidia/containers/nvhpc/tags
+
 SDK_TYPE:
   - cuda
   - nvhpc
@@ -10,11 +14,12 @@ SDK_TYPE:
 SDK_VER:
   - 11.0.3-devel
   - 11.1.1-devel
-  - 11.2.0-devel
+  - 11.2.2-devel
   - 11.3.1-devel
   - 11.4.3-devel
-  - 11.5.1-devel
-  - 11.6.0-devel
+  - 11.5.2-devel
+  - 11.6.2-devel
+  - 11.7.0-devel
   - 20.9-devel
   - 21.1-devel-cuda11.2
   - 21.3-devel-cuda11.2
@@ -23,6 +28,8 @@ SDK_VER:
   - 21.9-devel-cuda11.4
   - 21.11-devel-cuda11.5
   - 22.1-devel-cuda11.5
+  - 22.2-devel-cuda11.6
+  - 22.3-devel-cuda11.6
 
 OS_TYPE:
   - ubuntu
@@ -55,6 +62,8 @@ CXX_VER:
   - 21.9
   - 21.11
   - 22.1
+  - 22.2
+  - 22.3
   - latest
 
 exclude:
@@ -84,20 +93,26 @@ exclude:
     SDK_VER: 21.11-devel-cuda11.5
   - SDK_TYPE: cuda
     SDK_VER: 22.1-devel-cuda11.5
+  - SDK_TYPE: cuda
+    SDK_VER: 22.2-devel-cuda11.6
+  - SDK_TYPE: cuda
+    SDK_VER: 22.3-devel-cuda11.6
   - SDK_TYPE: nvhpc
     SDK_VER: 11.0.3-devel
   - SDK_TYPE: nvhpc
     SDK_VER: 11.1.1-devel
   - SDK_TYPE: nvhpc
-    SDK_VER: 11.2.0-devel
+    SDK_VER: 11.2.2-devel
   - SDK_TYPE: nvhpc
     SDK_VER: 11.3.1-devel
   - SDK_TYPE: nvhpc
     SDK_VER: 11.4.3-devel
   - SDK_TYPE: nvhpc
-    SDK_VER: 11.5.1-devel
+    SDK_VER: 11.5.2-devel
   - SDK_TYPE: nvhpc
-    SDK_VER: 11.6.0-devel
+    SDK_VER: 11.6.2-devel
+  - SDK_TYPE: nvhpc
+    SDK_VER: 11.7.0-devel
   # Excludes by `OS_TYPE`.
   - OS_TYPE: centos
     SDK_TYPE: nvhpc
@@ -105,9 +120,6 @@ exclude:
     CXX_TYPE: clang
   - OS_TYPE: centos
     CXX_TYPE: icc
-  # Workaround -- the nvidia/cuda:1.15.1-devel-centos7 packages are currently missing
-  - OS_TYPE: centos
-    SDK_VER: 11.5.1-devel
   # Excludes by `OS_VER`.
   - OS_TYPE: ubuntu
     OS_VER: 7
@@ -151,6 +163,10 @@ exclude:
   - CXX_TYPE: gcc
     CXX_VER: 22.1
   - CXX_TYPE: gcc
+    CXX_VER: 22.2
+  - CXX_TYPE: gcc
+    CXX_VER: 22.3
+  - CXX_TYPE: gcc
     CXX_VER: latest
   - CXX_TYPE: clang
     CXX_VER: 5
@@ -172,6 +188,10 @@ exclude:
     CXX_VER: 21.11
   - CXX_TYPE: clang
     CXX_VER: 22.1
+  - CXX_TYPE: clang
+    CXX_VER: 22.2
+  - CXX_TYPE: clang
+    CXX_VER: 22.3
   - CXX_TYPE: clang
     CXX_VER: latest
   - CXX_TYPE: icc
@@ -206,6 +226,10 @@ exclude:
     CXX_VER: 21.11
   - CXX_TYPE: icc
     CXX_VER: 22.1
+  - CXX_TYPE: icc
+    CXX_VER: 22.2
+  - CXX_TYPE: icc
+    CXX_VER: 22.3
   # Match nvhpc and nvcxx version
   # nvc++ 20.9
   - CXX_VER: 20.9
@@ -222,6 +246,10 @@ exclude:
     SDK_VER: 21.11-devel-cuda11.5
   - CXX_VER: 20.9
     SDK_VER: 22.1-devel-cuda11.5
+  - CXX_VER: 20.9
+    SDK_VER: 22.2-devel-cuda11.6
+  - CXX_VER: 20.9
+    SDK_VER: 22.3-devel-cuda11.6
   # nvc++ 21.1
   - CXX_VER: 21.1
     SDK_VER: 20.9-devel
@@ -237,6 +265,10 @@ exclude:
     SDK_VER: 21.11-devel-cuda11.5
   - CXX_VER: 21.1
     SDK_VER: 22.1-devel-cuda11.5
+  - CXX_VER: 21.1
+    SDK_VER: 22.2-devel-cuda11.6
+  - CXX_VER: 21.1
+    SDK_VER: 22.3-devel-cuda11.6
   # nvc++ 21.3
   - CXX_VER: 21.3
     SDK_VER: 20.9-devel
@@ -252,6 +284,10 @@ exclude:
     SDK_VER: 21.11-devel-cuda11.5
   - CXX_VER: 21.3
     SDK_VER: 22.1-devel-cuda11.5
+  - CXX_VER: 21.3
+    SDK_VER: 22.2-devel-cuda11.6
+  - CXX_VER: 21.3
+    SDK_VER: 22.3-devel-cuda11.6
   # nvc++ 21.5
   - CXX_VER: 21.5
     SDK_VER: 20.9-devel
@@ -267,6 +303,10 @@ exclude:
     SDK_VER: 21.11-devel-cuda11.5
   - CXX_VER: 21.5
     SDK_VER: 22.1-devel-cuda11.5
+  - CXX_VER: 21.5
+    SDK_VER: 22.2-devel-cuda11.6
+  - CXX_VER: 21.5
+    SDK_VER: 22.3-devel-cuda11.6
   # nvc++ 21.7
   - CXX_VER: 21.7
     SDK_VER: 20.9-devel
@@ -282,6 +322,10 @@ exclude:
     SDK_VER: 21.11-devel-cuda11.5
   - CXX_VER: 21.7
     SDK_VER: 22.1-devel-cuda11.5
+  - CXX_VER: 21.7
+    SDK_VER: 22.2-devel-cuda11.6
+  - CXX_VER: 21.7
+    SDK_VER: 22.3-devel-cuda11.6
   # nvc++ 21.9
   - CXX_VER: 21.9
     SDK_VER: 20.9-devel
@@ -297,6 +341,10 @@ exclude:
     SDK_VER: 21.11-devel-cuda11.5
   - CXX_VER: 21.9
     SDK_VER: 22.1-devel-cuda11.5
+  - CXX_VER: 21.9
+    SDK_VER: 22.2-devel-cuda11.6
+  - CXX_VER: 21.9
+    SDK_VER: 22.3-devel-cuda11.6
   # nvc++ 21.11
   - CXX_VER: 21.11
     SDK_VER: 20.9-devel
@@ -312,6 +360,10 @@ exclude:
     SDK_VER: 21.9-devel-cuda11.4
   - CXX_VER: 21.11
     SDK_VER: 22.1-devel-cuda11.5
+  - CXX_VER: 21.11
+    SDK_VER: 22.2-devel-cuda11.6
+  - CXX_VER: 21.11
+    SDK_VER: 22.3-devel-cuda11.6
   # nvc++ 22.1
   - CXX_VER: 22.1
     SDK_VER: 20.9-devel
@@ -327,3 +379,45 @@ exclude:
     SDK_VER: 21.9-devel-cuda11.4
   - CXX_VER: 22.1
     SDK_VER: 21.11-devel-cuda11.5
+  - CXX_VER: 22.1
+    SDK_VER: 22.2-devel-cuda11.6
+  - CXX_VER: 22.1
+    SDK_VER: 22.3-devel-cuda11.6
+  # nvc++ 22.2
+  - CXX_VER: 22.2
+    SDK_VER: 20.9-devel
+  - CXX_VER: 22.2
+    SDK_VER: 21.1-devel-cuda11.2
+  - CXX_VER: 22.2
+    SDK_VER: 21.3-devel-cuda11.2
+  - CXX_VER: 22.2
+    SDK_VER: 21.5-devel-cuda11.3
+  - CXX_VER: 22.2
+    SDK_VER: 21.7-devel-cuda11.4
+  - CXX_VER: 22.2
+    SDK_VER: 21.9-devel-cuda11.4
+  - CXX_VER: 22.2
+    SDK_VER: 21.11-devel-cuda11.5
+  - CXX_VER: 22.2
+    SDK_VER: 22.1-devel-cuda11.5
+  - CXX_VER: 22.2
+    SDK_VER: 22.3-devel-cuda11.6
+  # nvc++ 22.3
+  - CXX_VER: 22.3
+    SDK_VER: 20.9-devel
+  - CXX_VER: 22.3
+    SDK_VER: 21.1-devel-cuda11.2
+  - CXX_VER: 22.3
+    SDK_VER: 21.3-devel-cuda11.2
+  - CXX_VER: 22.3
+    SDK_VER: 21.5-devel-cuda11.3
+  - CXX_VER: 22.3
+    SDK_VER: 21.7-devel-cuda11.4
+  - CXX_VER: 22.3
+    SDK_VER: 21.9-devel-cuda11.4
+  - CXX_VER: 22.3
+    SDK_VER: 21.11-devel-cuda11.5
+  - CXX_VER: 22.3
+    SDK_VER: 22.1-devel-cuda11.5
+  - CXX_VER: 22.3
+    SDK_VER: 22.2-devel-cuda11.6
