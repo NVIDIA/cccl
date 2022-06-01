@@ -101,12 +101,14 @@ struct atomic
     __host__ __device__
     _Tp fetch_max(const _Tp & __op, memory_order __m = memory_order_seq_cst) volatile noexcept
     {
+        static_assert(std::is_integral<_Tp>(), "fetch_max/min is available for integral types only");
         return std::__detail::__cxx_atomic_fetch_max(&this->__a_, __op, __m);
     }
 
     __host__ __device__
     _Tp fetch_min(const _Tp & __op, memory_order __m = memory_order_seq_cst) volatile noexcept
     {
+        static_assert(std::is_integral<_Tp>(), "fetch_max/min is available for integral types only");
         return std::__detail::__cxx_atomic_fetch_min(&this->__a_, __op, __m);
     }
 };
@@ -192,12 +194,14 @@ struct atomic_ref
     __host__ __device__
     _Tp fetch_max(const _Tp & __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
     {
+        static_assert(std::is_integral<_Tp>(), "fetch_max/min is available for integral types only");
         return std::__detail::__cxx_atomic_fetch_max(&this->__a_, __op, __m);
     }
 
     __host__ __device__
     _Tp fetch_min(const _Tp & __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
     {
+        static_assert(std::is_integral<_Tp>(), "fetch_max/min is available for integral types only");
         return std::__detail::__cxx_atomic_fetch_min(&this->__a_, __op, __m);
     }
 };
