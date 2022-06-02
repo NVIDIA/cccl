@@ -46,7 +46,8 @@
 #  define _NV_TARGET_ARCH_TO_SM_860 86
 #  define _NV_TARGET_ARCH_TO_SM_870 87
 
-#if defined(_NV_COMPILER_NVCXX)
+// Only enable when compiling for CUDA/stdpar
+#if defined(_NV_COMPILER_NVCXX) && defined(_NVHPC_CUDA)
 
 #  define _NV_TARGET_VAL_SM_35 nv::target::sm_35
 #  define _NV_TARGET_VAL_SM_37 nv::target::sm_37
@@ -218,7 +219,7 @@
 #define NV_NO_TARGET       __NV_NO_TARGET
 
 // Platform invoke mechanisms
-#if defined(_NV_COMPILER_NVCXX)
+#if defined(_NV_COMPILER_NVCXX) && defined(_NVHPC_CUDA)
 
 #  define _NV_ARCH_COND(q) (_NV_TARGET_##q)
 
