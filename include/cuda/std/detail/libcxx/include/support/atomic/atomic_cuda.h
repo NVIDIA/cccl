@@ -72,7 +72,7 @@ inline
  void __cxx_atomic_thread_fence(memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            __atomic_thread_fence_cuda(__order, __thread_scope_system_tag());
+            __atomic_thread_fence_cuda(static_cast<__memory_order_underlying_t>(__order), __thread_scope_system_tag());
         ),
         NV_IS_HOST, (
             __host::__cxx_atomic_thread_fence(__order);
@@ -85,7 +85,7 @@ inline
  void __cxx_atomic_signal_fence(memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            __atomic_signal_fence_cuda(__order);
+            __atomic_signal_fence_cuda(static_cast<__memory_order_underlying_t>(__order));
         ),
         NV_IS_HOST, (
             __host::__cxx_atomic_signal_fence(__order);
@@ -181,7 +181,7 @@ __host__ __device__
     alignas(_Tp) auto __tmp = __val;
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            __atomic_store_n_cuda(__cxx_get_underlying_device_atomic(__a), __tmp, __order, __scope_tag<_Sco>());
+            __atomic_store_n_cuda(__cxx_get_underlying_device_atomic(__a), __tmp, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
             __host::__cxx_atomic_store(&__a->__a_value, __tmp, __order);
@@ -194,7 +194,7 @@ __host__ __device__
  _Tp __cxx_atomic_load(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> const volatile* __a, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_load_n_cuda(__cxx_get_underlying_device_atomic(__a), __order, __scope_tag<_Sco>());
+            return __atomic_load_n_cuda(__cxx_get_underlying_device_atomic(__a), static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
             return __host::__cxx_atomic_load(&__a->__a_value, __order);
@@ -208,7 +208,7 @@ __host__ __device__
     alignas(_Tp) auto __tmp = __val;
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_exchange_n_cuda(__cxx_get_underlying_device_atomic(__a), __tmp, __order, __scope_tag<_Sco>());
+            return __atomic_exchange_n_cuda(__cxx_get_underlying_device_atomic(__a), __tmp, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
             return __host::__cxx_atomic_exchange(&__a->__a_value, __tmp, __order);
@@ -224,7 +224,7 @@ __host__ __device__
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
             alignas(_Tp) auto __tmp_v = __val;
-            __result = __atomic_compare_exchange_cuda(__cxx_get_underlying_device_atomic(__a), &__tmp, &__tmp_v, false, __success, __failure, __scope_tag<_Sco>());
+            __result = __atomic_compare_exchange_cuda(__cxx_get_underlying_device_atomic(__a), &__tmp, &__tmp_v, false, static_cast<__memory_order_underlying_t>(__success), static_cast<__memory_order_underlying_t>(__failure), __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
             __result = __host::__cxx_atomic_compare_exchange_strong(&__a->__a_value, &__tmp, __val, __success, __failure);
@@ -242,7 +242,7 @@ __host__ __device__
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
             alignas(_Tp) auto __tmp_v = __val;
-            __result = __atomic_compare_exchange_cuda(__cxx_get_underlying_device_atomic(__a), &__tmp, &__tmp_v, true, __success, __failure, __scope_tag<_Sco>());
+            __result = __atomic_compare_exchange_cuda(__cxx_get_underlying_device_atomic(__a), &__tmp, &__tmp_v, true, static_cast<__memory_order_underlying_t>(__success), static_cast<__memory_order_underlying_t>(__failure), __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
             __result = __host::__cxx_atomic_compare_exchange_weak(&__a->__a_value, &__tmp, __val, __success, __failure);
@@ -257,7 +257,7 @@ __host__ __device__
  _Tp __cxx_atomic_fetch_add(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __delta, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_add_cuda(__cxx_get_underlying_device_atomic(__a), __delta, __order, __scope_tag<_Sco>());
+            return __atomic_fetch_add_cuda(__cxx_get_underlying_device_atomic(__a), __delta, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
             return __host::__cxx_atomic_fetch_add(&__a->__a_value, __delta, __order);
@@ -270,7 +270,7 @@ __host__ __device__
  _Tp* __cxx_atomic_fetch_add(__cxx_atomic_base_heterogeneous_impl<_Tp*, _Sco, _Ref> volatile* __a, ptrdiff_t __delta, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_add_cuda(__cxx_get_underlying_device_atomic(__a), __delta, __order, __scope_tag<_Sco>());
+            return __atomic_fetch_add_cuda(__cxx_get_underlying_device_atomic(__a), __delta, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
             return __host::__cxx_atomic_fetch_add(&__a->__a_value, __delta, __order);
@@ -283,7 +283,7 @@ __host__ __device__
  _Tp __cxx_atomic_fetch_sub(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __delta, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_sub_cuda(__cxx_get_underlying_device_atomic(__a), __delta, __order, __scope_tag<_Sco>());
+            return __atomic_fetch_sub_cuda(__cxx_get_underlying_device_atomic(__a), __delta, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
             return __host::__cxx_atomic_fetch_sub(&__a->__a_value, __delta, __order);
@@ -296,7 +296,7 @@ __host__ __device__
  _Tp* __cxx_atomic_fetch_sub(__cxx_atomic_base_heterogeneous_impl<_Tp*, _Sco, _Ref> volatile* __a, ptrdiff_t __delta, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_sub_cuda(__cxx_get_underlying_device_atomic(__a), __delta, __order, __scope_tag<_Sco>());
+            return __atomic_fetch_sub_cuda(__cxx_get_underlying_device_atomic(__a), __delta, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
             return __host::__cxx_atomic_fetch_sub(&__a->__a_value, __delta, __order);
@@ -309,7 +309,7 @@ __host__ __device__
  _Tp __cxx_atomic_fetch_and(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __pattern, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_and_cuda(__cxx_get_underlying_device_atomic(__a), __pattern, __order, __scope_tag<_Sco>());
+            return __atomic_fetch_and_cuda(__cxx_get_underlying_device_atomic(__a), __pattern, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
             return __host::__cxx_atomic_fetch_and(&__a->__a_value, __pattern, __order);
@@ -322,7 +322,7 @@ __host__ __device__
  _Tp __cxx_atomic_fetch_or(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __pattern, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_or_cuda(__cxx_get_underlying_device_atomic(__a), __pattern, __order, __scope_tag<_Sco>());
+            return __atomic_fetch_or_cuda(__cxx_get_underlying_device_atomic(__a), __pattern, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
             return __host::__cxx_atomic_fetch_or(&__a->__a_value, __pattern, __order);
@@ -335,7 +335,7 @@ __host__ __device__
  _Tp __cxx_atomic_fetch_xor(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __pattern, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_xor_cuda(__cxx_get_underlying_device_atomic(__a), __pattern, __order, __scope_tag<_Sco>());
+            return __atomic_fetch_xor_cuda(__cxx_get_underlying_device_atomic(__a), __pattern, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ),
         NV_IS_HOST, (
             return __host::__cxx_atomic_fetch_xor(&__a->__a_value, __pattern, __order);
@@ -348,7 +348,7 @@ __host__ __device__
  _Tp __cxx_atomic_fetch_max(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Delta __val, memory_order __order) {
     NV_IF_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_max_cuda(__cxx_get_underlying_device_atomic(__a), __val, __order, __scope_tag<_Sco>());
+            return __atomic_fetch_max_cuda(__cxx_get_underlying_device_atomic(__a), __val, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ), (
             return __host::__cxx_atomic_fetch_max(&__a->__a_value, __val, __order);
         )
@@ -360,7 +360,7 @@ __host__ __device__
  _Tp __cxx_atomic_fetch_min(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Delta __val, memory_order __order) {
     NV_IF_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_min_cuda(__cxx_get_underlying_device_atomic(__a), __val, __order, __scope_tag<_Sco>());
+            return __atomic_fetch_min_cuda(__cxx_get_underlying_device_atomic(__a), __val, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ), (
             return __host::__cxx_atomic_fetch_min(&__a->__a_value, __val, __order);
         )
@@ -428,7 +428,7 @@ __host__ __device__ inline bool __cxx_atomic_compare_exchange_weak(__cxx_atomic_
     auto const __actual = __cxx_small_from_32<_Tp>(__temp);
     if(!__ret) {
         if(0 == __cuda_memcmp(&__actual, __expected, sizeof(_Tp)))
-            __cxx_atomic_fetch_and(&__a->__a_value, (1u << (8*sizeof(_Tp))) - 1, memory_order::memory_order_relaxed);
+            __cxx_atomic_fetch_and(&__a->__a_value, (1u << (8*sizeof(_Tp))) - 1, memory_order_relaxed);
         else
             *__expected = __actual;
     }
