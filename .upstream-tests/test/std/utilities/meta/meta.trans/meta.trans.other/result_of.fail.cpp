@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 // Mandates: invoke result must fail to compile when used with device lambdas.
-// UNSUPPORTED: !nvcc
+// UNSUPPORTED: nvrtc
 
 // <cuda/std/functional>
 

@@ -13,6 +13,7 @@
 #include <cuda/std/type_traits>
 // #include <cuda/std/memory>
 #include <cuda/std/cassert>
+#include <cuda/functional>
 #include "test_macros.h"
 
 struct S
@@ -101,6 +102,7 @@ void test_no_result()
 #endif
 }
 
+#if defined(__NVCC__) 
 template <class Ret, class Fn>
 __host__ __device__
 void test_lambda(Fn &&)
@@ -111,6 +113,7 @@ void test_lambda(Fn &&)
     ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn>::type);
 #endif
 }
+#endif
 
 int main(int, char**)
 {
@@ -422,9 +425,13 @@ int main(int, char**)
     }
 #if defined(__NVCC__) 
     { // extended lambda
+#if defined(__CUDA_ARCH__)
     test_lambda<int>([] __host__ __device__ () -> int { return 42; });
     test_lambda<double>([] __host__ __device__ () -> double { return 42.0; });
     test_lambda<SD>([] __host__ __device__ () -> SD { return {}; });
+#endif
+    test_lambda<double>(cuda::proclaim_return_type<double>(
+        [] __device__ () -> double { return 42.0; }));
     }
 #endif
 
