@@ -101,6 +101,17 @@ void test_no_result()
 #endif
 }
 
+template <class Ret, class Fn>
+__host__ __device__
+void test_lambda(Fn &&)
+{
+    ASSERT_SAME_TYPE(Ret, typename cuda::std::result_of<Fn()>::type);
+
+#if TEST_STD_VER > 11
+    ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn>::type);
+#endif
+}
+
 int main(int, char**)
 {
     typedef NotDerived ND;
@@ -409,6 +420,13 @@ int main(int, char**)
 #endif
     test_no_result<PMD(ND&)>();
     }
+#if defined(__NVCC__) 
+    { // extended lambda
+    test_lambda<int>([] __host__ __device__ () -> int { return 42; });
+    test_lambda<double>([] __host__ __device__ () -> double { return 42.0; });
+    test_lambda<SD>([] __host__ __device__ () -> SD { return {}; });
+    }
+#endif
 
   return 0;
 }
