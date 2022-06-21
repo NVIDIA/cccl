@@ -92,6 +92,14 @@ defaults:
       nav_order: 5
   -
     scope:
+      path: extended_api/functional.md
+    values:
+      parent: Extended API
+      has_children: true
+      has_toc: false
+      nav_order: 6
+  -
+    scope:
       path: releases/changelog.md
     values:
       parent: Releases
