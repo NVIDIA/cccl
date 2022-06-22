@@ -275,16 +275,16 @@ int main() {
                                 }
                                 else {
                                     if(type.first == "f")
-                                        out << " and cuda::std::is_floating_point<_Type>::value, int>::type = 0>\n";
+                                        out << " && cuda::std::is_floating_point<_Type>::value, int>::type = 0>\n";
                                     else if(type.first == "u")
-                                        out << " and cuda::std::is_integral<_Type>::value, int>::type = 0>\n";
+                                        out << " && cuda::std::is_integral<_Type>::value, int>::type = 0>\n";
                                     else
                                         out << ", int>::type = 0>\n";
                                     out << "__device__ _Type __atomic_" << rmw.first << "_cuda(" << cv << "_Type *__ptr, _Type __val, int __memorder, " << scopenametag(s.first) << ") {\n";
                                     out << "    _Type __ret;\n";
-                                    if(type.first == "f" and sz == 32)
+                                    if(type.first == "f" && sz == 32)
                                         out << "    float";
-                                    else if(type.first == "f" and sz == 64)
+                                    else if(type.first == "f" && sz == 64)
                                         out << "    double";
                                     else
                                         out << "    uint" << sz << "_t";

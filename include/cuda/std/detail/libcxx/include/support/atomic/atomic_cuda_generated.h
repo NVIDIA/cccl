@@ -335,7 +335,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_relaxed_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.relaxed.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_release_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.release.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_volatile_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     float __tmp = 0;
@@ -372,7 +372,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_relaxed_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.relaxed.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_release_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.release.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_volatile_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -409,7 +409,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     float __tmp = 0;
@@ -446,7 +446,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -483,7 +483,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     float __tmp = 0;
@@ -520,7 +520,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -562,7 +562,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 asm volatile("atom.add.release.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_sub_volatile_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { __op = -__op;
 asm volatile("atom.add.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     float __tmp = 0;
@@ -604,7 +604,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 asm volatile("atom.add.release.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_sub_volatile_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { __op = -__op;
 asm volatile("atom.add.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -826,7 +826,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_relaxed_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.relaxed.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_release_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.release.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_volatile_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     double __tmp = 0;
@@ -863,7 +863,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_relaxed_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.relaxed.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_release_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.release.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_volatile_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -900,7 +900,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     double __tmp = 0;
@@ -937,7 +937,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -974,7 +974,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     double __tmp = 0;
@@ -1011,7 +1011,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -1053,7 +1053,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 asm volatile("atom.add.release.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_sub_volatile_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { __op = -__op;
 asm volatile("atom.add.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     double __tmp = 0;
@@ -1095,7 +1095,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 asm volatile("atom.add.release.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_sub_volatile_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { __op = -__op;
 asm volatile("atom.add.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -1519,7 +1519,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_relaxed_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.relaxed.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_release_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.release.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_volatile_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     float __tmp = 0;
@@ -1556,7 +1556,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_relaxed_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.relaxed.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_release_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.release.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_volatile_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -1593,7 +1593,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     float __tmp = 0;
@@ -1630,7 +1630,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -1667,7 +1667,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     float __tmp = 0;
@@ -1704,7 +1704,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -1746,7 +1746,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 asm volatile("atom.add.release.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_sub_volatile_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { __op = -__op;
 asm volatile("atom.add.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     float __tmp = 0;
@@ -1788,7 +1788,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 asm volatile("atom.add.release.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_sub_volatile_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { __op = -__op;
 asm volatile("atom.add.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -2010,7 +2010,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_relaxed_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.relaxed.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_release_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.release.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_volatile_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     double __tmp = 0;
@@ -2047,7 +2047,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_relaxed_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.relaxed.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_release_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.release.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_volatile_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -2084,7 +2084,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     double __tmp = 0;
@@ -2121,7 +2121,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -2158,7 +2158,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     double __tmp = 0;
@@ -2195,7 +2195,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -2237,7 +2237,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 asm volatile("atom.add.release.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_sub_volatile_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { __op = -__op;
 asm volatile("atom.add.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     double __tmp = 0;
@@ -2279,7 +2279,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 asm volatile("atom.add.release.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_sub_volatile_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { __op = -__op;
 asm volatile("atom.add.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -2703,7 +2703,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_relaxed_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.relaxed.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_release_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.release.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_volatile_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     float __tmp = 0;
@@ -2740,7 +2740,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_relaxed_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.relaxed.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_release_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.release.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_volatile_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -2777,7 +2777,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     float __tmp = 0;
@@ -2814,7 +2814,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -2851,7 +2851,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     float __tmp = 0;
@@ -2888,7 +2888,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -2930,7 +2930,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 asm volatile("atom.add.release.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_sub_volatile_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { __op = -__op;
 asm volatile("atom.add.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     float __tmp = 0;
@@ -2972,7 +2972,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 asm volatile("atom.add.release.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_sub_volatile_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { __op = -__op;
 asm volatile("atom.add.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -3194,7 +3194,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_relaxed_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.relaxed.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_release_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.release.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_volatile_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     double __tmp = 0;
@@ -3231,7 +3231,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_relaxed_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.relaxed.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_release_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.release.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_add_volatile_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.add.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -3268,7 +3268,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     double __tmp = 0;
@@ -3305,7 +3305,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -3342,7 +3342,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     double __tmp = 0;
@@ -3379,7 +3379,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -3421,7 +3421,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 asm volatile("atom.add.release.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_sub_volatile_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { __op = -__op;
 asm volatile("atom.add.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_floating_point<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_floating_point<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     double __tmp = 0;
@@ -3463,7 +3463,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ v
 asm volatile("atom.add.release.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_sub_volatile_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { __op = -__op;
 asm volatile("atom.add.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 and cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
