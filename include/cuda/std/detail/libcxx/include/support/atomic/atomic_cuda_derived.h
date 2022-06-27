@@ -65,7 +65,7 @@ _Type __host__ __device__ __atomic_fetch_min_cuda(_Type volatile *__ptr, _Delta 
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     _Type __desired = __expected < __val ? __expected : __val;
 
-    while(__desired != __val &&
+    while(__desired == __val &&
             !__atomic_compare_exchange_cuda(__ptr, &__expected, &__desired, true, __memorder, __memorder, __s)) {
         __desired = __expected < __val ? __expected : __val;
     }
