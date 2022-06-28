@@ -2141,7 +2141,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 typename enable_if
 <
-    is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
+    (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
 >::type
 atomic_fetch_add(volatile atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
@@ -2153,7 +2153,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 typename enable_if
 <
-    is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
+    (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
 >::type
 atomic_fetch_add(atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
@@ -2183,7 +2183,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 typename enable_if
 <
-    is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
+    (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
 >::type
 atomic_fetch_add_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
@@ -2195,7 +2195,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 typename enable_if
 <
-    is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
+    (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
 >::type
 atomic_fetch_add_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
@@ -2226,7 +2226,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 typename enable_if
 <
-    is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
+    (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
 >::type
 atomic_fetch_sub(volatile atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
@@ -2238,7 +2238,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 typename enable_if
 <
-    is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
+    (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
 >::type
 atomic_fetch_sub(atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
@@ -2268,7 +2268,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 typename enable_if
 <
-    is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
+    (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
 >::type
 atomic_fetch_sub_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
@@ -2280,7 +2280,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 typename enable_if
 <
-    is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
+    (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
 >::type
 atomic_fetch_sub_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
@@ -2711,6 +2711,9 @@ typedef atomic<unsigned long long> atomic_ullong;
 typedef atomic<char16_t>           atomic_char16_t;
 typedef atomic<char32_t>           atomic_char32_t;
 typedef atomic<wchar_t>            atomic_wchar_t;
+
+typedef atomic<float>  atomic_float;
+typedef atomic<double> atomic_double;
 
 typedef atomic<int_least8_t>   atomic_int_least8_t;
 typedef atomic<uint_least8_t>  atomic_uint_least8_t;

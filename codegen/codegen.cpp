@@ -203,6 +203,9 @@ int main() {
             for(auto& cl: rmw_classes) {
                 for(auto& rmw: rmw_operations[cl]) {
                     for(auto& type: rmw_types[cl]) {
+                        // fetch_min/fetch_max for fp types are derived functions
+                        if(type.first == "f" && (rmw.first == "fetch_max" || rmw.first == "fetch_min"))
+                            continue;
                         for(auto& sem : rmw_semantics) {
                             if(rmw.first == "compare_exchange")
                                 out << "template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> ";
