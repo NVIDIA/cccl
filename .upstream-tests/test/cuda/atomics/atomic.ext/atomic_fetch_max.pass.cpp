@@ -64,10 +64,13 @@ int main(int, char**)
 {
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
     TestEachIntegralType<TestFn, local_memory_selector>()();
+    TestEachFloatingPointType<TestFn, local_memory_selector>()();
 #endif
 #ifdef __CUDA_ARCH__
     TestEachIntegralType<TestFn, shared_memory_selector>()();
+    TestEachFloatingPointType<TestFn, shared_memory_selector>()();
     TestEachIntegralType<TestFn, global_memory_selector>()();
+    TestEachFloatingPointType<TestFn, global_memory_selector>()();
 #endif
 
   return 0;
