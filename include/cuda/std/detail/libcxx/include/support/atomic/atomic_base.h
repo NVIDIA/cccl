@@ -119,7 +119,7 @@ struct __atomic_ptr_inc<_Tp[]> { };
 template <typename _Tp, int n>
 struct __atomic_ptr_inc<_Tp[n]> { };
 
-template <typename _Tp, typename _Td>
+template <typename _Tp, typename _Td, _EnableIf<!is_floating_point<__cxx_atomic_underlying_t<_Tp>>::value, int> = 0>
 inline auto __cxx_atomic_fetch_add(_Tp* __a, _Td __delta,
                            memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   constexpr auto __skip_v = __atomic_ptr_inc<__cxx_atomic_underlying_t<_Tp>>::value;
@@ -128,13 +128,39 @@ inline auto __cxx_atomic_fetch_add(_Tp* __a, _Td __delta,
                             __cxx_atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td>
+template <typename _Tp, typename _Td, _EnableIf<is_floating_point<__cxx_atomic_underlying_t<_Tp>>::value, int> = 0>
+inline auto __cxx_atomic_fetch_add(_Tp* __a, _Td __delta,
+                           memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
+  auto __expected = __cxx_atomic_load(__a, memory_order_relaxed);
+  auto __desired = __expected + __delta;
+
+  while(!__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
+      __desired = __expected + __delta;
+  }
+
+  return __expected;
+}
+
+template <typename _Tp, typename _Td, _EnableIf<!is_floating_point<__cxx_atomic_underlying_t<_Tp>>::value, int> = 0>
 inline auto __cxx_atomic_fetch_sub(_Tp* __a, _Td __delta,
                            memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   constexpr auto __skip_v = __atomic_ptr_inc<__cxx_atomic_underlying_t<_Tp>>::value;
   auto __a_tmp = __cxx_get_underlying_atomic(__cxx_atomic_unwrap(__a));
   return __atomic_fetch_sub(__a_tmp, __delta * __skip_v,
                             __cxx_atomic_order_to_int(__order));
+}
+
+template <typename _Tp, typename _Td, _EnableIf<is_floating_point<__cxx_atomic_underlying_t<_Tp>>::value, int> = 0>
+inline auto __cxx_atomic_fetch_sub(_Tp* __a, _Td __delta,
+                           memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
+  auto __expected = __cxx_atomic_load(__a, memory_order_relaxed);
+  auto __desired = __expected - __delta;
+
+  while(!__cxx_atomic_compare_exchange_strong(__a, &__expected, __desired, __order, __order)) {
+      __desired = __expected - __delta;
+  }
+
+  return __expected;
 }
 
 template <typename _Tp, typename _Td>

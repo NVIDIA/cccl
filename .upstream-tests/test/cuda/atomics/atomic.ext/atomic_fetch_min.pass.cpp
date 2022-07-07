@@ -19,7 +19,7 @@
 #include "atomic_helpers.h"
 #include "cuda_space_selector.h"
 
-template <class T, template<typename, typename> typename Selector, cuda::thread_scope>
+template <class T, template<typename, typename> typename Selector, cuda::thread_scope ThreadScope>
 struct TestFn {
   __host__ __device__
   void operator()() const {
@@ -59,6 +59,48 @@ struct TestFn {
     }
   }
 };
+
+template <template<typename, typename> typename Selector, cuda::thread_scope ThreadScope>
+struct TestFn<int, Selector, ThreadScope> {
+  __host__ __device__
+  void operator()() const {
+    // Test lesser
+    {
+        typedef cuda::atomic<int> A;
+        Selector<A, constructor_initializer> sel;
+        A & t = *sel.construct();
+        t = int(5);
+        assert(t.fetch_min(4) == int(5));
+        assert(t.load() == int(4));
+    }
+    {
+        typedef cuda::atomic<int> A;
+        Selector<volatile A, constructor_initializer> sel;
+        volatile A & t = *sel.construct();
+        t = int(5);
+        assert(t.fetch_min(-1) == int(5));
+        assert(t.load() == int(-1));
+    }
+    // Test not lesser
+    {
+        typedef cuda::atomic<int> A;
+        Selector<A, constructor_initializer> sel;
+        A & t = *sel.construct();
+        t = int(-1);
+        assert(t.fetch_min(4) == int(-1));
+        assert(t.load() == int(-1));
+    }
+    {
+        typedef cuda::atomic<int> A;
+        Selector<volatile A, constructor_initializer> sel;
+        volatile A & t = *sel.construct();
+        t = int(-1);
+        assert(t.fetch_min(4) == int(-1));
+        assert(t.load() == int(-1));
+    }
+  }
+};
+
 
 int main(int, char**)
 {

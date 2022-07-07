@@ -67,7 +67,7 @@ int main() {
             { "fetch_min", ".min" } } } };
     std::map<std::string, std::map<std::string, std::string>> rmw_types{
         { "bitwise", std::map<std::string, std::string>{ { "", ".b" } } },
-        { "arithmetic", std::map<std::string, std::string>{ { "u", ".u" }, { "f", ".f" } } } };
+        { "arithmetic", std::map<std::string, std::string>{ { "u", ".u" }, { "s", ".s" }, { "f", ".f" } } } };
 
     std::vector<std::string> cv_qualifier{ "volatile "/*, ""*/ };
 
@@ -206,6 +206,8 @@ int main() {
                         // fetch_min/fetch_max for fp types are derived functions
                         if(type.first == "f" && (rmw.first == "fetch_max" || rmw.first == "fetch_min"))
                             continue;
+                        if(type.first == "s" && (rmw.first == "fetch_add" || rmw.first == "fetch_sub"))
+                            continue;
                         for(auto& sem : rmw_semantics) {
                             if(rmw.first == "compare_exchange")
                                 out << "template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> ";
@@ -279,7 +281,13 @@ int main() {
                                 else {
                                     if(type.first == "f")
                                         out << " && cuda::std::is_floating_point<_Type>::value, int>::type = 0>\n";
-                                    else if(type.first == "u")
+                                    else if (rmw.first == "fetch_max" || rmw.first == "fetch_min") {
+                                        if(type.first == "u")
+                                            out << " && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>\n";
+                                        else if(type.first == "s")
+                                            out << " && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>\n";
+                                    }
+                                    else if (type.first == "u")
                                         out << " && cuda::std::is_integral<_Type>::value, int>::type = 0>\n";
                                     else
                                         out << ", int>::type = 0>\n";

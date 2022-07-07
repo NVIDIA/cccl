@@ -404,12 +404,49 @@ __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int
     memcpy(&__ret, &__tmp, 4);
     return __ret;
 }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acq_rel_s32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acq_rel.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acquire_s32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acquire.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_s32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_s32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_s32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>
+__device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_s32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST:
+          case __ATOMIC_ACQ_REL: __cuda_membar_block();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_max_volatile_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acq_rel_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acq_rel.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acquire_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acquire.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -441,12 +478,49 @@ __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int
     memcpy(&__ret, &__tmp, 4);
     return __ret;
 }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acq_rel_s32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acq_rel.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acquire_s32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acquire.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_s32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_s32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_s32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>
+__device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_s32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST:
+          case __ATOMIC_ACQ_REL: __cuda_membar_block();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_min_volatile_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acq_rel_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acq_rel.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acquire_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acquire.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -821,12 +895,49 @@ __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int
     memcpy(&__ret, &__tmp, 8);
     return __ret;
 }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acq_rel_s64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acq_rel.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acquire_s64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acquire.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_s64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_s64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_s64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>
+__device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_s64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST:
+          case __ATOMIC_ACQ_REL: __cuda_membar_block();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_max_volatile_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acq_rel_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acq_rel.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acquire_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acquire.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -858,12 +969,49 @@ __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int
     memcpy(&__ret, &__tmp, 8);
     return __ret;
 }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acq_rel_s64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acq_rel.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acquire_s64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acquire.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_s64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_s64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_s64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>
+__device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_s64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST:
+          case __ATOMIC_ACQ_REL: __cuda_membar_block();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_min_volatile_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acq_rel_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acq_rel.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acquire_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acquire.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -1440,12 +1588,49 @@ __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int
     memcpy(&__ret, &__tmp, 4);
     return __ret;
 }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acq_rel_s32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acq_rel.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acquire_s32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acquire.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_s32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_s32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_s32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>
+__device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_s32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST:
+          case __ATOMIC_ACQ_REL: __cuda_membar_device();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_max_volatile_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acq_rel_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acq_rel.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acquire_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acquire.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -1477,12 +1662,49 @@ __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int
     memcpy(&__ret, &__tmp, 4);
     return __ret;
 }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acq_rel_s32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acq_rel.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acquire_s32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acquire.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_s32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_s32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_s32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>
+__device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_s32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST:
+          case __ATOMIC_ACQ_REL: __cuda_membar_device();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_min_volatile_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acq_rel_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acq_rel.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acquire_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acquire.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -1857,12 +2079,49 @@ __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int
     memcpy(&__ret, &__tmp, 8);
     return __ret;
 }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acq_rel_s64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acq_rel.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acquire_s64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acquire.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_s64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_s64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_s64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>
+__device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_s64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST:
+          case __ATOMIC_ACQ_REL: __cuda_membar_device();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_max_volatile_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acq_rel_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acq_rel.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acquire_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acquire.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -1894,12 +2153,49 @@ __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int
     memcpy(&__ret, &__tmp, 8);
     return __ret;
 }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acq_rel_s64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acq_rel.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acquire_s64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acquire.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_s64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_s64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_s64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>
+__device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_s64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST:
+          case __ATOMIC_ACQ_REL: __cuda_membar_device();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_min_volatile_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acq_rel_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acq_rel.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acquire_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acquire.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -2476,12 +2772,49 @@ __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int
     memcpy(&__ret, &__tmp, 4);
     return __ret;
 }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acq_rel_s32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acq_rel.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acquire_s32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acquire.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_s32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_s32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_s32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>
+__device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_s32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST:
+          case __ATOMIC_ACQ_REL: __cuda_membar_system();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_max_volatile_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acq_rel_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acq_rel.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acquire_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acquire.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -2513,12 +2846,49 @@ __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int
     memcpy(&__ret, &__tmp, 4);
     return __ret;
 }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acq_rel_s32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acq_rel.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acquire_s32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acquire.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_s32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_s32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_s32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>
+__device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_s32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST:
+          case __ATOMIC_ACQ_REL: __cuda_membar_system();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_min_volatile_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acq_rel_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acq_rel.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acquire_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acquire.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==4 && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     uint32_t __tmp = 0;
@@ -2893,12 +3263,49 @@ __device__ _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int
     memcpy(&__ret, &__tmp, 8);
     return __ret;
 }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acq_rel_s64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acq_rel.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acquire_s64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acquire.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_s64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_s64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_s64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>
+__device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_s64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST:
+          case __ATOMIC_ACQ_REL: __cuda_membar_system();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_max_volatile_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acq_rel_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acq_rel.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_acquire_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.acquire.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_relaxed_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.relaxed.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_release_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.release.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_max_volatile_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.max.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     uint64_t __tmp = 0;
@@ -2930,12 +3337,49 @@ __device__ _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int
     memcpy(&__ret, &__tmp, 8);
     return __ret;
 }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acq_rel_s64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acq_rel.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acquire_s64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acquire.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_s64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_s64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_s64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>
+__device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_s64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST:
+          case __ATOMIC_ACQ_REL: __cuda_membar_system();
+          case __ATOMIC_CONSUME:
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_min_volatile_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acq_rel_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acq_rel.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_acquire_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.acquire.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_relaxed_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.relaxed.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_release_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.release.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline __device__ void __cuda_fetch_min_volatile_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.min.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
-template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value, int>::type = 0>
+template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==8 && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>
 __device__ _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
     uint64_t __tmp = 0;

@@ -60,6 +60,47 @@ struct TestFn {
   }
 };
 
+template <template<typename, typename> typename Selector, cuda::thread_scope ThreadScope>
+struct TestFn<int, Selector, ThreadScope> {
+  __host__ __device__
+  void operator()() const {
+    // Test greater
+    {
+        typedef cuda::atomic<int> A;
+        Selector<A, constructor_initializer> sel;
+        A & t = *sel.construct();
+        t = int(1);
+        assert(t.fetch_max(2) == int(1));
+        assert(t.load() == int(2));
+    }
+    {
+        typedef cuda::atomic<int> A;
+        Selector<volatile A, constructor_initializer> sel;
+        volatile A & t = *sel.construct();
+        t = int(1);
+        assert(t.fetch_max(2) == int(1));
+        assert(t.load() == int(2));
+    }
+    // Test not greater
+    {
+        typedef cuda::atomic<int> A;
+        Selector<A, constructor_initializer> sel;
+        A & t = *sel.construct();
+        t = int(-1);
+        assert(t.fetch_max(4) == int(-1));
+        assert(t.load() == int(4));
+    }
+    {
+        typedef cuda::atomic<int> A;
+        Selector<volatile A, constructor_initializer> sel;
+        volatile A & t = *sel.construct();
+        t = int(-1);
+        assert(t.fetch_max(4) == int(-1));
+        assert(t.load() == int(4));
+    }
+  }
+};
+
 int main(int, char**)
 {
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
