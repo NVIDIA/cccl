@@ -1,0 +1,127 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
+#include <cuda/std/atomic>
+#include <cuda/std/cassert>
+
+#include <cmpxchg_loop.h>
+
+#include "test_macros.h"
+#if !defined(TEST_COMPILER_C1XX)
+  #include "placement_new.h"
+#endif
+#include "cuda_space_selector.h"
+
+template <class A, class T, template<typename, typename> class Selector>
+__host__ __device__ __noinline__
+void
+do_test()
+{
+    Selector<A, constructor_initializer> sel;
+    A & obj = *sel.construct(T(0));
+    bool b0 = obj.is_lock_free();
+    ((void)b0); // mark as unused
+    obj.store(T(0));
+    assert(obj == T(0));
+    obj.store(T(1), cuda::std::memory_order_release);
+    assert(obj == T(1));
+    assert(obj.load() == T(1));
+    assert(obj.load(cuda::std::memory_order_acquire) == T(1));
+    assert(obj.exchange(T(2)) == T(1));
+    assert(obj == T(2));
+    assert(obj.exchange(T(3), cuda::std::memory_order_relaxed) == T(2));
+    assert(obj == T(3));
+    T x = obj;
+    assert(cmpxchg_weak_loop(obj, x, T(2)) == true);
+    assert(obj == T(2));
+    assert(x == T(3));
+    assert(obj.compare_exchange_weak(x, T(1)) == false);
+    assert(obj == T(2));
+    assert(x == T(2));
+    x = T(2);
+    assert(obj.compare_exchange_strong(x, T(1)) == true);
+    assert(obj == T(1));
+    assert(x == T(2));
+    assert(obj.compare_exchange_strong(x, T(0)) == false);
+    assert(obj == T(1));
+    assert(x == T(1));
+    assert((obj = T(0)) == T(0));
+    assert(obj == T(0));
+    assert(obj++ == T(0));
+    assert(obj == T(1));
+    assert(++obj == T(2));
+    assert(obj == T(2));
+    assert(--obj == T(1));
+    assert(obj == T(1));
+    assert(obj-- == T(1));
+    assert(obj == T(0));
+    obj = T(2);
+    assert((obj += T(3)) == T(5));
+    assert(obj == T(5));
+    assert((obj -= T(3)) == T(2));
+    assert(obj == T(2));
+
+#if __cplusplus > 201703L
+    {
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
+        TEST_ALIGNAS_TYPE(A) char storage[sizeof(A)] = {23};
+        A& zero = *new (storage) A();
+        assert(zero == 0);
+        zero.~A();
+#endif
+    }
+#endif
+}
+
+template <class A, class T, template<typename, typename> class Selector>
+__host__ __device__ __noinline__
+void test()
+{
+    do_test<A, T, Selector>();
+    do_test<volatile A, T, Selector>();
+}
+
+template<template<typename, cuda::thread_scope> typename Atomic, cuda::thread_scope Scope, template<typename, typename> class Selector>
+__host__ __device__
+void test_for_all_types()
+{
+    test<Atomic<float, Scope>, float, Selector>();
+    test<Atomic<double, Scope>, double, Selector>();
+}
+
+template<typename T, cuda::thread_scope Scope>
+using cuda_std_atomic = cuda::std::atomic<T>;
+
+template<typename T, cuda::thread_scope Scope>
+using cuda_atomic = cuda::atomic<T, Scope>;
+
+int main(int, char**)
+{
+    // this test would instantiate more cases than just the ones below
+    // but ptxas already consumes 5 GB of RAM while translating these
+    // so in the interest of not eating all memory, it's limited to the current set
+    //
+    // the per-function tests *should* cover the other codegen aspects of the
+    // code, and the cross between scopes and memory locations below should provide
+    // a *reasonable* subset of all the possible combinations to provide enough
+    // confidence that this all actually works
+
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
+    test_for_all_types<cuda_std_atomic, cuda::thread_scope_system, local_memory_selector>();
+    test_for_all_types<cuda_atomic, cuda::thread_scope_system, local_memory_selector>();
+#endif
+#ifdef __CUDA_ARCH__
+    test_for_all_types<cuda_std_atomic, cuda::thread_scope_system, shared_memory_selector>();
+    test_for_all_types<cuda_atomic, cuda::thread_scope_block, shared_memory_selector>();
+
+    test_for_all_types<cuda_std_atomic, cuda::thread_scope_system, global_memory_selector>();
+    test_for_all_types<cuda_atomic, cuda::thread_scope_device, global_memory_selector>();
+#endif
+
+  return 0;
+}
