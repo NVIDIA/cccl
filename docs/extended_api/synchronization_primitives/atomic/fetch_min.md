@@ -25,7 +25,7 @@ The minimum is found using [`cuda::std::min`].
 
 __global__ void example_kernel() {
   cuda::atomic<int> a(1);
-  auto x = a.fetch_min(0); // Operates as if unsigned.
+  auto x = a.fetch_min(0);
   auto y = a.load();
   assert(x == 1 && y == 0);
 }
