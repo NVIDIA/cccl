@@ -5,6 +5,72 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
+//
+// UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
+// UNSUPPORTED: windows && pre-sm-70
+
+// <cuda/std/atomic>
+
+// template <>
+// struct atomic<floating_point>
+// {
+//     bool is_lock_free() const volatile;
+//     bool is_lock_free() const;
+//     void store(floating_point desr, memory_order m = memory_order_seq_cst) volatile;
+//     void store(floating_point desr, memory_order m = memory_order_seq_cst);
+//     floating_point load(memory_order m = memory_order_seq_cst) const volatile;
+//     floating_point load(memory_order m = memory_order_seq_cst) const;
+//     operator floating_point() const volatile;
+//     operator floating_point() const;
+//     floating_point exchange(floating_point desr,
+//                       memory_order m = memory_order_seq_cst) volatile;
+//     floating_point exchange(floating_point desr, memory_order m = memory_order_seq_cst);
+//     bool compare_exchange_weak(floating_point& expc, floating_point desr,
+//                                memory_order s, memory_order f) volatile;
+//     bool compare_exchange_weak(floating_point& expc, floating_point desr,
+//                                memory_order s, memory_order f);
+//     bool compare_exchange_strong(floating_point& expc, floating_point desr,
+//                                  memory_order s, memory_order f) volatile;
+//     bool compare_exchange_strong(floating_point& expc, floating_point desr,
+//                                  memory_order s, memory_order f);
+//     bool compare_exchange_weak(floating_point& expc, floating_point desr,
+//                                memory_order m = memory_order_seq_cst) volatile;
+//     bool compare_exchange_weak(floating_point& expc, floating_point desr,
+//                                memory_order m = memory_order_seq_cst);
+//     bool compare_exchange_strong(floating_point& expc, floating_point desr,
+//                                 memory_order m = memory_order_seq_cst) volatile;
+//     bool compare_exchange_strong(floating_point& expc, floating_point desr,
+//                                  memory_order m = memory_order_seq_cst);
+//
+//     floating_point
+//         fetch_add(floating_point op, memory_order m = memory_order_seq_cst) volatile;
+//     floating_point fetch_add(floating_point op, memory_order m = memory_order_seq_cst);
+//     floating_point
+//         fetch_sub(floating_point op, memory_order m = memory_order_seq_cst) volatile;
+//     floating_point fetch_sub(floating_point op, memory_order m = memory_order_seq_cst);
+//     floating_point
+//
+//     atomic() = default;
+//     constexpr atomic(floating_point desr);
+//     atomic(const atomic&) = delete;
+//     atomic& operator=(const atomic&) = delete;
+//     atomic& operator=(const atomic&) volatile = delete;
+//     floating_point operator=(floating_point desr) volatile;
+//     floating_point operator=(floating_point desr);
+//
+//     floating_point operator++(int) volatile;
+//     floating_point operator++(int);
+//     floating_point operator--(int) volatile;
+//     floating_point operator--(int);
+//     floating_point operator++() volatile;
+//     floating_point operator++();
+//     floating_point operator--() volatile;
+//     floating_point operator--();
+//     floating_point operator+=(floating_point op) volatile;
+//     floating_point operator+=(floating_point op);
+//     floating_point operator-=(floating_point op) volatile;
+//     floating_point operator-=(floating_point op);
+// };
 
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
