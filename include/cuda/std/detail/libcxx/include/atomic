@@ -1047,10 +1047,15 @@ template<typename _Tp> struct __cxx_is_always_lock_free {
 
 #endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
 
-template <typename _Tp, int _Sco,
-          typename _Base = typename conditional<__cxx_is_always_lock_free<_Tp>::__value,
+template <typename _Tp, int _Sco>
+struct __cxx_atomic_impl_conditional {
+    using type = typename conditional<__cxx_is_always_lock_free<_Tp>::__value,
                                                 __cxx_atomic_base_impl<_Tp, _Sco>,
-                                                __cxx_atomic_lock_impl<_Tp, _Sco> >::type>
+                                                __cxx_atomic_lock_impl<_Tp, _Sco> >::type;
+};
+
+template <typename _Tp, int _Sco,
+          typename _Base = __cxx_atomic_impl_conditional<_Tp, _Sco>::type >
 #else
 template <typename _Tp, int _Sco,
           typename _Base = __cxx_atomic_base_impl<_Tp, _Sco> >
