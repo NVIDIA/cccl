@@ -1055,7 +1055,7 @@ struct __cxx_atomic_impl_conditional {
 };
 
 template <typename _Tp, int _Sco,
-          typename _Base = __cxx_atomic_impl_conditional<_Tp, _Sco>::type >
+          typename _Base = typename __cxx_atomic_impl_conditional<_Tp, _Sco>::type >
 #else
 template <typename _Tp, int _Sco,
           typename _Base = __cxx_atomic_base_impl<_Tp, _Sco> >
