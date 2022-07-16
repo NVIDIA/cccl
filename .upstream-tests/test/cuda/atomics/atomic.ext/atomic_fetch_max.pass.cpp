@@ -19,7 +19,7 @@
 #include "atomic_helpers.h"
 #include "cuda_space_selector.h"
 
-template <class T, template<typename, typename> typename Selector, cuda::thread_scope>
+template <class T, template<typename, typename> typename Selector, cuda::thread_scope ThreadScope, bool Signed = cuda::std::is_signed<T>::value>
 struct TestFn {
   __host__ __device__
   void operator()() const {
@@ -60,43 +60,45 @@ struct TestFn {
   }
 };
 
-template <template<typename, typename> typename Selector, cuda::thread_scope ThreadScope>
-struct TestFn<int, Selector, ThreadScope> {
+template <class T, template<typename, typename> typename Selector, cuda::thread_scope ThreadScope>
+struct TestFn<T, Selector, ThreadScope, true> {
   __host__ __device__
   void operator()() const {
-    // Test greater
+    // Call unsigned tests
+    TestFn<T, Selector, ThreadScope, false>()();
+    // Test greater, but with signed math
     {
-        typedef cuda::atomic<int> A;
+        typedef cuda::atomic<T> A;
         Selector<A, constructor_initializer> sel;
         A & t = *sel.construct();
-        t = int(1);
-        assert(t.fetch_max(2) == int(1));
-        assert(t.load() == int(2));
+        t = T(-5);
+        assert(t.fetch_max(-1) == T(-5));
+        assert(t.load() == T(-1));
     }
     {
-        typedef cuda::atomic<int> A;
+        typedef cuda::atomic<T> A;
         Selector<volatile A, constructor_initializer> sel;
         volatile A & t = *sel.construct();
-        t = int(1);
-        assert(t.fetch_max(2) == int(1));
-        assert(t.load() == int(2));
+        t = T(-5);
+        assert(t.fetch_max(-1) == T(-5));
+        assert(t.load() == T(-1));
     }
     // Test not greater
     {
-        typedef cuda::atomic<int> A;
+        typedef cuda::atomic<T> A;
         Selector<A, constructor_initializer> sel;
         A & t = *sel.construct();
-        t = int(-1);
-        assert(t.fetch_max(4) == int(-1));
-        assert(t.load() == int(4));
+        t = T(-1);
+        assert(t.fetch_max(-5) == T(-1));
+        assert(t.load() == T(-1));
     }
     {
-        typedef cuda::atomic<int> A;
+        typedef cuda::atomic<T> A;
         Selector<volatile A, constructor_initializer> sel;
         volatile A & t = *sel.construct();
-        t = int(-1);
-        assert(t.fetch_max(4) == int(-1));
-        assert(t.load() == int(4));
+        t = T(-1);
+        assert(t.fetch_max(-5) == T(-1));
+        assert(t.load() == T(-1));
     }
   }
 };
