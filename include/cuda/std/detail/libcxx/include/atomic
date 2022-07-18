@@ -2717,9 +2717,6 @@ typedef atomic<char16_t>           atomic_char16_t;
 typedef atomic<char32_t>           atomic_char32_t;
 typedef atomic<wchar_t>            atomic_wchar_t;
 
-typedef atomic<float>  atomic_float;
-typedef atomic<double> atomic_double;
-
 typedef atomic<int_least8_t>   atomic_int_least8_t;
 typedef atomic<uint_least8_t>  atomic_uint_least8_t;
 typedef atomic<int_least16_t>  atomic_int_least16_t;
