@@ -103,17 +103,25 @@ struct TestFn<T, Selector, ThreadScope, true> {
   }
 };
 
+template <class T, template <typename, typename> typename Selector, cuda::thread_scope ThreadScope>
+struct TestFnDispatch {
+  __host__ __device__
+  void operator()() const {
+    TestFn<T, Selector, ThreadScope>()();
+  }
+};
+
 int main(int, char**)
 {
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
-    TestEachIntegralType<TestFn, local_memory_selector>()();
-    TestEachFloatingPointType<TestFn, local_memory_selector>()();
+    TestEachIntegralType<TestFnDispatch, local_memory_selector>()();
+    TestEachFloatingPointType<TestFnDispatch, local_memory_selector>()();
 #endif
 #ifdef __CUDA_ARCH__
-    TestEachIntegralType<TestFn, shared_memory_selector>()();
-    TestEachFloatingPointType<TestFn, shared_memory_selector>()();
-    TestEachIntegralType<TestFn, global_memory_selector>()();
-    TestEachFloatingPointType<TestFn, global_memory_selector>()();
+    TestEachIntegralType<TestFnDispatch, shared_memory_selector>()();
+    TestEachFloatingPointType<TestFnDispatch, shared_memory_selector>()();
+    TestEachIntegralType<TestFnDispatch, global_memory_selector>()();
+    TestEachFloatingPointType<TestFnDispatch, global_memory_selector>()();
 #endif
 
   return 0;
