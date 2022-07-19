@@ -219,6 +219,9 @@ void kernel_invoker()
     validate_not_movable<cuda::std::atomic<unsigned long>, bitwise_atomic_testers>();
     validate_not_movable<cuda::std::atomic<unsigned long long>, bitwise_atomic_testers>();
 
+    validate_not_movable<cuda::std::atomic<float>, arithmetic_atomic_testers>();
+    validate_not_movable<cuda::std::atomic<double>, arithmetic_atomic_testers>();
+
     validate_not_movable<cuda::std::atomic<big_not_lockfree_type>, basic_testers>();
 
     validate_not_movable<cuda::atomic<signed char, cuda::thread_scope_system>, arithmetic_atomic_testers>();
@@ -232,6 +235,9 @@ void kernel_invoker()
     validate_not_movable<cuda::atomic<unsigned int, cuda::thread_scope_system>, bitwise_atomic_testers>();
     validate_not_movable<cuda::atomic<unsigned long, cuda::thread_scope_system>, bitwise_atomic_testers>();
     validate_not_movable<cuda::atomic<unsigned long long, cuda::thread_scope_system>, bitwise_atomic_testers>();
+
+    validate_not_movable<cuda::atomic<float>, arithmetic_atomic_testers>();
+    validate_not_movable<cuda::atomic<double>, arithmetic_atomic_testers>();
 
     validate_not_movable<cuda::atomic<big_not_lockfree_type, cuda::thread_scope_system>, basic_testers>();
 }
