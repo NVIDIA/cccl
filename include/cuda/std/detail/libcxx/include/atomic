@@ -1255,7 +1255,7 @@ struct __atomic_base_storage {
     __atomic_base_storage& operator=(__atomic_base_storage&&) = default;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-    __atomic_base_storage(_Storage&& __a) _NOEXCEPT : __a_(forward<_Storage>(__a)) {}
+    __atomic_base_storage(_Storage&& __a) _NOEXCEPT : __a_(_CUDA_VSTD::forward<_Storage>(__a)) {}
 };
 
 template <class _Tp, bool _Cq, typename _Storage>
@@ -1268,7 +1268,7 @@ struct __atomic_base_core : public __atomic_base_storage<_Tp, _Storage>{
     __atomic_base_core& operator=(__atomic_base_core&&) = delete;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-    __atomic_base_core(_Storage&& __a) _NOEXCEPT : __atomic_base_storage<_Tp, _Storage>(forward<_Storage>(__a)) {}
+    __atomic_base_core(_Storage&& __a) _NOEXCEPT : __atomic_base_storage<_Tp, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
     static _LIBCUDACXX_CONSTEXPR bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
@@ -1393,7 +1393,7 @@ struct __atomic_base_core<_Tp, true, _Storage> : public __atomic_base_storage<_T
     __atomic_base_core& operator=(__atomic_base_core&&) = default;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-    __atomic_base_core(_Storage&& __a) _NOEXCEPT : __atomic_base_storage<_Tp, _Storage>(forward<_Storage>(__a)) {}
+    __atomic_base_core(_Storage&& __a) _NOEXCEPT : __atomic_base_storage<_Tp, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
     static _LIBCUDACXX_CONSTEXPR bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
@@ -1518,7 +1518,7 @@ struct __atomic_base_arithmetic : public __atomic_base_core<_Tp, _Cq, _Storage> 
     __atomic_base_arithmetic& operator=(__atomic_base_arithmetic&&) = delete;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-    __atomic_base_arithmetic(_Storage&& __a) _NOEXCEPT : __atomic_base_core<_Tp, _Cq, _Storage>(forward<_Storage>(__a)) {}
+    __atomic_base_arithmetic(_Storage&& __a) _NOEXCEPT : __atomic_base_core<_Tp, _Cq, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp fetch_add(_Tp __op, memory_order __m = memory_order_seq_cst) volatile _NOEXCEPT
@@ -1569,7 +1569,7 @@ struct __atomic_base_arithmetic<_Tp, true, _Storage> : public __atomic_base_core
     __atomic_base_arithmetic& operator=(__atomic_base_arithmetic&&) = default;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-    __atomic_base_arithmetic(_Storage&& __a) _NOEXCEPT : __atomic_base_core<_Tp, true, _Storage>(forward<_Storage>(__a)) {}
+    __atomic_base_arithmetic(_Storage&& __a) _NOEXCEPT : __atomic_base_core<_Tp, true, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp fetch_add(_Tp __op, memory_order __m = memory_order_seq_cst) const volatile _NOEXCEPT
@@ -1620,7 +1620,7 @@ struct __atomic_base_bitwise : public __atomic_base_arithmetic<_Tp, _Cq, _Storag
     __atomic_base_bitwise& operator=(__atomic_base_bitwise&&) = delete;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-    __atomic_base_bitwise(_Storage&& __a) _NOEXCEPT : __atomic_base_arithmetic<_Tp, _Cq, _Storage>(forward<_Storage>(__a)) {}
+    __atomic_base_bitwise(_Storage&& __a) _NOEXCEPT : __atomic_base_arithmetic<_Tp, _Cq, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp fetch_and(_Tp __op, memory_order __m = memory_order_seq_cst) volatile _NOEXCEPT
@@ -1665,7 +1665,7 @@ struct __atomic_base_bitwise<_Tp, true, _Storage> : public __atomic_base_arithme
     __atomic_base_bitwise& operator=(__atomic_base_bitwise&&) = default;
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-    __atomic_base_bitwise(_Storage&& __a) _NOEXCEPT : __atomic_base_arithmetic<_Tp, true, _Storage>(forward<_Storage>(__a)) {}
+    __atomic_base_bitwise(_Storage&& __a) _NOEXCEPT : __atomic_base_arithmetic<_Tp, true, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp fetch_and(_Tp __op, memory_order __m = memory_order_seq_cst) const volatile _NOEXCEPT
