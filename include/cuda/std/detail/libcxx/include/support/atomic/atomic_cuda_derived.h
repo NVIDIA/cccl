@@ -47,7 +47,7 @@ _Type __device__ __atomic_fetch_add_cuda(_Type volatile *__ptr, _Delta __val, in
     return __expected;
 }
 
-template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2, int>::type = 0>
+template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2 || _CUDA_VSTD::is_floating_point<_Type>::value, int>::type = 0>
 _Type __host__ __device__ __atomic_fetch_max_cuda(_Type volatile *__ptr, _Delta __val, int __memorder, _Scope __s) {
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     _Type __desired = __expected > __val ? __expected : __val;
@@ -60,12 +60,12 @@ _Type __host__ __device__ __atomic_fetch_max_cuda(_Type volatile *__ptr, _Delta 
     return __expected;
 }
 
-template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2, int>::type = 0>
+template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2 || _CUDA_VSTD::is_floating_point<_Type>::value, int>::type = 0>
 _Type __host__ __device__ __atomic_fetch_min_cuda(_Type volatile *__ptr, _Delta __val, int __memorder, _Scope __s) {
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     _Type __desired = __expected < __val ? __expected : __val;
 
-    while(__desired != __val &&
+    while(__desired == __val &&
             !__atomic_compare_exchange_cuda(__ptr, &__expected, &__desired, true, __memorder, __memorder, __s)) {
         __desired = __expected < __val ? __expected : __val;
     }

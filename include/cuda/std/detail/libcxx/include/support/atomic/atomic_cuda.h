@@ -142,6 +142,9 @@ const volatile _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterog
   return __cxx_get_underlying_atomic(&__a->__a_value);
 }
 
+template <typename _Tp>
+using __cxx_atomic_small_to_32 = typename conditional<is_signed<_Tp>::value, int32_t, uint32_t>::type;
+
 template <typename _Tp, int _Sco>
 struct __cxx_atomic_base_small_impl {
     __cxx_atomic_base_small_impl() noexcept = default;
@@ -149,15 +152,8 @@ struct __cxx_atomic_base_small_impl {
       __cxx_atomic_base_small_impl(_Tp __value) : __a_value(__value) {
     }
 
-    __cxx_atomic_base_heterogeneous_impl<uint32_t, _Sco, false> __a_value;
+    __cxx_atomic_base_heterogeneous_impl<__cxx_atomic_small_to_32<_Tp>, _Sco, false> __a_value;
 };
-
-template <typename _Tp>
-using __cxx_small_proxy = typename conditional<sizeof(_Tp) == 1,
-                                               uint8_t,
-                                               typename conditional<sizeof(_Tp) == 2,
-                                                                    uint16_t,
-                                                                    void>::type >::type;
 
 template <typename _Tp, int _Sco>
 using __cxx_atomic_base_impl = typename conditional<sizeof(_Tp) < 4,
@@ -368,15 +364,15 @@ __host__ __device__
 }
 
 template<class _Tp>
-__host__ __device__ inline uint32_t __cxx_small_to_32(_Tp __val) {
-    __cxx_small_proxy<_Tp> __temp = 0;
+__host__ __device__ inline __cxx_atomic_small_to_32<_Tp> __cxx_small_to_32(_Tp __val) {
+    _Tp __temp = 0;
     memcpy(&__temp, &__val, sizeof(_Tp));
     return __temp;
 }
 
 template<class _Tp>
-__host__ __device__ inline _Tp __cxx_small_from_32(uint32_t __val) {
-    __cxx_small_proxy<_Tp> __temp = static_cast<__cxx_small_proxy<_Tp>>(__val);
+__host__ __device__ inline _Tp __cxx_small_from_32(__cxx_atomic_small_to_32<_Tp> __val) {
+    _Tp __temp = static_cast<_Tp>(__val);
     _Tp __result;
     memcpy(&__result, &__temp, sizeof(_Tp));
     return __result;
@@ -426,9 +422,10 @@ __host__ __device__ inline bool __cxx_atomic_compare_exchange_weak(__cxx_atomic_
     auto __temp = __cxx_small_to_32(*__expected);
     auto const __ret = __cxx_atomic_compare_exchange_weak(&__a->__a_value, &__temp, __cxx_small_to_32(__value), __success, __failure);
     auto const __actual = __cxx_small_from_32<_Tp>(__temp);
+    constexpr auto __mask = static_cast<decltype(__temp)>((1u << (8*sizeof(_Tp))) - 1);
     if(!__ret) {
         if(0 == __cuda_memcmp(&__actual, __expected, sizeof(_Tp)))
-            __cxx_atomic_fetch_and(&__a->__a_value, (1u << (8*sizeof(_Tp))) - 1, memory_order_relaxed);
+            __cxx_atomic_fetch_and(&__a->__a_value, __mask, memory_order_relaxed);
         else
             *__expected = __actual;
     }

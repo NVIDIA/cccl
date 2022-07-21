@@ -68,10 +68,25 @@ template < template <class, template<typename, typename> class, cuda::thread_sco
     = cuda::thread_scope_system
 #endif
 >
+struct TestEachFloatingPointType {
+    __host__ __device__
+    void operator()() const {
+        TestFunctor<float, Selector, Scope>()();
+        TestFunctor<double, Selector, Scope>()();
+    }
+};
+
+template < template <class, template<typename, typename> class, cuda::thread_scope> class TestFunctor,
+    template<typename, typename> class Selector, cuda::thread_scope Scope
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
+    = cuda::thread_scope_system
+#endif
+>
 struct TestEachAtomicType {
     __host__ __device__
     void operator()() const {
         TestEachIntegralType<TestFunctor, Selector, Scope>()();
+        TestEachFloatingPointType<TestFunctor, Selector, Scope>()();
         TestFunctor<UserAtomicType, Selector, Scope>()();
         TestFunctor<int*, Selector, Scope>()();
         TestFunctor<const int*, Selector, Scope>()();
@@ -109,10 +124,25 @@ template < template <class, template<typename, typename> class, cuda::thread_sco
     = cuda::thread_scope_system
 #endif
 >
+struct TestEachFLoatingPointRefType {
+    __host__ __device__
+    void operator()() const {
+        TestFunctor<float, Selector, Scope>()();
+        TestFunctor<double, Selector, Scope>()();
+    }
+};
+
+template < template <class, template<typename, typename> class, cuda::thread_scope> class TestFunctor,
+    template<typename, typename> class Selector, cuda::thread_scope Scope
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
+    = cuda::thread_scope_system
+#endif
+>
 struct TestEachAtomicRefType {
     __host__ __device__
     void operator()() const {
         TestEachIntegralRefType<TestFunctor, Selector, Scope>()();
+        TestEachFLoatingPointRefType<TestFunctor, Selector, Scope>()();
         TestFunctor<UserAtomicType, Selector, Scope>()();
         TestFunctor<int*, Selector, Scope>()();
         TestFunctor<const int*, Selector, Scope>()();

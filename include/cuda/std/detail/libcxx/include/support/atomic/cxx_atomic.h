@@ -26,9 +26,12 @@ struct __cxx_atomic_base_impl {
 
   _LIBCUDACXX_CONSTEXPR
   __cxx_atomic_base_impl() _NOEXCEPT = default;
-
+  _LIBCUDACXX_CONSTEXPR
+  __cxx_atomic_base_impl(__cxx_atomic_base_impl &&) _NOEXCEPT = default;
   _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit
   __cxx_atomic_base_impl(_Tp value) _NOEXCEPT : __a_value(value) {}
+
+  __cxx_atomic_base_impl& operator=(const __cxx_atomic_base_impl &) _NOEXCEPT = default;
 
   _ALIGNAS(sizeof(_Tp)) _Tp __a_value;
 };
@@ -89,7 +92,10 @@ struct __cxx_atomic_ref_base_impl {
 
   _LIBCUDACXX_CONSTEXPR
   __cxx_atomic_ref_base_impl() _NOEXCEPT = delete;
-
+  _LIBCUDACXX_CONSTEXPR
+  __cxx_atomic_ref_base_impl(__cxx_atomic_ref_base_impl &&) _NOEXCEPT = default;
+  _LIBCUDACXX_CONSTEXPR
+  __cxx_atomic_ref_base_impl(const __cxx_atomic_ref_base_impl &) _NOEXCEPT = default;
   _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit
   __cxx_atomic_ref_base_impl(_Tp& value) _NOEXCEPT : __a_value(&value) {}
 

@@ -74,7 +74,6 @@ int main(int, char**)
     test_not_copy_constructible<cuda::std::atomic<int>>();
     test_not_copy_constructible<cuda::atomic<int>>();
 
-
     test_copy_constructible<cuda::std::atomic_ref<int>>();
     test_copy_constructible<cuda::atomic_ref<int>>();
 

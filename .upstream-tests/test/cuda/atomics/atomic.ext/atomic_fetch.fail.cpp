@@ -50,11 +50,11 @@ struct TestFn {
 int main(int, char**)
 {
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
-    TestFn<float, local_memory_selector, cuda::thread_scope::thread_scope_thread>()();
+    TestFn<__half, local_memory_selector, cuda::thread_scope::thread_scope_thread>()();
 #endif
 #ifdef __CUDA_ARCH__
-    TestFn<float, shared_memory_selector, cuda::thread_scope::thread_scope_thread>()();
-    TestFn<float, global_memory_selector, cuda::thread_scope::thread_scope_thread>()();
+    TestFn<__half, shared_memory_selector, cuda::thread_scope::thread_scope_thread>()();
+    TestFn<__half, global_memory_selector, cuda::thread_scope::thread_scope_thread>()();
 #endif
 
   return 0;

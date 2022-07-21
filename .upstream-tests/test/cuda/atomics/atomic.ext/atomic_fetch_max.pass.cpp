@@ -19,7 +19,7 @@
 #include "atomic_helpers.h"
 #include "cuda_space_selector.h"
 
-template <class T, template<typename, typename> typename Selector, cuda::thread_scope>
+template <class T, template<typename, typename> typename Selector, cuda::thread_scope ThreadScope, bool Signed = cuda::std::is_signed<T>::value>
 struct TestFn {
   __host__ __device__
   void operator()() const {
@@ -60,14 +60,68 @@ struct TestFn {
   }
 };
 
+template <class T, template<typename, typename> typename Selector, cuda::thread_scope ThreadScope>
+struct TestFn<T, Selector, ThreadScope, true> {
+  __host__ __device__
+  void operator()() const {
+    // Call unsigned tests
+    TestFn<T, Selector, ThreadScope, false>()();
+    // Test greater, but with signed math
+    {
+        typedef cuda::atomic<T> A;
+        Selector<A, constructor_initializer> sel;
+        A & t = *sel.construct();
+        t = T(-5);
+        assert(t.fetch_max(-1) == T(-5));
+        assert(t.load() == T(-1));
+    }
+    {
+        typedef cuda::atomic<T> A;
+        Selector<volatile A, constructor_initializer> sel;
+        volatile A & t = *sel.construct();
+        t = T(-5);
+        assert(t.fetch_max(-1) == T(-5));
+        assert(t.load() == T(-1));
+    }
+    // Test not greater
+    {
+        typedef cuda::atomic<T> A;
+        Selector<A, constructor_initializer> sel;
+        A & t = *sel.construct();
+        t = T(-1);
+        assert(t.fetch_max(-5) == T(-1));
+        assert(t.load() == T(-1));
+    }
+    {
+        typedef cuda::atomic<T> A;
+        Selector<volatile A, constructor_initializer> sel;
+        volatile A & t = *sel.construct();
+        t = T(-1);
+        assert(t.fetch_max(-5) == T(-1));
+        assert(t.load() == T(-1));
+    }
+  }
+};
+
+template <class T, template <typename, typename> typename Selector, cuda::thread_scope ThreadScope>
+struct TestFnDispatch {
+  __host__ __device__
+  void operator()() const {
+    TestFn<T, Selector, ThreadScope>()();
+  }
+};
+
 int main(int, char**)
 {
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
-    TestEachIntegralType<TestFn, local_memory_selector>()();
+    TestEachIntegralType<TestFnDispatch, local_memory_selector>()();
+    TestEachFloatingPointType<TestFnDispatch, local_memory_selector>()();
 #endif
 #ifdef __CUDA_ARCH__
-    TestEachIntegralType<TestFn, shared_memory_selector>()();
-    TestEachIntegralType<TestFn, global_memory_selector>()();
+    TestEachIntegralType<TestFnDispatch, shared_memory_selector>()();
+    TestEachFloatingPointType<TestFnDispatch, shared_memory_selector>()();
+    TestEachIntegralType<TestFnDispatch, global_memory_selector>()();
+    TestEachFloatingPointType<TestFnDispatch, global_memory_selector>()();
 #endif
 
   return 0;

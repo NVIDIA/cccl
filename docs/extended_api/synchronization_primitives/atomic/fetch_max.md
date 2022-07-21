@@ -25,7 +25,7 @@ The maximum is found using [`cuda::std::max`].
 
 __global__ void example_kernel() {
   cuda::atomic<int> a(0);
-  auto x = a.fetch_max(1); // Operates as if unsigned.
+  auto x = a.fetch_max(1);
   auto y = a.load();
   assert(x == 1 && y == 0);
 }
