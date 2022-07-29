@@ -28,6 +28,10 @@
 // detection should be changed to not report `nvcc` for NVRTC, but that's a
 // topic for another day.)
 
+// Because nvrtc inherits flags from the host compilers, gcc-7 expects failure while NVRTC builds pass.
+// Mark unsupported because the matrix of all {compiler && !nvrtc} is insane
+// UNSUPPORTED: nvrtc
+
 // If we're just building the test and not executing it, it should pass.
 // UNSUPPORTED: no_execute
 

@@ -8,7 +8,7 @@
 
 // UNSUPPORTED: c++98, c++03, c++11
 
-// XFAIL: gcc-7
+// XFAIL: gcc-7 && !nvrtc
 // GCC 5: Fails for C++11, passes for C++14.
 // GCC 6: Fails for C++11, passes for C++14.
 // GCC 7: Fails for C++11, fails for C++14.

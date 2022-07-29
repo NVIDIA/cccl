@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
+// UNSUPPORTED: c++98, c++03, c++11, nvrtc
 
 // type_traits
 
@@ -65,7 +65,7 @@ int main(int, char**)
     test_array<Abstract,       false>();
     test_array<Enum,           false>();
     test_array<FunctionPtr,    false>();
-    
+
 //  Array types
     test_array<array,             false>();
     test_array<incomplete_array,  true>();
