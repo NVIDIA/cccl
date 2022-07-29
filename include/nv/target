@@ -67,14 +67,15 @@ namespace nv {
       constexpr base_int_t sm_80_bit = 1 << 12;
       constexpr base_int_t sm_86_bit = 1 << 13;
       constexpr base_int_t sm_87_bit = 1 << 14;
-      constexpr base_int_t sm_90_bit = 1 << 15;
+      constexpr base_int_t sm_89_bit = 1 << 15;
+      constexpr base_int_t sm_90_bit = 1 << 16;
       constexpr base_int_t all_devices =
           sm_35_bit | sm_37_bit |
           sm_50_bit | sm_52_bit | sm_53_bit |
           sm_60_bit | sm_61_bit | sm_62_bit |
           sm_70_bit | sm_72_bit | sm_75_bit |
           sm_80_bit | sm_86_bit | sm_87_bit |
-          sm_90_bit;
+          sm_89_bit | sm_90_bit;
 
       // Store a set of targets as a set of bits
       struct _NV_BITSET_ATTRIBUTE target_description {
@@ -90,7 +91,7 @@ namespace nv {
         sm_60 = 60, sm_61 = 61, sm_62 = 62,
         sm_70 = 70, sm_72 = 72, sm_75 = 75,
         sm_80 = 80, sm_86 = 86, sm_87 = 87,
-        sm_90 = 90,
+        sm_89 = 89, sm_90 = 90,
       };
       _NV_FUNCTION_ANNOTATION
       constexpr base_int_t toint(sm_selector a) {
@@ -112,11 +113,13 @@ namespace nv {
                toint(a) == 80 ? sm_80_bit :
                toint(a) == 86 ? sm_86_bit :
                toint(a) == 87 ? sm_87_bit :
+               toint(a) == 89 ? sm_89_bit :
                toint(a) == 90 ? sm_90_bit : 0;
       }
       _NV_FUNCTION_ANNOTATION
       constexpr base_int_t bitrounddown(sm_selector a) {
         return toint(a) >= 90 ? sm_90_bit :
+               toint(a) >= 89 ? sm_89_bit :
                toint(a) >= 87 ? sm_87_bit :
                toint(a) >= 86 ? sm_86_bit :
                toint(a) >= 80 ? sm_80_bit :
@@ -193,6 +196,7 @@ namespace nv {
     constexpr sm_selector sm_80 = sm_selector::sm_80;
     constexpr sm_selector sm_86 = sm_selector::sm_86;
     constexpr sm_selector sm_87 = sm_selector::sm_87;
+    constexpr sm_selector sm_89 = sm_selector::sm_89;
     constexpr sm_selector sm_90 = sm_selector::sm_90;
 
     using detail::is_exactly;
