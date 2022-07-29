@@ -12,7 +12,7 @@
 
 #include <cuda/functional>
 
-#include <assert.h>
+#include <cuda/std/cassert>
 
 template <class T, class Fn, class... As>
 __host__ __device__
@@ -39,11 +39,13 @@ struct hd_callable
   __host__ __device__ int operator()() const&& { return 42; }
 };
 
+#if !defined(__CUDACC_RTC__)
 struct h_callable
 {
   __host__ int operator()() const& { return 42; }
   __host__ int operator()() const&& { return 42; }
 };
+#endif
 
 struct d_callable
 {
@@ -67,15 +69,17 @@ int main(int argc, char ** argv)
         [vp] __VA_ARGS__ () -> int& { return *vp; }, v);                       \
   }
 
+#if !defined(__CUDACC_RTC__)
   TEST_SPECIFIER(__device__)
   TEST_SPECIFIER(__host__ __device__)
+#endif
   TEST_SPECIFIER()
 #undef TEST_SPECIFIER
-  
-  test_proclaim_return_type<int>(hd_callable{}, 42);                                   
-  test_proclaim_return_type<int>(d_callable{}, 42);                                   
+
+  test_proclaim_return_type<int>(hd_callable{}, 42);
+  test_proclaim_return_type<int>(d_callable{}, 42);
 #else
-  test_proclaim_return_type<int>(h_callable{}, 42);                                   
+  test_proclaim_return_type<int>(h_callable{}, 42);
 #endif
 
   return 0;

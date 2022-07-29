@@ -17,13 +17,13 @@
 struct A {};
 struct B {
 public:
-    operator A() { return a; } A a;
+    __host__ __device__ operator A() { return a; } A a;
 };
 
 class C { };
 class D {
 public:
-    operator C() noexcept { return c; } C c;
+    __host__ __device__ operator C() noexcept { return c; } C c;
 };
 
 int main(int, char**) {

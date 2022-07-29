@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
+// UNSUPPORTED: c++98, c++03, c++11, nvrtc
 
 // <chrono>
 // class month_day_last;
@@ -33,11 +33,6 @@
 //     constexpr auto mdl = February/last; // mdl is the last day of February of an as yet unspecified year
 //     static_assert(mdl.month() == February);
 // --end example]
-
-
-
-
-
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
