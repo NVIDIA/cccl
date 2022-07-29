@@ -5,14 +5,13 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
+// UNSUPPORTED: c++98, c++03, c++11, nvrtc
 
 // <chrono>
 // class month_weekday;
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cassert>
 
 #include "test_macros.h"
 

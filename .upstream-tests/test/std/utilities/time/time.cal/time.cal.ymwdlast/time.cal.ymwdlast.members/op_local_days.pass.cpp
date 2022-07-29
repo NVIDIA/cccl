@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
+// UNSUPPORTED: c++98, c++03, c++11, nvrtc
 
 // <chrono>
 // class year_month_day_last;
@@ -33,7 +33,7 @@ int main(int, char**)
     { // Last day in Jan 1970 was the 31st
     constexpr year_month_day_last ymdl{year{1970}, month_day_last{cuda::std::chrono::January}};
     constexpr local_days sd{ymdl};
-    
+
     static_assert(sd.time_since_epoch() == days{30}, "");
     }
 
