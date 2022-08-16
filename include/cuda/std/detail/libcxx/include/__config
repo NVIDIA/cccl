@@ -1556,7 +1556,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  elif defined(_LIBCUDACXX_WIN32API)
 #    define _LIBCUDACXX_HAS_THREAD_API_WIN32
 #  else
-#    error "No thread API"
+#    define _LIBCUDACXX_UNSUPPORTED_THREAD_API
 #  endif // _LIBCUDACXX_HAS_THREAD_API
 #endif // _LIBCUDACXX_HAS_NO_THREADS
 
