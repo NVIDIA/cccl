@@ -58,6 +58,10 @@
 
 #include "test_macros.h"
 
+template <typename T>
+__host__ __device__
+constexpr bool unused(T &&) {return true;}
+
 struct aggregate {
     double a;
     double b;
@@ -68,6 +72,8 @@ __host__ __device__
 void test() {
     cuda::atomic<T> a({42, 1337});
     cuda::std::atomic<T> b({42, 1337});
+    unused(a);
+    unused(b);
 }
 
 int main(int, char**)
