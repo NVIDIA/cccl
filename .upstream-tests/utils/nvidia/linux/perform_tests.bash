@@ -71,7 +71,7 @@ function section_separator {
 LIBCXX_LOG=$(mktemp)
 LIBCUDACXX_LOG=$(mktemp)
 
-KNOWN_COMPUTE_ARCHS="35 50 52 53 60 61 62 70 72 75 80 86 87"
+KNOWN_COMPUTE_ARCHS="50 52 53 60 61 62 70 72 75 80 86 87"
 
 function report_and_exit {
   # If any of the lines searched for below aren't present in the log files, the
@@ -268,7 +268,7 @@ then
 
   echo "# DETECTION SM Architecture : Device 0, ${DEVICE_0_COMPUTE_ARCH}"
 
-  if (( 35 <= ${DEVICE_0_COMPUTE_ARCH:-0} ))
+  if (( 50 <= ${DEVICE_0_COMPUTE_ARCH:-0} ))
   then
     LIBCUDACXX_COMPUTE_ARCHS=${DEVICE_0_COMPUTE_ARCH}
   fi
