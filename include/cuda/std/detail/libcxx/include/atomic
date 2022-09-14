@@ -757,8 +757,6 @@ struct __cxx_atomic_lock_impl {
   __cxx_atomic_lock_impl(_Tp value) _NOEXCEPT
     : __a_value(value), __a_lock(0) {}
 
-  __cxx_atomic_lock_impl(const __cxx_atomic_lock_impl&) _NOEXCEPT = default;
-
   _Tp __a_value;
   mutable __cxx_atomic_base_impl<_LIBCUDACXX_ATOMIC_FLAG_TYPE, _Sco> __a_lock;
 
