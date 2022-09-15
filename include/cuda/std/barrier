@@ -189,15 +189,17 @@ public:
                 : "r"(static_cast<std::uint32_t>(__cvta_generic_to_shared(&__barrier)))
                 : "memory");
 #else
-            unsigned int __activeA = __match_any_sync(__activemask(), __update);
-            unsigned int __activeB = __match_any_sync(__activemask(), reinterpret_cast<std::uintptr_t>(&__barrier));
+            unsigned int __mask = __activemask();
+            unsigned int __activeA = __match_any_sync(__mask, __update);
+            unsigned int __activeB = __match_any_sync(__mask, reinterpret_cast<std::uintptr_t>(&__barrier));
             unsigned int __active = __activeA & __activeB;
             int __inc = __popc(__active) * __update;
 
             unsigned __laneid;
-            asm volatile ("mov.u32 %0, %laneid;" : "=r"(__laneid));
+            asm ("mov.u32 %0, %laneid;" : "=r"(__laneid));
             int __leader = __ffs(__active) - 1;
-
+            // All threads in mask synchronize here, establishing cummulativity to the __leader:
+            __syncwarp(__mask);
             if(__leader == __laneid)
             {
                 __token = __barrier.arrive(__inc);
