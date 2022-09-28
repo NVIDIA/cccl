@@ -31,8 +31,6 @@ ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 SHELL ["/usr/bin/env", "bash", "-c"]
 
 # Install baseline development tools
-ADD ${CMAKE_URL} /tmp/cmake.sh
-
 RUN function comment() { :; }; \
     comment "Sources for gcc"; \
     source /etc/os-release; \
@@ -41,11 +39,17 @@ RUN function comment() { :; }; \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ${UBUNTU_TOOL_FINGER}; \
     ${APT_GET} update;
 
+RUN function comment() { :; }; \
+    comment "Install compilers: ${COMPILERS}"; \
+    ${APT_GET} install gcc g++ gcc-multilib g++-multilib ${COMPILERS};
+
 # `--no-install-recommends` avoids unnecessary packages, keeping the image smaller.
 RUN function comment() { :; }; \
     comment "Install basic build tools"; \
     ${APT_GET} --no-install-recommends install apt-utils curl git zip unzip tar sudo make \
-        ninja-build ccache pkg-config python3 python3-pip;
+        ninja-build ccache pkg-config python3 python3-wheel python3-pip;
+
+ADD ${CMAKE_URL} /tmp/cmake.sh
 
 RUN function comment() { :; }; \
     comment "Install CMake"; \
@@ -55,12 +59,8 @@ RUN function comment() { :; }; \
     comment "Install Python utils"; \
     update-alternatives --quiet --install /usr/bin/python python $(which python3) 3; \
     update-alternatives --quiet --set python $(which python3); \
-    python -m pip install setuptools; \
-    python -m pip install lit;
-
-RUN function comment() { :; }; \
-    comment "Install compilers: ${COMPILERS}"; \
-    ${APT_GET} install gcc g++ gcc-multilib g++-multilib ${COMPILERS};
+    python3 -m pip install setuptools wheel; \
+    python3 -m pip install lit;
 
 # Assemble libcudacxx specific bits
 FROM devenv AS libcudacxx-configured
