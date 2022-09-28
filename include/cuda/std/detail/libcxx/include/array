@@ -490,13 +490,13 @@ _LIBCUDACXX_END_NAMESPACE_STD
 namespace std {
     template <class _Tp, size_t _Size>
     struct tuple_size<_CUDA_VSTD::array<_Tp, _Size>> 
-      : integral_constant<size_t, _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>::value>
+      : _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>
     {};
 
     template<size_t _Ip, class _Tp, size_t _Size>
-    struct tuple_element<_Ip, _CUDA_VSTD::array<_Tp, _Size>> {
-      using type = typename _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::array<_Tp, _Size>>::type;
-    };
+    struct tuple_element<_Ip, _CUDA_VSTD::array<_Tp, _Size>> 
+      : _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::array<_Tp, _Size>>
+    {};
 }
 #endif // _LIBCUDACXX_STD_VER > 14
 
