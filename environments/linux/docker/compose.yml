@@ -5,10 +5,14 @@ services:
     tty: true
     profiles: ["base"]
     build:
+      cache_from:
+        - "local/cccl-ubuntu22.04:latest"
+        - "local/cccl-ubuntu22.04:cached"
       context: .
       dockerfile: ubuntu.base.Dockerfile
       target: devenv
       args: &ubuntu22-args
+        BUILDKIT_INLINE_CACHE: "1"
         ROOT_IMAGE: "nvcr.io/nvidia/cuda:11.7.1-devel-ubuntu22.04"
         COMPILERS: "g++-11 g++-12 clang-12 clang-13 clang-11 clang-14"
     deploy: &deploy-template
@@ -24,10 +28,14 @@ services:
     tty: true
     profiles: ["base"]
     build:
+      cache_from:
+        - "local/cccl-ubuntu20.04:latest"
+        - "local/cccl-ubuntu20.04:cached"
       context: .
       dockerfile: ubuntu.base.Dockerfile
       target: devenv
       args: &ubuntu20-args
+        BUILDKIT_INLINE_CACHE: "1"
         ROOT_IMAGE: "nvcr.io/nvidia/cuda:11.7.1-devel-ubuntu20.04"
         COMPILERS: "g++-10 g++-9 g++-8 clang-9 clang-8 clang-10"
     deploy: *deploy-template
@@ -37,25 +45,30 @@ services:
     tty: true
     profiles: ["base"]
     build:
+      cache_from:
+        - "local/cccl-ubuntu18.04:latest"
+        - "local/cccl-ubuntu18.04:cached"
       context: .
       dockerfile: ubuntu.base.Dockerfile
       target: devenv
       args: &ubuntu18-args
+        BUILDKIT_INLINE_CACHE: "1"
         ROOT_IMAGE: "nvcr.io/nvidia/cuda:11.7.1-devel-ubuntu18.04"
         COMPILERS: "g++-5 g++-7 g++-6 clang-7"
     deploy: *deploy-template
 
-  nvhpc-ubuntu22.04:
-    image: "local/cccl-nvhpc-ubuntu22.04"
-    tty: true
-    profiles: ["base"]
-    build:
-      context: .
-      dockerfile: ubuntu.base.Dockerfile
-      target: devenv
-      args:
-        ROOT_IMAGE: "nvcr.io/nvidia/nvhpc:22.7-devel-cuda11.7-ubuntu22.04"
-    deploy: *deploy-template
+##### Not used yet
+##  nvhpc-ubuntu22.04:
+##    image: "local/cccl-nvhpc-ubuntu22.04"
+##    tty: true
+##    profiles: ["base"]
+##    build:
+##      context: .
+##      dockerfile: ubuntu.base.Dockerfile
+##      target: devenv
+##      args:
+##        ROOT_IMAGE: "nvcr.io/nvidia/nvhpc:22.7-devel-cuda11.7-ubuntu22.04"
+##    deploy: *deploy-template
 
 ## Configured images ##
 ### Ubuntu 22.04 images:
