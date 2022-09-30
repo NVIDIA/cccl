@@ -260,15 +260,21 @@ int main(int, char**)
 
     test_is_constructible<Base, Derived>();
     test_is_constructible<Base&, Derived&>();
+#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 20
     test_is_not_constructible<Derived&, Base&>();
+#endif
     test_is_constructible<Base const&, Derived const&>();
+#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 20
     test_is_not_constructible<Derived const&, Base const&>();
     test_is_not_constructible<Derived const&, Base>();
+#endif
 
     test_is_constructible<Base&&, Derived>();
     test_is_constructible<Base&&, Derived&&>();
+#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 20
     test_is_not_constructible<Derived&&, Base&&>();
     test_is_not_constructible<Derived&&, Base>();
+#endif
 
     // test that T must also be destructible
     test_is_constructible<PrivateDtor&, PrivateDtor&>();

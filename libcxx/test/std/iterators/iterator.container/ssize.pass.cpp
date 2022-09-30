@@ -23,6 +23,9 @@
 
 #include "test_macros.h"
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
 
 struct short_container {
     uint16_t size() const { return 60000; } // not noexcept

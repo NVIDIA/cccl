@@ -66,8 +66,10 @@ struct B
 
 int main(int, char**)
 {
+#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 20
     test_is_not_move_constructible<char[3]>();
     test_is_not_move_constructible<char[]>();
+#endif
     test_is_not_move_constructible<void>();
     test_is_not_move_constructible<Abstract>();
 

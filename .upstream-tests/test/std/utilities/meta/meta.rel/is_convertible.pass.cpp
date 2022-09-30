@@ -9,6 +9,7 @@
 // type_traits
 
 // is_convertible
+#pragma nv_diag_suppress 3013 // a volatile function parameter is deprecated
 
 #include <cuda/std/type_traits>
 #include "test_macros.h"

@@ -28,6 +28,7 @@
 
 int main(int, char**)
 {
+#ifndef __cuda_std__
     using local_t = cuda::std::chrono::local_t;
     using year    = cuda::std::chrono::year;
 
@@ -61,6 +62,7 @@ int main(int, char**)
     ASSERT_SAME_TYPE(decltype(s0.time_since_epoch()), seconds);
     assert( s0.time_since_epoch().count() == 0);
     assert( s1.time_since_epoch().count() == 946684800L);
+#endif // __cuda_std__
 
     return 0;
 }

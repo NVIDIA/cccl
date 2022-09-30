@@ -23,7 +23,7 @@ struct pod {
 using pair_t = cuda::std::pair<int, pod>;
 
 template<int N>
-struct write
+struct Write
 {
     using async = cuda::std::false_type;
 
@@ -37,7 +37,7 @@ struct write
 };
 
 template<int N>
-struct read
+struct Read
 {
     using async = cuda::std::false_type;
 
@@ -51,10 +51,10 @@ struct read
 };
 
 using w_r_w_r = performer_list<
-  write<10>,
-  read<10>,
-  write<30>,
-  read<30>
+  Write<10>,
+  Read<10>,
+  Write<30>,
+  Read<30>
 >;
 
 void kernel_invoker()

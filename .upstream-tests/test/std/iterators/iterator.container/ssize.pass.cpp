@@ -27,6 +27,10 @@
 #include <cuda/std/string_view>
 #endif
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
+
 #include "test_macros.h"
 
 struct short_container {

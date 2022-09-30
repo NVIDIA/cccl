@@ -23,6 +23,7 @@
 
 int main(int, char**)
 {
+#ifndef _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
     {
     using namespace cuda::std::chrono;
     ASSERT_NOEXCEPT(               4d);
@@ -31,7 +32,7 @@ int main(int, char**)
     static_assert( 7d == day(7), "");
     day d1 = 4d;
     assert (d1 == day(4));
-}
+    }
 
     {
     using namespace cuda::std::literals;
@@ -43,7 +44,7 @@ int main(int, char**)
     cuda::std::chrono::day d1 = 4d;
     assert (d1 == cuda::std::chrono::day(4));
     }
-
+#endif // !_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
 
   return 0;
 }
