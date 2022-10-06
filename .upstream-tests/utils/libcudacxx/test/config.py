@@ -577,17 +577,20 @@ class Configuration(object):
         pre_sm_60 = True
         pre_sm_70 = True
         pre_sm_80 = True
+        pre_sm_90 = True
         if compute_archs and self.cxx.type == 'nvcc':
             pre_sm_32 = False
             pre_sm_60 = False
             pre_sm_70 = False
             pre_sm_80 = False
+            pre_sm_90 = False
             compute_archs = [int(a) for a in sorted(shlex.split(compute_archs))]
             for arch in compute_archs:
                 if arch < 32: pre_sm_32 = True
                 if arch < 60: pre_sm_60 = True
                 if arch < 70: pre_sm_70 = True
                 if arch < 80: pre_sm_80 = True
+                if arch < 90: pre_sm_90 = True
                 arch_flag = '-gencode=arch=compute_{0},code=sm_{0}'.format(arch)
                 self.cxx.compile_flags += [arch_flag]
             enable_compute_future = self.get_lit_conf('enable_compute_future')
@@ -602,6 +605,8 @@ class Configuration(object):
             self.config.available_features.add("pre-sm-70")
         if pre_sm_80:
             self.config.available_features.add("pre-sm-80")
+        if pre_sm_90:
+            self.config.available_features.add("pre-sm-90")
 
     def configure_default_compile_flags(self):
         nvcc_host_compiler = self.get_lit_conf('nvcc_host_compiler')
@@ -614,7 +619,7 @@ class Configuration(object):
         std = self.get_lit_conf('std')
         if not std:
             # Choose the newest possible language dialect if none is given.
-            possible_stds = ['c++2a', 'c++17', 'c++1z', 'c++14', 'c++11',
+            possible_stds = ['c++20', 'c++2a', 'c++17', 'c++1z', 'c++14', 'c++11',
                              'c++03']
             if self.cxx.type == 'gcc':
                 maj_v, _, _ = self.cxx.version

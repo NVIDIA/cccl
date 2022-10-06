@@ -24,6 +24,5 @@ int main(int argc, char ** argv)
 
     array_anno_ptr = shared_ptr;  //  fail to compile, as expected
 
-
     return 0;
 }

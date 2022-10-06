@@ -10,20 +10,21 @@
 // UNSUPPORTED: pre-sm-70
 // UNSUPPORTED: !nvcc
 // UNSUPPORTED: nvrtc
-// XFAIL: nvcc
+// UNSUPPORTED: c++98, c++03
 
 #include "utils.h"
 
+__host__ __device__ __noinline__ void test_access_property_fail() {
+  cuda::access_property o = cuda::access_property::normal{};
+  // Test implicit conversion fails
+  std::uint64_t x;
+  x = o;
+  unused(o);
+}
+
 int main(int argc, char ** argv)
 {
-
-    cuda::access_property ap(cuda::access_property::persisting{});
-    int* array0 = new int[9];
-    cuda::annotated_ptr<int, cuda::access_property> array_anno_ptr{array0, ap};
-    cuda::annotated_ptr<int, cuda::access_property::shared> shared_ptr;
-
-    array_anno_ptr = shared_ptr;  //  fail to compile, as expected
-
-
-    return 0;
+  test_access_property_fail();
+  return 0;
 }
+

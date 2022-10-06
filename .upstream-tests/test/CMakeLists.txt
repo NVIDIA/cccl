@@ -6,7 +6,7 @@ macro(pythonize_bool var)
   endif()
 endmacro()
 
-set(LIBCUDACXX_HIGHEST_COMPUTE_ARCH 80)
+set(LIBCUDACXX_HIGHEST_COMPUTE_ARCH 90)
 
 foreach (COMPUTE_ARCH ${LIBCUDACXX_COMPUTE_ARCHS})
   set(_compute_message "${_compute_message} sm_${COMPUTE_ARCH}")
