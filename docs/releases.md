@@ -19,3 +19,5 @@ The latest ABI version is always the default.
 | 1.5.0       | 4, 3, 2         | CUDA 11.4              | `<nv/target>`                         |
 | 1.6.0       | 4, 3, 2         | CUDA 11.5              | `cuda::annotated_ptr`, atomic refactor|
 | 1.7.0       | 4, 3, 2         | CUDA 11.6              | `atomic_ref`, 128 bit support         |
+| 1.8.0       | 4, 3, 2         | CUDA 11.7              | `<cuda/std/bit>`, `<cuda/std/array>`  |
+| 1.8.1       | 4, 3, 2         | CUDA 11.8              | Bugfixes and documentation updates    |
