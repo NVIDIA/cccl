@@ -276,6 +276,9 @@ inline __host__ __device__ void atomic_thread_fence(memory_order __m, thread_sco
             case thread_scope::thread_scope_block:
                 std::__detail::__atomic_thread_fence_cuda((int)__m, __detail::__thread_scope_block_tag());
                 break;
+            // Atomics scoped to themselves do not require fencing
+            case thread_scope::thread_scope_thread:
+                break;
             }
         ),
         NV_IS_HOST, (
