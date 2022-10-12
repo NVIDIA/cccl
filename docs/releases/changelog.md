@@ -10,6 +10,42 @@ It pulls in the latest version of upstream libc++ and marks the beginning of
   automatic tracking of upstream.
 -->
 
+## libcu++ 1.9.0
+
+Adds `float` and `double` support to `cuda::std::atomic` and `cuda::atomic`.
+This release also adds workflows for contributors based on Docker to improve testing and coverage.
+
+Supported ABI Versions: 4 (default), 3, and 2.
+
+### New Features
+
+- #286: Add atomics for floating point types.
+  - Thanks Daniel Jünger for this contribution.
+- #284: `cuda::proclaim_return_type` for use with extended lambda support in NVCC.
+- #267: Docker refactor, parameterizes OS and compiler versions.
+
+### Issues Fixed
+
+- #280: NVHPC: Disable <nv/target> macro code paths when compiled without `-stdpar`.
+- #282: Prevent usage of cuda::atomic::fetch_max/min for non-integral types.
+- #288: Fix shortcut in fetch_min CAS loop.
+  - Thanks Daniel Jünger for this contribution.
+- #291: Remove usage of find_path to locate cuda/std/detail/__config.
+  - Thanks Robert Maynard for this contribution.
+- #276: Delete tests for unsupported header `<compare>`.
+- #293: Fix failures in several tests unsupportable by NVRTC.
+- #303: Move the emission of atomic errors on unsupported platforms to `<atomic>`.
+- #305: Add workflow to add issues/PRs to Project.
+- #314: Remove SM_35 from testing.
+- #312: Use escape hook for removal of `<ciso646>`.
+- #310: `<atomics>` Remove defaulted copy constructor from __cxx_atomic_lock_impl.
+- #300: Soundness bugfix for `barrier<thread_scope_block>` on sm_70.
+- #319: Fix ubuntu18 failing in CI due to missing lit prereqs.
+- #318: Fix gcc12 issues.
+- #320: Use cache_from to speed up builds if local versions exist.
+- #304: Fix `<chrono>` and `<atomic>` build errors with clang-cuda.
+- #324: Also disable tests on `windows && pre-sm-70`.
+
 ## libcu++ 1.8.1
 
 libcu++ 1.8.1 is a minor release. It fixes minor issues in source, tests, and documentation.
@@ -32,7 +68,7 @@ Supported ABI Versions: 4 (default), 3, and 2.
 - #249: Documentation update for building libcudacxx.
 - #247: Update godbolt links in examples.
     - Thanks Asher Mancinelli for this contribution.
- 
+
 ## libcu++ 1.8.0
 
 libcu++ 1.8.0 is a major release. It adds several `constexpr` bit manipulation
@@ -373,4 +409,3 @@ Included in: CUDA Toolkit 10.2.
   This makes libcu++ unusable if installed from the NVIDIA-provided Debian
     packages and may interfere with the operation of your host C++ Standard
     Library.
-
