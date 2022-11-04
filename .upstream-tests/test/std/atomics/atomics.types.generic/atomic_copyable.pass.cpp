@@ -22,6 +22,7 @@
 // #include <cuda/std/chrono> // for nanoseconds
 
 #include "test_macros.h"
+#include "cuda_space_selector.h"
 
 template <class T>
 __host__ __device__
@@ -44,7 +45,8 @@ void test_copy_constructible() {
 template <class T, class A>
 __host__ __device__
 void test_atomic_ref_copy_ctor() {
-  A val = 0;
+  SHARED A val;
+  val = 0;
 
   T t0(val);
   T t1(t0);
@@ -58,7 +60,8 @@ void test_atomic_ref_copy_ctor() {
 template <class T, class A>
 __host__ __device__
 void test_atomic_ref_move_ctor() {
-  A val = 0;
+  SHARED A val;
+  val = 0;
 
   T t0(val);
   t0++;

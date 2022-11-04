@@ -17,38 +17,54 @@
 // https://github.com/NVIDIA/libcudacxx/issues/160
 
 #include <cuda/atomic>
+#include "cuda_space_selector.h"
 
 template <typename T>
 __host__ __device__
 constexpr bool unused(T &&) {return true;}
 
-int main(int argc, char ** argv)
+template <template<typename, typename> typename Selector>
+struct TestFn {
+  __host__ __device__
+  void operator()() const {
+    {
+        struct key {
+          int32_t a;
+          int32_t b;
+        };
+        typedef cuda::std::atomic<key> A;
+        Selector<A, constructor_initializer> sel;
+        A & t = *sel.construct();
+        cuda::std::atomic_init(&t, key{1,2});
+        auto r = t.load();
+        t.store(r);
+        (void)t.exchange(r);
+    }
+    {
+        struct alignas(8) key {
+          int32_t a;
+          int32_t b;
+        };
+        typedef cuda::std::atomic<key> A;
+        Selector<A, constructor_initializer> sel;
+        A & t = *sel.construct();
+        cuda::std::atomic_init(&t, key{1,2});
+        auto r = t.load();
+        t.store(r);
+        (void)t.exchange(r);
+    }
+  }
+};
+
+int main(int, char**)
 {
-  // Test default aligned user type
-  {
-    struct key {
-      int32_t a;
-      int32_t b;
-    };
-    static_assert(alignof(key) == 4, "");
-    cuda::atomic<key> k(key{});
-    auto r = k.load();
-    k.store(r);
-    (void)k.exchange(r);
-    unused(r);
-  }
-  // Test forcibly aligned user type
-  {
-    struct alignas(8) key {
-      int32_t a;
-      int32_t b;
-    };
-    static_assert(alignof(key) == 8, "");
-    cuda::atomic<key> k(key{});
-    auto r = k.load();
-    k.store(r);
-    (void)k.exchange(r);
-    unused(r);
-  }
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
+    TestFn<local_memory_selector>()();
+#endif
+#ifdef __CUDA_ARCH__
+    TestFn<shared_memory_selector>()();
+    TestFn<global_memory_selector>()();
+#endif
+
   return 0;
 }

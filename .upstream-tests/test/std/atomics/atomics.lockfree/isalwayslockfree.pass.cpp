@@ -18,8 +18,12 @@
 
 #include "test_macros.h"
 
+// NVRTC doesn't include host atomic making this feature test invalid
+// TODO: Should we define __cpp_lib_atomic_is_always_lock_free for NVRTC?
+#if !defined(__CUDACC_RTC__)
 #if !defined(__cpp_lib_atomic_is_always_lock_free)
 # error Feature test macro missing.
+#endif
 #endif
 
 template <typename T> __host__ __device__ void checkAlwaysLockFree() {
