@@ -13,8 +13,8 @@ services:
       target: devenv
       args: &ubuntu22-args
         BUILDKIT_INLINE_CACHE: "1"
-        ROOT_IMAGE: "nvcr.io/nvidia/cuda:11.7.1-devel-ubuntu22.04"
-        COMPILERS: "g++-11 g++-12 clang-12 clang-13 clang-11 clang-14"
+        ROOT_IMAGE: "nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu22.04"
+        COMPILERS: "g++-11 g++-12 clang-11 clang-12 clang-13 clang-14 clang-15"
     deploy: &deploy-template
       resources:
         reservations:
@@ -36,8 +36,8 @@ services:
       target: devenv
       args: &ubuntu20-args
         BUILDKIT_INLINE_CACHE: "1"
-        ROOT_IMAGE: "nvcr.io/nvidia/cuda:11.7.1-devel-ubuntu20.04"
-        COMPILERS: "g++-10 g++-9 g++-8 clang-9 clang-8 clang-10"
+        ROOT_IMAGE: "nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu20.04"
+        COMPILERS: "g++-8 g++-9 g++-10 clang-8 clang-9 clang-10"
     deploy: *deploy-template
 
   ubuntu18.04:
@@ -53,8 +53,8 @@ services:
       target: devenv
       args: &ubuntu18-args
         BUILDKIT_INLINE_CACHE: "1"
-        ROOT_IMAGE: "nvcr.io/nvidia/cuda:11.7.1-devel-ubuntu18.04"
-        COMPILERS: "g++-5 g++-7 g++-6 clang-7"
+        ROOT_IMAGE: "nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu18.04"
+        COMPILERS: "g++-5 g++-6 g++-7 clang-7"
     deploy: *deploy-template
 
 ##### Not used yet
@@ -99,6 +99,19 @@ services:
       args:
         HOST_CXX: "g++-12"
 
+  clang-11:
+    extends:
+      service: ubuntu22.04
+    image: "libcudacxx/clang-11"
+    container_name: clang-11
+    profiles: ["clang-11"]
+    build:
+      context: ../../../
+      dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
+      target: libcudacxx-configured
+      args:
+        HOST_CXX: "clang++-11"
+
   clang-12:
     extends:
       service: ubuntu22.04
@@ -125,19 +138,6 @@ services:
       args:
         HOST_CXX: "clang++-13"
 
-  clang-11:
-    extends:
-      service: ubuntu22.04
-    image: "libcudacxx/clang-11"
-    container_name: clang-11
-    profiles: ["clang-11"]
-    build:
-      context: ../../../
-      dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
-      target: libcudacxx-configured
-      args:
-        HOST_CXX: "clang++-11"
-
   clang-14:
     extends:
       service: ubuntu22.04
@@ -151,33 +151,20 @@ services:
       args:
         HOST_CXX: "clang++-14"
 
+  clang-15:
+    extends:
+      service: ubuntu22.04
+    image: "libcudacxx/clang-15"
+    container_name: clang-15
+    profiles: ["clang-15"]
+    build:
+      context: ../../../
+      dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
+      target: libcudacxx-configured
+      args:
+        HOST_CXX: "clang++-15"
+
 ### Ubuntu 20.04 images:
-
-  gcc-10:
-    extends:
-      service: ubuntu20.04
-    image: "libcudacxx/gcc-10"
-    container_name: gcc-10
-    profiles: ["gcc-10"]
-    build:
-      context: ../../../
-      dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
-      target: libcudacxx-configured
-      args:
-        HOST_CXX: "g++-10"
-
-  gcc-9:
-    extends:
-      service: ubuntu20.04
-    image: "libcudacxx/gcc-9"
-    container_name: gcc-9
-    profiles: ["gcc-9"]
-    build:
-      context: ../../../
-      dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
-      target: libcudacxx-configured
-      args:
-        HOST_CXX: "g++-9"
 
   gcc-8:
     extends:
@@ -192,18 +179,31 @@ services:
       args:
         HOST_CXX: "g++-8"
 
-  clang-9:
+  gcc-9:
     extends:
       service: ubuntu20.04
-    image: "libcudacxx/clang-9"
-    container_name: clang-9
-    profiles: ["clang-9"]
+    image: "libcudacxx/gcc-9"
+    container_name: gcc-9
+    profiles: ["gcc-9"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
       target: libcudacxx-configured
       args:
-        HOST_CXX: "clang++-9"
+        HOST_CXX: "g++-9"
+
+  gcc-10:
+    extends:
+      service: ubuntu20.04
+    image: "libcudacxx/gcc-10"
+    container_name: gcc-10
+    profiles: ["gcc-10"]
+    build:
+      context: ../../../
+      dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
+      target: libcudacxx-configured
+      args:
+        HOST_CXX: "g++-10"
 
   clang-8:
     extends:
@@ -217,6 +217,19 @@ services:
       target: libcudacxx-configured
       args:
         HOST_CXX: "clang++-8"
+
+  clang-9:
+    extends:
+      service: ubuntu20.04
+    image: "libcudacxx/clang-9"
+    container_name: clang-9
+    profiles: ["clang-9"]
+    build:
+      context: ../../../
+      dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
+      target: libcudacxx-configured
+      args:
+        HOST_CXX: "clang++-9"
 
   clang-10:
     extends:
@@ -247,19 +260,6 @@ services:
       args:
         HOST_CXX: "g++-5"
 
-  gcc-7:
-    extends:
-      service: ubuntu18.04
-    image: "libcudacxx/gcc-7"
-    container_name: gcc-7
-    profiles: ["gcc-7"]
-    build:
-      context: ../../../
-      dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
-      target: libcudacxx-configured
-      args:
-        HOST_CXX: "g++-7"
-
   gcc-6:
     extends:
       service: ubuntu18.04
@@ -272,6 +272,19 @@ services:
       target: libcudacxx-configured
       args:
         HOST_CXX: "g++-6"
+
+  gcc-7:
+    extends:
+      service: ubuntu18.04
+    image: "libcudacxx/gcc-7"
+    container_name: gcc-7
+    profiles: ["gcc-7"]
+    build:
+      context: ../../../
+      dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
+      target: libcudacxx-configured
+      args:
+        HOST_CXX: "g++-7"
 
   clang-7:
     extends:
