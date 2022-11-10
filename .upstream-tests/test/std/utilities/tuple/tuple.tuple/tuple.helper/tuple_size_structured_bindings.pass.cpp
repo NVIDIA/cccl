@@ -20,8 +20,7 @@
 // UNSUPPORTED: msvc
 
 #include <cuda/std/tuple>
-// cuda::std::array not supported
-//#include <cuda/std/array>
+#include <cuda/std/array>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
 
@@ -48,8 +47,6 @@ __host__ __device__ void test_decomp_user_type() {
 
 __host__ __device__ void test_decomp_tuple() {
   typedef cuda::std::tuple<int> T;
-  // Possible compiler bug?
-  /*
   {
     T s{99};
     auto [m1] = s;
@@ -64,7 +61,6 @@ __host__ __device__ void test_decomp_tuple() {
     assert(m1 == 99);
     assert(&r1 == &cuda::std::get<0>(s));
   }
-  */
 }
 
 __host__ __device__ void test_decomp_pair() {
@@ -89,8 +85,6 @@ __host__ __device__ void test_decomp_pair() {
   }
 }
 
-// cuda::std::array not supported
-/*
 __host__ __device__ void test_decomp_array() {
   typedef cuda::std::array<int, 3> T;
   {
@@ -116,7 +110,6 @@ __host__ __device__ void test_decomp_array() {
     assert(&r3 == &cuda::std::get<2>(s));
   }
 }
-*/
 
 struct Test {
   int x;
@@ -152,8 +145,7 @@ int main(int, char**) {
   test_decomp_user_type();
   test_decomp_tuple();
   test_decomp_pair();
-  // cuda::std::array not supported
-  //test_decomp_array();
+  test_decomp_array();
   test_before_tuple_size_specialization();
   test_after_tuple_size_specialization();
 

@@ -558,7 +558,27 @@ struct __sfinae_assign_base<false, true> {
 };
 #endif // _LIBCUDACXX_STD_VER > 14
 
+template <size_t...>
+using _Ivoid_t = void;
+
 _LIBCUDACXX_END_NAMESPACE_STD
+
+// This is a workaround for the fact that structured bindings require that the specializations of
+// `tuple_size` and `tuple_element` reside in namespace std (https://eel.is/c++draft/dcl.struct.bind#4).
+// See https://github.com/NVIDIA/libcudacxx/issues/316 for a short discussion
+#if _LIBCUDACXX_STD_VER > 14
+namespace std {
+    template <class... _Tp>
+    struct tuple_size<_CUDA_VSTD::tuple<_Tp...>> 
+      : _CUDA_VSTD::tuple_size<_CUDA_VSTD::tuple<_Tp...>> 
+    {};
+
+    template<size_t _Ip, class... _Tp>
+    struct tuple_element<_Ip, _CUDA_VSTD::tuple<_Tp...>> 
+      : _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::tuple<_Tp...>>
+    {};
+}
+#endif // _LIBCUDACXX_STD_VER > 14
 
 #ifndef __cuda_std__
 #include <__pragma_pop>
