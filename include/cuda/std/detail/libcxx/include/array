@@ -488,6 +488,14 @@ _LIBCUDACXX_END_NAMESPACE_STD
 // See https://github.com/NVIDIA/libcudacxx/issues/316 for a short discussion
 #if _LIBCUDACXX_STD_VER > 14
 namespace std {
+#ifdef _LIBCUDACXX_COMPILER_NVRTC
+    template <class... _Tp>
+    struct tuple_size;
+
+    template<size_t _Ip, class... _Tp>
+    struct tuple_element;
+#endif
+
     template <class _Tp, size_t _Size>
     struct tuple_size<_CUDA_VSTD::array<_Tp, _Size>> 
       : _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>
