@@ -649,6 +649,7 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 */
 #ifndef __cuda_std__
 #include <__config>
+#include <__memory/addressof.h>
 #include <type_traits>
 #include <typeinfo>
 #include <cstddef>
@@ -667,6 +668,8 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #endif
 #include <version>
 #include <__pragma_push>
+#else
+#include "__memory/addressof.h"
 #endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

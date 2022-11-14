@@ -417,6 +417,7 @@ namespace std
 #ifndef __cuda_std__
 #include <__config>
 #include <__functional/invoke.h>
+#include <__memory/addressof.h>
 #include <__type_traits/add_const.h>
 #include <__type_traits/add_cv.h>
 #include <__type_traits/add_lvalue_reference.h>
@@ -552,6 +553,7 @@ namespace std
 #include <__pragma_push>
 #else
 #include "__functional/invoke.h"
+#include "__memory/addressof.h"
 #include "__type_traits/add_const.h"
 #include "__type_traits/add_cv.h"
 #include "__type_traits/add_lvalue_reference.h"
@@ -733,75 +735,6 @@ using _SecondType _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<(sizeof...(_Args
 
 template <class _Tp>
 struct __identity { typedef _Tp type; };
-
-// addressof
-#if defined(_LIBCUDACXX_ADDRESSOF)
-
-template <class _Tp>
-inline _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-_LIBCUDACXX_NO_CFI _LIBCUDACXX_INLINE_VISIBILITY
-_Tp*
-addressof(_Tp& __x) _NOEXCEPT
-{
-    return _LIBCUDACXX_ADDRESSOF(__x);
-}
-
-#else
-
-template <class _Tp>
-inline _LIBCUDACXX_NO_CFI _LIBCUDACXX_INLINE_VISIBILITY
-_Tp*
-addressof(_Tp& __x) _NOEXCEPT
-{
-  return reinterpret_cast<_Tp *>(
-      const_cast<char *>(&reinterpret_cast<const volatile char &>(__x)));
-}
-
-#endif // defined(_LIBCUDACXX_ADDRESSOF)
-
-#if defined(_LIBCUDACXX_HAS_OBJC_ARC) && !defined(_LIBCUDACXX_PREDEFINED_OBJC_ARC_ADDRESSOF)
-// Objective-C++ Automatic Reference Counting uses qualified pointers
-// that require special addressof() signatures. When
-// _LIBCUDACXX_PREDEFINED_OBJC_ARC_ADDRESSOF is defined, the compiler
-// itself is providing these definitions. Otherwise, we provide them.
-template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-__strong _Tp*
-addressof(__strong _Tp& __x) _NOEXCEPT
-{
-  return &__x;
-}
-
-#ifdef _LIBCUDACXX_HAS_OBJC_ARC_WEAK
-template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-__weak _Tp*
-addressof(__weak _Tp& __x) _NOEXCEPT
-{
-  return &__x;
-}
-#endif
-
-template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-__autoreleasing _Tp*
-addressof(__autoreleasing _Tp& __x) _NOEXCEPT
-{
-  return &__x;
-}
-
-template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-__unsafe_unretained _Tp*
-addressof(__unsafe_unretained _Tp& __x) _NOEXCEPT
-{
-  return &__x;
-}
-#endif
-
-#if !defined(_LIBCUDACXX_CXX03_LANG)
-template <class _Tp> _Tp* addressof(const _Tp&&) noexcept = delete;
-#endif
 
 // helper class:
 

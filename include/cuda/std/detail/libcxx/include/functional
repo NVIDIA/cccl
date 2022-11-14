@@ -500,6 +500,7 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #ifndef __cuda_std__
 #include <__config>
 #include <__functional/invoke.h>
+#include <__memory/addressof.h>
 #include <type_traits>
 #include <typeinfo>
 #include <exception>
@@ -511,6 +512,7 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include <__pragma_push>
 #else
 #include "__functional/invoke.h"
+#include "__memory/addressof.h"
 #endif
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

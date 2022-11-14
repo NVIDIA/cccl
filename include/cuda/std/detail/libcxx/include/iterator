@@ -420,6 +420,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include <__config>
 #include <iosfwd> // for forward declarations of vector and string.
 #include <__functional_base>
+#include <__memory/addressof.h>
 #include <type_traits>
 #include <cstddef>
 #include <initializer_list>
@@ -429,6 +430,8 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #endif
 #include <__debug>
 #include <__pragma_push>
+#else
+#include "__memory/addressof.h"
 #endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
