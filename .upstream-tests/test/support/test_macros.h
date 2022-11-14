@@ -149,6 +149,11 @@
 # else
 #   define TEST_CONSTEXPR_CXX14
 # endif
+# if TEST_STD_VER >= 17
+#   define TEST_CONSTEXPR_CXX17 constexpr
+# else
+#   define TEST_CONSTEXPR_CXX17
+# endif
 # if TEST_STD_VER > 14
 #   define TEST_THROW_SPEC(...)
 # else
@@ -266,6 +271,18 @@
 
 #define ASSERT_NOT_NOEXCEPT(...) \
     static_assert(!noexcept(__VA_ARGS__), "Operation must NOT be noexcept")
+#endif
+
+#if TEST_STD_VER > 11
+#define STATIC_ASSERT_CXX14(Pred) static_assert(Pred, "")
+#else
+#define STATIC_ASSERT_CXX14(Pred) assert(Pred)
+#endif
+
+#if TEST_STD_VER > 14
+#define STATIC_ASSERT_CXX17(Pred) static_assert(Pred, "")
+#else
+#define STATIC_ASSERT_CXX17(Pred) assert(Pred)
 #endif
 
 /* Macros for testing libc++ specific behavior and extensions */

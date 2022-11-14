@@ -1856,7 +1856,7 @@ end(const _Cp& __c)
 
 #endif  // !defined(_LIBCUDACXX_CXX03_LANG)
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _LIBCUDACXX_STD_VER > 11
 
 // #if _LIBCUDACXX_STD_VER > 11
 // template <>
@@ -1932,7 +1932,7 @@ constexpr _Tp* data(_Tp (&__array)[_Sz]) noexcept { return __array; }
 template <class _Ep>
 _LIBCUDACXX_INLINE_VISIBILITY
 constexpr const _Ep* data(::std::initializer_list<_Ep> __il) noexcept { return __il.begin(); }
-#endif
+#endif // _LIBCUDACXX_STD_VER > 11
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

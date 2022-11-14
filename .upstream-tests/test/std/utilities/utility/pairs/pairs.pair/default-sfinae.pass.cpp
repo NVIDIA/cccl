@@ -22,14 +22,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 11
-#define CONSTEXPR_CXX14 constexpr
-#define STATIC_ASSERT_CXX14(Pred) static_assert(Pred, "")
-#else
-#define CONSTEXPR_CXX14
-#define STATIC_ASSERT_CXX14(Pred) assert(Pred)
-#endif
-
 struct DeletedDefault {
     // A class with a deleted default constructor. Used to test the SFINAE
     // on cuda::std::pair's default constructor.
@@ -121,20 +113,20 @@ __host__ __device__ void test_illformed_default()
     {
     typedef cuda::std::pair<IllFormedDefault, int> P;
     static_assert((cuda::std::is_constructible<P, IllFormedDefault, int>::value), "");
-    CONSTEXPR_CXX14 P p(IllFormedDefault(42), -5);
+    TEST_CONSTEXPR_CXX14 P p(IllFormedDefault(42), -5);
     STATIC_ASSERT_CXX14(p.first.value == 42 && p.second == -5);
     }
     {
     typedef cuda::std::pair<int, IllFormedDefault> P;
     static_assert((cuda::std::is_constructible<P, int, IllFormedDefault>::value), "");
-    CONSTEXPR_CXX14 IllFormedDefault dd(-5);
-    CONSTEXPR_CXX14 P p(42, dd);
+    TEST_CONSTEXPR_CXX14 IllFormedDefault dd(-5);
+    TEST_CONSTEXPR_CXX14 P p(42, dd);
     STATIC_ASSERT_CXX14(p.first == 42 && p.second.value == -5);
     }
     {
     typedef cuda::std::pair<IllFormedDefault, IllFormedDefault> P;
     static_assert((cuda::std::is_constructible<P, IllFormedDefault, IllFormedDefault>::value), "");
-    CONSTEXPR_CXX14 P p(IllFormedDefault(42), IllFormedDefault(-5));
+    TEST_CONSTEXPR_CXX14 P p(IllFormedDefault(42), IllFormedDefault(-5));
     STATIC_ASSERT_CXX14(p.first.value == 42 && p.second.value == -5);
     }
 }
