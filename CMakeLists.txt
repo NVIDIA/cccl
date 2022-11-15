@@ -11,6 +11,11 @@ else()
   set(LIBCUDACXX_TOPLEVEL_PROJECT OFF)
 endif()
 
+set(PACKAGE_NAME libcudacxx)
+set(PACKAGE_VERSION 11.0)
+set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
+project(libcudacxx NONE)
+
 include(cmake/libcudacxxInstallRules.cmake)
 
 if (NOT LIBCUDACXX_TOPLEVEL_PROJECT)
@@ -29,11 +34,6 @@ if (libcudacxx_ENABLE_CMAKE_TESTS)
   add_subdirectory(cmake/test/)
   return()
 endif()
-
-set(PACKAGE_NAME libcudacxx)
-set(PACKAGE_VERSION 11.0)
-set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
-project(libcudacxx NONE)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(LLVM_PATH "${CMAKE_SOURCE_DIR}" CACHE STRING "" FORCE)
