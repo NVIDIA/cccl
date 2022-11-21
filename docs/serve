@@ -2,8 +2,13 @@
 
 set -ex
 
+mkdir -p build/docs
+(
+    cd build/docs
+    cp ../../docs/Gemfile .
+    docker build -f ../../docs/Dockerfile -t libcudacxx:docs .
+)
 (
     cd docs
-    docker build -f Dockerfile -t libcudacxx:docs .
     docker run --rm -p 4000:4000 -v $(pwd):/srv/jekyll -u $(id -u):$(id -g) -it libcudacxx:docs bash -c "jekyll serve --watch --host 0.0.0.0"
 )

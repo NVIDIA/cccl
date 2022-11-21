@@ -94,7 +94,7 @@ __global__ void example_kernel() {
 [See it on Godbolt](https://godbolt.org/z/ehdrY8Kae){: .btn }
 
 
-[`cuda::thread_scope`]: ../thread_scopes.md
+[`cuda::thread_scope`]: ../memory_model.md
 
 [`cuda::barrier::init`]: ./barrier/init.md
 [`cuda::device::barrier_native_handle`]: ./barrier/barrier_native_handle.md
@@ -107,4 +107,3 @@ __global__ void example_kernel() {
 
 [`concurrentManagedAccess` property]: https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_116f9619ccc85e93bc456b8c69c80e78b
 [`hostNativeAtomicSupported` property]: https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_1ef82fd7d1d0413c7d6f33287e5b6306f
-

@@ -141,7 +141,7 @@ template void __global__ example_kernel<int>(int*, int*, cuda::std::size_t);
 [asynchronous operations]: ../asynchronous_operations.md
 [`cuda::memcpy_async`]: ../asynchronous_operations/memcpy_async.md
 
-[`cuda::thread_scope`]: ../thread_scopes.md
+[`cuda::thread_scope`]: ../memory_model.md
 [`cuda::pipeline_shared_state`]: ./pipeline_shared_state.md
 
 [(destructor)]: ./pipeline/destructor.md
@@ -152,4 +152,3 @@ template void __global__ example_kernel<int>(int*, int*, cuda::std::size_t);
 [`consumer_wait_until`]: ./pipeline/consumer_wait.md
 [`consumer_release`]: ./pipeline/consumer_release.md
 [`quit`]: ./pipeline/quit.md
-

@@ -44,7 +44,7 @@ __global__ void example_kernel(cuda::barrier<cuda::thread_scope_block>& bar) {
 [See it on Godbolt](https://godbolt.org/z/dr4798Y76){: .btn }
 
 
-[`cuda::thread_scope`]: ./thread_scopes.md
+[`cuda::thread_scope`]: ./memory_model.md
 
 [thread.barrier.class paragraph 12]: https://eel.is/c++draft/thread.barrier.class#12
 
@@ -52,4 +52,3 @@ __global__ void example_kernel(cuda::barrier<cuda::thread_scope_block>& bar) {
 
 [`concurrentManagedAccess` property]: https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_116f9619ccc85e93bc456b8c69c80e78b
 [`hostNativeAtomicSupported` property]: https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_1ef82fd7d1d0413c7d6f33287e5b6306f
-

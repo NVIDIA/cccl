@@ -77,6 +77,6 @@ __global__ void example_kernel(char* device_buffer, char* sysmem_buffer) {
 [See it on Godbolt](https://godbolt.org/z/M9ah7r1Yx){: .btn }
 
 
-[`cuda::thread_scope`]: ../thread_scopes.md
+[`cuda::thread_scope`]: ../memory_model.md
 
 [(constructor)]: ./pipeline_shared_state/constructor.md

@@ -65,7 +65,7 @@ __global__ void example_kernel() {
 [See it on Godbolt](https://godbolt.org/z/3YrjjTvG6){: .btn }
 
 
-[`cuda::thread_scope`]: ../thread_scopes.md
+[`cuda::thread_scope`]: ../memory_model.md
 
 [`cuda::std::counting_semaphore`]: https://en.cppreference.com/w/cpp/thread/counting_semaphore
 

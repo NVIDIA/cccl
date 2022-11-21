@@ -69,7 +69,7 @@ __global__ void example_kernel() {
 [See it on Godbolt](https://godbolt.org/z/eKfjYYz58){: .btn }
 
 
-[`cuda::thread_scope`]: ../thread_scopes.md
+[`cuda::thread_scope`]: ../memory_model.md
 
 [`cuda::std::binary_semaphore`]: https://en.cppreference.com/w/cpp/thread/binary_semaphore
 

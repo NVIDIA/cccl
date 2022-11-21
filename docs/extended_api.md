@@ -21,6 +21,6 @@ nav_order: 3
 
 {% include_relative extended_api/functional.md %}
 
-[Thread Scopes]: ./extended_api/thread_scopes.md
+[Thread Scopes]: ./extended_api/memory_model.md#thread-scopes
 [Thread Groups]: ./extended_api/thread_groups.md
 

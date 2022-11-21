@@ -77,7 +77,7 @@ Both objects are reinterpreted as arrays of `unsigned char`.
    in the current thread.
 4. Binds the asynchronous copy completion to `cuda::pipeline` and cooperatively
    issues the copy across all threads in `group`.
-5. 5-8: convenience wrappers using `cuda::annotated_ptr` where `Sync` is 
+5. 5-8: convenience wrappers using `cuda::annotated_ptr` where `Sync` is
    either `cuda::barrier` or `cuda::pipeline`.
 
 ## Notes
@@ -141,9 +141,7 @@ __global__ void example_kernel(char* dst, char* src) {
 
 [_TriviallyCopyable_]: https://en.cppreference.com/w/cpp/named_req/TriviallyCopyable
 
-[_ThreadGroup_]: ./thread_group.md
-
 [`cuda::std::size_t`]: https://en.cppreference.com/w/c/types/size_t
-[`cuda::aligned_size_t`]: ./shapes/aligned_size_t.md
 
-[`cuda::pipeline::quit`]: ./pipelines/pipeline/quit.md
+[`cuda::aligned_size_t`]: ../shapes/aligned_size_t.md
+[`cuda::pipeline::quit`]: ../synchronization_primitives/pipeline/quit.md
