@@ -79,8 +79,6 @@ When work completes on an API version on the main development branch, a
 The name of that release is the API version.
 After a release is snapped, the API version on the main development branch
   is incremented and work begins on the next release.
-To learn more about our release process and workflow,
-  please see the [development model section].
 
 ## Application Binary Interface (ABI)
 
@@ -229,9 +227,8 @@ The deprecation period will depend on the impact of the change, but will usually
   last three to six months.
 
 
-[development model section]: ../contributing/development_model.md
-[releases section]: ./releases.md
-[changelog]: ./changelog.md
+[releases section]: ../releases.md
+[changelog]: changelog.md
 
 [semantic versioning]: https://semver.org
 [live at head]: https://www.youtube.com/watch?v=tISy7EJQPzI&t=1032s

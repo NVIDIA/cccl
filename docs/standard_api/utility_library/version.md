@@ -24,4 +24,4 @@ When using NVCC, the definition of C++ feature test macros is provided by the
   host Standard Library, not libcu++.
 
 
-[versioning section]: ./releases/versioning.md
+[versioning section]: ../../releases/versioning.md
