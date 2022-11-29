@@ -434,6 +434,7 @@ namespace std
 #include <__type_traits/integral_constant.h>
 #include <__type_traits/is_abstract.h>
 #include <__type_traits/is_aggregate.h>
+#include <__type_traits/is_array.h>
 #include <__type_traits/lazy.h>
 #include <__type_traits/nat.h>
 #include <__type_traits/remove_all_extents.h>
@@ -469,6 +470,7 @@ namespace std
 #include "__type_traits/integral_constant.h"
 #include "__type_traits/is_abstract.h"
 #include "__type_traits/is_aggregate.h"
+#include "__type_traits/is_array.h"
 #include "__type_traits/lazy.h"
 #include "__type_traits/nat.h"
 #include "__type_traits/remove_all_extents.h"
@@ -756,21 +758,6 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_floating_point
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_floating_point_v
     = is_floating_point<_Tp>::value;
-#endif
-
-// is_array
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_array
-    : public false_type {};
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_array<_Tp[]>
-    : public true_type {};
-template <class _Tp, size_t _Np> struct _LIBCUDACXX_TEMPLATE_VIS is_array<_Tp[_Np]>
-    : public true_type {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_array_v
-    = is_array<_Tp>::value;
 #endif
 
 // is_pointer
