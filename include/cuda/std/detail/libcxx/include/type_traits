@@ -453,6 +453,7 @@ namespace std
 #include <__type_traits/is_empty.h>
 #include <__type_traits/is_final.h>
 #include <__type_traits/is_floating_point.h>
+#include <__type_traits/is_function.h>
 #include <__type_traits/is_integral.h>
 #include <__type_traits/is_null_pointer.h>
 #include <__type_traits/is_pointer.h>
@@ -531,6 +532,7 @@ namespace std
 #include "__type_traits/is_empty.h"
 #include "__type_traits/is_final.h"
 #include "__type_traits/is_floating_point.h"
+#include "__type_traits/is_function.h"
 #include "__type_traits/is_integral.h"
 #include "__type_traits/is_null_pointer.h"
 #include "__type_traits/is_pointer.h"
@@ -690,24 +692,6 @@ template <class _Tp> _Tp* addressof(const _Tp&&) noexcept = delete;
 #endif
 
 // helper class:
-
-// is_function
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_function
-    : public _BoolConstant<
-#if defined(_LIBCUDACXX_IS_FUNCTION) && !defined(_LIBCUDACXX_USE_IS_FUNCTION_FALLBACK)
-    _LIBCUDACXX_IS_FUNCTION(_Tp)
-#else
-    !(is_reference<_Tp>::value || is_const<const _Tp>::value)
-#endif // defined(_LIBCUDACXX_IS_FUNCTION) && !defined(_LIBCUDACXX_USE_IS_FUNCTION_FALLBACK)
-    > {};
-
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_function_v
-    = is_function<_Tp>::value;
-#endif
 
 template <class _Tp> struct __libcpp_is_member_pointer {
   enum {
