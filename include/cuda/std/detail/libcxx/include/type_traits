@@ -420,6 +420,7 @@ namespace std
 #include <__type_traits/add_cv.h>
 #include <__type_traits/add_volatile.h>
 #include <__type_traits/conditional.h>
+#include <__type_traits/dependent_type.h>
 #include <cstddef>
 #include <version>
 #include <__pragma_push>
@@ -428,6 +429,7 @@ namespace std
 #include "__type_traits/add_cv.h"
 #include "__type_traits/add_volatile.h"
 #include "__type_traits/conditional.h"
+#include "__type_traits/dependent_type.h"
 #endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -535,9 +537,6 @@ struct __void_t { typedef void type; };
 
 template <class _Tp>
 struct __identity { typedef _Tp type; };
-
-template <class _Tp, bool>
-struct _LIBCUDACXX_TEMPLATE_VIS __dependent_type : public _Tp {};
 
 template <bool, class _Tp = void> struct _LIBCUDACXX_TEMPLATE_VIS enable_if {};
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS enable_if<true, _Tp> {typedef _Tp type;};
