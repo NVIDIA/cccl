@@ -421,6 +421,7 @@ namespace std
 #include <__type_traits/add_volatile.h>
 #include <__type_traits/aligned_storage.h>
 #include <__type_traits/aligned_union.h>
+#include <__type_traits/alignment_of.h>
 #include <__type_traits/conditional.h>
 #include <__type_traits/dependent_type.h>
 #include <__type_traits/enable_if.h>
@@ -447,6 +448,7 @@ namespace std
 #include "__type_traits/add_volatile.h"
 #include "__type_traits/aligned_storage.h"
 #include "__type_traits/aligned_union.h"
+#include "__type_traits/alignment_of.h"
 #include "__type_traits/conditional.h"
 #include "__type_traits/dependent_type.h"
 #include "__type_traits/enable_if.h"
@@ -1540,17 +1542,6 @@ _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool has_unique_object_representati
 #endif
 
 #endif // _LIBCUDACXX_STD_VER > 11 && defined(_LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS)
-
-// alignment_of
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS alignment_of
-    : public integral_constant<size_t, _LIBCUDACXX_ALIGNOF(_Tp)> {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR size_t alignment_of_v
-    = alignment_of<_Tp>::value;
-#endif
 
 template <class _Tp>
 struct __numeric_type
