@@ -467,6 +467,7 @@ namespace std
 #include <__type_traits/is_fundamental.h>
 #include <__type_traits/is_implicitly_default_constructible.h>
 #include <__type_traits/is_integral.h>
+#include <__type_traits/is_literal_type.h>
 #include <__type_traits/is_member_function_pointer.h>
 #include <__type_traits/is_member_object_pointer.h>
 #include <__type_traits/is_member_pointer.h>
@@ -564,6 +565,7 @@ namespace std
 #include "__type_traits/is_fundamental.h"
 #include "__type_traits/is_implicitly_default_constructible.h"
 #include "__type_traits/is_integral.h"
+#include "__type_traits/is_literal_type.h"
 #include "__type_traits/is_member_function_pointer.h"
 #include "__type_traits/is_member_object_pointer.h"
 #include "__type_traits/is_member_pointer.h"
@@ -2197,23 +2199,6 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_pod
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_pod_v
     = is_pod<_Tp>::value;
-#endif
-
-// is_literal_type;
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_literal_type
-#if defined(_LIBCUDACXX_IS_LITERAL) && !defined(_LIBCUDACXX_USE_IS_LITERAL_FALLBACK)
-    : public integral_constant<bool, _LIBCUDACXX_IS_LITERAL(_Tp)>
-#else
-    : integral_constant<bool, is_scalar<typename remove_all_extents<_Tp>::type>::value ||
-                              is_reference<typename remove_all_extents<_Tp>::type>::value>
-#endif // defined(_LIBCUDACXX_IS_LITERAL) && !defined(_LIBCUDACXX_USE_IS_LITERAL_FALLBACK)
-    {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_literal_type_v
-    = is_literal_type<_Tp>::value;
 #endif
 
 // is_trivially_copyable;

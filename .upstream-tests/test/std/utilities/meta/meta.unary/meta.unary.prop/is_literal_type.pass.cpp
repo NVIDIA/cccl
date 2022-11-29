@@ -10,6 +10,8 @@
 
 // is_literal_type
 
+#pragma nv_diag_suppress 1215
+
 #include <cuda/std/type_traits>
 #include <cuda/std/cstddef>       // for cuda::std::nullptr_t
 #include "test_macros.h"
