@@ -439,6 +439,7 @@ namespace std
 #include <__type_traits/integral_constant.h>
 #include <__type_traits/is_abstract.h>
 #include <__type_traits/is_aggregate.h>
+#include <__type_traits/is_allocator.h>
 #include <__type_traits/is_arithmetic.h>
 #include <__type_traits/is_array.h>
 #include <__type_traits/is_assignable.h>
@@ -516,6 +517,7 @@ namespace std
 #include "__type_traits/integral_constant.h"
 #include "__type_traits/is_abstract.h"
 #include "__type_traits/is_aggregate.h"
+#include "__type_traits/is_allocator.h"
 #include "__type_traits/is_arithmetic.h"
 #include "__type_traits/is_array.h"
 #include "__type_traits/is_assignable.h"
