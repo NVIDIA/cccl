@@ -430,6 +430,7 @@ namespace std
 #include <__type_traits/conjunction.h>
 #include <__type_traits/copy_cv.h>
 #include <__type_traits/copy_cvref.h>
+#include <__type_traits/decay.h>
 #include <__type_traits/dependent_type.h>
 #include <__type_traits/disjunction.h>
 #include <__type_traits/enable_if.h>
@@ -514,6 +515,7 @@ namespace std
 #include "__type_traits/conjunction.h"
 #include "__type_traits/copy_cv.h"
 #include "__type_traits/copy_cvref.h"
+#include "__type_traits/decay.h"
 #include "__type_traits/dependent_type.h"
 #include "__type_traits/disjunction.h"
 #include "__type_traits/enable_if.h"
@@ -783,42 +785,6 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_unsigned : public __libc
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_unsigned_v
     = is_unsigned<_Tp>::value;
-#endif
-
-// decay
-
-template <class _Up, bool>
-struct __decay {
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename remove_cv<_Up>::type type;
-};
-
-template <class _Up>
-struct __decay<_Up, true> {
-public:
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename conditional
-                     <
-                         is_array<_Up>::value,
-                         typename remove_extent<_Up>::type*,
-                         typename conditional
-                         <
-                              is_function<_Up>::value,
-                              typename add_pointer<_Up>::type,
-                              typename remove_cv<_Up>::type
-                         >::type
-                     >::type type;
-};
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS decay
-{
-private:
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename remove_reference<_Tp>::type _Up;
-public:
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename __decay<_Up, __libcpp_is_referenceable<_Up>::value>::type type;
-};
-
-#if _LIBCUDACXX_STD_VER > 11
-template <class _Tp> using decay_t = typename decay<_Tp>::type;
 #endif
 
 // is_convertible
