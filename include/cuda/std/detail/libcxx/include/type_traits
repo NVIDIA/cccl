@@ -454,6 +454,7 @@ namespace std
 #include <__type_traits/is_referenceable.h>
 #include <__type_traits/is_same.h>
 #include <__type_traits/is_signed_integer.h>
+#include <__type_traits/is_signed.h>
 #include <__type_traits/lazy.h>
 #include <__type_traits/nat.h>
 #include <__type_traits/remove_all_extents.h>
@@ -510,6 +511,7 @@ namespace std
 #include "__type_traits/is_referenceable.h"
 #include "__type_traits/is_same.h"
 #include "__type_traits/is_signed_integer.h"
+#include "__type_traits/is_signed.h"
 #include "__type_traits/lazy.h"
 #include "__type_traits/nat.h"
 #include "__type_traits/remove_all_extents.h"
@@ -954,27 +956,6 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_pointer
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class _Tp> using add_pointer_t = typename add_pointer<_Tp>::type;
-#endif
-
-// is_signed
-
-template <class _Tp, bool = is_integral<_Tp>::value>
-struct __libcpp_is_signed_impl : public _BoolConstant<_Tp(-1) < _Tp(0)> {};
-
-template <class _Tp>
-struct __libcpp_is_signed_impl<_Tp, false> : public true_type {};  // floating point
-
-template <class _Tp, bool = is_arithmetic<_Tp>::value>
-struct __libcpp_is_signed : public __libcpp_is_signed_impl<_Tp> {};
-
-template <class _Tp> struct __libcpp_is_signed<_Tp, false> : public false_type {};
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_signed : public __libcpp_is_signed<_Tp> {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_signed_v
-    = is_signed<_Tp>::value;
 #endif
 
 // is_unsigned
