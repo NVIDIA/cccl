@@ -473,6 +473,7 @@ namespace std
 #include <__type_traits/is_member_pointer.h>
 #include <__type_traits/is_move_assignable.h>
 #include <__type_traits/is_move_constructible.h>
+#include <__type_traits/is_nothrow_assignable.h>
 #include <__type_traits/is_null_pointer.h>
 #include <__type_traits/is_pointer.h>
 #include <__type_traits/is_polymorphic.h>
@@ -571,6 +572,7 @@ namespace std
 #include "__type_traits/is_member_pointer.h"
 #include "__type_traits/is_move_assignable.h"
 #include "__type_traits/is_move_constructible.h"
+#include "__type_traits/is_nothrow_assignable.h"
 #include "__type_traits/is_null_pointer.h"
 #include "__type_traits/is_pointer.h"
 #include "__type_traits/is_polymorphic.h"
@@ -2002,86 +2004,6 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_move_constructib
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_nothrow_move_constructible_v
     = is_nothrow_move_constructible<_Tp>::value;
-#endif
-
-// is_nothrow_assignable
-
-#if defined(_LIBCUDACXX_IS_NOTHROW_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_ASSIGNABLE_FALLBACK)
-
-template <class _Tp, class _Arg>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable
-    : public integral_constant<bool, _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)> {};
-
-#elif !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT) && !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT_SFINAE)
-
-template <bool, class _Tp, class _Arg> struct __libcpp_is_nothrow_assignable;
-
-template <class _Tp, class _Arg>
-struct __libcpp_is_nothrow_assignable<false, _Tp, _Arg>
-    : public false_type
-{
-};
-
-template <class _Tp, class _Arg>
-struct __libcpp_is_nothrow_assignable<true, _Tp, _Arg>
-    : public integral_constant<bool, noexcept(_CUDA_VSTD::declval<_Tp>() = _CUDA_VSTD::declval<_Arg>()) >
-{
-};
-
-template <class _Tp, class _Arg>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable
-    : public __libcpp_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
-{
-};
-
-#else
-
-template <class _Tp, class _Arg>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable
-    : public false_type {};
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable<_Tp&, _Tp>
-#if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)> {};
-#else
-    : integral_constant<bool, is_scalar<_Tp>::value> {};
-#endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable<_Tp&, _Tp&>
-#if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)> {};
-#else
-    : integral_constant<bool, is_scalar<_Tp>::value> {};
-#endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable<_Tp&, const _Tp&>
-#if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)> {};
-#else
-    : integral_constant<bool, is_scalar<_Tp>::value> {};
-#endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-
-#ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-
-template <class _Tp>
-struct is_nothrow_assignable<_Tp&, _Tp&&>
-#if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)> {};
-#else
-    : integral_constant<bool, is_scalar<_Tp>::value> {};
-#endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-
-#endif // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-
-#endif // !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp, class _Arg>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_nothrow_assignable_v
-    = is_nothrow_assignable<_Tp, _Arg>::value;
 #endif
 
 // is_nothrow_copy_assignable
