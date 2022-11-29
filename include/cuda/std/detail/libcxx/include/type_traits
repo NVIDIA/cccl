@@ -467,6 +467,7 @@ namespace std
 #include <__type_traits/maybe_const.h>
 #include <__type_traits/nat.h>
 #include <__type_traits/negation.h>
+#include <__type_traits/promote.h>
 #include <__type_traits/remove_all_extents.h>
 #include <__type_traits/remove_const_ref.h>
 #include <__type_traits/remove_const.h>
@@ -534,6 +535,7 @@ namespace std
 #include "__type_traits/maybe_const.h"
 #include "__type_traits/nat.h"
 #include "__type_traits/negation.h"
+#include "__type_traits/promote.h"
 #include "__type_traits/remove_all_extents.h"
 #include "__type_traits/remove_const_ref.h"
 #include "__type_traits/remove_const.h"
@@ -1098,88 +1100,6 @@ template <typename _Fm, typename _To>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_convertible_v = is_nothrow_convertible<_Fm, _To>::value;
 
 #endif // _LIBCUDACXX_STD_VER > 11
-
-template <class _Tp>
-struct __numeric_type
-{
-   _LIBCUDACXX_INLINE_VISIBILITY
-   static void __test(...);
-   _LIBCUDACXX_INLINE_VISIBILITY
-   static float __test(float);
-   _LIBCUDACXX_INLINE_VISIBILITY
-   static double __test(char);
-   _LIBCUDACXX_INLINE_VISIBILITY
-   static double __test(int);
-   _LIBCUDACXX_INLINE_VISIBILITY
-   static double __test(unsigned);
-   _LIBCUDACXX_INLINE_VISIBILITY
-   static double __test(long);
-   _LIBCUDACXX_INLINE_VISIBILITY
-   static double __test(unsigned long);
-   _LIBCUDACXX_INLINE_VISIBILITY
-   static double __test(long long);
-   _LIBCUDACXX_INLINE_VISIBILITY
-   static double __test(unsigned long long);
-   _LIBCUDACXX_INLINE_VISIBILITY
-   static double __test(double);
-   _LIBCUDACXX_INLINE_VISIBILITY
-   static long double __test(long double);
-
-   typedef decltype(__test(declval<_Tp>())) type;
-   static const bool value = _IsNotSame<type, void>::value;
-};
-
-template <>
-struct __numeric_type<void>
-{
-   static const bool value = true;
-};
-
-// __promote
-
-template <class _A1, class _A2 = void, class _A3 = void,
-          bool = __numeric_type<_A1>::value &&
-                 __numeric_type<_A2>::value &&
-                 __numeric_type<_A3>::value>
-class __promote_imp
-{
-public:
-    static const bool value = false;
-};
-
-template <class _A1, class _A2, class _A3>
-class __promote_imp<_A1, _A2, _A3, true>
-{
-private:
-    typedef typename __promote_imp<_A1>::type __type1;
-    typedef typename __promote_imp<_A2>::type __type2;
-    typedef typename __promote_imp<_A3>::type __type3;
-public:
-    typedef decltype(__type1() + __type2() + __type3()) type;
-    static const bool value = true;
-};
-
-template <class _A1, class _A2>
-class __promote_imp<_A1, _A2, void, true>
-{
-private:
-    typedef typename __promote_imp<_A1>::type __type1;
-    typedef typename __promote_imp<_A2>::type __type2;
-public:
-    typedef decltype(__type1() + __type2()) type;
-    static const bool value = true;
-};
-
-template <class _A1>
-class __promote_imp<_A1, void, void, true>
-{
-public:
-    typedef typename __numeric_type<_A1>::type type;
-    static const bool value = true;
-};
-
-template <class _A1, class _A2 = void, class _A3 = void>
-class __promote : public __promote_imp<_A1, _A2, _A3> {};
 
 // make_signed / make_unsigned
 
