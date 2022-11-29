@@ -425,6 +425,7 @@ namespace std
 #include <__type_traits/aligned_storage.h>
 #include <__type_traits/aligned_union.h>
 #include <__type_traits/alignment_of.h>
+#include <__type_traits/apply_cv.h>
 #include <__type_traits/conditional.h>
 #include <__type_traits/conjunction.h>
 #include <__type_traits/copy_cv.h>
@@ -500,6 +501,7 @@ namespace std
 #include "__type_traits/aligned_storage.h"
 #include "__type_traits/aligned_union.h"
 #include "__type_traits/alignment_of.h"
+#include "__type_traits/apply_cv.h"
 #include "__type_traits/conditional.h"
 #include "__type_traits/conjunction.h"
 #include "__type_traits/copy_cv.h"
@@ -1037,55 +1039,6 @@ typedef
     >
 #endif
     > > > > > __unsigned_types;
-
-template <class _Tp, class _Up, bool = is_const<typename remove_reference<_Tp>::type>::value,
-                             bool = is_volatile<typename remove_reference<_Tp>::type>::value>
-struct __apply_cv
-{
-    typedef _LIBCUDACXX_NODEBUG_TYPE _Up type;
-};
-
-template <class _Tp, class _Up>
-struct __apply_cv<_Tp, _Up, true, false>
-{
-    typedef _LIBCUDACXX_NODEBUG_TYPE const _Up type;
-};
-
-template <class _Tp, class _Up>
-struct __apply_cv<_Tp, _Up, false, true>
-{
-    typedef volatile _Up type;
-};
-
-template <class _Tp, class _Up>
-struct __apply_cv<_Tp, _Up, true, true>
-{
-    typedef const volatile _Up type;
-};
-
-template <class _Tp, class _Up>
-struct __apply_cv<_Tp&, _Up, false, false>
-{
-    typedef _Up& type;
-};
-
-template <class _Tp, class _Up>
-struct __apply_cv<_Tp&, _Up, true, false>
-{
-    typedef const _Up& type;
-};
-
-template <class _Tp, class _Up>
-struct __apply_cv<_Tp&, _Up, false, true>
-{
-    typedef volatile _Up& type;
-};
-
-template <class _Tp, class _Up>
-struct __apply_cv<_Tp&, _Up, true, true>
-{
-    typedef const volatile _Up& type;
-};
 
 template <class _Tp, bool = is_integral<_Tp>::value || is_enum<_Tp>::value>
 struct __make_signed {};
