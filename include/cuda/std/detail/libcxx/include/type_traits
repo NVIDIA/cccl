@@ -458,6 +458,7 @@ namespace std
 #include <__type_traits/is_final.h>
 #include <__type_traits/is_floating_point.h>
 #include <__type_traits/is_function.h>
+#include <__type_traits/is_fundamental.h>
 #include <__type_traits/is_integral.h>
 #include <__type_traits/is_member_function_pointer.h>
 #include <__type_traits/is_member_object_pointer.h>
@@ -544,6 +545,7 @@ namespace std
 #include "__type_traits/is_final.h"
 #include "__type_traits/is_floating_point.h"
 #include "__type_traits/is_function.h"
+#include "__type_traits/is_fundamental.h"
 #include "__type_traits/is_integral.h"
 #include "__type_traits/is_member_function_pointer.h"
 #include "__type_traits/is_member_object_pointer.h"
@@ -706,19 +708,6 @@ template <class _Tp> _Tp* addressof(const _Tp&&) noexcept = delete;
 #endif
 
 // helper class:
-
-// is_fundamental
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_fundamental
-    : public integral_constant<bool, is_void<_Tp>::value        ||
-                                     __is_nullptr_t<_Tp>::value ||
-                                     is_arithmetic<_Tp>::value> {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_fundamental_v
-    = is_fundamental<_Tp>::value;
-#endif
 
 // is_scalar
 
