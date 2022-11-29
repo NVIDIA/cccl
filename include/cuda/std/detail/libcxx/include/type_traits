@@ -440,6 +440,7 @@ namespace std
 #include <__type_traits/is_base_of.h>
 #include <__type_traits/is_bounded_array.h>
 #include <__type_traits/is_callable.h>
+#include <__type_traits/is_class.h>
 #include <__type_traits/is_const.h>
 #include <__type_traits/is_constant_evaluated.h>
 #include <__type_traits/is_core_convertible.h>
@@ -511,6 +512,7 @@ namespace std
 #include "__type_traits/is_base_of.h"
 #include "__type_traits/is_bounded_array.h"
 #include "__type_traits/is_callable.h"
+#include "__type_traits/is_class.h"
 #include "__type_traits/is_const.h"
 #include "__type_traits/is_constant_evaluated.h"
 #include "__type_traits/is_core_convertible.h"
@@ -675,35 +677,7 @@ addressof(__unsafe_unretained _Tp& __x) _NOEXCEPT
 template <class _Tp> _Tp* addressof(const _Tp&&) noexcept = delete;
 #endif
 
-struct __two {char __lx[2];};
-
 // helper class:
-
-// is_class
-
-#if defined(_LIBCUDACXX_IS_CLASS) && !defined(_LIBCUDACXX_USE_IS_CLASS_FALLBACK)
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_class
-    : public integral_constant<bool, _LIBCUDACXX_IS_CLASS(_Tp)> {};
-
-#else
-
-namespace __is_class_imp
-{
-template <class _Tp> char  __test(int _Tp::*);
-template <class _Tp> __two __test(...);
-}
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_class
-    : public integral_constant<bool, sizeof(__is_class_imp::__test<_Tp>(0)) == 1 && !is_union<_Tp>::value> {};
-
-#endif // defined(_LIBCUDACXX_IS_CLASS) && !defined(_LIBCUDACXX_USE_IS_CLASS_FALLBACK)
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_class_v
-    = is_class<_Tp>::value;
-#endif
 
 // is_function
 
