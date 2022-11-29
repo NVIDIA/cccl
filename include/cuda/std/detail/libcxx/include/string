@@ -626,11 +626,11 @@ template <class _Iter>
 struct __libcpp_string_gets_noexcept_iterator_impl : public false_type {};
 #else
 template <class _Iter, bool = __is_forward_iterator<_Iter>::value>
-struct __libcpp_string_gets_noexcept_iterator_impl : public _LIBCUDACXX_BOOL_CONSTANT((
+struct __libcpp_string_gets_noexcept_iterator_impl : public _BoolConstant<(
     noexcept(++(declval<_Iter&>())) &&
     is_nothrow_assignable<_Iter&, _Iter>::value &&
     noexcept(declval<_Iter>() == declval<_Iter>()) &&
-    noexcept(*declval<_Iter>())
+    noexcept(*declval<_Iter>()>
 )) {};
 
 template <class _Iter>
@@ -640,12 +640,12 @@ struct __libcpp_string_gets_noexcept_iterator_impl<_Iter, false> : public false_
 
 template <class _Iter>
 struct __libcpp_string_gets_noexcept_iterator
-    : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value || __libcpp_string_gets_noexcept_iterator_impl<_Iter>::value) {};
+    : public _BoolConstant<__libcpp_is_trivial_iterator<_Iter>::value || __libcpp_string_gets_noexcept_iterator_impl<_Iter>::value> {};
 
 template <class _CharT, class _Traits, class _Tp>
-struct __can_be_converted_to_string_view : public _LIBCUDACXX_BOOL_CONSTANT(
+struct __can_be_converted_to_string_view : public _BoolConstant<
     ( is_convertible<const _Tp&, basic_string_view<_CharT, _Traits> >::value &&
-     !is_convertible<const _Tp&, const _CharT*>::value)) {};
+     !is_convertible<const _Tp&, const _CharT*>::value)> {};
 
 #ifdef _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT
 
