@@ -426,6 +426,7 @@ namespace std
 #include <__type_traits/conjunction.h>
 #include <__type_traits/copy_cv.h>
 #include <__type_traits/dependent_type.h>
+#include <__type_traits/disjunction.h>
 #include <__type_traits/enable_if.h>
 #include <__type_traits/integral_constant.h>
 #include <__type_traits/lazy.h>
@@ -455,6 +456,7 @@ namespace std
 #include "__type_traits/conjunction.h"
 #include "__type_traits/copy_cv.h"
 #include "__type_traits/dependent_type.h"
+#include "__type_traits/disjunction.h"
 #include "__type_traits/enable_if.h"
 #include "__type_traits/integral_constant.h"
 #include "__type_traits/lazy.h"
@@ -514,8 +516,6 @@ struct _MetaBase<false> {
 };
 template <bool _Cond, class _Ret = void>
 using _EnableIf _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<_Cond>::template _EnableIfImpl<_Ret>;
-template <class ..._Rest>
-using _Or _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase< sizeof...(_Rest) != 0 >::template _OrImpl<false_type, _Rest...>;
 template <class _Pred>
 struct _Not : _BoolConstant<!_Pred::value> {};
 template <class ..._Args>
@@ -4452,19 +4452,6 @@ struct __has_operator_addressof
 #endif  // _LIBCUDACXX_CXX03_LANG
 
 #if _LIBCUDACXX_STD_VER > 11
-
-template <class... _Args>
-struct disjunction
-#if defined(_LIBCUDACXX_HAS_NO_LOGICAL_METAFUNCTION_ALIASES)
-    : _MetaBase< sizeof...(_Args) != 0 >::template _OrImpl<false_type, _Args...>
-#else
-    : _Or<_Args...>
-#endif
-    {};
-template<class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool disjunction_v
-    = disjunction<_Args...>::value;
-
 template <class _Tp>
 struct negation : _Not<_Tp> {};
 template<class _Tp>
