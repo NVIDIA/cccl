@@ -424,6 +424,7 @@ namespace std
 #include <__type_traits/enable_if.h>
 #include <__type_traits/integral_constant.h>
 #include <__type_traits/lazy.h>
+#include <__type_traits/nat.h>
 #include <cstddef>
 #include <version>
 #include <__pragma_push>
@@ -436,6 +437,7 @@ namespace std
 #include "__type_traits/enable_if.h"
 #include "__type_traits/integral_constant.h"
 #include "__type_traits/lazy.h"
+#include "__type_traits/nat.h"
 #endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -1618,16 +1620,6 @@ struct __type_list
 {
     typedef _Hp _Head;
     typedef _Tp _Tail;
-};
-
-struct __nat
-{
-#ifndef _LIBCUDACXX_CXX03_LANG
-    __nat() = delete;
-    __nat(const __nat&) = delete;
-    __nat& operator=(const __nat&) = delete;
-    ~__nat() = delete;
-#endif
 };
 
 template <class _Tp>
