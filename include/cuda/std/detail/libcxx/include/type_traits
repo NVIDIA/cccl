@@ -478,6 +478,7 @@ namespace std
 #include <__type_traits/is_nothrow_convertible.h>
 #include <__type_traits/is_nothrow_copy_assignable.h>
 #include <__type_traits/is_nothrow_copy_constructible.h>
+#include <__type_traits/is_nothrow_default_constructible.h>
 #include <__type_traits/is_null_pointer.h>
 #include <__type_traits/is_pointer.h>
 #include <__type_traits/is_polymorphic.h>
@@ -581,6 +582,7 @@ namespace std
 #include "__type_traits/is_nothrow_convertible.h"
 #include "__type_traits/is_nothrow_copy_assignable.h"
 #include "__type_traits/is_nothrow_copy_constructible.h"
+#include "__type_traits/is_nothrow_default_constructible.h"
 #include "__type_traits/is_null_pointer.h"
 #include "__type_traits/is_pointer.h"
 #include "__type_traits/is_polymorphic.h"
@@ -1780,18 +1782,6 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible<_
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_trivially_destructible_v
     = is_trivially_destructible<_Tp>::value;
-#endif
-
-// is_nothrow_default_constructible
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_default_constructible
-    : public is_nothrow_constructible<_Tp>
-    {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_nothrow_default_constructible_v
-    = is_nothrow_default_constructible<_Tp>::value;
 #endif
 
 // is_nothrow_move_constructible
