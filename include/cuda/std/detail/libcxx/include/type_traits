@@ -426,6 +426,7 @@ namespace std
 #include <__type_traits/aligned_union.h>
 #include <__type_traits/alignment_of.h>
 #include <__type_traits/apply_cv.h>
+#include <__type_traits/common_type.h>
 #include <__type_traits/conditional.h>
 #include <__type_traits/conjunction.h>
 #include <__type_traits/copy_cv.h>
@@ -511,6 +512,7 @@ namespace std
 #include "__type_traits/aligned_union.h"
 #include "__type_traits/alignment_of.h"
 #include "__type_traits/apply_cv.h"
+#include "__type_traits/common_type.h"
 #include "__type_traits/conditional.h"
 #include "__type_traits/conjunction.h"
 #include "__type_traits/copy_cv.h"
@@ -992,93 +994,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS make_unsigned
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class _Tp> using make_unsigned_t = typename make_unsigned<_Tp>::type;
-#endif
-
-template <class _Tp, class _Up, class = void>
-struct __common_type2_imp {};
-
-template <class _Tp, class _Up>
-struct __common_type2_imp<_Tp, _Up, 
-                          __void_t<decltype(true ? _CUDA_VSTD::declval<_Tp>() : _CUDA_VSTD::declval<_Up>())>>
-{
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename decay<decltype(
-                         true ? _CUDA_VSTD::declval<_Tp>() : _CUDA_VSTD::declval<_Up>()
-                         )>::type type;
-};
-
-template <class, class = void>
-struct __common_type_impl {};
-
-// Clang provides variadic templates in C++03 as an extension.
-#if !defined(_LIBCUDACXX_CXX03_LANG) || defined(__clang__)
-# define _LIBCUDACXX_OPTIONAL_PACK(...) , __VA_ARGS__
-template <class... Tp>
-struct __common_types;
-template <class... _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS common_type;
-#else
-# define _LIBCUDACXX_OPTIONAL_PACK(...)
-struct __no_arg;
-template <class _Tp, class _Up, class = __no_arg>
-struct __common_types;
-template <class _Tp = __no_arg, class _Up = __no_arg, class _Vp = __no_arg,
-          class _Unused = __no_arg>
-struct common_type {
-  static_assert(sizeof(_Unused) == 0,
-                "common_type accepts at most 3 arguments in C++03");
-};
-#endif // _LIBCUDACXX_CXX03_LANG
-
-template <class _Tp, class _Up>
-struct __common_type_impl<
-    __common_types<_Tp, _Up>,
-    __void_t<typename common_type<_Tp, _Up>::type>>
-{
-  typedef typename common_type<_Tp, _Up>::type type;
-};
-
-template <class _Tp, class _Up, class _Vp _LIBCUDACXX_OPTIONAL_PACK(class... _Rest)>
-struct __common_type_impl<
-    __common_types<_Tp, _Up, _Vp _LIBCUDACXX_OPTIONAL_PACK(_Rest...)>,
-    __void_t<typename common_type<_Tp, _Up>::type>>
-    : __common_type_impl<__common_types<typename common_type<_Tp, _Up>::type,
-                                        _Vp _LIBCUDACXX_OPTIONAL_PACK(_Rest...)> > {
-};
-
-// bullet 1 - sizeof...(Tp) == 0
-
-template <>
-struct _LIBCUDACXX_TEMPLATE_VIS common_type<> {};
-
-// bullet 2 - sizeof...(Tp) == 1
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS common_type<_Tp>
-    : public common_type<_Tp, _Tp> {};
-
-// bullet 3 - sizeof...(Tp) == 2
-
-template <class _Tp, class _Up>
-struct _LIBCUDACXX_TEMPLATE_VIS common_type<_Tp, _Up>
-    : conditional<
-        _IsSame<_Tp, typename decay<_Tp>::type>::value && _IsSame<_Up, typename decay<_Up>::type>::value,
-        __common_type2_imp<_Tp, _Up>,
-        common_type<typename decay<_Tp>::type, typename decay<_Up>::type>
-    >::type
-{};
-
-// bullet 4 - sizeof...(Tp) > 2
-
-template <class _Tp, class _Up, class _Vp _LIBCUDACXX_OPTIONAL_PACK(class... _Rest)>
-struct _LIBCUDACXX_TEMPLATE_VIS
-    common_type<_Tp, _Up, _Vp _LIBCUDACXX_OPTIONAL_PACK(_Rest...)>
-    : __common_type_impl<
-          __common_types<_Tp, _Up, _Vp _LIBCUDACXX_OPTIONAL_PACK(_Rest...)> > {};
-
-#undef _LIBCUDACXX_OPTIONAL_PACK
-
-#if _LIBCUDACXX_STD_VER > 11
-template <class ..._Tp> using common_type_t = typename common_type<_Tp...>::type;
 #endif
 
 // is_copy_assignable
