@@ -480,6 +480,7 @@ namespace std
 #include <__type_traits/is_nothrow_copy_constructible.h>
 #include <__type_traits/is_nothrow_default_constructible.h>
 #include <__type_traits/is_nothrow_destructible.h>
+#include <__type_traits/is_nothrow_move_assignable.h>
 #include <__type_traits/is_null_pointer.h>
 #include <__type_traits/is_pointer.h>
 #include <__type_traits/is_polymorphic.h>
@@ -585,6 +586,7 @@ namespace std
 #include "__type_traits/is_nothrow_copy_constructible.h"
 #include "__type_traits/is_nothrow_default_constructible.h"
 #include "__type_traits/is_nothrow_destructible.h"
+#include "__type_traits/is_nothrow_move_assignable.h"
 #include "__type_traits/is_null_pointer.h"
 #include "__type_traits/is_pointer.h"
 #include "__type_traits/is_polymorphic.h"
@@ -1796,19 +1798,6 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_move_constructib
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_nothrow_move_constructible_v
     = is_nothrow_move_constructible<_Tp>::value;
-#endif
-
-// is_nothrow_move_assignable
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_move_assignable
-    : public is_nothrow_assignable<typename add_lvalue_reference<_Tp>::type,
-                                     typename add_rvalue_reference<_Tp>::type>
-    {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_nothrow_move_assignable_v
-    = is_nothrow_move_assignable<_Tp>::value;
 #endif
 
 // is_pod
