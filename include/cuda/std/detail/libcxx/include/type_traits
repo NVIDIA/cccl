@@ -465,6 +465,7 @@ namespace std
 #include <__type_traits/is_floating_point.h>
 #include <__type_traits/is_function.h>
 #include <__type_traits/is_fundamental.h>
+#include <__type_traits/is_implicitly_default_constructible.h>
 #include <__type_traits/is_integral.h>
 #include <__type_traits/is_member_function_pointer.h>
 #include <__type_traits/is_member_object_pointer.h>
@@ -558,6 +559,7 @@ namespace std
 #include "__type_traits/is_floating_point.h"
 #include "__type_traits/is_function.h"
 #include "__type_traits/is_fundamental.h"
+#include "__type_traits/is_implicitly_default_constructible.h"
 #include "__type_traits/is_integral.h"
 #include "__type_traits/is_member_function_pointer.h"
 #include "__type_traits/is_member_object_pointer.h"
@@ -1555,31 +1557,6 @@ class _LIBCUDACXX_TEMPLATE_VIS result_of<_Fn(_A0, _A1, _A2)>
 };
 
 #endif  // _LIBCUDACXX_HAS_NO_VARIADICS
-
-#ifndef _LIBCUDACXX_CXX03_LANG
-// First of all, we can't implement this check in C++03 mode because the {}
-// default initialization syntax isn't valid.
-// Second, we implement the trait in a funny manner with two defaulted template
-// arguments to workaround Clang's PR43454.
-template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
-void __test_implicit_default_constructible(_Tp);
-
-template <class _Tp, class = void, bool = is_default_constructible<_Tp>::value>
-struct __is_implicitly_default_constructible
-    : false_type
-{ };
-
-template <class _Tp>
-struct __is_implicitly_default_constructible<_Tp, decltype(__test_implicit_default_constructible<_Tp const&>({})), true>
-    : true_type
-{ };
-
-template <class _Tp>
-struct __is_implicitly_default_constructible<_Tp, decltype(__test_implicit_default_constructible<_Tp const&>({})), false>
-    : false_type
-{ };
-#endif // !C++03
 
 // is_move_constructible
 
