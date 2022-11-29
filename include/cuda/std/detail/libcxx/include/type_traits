@@ -458,6 +458,7 @@ namespace std
 #include <__type_traits/is_standard_layout.h>
 #include <__type_traits/is_unbounded_array.h>
 #include <__type_traits/is_union.h>
+#include <__type_traits/is_unsigned_integer.h>
 #include <__type_traits/lazy.h>
 #include <__type_traits/nat.h>
 #include <__type_traits/remove_all_extents.h>
@@ -518,6 +519,7 @@ namespace std
 #include "__type_traits/is_standard_layout.h"
 #include "__type_traits/is_unbounded_array.h"
 #include "__type_traits/is_union.h"
+#include "__type_traits/is_unsigned_integer.h"
 #include "__type_traits/lazy.h"
 #include "__type_traits/nat.h"
 #include "__type_traits/remove_all_extents.h"
