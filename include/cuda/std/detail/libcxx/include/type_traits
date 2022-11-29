@@ -475,6 +475,7 @@ namespace std
 #include <__type_traits/is_move_constructible.h>
 #include <__type_traits/is_nothrow_assignable.h>
 #include <__type_traits/is_nothrow_constructible.h>
+#include <__type_traits/is_nothrow_convertible.h>
 #include <__type_traits/is_null_pointer.h>
 #include <__type_traits/is_pointer.h>
 #include <__type_traits/is_polymorphic.h>
@@ -575,6 +576,7 @@ namespace std
 #include "__type_traits/is_move_constructible.h"
 #include "__type_traits/is_nothrow_assignable.h"
 #include "__type_traits/is_nothrow_constructible.h"
+#include "__type_traits/is_nothrow_convertible.h"
 #include "__type_traits/is_null_pointer.h"
 #include "__type_traits/is_pointer.h"
 #include "__type_traits/is_polymorphic.h"
@@ -775,33 +777,6 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_unsigned_v
     = is_unsigned<_Tp>::value;
 #endif
-
-
-// is_nothrow_convertible
-
-#if _LIBCUDACXX_STD_VER > 11
-
-template <typename _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY static void __test_noexcept(_Tp) noexcept;
-
-template<typename _Fm, typename _To>
-_LIBCUDACXX_INLINE_VISIBILITY static bool_constant<noexcept(__test_noexcept<_To>(declval<_Fm>()))>
-__is_nothrow_convertible_test();
-
-template <typename _Fm, typename _To>
-struct __is_nothrow_convertible_helper: decltype(__is_nothrow_convertible_test<_Fm, _To>())
-{ };
-
-template <typename _Fm, typename _To>
-struct is_nothrow_convertible : _Or<
-    _And<is_void<_To>, is_void<_Fm>>,
-    _Lazy<_And, is_convertible<_Fm, _To>, __is_nothrow_convertible_helper<_Fm, _To>>
->::type { };
-
-template <typename _Fm, typename _To>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_convertible_v = is_nothrow_convertible<_Fm, _To>::value;
-
-#endif // _LIBCUDACXX_STD_VER > 11
 
 // make_signed / make_unsigned
 
