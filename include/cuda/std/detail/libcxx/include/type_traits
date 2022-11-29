@@ -423,6 +423,7 @@ namespace std
 #include <__type_traits/aligned_union.h>
 #include <__type_traits/alignment_of.h>
 #include <__type_traits/conditional.h>
+#include <__type_traits/conjunction.h>
 #include <__type_traits/dependent_type.h>
 #include <__type_traits/enable_if.h>
 #include <__type_traits/integral_constant.h>
@@ -450,6 +451,7 @@ namespace std
 #include "__type_traits/aligned_union.h"
 #include "__type_traits/alignment_of.h"
 #include "__type_traits/conditional.h"
+#include "__type_traits/conjunction.h"
 #include "__type_traits/dependent_type.h"
 #include "__type_traits/enable_if.h"
 #include "__type_traits/integral_constant.h"
@@ -512,8 +514,6 @@ template <bool _Cond, class _Ret = void>
 using _EnableIf _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<_Cond>::template _EnableIfImpl<_Ret>;
 template <class ..._Rest>
 using _Or _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase< sizeof...(_Rest) != 0 >::template _OrImpl<false_type, _Rest...>;
-template <class ..._Rest>
-using _And _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase< sizeof...(_Rest) != 0 >::template _AndImpl<true_type, _Rest...>;
 template <class _Pred>
 struct _Not : _BoolConstant<!_Pred::value> {};
 template <class ..._Args>
@@ -4450,18 +4450,6 @@ struct __has_operator_addressof
 #endif  // _LIBCUDACXX_CXX03_LANG
 
 #if _LIBCUDACXX_STD_VER > 11
-
-template <class... _Args>
-struct conjunction
-#if defined(_LIBCUDACXX_HAS_NO_LOGICAL_METAFUNCTION_ALIASES)
-    : _MetaBase< sizeof...(_Args) != 0 >::template _AndImpl<true_type, _Args...>
-#else
-    : _And<_Args...>
-#endif
-    {};
-template<class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool conjunction_v
-    = conjunction<_Args...>::value;
 
 template <class... _Args>
 struct disjunction
