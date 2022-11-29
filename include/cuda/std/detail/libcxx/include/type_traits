@@ -420,6 +420,7 @@ namespace std
 #include <__type_traits/add_cv.h>
 #include <__type_traits/add_lvalue_reference.h>
 #include <__type_traits/add_pointer.h>
+#include <__type_traits/add_rvalue_reference.h>
 #include <__type_traits/add_volatile.h>
 #include <__type_traits/aligned_storage.h>
 #include <__type_traits/aligned_union.h>
@@ -494,6 +495,7 @@ namespace std
 #include "__type_traits/add_cv.h"
 #include "__type_traits/add_lvalue_reference.h"
 #include "__type_traits/add_pointer.h"
+#include "__type_traits/add_rvalue_reference.h"
 #include "__type_traits/add_volatile.h"
 #include "__type_traits/aligned_storage.h"
 #include "__type_traits/aligned_union.h"
@@ -830,16 +832,6 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_compound
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_compound_v
     = is_compound<_Tp>::value;
-#endif
-
-template <class _Tp, bool = __libcpp_is_referenceable<_Tp>::value> struct __add_rvalue_reference_impl            { typedef _LIBCUDACXX_NODEBUG_TYPE  _Tp   type; };
-template <class _Tp                                       > struct __add_rvalue_reference_impl<_Tp, true> { typedef _LIBCUDACXX_NODEBUG_TYPE  _Tp&& type; };
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_rvalue_reference
-{typedef _LIBCUDACXX_NODEBUG_TYPE  typename __add_rvalue_reference_impl<_Tp>::type type;};
-
-#if _LIBCUDACXX_STD_VER > 11
-template <class _Tp> using add_rvalue_reference_t = typename add_rvalue_reference<_Tp>::type;
 #endif
 
 struct __any
