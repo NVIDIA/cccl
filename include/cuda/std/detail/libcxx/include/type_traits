@@ -471,6 +471,7 @@ namespace std
 #include <__type_traits/is_member_object_pointer.h>
 #include <__type_traits/is_member_pointer.h>
 #include <__type_traits/is_move_assignable.h>
+#include <__type_traits/is_move_constructible.h>
 #include <__type_traits/is_null_pointer.h>
 #include <__type_traits/is_pointer.h>
 #include <__type_traits/is_polymorphic.h>
@@ -566,6 +567,7 @@ namespace std
 #include "__type_traits/is_member_object_pointer.h"
 #include "__type_traits/is_member_pointer.h"
 #include "__type_traits/is_move_assignable.h"
+#include "__type_traits/is_move_constructible.h"
 #include "__type_traits/is_null_pointer.h"
 #include "__type_traits/is_pointer.h"
 #include "__type_traits/is_polymorphic.h"
@@ -1547,19 +1549,6 @@ class _LIBCUDACXX_TEMPLATE_VIS result_of<_Fn(_A0, _A1, _A2)>
 };
 
 #endif  // _LIBCUDACXX_HAS_NO_VARIADICS
-
-// is_move_constructible
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_move_constructible
-    : public is_constructible<_Tp, typename add_rvalue_reference<_Tp>::type>
-    {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_move_constructible_v
-    = is_move_constructible<_Tp>::value;
-#endif
 
 // is_trivially_constructible
 
