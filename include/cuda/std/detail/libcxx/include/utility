@@ -198,6 +198,7 @@ template <size_t I>
 #ifndef __cuda_std__
 #include <__config>
 #include <__tuple>
+#include <__utility/declval.h>
 #include <type_traits>
 #include <initializer_list>
 #include <cstddef>
@@ -206,6 +207,8 @@ template <size_t I>
 #include <version>
 #include <__debug>
 #include <__pragma_push>
+#else
+#include "__utility/declval.h"
 #endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
