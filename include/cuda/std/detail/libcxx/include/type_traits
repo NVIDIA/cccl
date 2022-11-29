@@ -434,6 +434,7 @@ namespace std
 #include <__type_traits/integral_constant.h>
 #include <__type_traits/is_abstract.h>
 #include <__type_traits/is_aggregate.h>
+#include <__type_traits/is_arithmetic.h>
 #include <__type_traits/is_array.h>
 #include <__type_traits/is_base_of.h>
 #include <__type_traits/is_bounded_array.h>
@@ -489,6 +490,7 @@ namespace std
 #include "__type_traits/integral_constant.h"
 #include "__type_traits/is_abstract.h"
 #include "__type_traits/is_aggregate.h"
+#include "__type_traits/is_arithmetic.h"
 #include "__type_traits/is_array.h"
 #include "__type_traits/is_base_of.h"
 #include "__type_traits/is_bounded_array.h"
@@ -825,18 +827,6 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_enum
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_enum_v
     = is_enum<_Tp>::value;
-#endif
-
-// is_arithmetic
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_arithmetic
-    : public integral_constant<bool, is_integral<_Tp>::value      ||
-                                     is_floating_point<_Tp>::value> {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_arithmetic_v
-    = is_arithmetic<_Tp>::value;
 #endif
 
 // is_fundamental
