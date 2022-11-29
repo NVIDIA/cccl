@@ -435,6 +435,7 @@ namespace std
 #include <__type_traits/is_abstract.h>
 #include <__type_traits/is_aggregate.h>
 #include <__type_traits/is_array.h>
+#include <__type_traits/is_base_of.h>
 #include <__type_traits/lazy.h>
 #include <__type_traits/nat.h>
 #include <__type_traits/remove_all_extents.h>
@@ -472,6 +473,7 @@ namespace std
 #include "__type_traits/is_abstract.h"
 #include "__type_traits/is_aggregate.h"
 #include "__type_traits/is_array.h"
+#include "__type_traits/is_base_of.h"
 #include "__type_traits/lazy.h"
 #include "__type_traits/nat.h"
 #include "__type_traits/remove_all_extents.h"
@@ -1237,47 +1239,6 @@ is_final : public integral_constant<bool, _LIBCUDACXX_IS_FINAL(_Tp)> {};
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_final_v
     = is_final<_Tp>::value;
-#endif
-
-// is_base_of
-
-#if defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
-
-template <class _Bp, class _Dp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_base_of
-    : public integral_constant<bool, _LIBCUDACXX_IS_BASE_OF(_Bp, _Dp)> {};
-
-#else  // defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
-
-namespace __is_base_of_imp
-{
-template <class _Tp>
-struct _Dst
-{
-    _Dst(const volatile _Tp &);
-};
-template <class _Tp>
-struct _Src
-{
-    operator const volatile _Tp &();
-    template <class _Up> operator const _Dst<_Up> &();
-};
-template <size_t> struct __one { typedef char type; };
-template <class _Bp, class _Dp> typename __one<sizeof(_Dst<_Bp>(declval<_Src<_Dp> >()))>::type __test(int);
-template <class _Bp, class _Dp> __two __test(...);
-}
-
-template <class _Bp, class _Dp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_base_of
-    : public integral_constant<bool, is_class<_Bp>::value &&
-                                     sizeof(__is_base_of_imp::__test<_Bp, _Dp>(0)) == 2> {};
-
-#endif  // defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Bp, class _Dp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_base_of_v
-    = is_base_of<_Bp, _Dp>::value;
 #endif
 
 // is_convertible
