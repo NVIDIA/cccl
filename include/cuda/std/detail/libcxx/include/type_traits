@@ -450,6 +450,7 @@ namespace std
 #include <__type_traits/is_polymorphic.h>
 #include <__type_traits/is_reference_wrapper.h>
 #include <__type_traits/is_reference.h>
+#include <__type_traits/is_referenceable.h>
 #include <__type_traits/is_same.h>
 #include <__type_traits/lazy.h>
 #include <__type_traits/nat.h>
@@ -503,6 +504,7 @@ namespace std
 #include "__type_traits/is_polymorphic.h"
 #include "__type_traits/is_reference_wrapper.h"
 #include "__type_traits/is_reference.h"
+#include "__type_traits/is_referenceable.h"
 #include "__type_traits/is_same.h"
 #include "__type_traits/lazy.h"
 #include "__type_traits/nat.h"
@@ -890,21 +892,9 @@ _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_compound_v
     = is_compound<_Tp>::value;
 #endif
 
-
-// __is_referenceable  [defns.referenceable]
-
-struct __is_referenceable_impl {
-    template <class _Tp> _LIBCUDACXX_INLINE_VISIBILITY static _Tp& __test(int);
-    template <class _Tp> _LIBCUDACXX_INLINE_VISIBILITY static __two __test(...);
-};
-
-template <class _Tp>
-struct __is_referenceable : integral_constant<bool,
-    _IsNotSame<decltype(__is_referenceable_impl::__test<_Tp>(0)), __two>::value> {};
-
 // add_lvalue_reference
 
-template <class _Tp, bool = __is_referenceable<_Tp>::value> struct __add_lvalue_reference_impl            { typedef _LIBCUDACXX_NODEBUG_TYPE _Tp  type; };
+template <class _Tp, bool = __libcpp_is_referenceable<_Tp>::value> struct __add_lvalue_reference_impl            { typedef _LIBCUDACXX_NODEBUG_TYPE _Tp  type; };
 template <class _Tp                                       > struct __add_lvalue_reference_impl<_Tp, true> { typedef _LIBCUDACXX_NODEBUG_TYPE _Tp& type; };
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_lvalue_reference
@@ -914,7 +904,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_lvalue_reference
 template <class _Tp> using add_lvalue_reference_t = typename add_lvalue_reference<_Tp>::type;
 #endif
 
-template <class _Tp, bool = __is_referenceable<_Tp>::value> struct __add_rvalue_reference_impl            { typedef _LIBCUDACXX_NODEBUG_TYPE  _Tp   type; };
+template <class _Tp, bool = __libcpp_is_referenceable<_Tp>::value> struct __add_rvalue_reference_impl            { typedef _LIBCUDACXX_NODEBUG_TYPE  _Tp   type; };
 template <class _Tp                                       > struct __add_rvalue_reference_impl<_Tp, true> { typedef _LIBCUDACXX_NODEBUG_TYPE  _Tp&& type; };
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_rvalue_reference
@@ -960,7 +950,7 @@ struct __any
 // add_pointer
 
 template <class _Tp,
-        bool = __is_referenceable<_Tp>::value ||
+        bool = __libcpp_is_referenceable<_Tp>::value ||
                 _IsSame<typename remove_cv<_Tp>::type, void>::value>
 struct __add_pointer_impl
     {typedef _LIBCUDACXX_NODEBUG_TYPE typename remove_reference<_Tp>::type* type;};
@@ -1071,7 +1061,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS decay
 private:
     typedef _LIBCUDACXX_NODEBUG_TYPE typename remove_reference<_Tp>::type _Up;
 public:
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename __decay<_Up, __is_referenceable<_Up>::value>::type type;
+    typedef _LIBCUDACXX_NODEBUG_TYPE typename __decay<_Up, __libcpp_is_referenceable<_Up>::value>::type type;
 };
 
 #if _LIBCUDACXX_STD_VER > 11
@@ -3927,7 +3917,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_swappable_with
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_swappable
     : public conditional<
-        __is_referenceable<_Tp>::value,
+        __libcpp_is_referenceable<_Tp>::value,
         is_swappable_with<
             typename add_lvalue_reference<_Tp>::type,
             typename add_lvalue_reference<_Tp>::type>,
@@ -3945,7 +3935,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_swappable_with
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_swappable
     : public conditional<
-        __is_referenceable<_Tp>::value,
+        __libcpp_is_referenceable<_Tp>::value,
         is_nothrow_swappable_with<
             typename add_lvalue_reference<_Tp>::type,
             typename add_lvalue_reference<_Tp>::type>,
