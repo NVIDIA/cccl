@@ -466,6 +466,7 @@ namespace std
 #include <__type_traits/make_const_lvalue_ref.h>
 #include <__type_traits/maybe_const.h>
 #include <__type_traits/nat.h>
+#include <__type_traits/negation.h>
 #include <__type_traits/remove_all_extents.h>
 #include <__type_traits/remove_const_ref.h>
 #include <__type_traits/remove_const.h>
@@ -532,6 +533,7 @@ namespace std
 #include "__type_traits/make_const_lvalue_ref.h"
 #include "__type_traits/maybe_const.h"
 #include "__type_traits/nat.h"
+#include "__type_traits/negation.h"
 #include "__type_traits/remove_all_extents.h"
 #include "__type_traits/remove_const_ref.h"
 #include "__type_traits/remove_const.h"
@@ -588,8 +590,6 @@ struct _MetaBase<false> {
 };
 template <bool _Cond, class _Ret = void>
 using _EnableIf _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<_Cond>::template _EnableIfImpl<_Ret>;
-template <class _Pred>
-struct _Not : _BoolConstant<!_Pred::value> {};
 template <class ..._Args>
 using _FirstType _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<(sizeof...(_Args) >= 1)>::template _FirstImpl<_Args...>;
 template <class ..._Args>
@@ -3983,14 +3983,6 @@ struct __has_operator_addressof
 {};
 
 #endif  // _LIBCUDACXX_CXX03_LANG
-
-#if _LIBCUDACXX_STD_VER > 11
-template <class _Tp>
-struct negation : _Not<_Tp> {};
-template<class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool negation_v
-    = negation<_Tp>::value;
-#endif  // _LIBCUDACXX_STD_VER > 11
 
 // These traits are used in __tree and __hash_table
 #ifndef _LIBCUDACXX_CXX03_LANG
