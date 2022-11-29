@@ -470,6 +470,7 @@ namespace std
 #include <__type_traits/is_member_function_pointer.h>
 #include <__type_traits/is_member_object_pointer.h>
 #include <__type_traits/is_member_pointer.h>
+#include <__type_traits/is_move_assignable.h>
 #include <__type_traits/is_null_pointer.h>
 #include <__type_traits/is_pointer.h>
 #include <__type_traits/is_polymorphic.h>
@@ -564,6 +565,7 @@ namespace std
 #include "__type_traits/is_member_function_pointer.h"
 #include "__type_traits/is_member_object_pointer.h"
 #include "__type_traits/is_member_pointer.h"
+#include "__type_traits/is_move_assignable.h"
 #include "__type_traits/is_null_pointer.h"
 #include "__type_traits/is_pointer.h"
 #include "__type_traits/is_polymorphic.h"
@@ -904,18 +906,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS make_unsigned
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class _Tp> using make_unsigned_t = typename make_unsigned<_Tp>::type;
-#endif
-
-// is_move_assignable
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_move_assignable
-    : public is_assignable<typename add_lvalue_reference<_Tp>::type,
-                           typename add_rvalue_reference<_Tp>::type> {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_move_assignable_v
-    = is_move_assignable<_Tp>::value;
 #endif
 
 // move
