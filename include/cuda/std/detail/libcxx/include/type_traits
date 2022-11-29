@@ -455,6 +455,7 @@ namespace std
 #include <__type_traits/is_constructible.h>
 #include <__type_traits/is_convertible.h>
 #include <__type_traits/is_copy_assignable.h>
+#include <__type_traits/is_copy_constructible.h>
 #include <__type_traits/is_core_convertible.h>
 #include <__type_traits/is_destructible.h>
 #include <__type_traits/is_empty.h>
@@ -546,6 +547,7 @@ namespace std
 #include "__type_traits/is_constructible.h"
 #include "__type_traits/is_convertible.h"
 #include "__type_traits/is_copy_assignable.h"
+#include "__type_traits/is_copy_constructible.h"
 #include "__type_traits/is_core_convertible.h"
 #include "__type_traits/is_destructible.h"
 #include "__type_traits/is_empty.h"
@@ -1589,19 +1591,6 @@ struct __is_implicitly_default_constructible<_Tp, decltype(__test_implicit_defau
     : false_type
 { };
 #endif // !C++03
-
-// is_copy_constructible
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_copy_constructible
-    : public is_constructible<_Tp,
-                  typename add_lvalue_reference<typename add_const<_Tp>::type>::type> {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_copy_constructible_v
-    = is_copy_constructible<_Tp>::value;
-#endif
 
 // is_move_constructible
 
