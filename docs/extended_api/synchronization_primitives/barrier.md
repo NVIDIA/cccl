@@ -1,7 +1,7 @@
 ---
 grand_parent: Extended API
 parent: Synchronization Primitives
-nav_order: 2
+nav_order: 3
 ---
 
 # `cuda::barrier`

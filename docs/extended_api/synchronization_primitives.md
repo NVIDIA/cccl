@@ -3,6 +3,7 @@
 ### Atomics
 
 | [`cuda::atomic`]             | System-wide [`cuda::std::atomic`] objects and operations. `(class template)`                                   <br/><br/> 1.0.0 / CUDA 10.2 |
+| [`cuda::atomic_ref`]         | System-wide [`cuda::std::atomic_ref`] objects and operations. `(class template)`                               <br/><br/> 1.7.0 / CUDA 11.6 |
 
 ### Latches
 
@@ -31,6 +32,7 @@ The pipeline library is included in the CUDA Toolkit, but is not part of the
 
 
 [`cuda::std::atomic`]: https://en.cppreference.com/w/cpp/atomic/atomic
+[`cuda::std::atomic_ref`]: https://en.cppreference.com/w/cpp/atomic/atomic_ref
 [`cuda::std::barrier`]: https://en.cppreference.com/w/cpp/thread/barrier
 [`cuda::std::latch`]: https://en.cppreference.com/w/cpp/thread/latch
 [`cuda::std::counting_semaphore`]: https://en.cppreference.com/w/cpp/thread/counting_semaphore
@@ -40,6 +42,7 @@ The pipeline library is included in the CUDA Toolkit, but is not part of the
 [`cuda::memcpy_async`]: {{ "extended_api/asynchronous_operations/memcpy_async.html" | relative_url }}
 
 [`cuda::atomic`]: {{ "extended_api/synchronization_primitives/atomic.html" | relative_url }}
+[`cuda::atomic_ref`]: {{ "extended_api/synchronization_primitives/atomic_ref.html" | relative_url }}
 [`cuda::barrier`]: {{ "extended_api/synchronization_primitives/barrier.html" | relative_url }}
 [`cuda::latch`]: {{ "extended_api/synchronization_primitives/latch.html" | relative_url }}
 [`cuda::counting_semaphore`]: {{ "extended_api/synchronization_primitives/counting_semaphore.html" | relative_url }}
@@ -51,4 +54,3 @@ The pipeline library is included in the CUDA Toolkit, but is not part of the
 [`cuda::make_pipeline`]: {{ "extended_api/synchronization_primitives/make_pipeline.html" | relative_url }}
 [`cuda::pipeline_consumer_wait_prior`]: {{ "extended_api/synchronization_primitives/pipeline_consumer_wait_prior.html" | relative_url }}
 [`cuda::pipeline_producer_commit`]: {{ "extended_api/synchronization_primitives/pipeline_producer_commit.html" | relative_url }}
-

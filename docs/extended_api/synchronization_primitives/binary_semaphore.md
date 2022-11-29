@@ -1,7 +1,7 @@
 ---
 grand_parent: Extended API
 parent: Synchronization Primitives
-nav_order: 4
+nav_order: 5
 ---
 
 # `cuda::binary_semaphore`
