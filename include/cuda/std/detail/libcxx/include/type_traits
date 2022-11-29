@@ -484,6 +484,7 @@ namespace std
 #include <__type_traits/is_nothrow_move_constructible.h>
 #include <__type_traits/is_null_pointer.h>
 #include <__type_traits/is_object.h>
+#include <__type_traits/is_pod.h>
 #include <__type_traits/is_pointer.h>
 #include <__type_traits/is_polymorphic.h>
 #include <__type_traits/is_primary_template.h>
@@ -613,6 +614,7 @@ namespace std
 #include "__type_traits/is_nothrow_move_constructible.h"
 #include "__type_traits/is_null_pointer.h"
 #include "__type_traits/is_object.h"
+#include "__type_traits/is_pod.h"
 #include "__type_traits/is_pointer.h"
 #include "__type_traits/is_polymorphic.h"
 #include "__type_traits/is_primary_template.h"
@@ -1409,29 +1411,6 @@ class _LIBCUDACXX_TEMPLATE_VIS result_of<_Fn(_A0, _A1, _A2)>
 };
 
 #endif  // _LIBCUDACXX_HAS_NO_VARIADICS
-
-// is_pod
-
-#if defined(_LIBCUDACXX_IS_POD) && !defined(_LIBCUDACXX_USE_IS_POD_FALLBACK)
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_pod
-    : public integral_constant<bool, _LIBCUDACXX_IS_POD(_Tp)> {};
-
-#else
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_pod
-    : public integral_constant<bool, is_trivially_default_constructible<_Tp>::value   &&
-                                     is_trivially_copy_constructible<_Tp>::value      &&
-                                     is_trivially_copy_assignable<_Tp>::value    &&
-                                     is_trivially_destructible<_Tp>::value> {};
-
-#endif // defined(_LIBCUDACXX_IS_POD) && !defined(_LIBCUDACXX_USE_IS_POD_FALLBACK)
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_pod_v
-    = is_pod<_Tp>::value;
-#endif
 
 #ifndef _LIBCUDACXX_CXX03_LANG
 
