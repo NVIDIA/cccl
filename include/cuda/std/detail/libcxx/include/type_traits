@@ -453,6 +453,7 @@ namespace std
 #include <__type_traits/is_const.h>
 #include <__type_traits/is_constant_evaluated.h>
 #include <__type_traits/is_convertible.h>
+#include <__type_traits/is_copy_assignable.h>
 #include <__type_traits/is_core_convertible.h>
 #include <__type_traits/is_destructible.h>
 #include <__type_traits/is_empty.h>
@@ -542,6 +543,7 @@ namespace std
 #include "__type_traits/is_const.h"
 #include "__type_traits/is_constant_evaluated.h"
 #include "__type_traits/is_convertible.h"
+#include "__type_traits/is_copy_assignable.h"
 #include "__type_traits/is_core_convertible.h"
 #include "__type_traits/is_destructible.h"
 #include "__type_traits/is_empty.h"
@@ -894,18 +896,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS make_unsigned
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class _Tp> using make_unsigned_t = typename make_unsigned<_Tp>::type;
-#endif
-
-// is_copy_assignable
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_copy_assignable
-    : public is_assignable<typename add_lvalue_reference<_Tp>::type,
-                  typename add_lvalue_reference<typename add_const<_Tp>::type>::type> {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_copy_assignable_v
-    = is_copy_assignable<_Tp>::value;
 #endif
 
 // is_move_assignable
