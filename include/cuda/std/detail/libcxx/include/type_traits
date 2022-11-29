@@ -448,6 +448,7 @@ namespace std
 #include <__type_traits/is_base_of.h>
 #include <__type_traits/is_bounded_array.h>
 #include <__type_traits/is_callable.h>
+#include <__type_traits/is_char_like_type.h>
 #include <__type_traits/is_class.h>
 #include <__type_traits/is_compound.h>
 #include <__type_traits/is_const.h>
@@ -578,6 +579,7 @@ namespace std
 #include "__type_traits/is_base_of.h"
 #include "__type_traits/is_bounded_array.h"
 #include "__type_traits/is_callable.h"
+#include "__type_traits/is_char_like_type.h"
 #include "__type_traits/is_class.h"
 #include "__type_traits/is_compound.h"
 #include "__type_traits/is_const.h"
@@ -1887,9 +1889,6 @@ struct __can_extract_map_key<_ValTy, _Key, _Key, _RawValTy>
     : false_type {};
 
 #endif
-
-template <class _CharT>
-using _IsCharLikeType = _And<is_standard_layout<_CharT>, is_trivial<_CharT> >;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
