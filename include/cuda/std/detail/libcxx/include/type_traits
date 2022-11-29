@@ -419,6 +419,7 @@ namespace std
 #include <__type_traits/add_const.h>
 #include <__type_traits/add_cv.h>
 #include <__type_traits/add_lvalue_reference.h>
+#include <__type_traits/add_pointer.h>
 #include <__type_traits/add_volatile.h>
 #include <__type_traits/aligned_storage.h>
 #include <__type_traits/aligned_union.h>
@@ -492,6 +493,7 @@ namespace std
 #include "__type_traits/add_const.h"
 #include "__type_traits/add_cv.h"
 #include "__type_traits/add_lvalue_reference.h"
+#include "__type_traits/add_pointer.h"
 #include "__type_traits/add_volatile.h"
 #include "__type_traits/aligned_storage.h"
 #include "__type_traits/aligned_union.h"
@@ -845,23 +847,6 @@ struct __any
     _LIBCUDACXX_INLINE_VISIBILITY
     __any(...);
 };
-
-// add_pointer
-
-template <class _Tp,
-        bool = __libcpp_is_referenceable<_Tp>::value ||
-                _IsSame<typename remove_cv<_Tp>::type, void>::value>
-struct __add_pointer_impl
-    {typedef _LIBCUDACXX_NODEBUG_TYPE typename remove_reference<_Tp>::type* type;};
-template <class _Tp> struct __add_pointer_impl<_Tp, false>
-    {typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;};
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_pointer
-    {typedef _LIBCUDACXX_NODEBUG_TYPE typename __add_pointer_impl<_Tp>::type type;};
-
-#if _LIBCUDACXX_STD_VER > 11
-template <class _Tp> using add_pointer_t = typename add_pointer<_Tp>::type;
-#endif
 
 // is_unsigned
 
