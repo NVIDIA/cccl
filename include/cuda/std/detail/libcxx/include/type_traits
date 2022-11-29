@@ -436,6 +436,7 @@ namespace std
 #include <__type_traits/is_aggregate.h>
 #include <__type_traits/is_arithmetic.h>
 #include <__type_traits/is_array.h>
+#include <__type_traits/is_assignable.h>
 #include <__type_traits/is_base_of.h>
 #include <__type_traits/is_bounded_array.h>
 #include <__type_traits/is_callable.h>
@@ -506,6 +507,7 @@ namespace std
 #include "__type_traits/is_aggregate.h"
 #include "__type_traits/is_arithmetic.h"
 #include "__type_traits/is_array.h"
+#include "__type_traits/is_assignable.h"
 #include "__type_traits/is_base_of.h"
 #include "__type_traits/is_bounded_array.h"
 #include "__type_traits/is_callable.h"
@@ -1295,48 +1297,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class ..._Tp> using common_type_t = typename common_type<_Tp...>::type;
-#endif
-
-// is_assignable
-
-template<typename, typename _Tp> struct __select_2nd { typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type; };
-
-template <class _Tp, class _Arg>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename __select_2nd<decltype((_CUDA_VSTD::declval<_Tp>() = _CUDA_VSTD::declval<_Arg>())), true_type>::type
-__is_assignable_test(int);
-
-#if defined(_LIBCUDACXX_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
-
-template <class _T1, class _T2> struct _LIBCUDACXX_TEMPLATE_VIS is_assignable
-    : public integral_constant<bool, _LIBCUDACXX_IS_ASSIGNABLE(_T1, _T2)> {};
-
-#else
-
-template <class, class>
-_LIBCUDACXX_INLINE_VISIBILITY
-false_type __is_assignable_test(...);
-
-template <class _Tp, class _Arg, bool = is_void<_Tp>::value || is_void<_Arg>::value>
-struct __is_assignable_imp
-    : public decltype((_CUDA_VSTD::__is_assignable_test<_Tp, _Arg>(0))) {};
-
-template <class _Tp, class _Arg>
-struct __is_assignable_imp<_Tp, _Arg, true>
-    : public false_type
-{
-};
-
-template <class _Tp, class _Arg>
-struct is_assignable
-    : public __is_assignable_imp<_Tp, _Arg> {};
-
-#endif // defined(_LIBCUDACXX_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp, class _Arg>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_assignable_v
-    = is_assignable<_Tp, _Arg>::value;
 #endif
 
 // is_copy_assignable
