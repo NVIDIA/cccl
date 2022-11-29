@@ -45,7 +45,7 @@ template <class ..._Args>
 struct __is_hash_value_type : false_type {};
 
 template <class _One>
-struct __is_hash_value_type<_One> : __is_hash_value_type_imp<typename __uncvref<_One>::type> {};
+struct __is_hash_value_type<_One> : __is_hash_value_type_imp<__remove_cvref_t<_One>> {};
 #endif
 
 _LIBCUDACXX_FUNC_VIS

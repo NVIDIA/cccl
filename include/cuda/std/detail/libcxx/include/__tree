@@ -544,7 +544,7 @@ template <class ..._Args>
 struct __is_tree_value_type : false_type {};
 
 template <class _One>
-struct __is_tree_value_type<_One> : __is_tree_value_type_imp<typename __uncvref<_One>::type> {};
+struct __is_tree_value_type<_One> : __is_tree_value_type_imp<__remove_cvref_t<_One>> {};
 #endif
 
 template <class _Tp>
@@ -1289,7 +1289,7 @@ public:
     }
 
     template <class _Vp, class = typename enable_if<
-            !is_same<typename __unconstref<_Vp>::type,
+            !is_same<__remove_const_t<_Vp>,
                      __container_value_type
             >::value
         >::type>
@@ -1299,7 +1299,7 @@ public:
     }
 
     template <class _Vp, class = typename enable_if<
-            !is_same<typename __unconstref<_Vp>::type,
+            !is_same<__remove_const_t<_Vp>,
                      __container_value_type
             >::value
         >::type>

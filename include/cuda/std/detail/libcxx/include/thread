@@ -229,7 +229,7 @@ public:
     template <class _Fp, class ..._Args,
               class = typename enable_if
               <
-                   !is_same<typename __uncvref<_Fp>::type, thread>::value
+                   !is_same<__remove_cvref_t<_Fp>, thread>::value
               >::type
              >
         _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS

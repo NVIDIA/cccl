@@ -482,7 +482,7 @@ struct __tuple_like_with_size_imp<true, _SizeTrait, _Expected>
     : integral_constant<bool, _SizeTrait::value == _Expected> {};
 
 template <class _Tuple, size_t _ExpectedSize,
-          class _RawTuple = typename __uncvref<_Tuple>::type>
+          class _RawTuple = __remove_cvref_t<_Tuple>>
 using __tuple_like_with_size _LIBCUDACXX_NODEBUG_TYPE = __tuple_like_with_size_imp<
                                    __tuple_like<_RawTuple>::value,
                                    tuple_size<_RawTuple>, _ExpectedSize

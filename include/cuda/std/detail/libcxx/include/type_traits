@@ -472,6 +472,7 @@ namespace std
 #include <__type_traits/remove_all_extents.h>
 #include <__type_traits/remove_const_ref.h>
 #include <__type_traits/remove_const.h>
+#include <__type_traits/remove_cvref.h>
 #include <__type_traits/remove_cv.h>
 #include <__type_traits/remove_extent.h>
 #include <__type_traits/remove_pointer.h>
@@ -541,6 +542,7 @@ namespace std
 #include "__type_traits/remove_all_extents.h"
 #include "__type_traits/remove_const_ref.h"
 #include "__type_traits/remove_const.h"
+#include "__type_traits/remove_cvref.h"
 #include "__type_traits/remove_cv.h"
 #include "__type_traits/remove_extent.h"
 #include "__type_traits/remove_pointer.h"
@@ -871,33 +873,6 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_rvalue_reference
 #if _LIBCUDACXX_STD_VER > 11
 template <class _Tp> using add_rvalue_reference_t = typename add_rvalue_reference<_Tp>::type;
 #endif
-
-// __uncvref
-
-template <class _Tp>
-struct __uncvref  {
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename remove_cv<typename remove_reference<_Tp>::type>::type type;
-};
-
-#ifndef _LIBCUDACXX_CXX03_LANG
-template <class _Tp>
-using __uncvref_t _LIBCUDACXX_NODEBUG_TYPE = typename __uncvref<_Tp>::type;
-#endif
-
-// __is_same_uncvref
-
-template <class _Tp, class _Up>
-struct __is_same_uncvref : _IsSame<typename __uncvref<_Tp>::type,
-                                   typename __uncvref<_Up>::type> {};
-
-#if _LIBCUDACXX_STD_VER > 11
-// remove_cvref - same as __uncvref
-template <class _Tp>
-struct remove_cvref : public __uncvref<_Tp> {};
-
-template <class _Tp> using remove_cvref_t = typename remove_cvref<_Tp>::type;
-#endif
-
 
 struct __any
 {
@@ -2122,8 +2097,8 @@ struct __libcpp_is_constructible;
 template <class _To, class _From>
 struct __is_invalid_base_to_derived_cast {
   static_assert(is_reference<_To>::value, "Wrong specialization");
-  using _RawFrom = __uncvref_t<_From>;
-  using _RawTo = __uncvref_t<_To>;
+  using _RawFrom = __remove_cvref_t<_From>;
+  using _RawTo = __remove_cvref_t<_To>;
   static const bool value = _And<
         _IsNotSame<_RawFrom, _RawTo>,
         is_base_of<_RawFrom, _RawTo>,
@@ -2138,8 +2113,8 @@ struct __is_invalid_lvalue_to_rvalue_cast : false_type {
 
 template <class _ToRef, class _FromRef>
 struct __is_invalid_lvalue_to_rvalue_cast<_ToRef&&, _FromRef&> {
-  using _RawFrom = __uncvref_t<_FromRef>;
-  using _RawTo = __uncvref_t<_ToRef>;
+  using _RawFrom = __remove_cvref_t<_FromRef>;
+  using _RawTo = __remove_cvref_t<_ToRef>;
   static const bool value = _And<
       _Not<is_function<_RawTo>>,
       _Or<

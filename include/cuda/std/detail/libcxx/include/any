@@ -580,7 +580,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST
 _ValueType any_cast(any const & __v)
 {
-    using _RawValueType = __uncvref_t<_ValueType>;
+    using _RawValueType = __remove_cvref_t<_ValueType>;
     static_assert(is_constructible<_ValueType, _RawValueType const &>::value,
                   "ValueType is required to be a const lvalue reference "
                   "or a CopyConstructible type");
@@ -595,7 +595,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST
 _ValueType any_cast(any & __v)
 {
-    using _RawValueType = __uncvref_t<_ValueType>;
+    using _RawValueType = __remove_cvref_t<_ValueType>;
     static_assert(is_constructible<_ValueType, _RawValueType &>::value,
                   "ValueType is required to be an lvalue reference "
                   "or a CopyConstructible type");
@@ -610,7 +610,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST
 _ValueType any_cast(any && __v)
 {
-    using _RawValueType = __uncvref_t<_ValueType>;
+    using _RawValueType = __remove_cvref_t<_ValueType>;
     static_assert(is_constructible<_ValueType, _RawValueType>::value,
                   "ValueType is required to be an rvalue reference "
                   "or a CopyConstructible type");

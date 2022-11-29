@@ -226,7 +226,7 @@ public:
     template <class _Tp,
               _EnableIf<
                   _And<
-                      _IsNotSame<__uncvref_t<_Tp>, __tuple_leaf>,
+                      _IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>,
                       is_constructible<_Hp, _Tp>
                     >::value,
                   bool
@@ -309,7 +309,7 @@ public:
     template <class _Tp,
               _EnableIf<
                   _And<
-                    _IsNotSame<__uncvref_t<_Tp>, __tuple_leaf>,
+                    _IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>,
                     is_constructible<_Hp, _Tp>
                   >::value,
                   bool
@@ -555,7 +555,7 @@ class _LIBCUDACXX_TEMPLATE_VIS tuple
 
     template <class _Arg>
     struct _PackExpandsToThisTuple<_Arg>
-        : is_same<typename __uncvref<_Arg>::type, tuple> {};
+        : is_same<__remove_cvref_t<_Arg>, tuple> {};
 
     template <bool _MaybeEnable, class _Dummy = void>
     struct _CheckArgsConstructor : __check_tuple_constructor_fail {};
@@ -660,7 +660,7 @@ class _LIBCUDACXX_TEMPLATE_VIS tuple
         using _PreferTupleLikeConstructor = _Or<
             // Don't attempt the two checks below if the tuple we are given
             // has the same type as this tuple.
-            _IsSame<__uncvref_t<_Tuple>, tuple>,
+            _IsSame<__remove_cvref_t<_Tuple>, tuple>,
             _Lazy<_And,
                 _Not<is_constructible<_Tp..., _Tuple>>,
                 _Not<is_convertible<_Tuple, _Tp...>>
@@ -1356,7 +1356,7 @@ template <class ..._Types, class _Tuple0>
 struct __tuple_cat_return_1<tuple<_Types...>, true, _Tuple0>
 {
     typedef _LIBCUDACXX_NODEBUG_TYPE typename __tuple_cat_type<tuple<_Types...>,
-            typename __make_tuple_types<typename __uncvref<_Tuple0>::type>::type>::type
+            typename __make_tuple_types<__remove_cvref_t<_Tuple0>>::type>::type
                                                                            type;
 };
 
@@ -1365,7 +1365,7 @@ struct __tuple_cat_return_1<tuple<_Types...>, true, _Tuple0, _Tuple1, _Tuples...
     : public __tuple_cat_return_1<
                  typename __tuple_cat_type<
                      tuple<_Types...>,
-                     typename __make_tuple_types<typename __uncvref<_Tuple0>::type>::type
+                     typename __make_tuple_types<__remove_cvref_t<_Tuple0>>::type
                  >::type,
                  __tuple_like<typename remove_reference<_Tuple1>::type>::value,
                  _Tuple1, _Tuples...>

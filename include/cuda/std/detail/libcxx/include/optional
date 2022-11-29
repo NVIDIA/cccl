@@ -592,9 +592,9 @@ public:
 
 private:
      // Disable the reference extension using this static assert.
-    static_assert(!is_same_v<__uncvref_t<value_type>, in_place_t>,
+    static_assert(!is_same_v<__remove_cvref_t<value_type>, in_place_t>,
         "instantiation of optional with in_place_t is ill-formed");
-    static_assert(!is_same_v<__uncvref_t<value_type>, nullopt_t>,
+    static_assert(!is_same_v<__remove_cvref_t<value_type>, nullopt_t>,
         "instantiation of optional with nullopt_t is ill-formed");
     static_assert(!is_reference_v<value_type>,
         "instantiation of optional with a reference type is ill-formed");
@@ -619,8 +619,8 @@ private:
     };
     template <class _Up>
     using _CheckOptionalArgsCtor = _If<
-        _IsNotSame<__uncvref_t<_Up>, in_place_t>::value &&
-        _IsNotSame<__uncvref_t<_Up>, optional>::value,
+        _IsNotSame<__remove_cvref_t<_Up>, in_place_t>::value &&
+        _IsNotSame<__remove_cvref_t<_Up>, optional>::value,
         _CheckOptionalArgsConstructor,
         __check_tuple_constructor_fail
     >;
@@ -771,9 +771,9 @@ public:
     template <class _Up = value_type,
               class = _EnableIf<
                       _And<
-                          _IsNotSame<__uncvref_t<_Up>, optional>,
+                          _IsNotSame<__remove_cvref_t<_Up>, optional>,
                           _Or<
-                              _IsNotSame<__uncvref_t<_Up>, value_type>,
+                              _IsNotSame<__remove_cvref_t<_Up>, value_type>,
                               _Not<is_scalar<value_type>>
                           >,
                           is_constructible<value_type, _Up>,

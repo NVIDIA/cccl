@@ -2011,7 +2011,7 @@ public:
               class = typename enable_if
               <
                   !is_same<
-                      typename __uncvref<_Fp>::type,
+                      __remove_cvref_t<_Fp>,
                       packaged_task
                       >::value
                   >::type
@@ -2022,7 +2022,7 @@ public:
               class = typename enable_if
               <
                   !is_same<
-                      typename __uncvref<_Fp>::type,
+                      __remove_cvref_t<_Fp>,
                       packaged_task
                       >::value
                   >::type
@@ -2140,7 +2140,7 @@ public:
               class = typename enable_if
               <
                   !is_same<
-                      typename __uncvref<_Fp>::type,
+                      __remove_cvref_t<_Fp>,
                       packaged_task
                       >::value
                   >::type
@@ -2151,7 +2151,7 @@ public:
               class = typename enable_if
               <
                   !is_same<
-                      typename __uncvref<_Fp>::type,
+                      __remove_cvref_t<_Fp>,
                       packaged_task
                       >::value
                   >::type
