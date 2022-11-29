@@ -419,6 +419,7 @@ namespace std
 #include <__type_traits/add_const.h>
 #include <__type_traits/add_cv.h>
 #include <__type_traits/add_volatile.h>
+#include <__type_traits/conditional.h>
 #include <cstddef>
 #include <version>
 #include <__pragma_push>
@@ -426,6 +427,7 @@ namespace std
 #include "__type_traits/add_const.h"
 #include "__type_traits/add_cv.h"
 #include "__type_traits/add_volatile.h"
+#include "__type_traits/conditional.h"
 #endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -502,8 +504,6 @@ struct _MetaBase<false> {
 };
 template <bool _Cond, class _Ret = void>
 using _EnableIf _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<_Cond>::template _EnableIfImpl<_Ret>;
-template <bool _Cond, class _IfRes, class _ElseRes>
-using _If _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<_Cond>::template _SelectImpl<_IfRes, _ElseRes>;
 template <class ..._Rest>
 using _Or _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase< sizeof...(_Rest) != 0 >::template _OrImpl<false_type, _Rest...>;
 template <class ..._Rest>
@@ -538,15 +538,6 @@ struct __identity { typedef _Tp type; };
 
 template <class _Tp, bool>
 struct _LIBCUDACXX_TEMPLATE_VIS __dependent_type : public _Tp {};
-
-template <bool _Bp, class _If, class _Then>
-    struct _LIBCUDACXX_TEMPLATE_VIS conditional {typedef _If type;};
-template <class _If, class _Then>
-    struct _LIBCUDACXX_TEMPLATE_VIS conditional<false, _If, _Then> {typedef _Then type;};
-
-#if _LIBCUDACXX_STD_VER > 11
-template <bool _Bp, class _If, class _Then> using conditional_t = typename conditional<_Bp, _If, _Then>::type;
-#endif
 
 template <bool, class _Tp = void> struct _LIBCUDACXX_TEMPLATE_VIS enable_if {};
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS enable_if<true, _Tp> {typedef _Tp type;};
