@@ -440,6 +440,7 @@ namespace std
 #include <__type_traits/is_callable.h>
 #include <__type_traits/is_const.h>
 #include <__type_traits/is_constant_evaluated.h>
+#include <__type_traits/is_core_convertible.h>
 #include <__type_traits/lazy.h>
 #include <__type_traits/nat.h>
 #include <__type_traits/remove_all_extents.h>
@@ -482,6 +483,7 @@ namespace std
 #include "__type_traits/is_callable.h"
 #include "__type_traits/is_const.h"
 #include "__type_traits/is_constant_evaluated.h"
+#include "__type_traits/is_core_convertible.h"
 #include "__type_traits/lazy.h"
 #include "__type_traits/nat.h"
 #include "__type_traits/remove_all_extents.h"
