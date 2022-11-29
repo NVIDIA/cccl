@@ -452,6 +452,7 @@ namespace std
 #include <__type_traits/is_reference.h>
 #include <__type_traits/is_referenceable.h>
 #include <__type_traits/is_same.h>
+#include <__type_traits/is_signed_integer.h>
 #include <__type_traits/lazy.h>
 #include <__type_traits/nat.h>
 #include <__type_traits/remove_all_extents.h>
@@ -506,6 +507,7 @@ namespace std
 #include "__type_traits/is_reference.h"
 #include "__type_traits/is_referenceable.h"
 #include "__type_traits/is_same.h"
+#include "__type_traits/is_signed_integer.h"
 #include "__type_traits/lazy.h"
 #include "__type_traits/nat.h"
 #include "__type_traits/remove_all_extents.h"
