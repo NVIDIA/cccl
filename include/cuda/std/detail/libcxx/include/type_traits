@@ -423,6 +423,7 @@ namespace std
 #include <__type_traits/dependent_type.h>
 #include <__type_traits/enable_if.h>
 #include <__type_traits/integral_constant.h>
+#include <__type_traits/lazy.h>
 #include <cstddef>
 #include <version>
 #include <__pragma_push>
@@ -434,6 +435,7 @@ namespace std
 #include "__type_traits/dependent_type.h"
 #include "__type_traits/enable_if.h"
 #include "__type_traits/integral_constant.h"
+#include "__type_traits/lazy.h"
 #endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -488,9 +490,6 @@ template <class ..._Args>
 using _FirstType _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<(sizeof...(_Args) >= 1)>::template _FirstImpl<_Args...>;
 template <class ..._Args>
 using _SecondType _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<(sizeof...(_Args) >= 2)>::template _SecondImpl<_Args...>;
-
-template <template <class...> class _Func, class ..._Args>
-struct _Lazy : _Func<_Args...> {};
 
 // Member detector base
 
