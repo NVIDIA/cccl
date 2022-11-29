@@ -448,6 +448,7 @@ namespace std
 #include <__type_traits/is_null_pointer.h>
 #include <__type_traits/is_pointer.h>
 #include <__type_traits/is_polymorphic.h>
+#include <__type_traits/is_reference_wrapper.h>
 #include <__type_traits/lazy.h>
 #include <__type_traits/nat.h>
 #include <__type_traits/remove_all_extents.h>
@@ -498,6 +499,7 @@ namespace std
 #include "__type_traits/is_null_pointer.h"
 #include "__type_traits/is_pointer.h"
 #include "__type_traits/is_polymorphic.h"
+#include "__type_traits/is_reference_wrapper.h"
 #include "__type_traits/lazy.h"
 #include "__type_traits/nat.h"
 #include "__type_traits/remove_all_extents.h"
@@ -3509,11 +3511,6 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_trivial_v
     = is_trivial<_Tp>::value;
 #endif
-
-template <class _Tp> struct __is_reference_wrapper_impl : public false_type {};
-template <class _Tp> struct __is_reference_wrapper_impl<reference_wrapper<_Tp> > : public true_type {};
-template <class _Tp> struct __is_reference_wrapper
-    : public __is_reference_wrapper_impl<typename remove_cv<_Tp>::type> {};
 
 #ifndef _LIBCUDACXX_CXX03_LANG
 
