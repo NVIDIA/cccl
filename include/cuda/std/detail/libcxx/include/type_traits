@@ -424,6 +424,7 @@ namespace std
 #include <__type_traits/alignment_of.h>
 #include <__type_traits/conditional.h>
 #include <__type_traits/conjunction.h>
+#include <__type_traits/copy_cv.h>
 #include <__type_traits/dependent_type.h>
 #include <__type_traits/enable_if.h>
 #include <__type_traits/integral_constant.h>
@@ -452,6 +453,7 @@ namespace std
 #include "__type_traits/alignment_of.h"
 #include "__type_traits/conditional.h"
 #include "__type_traits/conjunction.h"
+#include "__type_traits/copy_cv.h"
 #include "__type_traits/dependent_type.h"
 #include "__type_traits/enable_if.h"
 #include "__type_traits/integral_constant.h"
