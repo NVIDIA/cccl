@@ -429,6 +429,7 @@ namespace std
 #include <__type_traits/conditional.h>
 #include <__type_traits/conjunction.h>
 #include <__type_traits/copy_cv.h>
+#include <__type_traits/copy_cvref.h>
 #include <__type_traits/dependent_type.h>
 #include <__type_traits/disjunction.h>
 #include <__type_traits/enable_if.h>
@@ -505,6 +506,7 @@ namespace std
 #include "__type_traits/conditional.h"
 #include "__type_traits/conjunction.h"
 #include "__type_traits/copy_cv.h"
+#include "__type_traits/copy_cvref.h"
 #include "__type_traits/dependent_type.h"
 #include "__type_traits/disjunction.h"
 #include "__type_traits/enable_if.h"
