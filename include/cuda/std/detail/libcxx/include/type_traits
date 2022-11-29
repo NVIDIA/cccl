@@ -457,6 +457,7 @@ namespace std
 #include <__type_traits/is_copy_assignable.h>
 #include <__type_traits/is_copy_constructible.h>
 #include <__type_traits/is_core_convertible.h>
+#include <__type_traits/is_default_constructible.h>
 #include <__type_traits/is_destructible.h>
 #include <__type_traits/is_empty.h>
 #include <__type_traits/is_enum.h>
@@ -549,6 +550,7 @@ namespace std
 #include "__type_traits/is_copy_assignable.h"
 #include "__type_traits/is_copy_constructible.h"
 #include "__type_traits/is_core_convertible.h"
+#include "__type_traits/is_default_constructible.h"
 #include "__type_traits/is_destructible.h"
 #include "__type_traits/is_empty.h"
 #include "__type_traits/is_enum.h"
@@ -1553,19 +1555,6 @@ class _LIBCUDACXX_TEMPLATE_VIS result_of<_Fn(_A0, _A1, _A2)>
 };
 
 #endif  // _LIBCUDACXX_HAS_NO_VARIADICS
-
-// is_default_constructible
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_default_constructible
-    : public is_constructible<_Tp>
-    {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_default_constructible_v
-    = is_default_constructible<_Tp>::value;
-#endif
 
 #ifndef _LIBCUDACXX_CXX03_LANG
 // First of all, we can't implement this check in C++03 mode because the {}
