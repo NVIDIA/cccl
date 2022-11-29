@@ -435,6 +435,7 @@ namespace std
 #include <__type_traits/remove_volatile.h>
 #include <__type_traits/type_identity.h>
 #include <__type_traits/type_list.h>
+#include <__type_traits/void_t.h>
 #include <cstddef>
 #include <version>
 #include <__pragma_push>
@@ -458,6 +459,7 @@ namespace std
 #include "__type_traits/remove_volatile.h"
 #include "__type_traits/type_identity.h"
 #include "__type_traits/type_list.h"
+#include "__type_traits/void_t.h"
 #endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -524,9 +526,6 @@ false_type __sfinae_test_impl(...);
 
 template <template <class ...> class _Templ, class ..._Args>
 using _IsValidExpansion _LIBCUDACXX_NODEBUG_TYPE = decltype(std::__sfinae_test_impl<_Templ, _Args...>(0));
-
-template <class>
-struct __void_t { typedef void type; };
 
 template <class _Tp>
 struct __identity { typedef _Tp type; };
@@ -1932,10 +1931,8 @@ template <class _Tp, class _Up, class = void>
 struct __common_type2_imp {};
 
 template <class _Tp, class _Up>
-struct __common_type2_imp<_Tp, _Up,
-                          typename __void_t<decltype(
-                                            true ? _CUDA_VSTD::declval<_Tp>() : _CUDA_VSTD::declval<_Up>()
-                                            )>::type>
+struct __common_type2_imp<_Tp, _Up, 
+                          __void_t<decltype(true ? _CUDA_VSTD::declval<_Tp>() : _CUDA_VSTD::declval<_Up>())>>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE typename decay<decltype(
                          true ? _CUDA_VSTD::declval<_Tp>() : _CUDA_VSTD::declval<_Up>()
@@ -1968,7 +1965,7 @@ struct common_type {
 template <class _Tp, class _Up>
 struct __common_type_impl<
     __common_types<_Tp, _Up>,
-    typename __void_t<typename common_type<_Tp, _Up>::type>::type>
+    __void_t<typename common_type<_Tp, _Up>::type>>
 {
   typedef typename common_type<_Tp, _Up>::type type;
 };
@@ -1976,7 +1973,7 @@ struct __common_type_impl<
 template <class _Tp, class _Up, class _Vp _LIBCUDACXX_OPTIONAL_PACK(class... _Rest)>
 struct __common_type_impl<
     __common_types<_Tp, _Up, _Vp _LIBCUDACXX_OPTIONAL_PACK(_Rest...)>,
-    typename __void_t<typename common_type<_Tp, _Up>::type>::type>
+    __void_t<typename common_type<_Tp, _Up>::type>>
     : __common_type_impl<__common_types<typename common_type<_Tp, _Up>::type,
                                         _Vp _LIBCUDACXX_OPTIONAL_PACK(_Rest...)> > {
 };
@@ -4608,8 +4605,6 @@ struct __has_operator_addressof
 #endif  // _LIBCUDACXX_CXX03_LANG
 
 #if _LIBCUDACXX_STD_VER > 11
-
-template <class...> using void_t = void;
 
 template <class... _Args>
 struct conjunction

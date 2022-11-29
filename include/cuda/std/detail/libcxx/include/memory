@@ -732,7 +732,7 @@ struct __has_element_type : false_type {};
 
 template <class _Tp>
 struct __has_element_type<_Tp,
-              typename __void_t<typename _Tp::element_type>::type> : true_type {};
+              __void_t<typename _Tp::element_type>> : true_type {};
 
 template <class _Ptr, bool = __has_element_type<_Ptr>::value>
 struct __pointer_traits_element_type;
@@ -816,7 +816,7 @@ struct __has_difference_type : false_type {};
 
 template <class _Tp>
 struct __has_difference_type<_Tp,
-            typename __void_t<typename _Tp::difference_type>::type> : true_type {};
+            __void_t<typename _Tp::difference_type>> : true_type {};
 
 template <class _Ptr, bool = __has_difference_type<_Ptr>::value>
 struct __pointer_traits_difference_type
@@ -1002,7 +1002,7 @@ struct __has_pointer_type : false_type {};
 
 template <class _Tp>
 struct __has_pointer_type<_Tp,
-          typename __void_t<typename _Tp::pointer>::type> : true_type {};
+          __void_t<typename _Tp::pointer>> : true_type {};
 
 namespace __pointer_type_imp
 {
@@ -1032,7 +1032,7 @@ struct __has_const_pointer : false_type {};
 
 template <class _Tp>
 struct __has_const_pointer<_Tp,
-            typename __void_t<typename _Tp::const_pointer>::type> : true_type {};
+            __void_t<typename _Tp::const_pointer>> : true_type {};
 
 template <class _Tp, class _Ptr, class _Alloc, bool = __has_const_pointer<_Alloc>::value>
 struct __const_pointer
@@ -1055,7 +1055,7 @@ struct __has_void_pointer : false_type {};
 
 template <class _Tp>
 struct __has_void_pointer<_Tp,
-               typename __void_t<typename _Tp::void_pointer>::type> : true_type {};
+               __void_t<typename _Tp::void_pointer>> : true_type {};
 
 template <class _Ptr, class _Alloc, bool = __has_void_pointer<_Alloc>::value>
 struct __void_pointer
@@ -1078,7 +1078,7 @@ struct __has_const_void_pointer : false_type {};
 
 template <class _Tp>
 struct __has_const_void_pointer<_Tp,
-            typename __void_t<typename _Tp::const_void_pointer>::type> : true_type {};
+            __void_t<typename _Tp::const_void_pointer>> : true_type {};
 
 template <class _Ptr, class _Alloc, bool = __has_const_void_pointer<_Alloc>::value>
 struct __const_void_pointer
@@ -1153,7 +1153,7 @@ struct __has_size_type : false_type {};
 
 template <class _Tp>
 struct __has_size_type<_Tp,
-               typename __void_t<typename _Tp::size_type>::type> : true_type {};
+               __void_t<typename _Tp::size_type>> : true_type {};
 
 template <class _Alloc, class _DiffType, bool = __has_size_type<_Alloc>::value>
 struct __size_type
@@ -1172,7 +1172,7 @@ struct __has_propagate_on_container_copy_assignment : false_type {};
 
 template <class _Tp>
 struct __has_propagate_on_container_copy_assignment<_Tp,
-    typename __void_t<typename _Tp::propagate_on_container_copy_assignment>::type>
+    __void_t<typename _Tp::propagate_on_container_copy_assignment>>
         : true_type {};
 
 template <class _Alloc, bool = __has_propagate_on_container_copy_assignment<_Alloc>::value>
@@ -1192,7 +1192,7 @@ struct __has_propagate_on_container_move_assignment : false_type {};
 
 template <class _Tp>
 struct __has_propagate_on_container_move_assignment<_Tp,
-           typename __void_t<typename _Tp::propagate_on_container_move_assignment>::type>
+           __void_t<typename _Tp::propagate_on_container_move_assignment>>
                : true_type {};
 
 template <class _Alloc, bool = __has_propagate_on_container_move_assignment<_Alloc>::value>
@@ -1212,7 +1212,7 @@ struct __has_propagate_on_container_swap : false_type {};
 
 template <class _Tp>
 struct __has_propagate_on_container_swap<_Tp,
-           typename __void_t<typename _Tp::propagate_on_container_swap>::type>
+           __void_t<typename _Tp::propagate_on_container_swap>>
                : true_type {};
 
 template <class _Alloc, bool = __has_propagate_on_container_swap<_Alloc>::value>
@@ -1232,7 +1232,7 @@ struct __has_is_always_equal : false_type {};
 
 template <class _Tp>
 struct __has_is_always_equal<_Tp,
-           typename __void_t<typename _Tp::is_always_equal>::type>
+           __void_t<typename _Tp::is_always_equal>>
                : true_type {};
 
 template <class _Alloc, bool = __has_is_always_equal<_Alloc>::value>
@@ -1460,17 +1460,17 @@ template <class _Alloc, class _Pointer, class _Tp, class = void>
 struct __has_construct : std::false_type {};
 
 template <class _Alloc, class _Pointer, class _Tp>
-struct __has_construct<_Alloc, _Pointer, _Tp, typename __void_t<
-    decltype(_CUDA_VSTD::declval<_Alloc>().construct(_CUDA_VSTD::declval<_Pointer>(), _CUDA_VSTD::declval<_Tp>()))
->::type> : std::true_type {};
+struct __has_construct<_Alloc, _Pointer, _Tp, __void_t<
+    decltype(_CUDA_VSTD::declval<_Alloc>().construct(_CUDA_VSTD::declval<_Pointer>(), _CUDA_VSTD::declval<_Tp>()))>> 
+    : std::true_type {};
 
 template <class _Alloc, class _Pointer, class = void>
 struct __has_destroy : false_type {};
 
 template <class _Alloc, class _Pointer>
-struct __has_destroy<_Alloc, _Pointer, typename __void_t<
-    decltype(_CUDA_VSTD::declval<_Alloc>().destroy(_CUDA_VSTD::declval<_Pointer>()))
->::type> : std::true_type {};
+struct __has_destroy<_Alloc, _Pointer, __void_t<
+    decltype(_CUDA_VSTD::declval<_Alloc>().destroy(_CUDA_VSTD::declval<_Pointer>()))>> 
+    : std::true_type {};
 
 template <class _Alloc>
 struct __has_max_size
@@ -5379,8 +5379,8 @@ struct __is_allocator : false_type {};
 
 template<typename _Alloc>
 struct __is_allocator<_Alloc,
-       typename __void_t<typename _Alloc::value_type>::type,
-       typename __void_t<decltype(_CUDA_VSTD::declval<_Alloc&>().allocate(size_t(0)))>::type
+       __void_t<typename _Alloc::value_type>,
+       __void_t<decltype(_CUDA_VSTD::declval<_Alloc&>().allocate(size_t(0)))>
      >
    : true_type {};
 

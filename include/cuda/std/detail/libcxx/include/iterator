@@ -449,11 +449,11 @@ struct __has_iterator_typedefs
 private:
     struct __two {char __lx; char __lxx;};
     template <class _Up> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER static __two __test(...);
-    template <class _Up> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER static char __test(typename std::__void_t<typename _Up::iterator_category>::type* = 0,
-    										typename std::__void_t<typename _Up::difference_type>::type* = 0,
-    										typename std::__void_t<typename _Up::value_type>::type* = 0,
-    										typename std::__void_t<typename _Up::reference>::type* = 0,
-    										typename std::__void_t<typename _Up::pointer>::type* = 0
+    template <class _Up> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER static char __test(__void_t<typename _Up::iterator_category>* = 0,
+    										__void_t<typename _Up::difference_type>* = 0,
+    										__void_t<typename _Up::value_type>* = 0,
+    										__void_t<typename _Up::reference>* = 0,
+    										__void_t<typename _Up::pointer>* = 0
     										);
 public:
     static const bool value = sizeof(__test<_Tp>(0,0,0,0,0)) == 1;
@@ -672,7 +672,7 @@ template <class _Tp, class = void>
 struct __is_stashing_iterator : false_type {};
 
 template <class _Tp>
-struct __is_stashing_iterator<_Tp, typename __void_t<typename _Tp::__stashing_iterator_tag>::type>
+struct __is_stashing_iterator<_Tp, __void_t<typename _Tp::__stashing_iterator_tag>>
   : true_type {};
 
 template <class _Iter>
