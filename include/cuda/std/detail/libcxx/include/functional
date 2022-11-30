@@ -499,6 +499,7 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 
 #ifndef __cuda_std__
 #include <__config>
+#include <__functional/invoke.h>
 #include <type_traits>
 #include <typeinfo>
 #include <exception>
@@ -508,6 +509,8 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include <version>
 #include <__functional_base>
 #include <__pragma_push>
+#else
+#include "__functional/invoke.h"
 #endif
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -2907,15 +2910,6 @@ bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 #endif // __cuda_std__
 
 #if _LIBCUDACXX_STD_VER > 14
-
-template <class _Fn, class ..._Args>
-_LIBCUDACXX_INLINE_VISIBILITY
-invoke_result_t<_Fn, _Args...>
-invoke(_Fn&& __f, _Args&&... __args)
-    noexcept(is_nothrow_invocable_v<_Fn, _Args...>)
-{
-    return _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
-}
 
 template <class _DecayFunc>
 class _LIBCUDACXX_TEMPLATE_VIS __not_fn_imp {

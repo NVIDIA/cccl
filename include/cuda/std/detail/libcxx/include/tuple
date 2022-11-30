@@ -1503,7 +1503,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 constexpr decltype(auto) __apply_tuple_impl(_Fn && __f, _Tuple && __t,
                                             __tuple_indices<_Id...>)
 _LIBCUDACXX_NOEXCEPT_RETURN(
-    _CUDA_VSTD::__invoke_constexpr(
+    _CUDA_VSTD::__invoke(
         _CUDA_VSTD::forward<_Fn>(__f),
         _CUDA_VSTD::get<_Id>(_CUDA_VSTD::forward<_Tuple>(__t))...)
 )
