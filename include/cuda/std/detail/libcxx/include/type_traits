@@ -526,6 +526,7 @@ namespace std
 #include <__type_traits/void_t.h>
 #include <__utility/declval.h>
 #include <__utility/move.h>
+#include <__utility/swap.h>
 #include <cstddef>
 #include <version>
 #include <__pragma_push>
@@ -640,6 +641,7 @@ namespace std
 #include "__type_traits/void_t.h"
 #include "__utility/declval.h"
 #include "__utility/move.h"
+#include "__utility/swap.h"
 #endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -2064,42 +2066,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_invocable_r_v
 
 #endif  // !defined(_LIBCUDACXX_CXX03_LANG)
 
-// swap, swap_ranges
-
-template <class _ForwardIterator1, class _ForwardIterator2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_ForwardIterator2
-swap_ranges(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2);
-
-template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-#ifndef _LIBCUDACXX_CXX03_LANG
-typename enable_if
-<
-    is_move_constructible<_Tp>::value &&
-    is_move_assignable<_Tp>::value
->::type
-#else
-void
-#endif
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-swap(_Tp& __x, _Tp& __y) _NOEXCEPT_(is_nothrow_move_constructible<_Tp>::value &&
-                                    is_nothrow_move_assignable<_Tp>::value)
-{
-    _Tp __t(_CUDA_VSTD::move(__x));
-    __x = _CUDA_VSTD::move(__y);
-    __y = _CUDA_VSTD::move(__t);
-}
-
-template<class _Tp, size_t _Np>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-typename enable_if<
-    __is_swappable<_Tp>::value
->::type
-swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) _NOEXCEPT_(__is_nothrow_swappable<_Tp>::value)
-{
-    _CUDA_VSTD::swap_ranges(__a, __a + _Np, __b);
-}
+// swap_ranges
 
 template <class _ForwardIterator1, class _ForwardIterator2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17

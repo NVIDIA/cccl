@@ -200,6 +200,7 @@ template <size_t I>
 #include <__tuple>
 #include <__utility/declval.h>
 #include <__utility/move.h>
+#include <__utility/swap.h>
 #include <type_traits>
 #include <initializer_list>
 #include <cstddef>
@@ -211,6 +212,7 @@ template <size_t I>
 #else
 #include "__utility/declval.h"
 #include "__utility/move.h"
+#include "__utility/swap.h"
 #endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
