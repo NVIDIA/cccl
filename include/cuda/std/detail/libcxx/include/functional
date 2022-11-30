@@ -499,6 +499,7 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 
 #ifndef __cuda_std__
 #include <__config>
+#include <__functional/identity.h>
 #include <__functional/invoke.h>
 #include <__memory/addressof.h>
 #include <type_traits>
@@ -511,6 +512,7 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include <__functional_base>
 #include <__pragma_push>
 #else
+#include "__functional/identity.h"
 #include "__functional/invoke.h"
 #include "__memory/addressof.h"
 #endif

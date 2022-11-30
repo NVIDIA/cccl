@@ -416,6 +416,7 @@ namespace std
 */
 #ifndef __cuda_std__
 #include <__config>
+#include <__functional/identity.h>
 #include <__functional/invoke.h>
 #include <__memory/addressof.h>
 #include <__type_traits/add_const.h>
@@ -552,6 +553,7 @@ namespace std
 #include <version>
 #include <__pragma_push>
 #else
+#include "__functional/identity.h"
 #include "__functional/invoke.h"
 #include "__memory/addressof.h"
 #include "__type_traits/add_const.h"
@@ -732,9 +734,6 @@ template <class ..._Args>
 using _FirstType _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<(sizeof...(_Args) >= 1)>::template _FirstImpl<_Args...>;
 template <class ..._Args>
 using _SecondType _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<(sizeof...(_Args) >= 2)>::template _SecondImpl<_Args...>;
-
-template <class _Tp>
-struct __identity { typedef _Tp type; };
 
 // helper class:
 
