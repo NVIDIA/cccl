@@ -502,6 +502,7 @@ namespace std
 #include <__type_traits/is_trivially_copy_assignable.h>
 #include <__type_traits/is_trivially_copy_constructible.h>
 #include <__type_traits/is_trivially_default_constructible.h>
+#include <__type_traits/is_trivially_destructible.h>
 #include <__type_traits/is_trivially_move_assignable.h>
 #include <__type_traits/is_trivially_move_constructible.h>
 #include <__type_traits/is_unbounded_array.h>
@@ -628,6 +629,7 @@ namespace std
 #include "__type_traits/is_trivially_copy_assignable.h"
 #include "__type_traits/is_trivially_copy_constructible.h"
 #include "__type_traits/is_trivially_default_constructible.h"
+#include "__type_traits/is_trivially_destructible.h"
 #include "__type_traits/is_trivially_move_assignable.h"
 #include "__type_traits/is_trivially_move_constructible.h"
 #include "__type_traits/is_unbounded_array.h"
@@ -1403,38 +1405,6 @@ class _LIBCUDACXX_TEMPLATE_VIS result_of<_Fn(_A0, _A1, _A2)>
 };
 
 #endif  // _LIBCUDACXX_HAS_NO_VARIADICS
-
-// is_trivially_destructible
-
-#if defined(_LIBCUDACXX_IS_TRIVIALLY_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_DESTRUCTIBLE_FALLBACK)
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
-    : public integral_constant<bool, _LIBCUDACXX_IS_TRIVIALLY_DESTRUCTIBLE(_Tp)> {};
-
-#elif defined(_LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_DESTRUCTOR_FALLBACK)
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
-    : public integral_constant<bool, is_destructible<_Tp>::value && _LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR(_Tp)> {};
-
-#else
-
-template <class _Tp> struct __libcpp_trivial_destructor
-    : public integral_constant<bool, is_scalar<_Tp>::value ||
-                                     is_reference<_Tp>::value> {};
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
-    : public __libcpp_trivial_destructor<typename remove_all_extents<_Tp>::type> {};
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible<_Tp[]>
-    : public false_type {};
-
-#endif // defined(_LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_DESTRUCTOR_FALLBACK)
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_trivially_destructible_v
-    = is_trivially_destructible<_Tp>::value;
-#endif
 
 // is_pod
 
