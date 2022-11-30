@@ -536,6 +536,7 @@ namespace std
 #include <__type_traits/remove_pointer.h>
 #include <__type_traits/remove_reference.h>
 #include <__type_traits/remove_volatile.h>
+#include <__type_traits/result_of.h>
 #include <__type_traits/type_identity.h>
 #include <__type_traits/type_list.h>
 #include <__type_traits/underlying_type.h>
@@ -668,6 +669,7 @@ namespace std
 #include "__type_traits/remove_pointer.h"
 #include "__type_traits/remove_reference.h"
 #include "__type_traits/remove_volatile.h"
+#include "__type_traits/result_of.h"
 #include "__type_traits/type_identity.h"
 #include "__type_traits/type_list.h"
 #include "__type_traits/underlying_type.h"
@@ -806,20 +808,6 @@ __decay_copy(_Tp&& __t)
 {
     return _CUDA_VSTD::forward<_Tp>(__t);
 }
-
-// result_of
-
-template <class _Callable> class result_of;
-
-template <class _Fp, class ..._Args>
-class _LIBCUDACXX_TEMPLATE_VIS result_of<_Fp(_Args...)>
-    : public __invoke_of<_Fp, _Args...>
-{
-};
-
-#if _LIBCUDACXX_STD_VER > 11
-template <class _Tp> using result_of_t = typename result_of<_Tp>::type;
-#endif
 
 // swap_ranges
 
