@@ -483,6 +483,7 @@ namespace std
 #include <__type_traits/is_nothrow_move_assignable.h>
 #include <__type_traits/is_nothrow_move_constructible.h>
 #include <__type_traits/is_null_pointer.h>
+#include <__type_traits/is_object.h>
 #include <__type_traits/is_pointer.h>
 #include <__type_traits/is_polymorphic.h>
 #include <__type_traits/is_reference_wrapper.h>
@@ -599,6 +600,7 @@ namespace std
 #include "__type_traits/is_nothrow_move_assignable.h"
 #include "__type_traits/is_nothrow_move_constructible.h"
 #include "__type_traits/is_null_pointer.h"
+#include "__type_traits/is_object.h"
 #include "__type_traits/is_pointer.h"
 #include "__type_traits/is_polymorphic.h"
 #include "__type_traits/is_reference_wrapper.h"
@@ -766,20 +768,6 @@ template <class _Tp> _Tp* addressof(const _Tp&&) noexcept = delete;
 #endif
 
 // helper class:
-
-// is_object
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_object
-    : public integral_constant<bool, is_scalar<_Tp>::value ||
-                                     is_array<_Tp>::value  ||
-                                     is_union<_Tp>::value  ||
-                                     is_class<_Tp>::value  > {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_object_v
-    = is_object<_Tp>::value;
-#endif
 
 struct __any
 {
