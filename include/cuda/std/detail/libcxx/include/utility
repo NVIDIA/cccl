@@ -198,6 +198,7 @@ template <size_t I>
 #ifndef __cuda_std__
 #include <__config>
 #include <__tuple>
+#include <__utility/convert_to_integral.h>
 #include <__utility/declval.h>
 #include <__utility/forward.h>
 #include <__utility/move.h>
@@ -211,6 +212,7 @@ template <size_t I>
 #include <__debug>
 #include <__pragma_push>
 #else
+#include "__utility/convert_to_integral.h"
 #include "__utility/declval.h"
 #include "__utility/forward.h"
 #include "__utility/move.h"
