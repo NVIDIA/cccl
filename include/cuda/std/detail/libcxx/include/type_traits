@@ -493,6 +493,7 @@ namespace std
 #include <__type_traits/is_signed_integer.h>
 #include <__type_traits/is_signed.h>
 #include <__type_traits/is_standard_layout.h>
+#include <__type_traits/is_swappable.h>
 #include <__type_traits/is_unbounded_array.h>
 #include <__type_traits/is_union.h>
 #include <__type_traits/is_unsigned_integer.h>
@@ -605,6 +606,7 @@ namespace std
 #include "__type_traits/is_signed_integer.h"
 #include "__type_traits/is_signed.h"
 #include "__type_traits/is_standard_layout.h"
+#include "__type_traits/is_swappable.h"
 #include "__type_traits/is_unbounded_array.h"
 #include "__type_traits/is_union.h"
 #include "__type_traits/is_unsigned_integer.h"
@@ -2071,9 +2073,6 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_invocable_r_v
 
 #endif  // !defined(_LIBCUDACXX_CXX03_LANG)
 
-template <class _Tp> struct __is_swappable;
-template <class _Tp> struct __is_nothrow_swappable;
-
 // swap, swap_ranges
 
 template <class _ForwardIterator1, class _ForwardIterator2>
@@ -2133,119 +2132,6 @@ iter_swap(_ForwardIterator1 __a, _ForwardIterator2 __b)
 {
     swap(*__a, *__b);
 }
-
-// __swappable
-
-namespace __detail
-{
-// ALL generic swap overloads MUST already have a declaration available at this point.
-
-template <class _Tp, class _Up = _Tp,
-          bool _NotVoid = !is_void<_Tp>::value && !is_void<_Up>::value>
-struct __swappable_with
-{
-    template <class _LHS, class _RHS>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    static decltype(swap(_CUDA_VSTD::declval<_LHS>(), _CUDA_VSTD::declval<_RHS>()))
-    __test_swap(int);
-    template <class, class>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    static __nat __test_swap(long);
-
-    // Extra parens are needed for the C++03 definition of decltype.
-    typedef decltype((__test_swap<_Tp, _Up>(0))) __swap1;
-    typedef decltype((__test_swap<_Up, _Tp>(0))) __swap2;
-
-    static const bool value = _IsNotSame<__swap1, __nat>::value
-                           && _IsNotSame<__swap2, __nat>::value;
-};
-
-template <class _Tp, class _Up>
-struct __swappable_with<_Tp, _Up,  false> : false_type {};
-
-template <class _Tp, class _Up = _Tp, bool _Swappable = __swappable_with<_Tp, _Up>::value>
-struct __nothrow_swappable_with {
-  static const bool value =
-#ifndef _LIBCUDACXX_HAS_NO_NOEXCEPT
-      noexcept(swap(_CUDA_VSTD::declval<_Tp>(), _CUDA_VSTD::declval<_Up>()))
-  &&  noexcept(swap(_CUDA_VSTD::declval<_Up>(), _CUDA_VSTD::declval<_Tp>()));
-#else
-      false;
-#endif
-};
-
-template <class _Tp, class _Up>
-struct __nothrow_swappable_with<_Tp, _Up, false> : false_type {};
-
-}  // __detail
-
-template <class _Tp>
-struct __is_swappable
-    : public integral_constant<bool, __detail::__swappable_with<_Tp&>::value>
-{
-};
-
-template <class _Tp>
-struct __is_nothrow_swappable
-    : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp&>::value>
-{
-};
-
-#if _LIBCUDACXX_STD_VER > 11
-
-template <class _Tp, class _Up>
-struct _LIBCUDACXX_TEMPLATE_VIS is_swappable_with
-    : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
-{
-};
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_swappable
-    : public conditional<
-        __libcpp_is_referenceable<_Tp>::value,
-        is_swappable_with<
-            typename add_lvalue_reference<_Tp>::type,
-            typename add_lvalue_reference<_Tp>::type>,
-        false_type
-    >::type
-{
-};
-
-template <class _Tp, class _Up>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_swappable_with
-    : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp, _Up>::value>
-{
-};
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_swappable
-    : public conditional<
-        __libcpp_is_referenceable<_Tp>::value,
-        is_nothrow_swappable_with<
-            typename add_lvalue_reference<_Tp>::type,
-            typename add_lvalue_reference<_Tp>::type>,
-        false_type
-    >::type
-{
-};
-
-template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_swappable_with_v
-    = is_swappable_with<_Tp, _Up>::value;
-
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_swappable_v
-    = is_swappable<_Tp>::value;
-
-template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_swappable_with_v
-    = is_nothrow_swappable_with<_Tp, _Up>::value;
-
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_swappable_v
-    = is_nothrow_swappable<_Tp>::value;
-
-#endif // _LIBCUDACXX_STD_VER > 11
 
 template <class _Tp, bool = is_enum<_Tp>::value>
 struct __sfinae_underlying_type
