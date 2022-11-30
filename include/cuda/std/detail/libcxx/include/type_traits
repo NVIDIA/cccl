@@ -496,6 +496,7 @@ namespace std
 #include <__type_traits/is_unbounded_array.h>
 #include <__type_traits/is_union.h>
 #include <__type_traits/is_unsigned_integer.h>
+#include <__type_traits/is_unsigned.h>
 #include <__type_traits/is_valid_expansion.h>
 #include <__type_traits/is_void.h>
 #include <__type_traits/is_volatile.h>
@@ -603,6 +604,7 @@ namespace std
 #include "__type_traits/is_unbounded_array.h"
 #include "__type_traits/is_union.h"
 #include "__type_traits/is_unsigned_integer.h"
+#include "__type_traits/is_unsigned.h"
 #include "__type_traits/is_valid_expansion.h"
 #include "__type_traits/is_void.h"
 #include "__type_traits/is_volatile.h"
@@ -768,27 +770,6 @@ struct __any
     _LIBCUDACXX_INLINE_VISIBILITY
     __any(...);
 };
-
-// is_unsigned
-
-template <class _Tp, bool = is_integral<_Tp>::value>
-struct __libcpp_is_unsigned_impl : public _BoolConstant<_Tp(0) < _Tp(-1)> {};
-
-template <class _Tp>
-struct __libcpp_is_unsigned_impl<_Tp, false> : public false_type {};  // floating point
-
-template <class _Tp, bool = is_arithmetic<_Tp>::value>
-struct __libcpp_is_unsigned : public __libcpp_is_unsigned_impl<_Tp> {};
-
-template <class _Tp> struct __libcpp_is_unsigned<_Tp, false> : public false_type {};
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_unsigned : public __libcpp_is_unsigned<_Tp> {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_unsigned_v
-    = is_unsigned<_Tp>::value;
-#endif
 
 // make_signed / make_unsigned
 
