@@ -525,6 +525,7 @@ namespace std
 #include <__type_traits/underlying_type.h>
 #include <__type_traits/void_t.h>
 #include <__utility/declval.h>
+#include <__utility/forward.h>
 #include <__utility/move.h>
 #include <__utility/swap.h>
 #include <cstddef>
@@ -640,6 +641,7 @@ namespace std
 #include "__type_traits/underlying_type.h"
 #include "__type_traits/void_t.h"
 #include "__utility/declval.h"
+#include "__utility/forward.h"
 #include "__utility/move.h"
 #include "__utility/swap.h"
 #endif //__cuda_std__
@@ -784,24 +786,6 @@ struct __any
     _LIBCUDACXX_INLINE_VISIBILITY
     __any(...);
 };
-
-template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-_Tp&&
-forward(typename remove_reference<_Tp>::type& __t) _NOEXCEPT
-{
-    return static_cast<_Tp&&>(__t);
-}
-
-template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-_Tp&&
-forward(typename remove_reference<_Tp>::type&& __t) _NOEXCEPT
-{
-    static_assert(!is_lvalue_reference<_Tp>::value,
-                  "can not forward an rvalue as an lvalue");
-    return static_cast<_Tp&&>(__t);
-}
 
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY

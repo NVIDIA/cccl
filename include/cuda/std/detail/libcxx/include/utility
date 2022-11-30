@@ -199,6 +199,7 @@ template <size_t I>
 #include <__config>
 #include <__tuple>
 #include <__utility/declval.h>
+#include <__utility/forward.h>
 #include <__utility/move.h>
 #include <__utility/swap.h>
 #include <type_traits>
@@ -211,6 +212,7 @@ template <size_t I>
 #include <__pragma_push>
 #else
 #include "__utility/declval.h"
+#include "__utility/forward.h"
 #include "__utility/move.h"
 #include "__utility/swap.h"
 #endif //__cuda_std__
