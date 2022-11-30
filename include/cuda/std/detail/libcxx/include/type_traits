@@ -486,6 +486,7 @@ namespace std
 #include <__type_traits/is_object.h>
 #include <__type_traits/is_pointer.h>
 #include <__type_traits/is_polymorphic.h>
+#include <__type_traits/is_primary_template.h>
 #include <__type_traits/is_reference_wrapper.h>
 #include <__type_traits/is_reference.h>
 #include <__type_traits/is_referenceable.h>
@@ -603,6 +604,7 @@ namespace std
 #include "__type_traits/is_object.h"
 #include "__type_traits/is_pointer.h"
 #include "__type_traits/is_polymorphic.h"
+#include "__type_traits/is_primary_template.h"
 #include "__type_traits/is_reference_wrapper.h"
 #include "__type_traits/is_reference.h"
 #include "__type_traits/is_referenceable.h"
