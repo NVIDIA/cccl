@@ -501,6 +501,7 @@ namespace std
 #include <__type_traits/is_trivially_constructible.h>
 #include <__type_traits/is_trivially_copy_assignable.h>
 #include <__type_traits/is_trivially_copy_constructible.h>
+#include <__type_traits/is_trivially_copyable.h>
 #include <__type_traits/is_trivially_default_constructible.h>
 #include <__type_traits/is_trivially_destructible.h>
 #include <__type_traits/is_trivially_move_assignable.h>
@@ -628,6 +629,7 @@ namespace std
 #include "__type_traits/is_trivially_constructible.h"
 #include "__type_traits/is_trivially_copy_assignable.h"
 #include "__type_traits/is_trivially_copy_constructible.h"
+#include "__type_traits/is_trivially_copyable.h"
 #include "__type_traits/is_trivially_default_constructible.h"
 #include "__type_traits/is_trivially_destructible.h"
 #include "__type_traits/is_trivially_move_assignable.h"
@@ -1427,22 +1429,6 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_pod
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_pod_v
     = is_pod<_Tp>::value;
-#endif
-
-// is_trivially_copyable;
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_copyable
-#if defined(_LIBCUDACXX_IS_TRIVIALLY_COPYABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_COPYABLE_FALLBACK)
-    : public integral_constant<bool, _LIBCUDACXX_IS_TRIVIALLY_COPYABLE(_Tp)>
-#else
-    : integral_constant<bool, is_scalar<typename remove_all_extents<_Tp>::type>::value>
-#endif // defined(_LIBCUDACXX_IS_TRIVIALLY_COPYABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_COPYABLE_FALLBACK)
-    {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_trivially_copyable_v
-    = is_trivially_copyable<_Tp>::value;
 #endif
 
 // is_trivial;
