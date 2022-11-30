@@ -502,6 +502,7 @@ namespace std
 #include <__type_traits/is_volatile.h>
 #include <__type_traits/lazy.h>
 #include <__type_traits/make_const_lvalue_ref.h>
+#include <__type_traits/make_32_64_or_128_bit.h>
 #include <__type_traits/make_signed.h>
 #include <__type_traits/make_unsigned.h>
 #include <__type_traits/maybe_const.h>
@@ -612,6 +613,7 @@ namespace std
 #include "__type_traits/is_volatile.h"
 #include "__type_traits/lazy.h"
 #include "__type_traits/make_const_lvalue_ref.h"
+#include "__type_traits/make_32_64_or_128_bit.h"
 #include "__type_traits/make_signed.h"
 #include "__type_traits/make_unsigned.h"
 #include "__type_traits/maybe_const.h"
