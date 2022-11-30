@@ -4,9 +4,12 @@ set(files
   __bsd_locale_fallbacks.h
   __errc
   __debug
+  __functional/identity.h
+  __functional/invoke.h
   __functional_03
   __functional_base
   __functional_base_03
+  __fwd/pair.h
   __hash_table
   __libcpp_version
   __locale
@@ -19,8 +22,138 @@ set(files
   __string
   __threading_support
   __tree
+  __type_traits/add_const.h
+  __type_traits/add_cv.h
+  __type_traits/add_lvalue_reference.h
+  __type_traits/add_pointer.h
+  __type_traits/add_rvalue_reference.h
+  __type_traits/add_volatile.h
+  __type_traits/aligned_storage.h
+  __type_traits/aligned_union.h
+  __type_traits/alignment_of.h
+  __type_traits/apply_cv.h
+  __type_traits/can_extract_key.h
+  __type_traits/common_type.h
+  __type_traits/conditional.h
+  __type_traits/conjunction.h
+  __type_traits/copy_cv.h
+  __type_traits/copy_cvref.h
+  __type_traits/decay.h
+  __type_traits/dependent_type.h
+  __type_traits/disjunction.h
+  __type_traits/enable_if.h
+  __type_traits/extent.h
+  __type_traits/has_unique_object_representation.h
+  __type_traits/has_virtual_destructor.h
+  __type_traits/integral_constant.h
+  __type_traits/is_abstract.h
+  __type_traits/is_aggregate.h
+  __type_traits/is_allocator.h
+  __type_traits/is_arithmetic.h
+  __type_traits/is_array.h
+  __type_traits/is_assignable.h
+  __type_traits/is_base_of.h
+  __type_traits/is_bounded_array.h
+  __type_traits/is_callable.h
+  __type_traits/is_char_like_type.h
+  __type_traits/is_class.h
+  __type_traits/is_compound.h
+  __type_traits/is_constant_evaluated.h
+  __type_traits/is_const.h
+  __type_traits/is_constructible.h
+  __type_traits/is_convertible.h
+  __type_traits/is_copy_assignable.h
+  __type_traits/is_copy_constructible.h
+  __type_traits/is_core_convertible.h
+  __type_traits/is_default_constructible.h
+  __type_traits/is_destructible.h
+  __type_traits/is_empty.h
+  __type_traits/is_enum.h
+  __type_traits/is_final.h
+  __type_traits/is_floating_point.h
+  __type_traits/is_function.h
+  __type_traits/is_fundamental.h
+  __type_traits/is_implicitly_default_constructible.h
+  __type_traits/is_integral.h
+  __type_traits/is_literal_type.h
+  __type_traits/is_member_function_pointer.h
+  __type_traits/is_member_object_pointer.h
+  __type_traits/is_member_pointer.h
+  __type_traits/is_move_assignable.h
+  __type_traits/is_move_constructible.h
+  __type_traits/is_nothrow_assignable.h
+  __type_traits/is_nothrow_constructible.h
+  __type_traits/is_nothrow_convertible.h
+  __type_traits/is_nothrow_copy_assignable.h
+  __type_traits/is_nothrow_copy_constructible.h
+  __type_traits/is_nothrow_default_constructible.h
+  __type_traits/is_nothrow_destructible.h
+  __type_traits/is_nothrow_move_assignable.h
+  __type_traits/is_nothrow_move_constructible.h
+  __type_traits/is_null_pointer.h
+  __type_traits/is_object.h
+  __type_traits/is_pod.h
+  __type_traits/is_pointer.h
+  __type_traits/is_polymorphic.h
+  __type_traits/is_primary_template.h
+  __type_traits/is_referenceable.h
+  __type_traits/is_reference.h
+  __type_traits/is_reference_wrapper.h
+  __type_traits/is_same.h
+  __type_traits/is_scalar.h
+  __type_traits/is_scoped_enum.h
+  __type_traits/is_signed.h
+  __type_traits/is_signed_integer.h
+  __type_traits/is_standard_layout.h
+  __type_traits/is_swappable.h
+  __type_traits/is_trivial.h
+  __type_traits/is_trivially_assignable.h
+  __type_traits/is_trivially_constructible.h
+  __type_traits/is_trivially_copyable.h
+  __type_traits/is_trivially_copy_assignable.h
+  __type_traits/is_trivially_copy_constructible.h
+  __type_traits/is_trivially_default_constructible.h
+  __type_traits/is_trivially_destructible.h
+  __type_traits/is_trivially_move_assignable.h
+  __type_traits/is_trivially_move_constructible.h
+  __type_traits/is_unbounded_array.h
+  __type_traits/is_union.h
+  __type_traits/is_unsigned.h
+  __type_traits/is_unsigned_integer.h
+  __type_traits/is_valid_expansion.h
+  __type_traits/is_void.h
+  __type_traits/is_volatile.h
+  __type_traits/lazy.h
+  __type_traits/make_32_64_or_128_bit.h
+  __type_traits/make_const_lvalue_ref.h
+  __type_traits/make_signed.h
+  __type_traits/make_unsigned.h
+  __type_traits/maybe_const.h
+  __type_traits/nat.h
+  __type_traits/negation.h
+  __type_traits/promote.h
+  __type_traits/rank.h
+  __type_traits/remove_all_extents.h
+  __type_traits/remove_const.h
+  __type_traits/remove_const_ref.h
+  __type_traits/remove_cv.h
+  __type_traits/remove_cvref.h
+  __type_traits/remove_extent.h
+  __type_traits/remove_pointer.h
+  __type_traits/remove_reference.h
+  __type_traits/remove_volatile.h
+  __type_traits/result_of.h
+  __type_traits/type_identity.h
+  __type_traits/type_list.h
+  __type_traits/underlying_type.h
+  __type_traits/void_t.h
   __tuple
   __undef_macros
+  __utility/convert_to_integral.h
+  __utility/declval.h
+  __utility/forward.h
+  __utility/move.h
+  __utility/swap.h
   algorithm
   any
   array
