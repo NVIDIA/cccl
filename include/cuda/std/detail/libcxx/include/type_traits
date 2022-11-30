@@ -499,6 +499,7 @@ namespace std
 #include <__type_traits/is_swappable.h>
 #include <__type_traits/is_trivially_assignable.h>
 #include <__type_traits/is_trivially_constructible.h>
+#include <__type_traits/is_trivially_copy_assignable.h>
 #include <__type_traits/is_trivially_copy_constructible.h>
 #include <__type_traits/is_trivially_default_constructible.h>
 #include <__type_traits/is_trivially_move_constructible.h>
@@ -623,6 +624,7 @@ namespace std
 #include "__type_traits/is_swappable.h"
 #include "__type_traits/is_trivially_assignable.h"
 #include "__type_traits/is_trivially_constructible.h"
+#include "__type_traits/is_trivially_copy_assignable.h"
 #include "__type_traits/is_trivially_copy_constructible.h"
 #include "__type_traits/is_trivially_default_constructible.h"
 #include "__type_traits/is_trivially_move_constructible.h"
@@ -1399,18 +1401,6 @@ class _LIBCUDACXX_TEMPLATE_VIS result_of<_Fn(_A0, _A1, _A2)>
 };
 
 #endif  // _LIBCUDACXX_HAS_NO_VARIADICS
-
-// is_trivially_copy_assignable
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_copy_assignable
-    : public is_trivially_assignable<typename add_lvalue_reference<_Tp>::type,
-                  typename add_lvalue_reference<typename add_const<_Tp>::type>::type> {};
-
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool is_trivially_copy_assignable_v
-    = is_trivially_copy_assignable<_Tp>::value;
-#endif
 
 // is_trivially_move_assignable
 
