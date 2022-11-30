@@ -427,6 +427,7 @@ namespace std
 #include <__type_traits/aligned_union.h>
 #include <__type_traits/alignment_of.h>
 #include <__type_traits/apply_cv.h>
+#include <__type_traits/can_extract_key.h>
 #include <__type_traits/common_type.h>
 #include <__type_traits/conditional.h>
 #include <__type_traits/conjunction.h>
@@ -561,6 +562,7 @@ namespace std
 #include "__type_traits/aligned_union.h"
 #include "__type_traits/alignment_of.h"
 #include "__type_traits/apply_cv.h"
+#include "__type_traits/can_extract_key.h"
 #include "__type_traits/common_type.h"
 #include "__type_traits/conditional.h"
 #include "__type_traits/conjunction.h"
@@ -873,39 +875,6 @@ struct __has_operator_addressof
 {};
 
 #endif  // _LIBCUDACXX_CXX03_LANG
-
-// These traits are used in __tree and __hash_table
-#ifndef _LIBCUDACXX_CXX03_LANG
-struct __extract_key_fail_tag {};
-struct __extract_key_self_tag {};
-struct __extract_key_first_tag {};
-
-template <class _ValTy, class _Key,
-          class _RawValTy = __remove_const_ref_t<_ValTy>>
-struct __can_extract_key
-    : conditional<_IsSame<_RawValTy, _Key>::value, __extract_key_self_tag,
-                  __extract_key_fail_tag>::type {};
-
-template <class _Pair, class _Key, class _First, class _Second>
-struct __can_extract_key<_Pair, _Key, pair<_First, _Second>>
-    : conditional<_IsSame<typename remove_const<_First>::type, _Key>::value,
-                  __extract_key_first_tag, __extract_key_fail_tag>::type {};
-
-// __can_extract_map_key uses true_type/false_type instead of the tags.
-// It returns true if _Key != _ContainerValueTy (the container is a map not a set)
-// and _ValTy == _Key.
-template <class _ValTy, class _Key, class _ContainerValueTy,
-          class _RawValTy = __remove_const_ref_t<_ValTy>>
-struct __can_extract_map_key
-    : integral_constant<bool, _IsSame<_RawValTy, _Key>::value> {};
-
-// This specialization returns __extract_key_fail_tag for non-map containers
-// because _Key == _ContainerValueTy
-template <class _ValTy, class _Key, class _RawValTy>
-struct __can_extract_map_key<_ValTy, _Key, _Key, _RawValTy>
-    : false_type {};
-
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
