@@ -1797,7 +1797,7 @@ template <class _Rp, class... _ArgTypes> class __value_func<_Rp(_ArgTypes...)>
     }
 
     template <class _Fp,
-        class = typename enable_if<!is_same<typename decay<_Fp>::type, __value_func>::value>::type>
+        class = typename enable_if<!is_same<__decay_t<_Fp>, __value_func>::value>::type>
     _LIBCUDACXX_INLINE_VISIBILITY explicit __value_func(_Fp&& __f)
         : __value_func(std::forward<_Fp>(__f), allocator<_Fp>()) {}
 
@@ -2140,7 +2140,7 @@ template <class _Rp, class... _ArgTypes> class __policy_func<_Rp(_ArgTypes...)>
         }
     }
 
-    template <class _Fp, class = typename enable_if<!is_same<typename decay<_Fp>::type, __policy_func>::value>::type>
+    template <class _Fp, class = typename enable_if<!is_same<__decay_t<_Fp>, __policy_func>::value>::type>
     _LIBCUDACXX_INLINE_VISIBILITY explicit __policy_func(_Fp&& __f)
         : __policy_(__policy::__create_empty()) {
       typedef __default_alloc_func<_Fp, _Rp(_ArgTypes...)> _Fun;
@@ -2791,11 +2791,11 @@ __apply_functor(_Fp& __f, _BoundArgs& __bound_args, __tuple_indices<_Indx...>,
 
 template<class _Fp, class ..._BoundArgs>
 class __bind
-    : public __weak_result_type<typename decay<_Fp>::type>
+    : public __weak_result_type<__decay_t<_Fp>>
 {
 protected:
-    typedef typename decay<_Fp>::type _Fd;
-    typedef tuple<typename decay<_BoundArgs>::type...> _Td;
+    typedef __decay_t<_Fp> _Fd;
+    typedef tuple<__decay_t<_BoundArgs>...> _Td;
 private:
     _Fd __f_;
     _Td __bound_args_;

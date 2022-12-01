@@ -286,7 +286,7 @@ void
 throw_with_nested(_Tp&& __t)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-    typedef typename decay<_Tp>::type _Up;
+    typedef __decay_t<_Tp> _Up;
     static_assert( is_copy_constructible<_Up>::value, "type thrown must be CopyConstructible");
     __throw_with_nested<_Tp, _Up,
         is_class<_Up>::value &&

@@ -308,11 +308,11 @@ public:
 };
 
 template <class F, class... Args>
-  future<typename result_of<typename decay<F>::type(typename decay<Args>::type...)>::type>
+  future<typename result_of<__decay_t<F>(__decay_t<Args>...)>::type>
   async(F&& f, Args&&... args);
 
 template <class F, class... Args>
-  future<typename result_of<typename decay<F>::type(typename decay<Args>::type...)>::type>
+  future<typename result_of<__decay_t<F>(__decay_t<Args>...)>::type>
   async(launch policy, F&& f, Args&&... args);
 
 template <class> class packaged_task; // undefined
@@ -1872,7 +1872,7 @@ template <class _Fp>
 __packaged_task_function<_Rp(_ArgTypes...)>::__packaged_task_function(_Fp&& __f)
     : __f_(nullptr)
 {
-    typedef typename remove_reference<typename decay<_Fp>::type>::type _FR;
+    typedef typename remove_reference<__decay_t<_Fp>>::type _FR;
     typedef __packaged_task_func<_FR, allocator<_FR>, _Rp(_ArgTypes...)> _FF;
     if (sizeof(_FF) <= sizeof(__buf_))
     {
@@ -1896,7 +1896,7 @@ __packaged_task_function<_Rp(_ArgTypes...)>::__packaged_task_function(
                                   allocator_arg_t, const _Alloc& __a0, _Fp&& __f)
     : __f_(nullptr)
 {
-    typedef typename remove_reference<typename decay<_Fp>::type>::type _FR;
+    typedef typename remove_reference<__decay_t<_Fp>>::type _FR;
     typedef __packaged_task_func<_FR, _Alloc, _Rp(_ArgTypes...)> _FF;
     if (sizeof(_FF) <= sizeof(__buf_))
     {
@@ -2326,10 +2326,10 @@ inline _LIBCUDACXX_INLINE_VISIBILITY bool __does_policy_contain(launch __policy,
 
 template <class _Fp, class... _Args>
 _LIBCUDACXX_NODISCARD_AFTER_CXX17
-future<typename __invoke_of<typename decay<_Fp>::type, typename decay<_Args>::type...>::type>
+future<typename __invoke_of<__decay_t<_Fp>, __decay_t<_Args>...>::type>
 async(launch __policy, _Fp&& __f, _Args&&... __args)
 {
-    typedef __async_func<typename decay<_Fp>::type, typename decay<_Args>::type...> _BF;
+    typedef __async_func<__decay_t<_Fp>, __decay_t<_Args>...> _BF;
     typedef typename _BF::_Rp _Rp;
 
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -2352,7 +2352,7 @@ async(launch __policy, _Fp&& __f, _Args&&... __args)
 
 template <class _Fp, class... _Args>
 _LIBCUDACXX_NODISCARD_AFTER_CXX17 inline _LIBCUDACXX_INLINE_VISIBILITY
-future<typename __invoke_of<typename decay<_Fp>::type, typename decay<_Args>::type...>::type>
+future<typename __invoke_of<__decay_t<_Fp>, __decay_t<_Args>...>::type>
 async(_Fp&& __f, _Args&&... __args)
 {
     return _CUDA_VSTD::async(launch::any, _CUDA_VSTD::forward<_Fp>(__f),

@@ -398,7 +398,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     template <class _Tuple>
     using _CheckTLC _LIBCUDACXX_NODEBUG_TYPE = typename conditional<
         __tuple_like_with_size<_Tuple, 2>::value
-            && !is_same<typename decay<_Tuple>::type, pair>::value,
+            && !is_same<__decay_t<_Tuple>, pair>::value,
         _CheckTupleLikeConstructor,
         __check_tuple_constructor_fail
     >::type;
@@ -659,7 +659,7 @@ template <class _Tp>
 struct unwrap_reference : __unwrap_reference<_Tp> { };
 
 template <class _Tp>
-struct unwrap_ref_decay : unwrap_reference<typename decay<_Tp>::type> { };
+struct unwrap_ref_decay : unwrap_reference<__decay_t<_Tp>> { };
 #endif // > C++17
 
 template <class _Tp>
@@ -667,7 +667,7 @@ struct __unwrap_ref_decay
 #if _LIBCUDACXX_STD_VER > 17
     : unwrap_ref_decay<_Tp>
 #else
-    : __unwrap_reference<typename decay<_Tp>::type>
+    : __unwrap_reference<__decay_t<_Tp>>
 #endif
 { };
 

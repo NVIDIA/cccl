@@ -76,6 +76,8 @@ public:
 };
 #endif // __has_builtin(__decay)
 
+template <class _Tp> using __decay_t = typename decay<_Tp>::type;
+
 #if _LIBCUDACXX_STD_VER > 11
 template <class _Tp> using decay_t = typename decay<_Tp>::type;
 #endif

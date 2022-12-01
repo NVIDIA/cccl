@@ -291,7 +291,7 @@ thread::thread(_Fp&& __f, _Args&&... __args)
 {
     typedef unique_ptr<__thread_struct> _TSPtr;
     _TSPtr __tsp(new __thread_struct);
-    typedef tuple<_TSPtr, typename decay<_Fp>::type, typename decay<_Args>::type...> _Gp;
+    typedef tuple<_TSPtr, __decay_t<_Fp>, __decay_t<_Args>...> _Gp;
     _CUDA_VSTD::unique_ptr<_Gp> __p(
             new _Gp(std::move(__tsp),
                     __decay_copy(_CUDA_VSTD::forward<_Fp>(__f)),

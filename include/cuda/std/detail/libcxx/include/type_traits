@@ -739,8 +739,7 @@ using _SecondType _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<(sizeof...(_Args
 
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename decay<_Tp>::type
-__decay_copy(_Tp&& __t)
+__decay_t<_Tp> __decay_copy(_Tp&& __t)
 {
     return _CUDA_VSTD::forward<_Tp>(__t);
 }
