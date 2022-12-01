@@ -330,7 +330,7 @@ template <>
 struct __apply_cv_mf<true, true, true> {
   template <class _Tp> using __apply _LIBCUDACXX_NODEBUG_TYPE = const volatile _Tp&;
 };
-template <class _Tp, class _RawTp = typename remove_reference<_Tp>::type>
+template <class _Tp, class _RawTp = __libcpp_remove_reference_t<_Tp>>
 using __apply_cv_t _LIBCUDACXX_NODEBUG_TYPE  = __apply_cv_mf<
     is_lvalue_reference<_Tp>::value,
     is_const<_RawTp>::value,
@@ -365,13 +365,13 @@ struct __make_tuple_types_flat<array<_Vt, _Np>, __tuple_indices<_Idx...>> {
     >;
 };
 
-template <class _Tp, size_t _Ep = tuple_size<typename remove_reference<_Tp>::type>::value,
+template <class _Tp, size_t _Ep = tuple_size<__libcpp_remove_reference_t<_Tp>>::value,
           size_t _Sp = 0,
-          bool _SameSize = (_Ep == tuple_size<typename remove_reference<_Tp>::type>::value)>
+          bool _SameSize = (_Ep == tuple_size<__libcpp_remove_reference_t<_Tp>>::value)>
 struct __make_tuple_types
 {
     static_assert(_Sp <= _Ep, "__make_tuple_types input error");
-    using _RawTp = typename remove_cv<typename remove_reference<_Tp>::type>::type;
+    using _RawTp = typename remove_cv<__libcpp_remove_reference_t<_Tp>>::type;
     using _Maker = __make_tuple_types_flat<_RawTp, typename __make_tuple_indices<_Ep, _Sp>::type>;
     using type = typename _Maker::template __apply_quals<_Tp>;
 };
@@ -419,7 +419,7 @@ struct __tuple_sfinae_base {
 
 // __tuple_convertible
 
-template <class _Tp, class _Up, bool = __tuple_like<typename remove_reference<_Tp>::type>::value,
+template <class _Tp, class _Up, bool = __tuple_like<__libcpp_remove_reference_t<_Tp>>::value,
                                 bool = __tuple_like<_Up>::value>
 struct __tuple_convertible
     : public false_type {};
@@ -434,7 +434,7 @@ struct __tuple_convertible<_Tp, _Up, true, true>
 
 // __tuple_constructible
 
-template <class _Tp, class _Up, bool = __tuple_like<typename remove_reference<_Tp>::type>::value,
+template <class _Tp, class _Up, bool = __tuple_like<__libcpp_remove_reference_t<_Tp>>::value,
                                 bool = __tuple_like<_Up>::value>
 struct __tuple_constructible
     : public false_type {};
@@ -449,7 +449,7 @@ struct __tuple_constructible<_Tp, _Up, true, true>
 
 // __tuple_assignable
 
-template <class _Tp, class _Up, bool = __tuple_like<typename remove_reference<_Tp>::type>::value,
+template <class _Tp, class _Up, bool = __tuple_like<__libcpp_remove_reference_t<_Tp>>::value,
                                 bool = __tuple_like<_Up>::value>
 struct __tuple_assignable
     : public false_type {};

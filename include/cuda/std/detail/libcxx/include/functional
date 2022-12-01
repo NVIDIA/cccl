@@ -2806,7 +2806,7 @@ public:
               class = typename enable_if
                                <
                                   is_constructible<_Fd, _Gp>::value &&
-                                  !is_same<typename remove_reference<_Gp>::type,
+                                  !is_same<__libcpp_remove_reference_t<_Gp>,
                                            __bind>::value
                                >::type>
       _LIBCUDACXX_INLINE_VISIBILITY
@@ -2851,7 +2851,7 @@ public:
               class = typename enable_if
                                <
                                   is_constructible<_Fd, _Gp>::value &&
-                                  !is_same<typename remove_reference<_Gp>::type,
+                                  !is_same<__libcpp_remove_reference_t<_Gp>,
                                            __bind_r>::value
                                >::type>
       _LIBCUDACXX_INLINE_VISIBILITY

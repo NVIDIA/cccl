@@ -363,9 +363,9 @@ struct __optional_storage_base<_Tp, true>
 
     template <class _Up>
     static constexpr bool __can_bind_reference() {
-        using _RawUp = typename remove_reference<_Up>::type;
+        using _RawUp = __libcpp_remove_reference_t<_Up>;
         using _UpPtr = _RawUp*;
-        using _RawTp = typename remove_reference<_Tp>::type;
+        using _RawTp = __libcpp_remove_reference_t<_Tp>;
         using _TpPtr = _RawTp*;
         using _CheckLValueArg = integral_constant<bool,
             (is_lvalue_reference<_Up>::value && is_convertible<_UpPtr, _TpPtr>::value)
