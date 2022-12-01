@@ -609,8 +609,8 @@ struct __is_pathable_char_array : false_type {};
 
 template <class _Source, class _ECharT, class _UPtr>
 struct __is_pathable_char_array<_Source, _ECharT*, _UPtr, true>
-    : __can_convert_char<typename remove_const<_ECharT>::type> {
-  using _Base = __can_convert_char<typename remove_const<_ECharT>::type>;
+    : __can_convert_char<__remove_const_t<_ECharT>> {
+  using _Base = __can_convert_char<__remove_const_t<_ECharT>>;
 
   static _ECharT const* __range_begin(const _ECharT* __b) { return __b; }
   static _ECharT const* __range_end(const _ECharT* __b) {

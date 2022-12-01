@@ -635,7 +635,7 @@ class _LIBCUDACXX_TEMPLATE_VIS __hash_const_local_iterator
 
     typedef pointer_traits<__node_pointer>          __pointer_traits;
     typedef typename __pointer_traits::element_type __node;
-    typedef typename remove_const<__node>::type     __non_const_node;
+    typedef __remove_const_t<__node>     __non_const_node;
     typedef typename __rebind_pointer<__node_pointer, __non_const_node>::type
         __non_const_node_pointer;
 public:

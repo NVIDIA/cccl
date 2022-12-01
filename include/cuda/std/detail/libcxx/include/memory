@@ -1679,8 +1679,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
         }
 
     template <class _SourceTp, class _DestTp,
-              class _RawSourceTp = typename remove_const<_SourceTp>::type,
-              class _RawDestTp = typename remove_const<_DestTp>::type>
+              class _RawSourceTp = __remove_const_t<_SourceTp>,
+              class _RawDestTp = __remove_const_t<_DestTp>>
         _LIBCUDACXX_INLINE_VISIBILITY
         static
         typename enable_if

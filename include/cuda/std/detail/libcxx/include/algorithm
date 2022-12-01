@@ -1722,7 +1722,7 @@ template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 typename enable_if
 <
-    is_same<typename remove_const<_Tp>::type, _Up>::value &&
+    is_same<__remove_const_t<_Tp>, _Up>::value &&
     is_trivially_copy_assignable<_Up>::value,
     _Up*
 >::type
@@ -1758,7 +1758,7 @@ template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 typename enable_if
 <
-    is_same<typename remove_const<_Tp>::type, _Up>::value &&
+    is_same<__remove_const_t<_Tp>, _Up>::value &&
     is_trivially_copy_assignable<_Up>::value,
     _Up*
 >::type
@@ -1861,7 +1861,7 @@ template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 typename enable_if
 <
-    is_same<typename remove_const<_Tp>::type, _Up>::value &&
+    is_same<__remove_const_t<_Tp>, _Up>::value &&
     is_trivially_copy_assignable<_Up>::value,
     _Up*
 >::type
@@ -1897,7 +1897,7 @@ template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 typename enable_if
 <
-    is_same<typename remove_const<_Tp>::type, _Up>::value &&
+    is_same<__remove_const_t<_Tp>, _Up>::value &&
     is_trivially_copy_assignable<_Up>::value,
     _Up*
 >::type
