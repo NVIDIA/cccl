@@ -598,7 +598,7 @@ typedef int __libcpp_platform_wait_t;
 
 template<typename _Tp>
 struct __libcpp_platform_wait_uses_type {
-    enum { __value = is_same<typename remove_cv<_Tp>::type, __libcpp_platform_wait_t>::value };
+    enum { __value = is_same<__remove_cv_t<_Tp>, __libcpp_platform_wait_t>::value };
 };
 
 template <class _Tp, typename enable_if<__libcpp_platform_wait_uses_type<_Tp>::__value, int>::type = 1>

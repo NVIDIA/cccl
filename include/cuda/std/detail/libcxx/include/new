@@ -351,7 +351,7 @@ _LIBCUDACXX_NODISCARD_AFTER_CXX17 inline
 _LIBCUDACXX_CONSTEXPR _Tp* __launder(_Tp* __p) _NOEXCEPT
 {
     static_assert (!(is_function<_Tp>::value), "can't launder functions" );
-    static_assert (!(is_same<void, typename remove_cv<_Tp>::type>::value), "can't launder cv-void" );
+    static_assert (!(is_same<void, __remove_cv_t<_Tp>>::value), "can't launder cv-void" );
 #if defined(_LIBCUDACXX_LAUNDER)
     return _LIBCUDACXX_LAUNDER(__p);
 #else

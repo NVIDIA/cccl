@@ -505,11 +505,11 @@ template <class _Tp>
 using __bitop_unsigned_integer _LIBCUDACXX_NODEBUG_TYPE = integral_constant<bool,
          is_integral<_Tp>::value &&
          is_unsigned<_Tp>::value &&
-        _IsNotSame<typename remove_cv<_Tp>::type, bool>::value &&
-        _IsNotSame<typename remove_cv<_Tp>::type, signed char>::value &&
-        _IsNotSame<typename remove_cv<_Tp>::type, wchar_t>::value &&
-        _IsNotSame<typename remove_cv<_Tp>::type, char16_t>::value &&
-        _IsNotSame<typename remove_cv<_Tp>::type, char32_t>::value
+        _IsNotSame<__remove_cv_t<_Tp>, bool>::value &&
+        _IsNotSame<__remove_cv_t<_Tp>, signed char>::value &&
+        _IsNotSame<__remove_cv_t<_Tp>, wchar_t>::value &&
+        _IsNotSame<__remove_cv_t<_Tp>, char16_t>::value &&
+        _IsNotSame<__remove_cv_t<_Tp>, char32_t>::value
     >;
 
 

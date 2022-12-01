@@ -3904,7 +3904,7 @@ private:
         __enable_weak_this(const enable_shared_from_this<_Yp>* __e,
                            _OrigPtr* __ptr) _NOEXCEPT
         {
-            typedef typename remove_cv<_Yp>::type _RawYp;
+            typedef __remove_cv_t<_Yp> _RawYp;
             if (__e && __e->__weak_this_.expired())
             {
                 __e->__weak_this_ = shared_ptr<_RawYp>(*this,

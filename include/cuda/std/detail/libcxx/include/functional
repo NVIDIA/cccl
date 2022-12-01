@@ -2557,7 +2557,7 @@ swap(function<_Rp(_ArgTypes...)>& __x, function<_Rp(_ArgTypes...)>& __y) _NOEXCE
 
 template<class _Tp> struct __is_bind_expression : public false_type {};
 template<class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_bind_expression
-    : public __is_bind_expression<typename remove_cv<_Tp>::type> {};
+    : public __is_bind_expression<__remove_cv_t<_Tp>> {};
 
 #if _LIBCUDACXX_STD_VER > 14
 template <class _Tp>
@@ -2566,7 +2566,7 @@ _LIBCUDACXX_INLINE_VAR constexpr size_t is_bind_expression_v = is_bind_expressio
 
 template<class _Tp> struct __is_placeholder : public integral_constant<int, 0> {};
 template<class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_placeholder
-    : public __is_placeholder<typename remove_cv<_Tp>::type> {};
+    : public __is_placeholder<__remove_cv_t<_Tp>> {};
 
 #if _LIBCUDACXX_STD_VER > 14
 template <class _Tp>
