@@ -832,7 +832,7 @@ struct __comp_ref_type {
   // Pass the comparator by lvalue reference. Or in debug mode, using a
   // debugging wrapper that stores a reference.
 #ifndef _LIBCUDACXX_DEBUG
-  typedef typename add_lvalue_reference<_Comp>::type type;
+  typedef __add_lvalue_reference_t<_Comp> type;
 #else
   typedef __debug_less<_Comp> type;
 #endif
@@ -1089,7 +1089,7 @@ _ForwardIterator1
 find_end(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
          _ForwardIterator2 __first2, _ForwardIterator2 __last2, _BinaryPredicate __pred)
 {
-    return _CUDA_VSTD::__find_end<typename add_lvalue_reference<_BinaryPredicate>::type>
+    return _CUDA_VSTD::__find_end<__add_lvalue_reference_t<_BinaryPredicate>>
                          (__first1, __last1, __first2, __last2, __pred,
                           typename iterator_traits<_ForwardIterator1>::iterator_category(),
                           typename iterator_traits<_ForwardIterator2>::iterator_category());
@@ -1310,7 +1310,7 @@ __equal(_RandomAccessIterator1 __first1, _RandomAccessIterator1 __last1,
     if ( _CUDA_VSTD::distance(__first1, __last1) != _CUDA_VSTD::distance(__first2, __last2))
         return false;
     return _CUDA_VSTD::equal<_RandomAccessIterator1, _RandomAccessIterator2,
-                        typename add_lvalue_reference<_BinaryPredicate>::type>
+                        __add_lvalue_reference_t<_BinaryPredicate>>
                        (__first1, __last1, __first2, __pred );
 }
 
@@ -1321,7 +1321,7 @@ inline bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1,
       _InputIterator2 __first2, _InputIterator2 __last2, _BinaryPredicate __pred )
 {
-    return _CUDA_VSTD::__equal<typename add_lvalue_reference<_BinaryPredicate>::type>
+    return _CUDA_VSTD::__equal<__add_lvalue_reference_t<_BinaryPredicate>>
        (__first1, __last1, __first2, __last2, __pred,
         typename iterator_traits<_InputIterator1>::iterator_category(),
         typename iterator_traits<_InputIterator2>::iterator_category());
@@ -1470,7 +1470,7 @@ __is_permutation(_RandomAccessIterator1 __first1, _RandomAccessIterator2 __last1
     if ( _CUDA_VSTD::distance(__first1, __last1) != _CUDA_VSTD::distance(__first2, __last2))
         return false;
     return _CUDA_VSTD::is_permutation<_RandomAccessIterator1, _RandomAccessIterator2,
-                                 typename add_lvalue_reference<_BinaryPredicate>::type>
+                                 __add_lvalue_reference_t<_BinaryPredicate>>
                                 (__first1, __last1, __first2, __pred );
 }
 
@@ -1482,7 +1482,7 @@ is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
                _ForwardIterator2 __first2, _ForwardIterator2 __last2,
                _BinaryPredicate __pred )
 {
-    return _CUDA_VSTD::__is_permutation<typename add_lvalue_reference<_BinaryPredicate>::type>
+    return _CUDA_VSTD::__is_permutation<__add_lvalue_reference_t<_BinaryPredicate>>
        (__first1, __last1, __first2, __last2, __pred,
         typename iterator_traits<_ForwardIterator1>::iterator_category(),
         typename iterator_traits<_ForwardIterator2>::iterator_category());
@@ -1514,7 +1514,7 @@ _ForwardIterator1
 search(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
        _ForwardIterator2 __first2, _ForwardIterator2 __last2, _BinaryPredicate __pred)
 {
-    return _CUDA_VSTD::__search<typename add_lvalue_reference<_BinaryPredicate>::type>
+    return _CUDA_VSTD::__search<__add_lvalue_reference_t<_BinaryPredicate>>
                          (__first1, __last1, __first2, __last2, __pred,
                           typename iterator_traits<_ForwardIterator1>::iterator_category(),
                           typename iterator_traits<_ForwardIterator2>::iterator_category())
@@ -1629,7 +1629,7 @@ _ForwardIterator
 search_n(_ForwardIterator __first, _ForwardIterator __last,
          _Size __count, const _Tp& __value_, _BinaryPredicate __pred)
 {
-    return _CUDA_VSTD::__search_n<typename add_lvalue_reference<_BinaryPredicate>::type>
+    return _CUDA_VSTD::__search_n<__add_lvalue_reference_t<_BinaryPredicate>>
            (__first, __last, __convert_to_integral(__count), __value_, __pred,
            typename iterator_traits<_ForwardIterator>::iterator_category());
 }
@@ -2108,7 +2108,7 @@ _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 remove_if(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
-    __first = _CUDA_VSTD::find_if<_ForwardIterator, typename add_lvalue_reference<_Predicate>::type>
+    __first = _CUDA_VSTD::find_if<_ForwardIterator, __add_lvalue_reference_t<_Predicate>>
                            (__first, __last, __pred);
     if (__first != __last)
     {
@@ -2168,7 +2168,7 @@ _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _ForwardIterator
 unique(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicate __pred)
 {
-    __first = _CUDA_VSTD::adjacent_find<_ForwardIterator, typename add_lvalue_reference<_BinaryPredicate>::type>
+    __first = _CUDA_VSTD::adjacent_find<_ForwardIterator, __add_lvalue_reference_t<_BinaryPredicate>>
                                  (__first, __last, __pred);
     if (__first != __last)
     {
@@ -2265,7 +2265,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 _OutputIterator
 unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryPredicate __pred)
 {
-    return _CUDA_VSTD::__unique_copy<typename add_lvalue_reference<_BinaryPredicate>::type>
+    return _CUDA_VSTD::__unique_copy<__add_lvalue_reference_t<_BinaryPredicate>>
                               (__first, __last, __result, __pred,
                                typename iterator_traits<_InputIterator>::iterator_category(),
                                typename iterator_traits<_OutputIterator>::iterator_category());
@@ -3306,7 +3306,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 _ForwardIterator
 partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
-    return _CUDA_VSTD::__partition<typename add_lvalue_reference<_Predicate>::type>
+    return _CUDA_VSTD::__partition<__add_lvalue_reference_t<_Predicate>>
                             (__first, __last, __pred, typename iterator_traits<_ForwardIterator>::iterator_category());
 }
 
@@ -3425,7 +3425,7 @@ __stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate
     // recurse on [__first, __m), *__first know to be false
     // F?????????????????
     // f       m         l
-    typedef typename add_lvalue_reference<_Predicate>::type _PredRef;
+    typedef __add_lvalue_reference_t<_Predicate> _PredRef;
     _ForwardIterator __first_false = __stable_partition<_PredRef>(__first, __m, __pred, __len2, __p, __fit);
     // TTTFFFFF??????????
     // f  ff   m         l
@@ -3484,7 +3484,7 @@ __stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate
         __p = _CUDA_VSTD::get_temporary_buffer<value_type>(__len);
         __h.reset(__p.first);
     }
-    return __stable_partition<typename add_lvalue_reference<_Predicate>::type>
+    return __stable_partition<__add_lvalue_reference_t<_Predicate>>
                              (__first, __last, __pred, __len, __p, forward_iterator_tag());
 }
 
@@ -3570,7 +3570,7 @@ __stable_partition(_BidirectionalIterator __first, _BidirectionalIterator __last
     }
     // F???TFFF?????????T
     // f   m1  m        l
-    typedef typename add_lvalue_reference<_Predicate>::type _PredRef;
+    typedef __add_lvalue_reference_t<_Predicate> _PredRef;
     __first_false = __stable_partition<_PredRef>(__first, __m1, __pred, __len_half, __p, __bit);
 __first_half_done:
     // TTTFFFFF?????????T
@@ -3634,7 +3634,7 @@ __stable_partition(_BidirectionalIterator __first, _BidirectionalIterator __last
         __p = _CUDA_VSTD::get_temporary_buffer<value_type>(__len);
         __h.reset(__p.first);
     }
-    return __stable_partition<typename add_lvalue_reference<_Predicate>::type>
+    return __stable_partition<__add_lvalue_reference_t<_Predicate>>
                              (__first, __last, __pred, __len, __p, bidirectional_iterator_tag());
 }
 
@@ -3643,7 +3643,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 _ForwardIterator
 stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
-    return __stable_partition<typename add_lvalue_reference<_Predicate>::type>
+    return __stable_partition<__add_lvalue_reference_t<_Predicate>>
                              (__first, __last, __pred, typename iterator_traits<_ForwardIterator>::iterator_category());
 }
 
@@ -3806,7 +3806,7 @@ __selection_sort(_BirdirectionalIterator __first, _BirdirectionalIterator __last
     for (--__lm1; __first != __lm1; ++__first)
     {
         _BirdirectionalIterator __i = _CUDA_VSTD::min_element<_BirdirectionalIterator,
-                                                        typename add_lvalue_reference<_Compare>::type>
+                                                        __add_lvalue_reference_t<_Compare>>
                                                        (__first, __last, __comp);
         if (__i != __first)
             swap(*__first, *__i);
@@ -4178,7 +4178,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last, _Compare __comp)
 {
-    typedef typename add_lvalue_reference<_Compare>::type _Comp_ref;
+    typedef __add_lvalue_reference_t<_Compare> _Comp_ref;
     _CUDA_VSTD::sort<_Tp*, _Comp_ref>(__first.base(), __last.base(), __comp);
 }
 
@@ -4247,7 +4247,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 _ForwardIterator
 lower_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_, _Compare __comp)
 {
-    typedef typename add_lvalue_reference<_Compare>::type _Comp_ref;
+    typedef __add_lvalue_reference_t<_Compare> _Comp_ref;
     return __lower_bound<_Comp_ref>(__first, __last, __value_, __comp);
 }
 
@@ -4292,7 +4292,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 _ForwardIterator
 upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_, _Compare __comp)
 {
-    typedef typename add_lvalue_reference<_Compare>::type _Comp_ref;
+    typedef __add_lvalue_reference_t<_Compare> _Comp_ref;
     return __upper_bound<_Comp_ref>(__first, __last, __value_, __comp);
 }
 

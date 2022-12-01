@@ -637,7 +637,7 @@ public:
 #endif
 
     _Rp move();
-    typename add_lvalue_reference<_Rp>::type copy();
+    __add_lvalue_reference_t<_Rp> copy();
 };
 
 template <class _Rp>
@@ -696,7 +696,7 @@ __assoc_state<_Rp>::move()
 }
 
 template <class _Rp>
-typename add_lvalue_reference<_Rp>::type
+__add_lvalue_reference_t<_Rp>
 __assoc_state<_Rp>::copy()
 {
     unique_lock<mutex> __lk(this->__mut_);

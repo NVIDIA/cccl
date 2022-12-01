@@ -50,8 +50,8 @@ public:
     pointer                                         __end_;
     __compressed_pair<pointer, allocator_type> __end_cap_;
 
-    typedef typename add_lvalue_reference<allocator_type>::type __alloc_ref;
-    typedef typename add_lvalue_reference<allocator_type>::type __alloc_const_ref;
+    typedef __add_lvalue_reference_t<allocator_type> __alloc_ref;
+    typedef __add_lvalue_reference_t<allocator_type> __alloc_const_ref;
 
     _LIBCUDACXX_INLINE_VISIBILITY __alloc_rr&           __alloc() _NOEXCEPT         {return __end_cap_.second();}
     _LIBCUDACXX_INLINE_VISIBILITY const __alloc_rr&     __alloc() const _NOEXCEPT   {return __end_cap_.second();}
