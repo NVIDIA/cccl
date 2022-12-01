@@ -10,6 +10,12 @@
 #ifndef _CUDA_TUPLE
 #define _CUDA_TUPLE
 
+#if !defined(__CUDACC_RTC__)
+// Fetch utility to get primary template for ::std::tuple_size necessary for the specialization of
+// ::std::tuple_size<cuda::std::tuple> to enable structured bindings. See https://github.com/NVIDIA/libcudacxx/issues/316 
+#include <utility>
+#endif
+
 #include "cstdint"
 #include "climits"
 
@@ -29,5 +35,3 @@
 #include "detail/__pragma_pop"
 
 #endif //_CUDA_TUPLE
-
-
