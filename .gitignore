@@ -40,3 +40,4 @@ Output/
 compile_commands.json
 *~
 *lit_test_times.txt
+llvm-project/
