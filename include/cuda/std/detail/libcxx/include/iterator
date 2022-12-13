@@ -677,9 +677,10 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 
 #ifndef __cuda_std__
 #include <__config>
-#include <iosfwd> // for forward declarations of vector and string.
+#include <__iterator/access.h>
 #include <__functional_base>
 #include <__memory/addressof.h>
+#include <iosfwd> // for forward declarations of vector and string.
 #include <type_traits>
 #include <cstddef>
 #include <initializer_list>
@@ -690,6 +691,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include <__debug>
 #include <__pragma_push>
 #else
+#include "__iterator/access.h"
 #include "__memory/addressof.h"
 #endif //__cuda_std__
 
@@ -1942,57 +1944,6 @@ template <class _Iter>
 struct __libcpp_is_trivial_iterator<__wrap_iter<_Iter> >
     : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value) {};
 
-
-template <class _Tp, size_t _Np>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-_Tp*
-begin(_Tp (&__array)[_Np])
-{
-    return __array;
-}
-
-template <class _Tp, size_t _Np>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-_Tp*
-end(_Tp (&__array)[_Np])
-{
-    return __array + _Np;
-}
-
-#if !defined(_LIBCUDACXX_CXX03_LANG)
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-auto
-begin(_Cp& __c) -> decltype(__c.begin())
-{
-    return __c.begin();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-auto
-begin(const _Cp& __c) -> decltype(__c.begin())
-{
-    return __c.begin();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-auto
-end(_Cp& __c) -> decltype(__c.end())
-{
-    return __c.end();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-auto
-end(const _Cp& __c) -> decltype(__c.end())
-{
-    return __c.end();
-}
-
 #if _LIBCUDACXX_STD_VER > 11
 
 template <class _Tp, size_t _Np>
@@ -2022,21 +1973,6 @@ reverse_iterator<const _Ep*> rend(::std::initializer_list<_Ep> __il)
 {
     return reverse_iterator<const _Ep*>(__il.begin());
 }
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-auto cbegin(const _Cp& __c) -> decltype(_CUDA_VSTD::begin(__c))
-{
-    return _CUDA_VSTD::begin(__c);
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-auto cend(const _Cp& __c) -> decltype(_CUDA_VSTD::end(__c))
-{
-    return _CUDA_VSTD::end(__c);
-}
-
 template <class _Cp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
 auto rbegin(_Cp& __c) -> decltype(__c.rbegin())
@@ -2080,43 +2016,6 @@ auto crend(const _Cp& __c) -> decltype(_CUDA_VSTD::rend(__c))
 }
 
 #endif
-
-
-#else  // defined(_LIBCUDACXX_CXX03_LANG)
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Cp::iterator
-begin(_Cp& __c)
-{
-    return __c.begin();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Cp::const_iterator
-begin(const _Cp& __c)
-{
-    return __c.begin();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Cp::iterator
-end(_Cp& __c)
-{
-    return __c.end();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Cp::const_iterator
-end(const _Cp& __c)
-{
-    return __c.end();
-}
-
-#endif  // !defined(_LIBCUDACXX_CXX03_LANG)
 
 #if _LIBCUDACXX_STD_VER > 11
 
