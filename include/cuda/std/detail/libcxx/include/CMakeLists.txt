@@ -4,15 +4,43 @@ set(files
   __bsd_locale_fallbacks.h
   __errc
   __debug
+  __functional/binary_function.h
   __functional/identity.h
   __functional/invoke.h
+  __functional/reference_wrapper.h
+  __functional/unary_function.h
+  __functional/weak_result_type.h
   __functional_03
   __functional_base
   __functional_base_03
   __fwd/pair.h
   __hash_table
+  __iterator/access.h
+  __iterator/advance.h
+  __iterator/back_insert_iterator.h
+  __iterator/data.h
+  __iterator/distance.h
+  __iterator/empty.h
+  __iterator/erase_if_container.h
+  __iterator/front_insert_iterator.h
+  __iterator/insert_iterator.h
+  __iterator/istream_iterator.h
+  __iterator/istreambuf_iterator.h
+  __iterator/iterator.h
+  __iterator/iterator_traits.h
+  __iterator/move_iterator.h
+  __iterator/next.h
+  __iterator/ostream_iterator.h
+  __iterator/ostreambuf_iterator.h
+  __iterator/prev.h
+  __iterator/reverse_access.h
+  __iterator/reverse_iterator.h
+  __iterator/size.h
+  __iterator/wrap_iter.h
   __libcpp_version
   __locale
+  __memory/addressof.h
+  __memory/pointer_traits.h
   __mutex_base
   __node_handle
   __nullptr
@@ -148,6 +176,7 @@ set(files
   __type_traits/underlying_type.h
   __type_traits/void_t.h
   __tuple
+  __type_traits/is_constant_evaluated.h
   __undef_macros
   __utility/convert_to_integral.h
   __utility/declval.h
