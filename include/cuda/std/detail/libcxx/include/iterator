@@ -680,6 +680,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include <__iterator/access.h>
 #include <__iterator/data.h>
 #include <__iterator/empty.h>
+#include <__iterator/erase_if_container.h>
 #include <__iterator/size.h>
 #include <__functional_base>
 #include <__memory/addressof.h>
@@ -697,6 +698,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "__iterator/access.h"
 #include "__iterator/data.h"
 #include "__iterator/empty.h"
+#include "__iterator/erase_if_container.h"
 #include "__iterator/size.h"
 #include "__memory/addressof.h"
 #endif //__cuda_std__
