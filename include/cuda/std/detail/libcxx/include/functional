@@ -501,6 +501,7 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include <__config>
 #include <__functional/identity.h>
 #include <__functional/invoke.h>
+#include <__functional/unary_function.h>
 #include <__memory/addressof.h>
 #include <__memory/pointer_traits.h>
 #include <type_traits>
@@ -515,6 +516,7 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #else
 #include "__functional/identity.h"
 #include "__functional/invoke.h"
+#include "__functional/unary_function.h"
 #include "__memory/addressof.h"
 #include "__memory/pointer_traits.h"
 #endif
@@ -665,7 +667,7 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS negate : unary_function<_Tp, _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS negate : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -883,7 +885,7 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS logical_not : unary_function<_Tp, bool>
+struct _LIBCUDACXX_TEMPLATE_VIS logical_not : __unary_function<_Tp, bool>
 {
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Tp& __x) const
@@ -988,7 +990,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_xor<void>
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class _Tp = void>
-struct _LIBCUDACXX_TEMPLATE_VIS bit_not : unary_function<_Tp, _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS bit_not : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -1010,7 +1012,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_not<void>
 
 template <class _Predicate>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX17 unary_negate
-    : public unary_function<typename _Predicate::argument_type, bool>
+    : public __unary_function<typename _Predicate::argument_type, bool>
 {
     _Predicate __pred_;
 public:
@@ -1052,7 +1054,7 @@ not2(const _Predicate& __pred) {return binary_negate<_Predicate>(__pred);}
 #if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 template <class __Operation>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 binder1st
-    : public unary_function<typename __Operation::second_argument_type,
+    : public __unary_function<typename __Operation::second_argument_type,
                             typename __Operation::result_type>
 {
 protected:
@@ -1078,7 +1080,7 @@ bind1st(const __Operation& __op, const _Tp& __x)
 
 template <class __Operation>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 binder2nd
-    : public unary_function<typename __Operation::first_argument_type,
+    : public __unary_function<typename __Operation::first_argument_type,
                             typename __Operation::result_type>
 {
 protected:
@@ -1104,7 +1106,7 @@ bind2nd(const __Operation& __op, const _Tp& __x)
 
 template <class _Arg, class _Result>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 pointer_to_unary_function
-    : public unary_function<_Arg, _Result>
+    : public __unary_function<_Arg, _Result>
 {
     _Result (*__f_)(_Arg);
 public:
@@ -1140,7 +1142,7 @@ ptr_fun(_Result (*__f)(_Arg1,_Arg2))
 
 template<class _Sp, class _Tp>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 mem_fun_t
-    : public unary_function<_Tp*, _Sp>
+    : public __unary_function<_Tp*, _Sp>
 {
     _Sp (_Tp::*__p_)();
 public:
@@ -1176,7 +1178,7 @@ mem_fun(_Sp (_Tp::*__f)(_Ap))
 
 template<class _Sp, class _Tp>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 mem_fun_ref_t
-    : public unary_function<_Tp, _Sp>
+    : public __unary_function<_Tp, _Sp>
 {
     _Sp (_Tp::*__p_)();
 public:
@@ -1212,7 +1214,7 @@ mem_fun_ref(_Sp (_Tp::*__f)(_Ap))
 
 template <class _Sp, class _Tp>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 const_mem_fun_t
-    : public unary_function<const _Tp*, _Sp>
+    : public __unary_function<const _Tp*, _Sp>
 {
     _Sp (_Tp::*__p_)() const;
 public:
@@ -1248,7 +1250,7 @@ mem_fun(_Sp (_Tp::*__f)(_Ap) const)
 
 template <class _Sp, class _Tp>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 const_mem_fun_ref_t
-    : public unary_function<_Tp, _Sp>
+    : public __unary_function<_Tp, _Sp>
 {
     _Sp (_Tp::*__p_)() const;
 public:
@@ -1461,7 +1463,7 @@ struct __maybe_derive_from_unary_function
 
 template<class _Rp, class _A1>
 struct __maybe_derive_from_unary_function<_Rp(_A1)>
-    : public unary_function<_A1, _Rp>
+    : public __unary_function<_A1, _Rp>
 {
 };
 

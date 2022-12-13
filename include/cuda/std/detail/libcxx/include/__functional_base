@@ -12,12 +12,15 @@
 
 #ifndef __cuda_std__
 #include <__config>
+#include <__functional/unary_function.h>
 #include <type_traits>
 #include <typeinfo>
 #include <exception>
 #include <new>
 #include <utility>
 #include <__pragma_push>
+#else
+#include "__functional/unary_function.h"
 #endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
