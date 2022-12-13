@@ -691,6 +691,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include <__iterator/size.h>
 #include <__functional_base>
 #include <__memory/addressof.h>
+#include <__memory/pointer_traits.h>
 #include <iosfwd> // for forward declarations of vector and string.
 #include <type_traits>
 #include <cstddef>
@@ -715,6 +716,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "__iterator/reverse_iterator.h"
 #include "__iterator/size.h"
 #include "__memory/addressof.h"
+#include "__memory/pointer_traits.h"
 #endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
