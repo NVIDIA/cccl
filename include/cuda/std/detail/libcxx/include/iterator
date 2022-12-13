@@ -695,6 +695,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include <__iterator/ostream_iterator.h>
 #include <__iterator/ostreambuf_iterator.h>
 #include <__iterator/prev.h>
+#include <__iterator/reverse_access.h>
 #include <__iterator/reverse_iterator.h>
 #include <__iterator/size.h>
 #include <__iterator/wrap_iter.h>
@@ -729,6 +730,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "__iterator/ostream_iterator.h"
 #include "__iterator/ostreambuf_iterator.h"
 #include "__iterator/prev.h"
+#include "__iterator/reverse_access.h"
 #include "__iterator/reverse_iterator.h"
 #include "__iterator/size.h"
 #include "__iterator/wrap_iter.h"
@@ -757,79 +759,6 @@ struct __libcpp_is_trivial_iterator<reverse_iterator<_Iter> >
 template <class _Iter>
 struct __libcpp_is_trivial_iterator<__wrap_iter<_Iter> >
     : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value) {};
-
-#if _LIBCUDACXX_STD_VER > 11
-
-template <class _Tp, size_t _Np>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-reverse_iterator<_Tp*> rbegin(_Tp (&__array)[_Np])
-{
-    return reverse_iterator<_Tp*>(__array + _Np);
-}
-
-template <class _Tp, size_t _Np>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-reverse_iterator<_Tp*> rend(_Tp (&__array)[_Np])
-{
-    return reverse_iterator<_Tp*>(__array);
-}
-
-template <class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-reverse_iterator<const _Ep*> rbegin(::std::initializer_list<_Ep> __il)
-{
-    return reverse_iterator<const _Ep*>(__il.end());
-}
-
-template <class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-reverse_iterator<const _Ep*> rend(::std::initializer_list<_Ep> __il)
-{
-    return reverse_iterator<const _Ep*>(__il.begin());
-}
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-auto rbegin(_Cp& __c) -> decltype(__c.rbegin())
-{
-    return __c.rbegin();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-auto rbegin(const _Cp& __c) -> decltype(__c.rbegin())
-{
-    return __c.rbegin();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-auto rend(_Cp& __c) -> decltype(__c.rend())
-{
-    return __c.rend();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-auto rend(const _Cp& __c) -> decltype(__c.rend())
-{
-    return __c.rend();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-auto crbegin(const _Cp& __c) -> decltype(_CUDA_VSTD::rbegin(__c))
-{
-    return _CUDA_VSTD::rbegin(__c);
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-auto crend(const _Cp& __c) -> decltype(_CUDA_VSTD::rend(__c))
-{
-    return _CUDA_VSTD::rend(__c);
-}
-
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
