@@ -681,6 +681,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include <__iterator/data.h>
 #include <__iterator/empty.h>
 #include <__iterator/erase_if_container.h>
+#include <__iterator/iterator.h>
 #include <__iterator/size.h>
 #include <__functional_base>
 #include <__memory/addressof.h>
@@ -699,6 +700,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "__iterator/data.h"
 #include "__iterator/empty.h"
 #include "__iterator/erase_if_container.h"
+#include "__iterator/iterator.h"
 #include "__iterator/size.h"
 #include "__memory/addressof.h"
 #endif //__cuda_std__
@@ -827,17 +829,6 @@ using __iter_to_alloc_type = pair<
     add_const_t<typename iterator_traits<_InputIterator>::value_type::first_type>,
     typename iterator_traits<_InputIterator>::value_type::second_type>;
 #endif
-
-template<class _Category, class _Tp, class _Distance = ptrdiff_t,
-         class _Pointer = _Tp*, class _Reference = _Tp&>
-struct _LIBCUDACXX_TEMPLATE_VIS iterator
-{
-    typedef _Tp        value_type;
-    typedef _Distance  difference_type;
-    typedef _Pointer   pointer;
-    typedef _Reference reference;
-    typedef _Category  iterator_category;
-};
 
 template <class _InputIter>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
