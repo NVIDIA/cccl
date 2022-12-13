@@ -9,6 +9,10 @@
 #ifndef _CUDA_ARRAY
 #define _CUDA_ARRAY
 
+#ifndef __CUDACC_RTC__
+# include <cstdlib>
+#endif
+
 #include "cassert"
 #include "cstdint"
 #include "limits"
@@ -30,5 +34,3 @@
 #include "detail/__pragma_pop"
 
 #endif //_CUDA_ARRAY
-
-

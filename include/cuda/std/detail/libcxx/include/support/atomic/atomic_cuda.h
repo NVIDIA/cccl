@@ -11,28 +11,6 @@
 #  error "CUDA atomics are only supported for sm_60 and up on *nix and sm_70 and up on Windows."
 #endif
 
-#if !defined(__CLANG_ATOMIC_BOOL_LOCK_FREE) && !defined(__GCC_ATOMIC_BOOL_LOCK_FREE)
-#define ATOMIC_BOOL_LOCK_FREE      2
-#define ATOMIC_CHAR_LOCK_FREE      2
-#define ATOMIC_CHAR16_T_LOCK_FREE  2
-#define ATOMIC_CHAR32_T_LOCK_FREE  2
-#define ATOMIC_WCHAR_T_LOCK_FREE   2
-#define ATOMIC_SHORT_LOCK_FREE     2
-#define ATOMIC_INT_LOCK_FREE       2
-#define ATOMIC_LONG_LOCK_FREE      2
-#define ATOMIC_LLONG_LOCK_FREE     2
-#define ATOMIC_POINTER_LOCK_FREE   2
-#endif //!defined(__CLANG_ATOMIC_BOOL_LOCK_FREE) && !defined(__GCC_ATOMIC_BOOL_LOCK_FREE)
-
-#ifndef __ATOMIC_RELAXED
-#define __ATOMIC_RELAXED 0
-#define __ATOMIC_CONSUME 1
-#define __ATOMIC_ACQUIRE 2
-#define __ATOMIC_RELEASE 3
-#define __ATOMIC_ACQ_REL 4
-#define __ATOMIC_SEQ_CST 5
-#endif //__ATOMIC_RELAXED
-
 inline __host__ __device__ int __stronger_order_cuda(int __a, int __b) {
     int const __max = __a > __b ? __a : __b;
     if(__max != __ATOMIC_RELEASE)

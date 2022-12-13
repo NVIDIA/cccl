@@ -796,8 +796,8 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_HAS_NO_ASAN
 #endif
 
-#if _GNUC_VER < 600 && defined(_LIBCUDACXX_COMPILER_NVCC)
-#define _LIBCUDACXX_MISSING_GCC_MATH_INTRINSICS
+#if _GNUC_VER < 600
+#define _LIBCUDACXX_GCC_MATH_IN_STD
 #endif
 
 #if _GNUC_VER >= 700

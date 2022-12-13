@@ -70,3 +70,6 @@ configure_lit_site_cfg(
 add_lit_testsuite(check-cudacxx
   "Running libcu++ tests"
   ${CMAKE_CURRENT_BINARY_DIR})
+
+# Add test target for standalone headers
+add_subdirectory(host_only)

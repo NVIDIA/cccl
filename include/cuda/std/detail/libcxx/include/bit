@@ -171,7 +171,7 @@ int __fallback_popc8(uint64_t __x) {
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __fallback_popc16(uint64_t __x) {
   return __fallback_popc8(
-      __x + (__x >> 4) & 0x0f0f0f0f0f0f0f0f);
+      (__x + (__x >> 4)) & 0x0f0f0f0f0f0f0f0f);
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR

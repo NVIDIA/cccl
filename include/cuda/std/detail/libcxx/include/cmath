@@ -318,6 +318,7 @@ long double    truncl(long double x);
 #define NAN      __builtin_nan()
 #endif
 
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 using ::signbit;
@@ -377,8 +378,7 @@ using ::abs;
 #endif
 
 #ifndef _LIBCUDACXX_COMPILER_NVRTC
-// GCC <= 50X is missing some math intrinsics in the global namespace
-#if !defined(_LIBCUDACXX_MISSING_GCC_MATH_INTRINSICS)
+
 using ::fpclassify;
 using ::isnormal;
 using ::isgreater;
@@ -386,9 +386,8 @@ using ::isgreaterequal;
 using ::isless;
 using ::islessequal;
 using ::islessgreater;
+
 using ::isunordered;
-using ::isunordered;
-#endif
 
 using ::float_t;
 using ::double_t;
@@ -563,7 +562,8 @@ using ::scalblnl;
 using ::scalbnl;
 using ::tgammal;
 using ::truncl;
-#endif
+
+#endif // _LIBCUDACXX_COMPILER_NVRTC
 
 #if _LIBCUDACXX_STD_VER > 14 && !defined(__cuda_std__)
 inline _LIBCUDACXX_INLINE_VISIBILITY float       hypot(       float x,       float y,       float z ) { return sqrt(x*x + y*y + z*z); }

@@ -19,9 +19,10 @@ int main() {
         "-std=c++11",
 #elif __cplusplus < 201703L
         "-std=c++14",
-#elif __cplusplus == 201703L
+#elif __cplusplus < 202002L
         "-std=c++17",
+#elif __cplusplus == 202002L
+        "-std=c++20",
 #else
         #error "Unknown C++ standard!"
 #endif
-

@@ -230,4 +230,3 @@ if (_libcudacxx_enable_tests)
     ARGS ${LLVM_LIT_EXTRA_ARGS}
   )
 endif ()
-

@@ -11,6 +11,10 @@
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif
 
+#ifndef __CUDACC_RTC__
+# include <new>
+#endif
+
 #ifndef _CUDA_BARRIER
 #define _CUDA_BARRIER
 

@@ -16,6 +16,8 @@ ARG UBUNTU_TOOL_DEB_REPO=https://ppa.launchpadcontent.net/ubuntu-toolchain-r/ppa
 ARG UBUNTU_TOOL_FINGER=60C317803A41BA51845E371A1E9377A2BA9EF27F
 
 ARG LLVM_INSTALLER=https://apt.llvm.org/llvm.sh
+ARG USE_LLVM_INSTALLER=1
+
 # `-y` answers yes to any interactive prompts.
 # `-qq` because apt is noisy
 ARG APT_GET="apt-get -y -qq"
@@ -44,7 +46,7 @@ RUN function comment() { :; }; \
         python3 python3-wheel python3-pip; \
     comment "Install GCC and Clang"; \
     # Unattended installation hack
-    echo "\n" | bash /tmp/llvm.sh all; \
+    if [ "${USE_LLVM_INSTALLER}" -eq "1" ]; then echo "\n" | bash /tmp/llvm.sh all; fi; \
     ${APT_GET} install gcc g++ ${COMPILERS}; \
     comment "Install CMake"; \
     sh /tmp/cmake.sh --skip-license --prefix=/usr; \
@@ -87,6 +89,7 @@ RUN cmake -S /libcudacxx -B /build \
         -DCMAKE_CUDA_FLAGS="-allow-unsupported-compiler"
 
 RUN make -j -C /build/libcxx
+RUN make -j -C /build/test/host_only
 
 ENV LIBCUDACXX_SITE_CONFIG=/build/test/lit.site.cfg
 ENV LIBCXX_SITE_CONFIG=/build/libcxx/test/lit.site.cfg
