@@ -46,6 +46,9 @@ int main(int, char**)
 {
     {
         char s[] = "1234567890";
+#ifdef __NVCOMPILER
+        for (int i = 0; i < 10; ++i) { s[i] = i == 9 ? '0' : ('1' + i); }
+#endif
         test(random_access_iterator<char*>(s+5), 4, '0');
         test(s+5, 4, '0');
     }
