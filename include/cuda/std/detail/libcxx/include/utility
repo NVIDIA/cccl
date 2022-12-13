@@ -198,6 +198,7 @@ template <size_t I>
 #ifndef __cuda_std__
 #include <__config>
 #include <__functional/binary_function.h>
+#include <__functional/reference_wrapper.h>
 #include <__functional/unary_function.h>
 #include <__functional/weak_result_type.h>
 #include <__tuple>
@@ -216,6 +217,7 @@ template <size_t I>
 #include <__pragma_push>
 #else
 #include "__functional/binary_function.h"
+#include "__functional/reference_wrapper.h"
 #include "__functional/unary_function.h"
 #include "__functional/weak_result_type.h"
 #include "__utility/convert_to_integral.h"

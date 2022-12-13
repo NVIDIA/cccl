@@ -502,6 +502,7 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include <__functional/binary_function.h>
 #include <__functional/identity.h>
 #include <__functional/invoke.h>
+#include <__functional/reference_wrapper.h>
 #include <__functional/unary_function.h>
 #include <__functional/weak_result_type.h>
 #include <__memory/addressof.h>
@@ -519,6 +520,7 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include "__functional/binary_function.h"
 #include "__functional/identity.h"
 #include "__functional/invoke.h"
+#include "__functional/reference_wrapper.h"
 #include "__functional/unary_function.h"
 #include "__functional/weak_result_type.h"
 #include "__memory/addressof.h"
