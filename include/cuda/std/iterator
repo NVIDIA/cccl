@@ -9,11 +9,8 @@
 #ifndef _CUDA_ITERATOR
 #define _CUDA_ITERATOR
 
+#include "initializer_list"
 #include "type_traits"
-
-#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
-#include <initializer_list>
-#endif
 
 #include "detail/__config"
 

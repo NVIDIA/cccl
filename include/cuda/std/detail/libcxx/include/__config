@@ -61,8 +61,10 @@ extern "C++" {
 #      define _LIBCUDACXX_STD_VER 14
 #    elif _MSVC_LANG <= 201703L
 #      define _LIBCUDACXX_STD_VER 17
+#    elif _MSVC_LANG <= 202002L
+#      define _LIBCUDACXX_STD_VER 20
 #    else
-#      define _LIBCUDACXX_STD_VER 19  // current year, or date of c++2a ratification
+#      define _LIBCUDACXX_STD_VER 22  // current year, or date of c++2a ratification
 #    endif
 #  else
 #    if   __cplusplus <= 201103L
@@ -71,8 +73,10 @@ extern "C++" {
 #      define _LIBCUDACXX_STD_VER 14
 #    elif __cplusplus <= 201703L
 #      define _LIBCUDACXX_STD_VER 17
+#    elif __cplusplus <= 202002L
+#      define _LIBCUDACXX_STD_VER 20
 #    else
-#      define _LIBCUDACXX_STD_VER 19  // current year, or date of c++2a ratification
+#      define _LIBCUDACXX_STD_VER 22  // current year, or date of c++2a ratification
 #    endif
 #  endif
 #endif  // _LIBCUDACXX_STD_VER

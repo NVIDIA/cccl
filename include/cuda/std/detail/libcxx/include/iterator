@@ -678,6 +678,9 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #ifndef __cuda_std__
 #include <__config>
 #include <__iterator/access.h>
+#include <__iterator/data.h>
+#include <__iterator/empty.h>
+#include <__iterator/size.h>
 #include <__functional_base>
 #include <__memory/addressof.h>
 #include <iosfwd> // for forward declarations of vector and string.
@@ -692,6 +695,9 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include <__pragma_push>
 #else
 #include "__iterator/access.h"
+#include "__iterator/data.h"
+#include "__iterator/empty.h"
+#include "__iterator/size.h"
 #include "__memory/addressof.h"
 #endif //__cuda_std__
 
@@ -2016,84 +2022,6 @@ auto crend(const _Cp& __c) -> decltype(_CUDA_VSTD::rend(__c))
 }
 
 #endif
-
-#if _LIBCUDACXX_STD_VER > 11
-
-// #if _LIBCUDACXX_STD_VER > 11
-// template <>
-// struct _LIBCUDACXX_TEMPLATE_VIS plus<void>
-// {
-//     template <class _T1, class _T2>
-//     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
-//     auto operator()(_T1&& __t, _T2&& __u) const
-//     _NOEXCEPT_(noexcept(_CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u)))
-//     -> decltype        (_CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u))
-//         { return        _CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u); }
-//     typedef void is_transparent;
-// };
-// #endif
-
-template <class _Cont>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr auto size(const _Cont& __c)
-_NOEXCEPT_(noexcept(__c.size()))
--> decltype        (__c.size())
-{ return            __c.size(); }
-
-template <class _Tp, size_t _Sz>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr size_t size(const _Tp (&)[_Sz]) noexcept { return _Sz; }
-
-#if _LIBCUDACXX_STD_VER > 17
-template <class _Cont>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr auto ssize(const _Cont& __c)
-_NOEXCEPT_(noexcept(static_cast<common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>>(__c.size())))
-->                              common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>
-{ return            static_cast<common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>>(__c.size()); }
-
-template <class _Tp, ptrdiff_t _Sz>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr ptrdiff_t ssize(const _Tp (&)[_Sz]) noexcept { return _Sz; }
-#endif
-
-template <class _Cont>
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
-constexpr auto empty(const _Cont& __c)
-_NOEXCEPT_(noexcept(__c.empty()))
--> decltype        (__c.empty())
-{ return            __c.empty(); }
-
-template <class _Tp, size_t _Sz>
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
-constexpr bool empty(const _Tp (&)[_Sz]) noexcept { return false; }
-
-template <class _Ep>
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
-constexpr bool empty(::std::initializer_list<_Ep> __il) noexcept { return __il.size() == 0; }
-
-template <class _Cont> constexpr
-_LIBCUDACXX_INLINE_VISIBILITY
-auto data(_Cont& __c)
-_NOEXCEPT_(noexcept(__c.data()))
--> decltype        (__c.data())
-{ return            __c.data(); }
-
-template <class _Cont> constexpr
-_LIBCUDACXX_INLINE_VISIBILITY
-auto data(const _Cont& __c)
-_NOEXCEPT_(noexcept(__c.data()))
--> decltype        (__c.data())
-{ return            __c.data(); }
-
-template <class _Tp, size_t _Sz>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr _Tp* data(_Tp (&__array)[_Sz]) noexcept { return __array; }
-
-template <class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr const _Ep* data(::std::initializer_list<_Ep> __il) noexcept { return __il.begin(); }
-#endif // _LIBCUDACXX_STD_VER > 11
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
