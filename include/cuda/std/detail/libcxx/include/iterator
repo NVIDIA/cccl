@@ -686,6 +686,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include <__iterator/iterator.h>
 #include <__iterator/iterator_traits.h>
 #include <__iterator/next.h>
+#include <__iterator/prev.h>
 #include <__iterator/size.h>
 #include <__functional_base>
 #include <__memory/addressof.h>
@@ -709,6 +710,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "__iterator/iterator.h"
 #include "__iterator/iterator_traits.h"
 #include "__iterator/next.h"
+#include "__iterator/prev.h"
 #include "__iterator/size.h"
 #include "__memory/addressof.h"
 #endif //__cuda_std__
@@ -718,23 +720,6 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-template <class _InputIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-typename enable_if
-<
-    __is_cpp17_input_iterator<_InputIter>::value,
-    _InputIter
->::type
-prev(_InputIter __x,
-     typename iterator_traits<_InputIter>::difference_type __n = 1)
-{
-    _LIBCUDACXX_ASSERT(__n <= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
-                       "Attempt to prev(it, +n) on a non-bidi iterator");
-    _CUDA_VSTD::advance(__x, -__n);
-    return __x;
-}
-
 
 template <class _Tp, class = void>
 struct __is_cpp17_stashing_iterator : false_type {};
