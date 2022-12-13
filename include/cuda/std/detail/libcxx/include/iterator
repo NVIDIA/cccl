@@ -680,6 +680,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include <__iterator/access.h>
 #include <__iterator/advance.h>
 #include <__iterator/data.h>
+#include <__iterator/distance.h>
 #include <__iterator/empty.h>
 #include <__iterator/erase_if_container.h>
 #include <__iterator/iterator.h>
@@ -701,6 +702,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "__iterator/access.h"
 #include "__iterator/advance.h"
 #include "__iterator/data.h"
+#include "__iterator/distance.h"
 #include "__iterator/empty.h"
 #include "__iterator/erase_if_container.h"
 #include "__iterator/iterator.h"
@@ -714,33 +716,6 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-template <class _InputIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-typename iterator_traits<_InputIter>::difference_type
-__distance(_InputIter __first, _InputIter __last, input_iterator_tag)
-{
-    typename iterator_traits<_InputIter>::difference_type __r(0);
-    for (; __first != __last; ++__first)
-        ++__r;
-    return __r;
-}
-
-template <class _RandIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-typename iterator_traits<_RandIter>::difference_type
-__distance(_RandIter __first, _RandIter __last, random_access_iterator_tag)
-{
-    return __last - __first;
-}
-
-template <class _InputIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
-typename iterator_traits<_InputIter>::difference_type
-distance(_InputIter __first, _InputIter __last)
-{
-    return __distance(__first, __last, typename iterator_traits<_InputIter>::iterator_category());
-}
 
 template <class _InputIter>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
