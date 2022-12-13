@@ -71,9 +71,11 @@ struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_debug_info {
 /// __libcpp_debug_function_type - The type of the assertion failure handler.
 typedef void(*__libcpp_debug_function_type)(__libcpp_debug_info const&);
 
+#if _LIBCUDACXX_DEBUG_LEVEL >= 2
 /// __libcpp_debug_function - The handler function called when a _LIBCUDACXX_ASSERT
 ///    fails.
 extern _LIBCUDACXX_EXPORTED_FROM_ABI __libcpp_debug_function_type __libcpp_debug_function;
+#endif
 
 /// __libcpp_abort_debug_function - A debug handler that aborts when called.
 _LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS
