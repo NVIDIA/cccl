@@ -12,6 +12,7 @@
 
 #ifndef __cuda_std__
 #include <__config>
+#include <__functional/binary_function.h>
 #include <__functional/unary_function.h>
 #include <type_traits>
 #include <typeinfo>
@@ -20,6 +21,7 @@
 #include <utility>
 #include <__pragma_push>
 #else
+#include "__functional/binary_function.h"
 #include "__functional/unary_function.h"
 #endif //__cuda_std__
 
@@ -29,31 +31,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Arg1, class _Arg2, class _Result>
-struct _LIBCUDACXX_TEMPLATE_VIS binary_function
-{
-    typedef _Arg1   first_argument_type;
-    typedef _Arg2   second_argument_type;
-    typedef _Result result_type;
-};
-
-template <class _Tp>
-struct __has_result_type
-{
-private:
-    struct __two {char __lx; char __lxx;};
-    template <class _Up> _LIBCUDACXX_INLINE_VISIBILITY static __two __test(...);
-    template <class _Up> _LIBCUDACXX_INLINE_VISIBILITY static char __test(typename _Up::result_type* = 0);
-public:
-    static const bool value = sizeof(__test<_Tp>(0)) == 1;
-};
-
 #if _LIBCUDACXX_STD_VER > 11
 template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS less : binary_function<_Tp, _Tp, bool>
+struct _LIBCUDACXX_TEMPLATE_VIS less : __binary_function<_Tp, _Tp, bool>
 {
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Tp& __x, const _Tp& __y) const
