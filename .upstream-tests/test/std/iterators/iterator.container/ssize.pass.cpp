@@ -85,7 +85,7 @@ void test_const_array(const T (&array)[Sz])
     assert ( cuda::std::ssize(array) == Sz );
 }
 
-static constexpr int arrA [] { 1, 2, 3 };
+__device__ static constexpr int arrA [] { 1, 2, 3 };
 
 int main(int, char**)
 {

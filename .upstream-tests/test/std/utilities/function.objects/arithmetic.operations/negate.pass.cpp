@@ -20,8 +20,10 @@ int main(int, char**)
 {
     typedef cuda::std::negate<int> F;
     const F f = F();
+#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
     static_assert((cuda::std::is_same<F::argument_type, int>::value), "" );
     static_assert((cuda::std::is_same<F::result_type, int>::value), "" );
+#endif
     assert(f(36) == -36);
 #if TEST_STD_VER > 11
     typedef cuda::std::negate<> F2;

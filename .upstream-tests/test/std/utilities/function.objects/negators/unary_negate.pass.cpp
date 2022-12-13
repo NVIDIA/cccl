@@ -20,8 +20,10 @@ int main(int, char**)
 {
     typedef cuda::std::unary_negate<cuda::std::logical_not<int> > F;
     const F f = F(cuda::std::logical_not<int>());
+#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
     static_assert((cuda::std::is_same<F::argument_type, int>::value), "" );
     static_assert((cuda::std::is_same<F::result_type, bool>::value), "" );
+#endif
     assert(f(36));
     assert(!f(0));
 

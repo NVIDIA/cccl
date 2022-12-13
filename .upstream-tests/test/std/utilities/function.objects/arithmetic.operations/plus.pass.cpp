@@ -20,9 +20,11 @@ int main(int, char**)
 {
     typedef cuda::std::plus<int> F;
     const F f = F();
+#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
     static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "" );
     static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "" );
     static_assert((cuda::std::is_same<int, F::result_type>::value), "" );
+#endif
     assert(f(3, 2) == 5);
 #if TEST_STD_VER > 11
     typedef cuda::std::plus<> F2;

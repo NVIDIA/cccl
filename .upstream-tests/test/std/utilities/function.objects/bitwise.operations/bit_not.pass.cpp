@@ -19,8 +19,10 @@ int main(int, char**)
 {
     typedef cuda::std::bit_not<int> F;
     const F f = F();
+#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
     static_assert((cuda::std::is_same<F::argument_type, int>::value), "" );
     static_assert((cuda::std::is_same<F::result_type, int>::value), "" );
+#endif
     assert((f(0xEA95) & 0xFFFF ) == 0x156A);
     assert((f(0x58D3) & 0xFFFF ) == 0xA72C);
     assert((f(0)      & 0xFFFF ) == 0xFFFF);
