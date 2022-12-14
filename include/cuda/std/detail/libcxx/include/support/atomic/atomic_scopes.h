@@ -1,6 +1,8 @@
 #ifndef __LIBCUDACXX_ATOMIC_SCOPES_H
 #define __LIBCUDACXX_ATOMIC_SCOPES_H
 
+// REMEMBER CHANGES TO THESE ARE ABI BREAKING
+// TODO: Space values out for potential new scopes
 #ifndef __ATOMIC_BLOCK
 #define __ATOMIC_SYSTEM 0 // 0 indicates default
 #define __ATOMIC_DEVICE 1

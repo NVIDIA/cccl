@@ -9,6 +9,9 @@
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-70
 
+// Compiler bug for being unable to convert __nv_hdl lambdas
+// XFAIL: msvc-19.33
+
 // <cuda/std/barrier>
 
 #include <cuda/std/barrier>

@@ -75,6 +75,7 @@ void test_select_scope()
     // API entrypoints accept barriers with arbitrary completion function, and that the synchronization mechanism detects it correctly.
     test_fully_specialized<T, SourceSelector, DestSelector, BarrierSelector, cuda::thread_scope_block, completion>();
     test_fully_specialized<T, SourceSelector, DestSelector, BarrierSelector, cuda::thread_scope_thread>();
+
 }
 
 template <class T,

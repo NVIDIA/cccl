@@ -53,15 +53,13 @@
 #ifndef _CUDA_PIPELINE
 #define _CUDA_PIPELINE
 
-#include <nv/target>
-#include <cuda/barrier>
-#include <cuda/atomic>
+#include "barrier"
+#include "atomic"
+#include "std/chrono"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-    template<thread_scope _Scope>
-    class pipeline;
-
+    // Forward declaration in barrier of pipeline
     enum class pipeline_role {
         producer,
         consumer
@@ -96,7 +94,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
         template<class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
         friend _LIBCUDACXX_INLINE_VISIBILITY
         pipeline<_Pipeline_scope> make_pipeline(const _Group & __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count> * __shared_state, size_t __producer_count);
-     
+
         template<class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
         friend _LIBCUDACXX_INLINE_VISIBILITY
         pipeline<_Pipeline_scope> make_pipeline(const _Group & __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count> * __shared_state, pipeline_role __role);
@@ -149,9 +147,7 @@ NV_IF_TARGET(NV_IS_DEVICE,
                 if (__last) {
                     for (uint8_t __stage = 0; __stage < __stages_count; ++__stage) {
                         __shared_state_get_stage(__stage)->__produced.~barrier();
-                        if (__partitioned) {
-                            __shared_state_get_stage(__stage)->__consumed.~barrier();
-                        }
+                        __shared_state_get_stage(__stage)->__consumed.~barrier();
                     }
                     __released = true;
                 }
@@ -163,23 +159,19 @@ NV_IF_TARGET(NV_IS_DEVICE,
         _LIBCUDACXX_INLINE_VISIBILITY
         void producer_acquire()
         {
-            if (__partitioned) {
-                barrier<_Scope> & __stage_barrier = __shared_state_get_stage(__head)->__consumed;
-                (void)_CUDA_VSTD::__libcpp_thread_poll_with_backoff(__poll_tester(__stage_barrier, __consumed_phase_parity));
-            }
+            barrier<_Scope> & __stage_barrier = __shared_state_get_stage(__head)->__consumed;
+            __stage_barrier.wait_parity(__consumed_phase_parity);
         }
 
         _LIBCUDACXX_INLINE_VISIBILITY
         void producer_commit()
         {
             barrier<_Scope> & __stage_barrier = __shared_state_get_stage(__head)->__produced;
-            __memcpy_async_synchronize(__stage_barrier, true);
+            __memcpy_arrive_on_impl::__arrive_on(__stage_barrier, async_contract_fulfillment::async);
             (void)__stage_barrier.arrive();
             if (++__head == __stages_count) {
                 __head = 0;
-                if (__partitioned) {
-                    __consumed_phase_parity = !__consumed_phase_parity;
-                }
+                __consumed_phase_parity = !__consumed_phase_parity;
             }
         }
 
@@ -187,15 +179,13 @@ NV_IF_TARGET(NV_IS_DEVICE,
         void consumer_wait()
         {
             barrier<_Scope> & __stage_barrier = __shared_state_get_stage(__tail)->__produced;
-            (void)_CUDA_VSTD::__libcpp_thread_poll_with_backoff(__poll_tester(__stage_barrier, __produced_phase_parity));
+            __stage_barrier.wait_parity(__produced_phase_parity);
         }
 
         _LIBCUDACXX_INLINE_VISIBILITY
         void consumer_release()
         {
-            if (__partitioned) {
-                (void)__shared_state_get_stage(__tail)->__consumed.arrive();
-            }
+            (void)__shared_state_get_stage(__tail)->__consumed.arrive();
             if (++__tail == __stages_count) {
                 __tail = 0;
                 __produced_phase_parity = !__produced_phase_parity;
@@ -208,12 +198,14 @@ NV_IF_TARGET(NV_IS_DEVICE,
         {
             barrier<_Scope> & __stage_barrier = __shared_state_get_stage(__tail)->__produced;
             return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
-                __poll_tester(__stage_barrier, __produced_phase_parity),
-                _CUDA_VSTD::chrono::duration_cast<_CUDA_VSTD::chrono::nanoseconds>(__duration)
+                        _CUDA_VSTD::__barrier_poll_tester_parity<barrier<_Scope>>(
+                            &__stage_barrier,
+                            __produced_phase_parity),
+                        _CUDA_VSTD::chrono::duration_cast<_CUDA_VSTD::chrono::nanoseconds>(__duration)
             );
         }
 
-        template<class _Clock, class _Duration> 
+        template<class _Clock, class _Duration>
         _LIBCUDACXX_INLINE_VISIBILITY
         bool consumer_wait_until(const _CUDA_VSTD::chrono::time_point<_Clock, _Duration> & __time_point)
         {
@@ -227,8 +219,10 @@ NV_IF_TARGET(NV_IS_DEVICE,
         bool __consumed_phase_parity : 1;
         bool __produced_phase_parity : 1;
         bool __active                : 1;
+        // TODO: Remove partitioned on next ABI break
         const bool __partitioned     : 1;
         char * const __shared_state;
+
 
         _LIBCUDACXX_INLINE_VISIBILITY
         pipeline(char * __shared_state, uint8_t __stages_count, bool __partitioned)
@@ -241,36 +235,6 @@ NV_IF_TARGET(NV_IS_DEVICE,
             , __partitioned(__partitioned)
             , __shared_state(__shared_state)
         {}
-
-        _LIBCUDACXX_INLINE_VISIBILITY
-        static bool __barrier_try_wait_parity_impl(barrier<_Scope> & __barrier, bool __phase_parity)
-        {
-            typename barrier<_Scope>::arrival_token __synthesized_token = (__phase_parity ? 1ull : 0ull) << 63;
-            return __barrier.__try_wait(_CUDA_VSTD::move(__synthesized_token));
-        }
-
-        _LIBCUDACXX_INLINE_VISIBILITY
-        static bool __barrier_try_wait_parity(barrier<_Scope> & __barrier, bool __phase_parity)
-        {
-            return __barrier_try_wait_parity_impl(__barrier, __phase_parity);
-        }
-
-        struct __poll_tester {
-            barrier<_Scope> & __barrier;
-            bool __phase_parity;
-
-            _LIBCUDACXX_INLINE_VISIBILITY
-            __poll_tester(barrier<_Scope> & __barrier, bool __phase_parity)
-              : __barrier(__barrier)
-              , __phase_parity(__phase_parity)
-            {}
-
-            _LIBCUDACXX_INLINE_VISIBILITY
-            bool operator()() const
-            {
-                return __barrier_try_wait_parity(__barrier, __phase_parity);
-            }
-        };
 
         _LIBCUDACXX_INLINE_VISIBILITY
         __pipeline_stage<_Scope> * __shared_state_get_stage(uint8_t __stage)
@@ -293,39 +257,11 @@ NV_IF_TARGET(NV_IS_DEVICE,
         template<class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
         friend _LIBCUDACXX_INLINE_VISIBILITY
         pipeline<_Pipeline_scope> make_pipeline(const _Group & __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count> * __shared_state, size_t __producer_count);
-     
+
         template<class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
         friend _LIBCUDACXX_INLINE_VISIBILITY
         pipeline<_Pipeline_scope> make_pipeline(const _Group & __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count> * __shared_state, pipeline_role __role);
     };
-
-    template<>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline bool pipeline<thread_scope_block>::__barrier_try_wait_parity(barrier<thread_scope_block> & __barrier, bool __phase_parity)
-    {
-NV_IF_TARGET(NV_PROVIDES_SM_80,
-        if (__isShared(&__barrier)) {
-            uint64_t * __mbarrier = device::barrier_native_handle(__barrier);
-            uint16_t __wait_complete;
-
-            asm volatile ("{"
-                          "     .reg .pred %p;"
-                          "     mbarrier.test_wait.parity.shared.b64 %p, [%1], %2;"
-                          "     selp.u16 %0, 1, 0, %p;"
-                          "}"
-                : "=h"(__wait_complete)
-                : "r"(static_cast<uint32_t>(__cvta_generic_to_shared(__mbarrier))), "r"(static_cast<uint32_t>(__phase_parity))
-                : "memory");
-
-            return bool(__wait_complete);
-        } else
-        {
-            return __barrier_try_wait_parity_impl(__barrier, __phase_parity);
-        }
-,
-        return __barrier_try_wait_parity_impl(__barrier, __phase_parity);
-)
-    }
 
     template<class _Group, thread_scope _Scope, uint8_t _Stages_count>
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -336,6 +272,7 @@ NV_IF_TARGET(NV_PROVIDES_SM_80,
 
         if (__thread_rank == 0) {
             for (uint8_t __stage = 0; __stage < _Stages_count; ++__stage) {
+                init(&__shared_state->__stages[__stage].__consumed, __group_size);
                 init(&__shared_state->__stages[__stage].__produced, __group_size);
             }
             __shared_state->__refcount.store(__group_size, std::memory_order_relaxed);
@@ -364,7 +301,7 @@ NV_IF_TARGET(NV_PROVIDES_SM_80,
 
         return pipeline<_Scope>(reinterpret_cast<char*>(__shared_state->__stages), _Stages_count, true);
     }
- 
+
     template<class _Group, thread_scope _Scope, uint8_t _Stages_count>
     _LIBCUDACXX_INLINE_VISIBILITY
     pipeline<_Scope> make_pipeline(const _Group & __group, pipeline_shared_state<_Scope, _Stages_count> * __shared_state, pipeline_role __role)
@@ -469,7 +406,7 @@ NV_IF_TARGET(NV_PROVIDES_SM_80,
 
         _LIBCUDACXX_INLINE_VISIBILITY
         void consumer_release() {}
-    
+
         template<class _Rep, class _Period>
         _LIBCUDACXX_INLINE_VISIBILITY
         bool consumer_wait_for(const _CUDA_VSTD::chrono::duration<_Rep, _Period> & __duration)
@@ -479,7 +416,7 @@ NV_IF_TARGET(NV_PROVIDES_SM_80,
             return true;
         }
 
-        template<class _Clock, class _Duration> 
+        template<class _Clock, class _Duration>
         _LIBCUDACXX_INLINE_VISIBILITY
         bool consumer_wait_until(const _CUDA_VSTD::chrono::time_point<_Clock, _Duration> & __time_point)
         {
@@ -503,6 +440,10 @@ NV_IF_TARGET(NV_PROVIDES_SM_80,
         template<uint8_t _Prior>
         friend _LIBCUDACXX_INLINE_VISIBILITY
         void pipeline_consumer_wait_prior(pipeline<thread_scope_thread> & __pipeline);
+
+        template<class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
+        friend _LIBCUDACXX_INLINE_VISIBILITY
+        pipeline<_Pipeline_scope> __make_pipeline(const _Group & __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count> * __shared_state);
     };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
@@ -553,10 +494,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
     _LIBCUDACXX_INLINE_VISIBILITY
     void pipeline_consumer_wait_prior(pipeline<thread_scope_thread> & __pipeline)
     {
-NV_IF_TARGET(NV_PROVIDES_SM_80,
-        device::__pipeline_consumer_wait<_Prior>(__pipeline);
-        __pipeline.__tail = __pipeline.__head - _Prior;
-)
+        NV_IF_TARGET(NV_PROVIDES_SM_80,
+            device::__pipeline_consumer_wait<_Prior>(__pipeline);
+            __pipeline.__tail = __pipeline.__head - _Prior;
+        )
     }
 
     template<thread_scope _Scope>
@@ -564,70 +505,61 @@ NV_IF_TARGET(NV_PROVIDES_SM_80,
     void pipeline_producer_commit(pipeline<thread_scope_thread> & __pipeline, barrier<_Scope> & __barrier)
     {
         (void)__pipeline;
-NV_IF_TARGET(NV_PROVIDES_SM_80,
-        __memcpy_async_synchronize(__barrier, true);
-)
-    }
-
-    template<thread_scope _Scope>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    void __memcpy_async_synchronize(pipeline<_Scope> & __pipeline, bool __is_async) {
-        // memcpy_async submissions never synchronize on their own in the pipeline path.
-        (void)__pipeline;
-        (void)__is_async;
+        NV_IF_TARGET(NV_PROVIDES_SM_80,
+            __memcpy_arrive_on_impl::__arrive_on(__barrier, async_contract_fulfillment::async);
+        )
     }
 
     template<typename _Group, class _Type, thread_scope _Scope>
     _LIBCUDACXX_INLINE_VISIBILITY
-    void memcpy_async(_Group const & __group, _Type * __destination, _Type const * __source, std::size_t __size, pipeline<_Scope> & __pipeline)
-    {
+    async_contract_fulfillment memcpy_async(_Group const & __group, _Type * __destination, _Type const * __source, std::size_t __size, pipeline<_Scope> & __pipeline) {
         // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
         // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
         // memcpy_async when compiling with GCC 4.8.
         // FIXME: remove the #if once GCC 4.8 is no longer supported.
     #if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
-        static_assert(_CUDA_VSTD::is_trivially_copyable<_Type>::value, "memcpy_async requires a trivially copyable type");
+        static_assert(std::is_trivially_copyable<_Type>::value, "memcpy_async requires a trivially copyable type");
     #endif
 
-        __memcpy_async<alignof(_Type)>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
+        return __memcpy_async<alignof(_Type)>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
     }
 
     template<typename _Group, class _Type, std::size_t _Alignment, thread_scope _Scope, std::size_t _Larger_alignment = (alignof(_Type) > _Alignment) ? alignof(_Type) : _Alignment>
     _LIBCUDACXX_INLINE_VISIBILITY
-    void memcpy_async(_Group const & __group, _Type * __destination, _Type const * __source, aligned_size_t<_Alignment> __size, pipeline<_Scope> & __pipeline) {
+    async_contract_fulfillment memcpy_async(_Group const & __group, _Type * __destination, _Type const * __source, aligned_size_t<_Alignment> __size, pipeline<_Scope> & __pipeline) {
         // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
         // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
         // memcpy_async when compiling with GCC 4.8.
         // FIXME: remove the #if once GCC 4.8 is no longer supported.
     #if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
-        static_assert(_CUDA_VSTD::is_trivially_copyable<_Type>::value, "memcpy_async requires a trivially copyable type");
+        static_assert(std::is_trivially_copyable<_Type>::value, "memcpy_async requires a trivially copyable type");
     #endif
 
-        __memcpy_async<_Larger_alignment>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
+        return __memcpy_async<_Larger_alignment>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
     }
 
     template<class _Type, typename _Size, thread_scope _Scope>
     _LIBCUDACXX_INLINE_VISIBILITY
-    void memcpy_async(_Type * __destination, _Type const * __source, _Size __size, pipeline<_Scope> & __pipeline) {
-        memcpy_async(__single_thread_group{}, __destination, __source, __size, __pipeline);
+    async_contract_fulfillment memcpy_async(_Type * __destination, _Type const * __source, _Size __size, pipeline<_Scope> & __pipeline) {
+        return memcpy_async(__single_thread_group{}, __destination, __source, __size, __pipeline);
     }
 
     template<typename _Group, thread_scope _Scope>
     _LIBCUDACXX_INLINE_VISIBILITY
-    void memcpy_async(_Group const & __group, void * __destination, void const * __source, std::size_t __size, pipeline<_Scope> & __pipeline) {
-        __memcpy_async<1>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
+    async_contract_fulfillment memcpy_async(_Group const & __group, void * __destination, void const * __source, std::size_t __size, pipeline<_Scope> & __pipeline) {
+        return __memcpy_async<1>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
     }
 
     template<typename _Group, std::size_t _Alignment, thread_scope _Scope>
     _LIBCUDACXX_INLINE_VISIBILITY
-    void memcpy_async(_Group const & __group, void * __destination, void const * __source, aligned_size_t<_Alignment> __size, pipeline<_Scope> & __pipeline) {
-        __memcpy_async<_Alignment>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
+    async_contract_fulfillment memcpy_async(_Group const & __group, void * __destination, void const * __source, aligned_size_t<_Alignment> __size, pipeline<_Scope> & __pipeline) {
+        return __memcpy_async<_Alignment>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline, std::false_type());
     }
 
     template<typename _Size, thread_scope _Scope>
     _LIBCUDACXX_INLINE_VISIBILITY
-    void memcpy_async(void * __destination, void const * __source, _Size __size, pipeline<_Scope> & __pipeline) {
-        memcpy_async(__single_thread_group{}, __destination, __source, __size, __pipeline);
+    async_contract_fulfillment memcpy_async(void * __destination, void const * __source, _Size __size, pipeline<_Scope> & __pipeline) {
+        return memcpy_async(__single_thread_group{}, __destination, __source, __size, __pipeline);
     }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

@@ -859,6 +859,7 @@ class Configuration(object):
                 self.cxx.compile_flags += ['--no_rtti']
             elif 'msvc' in self.config.available_features:
                 self.cxx.compile_flags += ['/GR-']
+                self.cxx.compile_flags += ['-D_SILENCE_CXX20_CISO646_REMOVED_WARNING']
             else:
                 self.cxx.compile_flags += ['-fno-rtti']
             self.cxx.compile_flags += ['-D_LIBCUDACXX_NO_RTTI']

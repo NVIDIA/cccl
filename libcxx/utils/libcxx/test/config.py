@@ -577,11 +577,13 @@ class Configuration(object):
             pre_sm_32 = False
             pre_sm_60 = False
             pre_sm_70 = False
+            pre_sm_90 = False
             compute_archs = [int(a) for a in sorted(shlex.split(compute_archs))]
             for arch in compute_archs:
                 if arch < 32: pre_sm_32 = True
                 if arch < 60: pre_sm_60 = True
                 if arch < 70: pre_sm_70 = True
+                if arch < 90: pre_sm_90 = True
                 arch_flag = '-gencode=arch=compute_{0},code=sm_{0}'.format(arch)
                 self.cxx.compile_flags += [arch_flag]
             enable_compute_future = self.get_lit_conf('enable_compute_future')
@@ -594,6 +596,8 @@ class Configuration(object):
                 self.config.available_features.add("pre-sm-60")
             if pre_sm_70:
                 self.config.available_features.add("pre-sm-70")
+            if pre_sm_90:
+                self.config.available_features.add("pre-sm-90")
     def configure_default_compile_flags(self):
         nvcc_host_compiler = self.get_lit_conf('nvcc_host_compiler')
         if nvcc_host_compiler and self.cxx.type == 'nvcc':
