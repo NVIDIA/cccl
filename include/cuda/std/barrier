@@ -617,12 +617,17 @@ struct __memcpy_async_impl {
 template<>
 struct __memcpy_async_impl<4, false> {
     __device__ static inline async_contract_fulfillment __copy(char * __destination, char const * __source, std::size_t __total_size, std::size_t __rank, std::size_t __stride) {
-        for (std::size_t __offset = __rank * 4; __offset < __total_size; __offset += __stride * 4) {
-            asm volatile ("cp.async.ca.shared.global [%0], [%1], 4, 4;"
-                :: "r"(static_cast<std::uint32_t>(__cvta_generic_to_shared(__destination + __offset))),
-                    "l"(__source + __offset)
-                : "memory");
-        }
+        // Guard from host visibility when compiling in host only contexts
+        NV_IF_TARGET(
+            NV_IS_DEVICE, (
+                for (std::size_t __offset = __rank * 4; __offset < __total_size; __offset += __stride * 4) {
+                    asm volatile ("cp.async.ca.shared.global [%0], [%1], 4, 4;"
+                        :: "r"(static_cast<std::uint32_t>(__cvta_generic_to_shared(__destination + __offset))),
+                            "l"(__source + __offset)
+                        : "memory");
+                }
+            )
+        )
         return async_contract_fulfillment::async;
     }
 };
@@ -630,12 +635,17 @@ struct __memcpy_async_impl<4, false> {
 template<>
 struct __memcpy_async_impl<8, false> {
     __device__ static inline async_contract_fulfillment __copy(char * __destination, char const * __source, std::size_t __total_size, std::size_t __rank, std::size_t __stride) {
-        for (std::size_t __offset = __rank * 8; __offset < __total_size; __offset += __stride * 8) {
-            asm volatile ("cp.async.ca.shared.global [%0], [%1], 8, 8;"
-                :: "r"(static_cast<std::uint32_t>(__cvta_generic_to_shared(__destination + __offset))),
-                    "l"(__source + __offset)
-                : "memory");
-        }
+        // Guard from host visibility when compiling in host only contexts
+        NV_IF_TARGET(
+            NV_IS_DEVICE, (
+                for (std::size_t __offset = __rank * 8; __offset < __total_size; __offset += __stride * 8) {
+                    asm volatile ("cp.async.ca.shared.global [%0], [%1], 8, 8;"
+                        :: "r"(static_cast<std::uint32_t>(__cvta_generic_to_shared(__destination + __offset))),
+                            "l"(__source + __offset)
+                        : "memory");
+                }
+            )
+        )
         return async_contract_fulfillment::async;
     }
 };
@@ -643,12 +653,17 @@ struct __memcpy_async_impl<8, false> {
 template<>
 struct __memcpy_async_impl<16, false> {
     __device__ static inline async_contract_fulfillment __copy(char * __destination, char const * __source, std::size_t __total_size, std::size_t __rank, std::size_t __stride) {
-        for (std::size_t __offset = __rank * 16; __offset < __total_size; __offset += __stride * 16) {
-            asm volatile ("cp.async.cg.shared.global [%0], [%1], 16, 16;"
-                :: "r"(static_cast<std::uint32_t>(__cvta_generic_to_shared(__destination + __offset))),
-                    "l"(__source + __offset)
-                : "memory");
-        }
+        // Guard from host visibility when compiling in host only contexts
+        NV_IF_TARGET(
+            NV_IS_DEVICE, (
+                for (std::size_t __offset = __rank * 16; __offset < __total_size; __offset += __stride * 16) {
+                    asm volatile ("cp.async.cg.shared.global [%0], [%1], 16, 16;"
+                        :: "r"(static_cast<std::uint32_t>(__cvta_generic_to_shared(__destination + __offset))),
+                            "l"(__source + __offset)
+                        : "memory");
+                }
+            )
+        )
         return async_contract_fulfillment::async;
     }
 };
