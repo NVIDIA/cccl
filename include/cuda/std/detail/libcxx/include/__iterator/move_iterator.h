@@ -14,18 +14,13 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__iterator/iterator_traits.h>
-#include <__type_traits/conditional.h>
-#include <__type_traits/is_reference.h>
-#include <__type_traits/remove_reference.h>
-#include <__utility/move.h>
-#else
+#endif // __cuda_std__
+
 #include "../__iterator/iterator_traits.h"
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/is_reference.h"
 #include "../__type_traits/remove_reference.h"
 #include "../__utility/move.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

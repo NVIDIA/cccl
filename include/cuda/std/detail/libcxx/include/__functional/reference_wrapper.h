@@ -12,13 +12,10 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__functional/weak_result_type.h>
-#include <__memory/addressof.h>
-#include <type_traits>
-#else
-#include "weak_result_type.h"
-#include "../__memory/addressof.h"
 #endif // __cuda_std__
+
+#include "../__functional/weak_result_type.h"
+#include "../__memory/addressof.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

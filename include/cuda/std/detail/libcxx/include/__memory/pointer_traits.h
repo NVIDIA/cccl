@@ -12,12 +12,20 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__memory/addressof.h>
 #include <cstddef>
-#include <type_traits>
-#else
-#include "addressof.h"
 #endif //__cuda_std__
+
+#include "../__memory/addressof.h"
+#include "../__type_traits/conjunction.h"
+#include "../__type_traits/conditional.h"
+#include "../__type_traits/decay.h"
+#include "../__type_traits/enable_if.h"
+#include "../__type_traits/integral_constant.h"
+#include "../__type_traits/is_class.h"
+#include "../__type_traits/is_function.h"
+#include "../__type_traits/is_void.h"
+#include "../__type_traits/void_t.h"
+#include "../__utility/declval.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -258,8 +266,7 @@ private:
     struct __nat {};
 public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-    static pointer pointer_to(typename conditional<is_void<element_type>::value,
-                                           __nat, element_type>::type& __r)
+    static pointer pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r)
         {return pointer::pointer_to(__r);}
 };
 
@@ -280,8 +287,7 @@ private:
     struct __nat {};
 public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-    static pointer pointer_to(typename conditional<is_void<element_type>::value,
-                                      __nat, element_type>::type& __r) _NOEXCEPT
+    static pointer pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r) _NOEXCEPT
         {return _CUDA_VSTD::addressof(__r);}
 };
 
@@ -332,7 +338,7 @@ template <class _Pointer, class = __enable_if_t<
     _And<is_class<_Pointer>, _IsFancyPointer<_Pointer> >::value
 > >
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-typename decay<decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>::type
+__decay_t<decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>
 __to_address(const _Pointer& __p) _NOEXCEPT {
     return __to_address_helper<_Pointer>::__call(__p);
 }

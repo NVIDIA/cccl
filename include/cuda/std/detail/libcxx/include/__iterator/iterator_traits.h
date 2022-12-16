@@ -13,19 +13,14 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__fwd/pair.h>
-#include <__type_traits/add_const.h>
-#include <__type_traits/is_convertible.h>
-#include <__type_traits/remove_cv.h>
-#include <__type_traits/void_t.h>
 #include <cstddef>
-#else
+#endif // __cuda_std__
+
 #include "../__fwd/pair.h"
 #include "../__type_traits/add_const.h"
 #include "../__type_traits/is_convertible.h"
 #include "../__type_traits/remove_cv.h"
 #include "../__type_traits/void_t.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

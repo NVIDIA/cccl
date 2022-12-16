@@ -13,14 +13,8 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__debug>
-#include <__iterator/iterator_traits.h>
-#include <__memory/addressof.h>
-#include <__memory/pointer_traits.h>
-#include <__type_traits/enable_if.h>
-#include <__type_traits/is_convertible.h>
-#include <__type_traits/is_trivially_copy_assignable.h>
-#else
+#endif // __cuda_std__
+
 #include "../__debug"
 #include "../__iterator/iterator_traits.h"
 #include "../__memory/addressof.h"
@@ -28,7 +22,6 @@
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/is_convertible.h"
 #include "../__type_traits/is_trivially_copy_assignable.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

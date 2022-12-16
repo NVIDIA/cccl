@@ -677,31 +677,6 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__iterator/access.h>
-#include <__iterator/advance.h>
-#include <__iterator/back_insert_iterator.h>
-#include <__iterator/data.h>
-#include <__iterator/distance.h>
-#include <__iterator/empty.h>
-#include <__iterator/erase_if_container.h>
-#include <__iterator/front_insert_iterator.h>
-#include <__iterator/insert_iterator.h>
-#include <__iterator/istream_iterator.h>
-#include <__iterator/istreambuf_iterator.h>
-#include <__iterator/iterator.h>
-#include <__iterator/iterator_traits.h>
-#include <__iterator/move_iterator.h>
-#include <__iterator/next.h>
-#include <__iterator/ostream_iterator.h>
-#include <__iterator/ostreambuf_iterator.h>
-#include <__iterator/prev.h>
-#include <__iterator/reverse_access.h>
-#include <__iterator/reverse_iterator.h>
-#include <__iterator/size.h>
-#include <__iterator/wrap_iter.h>
-#include <__functional_base>
-#include <__memory/addressof.h>
-#include <__memory/pointer_traits.h>
 #include <iosfwd> // for forward declarations of vector and string.
 #include <type_traits>
 #include <cstddef>
@@ -711,7 +686,8 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include <Availability.h>
 #endif
 #include <__pragma_push>
-#else
+#endif //__cuda_std__
+
 #include "__iterator/access.h"
 #include "__iterator/advance.h"
 #include "__iterator/back_insert_iterator.h"
@@ -736,7 +712,6 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "__iterator/wrap_iter.h"
 #include "__memory/addressof.h"
 #include "__memory/pointer_traits.h"
-#endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

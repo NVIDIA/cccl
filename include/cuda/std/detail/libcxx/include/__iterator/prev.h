@@ -13,15 +13,12 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__iterator/advance.h>
-#include <__iterator/iterator_traits.h>
-#include <__type_traits/enable_if.h>
 #include <cassert>
-#else
+#endif // __cuda_std__
+
 #include "../__iterator/advance.h"
 #include "../__iterator/iterator_traits.h"
 #include "../__type_traits/enable_if.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

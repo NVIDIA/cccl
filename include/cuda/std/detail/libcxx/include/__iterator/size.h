@@ -14,12 +14,10 @@
 #ifndef __cuda_std__
 #include <__config>
 #include <cstddef>
-#include <__type_traits/common_type.h>
-#include <__type_traits/make_signed.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/common_type.h"
 #include "../__type_traits/make_signed.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

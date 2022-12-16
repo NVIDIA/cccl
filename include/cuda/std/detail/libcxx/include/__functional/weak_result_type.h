@@ -12,13 +12,14 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__functional/binary_function.h>
-#include <__functional/unary_function.h>
-#include <type_traits>
-#else
-#include "binary_function.h"
-#include "unary_function.h"
 #endif // __cuda_std__
+
+#include "../__functional/binary_function.h"
+#include "../__functional/invoke.h"
+#include "../__functional/unary_function.h"
+#include "../__type_traits/integral_constant.h"
+#include "../__type_traits/is_same.h"
+#include "../__utility/declval.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
