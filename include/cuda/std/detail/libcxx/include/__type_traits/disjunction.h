@@ -12,10 +12,9 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/integral_constant.h>
-#else
-#include "../__type_traits/integral_constant.h"
 #endif // __cuda_std__
+
+#include "../__type_traits/integral_constant.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -29,7 +28,7 @@ struct _OrImpl;
 template <>
 struct _OrImpl<true> {
   template <class _Res, class _First, class... _Rest>
-  using _Result _LIBCUDACXX_NODEBUG =
+  using _Result _LIBCUDACXX_NODEBUG_TYPE =
       typename _OrImpl<!bool(_First::value) && sizeof...(_Rest) != 0>::template _Result<_First, _Rest...>;
 };
 
@@ -46,7 +45,7 @@ struct _OrImpl<false> {
 // If you want to defer the evaluation of `_Or<_Pred...>` itself, use `_Lazy<_Or, _Pred...>`
 // or `disjunction<_Pred...>` directly.
 template <class... _Args>
-using _Or _LIBCUDACXX_NODEBUG = typename _OrImpl<sizeof...(_Args) != 0>::template _Result<false_type, _Args...>;
+using _Or _LIBCUDACXX_NODEBUG_TYPE = typename _OrImpl<sizeof...(_Args) != 0>::template _Result<false_type, _Args...>;
 
 #if _LIBCUDACXX_STD_VER > 11
 

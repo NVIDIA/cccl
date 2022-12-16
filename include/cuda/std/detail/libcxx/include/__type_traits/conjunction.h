@@ -12,14 +12,11 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/conditional.h>
-#include <__type_traits/enable_if.h>
-#include <__type_traits/integral_constant.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/integral_constant.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -31,10 +28,10 @@ template <class...>
 using __expand_to_true = true_type;
 
 template <class... _Pred>
-__expand_to_true<__enable_if_t<_Pred::value>...> __and_helper(int);
+_LIBCUDACXX_INLINE_VISIBILITY __expand_to_true<__enable_if_t<_Pred::value>...> __and_helper(int);
 
 template <class...>
-false_type __and_helper(...);
+_LIBCUDACXX_INLINE_VISIBILITY false_type __and_helper(...);
 
 // _And always performs lazy evaluation of its arguments.
 //
@@ -42,7 +39,7 @@ false_type __and_helper(...);
 // be instantiated) since it is an alias, unlike `conjunction<_Pred...>`, which is a struct.
 // If you want to defer the evaluation of `_And<_Pred...>` itself, use `_Lazy<_And, _Pred...>`.
 template <class... _Pred>
-using _And _LIBCUDACXX_NODEBUG = decltype(__and_helper<_Pred...>(0));
+using _And _LIBCUDACXX_NODEBUG_TYPE = decltype(__and_helper<_Pred...>(0));
 
 #if _LIBCUDACXX_STD_VER > 11
 

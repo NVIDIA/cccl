@@ -21,7 +21,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_cv {
-  typedef _LIBCUDACXX_NODEBUG const volatile _Tp type;
+  typedef _LIBCUDACXX_NODEBUG_TYPE const volatile _Tp type;
 };
 
 #if _LIBCUDACXX_STD_VER > 11

@@ -12,20 +12,13 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/conditional.h>
-#include <__type_traits/decay.h>
-#include <__type_traits/is_same.h>
-#include <__type_traits/remove_cvref.h>
-#include <__type_traits/void_t.h>
-#include <__utility/declval.h>
-#else
-#include "../__type_traits/conditional.h"
+#endif // __cuda_std__
+
 #include "../__type_traits/decay.h"
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/remove_cvref.h"
 #include "../__type_traits/void_t.h"
 #include "../__utility/declval.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -59,9 +52,9 @@ struct __common_type2_imp {};
 template <class _Tp, class _Up>
 struct __common_type2_imp<_Tp, _Up, __void_t<decltype(true ? declval<_Tp>() : declval<_Up>())> >
 {
-  typedef _LIBCUDACXX_NODEBUG typename decay<decltype(
+  typedef _LIBCUDACXX_NODEBUG_TYPE __decay_t<decltype(
                          true ? declval<_Tp>() : declval<_Up>()
-                         )>::type type;
+                         )> type;
 };
 
 template <class, class = void>

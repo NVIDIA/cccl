@@ -12,14 +12,11 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/add_const.h>
-#include <__type_traits/add_cv.h>
-#include <__type_traits/add_volatile.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/add_const.h"
 #include "../__type_traits/add_cv.h"
 #include "../__type_traits/add_volatile.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

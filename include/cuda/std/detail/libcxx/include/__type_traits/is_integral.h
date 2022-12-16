@@ -12,12 +12,10 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/integral_constant.h>
-#include <__type_traits/remove_cv.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/remove_cv.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -25,14 +23,16 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if __has_builtin(__is_integral)
+#if defined(_LIBCUDACXX_IS_INTEGRAL) && !defined(_LIBCUDACXX_USE_IS_INTEGRAL_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_integral : integral_constant<bool, __is_integral(_Tp)> { };
+struct _LIBCUDACXX_TEMPLATE_VIS is_integral 
+    : public integral_constant<bool, _LIBCUDACXX_IS_INTEGRAL(_Tp)> 
+    {};
 
 #if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_integral_v = __is_integral(_Tp);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_integral_v = _LIBCUDACXX_IS_INTEGRAL(_Tp);
 #endif
 
 #else
@@ -64,14 +64,15 @@ template <>          struct __libcpp_is_integral<__uint128_t>        : public tr
 #endif
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_integral
-    : public integral_constant<bool, __libcpp_is_integral<__remove_cv_t<_Tp> >::value> {};
+    : public integral_constant<bool, __libcpp_is_integral<__remove_cv_t<_Tp> >::value> 
+    {};
 
 #if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_integral_v = is_integral<_Tp>::value;
 #endif
 
-#endif // __has_builtin(__is_integral)
+#endif // defined(_LIBCUDACXX_IS_INTEGRAL) && !defined(_LIBCUDACXX_USE_IS_INTEGRAL_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

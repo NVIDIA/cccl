@@ -12,15 +12,8 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/add_pointer.h>
-#include <__type_traits/conditional.h>
-#include <__type_traits/is_array.h>
-#include <__type_traits/is_function.h>
-#include <__type_traits/is_referenceable.h>
-#include <__type_traits/remove_cv.h>
-#include <__type_traits/remove_extent.h>
-#include <__type_traits/remove_reference.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/add_pointer.h"
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/is_array.h"
@@ -29,7 +22,6 @@
 #include "../__type_traits/remove_cv.h"
 #include "../__type_traits/remove_extent.h"
 #include "../__type_traits/remove_reference.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -37,23 +29,23 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if __has_builtin(__decay)
+#if defined(_LIBCUDACXX_DECAY) && !defined(_LIBCUDACXX_USE_DECAY_FALLBACK)
 template <class _Tp>
 struct decay {
-  using type _LIBCUDACXX_NODEBUG = __decay(_Tp);
+  using type _LIBCUDACXX_NODEBUG_TYPE = _LIBCUDACXX_DECAY(_Tp);
 };
 
 #else
 
 template <class _Up, bool>
 struct __decay {
-    typedef _LIBCUDACXX_NODEBUG __remove_cv_t<_Up> type;
+    typedef _LIBCUDACXX_NODEBUG_TYPE __remove_cv_t<_Up> type;
 };
 
 template <class _Up>
 struct __decay<_Up, true> {
 public:
-    typedef _LIBCUDACXX_NODEBUG typename conditional
+    typedef _LIBCUDACXX_NODEBUG_TYPE typename conditional
                      <
                          is_array<_Up>::value,
                          __remove_extent_t<_Up>*,
@@ -70,11 +62,11 @@ template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS decay
 {
 private:
-    typedef _LIBCUDACXX_NODEBUG __libcpp_remove_reference_t<_Tp> _Up;
+    typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tp> _Up;
 public:
-  typedef _LIBCUDACXX_NODEBUG typename __decay<_Up, __libcpp_is_referenceable<_Up>::value>::type type;
+  typedef _LIBCUDACXX_NODEBUG_TYPE typename __decay<_Up, __libcpp_is_referenceable<_Up>::value>::type type;
 };
-#endif // __has_builtin(__decay)
+#endif // defined(_LIBCUDACXX_DECAY) && !defined(_LIBCUDACXX_USE_DECAY_FALLBACK)
 
 template <class _Tp> using __decay_t = typename decay<_Tp>::type;
 

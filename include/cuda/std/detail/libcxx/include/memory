@@ -2463,7 +2463,7 @@ private:
       typename __dependent_type<_DeleterSFINAE, _Dummy>::__bad_rval_ref_type;
 
   template <bool _Dummy, class _Deleter = typename __dependent_type<
-                             __identity<deleter_type>, _Dummy>::type>
+                             __type_identity<deleter_type>, _Dummy>::type>
   using _EnableIfDeleterDefaultConstructible _LIBCUDACXX_NODEBUG_TYPE =
       typename enable_if<is_default_constructible<_Deleter>::value &&
                          !is_pointer<_Deleter>::value>::type;
@@ -2678,7 +2678,7 @@ private:
       typename __dependent_type<_DeleterSFINAE, _Dummy>::__bad_rval_ref_type;
 
   template <bool _Dummy, class _Deleter = typename __dependent_type<
-                             __identity<deleter_type>, _Dummy>::type>
+                             __type_identity<deleter_type>, _Dummy>::type>
   using _EnableIfDeleterDefaultConstructible _LIBCUDACXX_NODEBUG_TYPE  =
       typename enable_if<is_default_constructible<_Deleter>::value &&
                          !is_pointer<_Deleter>::value>::type;
@@ -5410,13 +5410,13 @@ struct __builtin_new_allocator {
   }
 
   template <class _Tp>
-  _LIBCUDACXX_NODEBUG _LIBCUDACXX_ALWAYS_INLINE
+  _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_ALWAYS_INLINE
   static __holder_t __allocate_type(size_t __n) {
       return __allocate_bytes(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
   }
 
   template <class _Tp>
-  _LIBCUDACXX_NODEBUG _LIBCUDACXX_ALWAYS_INLINE
+  _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_ALWAYS_INLINE
   static void __deallocate_type(void* __p, size_t __n) _NOEXCEPT {
       __deallocate_bytes(__p, __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
   }

@@ -12,14 +12,11 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/integral_constant.h>
-#include <__type_traits/remove_all_extents.h>
-#include <__type_traits/remove_cv.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/remove_all_extents.h"
 #include "../__type_traits/remove_cv.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

@@ -12,14 +12,11 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/is_same.h>
-#include <__type_traits/remove_cv.h>
-#include <__type_traits/remove_reference.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/remove_cv.h"
 #include "../__type_traits/remove_reference.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -27,17 +24,17 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if __has_builtin(__remove_cvref)
+#if defined(_LIBCUDACXX_REMOVE_CVREF) && !defined(_LIBCUDACXX_USE_REMOVE_CVREF_FALLBACK)
 
 template <class _Tp>
-using __remove_cvref_t _LIBCUDACXX_NODEBUG = __remove_cvref(_Tp);
+using __remove_cvref_t _LIBCUDACXX_NODEBUG_TYPE = _LIBCUDACXX_REMOVE_CVREF(_Tp);
 
 #else
 
 template <class _Tp>
-using __remove_cvref_t _LIBCUDACXX_NODEBUG = __remove_cv_t<__libcpp_remove_reference_t<_Tp> >;
+using __remove_cvref_t _LIBCUDACXX_NODEBUG_TYPE = __remove_cv_t<__libcpp_remove_reference_t<_Tp> >;
 
-#endif // __has_builtin(__remove_cvref)
+#endif // defined(_LIBCUDACXX_REMOVE_CVREF) && !defined(_LIBCUDACXX_USE_REMOVE_CVREF_FALLBACK)
 
 template <class _Tp, class _Up>
 struct __is_same_uncvref : _IsSame<__remove_cvref_t<_Tp>, __remove_cvref_t<_Up> > {};
@@ -45,7 +42,7 @@ struct __is_same_uncvref : _IsSame<__remove_cvref_t<_Tp>, __remove_cvref_t<_Up> 
 #if _LIBCUDACXX_STD_VER > 11
 template <class _Tp>
 struct remove_cvref {
-    using type _LIBCUDACXX_NODEBUG = __remove_cvref_t<_Tp>;
+    using type _LIBCUDACXX_NODEBUG_TYPE = __remove_cvref_t<_Tp>;
 };
 
 template <class _Tp> using remove_cvref_t = __remove_cvref_t<_Tp>;

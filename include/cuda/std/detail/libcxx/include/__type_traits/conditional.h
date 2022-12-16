@@ -26,17 +26,17 @@ struct _IfImpl;
 template <>
 struct _IfImpl<true> {
   template <class _IfRes, class _ElseRes>
-  using _Select _LIBCUDACXX_NODEBUG = _IfRes;
+  using _Select _LIBCUDACXX_NODEBUG_TYPE = _IfRes;
 };
 
 template <>
 struct _IfImpl<false> {
   template <class _IfRes, class _ElseRes>
-  using _Select _LIBCUDACXX_NODEBUG = _ElseRes;
+  using _Select _LIBCUDACXX_NODEBUG_TYPE = _ElseRes;
 };
 
 template <bool _Cond, class _IfRes, class _ElseRes>
-using _If _LIBCUDACXX_NODEBUG = typename _IfImpl<_Cond>::template _Select<_IfRes, _ElseRes>;
+using _If _LIBCUDACXX_NODEBUG_TYPE = typename _IfImpl<_Cond>::template _Select<_IfRes, _ElseRes>;
 
 template <bool _Bp, class _If, class _Then>
     struct _LIBCUDACXX_TEMPLATE_VIS conditional {typedef _If type;};

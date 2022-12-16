@@ -12,15 +12,8 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/apply_cv.h>
-#include <__type_traits/conditional.h>
-#include <__type_traits/is_enum.h>
-#include <__type_traits/is_integral.h>
-#include <__type_traits/is_unsigned.h>
-#include <__type_traits/nat.h>
-#include <__type_traits/remove_cv.h>
-#include <__type_traits/type_list.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/apply_cv.h"
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/is_enum.h"
@@ -29,7 +22,6 @@
 #include "../__type_traits/nat.h"
 #include "../__type_traits/remove_cv.h"
 #include "../__type_traits/type_list.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -37,10 +29,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if __has_builtin(__make_unsigned)
+#if defined(_LIBCUDACXX_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
 
 template <class _Tp>
-using __make_unsigned_t = __make_unsigned(_Tp);
+using __make_unsigned_t = _LIBCUDACXX_MAKE_UNSIGNED(_Tp);
 
 #else
 typedef
@@ -84,11 +76,11 @@ template <> struct __make_unsigned<__uint128_t,        true> {typedef __uint128_
 template <class _Tp>
 using __make_unsigned_t = typename __apply_cv<_Tp, typename __make_unsigned<__remove_cv_t<_Tp> >::type>::type;
 
-#endif // __has_builtin(__make_unsigned)
+#endif // defined(_LIBCUDACXX_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
 
 template <class _Tp>
 struct make_unsigned {
-  using type _LIBCUDACXX_NODEBUG = __make_unsigned_t<_Tp>;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __make_unsigned_t<_Tp>;
 };
 
 #if _LIBCUDACXX_STD_VER > 11

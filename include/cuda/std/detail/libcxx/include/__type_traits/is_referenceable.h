@@ -12,12 +12,10 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/integral_constant.h>
-#include <__type_traits/is_same.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_same.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -25,10 +23,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if __has_builtin(__is_referenceable)
+#if defined(_LIBCUDACXX_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
 
 template <class _Tp>
-struct __libcpp_is_referenceable : integral_constant<bool, __is_referenceable(_Tp)> {};
+struct __libcpp_is_referenceable 
+  : public integral_constant<bool, _LIBCUDACXX_IS_REFERENCEABLE(_Tp)> 
+  {};
 
 #else
 struct __libcpp_is_referenceable_impl {
@@ -42,7 +42,7 @@ template <class _Tp>
 struct __libcpp_is_referenceable
     : integral_constant<bool, _IsNotSame<decltype(__libcpp_is_referenceable_impl::__test<_Tp>(0)), false_type>::value> {
 };
-#endif // __has_builtin(__is_referenceable)
+#endif // defined(_LIBCUDACXX_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

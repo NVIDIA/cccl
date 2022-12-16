@@ -448,7 +448,7 @@ public:
     typedef key_type                                 value_type;
     typedef _Compare                                 key_compare;
     typedef key_compare                              value_compare;
-    typedef typename __identity<_Allocator>::type    allocator_type;
+    typedef __type_identity_t<_Allocator>    allocator_type;
     typedef value_type&                              reference;
     typedef const value_type&                        const_reference;
 
@@ -974,7 +974,7 @@ public:
     typedef key_type                                 value_type;
     typedef _Compare                                  key_compare;
     typedef key_compare                              value_compare;
-    typedef typename __identity<_Allocator>::type    allocator_type;
+    typedef __type_identity_t<_Allocator>    allocator_type;
     typedef value_type&                              reference;
     typedef const value_type&                        const_reference;
 

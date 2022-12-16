@@ -10,6 +10,9 @@
 
 // result_of<Fn(ArgTypes...)>
 
+#define _LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <cuda/std/type_traits>
 // #include <cuda/std/memory>
 #include <cuda/std/cassert>

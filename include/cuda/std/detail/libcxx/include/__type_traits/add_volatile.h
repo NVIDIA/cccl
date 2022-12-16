@@ -21,7 +21,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_volatile {
-  typedef _LIBCUDACXX_NODEBUG volatile _Tp type;
+  typedef _LIBCUDACXX_NODEBUG_TYPE volatile _Tp type;
 };
 
 #if _LIBCUDACXX_STD_VER > 11

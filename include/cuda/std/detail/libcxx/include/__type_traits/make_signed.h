@@ -12,20 +12,14 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/apply_cv.h>
-#include <__type_traits/is_enum.h>
-#include <__type_traits/is_integral.h>
-#include <__type_traits/nat.h>
-#include <__type_traits/remove_cv.h>
-#include <__type_traits/type_list.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/apply_cv.h"
 #include "../__type_traits/is_enum.h"
 #include "../__type_traits/is_integral.h"
 #include "../__type_traits/nat.h"
 #include "../__type_traits/remove_cv.h"
 #include "../__type_traits/type_list.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -33,10 +27,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if __has_builtin(__make_signed)
+#if defined(_LIBCUDACXX_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
 
 template <class _Tp>
-using __make_signed_t = __make_signed(_Tp);
+using __make_signed_t = _LIBCUDACXX_MAKE_SIGNED(_Tp);
 
 #else
 typedef
@@ -80,11 +74,11 @@ template <> struct __make_signed<__uint128_t,        true> {typedef __int128_t t
 template <class _Tp>
 using __make_signed_t = typename __apply_cv<_Tp, typename __make_signed<__remove_cv_t<_Tp> >::type>::type;
 
-#endif // __has_builtin(__make_signed)
+#endif // defined(_LIBCUDACXX_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
 
 template <class _Tp>
 struct make_signed {
-  using type _LIBCUDACXX_NODEBUG = __make_signed_t<_Tp>;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __make_signed_t<_Tp>;
 };
 
 #if _LIBCUDACXX_STD_VER > 11

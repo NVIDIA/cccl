@@ -12,20 +12,9 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/add_lvalue_reference.h>
-#include <__type_traits/conditional.h>
-#include <__type_traits/enable_if.h>
-#include <__type_traits/is_move_assignable.h>
-#include <__type_traits/is_move_constructible.h>
-#include <__type_traits/is_nothrow_move_assignable.h>
-#include <__type_traits/is_nothrow_move_constructible.h>
-#include <__type_traits/is_referenceable.h>
-#include <__type_traits/is_same.h>
-#include <__type_traits/is_void.h>
-#include <__type_traits/nat.h>
-#include <__utility/declval.h>
 #include <cstddef>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/add_lvalue_reference.h"
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/enable_if.h"
@@ -38,7 +27,6 @@
 #include "../__type_traits/is_void.h"
 #include "../__type_traits/nat.h"
 #include "../__utility/declval.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

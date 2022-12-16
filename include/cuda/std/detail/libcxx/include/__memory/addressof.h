@@ -23,7 +23,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // addressof
 // NVCXX has the builtin defined but did not mark it as supported
-#if defined(_LIBCUDACXX_ADDRESSOF) || defined(__NVCOMPILER)
+#if defined(_LIBCUDACXX_ADDRESSOF)
 
 template <class _Tp>
 inline _LIBCUDACXX_CONSTEXPR_AFTER_CXX14

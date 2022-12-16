@@ -23,7 +23,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <bool, class _Tp = void> struct _LIBCUDACXX_TEMPLATE_VIS enable_if {};
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS enable_if<true, _Tp> {typedef _Tp type;};
 
-template <bool _Bp, class _Tp = void> using __enable_if_t _LIBCUDACXX_NODEBUG = typename enable_if<_Bp, _Tp>::type;
+template <bool _Bp, class _Tp = void> using __enable_if_t _LIBCUDACXX_NODEBUG_TYPE = typename enable_if<_Bp, _Tp>::type;
 
 #if _LIBCUDACXX_STD_VER > 11
 template <bool _Bp, class _Tp = void> using enable_if_t = typename enable_if<_Bp, _Tp>::type;

@@ -15,6 +15,7 @@
 #endif //__CUDACC_RTC__
 
 #include "cstddef"
+#include "cstdint"
 #include "version"
 
 #include "detail/__config"

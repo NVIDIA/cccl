@@ -12,12 +12,10 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/integral_constant.h>
-#include <__type_traits/is_arithmetic.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_arithmetic.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -25,17 +23,19 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if __has_builtin(__is_signed)
+#if defined(_LIBCUDACXX_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
 
 template<class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_signed : _BoolConstant<__is_signed(_Tp)> { };
+struct _LIBCUDACXX_TEMPLATE_VIS is_signed 
+    : public integral_constant<bool, _LIBCUDACXX_IS_SIGNED(_Tp)> 
+    {};
 
 #if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_signed_v = __is_signed(_Tp);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_signed_v = _LIBCUDACXX_IS_SIGNED(_Tp);
 #endif
 
-#else // __has_builtin(__is_signed)
+#else
 
 template <class _Tp, bool = is_integral<_Tp>::value>
 struct __libcpp_is_signed_impl : public _BoolConstant<(_Tp(-1) < _Tp(0))> {};
@@ -55,7 +55,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_signed_v = is_signed<_Tp>::value;
 #endif
 
-#endif // __has_builtin(__is_signed)
+#endif // defined(_LIBCUDACXX_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

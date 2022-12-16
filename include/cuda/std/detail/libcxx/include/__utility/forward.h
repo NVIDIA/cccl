@@ -13,12 +13,10 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/is_reference.h>
-#include <__type_traits/remove_reference.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/is_reference.h"
 #include "../__type_traits/remove_reference.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

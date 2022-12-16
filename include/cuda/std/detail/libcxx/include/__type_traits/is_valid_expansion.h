@@ -12,10 +12,9 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/integral_constant.h>
-#else
-#include "../__type_traits/integral_constant.h"
 #endif // __cuda_std__
+
+#include "../__type_traits/integral_constant.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -29,7 +28,7 @@ template <template <class...> class, class ...>
 _LIBCUDACXX_INLINE_VISIBILITY false_type __sfinae_test_impl(...);
 
 template <template <class ...> class _Templ, class ..._Args>
-using _IsValidExpansion _LIBCUDACXX_NODEBUG = decltype(_CUDA_VSTD::__sfinae_test_impl<_Templ, _Args...>(0));
+using _IsValidExpansion _LIBCUDACXX_NODEBUG_TYPE = decltype(_CUDA_VSTD::__sfinae_test_impl<_Templ, _Args...>(0));
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

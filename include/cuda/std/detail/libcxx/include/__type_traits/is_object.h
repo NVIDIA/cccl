@@ -12,18 +12,13 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/integral_constant.h>
-#include <__type_traits/is_array.h>
-#include <__type_traits/is_class.h>
-#include <__type_traits/is_scalar.h>
-#include <__type_traits/is_union.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_array.h"
 #include "../__type_traits/is_class.h"
 #include "../__type_traits/is_scalar.h"
 #include "../__type_traits/is_union.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -31,17 +26,19 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if __has_builtin(__is_object)
+#if defined(_LIBCUDACXX_IS_OBJECT) && !defined(_LIBCUDACXX_USE_IS_OBJECT_FALLBACK)
 
 template<class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_object : _BoolConstant<__is_object(_Tp)> { };
+struct _LIBCUDACXX_TEMPLATE_VIS is_object 
+    : public integral_constant<bool, _LIBCUDACXX_IS_OBJECT(_Tp)> 
+    {};
 
 #if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_object_v = __is_object(_Tp);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_object_v = _LIBCUDACXX_IS_OBJECT(_Tp);
 #endif
 
-#else // __has_builtin(__is_object)
+#else
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_object
     : public integral_constant<bool, is_scalar<_Tp>::value ||
@@ -54,7 +51,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_object_v = is_object<_Tp>::value;
 #endif
 
-#endif // __has_builtin(__is_object)
+#endif // defined(_LIBCUDACXX_IS_OBJECT) && !defined(_LIBCUDACXX_USE_IS_OBJECT_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

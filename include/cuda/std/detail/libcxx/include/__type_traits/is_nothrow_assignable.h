@@ -12,16 +12,12 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/integral_constant.h>
-#include <__type_traits/is_assignable.h>
-#include <__type_traits/is_scalar.h>
-#include <__utility/declval.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_assignable.h"
 #include "../__type_traits/is_scalar.h"
 #include "../__utility/declval.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

@@ -12,12 +12,10 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/integral_constant.h>
-#include <__type_traits/remove_cv.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/remove_cv.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -25,17 +23,19 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if __has_builtin(__is_pointer)
+#if defined(_LIBCUDACXX_IS_POINTER) && !defined(_LIBCUDACXX_USE_IS_POINTER_FALLBACK)
 
 template<class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_pointer : _BoolConstant<__is_pointer(_Tp)> { };
+struct _LIBCUDACXX_TEMPLATE_VIS is_pointer 
+    : public integral_constant<bool, _LIBCUDACXX_IS_POINTER(_Tp)> 
+    {};
 
 #if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_pointer_v = __is_pointer(_Tp);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_pointer_v = _LIBCUDACXX_IS_POINTER(_Tp);
 #endif
 
-#else // __has_builtin(__is_pointer)
+#else
 
 template <class _Tp> struct __libcpp_is_pointer       : public false_type {};
 template <class _Tp> struct __libcpp_is_pointer<_Tp*> : public true_type {};
@@ -56,7 +56,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_pointer_v = is_pointer<_Tp>::value;
 #endif
 
-#endif // __has_builtin(__is_pointer)
+#endif // defined(_LIBCUDACXX_IS_POINTER) && !defined(_LIBCUDACXX_USE_IS_POINTER_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

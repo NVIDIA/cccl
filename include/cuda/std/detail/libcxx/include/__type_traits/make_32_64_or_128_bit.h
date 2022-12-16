@@ -12,19 +12,14 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/conditional.h>
-#include <__type_traits/is_same.h>
-#include <__type_traits/is_signed.h>
-#include <__type_traits/is_unsigned.h>
-#include <__type_traits/make_unsigned.h>
 #include <cstdint>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/is_signed.h"
 #include "../__type_traits/is_unsigned.h"
 #include "../__type_traits/make_unsigned.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

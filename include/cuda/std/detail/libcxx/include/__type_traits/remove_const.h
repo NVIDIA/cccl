@@ -20,21 +20,24 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if __has_builtin(__remove_const)
+#if defined(_LIBCUDACXX_REMOVE_CONST) && !defined(_LIBCUDACXX_USE_REMOVE_CONST_FALLBACK)
 template <class _Tp>
 struct remove_const {
-  using type _LIBCUDACXX_NODEBUG = __remove_const(_Tp);
+  using type _LIBCUDACXX_NODEBUG_TYPE = _LIBCUDACXX_REMOVE_CONST(_Tp);
 };
 
 template <class _Tp>
-using __remove_const_t = __remove_const(_Tp);
+using __remove_const_t = _LIBCUDACXX_REMOVE_CONST(_Tp);
+
 #else
+
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS remove_const            {typedef _Tp type;};
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS remove_const<const _Tp> {typedef _Tp type;};
 
 template <class _Tp>
 using __remove_const_t = typename remove_const<_Tp>::type;
-#endif // __has_builtin(__remove_const)
+
+#endif // defined(_LIBCUDACXX_REMOVE_CONST) && !defined(_LIBCUDACXX_USE_REMOVE_CONST_FALLBACK)
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class _Tp> using remove_const_t = __remove_const_t<_Tp>;

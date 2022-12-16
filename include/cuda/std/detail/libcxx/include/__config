@@ -493,14 +493,6 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_HAS_NO_GENERALIZED_INITIALIZERS
 #endif
 
-#if __has_feature(is_base_of)
-#define _LIBCUDACXX_IS_BASE_OF(...) __is_base_of(__VA_ARGS__)
-#endif
-
-#if __has_feature(is_final)
-#define _LIBCUDACXX_IS_FINAL(...) __is_final(__VA_ARGS__)
-#endif
-
 // Objective-C++ features (opt-in)
 #if __has_feature(objc_arc)
 #define _LIBCUDACXX_HAS_OBJC_ARC
@@ -522,125 +514,137 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_HAS_NO_NOEXCEPT
 #endif
 
-#if __has_feature(underlying_type)
+#define __check_builtin(__x) (__has_builtin(__##__x) || \
+                              __has_keyword(__##__x) || \
+                              __has_feature(__x))
+
+#if __check_builtin(is_base_of)
+#define _LIBCUDACXX_IS_BASE_OF(...) __is_base_of(__VA_ARGS__)
+#endif
+
+#if __check_builtin(is_final)
+#define _LIBCUDACXX_IS_FINAL(...) __is_final(__VA_ARGS__)
+#endif
+
+#if __check_builtin(underlying_type)
 #define _LIBCUDACXX_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_constructible)
+#if __check_builtin(is_constructible)
 #define _LIBCUDACXX_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
 #endif
 
-#if __has_keyword(__is_destructible)
+#if __check_builtin(is_destructible)
 #define _LIBCUDACXX_IS_DESTRUCTIBLE(...) __is_destructible(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_trivially_constructible)
+#if __check_builtin(is_trivially_constructible)
 #define _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
 #endif
 
 // https://bugs.llvm.org/show_bug.cgi?id=44517
-#if __has_keyword(__is_trivially_destructible)
+#if __check_builtin(is_trivially_destructible)
 #define _LIBCUDACXX_IS_TRIVIALLY_DESTRUCTIBLE(...) __is_trivially_destructible(__VA_ARGS__)
 #endif
 
 // https://bugs.llvm.org/show_bug.cgi?id=44517
-#if __has_keyword(__is_nothrow_constructible)
+#if __check_builtin(is_nothrow_constructible)
 #define _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(...) __is_nothrow_constructible(__VA_ARGS__)
 #endif
 
 // https://bugs.llvm.org/show_bug.cgi?id=44517
-#if __has_keyword(__is_nothrow_assignable)
+#if __check_builtin(is_nothrow_assignable)
 #define _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(...) __is_nothrow_assignable(__VA_ARGS__)
 #endif
 
 // https://bugs.llvm.org/show_bug.cgi?id=44517
-#if __has_keyword(__is_assignable)
+#if __check_builtin(is_assignable)
 #define _LIBCUDACXX_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
 #endif
 
 // https://bugs.llvm.org/show_bug.cgi?id=44517
-#if __has_keyword(__is_same) && !defined(_LIBCUDACXX_COMPILER_NVCC)
+#if __check_builtin(is_same) && !defined(_LIBCUDACXX_COMPILER_NVCC)
 #define _LIBCUDACXX_IS_SAME(...) __is_same(__VA_ARGS__)
 #endif
 
-#if __has_feature(has_trivial_constructor)
+#if __check_builtin(has_trivial_constructor)
 #define _LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR(...) __has_trivial_constructor(__VA_ARGS__)
 #endif
 
-#if __has_feature(has_nothrow_constructor)
+#if __check_builtin(has_nothrow_constructor)
 #define _LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR(...) __has_nothrow_constructor(__VA_ARGS__)
 #endif
 
-#if __has_feature(has_nothrow_copy)
+#if __check_builtin(has_nothrow_copy)
 #define _LIBCUDACXX_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
 #endif
 
-#if __has_feature(has_nothrow_assign)
+#if __check_builtin(has_nothrow_assign)
 #define _LIBCUDACXX_HAS_NOTHROW_ASSIGN(...) __has_nothrow_assign(__VA_ARGS__)
 #endif
 
-#if __has_feature(has_trivial_destructor)
+#if __check_builtin(has_trivial_destructor)
 #define _LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_trivially_assignable)
+#if __check_builtin(is_trivially_assignable)
 #define _LIBCUDACXX_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_trivially_copyable)
+#if __check_builtin(is_trivially_copyable)
 #define _LIBCUDACXX_IS_TRIVIALLY_COPYABLE(...) __is_trivially_copyable(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_trivial)
+#if __check_builtin(is_trivial)
 #define _LIBCUDACXX_IS_TRIVIAL(...) __is_trivial(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_convertible_to)
+#if __check_builtin(is_convertible_to)
 #define _LIBCUDACXX_IS_CONVERTIBLE_TO(...) __is_convertible_to(__VA_ARGS__)
 #endif
 
 // https://bugs.llvm.org/show_bug.cgi?id=44517
-#if __has_keyword(__is_function) && !defined(_LIBCUDACXX_COMPILER_NVCC)
+#if __check_builtin(is_function) && !defined(_LIBCUDACXX_COMPILER_NVCC)
 #define _LIBCUDACXX_IS_FUNCTION(...) __is_function(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_union)
+#if __check_builtin(is_union)
 #define _LIBCUDACXX_IS_UNION(...) __is_union(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_class)
+#if __check_builtin(is_class)
 #define _LIBCUDACXX_IS_CLASS(...) __is_class(__VA_ARGS__)
 #endif
 
-#if __has_keyword(__is_aggregate)
+#if __check_builtin(is_aggregate)
 #define _LIBCUDACXX_IS_AGGREGATE(...) __is_aggregate(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_pod)
+#if __check_builtin(is_pod)
 #define _LIBCUDACXX_IS_POD(...) __is_pod(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_standard_layout)
+#if __check_builtin(is_standard_layout)
 #define _LIBCUDACXX_IS_STANDARD_LAYOUT(...) __is_standard_layout(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_enum)
+#if __check_builtin(is_enum)
 #define _LIBCUDACXX_IS_ENUM(...) __is_enum(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_empty)
+#if __check_builtin(is_empty)
 #define _LIBCUDACXX_IS_EMPTY(...) __is_empty(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_polymorphic)
+#if __check_builtin(is_polymorphic)
 #define _LIBCUDACXX_IS_POLYMORPHIC(...) __is_polymorphic(__VA_ARGS__)
 #endif
 
-#if __has_feature(has_virtual_destructor)
+#if __check_builtin(has_virtual_destructor)
 #define _LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR(...) __has_virtual_destructor(__VA_ARGS__)
 #endif
 
-#if __has_feature(is_literal)
+#if __check_builtin(is_literal)
 #define _LIBCUDACXX_IS_LITERAL(...) __is_literal(__VA_ARGS__)
 #endif
 
@@ -653,11 +657,11 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK __attribute__((__no_sanitize__("unsigned-integer-overflow")))
 #endif
 
-#if __has_builtin(__builtin_launder)
+#if __check_builtin(builtin_launder)
 #define _LIBCUDACXX_LAUNDER(...) __builtin_launder(__VA_ARGS__)
 #endif
 
-#if !__is_identifier(__has_unique_object_representations)
+#if __check_builtin(has_unique_object_representations)
 #define _LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS(...) __has_unique_object_representations(__VA_ARGS__)
 #endif
 
@@ -666,12 +670,110 @@ typedef __char32_t char32_t;
 #endif
 
 // NVCC in C++11 mode freaks out about `__builtin_is_constant_evaluated`.
-#if __has_builtin(__builtin_is_constant_evaluated) && !(defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_STD_VER < 14)
+#if __check_builtin(builtin_is_constant_evaluated) && !(defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_STD_VER < 14)
 #define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif
 
-#if __has_builtin(__builtin_addressof)
+#if __check_builtin(builtin_addressof)
 #define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
+#endif
+
+#if __check_builtin(is_array)
+#define _LIBCUDACXX_IS_ARRAY(...) __is_array(__VA_ARGS__)
+#endif
+
+// TODO: Clang incorrectly reports that __is_array is true for T[0].
+//       Re-enable the branch once https://llvm.org/PR54705 is fixed.
+#ifdef __clang__
+#define _LIBCUDACXX_USE_IS_ARRAY_FALLBACK
+#endif
+
+#if __check_builtin(is_lvalue_reference)
+#define _LIBCUDACXX_IS_LVALUE_REFERENCE(...) __is_lvalue_reference(__VA_ARGS__)
+#endif
+
+#if __check_builtin(is_object)
+#define _LIBCUDACXX_IS_OBJECT(...) __is_object(__VA_ARGS__)
+#endif
+
+// libstdc++ defines this as a function, breaking functionality
+#if 0 // __check_builtin(is_pointer)
+#define _LIBCUDACXX_IS_POINTER(...) __is_pointer(__VA_ARGS__)
+#endif
+
+#if __check_builtin(is_rvalue_reference)
+#define _LIBCUDACXX_IS_RVALUE_REFERENCE(...) __is_rvalue_reference(__VA_ARGS__)
+#endif
+
+#if __check_builtin(is_reference)
+#define _LIBCUDACXX_IS_REFERENCE(...) __is_reference(__VA_ARGS__)
+#endif
+
+#if __check_builtin(is_referenceable)
+#define _LIBCUDACXX_IS_REFERENCEABLE(...) __is_referenceable(__VA_ARGS__)
+#endif
+
+// libstdc++ defines this as a function, breaking functionality
+#if 0 // __check_builtin(is_scalar)
+#define _LIBCUDACXX_IS_SCALAR(...) __is_scalar(__VA_ARGS__)
+#endif
+
+// libstdc++ defines this as a function, breaking functionality
+#if 0 // __check_builtin(is_signed)
+#define _LIBCUDACXX_IS_SIGNED(...) __is_signed(__VA_ARGS__)
+#endif
+
+#if __check_builtin(is_unsigned)
+#define _LIBCUDACXX_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
+#endif
+
+// libstdc++ defines this as a function, breaking functionality
+#if 0 // __check_builtin(is_void)
+#define _LIBCUDACXX_IS_VOID(...) __is_void(__VA_ARGS__)
+#endif
+
+#if __check_builtin(make_signed)
+#define _LIBCUDACXX_MAKE_SIGNED(...) __make_signed(__VA_ARGS__)
+#endif
+
+#if __check_builtin(make_unsigned)
+#define _LIBCUDACXX_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
+#endif
+
+#if __check_builtin(array_rank)
+#define _LIBCUDACXX_ARRAY_RANK(...) __array_rank(__VA_ARGS__)
+#endif
+
+#if __check_builtin(remove_all_extents)
+#define _LIBCUDACXX_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)
+#endif
+
+#if __check_builtin(remove_const)
+#define _LIBCUDACXX_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
+#endif
+
+#if __check_builtin(remove_cv)
+#define _LIBCUDACXX_REMOVE_CV(...) __remove_cv(__VA_ARGS__)
+#endif
+
+#if __check_builtin(remove_cvref)
+#define _LIBCUDACXX_REMOVE_CVREF(...) __remove_cvref(__VA_ARGS__)
+#endif
+
+#if __check_builtin(remove_extent)
+#define _LIBCUDACXX_REMOVE_EXTENT(...) __remove_extent(__VA_ARGS__)
+#endif
+
+#if __check_builtin(remove_pointer)
+#define _LIBCUDACXX_REMOVE_POINTER(...) __remove_pointer(__VA_ARGS__)
+#endif
+
+#if __check_builtin(remove_reference_t)
+#define _LIBCUDACXX_REMOVE_REFERENCE_T(...) __remove_reference_t(__VA_ARGS__)
+#endif
+
+#if __check_builtin(remove_volatile)
+#define _LIBCUDACXX_REMOVE_VOLATILE(...) __remove_volatile(__VA_ARGS__)
 #endif
 
 #define _LIBCUDACXX_ALWAYS_INLINE __attribute__ ((__always_inline__))

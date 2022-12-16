@@ -13,16 +13,12 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/conditional.h>
-#include <__type_traits/is_copy_constructible.h>
-#include <__type_traits/is_nothrow_move_constructible.h>
-#include <__type_traits/remove_reference.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/is_copy_constructible.h"
 #include "../__type_traits/is_nothrow_move_constructible.h"
 #include "../__type_traits/remove_reference.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -33,7 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR __libcpp_remove_reference_t<_Tp>&&
 move(_Tp&& __t) _NOEXCEPT {
-  typedef _LIBCUDACXX_NODEBUG __libcpp_remove_reference_t<_Tp> _Up;
+  typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tp> _Up;
   return static_cast<_Up&&>(__t);
 }
 

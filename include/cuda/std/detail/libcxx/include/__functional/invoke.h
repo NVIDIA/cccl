@@ -13,24 +13,8 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/add_lvalue_reference.h>
-#include <__type_traits/apply_cv.h>
-#include <__type_traits/conditional.h>
-#include <__type_traits/decay.h>
-#include <__type_traits/enable_if.h>
-#include <__type_traits/integral_constant.h>
-#include <__type_traits/is_base_of.h>
-#include <__type_traits/is_core_convertible.h>
-#include <__type_traits/is_member_function_pointer.h>
-#include <__type_traits/is_member_object_pointer.h>
-#include <__type_traits/is_reference_wrapper.h>
-#include <__type_traits/is_same.h>
-#include <__type_traits/is_void.h>
-#include <__type_traits/nat.h>
-#include <__type_traits/remove_cv.h>
-#include <__utility/declval.h>
-#include <__utility/forward.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/add_lvalue_reference.h"
 #include "../__type_traits/apply_cv.h"
 #include "../__type_traits/conditional.h"
@@ -48,7 +32,6 @@
 #include "../__type_traits/remove_cv.h"
 #include "../__utility/declval.h"
 #include "../__utility/forward.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -503,7 +486,7 @@ template <class _Ret, bool = is_void<_Ret>::value>
 struct __invoke_void_return_wrapper
 {
     template <class ..._Args>
-    static _Ret __call(_Args&&... __args) {
+    _LIBCUDACXX_INLINE_VISIBILITY static _Ret __call(_Args&&... __args) {
         return _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Args>(__args)...);
     }
 };
@@ -512,7 +495,7 @@ template <class _Ret>
 struct __invoke_void_return_wrapper<_Ret, true>
 {
     template <class ..._Args>
-    static void __call(_Args&&... __args) {
+    _LIBCUDACXX_INLINE_VISIBILITY static void __call(_Args&&... __args) {
         _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Args>(__args)...);
     }
 };

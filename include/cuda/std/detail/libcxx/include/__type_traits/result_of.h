@@ -12,10 +12,9 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__functional/invoke.h>
-#else
-#include "../__functional/invoke.h"
 #endif // __cuda_std__
+
+#include "../__functional/invoke.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

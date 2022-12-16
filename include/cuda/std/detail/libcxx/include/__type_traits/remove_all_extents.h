@@ -21,15 +21,17 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if __has_builtin(__remove_all_extents)
+#if defined(_LIBCUDACXX_REMOVE_ALL_EXTENTS) && !defined(_LIBCUDACXX_USE_REMOVE_ALL_EXTENTS_FALLBACK)
 template <class _Tp>
 struct remove_all_extents {
-  using type _LIBCUDACXX_NODEBUG = __remove_all_extents(_Tp);
+  using type _LIBCUDACXX_NODEBUG_TYPE = _LIBCUDACXX_REMOVE_ALL_EXTENTS(_Tp);
 };
 
 template <class _Tp>
-using __remove_all_extents_t = __remove_all_extents(_Tp);
+using __remove_all_extents_t = _LIBCUDACXX_REMOVE_ALL_EXTENTS(_Tp);
+
 #else
+
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS remove_all_extents
     {typedef _Tp type;};
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS remove_all_extents<_Tp[]>
@@ -39,7 +41,8 @@ template <class _Tp, size_t _Np> struct _LIBCUDACXX_TEMPLATE_VIS remove_all_exte
 
 template <class _Tp>
 using __remove_all_extents_t = typename remove_all_extents<_Tp>::type;
-#endif // __has_builtin(__remove_all_extents)
+
+#endif // defined(_LIBCUDACXX_REMOVE_ALL_EXTENTS) && !defined(_LIBCUDACXX_USE_REMOVE_ALL_EXTENTS_FALLBACK)
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class _Tp> using remove_all_extents_t = __remove_all_extents_t<_Tp>;

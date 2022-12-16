@@ -10,6 +10,7 @@
 
 // is_literal_type
 
+// is_literal_type has been deprecated in C++17
 #pragma nv_diag_suppress 1215
 
 #include <cuda/std/type_traits>

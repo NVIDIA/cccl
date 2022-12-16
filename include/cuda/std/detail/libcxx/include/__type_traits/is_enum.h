@@ -12,18 +12,8 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/integral_constant.h>
-#include <__type_traits/is_array.h>
-#include <__type_traits/is_class.h>
-#include <__type_traits/is_floating_point.h>
-#include <__type_traits/is_function.h>
-#include <__type_traits/is_integral.h>
-#include <__type_traits/is_member_pointer.h>
-#include <__type_traits/is_pointer.h>
-#include <__type_traits/is_reference.h>
-#include <__type_traits/is_union.h>
-#include <__type_traits/is_void.h>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_array.h"
 #include "../__type_traits/is_class.h"
@@ -35,7 +25,6 @@
 #include "../__type_traits/is_reference.h"
 #include "../__type_traits/is_union.h"
 #include "../__type_traits/is_void.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

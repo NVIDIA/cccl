@@ -12,6 +12,7 @@
 
 // #include <cuda/std/functional>
 // #include <cuda/std/memory>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
@@ -23,6 +24,13 @@ struct X { __host__ __device__ explicit X(T const&){} };
 
 template <class T>
 struct S { __host__ __device__ explicit S(T const&){} };
+
+template <class T>
+struct bad_reference_wrapper {
+    __host__ __device__ bad_reference_wrapper(T&);
+    bad_reference_wrapper(T&&) = delete;
+    __host__ __device__ operator T&() const;
+};
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -98,14 +106,17 @@ struct TernaryOp {
     >::type type;
 };
 
+// (4.1)
 // -- If sizeof...(T) is zero, there shall be no member type.
 __host__ __device__
 void test_bullet_one() {
   static_assert(no_common_type<>::value, "");
 }
 
-// If sizeof...(T) is one, let T0 denote the sole type constituting the pack T.
-// The member typedef-name type shall denote the same type as decay_t<T0>.
+// (4.2)
+// -- If sizeof...(T) is one, let T0 denote the sole type constituting the pack
+//    T. The member typedef-name type shall denote the same type, if any, as
+//    common_type_t<T0, T0>; otherwise there shall be no member type.
 __host__ __device__
 void test_bullet_two() {
   static_assert((cuda::std::is_same<cuda::std::common_type<void>::type, void>::value), "");
@@ -128,11 +139,11 @@ void test_bullet_three_one_imp() {
   static_assert((cuda::std::is_same<typename cuda::std::common_type<T, U>::type, typename cuda::std::common_type<DT, DU>::type>::value), "");
 }
 
-// (3.3)
+// (4.3)
 // -- If sizeof...(T) is two, let the first and second types constituting T be
 //    denoted by T1 and T2, respectively, and let D1 and D2 denote the same types
 //    as decay_t<T1> and decay_t<T2>, respectively.
-// (3.3.1)
+// (4.3.1)
 //    -- If is_same_v<T1, D1> is false or is_same_v<T2, D2> is false, let C
 //       denote the same type, if any, as common_type_t<D1, D2>.
 __host__ __device__
@@ -167,17 +178,20 @@ void test_bullet_three_one() {
   }
 }
 
-// (3.3)
+// (4.3)
 // -- If sizeof...(T) is two, let the first and second types constituting T be
 //    denoted by T1 and T2, respectively, and let D1 and D2 denote the same types
 //    as decay_t<T1> and decay_t<T2>, respectively.
-// (3.3.1)
+// (4.3.1)
 //    -- If [...]
-// (3.3.2)
-//    -- Otherwise, let C denote the same type, if any, as
+// (4.3.2)
+//    -- [Note: [...]
+// (4.3.3)
+//    -- Otherwise, if
 //       decay_t<decltype(false ? declval<D1>() : declval<D2>())>
+//       denotes a type, let C denote that type.
 __host__ __device__
-void test_bullet_three_two() {
+void test_bullet_three_three() {
   {
     typedef int const* T1;
     typedef int* T2;
@@ -211,7 +225,38 @@ void test_bullet_three_two() {
   }
 }
 
-// (3.4)
+// (4.3)
+// -- If sizeof...(T) is two, let the first and second types constituting T be
+//    denoted by T1 and T2, respectively, and let D1 and D2 denote the same types
+//    as decay_t<T1> and decay_t<T2>, respectively.
+// (4.3.1)
+//    -- If [...]
+// (4.3.2)
+//    -- [Note: [...]
+// (4.3.3)
+//    -- Otherwise
+// (4.3.4)
+//    -- Otherwise, if COND-RES(CREF(D1), CREF(D2)) denotes a type, let C
+//       denote the type decay_t<COND-RES(CREF(D1), CREF(D2))>.
+__host__ __device__
+void test_bullet_three_four() {
+#if TEST_STD_VER >= 20
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<int, bad_reference_wrapper<int>>, int>, "");
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, double>, double>, "");
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<const bad_reference_wrapper<double>, double>, double>, "");
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<volatile bad_reference_wrapper<double>, double>, double>, "");
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<const volatile bad_reference_wrapper<double>, double>, double>, "");
+
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, const double>, double>, "");
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, volatile double>, double>, "");
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, const volatile double>, double>, "");
+
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>&, double>, double>, "");
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, double&>, double>, "");
+#endif
+}
+
+// (4.4)
 // -- If sizeof...(T) is greater than two, let T1, T2, and R, respectively,
 // denote the first, second, and (pack of) remaining types constituting T.
 // Let C denote the same type, if any, as common_type_t<T1, T2>. If there is
@@ -230,41 +275,15 @@ void test_bullet_four() {
   }
 }
 
-
-// The example code specified in Note B for common_type
-namespace note_b_example {
-
-typedef bool (&PF1)();
-typedef short (*PF2)(long);
-
-struct S {
-  __host__ __device__
-  operator PF2() const;
-  __host__ __device__
-  double operator()(char, int&);
-  __host__ __device__
-  void fn(long) const;
-  char data;
+#if TEST_STD_VER > 20
+struct A {};
+struct B {};
+struct C : B {};
+template<>
+struct cuda::std::common_type<A, cuda::std::tuple<B>> {
+  using type = tuple<B>;
 };
-
-typedef void (S::*PMF)(long) const;
-typedef char S::*PMD;
-
-using cuda::std::is_same;
-using cuda::std::result_of;
-// using cuda::std::unique_ptr;
-
-static_assert((is_same<result_of<S(int)>::type, short>::value), "Error!");
-static_assert((is_same<result_of<S&(unsigned char, int&)>::type, double>::value), "Error!");
-static_assert((is_same<result_of<PF1()>::type, bool>::value), "Error!");
-//static_assert((is_same<result_of<PMF(unique_ptr<S>, int)>::type, void>::value), "Error!");
-#if TEST_STD_VER >= 11
-static_assert((is_same<result_of<PMD(S)>::type, char&&>::value), "Error!");
 #endif
-static_assert((is_same<result_of<PMD(const S*)>::type, const char&>::value), "Error!");
-
-} // namespace note_b_example
-
 
 int main(int, char**)
 {
@@ -318,10 +337,12 @@ int main(int, char**)
     static_assert((cuda::std::is_same<cuda::std::common_type<int, S<int>, S<int> >::type, S<int> >::value), "");
     static_assert((cuda::std::is_same<cuda::std::common_type<int, int, S<int> >::type, S<int> >::value), "");
 
+
   test_bullet_one();
   test_bullet_two();
   test_bullet_three_one();
-  test_bullet_three_two();
+  test_bullet_three_three();
+  test_bullet_three_four();
   test_bullet_four();
 
     // P0548
@@ -341,6 +362,30 @@ int main(int, char**)
 #if TEST_STD_VER >= 11
     // Test that we're really variadic in C++11
     static_assert(cuda::std::is_same<cuda::std::common_type<int, int, int, int, int, int, int, int>::type, int>::value, "");
+#endif
+
+#if 0 // TEST_STD_VER > 20 Not Implemented
+    // P2321
+    static_assert(cuda::std::is_same_v<cuda::std::common_type_t<cuda::std::tuple<int>>, cuda::std::tuple<int>>);
+    static_assert(cuda::std::is_same_v<cuda::std::common_type_t<cuda::std::tuple<int>, cuda::std::tuple<long>>, cuda::std::tuple<long>>);
+    static_assert(cuda::std::is_same_v<cuda::std::common_type_t<cuda::std::tuple<const int>, cuda::std::tuple<const int>>, cuda::std::tuple<int>>);
+    static_assert(cuda::std::is_same_v<cuda::std::common_type_t<cuda::std::tuple<const int&>>, cuda::std::tuple<int>>);
+    static_assert(cuda::std::is_same_v<cuda::std::common_type_t<cuda::std::tuple<const volatile int&>, cuda::std::tuple<const volatile long&>>, cuda::std::tuple<long>>);
+
+    static_assert(cuda::std::is_same_v<cuda::std::common_type_t<A, cuda::std::tuple<B>, cuda::std::tuple<C>>, cuda::std::tuple<B>>);
+
+    static_assert(cuda::std::is_same_v<cuda::std::common_type_t<cuda::std::pair<int, int>>, cuda::std::pair<int, int>>);
+    static_assert(cuda::std::is_same_v<cuda::std::common_type_t<cuda::std::pair<int, long>, cuda::std::pair<long, int>>, cuda::std::pair<long, long>>);
+    static_assert(cuda::std::is_same_v<cuda::std::common_type_t<cuda::std::pair<const int, const long>,
+                                                    cuda::std::pair<const int, const long>>,
+                                                    cuda::std::pair<int, long>>);
+
+    static_assert(cuda::std::is_same_v<cuda::std::common_type_t<cuda::std::pair<const int&, const long&>>, cuda::std::pair<int, long>>);
+    static_assert(cuda::std::is_same_v<cuda::std::common_type_t<cuda::std::pair<const volatile int&, const volatile long&>,
+                                                    cuda::std::pair<const volatile long&, const volatile int&>>,
+                                                    cuda::std::pair<long, long>>);
+
+    static_assert(cuda::std::is_same_v<cuda::std::common_type_t<A, cuda::std::tuple<B>, cuda::std::tuple<C>>, cuda::std::tuple<B>>);
 #endif
 
   return 0;

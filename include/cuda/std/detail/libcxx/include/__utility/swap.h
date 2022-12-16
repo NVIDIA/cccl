@@ -12,15 +12,9 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/enable_if.h>
-#include <__type_traits/is_move_assignable.h>
-#include <__type_traits/is_move_constructible.h>
-#include <__type_traits/is_nothrow_move_assignable.h>
-#include <__type_traits/is_nothrow_move_constructible.h>
-#include <__type_traits/is_swappable.h>
-#include <__utility/move.h>
 #include <cstddef>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/is_move_assignable.h"
 #include "../__type_traits/is_move_constructible.h"
@@ -28,7 +22,6 @@
 #include "../__type_traits/is_nothrow_move_constructible.h"
 #include "../__type_traits/is_swappable.h"
 #include "../__utility/move.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

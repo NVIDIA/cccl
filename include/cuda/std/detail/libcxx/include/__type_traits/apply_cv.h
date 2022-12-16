@@ -12,15 +12,12 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__type_traits/is_const.h>
-#include <__type_traits/is_volatile.h>
-#include <__type_traits/remove_reference.h>
 #include <cstddef>
-#else
+#endif // __cuda_std__
+
 #include "../__type_traits/is_const.h"
 #include "../__type_traits/is_volatile.h"
 #include "../__type_traits/remove_reference.h"
-#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -32,13 +29,13 @@ template <class _Tp, class _Up, bool = is_const<__libcpp_remove_reference_t<_Tp>
                              bool = is_volatile<__libcpp_remove_reference_t<_Tp> >::value>
 struct __apply_cv
 {
-    typedef _LIBCUDACXX_NODEBUG _Up type;
+    typedef _LIBCUDACXX_NODEBUG_TYPE _Up type;
 };
 
 template <class _Tp, class _Up>
 struct __apply_cv<_Tp, _Up, true, false>
 {
-    typedef _LIBCUDACXX_NODEBUG const _Up type;
+    typedef _LIBCUDACXX_NODEBUG_TYPE const _Up type;
 };
 
 template <class _Tp, class _Up>

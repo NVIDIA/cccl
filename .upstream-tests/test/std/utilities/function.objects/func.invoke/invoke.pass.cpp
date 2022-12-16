@@ -37,6 +37,9 @@
 ///   described in the previous item;
 ///   (1.5) - f(t1, t2, ..., tN) in all other cases.
 
+#define _LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility> // for cuda::std::move
