@@ -26,7 +26,7 @@ int main(int, char**)
     {
         std::fstream fso(temp, std::ios_base::in | std::ios_base::out
                                                  | std::ios_base::trunc);
-        std::fstream fs = move(fso);
+        std::fstream fs = std::move(fso);
         double x = 0;
         fs << 3.25;
         fs.seekg(0);
@@ -37,7 +37,7 @@ int main(int, char**)
     {
         std::wfstream fso(temp, std::ios_base::in | std::ios_base::out
                                                   | std::ios_base::trunc);
-        std::wfstream fs = move(fso);
+        std::wfstream fs = std::move(fso);
         double x = 0;
         fs << 3.25;
         fs.seekg(0);

@@ -31,7 +31,7 @@ void test0(typename S::value_type lhs, const S& rhs, const S& x) {
 #if TEST_STD_VER >= 11
 template <class S>
 void test1(typename S::value_type lhs, S&& rhs, const S& x) {
-  assert(lhs + move(rhs) == x);
+  assert(lhs + std::move(rhs) == x);
 }
 #endif
 

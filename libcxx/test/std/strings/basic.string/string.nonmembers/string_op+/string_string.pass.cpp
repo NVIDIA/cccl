@@ -43,17 +43,17 @@ void test0(const S& lhs, const S& rhs, const S& x) {
 #if TEST_STD_VER >= 11
 template <class S>
 void test1(S&& lhs, const S& rhs, const S& x) {
-  assert(move(lhs) + rhs == x);
+  assert(std::move(lhs) + rhs == x);
 }
 
 template <class S>
 void test2(const S& lhs, S&& rhs, const S& x) {
-  assert(lhs + move(rhs) == x);
+  assert(lhs + std::move(rhs) == x);
 }
 
 template <class S>
 void test3(S&& lhs, S&& rhs, const S& x) {
-  assert(move(lhs) + move(rhs) == x);
+  assert(std::move(lhs) + std::move(rhs) == x);
 }
 
 #endif
