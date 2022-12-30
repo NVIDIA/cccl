@@ -38,7 +38,7 @@ constexpr bool empty(const _Tp (&)[_Sz]) noexcept { return false; }
 
 template <class _Ep>
 _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
-constexpr bool empty(_CUDA_VSTD::initializer_list<_Ep> __il) noexcept { return __il.size() == 0; }
+constexpr bool empty(initializer_list<_Ep> __il) noexcept { return __il.size() == 0; }
 
 #endif // _LIBCUDACXX_STD_VER > 17
 
