@@ -9,10 +9,6 @@
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
-// NOTE: atomic<> of a TriviallyCopyable class is wrongly rejected by older
-// clang versions. It was fixed right before the llvm 3.5 release. See PR18097.
-// XFAIL: apple-clang-6.0, clang-3.4, clang-3.3
-
 // <cuda/std/atomic>
 
 // template <class T>
@@ -53,43 +49,37 @@
 //     T operator=(T) noexcept;
 // };
 
-#include <cuda/atomic>
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
-#include <cuda/std/tuple>
 
 #include "test_macros.h"
+
+#include "cuda_space_selector.h"
 
 template <typename T>
 __host__ __device__
 constexpr bool unused(T &&) {return true;}
 
-struct aggregate {
-    double a;
-    double b;
-};
-
-struct small_aggregate {
-    uint8_t a;
-    uint8_t b;
+enum class foo_bar_enum : uint8_t {
+  foo,
+  bar,
+  baz
 };
 
 template <class T>
 __host__ __device__
 void test() {
-    cuda::atomic<T> a({42, 137});
-    cuda::std::atomic<T> b({42, 137});
-    unused(a);
-    unused(b);
+    cuda::atomic<T> a;
+    cuda::std::atomic<T> b;
+
+    T expected{};
+    a.compare_exchange_strong(expected, expected);
+    b.compare_exchange_strong(expected, expected);
 }
 
 int main(int, char**)
 {
-  test<double2>();
-  test<cuda::std::pair<double, double>>();
-  test<cuda::std::tuple<double, double>>();
-  test<aggregate>();
-  test<small_aggregate>();
+  test<foo_bar_enum>();
 
   return 0;
 }

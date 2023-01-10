@@ -121,22 +121,48 @@ const volatile _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterog
 }
 
 template <typename _Tp>
-using __cxx_atomic_small_to_32 = typename conditional<is_signed<_Tp>::value, int32_t, uint32_t>::type;
+using __cxx_atomic_small_to_32 = __conditional_t<is_signed<_Tp>::value, int32_t, uint32_t>;
+
+// Arithmetic conversions to/from proxy types
+template<class _Tp, __enable_if_t<is_arithmetic<_Tp>::value, int> = 0>
+_LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY inline __cxx_atomic_small_to_32<_Tp> __cxx_small_to_32(_Tp __val) {
+    return static_cast<__cxx_atomic_small_to_32<_Tp>>(__val);
+}
+
+template<class _Tp, __enable_if_t<is_arithmetic<_Tp>::value, int> = 0>
+_LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY inline _Tp __cxx_small_from_32(__cxx_atomic_small_to_32<_Tp> __val) {
+    return static_cast<_Tp>(__val);
+}
+
+// Non-arithmetic conversion to/from proxy types
+template<class _Tp, __enable_if_t<!is_arithmetic<_Tp>::value, int> = 0>
+_LIBCUDACXX_INLINE_VISIBILITY inline __cxx_atomic_small_to_32<_Tp> __cxx_small_to_32(_Tp __val) {
+    __cxx_atomic_small_to_32<_Tp> __temp{};
+    memcpy(&__temp, &__val, sizeof(_Tp));
+    return __temp;
+}
+
+template<class _Tp, __enable_if_t<!is_arithmetic<_Tp>::value, int> = 0>
+_LIBCUDACXX_INLINE_VISIBILITY inline _Tp __cxx_small_from_32(__cxx_atomic_small_to_32<_Tp> __val) {
+    _Tp __temp{};
+    memcpy(&__temp, &__val, sizeof(_Tp));
+    return __temp;
+}
 
 template <typename _Tp, int _Sco>
 struct __cxx_atomic_base_small_impl {
     __cxx_atomic_base_small_impl() noexcept = default;
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit
-      __cxx_atomic_base_small_impl(_Tp __value) : __a_value(__value) {
+      __cxx_atomic_base_small_impl(_Tp __value) : __a_value(__cxx_small_to_32(__value)) {
     }
 
     __cxx_atomic_base_heterogeneous_impl<__cxx_atomic_small_to_32<_Tp>, _Sco, false> __a_value;
 };
 
 template <typename _Tp, int _Sco>
-using __cxx_atomic_base_impl = typename conditional<sizeof(_Tp) < 4,
+using __cxx_atomic_base_impl = __conditional_t<sizeof(_Tp) < 4,
                                     __cxx_atomic_base_small_impl<_Tp, _Sco>,
-                                    __cxx_atomic_base_heterogeneous_impl<_Tp, _Sco> >::type;
+                                    __cxx_atomic_base_heterogeneous_impl<_Tp, _Sco> >;
 
 
 template <typename _Tp, int _Sco>
@@ -339,21 +365,6 @@ __host__ __device__
             return __host::__cxx_atomic_fetch_min(&__a->__a_value, __val, __order);
         )
     )
-}
-
-template<class _Tp>
-__host__ __device__ inline __cxx_atomic_small_to_32<_Tp> __cxx_small_to_32(_Tp __val) {
-    _Tp __temp = 0;
-    memcpy(&__temp, &__val, sizeof(_Tp));
-    return __temp;
-}
-
-template<class _Tp>
-__host__ __device__ inline _Tp __cxx_small_from_32(__cxx_atomic_small_to_32<_Tp> __val) {
-    _Tp __temp = static_cast<_Tp>(__val);
-    _Tp __result;
-    memcpy(&__result, &__temp, sizeof(_Tp));
-    return __result;
 }
 
 template <typename _Tp, int _Sco>
