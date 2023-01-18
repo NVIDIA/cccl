@@ -657,8 +657,8 @@ __libcpp_isfinite_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 
 #if _LIBCUDACXX_STD_VER > 17
 template <typename _Fp>
-constexpr
-_Fp __lerp(_Fp __a, _Fp __b, _Fp __t) noexcept {
+_LIBCUDACXX_INLINE_VISIBILITY
+constexpr _Fp __lerp(_Fp __a, _Fp __b, _Fp __t) noexcept {
     if ((__a <= 0 && __b >= 0) || (__a >= 0 && __b <= 0))
         return __t * __b + (1 - __t) * __a;
 
@@ -670,12 +670,15 @@ _Fp __lerp(_Fp __a, _Fp __b, _Fp __t) noexcept {
     	return __x < __b ? __x : __b;
 }
 
+_LIBCUDACXX_INLINE_VISIBILITY
 constexpr float
 lerp(float __a, float __b, float __t)                   _NOEXCEPT { return __lerp(__a, __b, __t); }
 
+_LIBCUDACXX_INLINE_VISIBILITY
 constexpr double
 lerp(double __a, double __b, double __t)                _NOEXCEPT { return __lerp(__a, __b, __t); }
 
+_LIBCUDACXX_INLINE_VISIBILITY
 constexpr long double
 lerp(long double __a, long double __b, long double __t) _NOEXCEPT { return __lerp(__a, __b, __t); }
 
