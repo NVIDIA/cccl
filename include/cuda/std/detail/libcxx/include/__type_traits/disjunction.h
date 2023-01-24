@@ -49,8 +49,16 @@ using _Or _LIBCUDACXX_NODEBUG_TYPE = typename _OrImpl<sizeof...(_Args) != 0>::te
 
 #if _LIBCUDACXX_STD_VER > 11
 
+#ifdef _LIBCUDACXX_COMPILER_MSVC
+template <class... _Args>
+struct disjunction : false_type {};
+
+template <class _First, class... _Rest>
+struct disjunction<_First, _Rest...> : _OrImpl<true>::template _Result<false_type, _First, _Rest...> {};
+#else
 template <class... _Args>
 struct disjunction : _Or<_Args...> {};
+#endif // !MSVC
 
 template <class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool disjunction_v = _Or<_Args...>::value;
