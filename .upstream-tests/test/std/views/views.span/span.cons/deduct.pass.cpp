@@ -8,6 +8,9 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: c++03, c++11, c++14
 
+// gcc-6 does not support deduction guides until 7
+// UNSUPPORTED: gcc-6
+
 // <span>
 
 //   template<class It, class EndOrSize>
@@ -94,6 +97,6 @@ int main(int, char**)
   test_iterator_sentinel();
   test_c_array();
   test_std_array();
- 
+
   return 0;
 }

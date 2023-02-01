@@ -14,7 +14,7 @@ services:
       args: &ubuntu22-args
         BUILDKIT_INLINE_CACHE: "1"
         USE_LLVM_INSTALLER: "1"
-        ROOT_IMAGE: "nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu22.04"
+        ROOT_IMAGE: "nvcr.io/nvidia/cuda:12.0.0-devel-ubuntu22.04"
         COMPILERS: "g++-11 g++-12 clang-11 clang-12 clang-13 clang-14 clang-15"
     deploy: &deploy-template
       resources:
@@ -38,7 +38,7 @@ services:
       args: &ubuntu20-args
         BUILDKIT_INLINE_CACHE: "1"
         USE_LLVM_INSTALLER: 0
-        ROOT_IMAGE: "nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu20.04"
+        ROOT_IMAGE: "nvcr.io/nvidia/cuda:12.0.0-devel-ubuntu20.04"
         COMPILERS: "g++-8 g++-9 g++-10 clang-8 clang-9 clang-10"
     deploy: *deploy-template
 
@@ -56,7 +56,7 @@ services:
       args: &ubuntu18-args
         BUILDKIT_INLINE_CACHE: "1"
         USE_LLVM_INSTALLER: 0
-        ROOT_IMAGE: "nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu18.04"
+        ROOT_IMAGE: "nvcr.io/nvidia/cuda:12.0.0-devel-ubuntu18.04"
         COMPILERS: "g++-6 g++-7 clang-7"
     deploy: *deploy-template
 

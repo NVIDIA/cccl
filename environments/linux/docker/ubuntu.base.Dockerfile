@@ -77,6 +77,7 @@ ADD ./.upstream-tests/utils                   /libcudacxx/utils
 
 # Install compiler and configure project
 RUN cmake -S /libcudacxx -B /build \
+        -G Ninja \
         -DLIBCUDACXX_ENABLE_STATIC_LIBRARY=OFF \
         -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON \
         -DLIBCUDACXX_ENABLE_LIBCXX_TESTS=ON \
@@ -88,8 +89,8 @@ RUN cmake -S /libcudacxx -B /build \
         -DCMAKE_CUDA_COMPILER=${CUDACXX_PATH} \
         -DCMAKE_CUDA_FLAGS="-allow-unsupported-compiler"
 
-RUN make -j -C /build/libcxx
-RUN make -j -C /build/test/host_only
+RUN ninja -C /build libcudacxx_tu_tests && ninja -C /build clean
+RUN ninja -C /build cxx
 
 ENV LIBCUDACXX_SITE_CONFIG=/build/test/lit.site.cfg
 ENV LIBCXX_SITE_CONFIG=/build/libcxx/test/lit.site.cfg

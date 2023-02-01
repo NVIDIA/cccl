@@ -64,8 +64,14 @@
 #define __LDBL_DENORM_MIN__ 3.64519953188247460253e-4951L
 
 // __builtin replacements/workarounds
+#if _MSC_VER < 1934
 #define __builtin_huge_vall()    _LInf._Long_double
 #define __builtin_nanl(__dummmy) _LNan._Long_double
 #define __builtin_nansl(__dummy) _LSnan._Long_double
+#else
+#define __builtin_huge_vall()    __builtin_huge_val()
+#define __builtin_nanl(__v)      __builtin_nan(__v)
+#define __builtin_nansl(__v)     __builtin_nans(__v)
+#endif
 
 #endif // _LIBCUDACXX_SUPPORT_WIN32_LIMITS_MSVC_WIN32_H

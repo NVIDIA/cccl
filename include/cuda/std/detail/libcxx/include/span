@@ -226,11 +226,11 @@ public:
 #endif
     template <class _OtherElementType, enable_if_t<
                 is_convertible<_OtherElementType(*)[], element_type (*)[]>::value, nullptr_t> = nullptr>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     span(      array<_OtherElementType, _Extent>& __arr) noexcept : __data{__arr.data()} {}
     template <class _OtherElementType, enable_if_t<
                 is_convertible<_OtherElementType(*)[], element_type (*)[]>::value, nullptr_t> = nullptr>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     span(const array<_OtherElementType, _Extent>& __arr) noexcept : __data{__arr.data()} {}
 
     template <class _OtherElementType, enable_if_t<
@@ -501,7 +501,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator end() const noexcept { return iterator(data() + size()); }
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 reverse_iterator rbegin() const noexcept { return reverse_iterator(end()); }
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 reverse_iterator rend() const noexcept { return reverse_iterator(begin()); }
-    
+
     _LIBCUDACXX_INLINE_VISIBILITY span<const byte, dynamic_extent> __as_bytes() const noexcept
     { return {reinterpret_cast<const byte *>(data()), size_bytes()}; }
 
@@ -528,7 +528,7 @@ auto as_writable_bytes(span<_Tp, _Extent> __s) noexcept
 
 #endif // _LIBCUDACXX_STD_VER > 11
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 
 //  Deduction guides
 template<class _Tp, size_t _Sz>
