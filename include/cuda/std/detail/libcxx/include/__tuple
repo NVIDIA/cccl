@@ -20,6 +20,7 @@
 #include "__fwd/array.h"
 #include "__fwd/get.h"
 #include "__fwd/tuple.h"
+#include "__tuple_/apply_cv.h"
 #include "__tuple_/tuple_element.h"
 #include "__tuple_/tuple_indices.h"
 #include "__tuple_/tuple_like.h"
@@ -34,46 +35,6 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef _LIBCUDACXX_CXX03_LANG
-
-template <bool _ApplyLV, bool _ApplyConst, bool _ApplyVolatile>
-struct __apply_cv_mf;
-template <>
-struct __apply_cv_mf<false, false, false> {
-  template <class _Tp> using __apply = _Tp;
-};
-template <>
-struct __apply_cv_mf<false, true, false> {
-  template <class _Tp> using __apply _LIBCUDACXX_NODEBUG_TYPE  = const _Tp;
-};
-template <>
-struct __apply_cv_mf<false, false, true> {
-  template <class _Tp> using __apply _LIBCUDACXX_NODEBUG_TYPE  = volatile _Tp;
-};
-template <>
-struct __apply_cv_mf<false, true, true> {
-  template <class _Tp> using __apply _LIBCUDACXX_NODEBUG_TYPE  = const volatile _Tp;
-};
-template <>
-struct __apply_cv_mf<true, false, false> {
-  template <class _Tp> using __apply _LIBCUDACXX_NODEBUG_TYPE  = _Tp&;
-};
-template <>
-struct __apply_cv_mf<true, true, false> {
-  template <class _Tp> using __apply _LIBCUDACXX_NODEBUG_TYPE  = const _Tp&;
-};
-template <>
-struct __apply_cv_mf<true, false, true> {
-  template <class _Tp> using __apply _LIBCUDACXX_NODEBUG_TYPE  = volatile _Tp&;
-};
-template <>
-struct __apply_cv_mf<true, true, true> {
-  template <class _Tp> using __apply _LIBCUDACXX_NODEBUG_TYPE = const volatile _Tp&;
-};
-template <class _Tp, class _RawTp = __libcpp_remove_reference_t<_Tp>>
-using __apply_cv_t _LIBCUDACXX_NODEBUG_TYPE  = __apply_cv_mf<
-    is_lvalue_reference<_Tp>::value,
-    is_const<_RawTp>::value,
-    is_volatile<_RawTp>::value>;
 
 // __make_tuple_types
 
