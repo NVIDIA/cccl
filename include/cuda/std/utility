@@ -10,11 +10,6 @@
 #ifndef _CUDA_UTILITY
 #define _CUDA_UTILITY
 
-#if !defined(__CUDACC_RTC__)
-// Fetch utility to populate tuple_size
-#include <utility>
-#endif
-
 #include "limits"
 #include "type_traits"
 #include "version"

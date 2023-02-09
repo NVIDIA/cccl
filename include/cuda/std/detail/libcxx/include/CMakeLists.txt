@@ -98,6 +98,7 @@ set(files
   __tuple_/apply_cv.h
   __tuple_/make_tuple_types.h
   __tuple_/sfinae_helpers.h
+  __tuple_/structured_bindings.h
   __tuple_/tuple_element.h
   __tuple_/tuple_indices.h
   __tuple_/tuple_like.h

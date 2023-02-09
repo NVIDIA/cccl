@@ -116,6 +116,7 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #include <__debug>
 #endif
 
+#include "__tuple_/structured_bindings.h"
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
 #endif
@@ -482,30 +483,5 @@ get(const array<_Tp, _Size>&& __a) _NOEXCEPT
 #endif  // !_LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-// This is a workaround for the fact that structured bindings require that the specializations of
-// `tuple_size` and `tuple_element` reside in namespace std (https://eel.is/c++draft/dcl.struct.bind#4).
-// See https://github.com/NVIDIA/libcudacxx/issues/316 for a short discussion
-#if _LIBCUDACXX_STD_VER > 14
-namespace std {
-#ifdef _LIBCUDACXX_COMPILER_NVRTC
-    template <class... _Tp>
-    struct tuple_size;
-
-    template<size_t _Ip, class... _Tp>
-    struct tuple_element;
-#endif
-
-    template <class _Tp, size_t _Size>
-    struct tuple_size<_CUDA_VSTD::array<_Tp, _Size>> 
-      : _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>
-    {};
-
-    template<size_t _Ip, class _Tp, size_t _Size>
-    struct tuple_element<_Ip, _CUDA_VSTD::array<_Tp, _Size>> 
-      : _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::array<_Tp, _Size>>
-    {};
-}
-#endif // _LIBCUDACXX_STD_VER > 14
 
 #endif  // _LIBCUDACXX_ARRAY
