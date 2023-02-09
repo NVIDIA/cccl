@@ -19,6 +19,7 @@
 
 #include "__fwd/array.h"
 #include "__fwd/tuple.h"
+#include "__tuple_/tuple_size.h"
 #include "__tuple_/tuple_types.h"
 #include "__utility/integer_sequence.h"
 
@@ -27,38 +28,6 @@
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS tuple_size;
-
-#if !defined(_LIBCUDACXX_CXX03_LANG)
-template <class _Tp, class...>
-using __enable_if_tuple_size_imp = _Tp;
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<__enable_if_tuple_size_imp<
-    const _Tp,
-    typename enable_if<!is_volatile<_Tp>::value>::type,
-    integral_constant<size_t, sizeof(tuple_size<_Tp>)>>>
-    : public integral_constant<size_t, tuple_size<_Tp>::value> {};
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<__enable_if_tuple_size_imp<
-    volatile _Tp,
-    typename enable_if<!is_const<_Tp>::value>::type,
-    integral_constant<size_t, sizeof(tuple_size<_Tp>)>>>
-    : public integral_constant<size_t, tuple_size<_Tp>::value> {};
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<__enable_if_tuple_size_imp<
-    const volatile _Tp,
-    integral_constant<size_t, sizeof(tuple_size<_Tp>)>>>
-    : public integral_constant<size_t, tuple_size<_Tp>::value> {};
-
-#else
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<const _Tp> : public tuple_size<_Tp> {};
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<volatile _Tp> : public tuple_size<_Tp> {};
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<const volatile _Tp> : public tuple_size<_Tp> {};
-#endif
 
 template <size_t _Ip, class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS tuple_element;
 
@@ -98,12 +67,6 @@ struct __make_tuple_indices
 };
 
 template <class... _Tp> struct __tuple_like<tuple<_Tp...> > : true_type {};
-
-template <class ..._Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<tuple<_Tp...> >
-    : public integral_constant<size_t, sizeof...(_Tp)>
-{
-};
 
 template <size_t _Ip, class ..._Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
@@ -216,13 +179,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, __tuple_types<_Types...>>
 {
     static_assert(_Ip < sizeof...(_Types), "tuple_element index out of range");
     typedef _LIBCUDACXX_NODEBUG_TYPE __type_pack_element<_Ip, _Types...> type;
-};
-
-
-template <class ..._Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<__tuple_types<_Tp...> >
-    : public integral_constant<size_t, sizeof...(_Tp)>
-{
 };
 
 template <class... _Tp> struct __tuple_like<__tuple_types<_Tp...> > : true_type {};
