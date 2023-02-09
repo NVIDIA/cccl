@@ -213,8 +213,8 @@ template <size_t I>
 #include "__functional/unwrap_ref.h"
 #include "__functional/weak_result_type.h"
 #include "__fwd/get.h"
-#include "__tuple_/sfinae_helpers.h"
-#include "__tuple_/structured_bindings.h"
+#include "__tuple/sfinae_helpers.h"
+#include "__tuple/structured_bindings.h"
 #include "__utility/as_const.h"
 #include "__utility/auto_cast.h"
 #include "__utility/cmp.h"
@@ -242,8 +242,8 @@ template <size_t I>
 //#include <initializer_list>
 
 // [tuple.helper]
-#include "__tuple_/tuple_element.h"
-#include "__tuple_/tuple_size.h"
+#include "__tuple/tuple_element.h"
+#include "__tuple/tuple_size.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

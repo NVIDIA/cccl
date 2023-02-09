@@ -18,7 +18,7 @@
 #include "../__fwd/array.h"
 #include "../__fwd/pair.h"
 #include "../__fwd/tuple.h"
-#include "../__tuple_/tuple_types.h"
+#include "../__tuple/tuple_types.h"
 #include "../__type_traits/integral_constant.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

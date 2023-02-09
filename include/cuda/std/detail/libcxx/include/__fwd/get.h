@@ -18,7 +18,7 @@
 #include "../__fwd/array.h"
 #include "../__fwd/pair.h"
 #include "../__fwd/tuple.h"
-#include "../__tuple_/tuple_element.h"
+#include "../__tuple/tuple_element.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

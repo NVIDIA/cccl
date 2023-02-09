@@ -15,8 +15,8 @@
 #include <cstddef>
 #endif // __cuda_std__
 
-#include "../__tuple_/tuple_indices.h"
-#include "../__tuple_/tuple_types.h"
+#include "../__tuple/tuple_indices.h"
+#include "../__tuple/tuple_types.h"
 #include "../__type_traits/add_const.h"
 #include "../__type_traits/add_cv.h"
 #include "../__type_traits/add_volatile.h"

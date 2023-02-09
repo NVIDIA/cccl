@@ -16,7 +16,7 @@
 #endif // __cuda_std__
 
 #include "../__fwd/tuple.h"
-#include "../__tuple_/tuple_types.h"
+#include "../__tuple/tuple_types.h"
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_const.h"

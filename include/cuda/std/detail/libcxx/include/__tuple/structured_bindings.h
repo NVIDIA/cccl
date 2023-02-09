@@ -21,8 +21,8 @@
 #include "../__fwd/array.h"
 #include "../__fwd/pair.h"
 #include "../__fwd/tuple.h"
-#include "../__tuple_/tuple_element.h"
-#include "../__tuple_/tuple_size.h"
+#include "../__tuple/tuple_element.h"
+#include "../__tuple/tuple_size.h"
 #include "../__type_traits/integral_constant.h"
 
 // This is a workaround for the fact that structured bindings require that the specializations of
