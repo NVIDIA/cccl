@@ -96,6 +96,7 @@ set(files
   __threading_support
   __tree
   __tuple_/apply_cv.h
+  __tuple_/make_tuple_types.h
   __tuple_/tuple_element.h
   __tuple_/tuple_indices.h
   __tuple_/tuple_like.h
