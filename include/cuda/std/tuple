@@ -15,8 +15,6 @@
 
 #include "type_traits"
 
-#include "detail/libcxx/include/__tuple"
-
 #include "functional"
 #include "utility"
 

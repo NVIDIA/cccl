@@ -26,7 +26,6 @@
 #include "detail/__pragma_push"
 
 #include "detail/libcxx/include/algorithm"
-#include "detail/libcxx/include/__tuple"
 #include "detail/libcxx/include/cstdlib"
 #include "detail/libcxx/include/stdexcept"
 #include "detail/libcxx/include/array"

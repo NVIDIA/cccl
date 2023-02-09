@@ -147,16 +147,39 @@ template <class... Types>
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__tuple>
 #include <cstddef>
 #include <type_traits>
-#include <__functional_base>
 #include <utility>
 #include <version>
 #include <__pragma_push>
 #endif // __cuda_std__
 
+#include "__functional_base"
+#include "__functional/unwrap_ref.h"
+#include "__fwd/array.h"
+#include "__type_traits/maybe_const.h"
+#include "__tuple_/apply_cv.h"
+#include "__tuple_/make_tuple_types.h"
+#include "__tuple_/sfinae_helpers.h"
 #include "__tuple_/structured_bindings.h"
+#include "__tuple_/tuple_element.h"
+#include "__tuple_/tuple_indices.h"
+#include "__tuple_/tuple_like.h"
+#include "__tuple_/tuple_size.h"
+#include "__tuple_/tuple_types.h"
+#include "__utility/forward.h"
+#include "__utility/integer_sequence.h"
+#include "__utility/move.h"
+#include "__utility/piecewise_construct.h"
+#include "__utility/swap.h"
+
+// standard-mandated includes
+
+// [tuple.syn]
+#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#include "compare"
+#endif
+
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
 #endif

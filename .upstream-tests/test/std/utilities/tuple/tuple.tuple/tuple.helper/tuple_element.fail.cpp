@@ -28,7 +28,7 @@ int main(int, char**)
     using E1 = typename cuda::std::tuple_element<1, T &>::type; // expected-error{{undefined template}}
     using E2 = typename cuda::std::tuple_element<3, T>::type;
     using E3 = typename cuda::std::tuple_element<4, T const>::type;
-        // expected-error@__tuple:* 2 {{static_assert failed}}
+        // expected-error@*:* 2 {{static_assert failed}}
 
 
   return 0;
