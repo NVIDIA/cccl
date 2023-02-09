@@ -54,7 +54,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     typename __invoke_of<type&, _ArgTypes...>::type
     operator() (_ArgTypes&&... __args) const {
-        return std::__invoke(get(), std::forward<_ArgTypes>(__args)...);
+        return _CUDA_VSTD::__invoke(get(), _CUDA_VSTD::forward<_ArgTypes>(__args)...);
     }
 };
 
