@@ -18,6 +18,7 @@
 #endif //__cuda_std__
 
 #include "__fwd/array.h"
+#include "__fwd/tuple.h"
 #include "__utility/integer_sequence.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -94,9 +95,6 @@ struct __make_tuple_indices
     static_assert(_Sp <= _Ep, "__make_tuple_indices input error");
     typedef __make_indices_imp<_Ep, _Sp> type;
 };
-
-
-template <class ..._Tp> class _LIBCUDACXX_TEMPLATE_VIS tuple;
 
 template <class... _Tp> struct __tuple_like<tuple<_Tp...> > : true_type {};
 
