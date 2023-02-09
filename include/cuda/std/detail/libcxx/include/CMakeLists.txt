@@ -227,6 +227,7 @@ set(files
   __utility/forward.h
   __utility/in_place.h
   __utility/move.h
+  __utility/piecewise_construct.h
   __utility/swap.h
   algorithm
   any

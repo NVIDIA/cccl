@@ -220,6 +220,7 @@ template <size_t I>
 #include "__utility/forward.h"
 #include "__utility/in_place.h"
 #include "__utility/move.h"
+#include "__utility/piecewise_construct.h"
 #include "__utility/swap.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -275,13 +276,6 @@ operator>=(const _Tp& __x, const _Tp& __y)
 // swap is defined in <type_traits>
 
 #endif //__cuda_std__
-
-struct _LIBCUDACXX_TEMPLATE_VIS piecewise_construct_t { explicit piecewise_construct_t() = default; };
-#if defined(_LIBCUDACXX_CXX03_LANG) || defined(_LIBCUDACXX_BUILDING_LIBRARY)
-extern _LIBCUDACXX_EXPORTED_FROM_ABI const piecewise_construct_t piecewise_construct;// = piecewise_construct_t();
-#else
-/* _LIBCUDACXX_INLINE_VAR */ constexpr piecewise_construct_t piecewise_construct = piecewise_construct_t();
-#endif
 
 #if defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
 template <class, class>
