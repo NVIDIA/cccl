@@ -222,6 +222,7 @@ template <size_t I>
 #include "__utility/move.h"
 #include "__utility/piecewise_construct.h"
 #include "__utility/priority_tag.h"
+#include "__utility/rel_ops.h"
 #include "__utility/swap.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -233,50 +234,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // This header is not currently supported. It exists to allow for the use of
 // `unary_function`, needed by `<cuda/std/functional>`, which happens to be defined here.
 
-#ifndef __cuda_std__
-
-namespace rel_ops
-{
-
-template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool
-operator!=(const _Tp& __x, const _Tp& __y)
-{
-    return !(__x == __y);
-}
-
-template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool
-operator> (const _Tp& __x, const _Tp& __y)
-{
-    return __y < __x;
-}
-
-template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool
-operator<=(const _Tp& __x, const _Tp& __y)
-{
-    return !(__y < __x);
-}
-
-template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool
-operator>=(const _Tp& __x, const _Tp& __y)
-{
-    return !(__x < __y);
-}
-
-}  // rel_ops
-
 // swap_ranges is defined in <type_traits>`
 
 // swap is defined in <type_traits>
-
-#endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
 template <class, class>

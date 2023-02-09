@@ -229,6 +229,7 @@ set(files
   __utility/move.h
   __utility/piecewise_construct.h
   __utility/priority_tag.h
+  __utility/rel_ops.h
   __utility/swap.h
   algorithm
   any
