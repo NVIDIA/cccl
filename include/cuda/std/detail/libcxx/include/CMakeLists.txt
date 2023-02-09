@@ -225,6 +225,7 @@ set(files
   __utility/declval.h
   __utility/exchange.h
   __utility/forward.h
+  __utility/in_place.h
   __utility/move.h
   __utility/swap.h
   algorithm

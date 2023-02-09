@@ -218,6 +218,7 @@ template <size_t I>
 #include "__utility/declval.h"
 #include "__utility/exchange.h"
 #include "__utility/forward.h"
+#include "__utility/in_place.h"
 #include "__utility/move.h"
 #include "__utility/swap.h"
 
@@ -922,41 +923,6 @@ template<class... _Tp>
     using index_sequence_for = make_index_sequence<sizeof...(_Tp)>;
 
 #endif  // _LIBCUDACXX_STD_VER > 11
-
-#if _LIBCUDACXX_STD_VER > 14
-
-struct _LIBCUDACXX_TYPE_VIS in_place_t {
-    explicit in_place_t() = default;
-};
-_LIBCUDACXX_INLINE_VAR constexpr in_place_t in_place{};
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS in_place_type_t {
-    explicit in_place_type_t() = default;
-};
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr in_place_type_t<_Tp> in_place_type{};
-
-template <size_t _Idx>
-struct _LIBCUDACXX_TYPE_VIS in_place_index_t {
-    explicit in_place_index_t() = default;
-};
-template <size_t _Idx>
-_LIBCUDACXX_INLINE_VAR constexpr in_place_index_t<_Idx> in_place_index{};
-
-template <class _Tp> struct __is_inplace_type_imp : false_type {};
-template <class _Tp> struct __is_inplace_type_imp<in_place_type_t<_Tp>> : true_type {};
-
-template <class _Tp>
-using __is_inplace_type = __is_inplace_type_imp<__remove_cvref_t<_Tp>>;
-
-template <class _Tp> struct __is_inplace_index_imp : false_type {};
-template <size_t _Idx> struct __is_inplace_index_imp<in_place_index_t<_Idx>> : true_type {};
-
-template <class _Tp>
-using __is_inplace_index = __is_inplace_index_imp<__remove_cvref_t<_Tp>>;
-
-#endif // _LIBCUDACXX_STD_VER > 14
 
 #ifndef __cuda_std__
 
