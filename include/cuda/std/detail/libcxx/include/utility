@@ -217,6 +217,7 @@ template <size_t I>
 #include "__utility/convert_to_integral.h"
 #include "__utility/declval.h"
 #include "__utility/exchange.h"
+#include "__utility/forward_like.h"
 #include "__utility/forward.h"
 #include "__utility/in_place.h"
 #include "__utility/move.h"
