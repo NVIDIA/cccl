@@ -38,6 +38,7 @@ set(files
   __functional_03
   __functional_base
   __functional_base_03
+  __fwd/array.h
   __fwd/pair.h
   __hash_table
   __iterator/access.h
