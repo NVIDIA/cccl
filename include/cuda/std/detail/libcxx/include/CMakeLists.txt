@@ -228,6 +228,7 @@ set(files
   __utility/forward_like.h
   __utility/forward.h
   __utility/in_place.h
+  __utility/integer_sequence.h
   __utility/move.h
   __utility/piecewise_construct.h
   __utility/priority_tag.h
