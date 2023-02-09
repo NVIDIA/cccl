@@ -15,6 +15,7 @@
 #include <utility>
 #endif
 
+#include "limits"
 #include "type_traits"
 #include "version"
 
