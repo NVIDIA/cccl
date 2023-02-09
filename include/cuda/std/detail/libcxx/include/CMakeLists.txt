@@ -242,6 +242,7 @@ set(files
   __utility/in_place.h
   __utility/integer_sequence.h
   __utility/move.h
+  __utility/pair.h
   __utility/piecewise_construct.h
   __utility/priority_tag.h
   __utility/rel_ops.h
