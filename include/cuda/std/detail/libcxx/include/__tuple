@@ -19,6 +19,7 @@
 
 #include "__fwd/array.h"
 #include "__fwd/tuple.h"
+#include "__tuple_/tuple_indices.h"
 #include "__tuple_/tuple_size.h"
 #include "__tuple_/tuple_types.h"
 #include "__utility/integer_sequence.h"
@@ -58,13 +59,6 @@ template <class _Tp> struct __tuple_like<const volatile _Tp> : public __tuple_li
 // tuple specializations
 
 #ifndef _LIBCUDACXX_CXX03_LANG
-
-template <size_t _Ep, size_t _Sp = 0>
-struct __make_tuple_indices
-{
-    static_assert(_Sp <= _Ep, "__make_tuple_indices input error");
-    typedef __make_indices_imp<_Ep, _Sp> type;
-};
 
 template <class... _Tp> struct __tuple_like<tuple<_Tp...> > : true_type {};
 
