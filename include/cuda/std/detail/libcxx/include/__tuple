@@ -19,6 +19,7 @@
 
 #include "__fwd/array.h"
 #include "__fwd/tuple.h"
+#include "__tuple_/tuple_types.h"
 #include "__utility/integer_sequence.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -179,10 +180,6 @@ get(const array<_Tp, _Size>&&) _NOEXCEPT;
 #endif
 
 #ifndef _LIBCUDACXX_CXX03_LANG
-
-// __tuple_types
-
-template <class ..._Tp> struct __tuple_types {};
 
 #if !__has_builtin(__type_pack_element)
 

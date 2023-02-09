@@ -94,6 +94,7 @@ set(files
   __string
   __threading_support
   __tree
+  __tuple_/tuple_types.h
   __type_traits/add_const.h
   __type_traits/add_cv.h
   __type_traits/add_lvalue_reference.h
