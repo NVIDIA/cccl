@@ -39,6 +39,7 @@ set(files
   __functional_base
   __functional_base_03
   __fwd/array.h
+  __fwd/get.h
   __fwd/pair.h
   __fwd/tuple.h
   __hash_table
