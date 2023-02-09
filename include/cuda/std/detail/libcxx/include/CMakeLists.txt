@@ -29,6 +29,7 @@ set(files
   __concepts/totally_ordered.h
   __debug
   __functional/binary_function.h
+  __functional/hash.h
   __functional/identity.h
   __functional/invoke.h
   __functional/reference_wrapper.h
@@ -40,6 +41,7 @@ set(files
   __functional_base_03
   __fwd/array.h
   __fwd/get.h
+  __fwd/hash.h
   __fwd/pair.h
   __fwd/tuple.h
   __hash_table

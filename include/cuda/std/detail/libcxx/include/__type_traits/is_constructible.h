@@ -14,6 +14,8 @@
 #include <__config>
 #endif // __cuda_std__
 
+#include "../__type_traits/conjunction.h"
+#include "../__type_traits/disjunction.h"
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_base_of.h"
 #include "../__type_traits/is_destructible.h"
