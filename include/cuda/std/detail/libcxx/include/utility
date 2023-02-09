@@ -211,6 +211,7 @@ template <size_t I>
 #include "__functional/binary_function.h"
 #include "__functional/reference_wrapper.h"
 #include "__functional/unary_function.h"
+#include "__functional/unwrap_ref.h"
 #include "__functional/weak_result_type.h"
 #include "__utility/as_const.h"
 #include "__utility/auto_cast.h"
@@ -605,29 +606,6 @@ swap(pair<_T1, _T2>& __x, pair<_T1, _T2>& __y)
 {
     __x.swap(__y);
 }
-
-template <class _Tp>
-struct __unwrap_reference { typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type; };
-
-template <class _Tp>
-struct __unwrap_reference<reference_wrapper<_Tp> > { typedef _LIBCUDACXX_NODEBUG_TYPE _Tp& type; };
-
-#if _LIBCUDACXX_STD_VER > 17
-template <class _Tp>
-struct unwrap_reference : __unwrap_reference<_Tp> { };
-
-template <class _Tp>
-struct unwrap_ref_decay : unwrap_reference<__decay_t<_Tp>> { };
-#endif // > C++17
-
-template <class _Tp>
-struct __unwrap_ref_decay
-#if _LIBCUDACXX_STD_VER > 17
-    : unwrap_ref_decay<_Tp>
-#else
-    : __unwrap_reference<__decay_t<_Tp>>
-#endif
-{ };
 
 #ifndef _LIBCUDACXX_CXX03_LANG
 

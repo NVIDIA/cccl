@@ -522,6 +522,7 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include "__functional/invoke.h"
 #include "__functional/reference_wrapper.h"
 #include "__functional/unary_function.h"
+#include "__functional/unwrap_ref.h"
 #include "__functional/weak_result_type.h"
 #include "__memory/addressof.h"
 #include "__memory/pointer_traits.h"
@@ -3100,14 +3101,6 @@ private:
 #endif // _LIBCUDACXX_STD_VER > 14
 
 #endif // __cuda_std__
-
-#if _LIBCUDACXX_STD_VER > 17
-template <class _Tp>
-using unwrap_reference_t = typename unwrap_reference<_Tp>::type;
-
-template <class _Tp>
-using unwrap_ref_decay_t = typename unwrap_ref_decay<_Tp>::type;
-#endif // > C++17
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

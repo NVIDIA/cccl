@@ -33,6 +33,7 @@ set(files
   __functional/invoke.h
   __functional/reference_wrapper.h
   __functional/unary_function.h
+  __functional/unwrap_ref.h
   __functional/weak_result_type.h
   __functional_03
   __functional_base
