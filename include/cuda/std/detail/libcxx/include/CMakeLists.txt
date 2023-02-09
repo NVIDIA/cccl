@@ -96,6 +96,7 @@ set(files
   __tree
   __tuple_/tuple_element.h
   __tuple_/tuple_indices.h
+  __tuple_/tuple_like.h
   __tuple_/tuple_size.h
   __tuple_/tuple_types.h
   __type_traits/add_const.h

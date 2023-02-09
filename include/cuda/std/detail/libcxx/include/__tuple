@@ -21,6 +21,7 @@
 #include "__fwd/tuple.h"
 #include "__tuple_/tuple_element.h"
 #include "__tuple_/tuple_indices.h"
+#include "__tuple_/tuple_like.h"
 #include "__tuple_/tuple_size.h"
 #include "__tuple_/tuple_types.h"
 #include "__utility/integer_sequence.h"
@@ -31,17 +32,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp> struct __tuple_like : false_type {};
-
-template <class _Tp> struct __tuple_like<const _Tp> : public __tuple_like<_Tp> {};
-template <class _Tp> struct __tuple_like<volatile _Tp> : public __tuple_like<_Tp> {};
-template <class _Tp> struct __tuple_like<const volatile _Tp> : public __tuple_like<_Tp> {};
-
 // tuple specializations
 
 #ifndef _LIBCUDACXX_CXX03_LANG
-
-template <class... _Tp> struct __tuple_like<tuple<_Tp...> > : true_type {};
 
 template <size_t _Ip, class ..._Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
@@ -67,8 +60,6 @@ get(const tuple<_Tp...>&&) _NOEXCEPT;
 
 // pair specializations
 
-template <class _T1, class _T2> struct __tuple_like<pair<_T1, _T2> > : true_type {};
-
 template <size_t _Ip, class _T1, class _T2>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 typename tuple_element<_Ip, pair<_T1, _T2> >::type&
@@ -93,8 +84,6 @@ get(const pair<_T1, _T2>&&) _NOEXCEPT;
 
 // array specializations
 
-template <class _Tp, size_t _Size> struct __tuple_like<array<_Tp, _Size> > : true_type {};
-
 template <size_t _Ip, class _Tp, size_t _Size>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _Tp&
@@ -118,8 +107,6 @@ get(const array<_Tp, _Size>&&) _NOEXCEPT;
 #endif
 
 #ifndef _LIBCUDACXX_CXX03_LANG
-
-template <class... _Tp> struct __tuple_like<__tuple_types<_Tp...> > : true_type {};
 
 template <bool _ApplyLV, bool _ApplyConst, bool _ApplyVolatile>
 struct __apply_cv_mf;
