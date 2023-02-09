@@ -220,6 +220,7 @@ set(files
   __type_traits/is_constant_evaluated.h
   __undef_macros
   __utility/as_const.h
+  __utility/auto_cast.h
   __utility/convert_to_integral.h
   __utility/declval.h
   __utility/exchange.h
