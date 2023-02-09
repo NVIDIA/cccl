@@ -231,6 +231,7 @@ set(files
   __utility/priority_tag.h
   __utility/rel_ops.h
   __utility/swap.h
+  __utility/to_underlying.h
   algorithm
   any
   array

@@ -224,6 +224,7 @@ template <size_t I>
 #include "__utility/priority_tag.h"
 #include "__utility/rel_ops.h"
 #include "__utility/swap.h"
+#include "__utility/to_underlying.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
