@@ -48,7 +48,7 @@ ARG CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/c
 ARG TINI_VER=0.18.0
 ARG TINI_URL=https://github.com/krallin/tini/releases/download/v${TINI_VER}/tini
 
-ARG SCCACHE_VERSION=0.2.15
+ARG SCCACHE_VERSION=0.3.3
 ARG SCCACHE_URL="https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/sccache-v${SCCACHE_VERSION}-x86_64-unknown-linux-musl.tar.gz"
 
 # `--silent --show-error` disables non-error output.
