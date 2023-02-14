@@ -89,6 +89,64 @@ class resource_ref {
 
 #if _LIBCUDACXX_STD_VER > 11
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+///////////////////////////////////////////////////////////////////////////////
+// properties
+
+/// \concept has_property
+/// \brief The \c has_property concept
+template <class _Resource, class _Property>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __has_property_,
+  requires(const _Resource& __res)(
+    get_property(__res, _Property{})
+  ));
+template <class _Resource, class _Property>
+_LIBCUDACXX_CONCEPT has_property = _LIBCUDACXX_FRAGMENT(__has_property_, _Resource, _Property);
+
+/// \concept property_with_value
+/// \brief The \c property_with_value concept
+template <class _Property>
+using __property_value_t = typename _Property::value_type;
+
+template <class _Property>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __property_with_value_,
+  requires()(
+    typename(__property_value_t<_Property>)
+  ));
+template <class _Property>
+_LIBCUDACXX_CONCEPT property_with_value = _LIBCUDACXX_FRAGMENT(__property_with_value_, _Property);
+
+/// \concept has_property_with
+/// \brief The \c has_property_with concept
+template <class _Resource, class _Property, class _Return>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __has_property_with_,
+  requires(const _Resource& __res)(
+    requires(property_with_value<_Property>),
+    requires(_CUDA_VSTD::same_as<_Return, decltype(get_property(__res, _Property{}))>)
+  ));
+template <class _Resource, class _Property, class _Return>
+_LIBCUDACXX_CONCEPT has_property_with = _LIBCUDACXX_FRAGMENT(__has_property_with_, _Resource, _Property, _Return);
+
+/// class forward_property
+/// \brief The \c forward_property crtp temaplate simplifies the user facing side of forwarding properties
+///        We can always tell people to just derive from it to properly forward all properties
+template <class _Derived, class _Upstream>
+struct forward_property {
+  _LIBCUDACXX_TEMPLATE(class _Property)
+    (requires (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
+  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr void get_property(const _Derived&, _Property) noexcept {}
+  
+  _LIBCUDACXX_TEMPLATE(class _Property)
+    (requires (property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
+  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr __property_value_t<_Property> get_property(
+    const _Derived& __res, _Property __prop) {
+    return get_property(__res.upstream_resource(), __prop);
+  }
+};
+
 namespace mr
 {
 
@@ -123,40 +181,6 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 
 template <class _Resource>
 _LIBCUDACXX_CONCEPT async_resource = _LIBCUDACXX_FRAGMENT(__async_resource_, _Resource);
-
-/// \concept has_property
-/// \brief The \c has_property concept
-template <class _Resource, class _Property>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __has_property_,
-  requires(const _Resource& __res)(
-    get_property(__res, _Property{})
-  ));
-template <class _Resource, class _Property>
-_LIBCUDACXX_CONCEPT has_property = _LIBCUDACXX_FRAGMENT(__has_property_, _Resource, _Property);
-
-/// \concept property_with_value
-/// \brief The \c property_with_value concept
-template <class _Property>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __property_with_value_,
-  requires()(
-    typename(typename _Property::value_type)
-  ));
-template <class _Property>
-_LIBCUDACXX_CONCEPT property_with_value = _LIBCUDACXX_FRAGMENT(__property_with_value_, _Property);
-
-/// \concept has_property_with
-/// \brief The \c has_property_with concept
-template <class _Resource, class _Property, class _Return>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __has_property_with_,
-  requires(const _Resource& __res)(
-    requires(property_with_value<_Property>),
-    requires(_CUDA_VSTD::same_as<_Return, decltype(get_property(__res, _Property{}))>)
-  ));
-template <class _Resource, class _Property, class _Return>
-_LIBCUDACXX_CONCEPT has_property_with = _LIBCUDACXX_FRAGMENT(__has_property_with_, _Resource, _Property, _Return);
 
 /// \concept resource_with
 /// \brief The \c resource_with concept
@@ -228,7 +252,7 @@ struct _Async_alloc_vtable : public _Alloc_vtable
 struct _Resource_vtable_builder
 {
     template <class _Resource, class _Property>
-    static typename _Property::value_type _Get_property(void* __res) noexcept {
+    static __property_value_t<_Property> _Get_property(void* __res) noexcept {
         return get_property(*static_cast<const _Resource *>(__res), _Property{});
     }
 
@@ -282,7 +306,7 @@ struct _Resource_vtable_builder
 template <class _Property>
 struct _Property_vtable
 {
-  using _PropertyFn         = typename _Property::value_type (*)(void*);
+  using _PropertyFn         = __property_value_t<_Property> (*)(void*);
   _PropertyFn __property_fn = nullptr;
 
   constexpr _Property_vtable(_PropertyFn __property_fn_) noexcept
@@ -516,7 +540,7 @@ public:
 
     _LIBCUDACXX_TEMPLATE(class _Property)
         (requires  property_with_value<_Property> &&_CUDA_VSTD::_One_of<_Property, _Properties...>) //
-     friend typename _Property::value_type get_property(
+     friend __property_value_t<_Property> get_property(
         const basic_resource_ref &__res, _Property) noexcept {
         return __res._Property_vtable<_Property>::__property_fn(__res.__object);
     }

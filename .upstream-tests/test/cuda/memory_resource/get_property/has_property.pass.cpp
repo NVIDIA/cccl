@@ -9,7 +9,7 @@
 
 // UNSUPPORTED: c++03, c++11
 
-// cuda::mr::has_property, cuda::mr::has_property_with
+// cuda::has_property, cuda::has_property_with
 #include <cuda/memory_resource>
 
 struct prop_with_value {
@@ -17,15 +17,15 @@ struct prop_with_value {
 };
 struct prop {};
 
-static_assert(cuda::mr::property_with_value<prop_with_value>);
-static_assert(!cuda::mr::property_with_value<prop>);
+static_assert(cuda::property_with_value<prop_with_value>);
+static_assert(!cuda::property_with_value<prop>);
 
 struct valid_property {
   friend void get_property(const valid_property&, prop) {}
 };
-static_assert(!cuda::mr::has_property<valid_property, prop_with_value>, "");
-static_assert(cuda::mr::has_property<valid_property, prop>, "");
-static_assert(!cuda::mr::has_property_with<valid_property, prop, int>, "");
+static_assert(!cuda::has_property<valid_property, prop_with_value>, "");
+static_assert(cuda::has_property<valid_property, prop>, "");
+static_assert(!cuda::has_property_with<valid_property, prop, int>, "");
 
 struct valid_property_with_value {
   friend int get_property(const valid_property_with_value&, prop_with_value) {
@@ -33,12 +33,12 @@ struct valid_property_with_value {
   }
 };
 static_assert(
-    cuda::mr::has_property<valid_property_with_value, prop_with_value>, "");
-static_assert(!cuda::mr::has_property<valid_property_with_value, prop>, "");
-static_assert(cuda::mr::has_property_with<valid_property_with_value,
+    cuda::has_property<valid_property_with_value, prop_with_value>, "");
+static_assert(!cuda::has_property<valid_property_with_value, prop>, "");
+static_assert(cuda::has_property_with<valid_property_with_value,
                                           prop_with_value, int>,
               "");
-static_assert(!cuda::mr::has_property_with<valid_property_with_value,
+static_assert(!cuda::has_property_with<valid_property_with_value,
                                            prop_with_value, double>,
               "");
 
@@ -47,13 +47,13 @@ struct derived_from_property : public valid_property {
     return 42;
   }
 };
-static_assert(cuda::mr::has_property<derived_from_property, prop_with_value>,
+static_assert(cuda::has_property<derived_from_property, prop_with_value>,
               "");
-static_assert(cuda::mr::has_property<derived_from_property, prop>, "");
+static_assert(cuda::has_property<derived_from_property, prop>, "");
 static_assert(
-    cuda::mr::has_property_with<derived_from_property, prop_with_value, int>,
+    cuda::has_property_with<derived_from_property, prop_with_value, int>,
     "");
-static_assert(!cuda::mr::has_property_with<derived_from_property,
+static_assert(!cuda::has_property_with<derived_from_property,
                                            prop_with_value, double>,
               "");
 

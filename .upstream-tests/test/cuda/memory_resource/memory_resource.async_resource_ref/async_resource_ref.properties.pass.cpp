@@ -25,13 +25,13 @@ template <class T>
 struct property_without_value {};
 
 namespace properties_test {
-static_assert(cuda::mr::property_with_value<property_with_value<int> >, "");
+static_assert(cuda::property_with_value<property_with_value<int> >, "");
 static_assert(
-    cuda::mr::property_with_value<property_with_value<struct someStruct> >, "");
+    cuda::property_with_value<property_with_value<struct someStruct> >, "");
 
-static_assert(!cuda::mr::property_with_value<property_without_value<int> >, "");
+static_assert(!cuda::property_with_value<property_without_value<int> >, "");
 static_assert(
-    !cuda::mr::property_with_value<property_without_value<struct otherStruct> >,
+    !cuda::property_with_value<property_without_value<struct otherStruct> >,
     "");
 } // namespace properties_test
 
@@ -56,12 +56,12 @@ struct async_resource {
   int _val = 0;
 
   _LIBCUDACXX_TEMPLATE(class Property)
-  (requires !cuda::mr::property_with_value<Property> &&
+  (requires !cuda::property_with_value<Property> &&
    _CUDA_VSTD::_One_of<Property, Properties...>) //
       friend void get_property(const async_resource&, Property) noexcept {}
 
   _LIBCUDACXX_TEMPLATE(class Property)
-  (requires cuda::mr::property_with_value<Property>&&
+  (requires cuda::property_with_value<Property>&&
        _CUDA_VSTD::_One_of<Property, Properties...>) //
       friend typename Property::value_type
       get_property(const async_resource& res, Property) noexcept {
@@ -86,25 +86,25 @@ static_assert(
     (2 * sizeof(void*)));
 
 _LIBCUDACXX_TEMPLATE(class Property, class Ref)
-(requires !cuda::mr::property_with_value<Property>) //
+(requires !cuda::property_with_value<Property>) //
     int InvokeIfWithValue(const Ref& ref) {
   return -1;
 }
 
 _LIBCUDACXX_TEMPLATE(class Property, class Ref)
-(requires cuda::mr::property_with_value<Property>) //
+(requires cuda::property_with_value<Property>) //
     typename Property::value_type InvokeIfWithValue(const Ref& ref) {
   return get_property(ref, Property{});
 }
 
 _LIBCUDACXX_TEMPLATE(class Property, class Ref)
-(requires cuda::mr::property_with_value<Property>) //
+(requires cuda::property_with_value<Property>) //
     int InvokeIfWithoutValue(const Ref& ref) {
   return -1;
 }
 
 _LIBCUDACXX_TEMPLATE(class Property, class Ref)
-(requires !cuda::mr::property_with_value<Property>) //
+(requires !cuda::property_with_value<Property>) //
     int InvokeIfWithoutValue(const Ref& ref) {
   get_property(ref, Property{});
   return 1;
@@ -119,7 +119,7 @@ void test_async_resource_ref() {
   // Check all the potentially stateful properties
   const int properties_with_value[] = {InvokeIfWithValue<Properties>(ref)...};
   const int expected_with_value[] = {
-      ((cuda::mr::property_with_value<Properties>) ? expected_initially
+      ((cuda::property_with_value<Properties>) ? expected_initially
                                                    : -1)...};
   for (std::size_t i = 0; i < sizeof...(Properties); ++i) {
     assert(properties_with_value[i] == expected_with_value[i]);
@@ -128,7 +128,7 @@ void test_async_resource_ref() {
   const int properties_without_value[] = {
       InvokeIfWithoutValue<Properties>(ref)...};
   const int expected_without_value[] = {
-      ((cuda::mr::property_with_value<Properties>) ? -1 : 1)...};
+      ((cuda::property_with_value<Properties>) ? -1 : 1)...};
   for (std::size_t i = 0; i < sizeof...(Properties); ++i) {
     assert(properties_without_value[i] == expected_without_value[i]);
   }
@@ -139,7 +139,7 @@ void test_async_resource_ref() {
   // Check whether we truly get the right value
   const int properties_with_value2[] = {InvokeIfWithValue<Properties>(ref)...};
   const int expected_with_value2[] = {
-      ((cuda::mr::property_with_value<Properties>) ? expected_after_change
+      ((cuda::property_with_value<Properties>) ? expected_after_change
                                                    : -1)...};
   for (std::size_t i = 0; i < sizeof...(Properties); ++i) {
     assert(properties_with_value2[i] == expected_with_value2[i]);

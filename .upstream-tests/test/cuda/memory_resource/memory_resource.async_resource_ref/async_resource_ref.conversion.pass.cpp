@@ -52,12 +52,12 @@ struct resource {
   int _val = 0;
 
   _LIBCUDACXX_TEMPLATE(class Property)
-  (requires !cuda::mr::property_with_value<Property> &&
+  (requires !cuda::property_with_value<Property> &&
    _CUDA_VSTD::_One_of<Property, Properties...>) //
       friend void get_property(const resource&, Property) noexcept {}
 
   _LIBCUDACXX_TEMPLATE(class Property)
-  (requires cuda::mr::property_with_value<Property>&&
+  (requires cuda::property_with_value<Property>&&
        _CUDA_VSTD::_One_of<Property, Properties...>) //
       friend typename Property::value_type
       get_property(const resource& res, Property) noexcept {
