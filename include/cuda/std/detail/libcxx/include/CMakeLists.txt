@@ -39,6 +39,23 @@ set(files
   __iterator/wrap_iter.h
   __libcpp_version
   __locale
+  __mdspan/compressed_pair.hpp
+  __mdspan/config.hpp
+  __mdspan/default_accessor.hpp
+  __mdspan/dynamic_extent.hpp
+  __mdspan/extents.hpp
+  __mdspan/full_extent_t.hpp
+  __mdspan/layout_left.hpp
+  __mdspan/layout_right.hpp
+  __mdspan/layout_stride.hpp
+  __mdspan/macros.hpp
+  __mdspan/maybe_static_value.hpp
+  __mdspan/mdspan.hpp
+  __mdspan/no_unique_address.hpp
+  __mdspan/standard_layout_static_array.hpp
+  __mdspan/static_array.hpp
+  __mdspan/submdspan.hpp
+  __mdspan/type_list.hpp
   __memory/addressof.h
   __memory/pointer_traits.h
   __mutex_base
@@ -178,6 +195,7 @@ set(files
   __tuple
   __type_traits/is_constant_evaluated.h
   __undef_macros
+  __utility/as_const.h
   __utility/convert_to_integral.h
   __utility/declval.h
   __utility/forward.h
@@ -274,6 +292,7 @@ set(files
   locale.h
   map
   math.h
+  mdspan
   memory
   module.modulemap
   mutex

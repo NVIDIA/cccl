@@ -220,6 +220,7 @@ template <size_t I>
 #include "__functional/reference_wrapper.h"
 #include "__functional/unary_function.h"
 #include "__functional/weak_result_type.h"
+#include "__utility/as_const.h"
 #include "__utility/convert_to_integral.h"
 #include "__utility/declval.h"
 #include "__utility/forward.h"
@@ -278,11 +279,6 @@ operator>=(const _Tp& __x, const _Tp& __y)
 // swap_ranges is defined in <type_traits>`
 
 // swap is defined in <type_traits>
-
-#if _LIBCUDACXX_STD_VER > 14
-template <class _Tp> constexpr add_const_t<_Tp>& as_const(_Tp& __t) noexcept { return __t; }
-template <class _Tp>                        void as_const(const _Tp&&) = delete;
-#endif
 
 #endif //__cuda_std__
 

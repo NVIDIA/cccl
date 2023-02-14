@@ -1,0 +1,32 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_MDSPAN
+#define _CUDA_MDSPAN
+
+#include "array"
+#include "span"
+#include "cstddef"
+#include "limits"
+#include "tuple"
+#include "utility"
+#include "version"
+
+#include "detail/__config"
+
+#include "detail/__pragma_push"
+
+#include "detail/libcxx/include/algorithm"
+#include "detail/libcxx/include/numeric"
+#include "detail/libcxx/include/mdspan"
+
+#include "detail/__pragma_pop"
+
+#endif // _CUDA_MDSPAN
