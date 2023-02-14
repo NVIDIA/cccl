@@ -1,0 +1,209 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the CUDA Toolkit, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_MEMORY_RESOURCE
+#define _CUDA_MEMORY_RESOURCE
+
+// clang-format off
+/*
+    memory_resource synopsis
+namespace cuda {
+namespace mr {
+template <class Resource>
+concept resource = equality_comparable<Resource>
+                && requires(Resource& res, void* ptr, size_t size, size_t alignment) {
+    { res.allocate(size, alignment) } -> same_as<void*>;
+    { res.deallocate(ptr, size, alignment) } -> same_as<void>;
+};
+
+template <class Resource>
+concept async_resource = resource<Resource>
+                      && requires(Resource& res, void* ptr, size_t size, size_t alignment, cuda_stream_ref stream) {
+    { res.allocate_async(size, alignment, stream) } -> same_as<void*>;
+    { res.deallocate_async(ptr, size, alignment, stream) } -> same_as<void>;
+};
+
+template <class Resource, class Property>
+concept has_property = resource<Resource> && requires(const Resource& res, Property prop) {
+    get_property(res, prop);    
+};
+
+template <class Property>
+concept property_with_value = requires {
+    typename Property::value_type;
+};
+
+template <class Resource, class Property, class Return>
+concept has_property_with = resource<Resource> 
+                         && property_with_value<Property>
+                         && same_as<Return, typename Property::value_type>
+                         && requires(const Resource& res, Property prop) {
+    get_property(res, prop) -> Return;    
+};
+
+template <class Resource, class... Properties>
+concept resource_with = resource<Resource> && (has_property<Resource, Properties> && ...);
+
+template <class Resource, class... Properties>
+concept async_resource_with = async_resource<Resource> && (has_property<Resource, Properties> && ...);
+
+template <class... Properties>
+class resource_ref {
+    template <resource_with<Properties...> Resource>
+    resource_ref(Resource&) noexcept;
+
+    void* allocate(size_t size, size_t alignment);
+    void deallocate(void* ptr, size_t size, size_t alignment);
+
+    template <class... OtherProperties>
+        requires resource_with<resource_ref, OtherProperties...>
+              && resource_with<resource_ref<OtherProperties...>, Properties...>
+    friend bool operator==(const resource_ref& left, const resource_ref<OtherProperties...>& right);
+
+    template <property_with_value Property>
+        requires has_property<resource_ref, Property>
+    friend typename Property::value_type get_property(const resource_ref& ref, Property) noexcept;
+
+    template <class Property>
+        requires (has_property<resource_ref, Property> && !property_with_value<Property>)
+    friend void get_property(const resource_ref& ref, Property) noexcept;
+};
+
+}  // mr
+}  // cuda
+*/
+// clang-format on
+#include <cuda/stream_ref>
+
+#include <cuda/std/concepts>
+#include <cuda/std/type_traits>
+
+#include <cuda/std/detail/__config>
+#include <cuda/std/detail/__pragma_push>
+
+#if _LIBCUDACXX_STD_VER > 11
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+namespace mr
+{
+
+///////////////////////////////////////////////////////////////////////////////
+// memory_resource
+
+/// \concept resource
+/// \brief The \c resource concept
+template <class _Resource>
+_LIBCUDACXX_CONCEPT_FRAGMENT(_Has_member_allocate_,
+                             requires(_Resource& __res, size_t __bytes, size_t __alignment) //
+                             (_CUDA_VSTD::_Returns_exactly<void*>(__res.allocate(__bytes, __alignment))));
+template <class _Resource>
+_LIBCUDACXX_CONCEPT _Has_member_allocate = _LIBCUDACXX_FRAGMENT(_Has_member_allocate_, _Resource);
+
+template <class _Resource>
+_LIBCUDACXX_CONCEPT_FRAGMENT(_Has_member_deallocate_,
+                             requires(_Resource& __res,
+                                      void* __ptr,
+                                      size_t __bytes,
+                                      size_t __alignment) //
+                             (__res.deallocate(__ptr, __bytes, __alignment)));
+template <class _Resource>
+_LIBCUDACXX_CONCEPT _Has_member_deallocate = _LIBCUDACXX_FRAGMENT(_Has_member_deallocate_, _Resource);
+
+template <class _Resource>
+_LIBCUDACXX_CONCEPT resource =
+  _Has_member_allocate<_Resource>&& _Has_member_deallocate<_Resource>&& _CUDA_VSTD::equality_comparable<_Resource>;
+
+/// \concept async_resource
+/// \brief The \c async_resource concept
+template <class _Resource>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  _Has_member_allocate_async_,
+  requires(_Resource& __res,
+           size_t __bytes,
+           size_t __alignment,
+           cuda::stream_ref __stream) //
+  (_CUDA_VSTD::_Returns_exactly<void*>(__res.allocate_async(__bytes, __alignment, __stream))));
+template <class _Resource>
+_LIBCUDACXX_CONCEPT _Has_member_allocate_async = _LIBCUDACXX_FRAGMENT(_Has_member_allocate_async_, _Resource);
+
+template <class _Resource>
+_LIBCUDACXX_CONCEPT_FRAGMENT(_Has_member_deallocate_async_,
+                             requires(_Resource& __res,
+                                      void* __ptr,
+                                      size_t __bytes,
+                                      size_t __alignment,
+                                      cuda::stream_ref __stream) //
+                             (__res.deallocate_async(__ptr, __bytes, __alignment, __stream)));
+template <class _Resource>
+_LIBCUDACXX_CONCEPT _Has_member_deallocate_async = _LIBCUDACXX_FRAGMENT(_Has_member_deallocate_async_, _Resource);
+
+/// \concept async_resource
+/// \brief The \c async_resource concept
+template <class _Resource>
+_LIBCUDACXX_CONCEPT async_resource =
+  resource<_Resource>&& _Has_member_allocate_async<_Resource>&& _Has_member_deallocate_async<_Resource>;
+
+/// \concept has_property
+/// \brief The \c has_property concept
+template <class _Resource, class _Property>
+_LIBCUDACXX_CONCEPT_FRAGMENT(_Has_property_,
+                             requires(const _Resource& __res) //
+                             (get_property(__res, _Property{})));
+template <class _Resource, class _Property>
+_LIBCUDACXX_CONCEPT has_property = _LIBCUDACXX_FRAGMENT(_Has_property_, _Resource, _Property);
+
+template <class T>
+using _Has_value_types = typename T::value_type;
+
+/// \concept property_with_value
+/// \brief The \c property_with_value concept
+template <class _Property>
+_LIBCUDACXX_CONCEPT_FRAGMENT(_Property_with_value_,
+                             requires() //
+                             (typename(_Has_value_types<_Property>)));
+template <class _Property>
+_LIBCUDACXX_CONCEPT property_with_value = _LIBCUDACXX_FRAGMENT(_Property_with_value_, _Property);
+
+/// \concept has_property_with
+/// \brief The \c has_property_with concept
+template <class _Resource, class _Property, class _Return>
+_LIBCUDACXX_CONCEPT_FRAGMENT(_Has_property_with_,
+                             requires(const _Resource& __res) //
+                             (_CUDA_VSTD::_Returns_exactly<_Return>(get_property(__res, _Property{}))));
+template <class _Resource, class _Property, class _Return>
+_LIBCUDACXX_CONCEPT has_property_with = property_with_value<_Property>&&
+  _LIBCUDACXX_FRAGMENT(_Has_property_with_, _Resource, _Property, _Return);
+
+/// \concept resource_with
+/// \brief The \c resource_with concept
+template <class _Resource, class... _Properties>
+#if _LIBCUDACXX_STD_VER < 17
+_LIBCUDACXX_CONCEPT resource_with =
+  resource<_Resource>&& _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<has_property<_Resource, _Properties>>...>;
+#else
+_LIBCUDACXX_CONCEPT resource_with       = resource<_Resource> && (has_property<_Resource, _Properties> && ...);
+#endif
+
+/// \concept async_resource_with
+/// \brief The \c async_resource_with concept
+template <class _Resource, class... _Properties>
+#if _LIBCUDACXX_STD_VER < 17
+_LIBCUDACXX_CONCEPT async_resource_with = async_resource<_Resource>&&
+  _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<has_property<_Resource, _Properties>>...>;
+#else
+_LIBCUDACXX_CONCEPT async_resource_with = async_resource<_Resource> //
+                                          && (has_property<_Resource, _Properties> && ...);
+#endif
+
+} // namespace mr
+_LIBCUDACXX_END_NAMESPACE_CUDA
+#endif // _LIBCUDACXX_STD_VER > 11
+
+#include <cuda/std/detail/__pragma_pop>
+
+#endif //_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
