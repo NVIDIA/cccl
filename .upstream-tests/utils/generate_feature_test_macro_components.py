@@ -501,7 +501,7 @@ feature_test_macros = sorted([ add_version_header(x) for x in [
    },
   {"name": "__cpp_lib_concepts",
    "values": {
-     "c++2a": 201806L,
+     "c++14": 202002L,
    },
    "headers": ["concepts"],
    "unimplemented": True,

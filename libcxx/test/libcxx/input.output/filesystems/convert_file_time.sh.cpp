@@ -25,11 +25,8 @@
 #include <cstddef>
 #include <cassert>
 
+#include "test_macros.h"
 #include "filesystem_common.h"
-
-#ifndef __SIZEOF_INT128__
-#define TEST_HAS_NO_INT128_T
-#endif
 
 using namespace std::chrono;
 namespace fs = std::__fs::filesystem;

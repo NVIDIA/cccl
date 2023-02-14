@@ -8,8 +8,8 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: c++03, c++11, c++14
 
-// gcc-6 does not support deduction guides until 7
-// UNSUPPORTED: gcc-6
+// gcc does not support deduction guides until gcc-7 and that is buggy
+// UNSUPPORTED: gcc-6, gcc-7
 
 // <span>
 

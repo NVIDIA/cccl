@@ -260,9 +260,7 @@
 #define TEST_SAFE_STATIC
 #endif
 
-// FIXME: Fix this feature check when either (A) a compiler provides a complete
-// implementation, or (b) a feature check macro is specified
-#if defined(TEST_COMPILER_CLANG) || !defined(TEST_COMPILER_C1XX) || _MSC_VER < 1920 || _MSVC_LANG <= 201703L
+#if defined(_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR)
 #define TEST_HAS_NO_SPACESHIP_OPERATOR
 #endif
 
@@ -327,6 +325,12 @@ struct is_same<T, T> { enum {value = 1}; };
 #else
 #include <stdlib.h>
 #define TEST_THROW(...) ::abort()
+#endif
+#endif
+
+#ifndef TEST_HAS_NO_INT128_T
+#ifdef _LIBCUDACXX_HAS_NO_INT128
+#define TEST_HAS_NO_INT128_T
 #endif
 #endif
 

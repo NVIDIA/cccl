@@ -15,12 +15,14 @@
 #endif // __cuda_std__
 
 #include "../__type_traits/integral_constant.h"
+#include "../__type_traits/is_base_of.h"
 #include "../__type_traits/is_destructible.h"
 #include "../__type_traits/is_reference.h"
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/is_void.h"
 #include "../__type_traits/negation.h"
 #include "../__type_traits/remove_cvref.h"
+#include "../__utility/declval.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

@@ -197,16 +197,7 @@ template <size_t I>
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__functional/binary_function.h>
-#include <__functional/reference_wrapper.h>
-#include <__functional/unary_function.h>
-#include <__functional/weak_result_type.h>
 #include <__tuple>
-#include <__utility/convert_to_integral.h>
-#include <__utility/declval.h>
-#include <__utility/forward.h>
-#include <__utility/move.h>
-#include <__utility/swap.h>
 #include <type_traits>
 #include <initializer_list>
 #include <cstddef>
@@ -215,7 +206,8 @@ template <size_t I>
 #include <version>
 #include <__debug>
 #include <__pragma_push>
-#else
+#endif //__cuda_std__
+
 #include "__functional/binary_function.h"
 #include "__functional/reference_wrapper.h"
 #include "__functional/unary_function.h"
@@ -223,10 +215,10 @@ template <size_t I>
 #include "__utility/as_const.h"
 #include "__utility/convert_to_integral.h"
 #include "__utility/declval.h"
+#include "__utility/exchange.h"
 #include "__utility/forward.h"
 #include "__utility/move.h"
 #include "__utility/swap.h"
-#endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -928,17 +920,6 @@ template<size_t _Np>
 template<class... _Tp>
     using index_sequence_for = make_index_sequence<sizeof...(_Tp)>;
 
-#endif  // _LIBCUDACXX_STD_VER > 11
-
-#if _LIBCUDACXX_STD_VER > 11
-template<class _T1, class _T2 = _T1>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_T1 exchange(_T1& __obj, _T2 && __new_value)
-{
-    _T1 __old_value = _CUDA_VSTD::move(__obj);
-    __obj = _CUDA_VSTD::forward<_T2>(__new_value);
-    return __old_value;
-}
 #endif  // _LIBCUDACXX_STD_VER > 11
 
 #if _LIBCUDACXX_STD_VER > 14

@@ -3,6 +3,30 @@ set(files
   __bsd_locale_defaults.h
   __bsd_locale_fallbacks.h
   __errc
+  __concepts/__concept_macros.h
+  __concepts/_One_of.h
+  __concepts/arithmetic.h
+  __concepts/assignable.h
+  __concepts/boolean_testable.h
+  __concepts/class_or_enum.h
+  __concepts/common_reference_with.h
+  __concepts/common_with.h
+  __concepts/constructible.h
+  __concepts/convertible_to.h
+  __concepts/copyable.h
+  __concepts/derived_from.h
+  __concepts/destructible.h
+  __concepts/different_from.h
+  __concepts/equality_comparable.h
+  __concepts/invocable.h
+  __concepts/movable.h
+  __concepts/predicate.h
+  __concepts/regular.h
+  __concepts/relation.h
+  __concepts/same_as.h
+  __concepts/semiregular.h
+  __concepts/swappable.h
+  __concepts/totally_ordered.h
   __debug
   __functional/binary_function.h
   __functional/identity.h
@@ -198,6 +222,7 @@ set(files
   __utility/as_const.h
   __utility/convert_to_integral.h
   __utility/declval.h
+  __utility/exchange.h
   __utility/forward.h
   __utility/move.h
   __utility/swap.h
@@ -225,6 +250,7 @@ set(files
   compare
   complex
   complex.h
+  concepts
   condition_variable
   csetjmp
   csignal

@@ -349,7 +349,8 @@ int main(int, char**)
 #elif defined(TEST_COMPILER_NVRTC) || defined(TEST_COMPILER_PGI)
     // FIXME NVRTC also doesn't like these tests.
     // FIXME neither does NVCC+PGI.
-#else // GCC and others.
+#elif !defined(__GNUC__)
+    // This fails with gcc, as the intrinsic differs from other compilers
     test_is_not_constructible<const int&, ExplicitTo<int>>();
     test_is_not_constructible<int&&, ExplicitTo<int>>();
 #endif

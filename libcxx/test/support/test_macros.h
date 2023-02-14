@@ -257,9 +257,7 @@
 #define TEST_SAFE_STATIC
 #endif
 
-// FIXME: Fix this feature check when either (A) a compiler provides a complete
-// implementation, or (b) a feature check macro is specified
-#if defined(TEST_COMPILER_CLANG) || !defined(TEST_COMPILER_C1XX) || _MSC_VER < 1920 || _MSVC_LANG <= 201703L
+#if defined(_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR)
 #define TEST_HAS_NO_SPACESHIP_OPERATOR
 #endif
 
