@@ -532,6 +532,14 @@ using resource_ref = basic_resource_ref<_AllocType::_Default, _Properties...>;
 template <class... _Properties> //
 using async_resource_ref = basic_resource_ref<_AllocType::_Async, _Properties...>;
 
+/// \struct device_accessible
+/// \brief The \c device_accessible property signals that the allocated memory is device accessible
+struct device_accessible{};
+
+/// \struct host_accessible
+/// \brief The \c host_accessible property signals that the allocated memory is host accessible
+struct host_accessible{};
+
 } // namespace mr
 _LIBCUDACXX_END_NAMESPACE_CUDA
 #endif // _LIBCUDACXX_STD_VER > 11
