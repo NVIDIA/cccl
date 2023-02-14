@@ -147,6 +147,34 @@ struct forward_property {
   }
 };
 
+/// class get_property
+/// \brief The \c get_property crtp temaplate simplifies the user facing side of forwarding properties
+///        We can always tell people to just derive from it to properly forward all properties
+_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__get_property)
+struct __fn {
+  #if defined(__CUDACC__) && !defined(__NVCOMPILER)
+  #pragma nv_exec_check_disable
+  #endif
+  _LIBCUDACXX_TEMPLATE(class _Upstream, class _Property)
+    (requires (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(const _Upstream&, _Property) const noexcept {}
+  
+  #if defined(__CUDACC__) && !defined(__NVCOMPILER)
+  #pragma nv_exec_check_disable
+  #endif
+  _LIBCUDACXX_TEMPLATE(class _Upstream, class _Property)
+    (requires (property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __property_value_t<_Property> operator()(
+    const _Upstream& __res, _Property __prop) const {
+    return get_property(__res, __prop);
+  }
+};
+_LIBCUDACXX_END_NAMESPACE_CPO
+
+inline namespace __cpo {
+  _LIBCUDACXX_CPO_ACCESSIBILITY _LIBCUDACXX_INLINE_VAR constexpr auto get_property = __get_property::__fn{};
+} // namespace __cpo
+
 namespace mr
 {
 
