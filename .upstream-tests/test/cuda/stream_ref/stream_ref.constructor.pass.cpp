@@ -13,20 +13,28 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
-static_assert(cuda::std::is_default_constructible<cuda::stream_ref>::value);
-static_assert(!cuda::std::is_constructible<cuda::stream_ref, int>::value);
-static_assert(!cuda::std::is_constructible<cuda::stream_ref, nullptr_t>::value);
+static_assert(cuda::std::is_default_constructible<cuda::stream_ref>::value, "");
+static_assert(!cuda::std::is_constructible<cuda::stream_ref, int>::value, "");
+static_assert(!cuda::std::is_constructible<cuda::stream_ref, cuda::std::nullptr_t>::value, "");
 
 template <class...>
 using void_t = void;
 
+#if TEST_STD_VER < 14
+template <class T, class = void>
+struct has_value_type : cuda::std::false_type {};
+template <class T>
+struct has_value_type<T, void_t<typename T::value_type>> : cuda::std::true_type {};
+static_assert(has_value_type<cuda::stream_ref>::value, "");
+#else
 template <class T, class = void>
 constexpr bool has_value_type = false;
 
 template <class T>
-constexpr bool has_value_type<T, void_t<typename T::value_type> > = true;
-
+constexpr bool has_value_type_v<T, void_t<typename T::value_type> > = true;
 static_assert(has_value_type<cuda::stream_ref>, "");
+#endif
+
 
 int main(int argc, char** argv) {
 #ifndef __CUDA_ARCH__

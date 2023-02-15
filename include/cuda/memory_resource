@@ -437,7 +437,7 @@ using _Filtered_vtable = typename _Filtered<_Properties...>::_Filtered_vtable::_
 template <class _Vtable>
 struct _Alloc_base
 {
-  static_assert(cuda::std::is_base_of_v<_Alloc_vtable, _Vtable>);
+  static_assert(cuda::std::is_base_of_v<_Alloc_vtable, _Vtable>, "");
 
   _Alloc_base(void* __object_, const _Vtable* __static_vtabl_) noexcept
       : __object(__object_)
@@ -462,7 +462,7 @@ protected:
 template <class _Vtable>
 struct _Async_alloc_base : public _Alloc_base<_Vtable>
 {
-  static_assert(cuda::std::is_base_of_v<_Async_alloc_vtable, _Vtable>);
+  static_assert(cuda::std::is_base_of_v<_Async_alloc_vtable, _Vtable>, "");
 
   _Async_alloc_base(void* __object_, const _Vtable* __static_vtabl_) noexcept
       : _Alloc_base<_Vtable>(__object_, __static_vtabl_)
@@ -588,11 +588,11 @@ public:
     }
 
     _LIBCUDACXX_TEMPLATE(class _Property)
-        (requires !property_with_value<_Property> && _CUDA_VSTD::_One_of<_Property, _Properties...>) //
+        (requires (!property_with_value<_Property>) _LIBCUDACXX_AND  _CUDA_VSTD::_One_of<_Property, _Properties...>) //
      friend void get_property(const basic_resource_ref &, _Property) noexcept {}
 
     _LIBCUDACXX_TEMPLATE(class _Property)
-        (requires  property_with_value<_Property> &&_CUDA_VSTD::_One_of<_Property, _Properties...>) //
+        (requires  property_with_value<_Property> _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>) //
      friend __property_value_t<_Property> get_property(
         const basic_resource_ref &__res, _Property) noexcept {
         return __res._Property_vtable<_Property>::__property_fn(__res.__object);

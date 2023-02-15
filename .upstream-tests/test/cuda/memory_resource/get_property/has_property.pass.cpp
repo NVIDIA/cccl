@@ -20,8 +20,8 @@ struct prop_with_value {
 };
 struct prop {};
 
-static_assert(cuda::property_with_value<prop_with_value>);
-static_assert(!cuda::property_with_value<prop>);
+static_assert(cuda::property_with_value<prop_with_value>, "");
+static_assert(!cuda::property_with_value<prop>, "");
 
 struct valid_property {
   friend void get_property(const valid_property&, prop) {}

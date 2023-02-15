@@ -107,7 +107,7 @@ namespace forward_property {
       return convertible_to_upstream{};
     }
   };
-  static_assert(!cuda::has_property<derived_with_converstin_upstream_resource, prop_with_value>);
+  static_assert(!cuda::has_property<derived_with_converstin_upstream_resource, prop_with_value>, "");
 
   __host__ __device__ constexpr bool test_stateful() {
     using derived_no_override = derived_plain<upstream_with_stateful_property>;

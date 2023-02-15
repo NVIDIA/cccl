@@ -36,15 +36,12 @@ struct resource_base {
   bool operator!=(const resource_base& other) const { return false; }
 
   _LIBCUDACXX_TEMPLATE(class Property)
-  (requires !cuda::property_with_value<Property> &&
-   _CUDA_VSTD::_One_of<Property, Properties...>) //
-      friend void get_property(const resource_base&, Property) noexcept {}
+    (requires (!cuda::property_with_value<Property>) && _CUDA_VSTD::_One_of<Property, Properties...>) //
+  friend void get_property(const resource_base&, Property) noexcept {}
 
   _LIBCUDACXX_TEMPLATE(class Property)
-  (requires cuda::property_with_value<Property>&&
-       _CUDA_VSTD::_One_of<Property, Properties...>) //
-      friend typename Property::value_type
-      get_property(const resource_base& res, Property) noexcept {
+    (requires cuda::property_with_value<Property> && _CUDA_VSTD::_One_of<Property, Properties...>) //
+  friend typename Property::value_type get_property(const resource_base& res, Property) noexcept {
     return 42;
   }
 };
@@ -52,7 +49,6 @@ struct resource_base {
 template <class... Properties>
 struct resource_derived_first : public resource_base<Properties...> {
   using super_t = resource_base<Properties...>;
-  using super_t::operator==;
 
   resource_derived_first(const int val) : _val(val) {}
 
@@ -60,9 +56,12 @@ struct resource_derived_first : public resource_base<Properties...> {
 
   void deallocate(void* ptr, std::size_t, std::size_t) override {}
 
+  bool operator==(const resource_derived_first& other) const { return true; }
+  bool operator!=(const resource_derived_first& other) const { return false; }
+
   int _val = 0;
 };
-static_assert(cuda::mr::resource<resource_derived_first<> >);
+static_assert(cuda::mr::resource<resource_derived_first<> >, "");
 
 struct some_data {
   int _val;
@@ -71,13 +70,15 @@ struct some_data {
 template <class... Properties>
 struct resource_derived_second : public resource_base<Properties...> {
   using super_t = resource_base<Properties...>;
-  using super_t::operator==;
 
   resource_derived_second(some_data* val) : _val(val) {}
 
   void* allocate(std::size_t, std::size_t) override { return &_val->_val; }
 
   void deallocate(void* ptr, std::size_t, std::size_t) override {}
+
+  bool operator==(const resource_derived_second& other) const { return true; }
+  bool operator!=(const resource_derived_second& other) const { return false; }
 
   some_data* _val = 0;
 };
