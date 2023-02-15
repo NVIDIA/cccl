@@ -10,6 +10,9 @@
 // UNSUPPORTED: c++03, c++11
 
 // cuda::get_property
+
+#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+
 #include <cuda/std/cassert>
 #include <cuda/memory_resource>
 
@@ -44,10 +47,10 @@ static_assert( cuda::std::invocable<decltype(cuda::get_property), upstream_with_
 __host__ __device__ constexpr bool test() {
   upstream_with_valueless_property with_valueless{};
   cuda::get_property(with_valueless, prop{});
-  
+
   upstream_with_stateful_property with_value{};
   assert(cuda::get_property(with_value, prop_with_value{}) == 42);
-  
+
   upstream_with_both_properties with_both{};
   cuda::get_property(with_both, prop{});
   assert(cuda::get_property(with_both, prop_with_value{}) == 42);
@@ -57,5 +60,5 @@ __host__ __device__ constexpr bool test() {
 int main(int, char**) {
   test();
   static_assert(test(), "");
-  return 0; 
+  return 0;
 }

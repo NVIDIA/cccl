@@ -10,6 +10,9 @@
 // UNSUPPORTED: c++03, c++11
 
 // cuda::mr::resource_with
+
+#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+
 #include <cuda/memory_resource>
 
 #include <cuda/std/cstdint>

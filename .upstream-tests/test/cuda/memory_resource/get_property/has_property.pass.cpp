@@ -10,6 +10,9 @@
 // UNSUPPORTED: c++03, c++11
 
 // cuda::has_property, cuda::has_property_with
+
+#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+
 #include <cuda/memory_resource>
 
 struct prop_with_value {

@@ -31,7 +31,7 @@ concept async_resource = resource<Resource>
 
 template <class Resource, class Property>
 concept has_property = resource<Resource> && requires(const Resource& res, Property prop) {
-    get_property(res, prop);    
+    get_property(res, prop);
 };
 
 template <class Property>
@@ -40,11 +40,11 @@ concept property_with_value = requires {
 };
 
 template <class Resource, class Property, class Return>
-concept has_property_with = resource<Resource> 
+concept has_property_with = resource<Resource>
                          && property_with_value<Property>
                          && same_as<Return, typename Property::value_type>
                          && requires(const Resource& res, Property prop) {
-    get_property(res, prop) -> Return;    
+    get_property(res, prop) -> Return;
 };
 
 template <class Resource, class... Properties>
@@ -79,12 +79,18 @@ class resource_ref {
 }  // cuda
 */
 // clang-format on
+
+#ifndef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#error "<cuda/memory_resource> is experimental and requires LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to be defined"
+#endif
+
 #include <cuda/stream_ref>
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
 #include <cuda/std/detail/__config>
+
 #include <cuda/std/detail/__pragma_push>
 
 #if _LIBCUDACXX_STD_VER > 11
@@ -152,13 +158,13 @@ struct forward_property {
   _LIBCUDACXX_TEMPLATE(class _Property)
     (requires (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_INLINE_VISIBILITY friend constexpr void get_property(const _Derived&, _Property) noexcept {}
-  
+
   // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
   #if defined(__CUDACC__) && !defined(__NVCOMPILER)
   #pragma nv_exec_check_disable
   #endif
   _LIBCUDACXX_TEMPLATE(class _Property, class _Derived2 = _Derived)
-    (requires property_with_value<_Property> _LIBCUDACXX_AND has_property<_Upstream, _Property> _LIBCUDACXX_AND 
+    (requires property_with_value<_Property> _LIBCUDACXX_AND has_property<_Upstream, _Property> _LIBCUDACXX_AND
               __has_upstream_resource<_Derived2, _Upstream>)
   _LIBCUDACXX_INLINE_VISIBILITY friend constexpr __property_value_t<_Property> get_property(
     const _Derived& __res, _Property __prop) {
@@ -177,7 +183,7 @@ struct __fn {
   _LIBCUDACXX_TEMPLATE(class _Upstream, class _Property)
     (requires (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(const _Upstream&, _Property) const noexcept {}
-  
+
   #if defined(__CUDACC__) && !defined(__NVCOMPILER)
   #pragma nv_exec_check_disable
   #endif
@@ -246,7 +252,7 @@ template <class _Resource, class... _Properties>
 _LIBCUDACXX_CONCEPT async_resource_with = async_resource<_Resource> &&
   _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<has_property<_Resource, _Properties>>...>;
 #else
-_LIBCUDACXX_CONCEPT async_resource_with = async_resource<_Resource> && 
+_LIBCUDACXX_CONCEPT async_resource_with = async_resource<_Resource> &&
   (has_property<_Resource, _Properties> && ...);
 #endif
 
@@ -512,14 +518,14 @@ private:
 public:
   // clang-format off
     _LIBCUDACXX_TEMPLATE(class _Resource)
-        (requires (!_Is_basic_resource_ref<_Resource> 
+        (requires (!_Is_basic_resource_ref<_Resource>
           && (((_Alloc_type == _AllocType::_Default) && resource_with<_Resource, _Properties...>) //
             ||((_Alloc_type == _AllocType::_Async) && async_resource_with<_Resource, _Properties...>)))) //
      basic_resource_ref(_Resource& __res) noexcept
         : _Resource_ref_base<_Alloc_type>(&__res, &__alloc_vtable<_Alloc_type, _Resource>)
         , _Filtered_vtable<_Properties...>(_Filtered_vtable<_Properties...>::template _Create<_Resource>())
     {}
-    
+
     #if _LIBCUDACXX_STD_VER > 14
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
       (requires (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
@@ -533,14 +539,14 @@ public:
         : _Resource_ref_base<_Alloc_type>(__ref.__object, __ref.__static_vtable)
         , _Filtered_vtable<_Properties...>(__ref)
     {}
-        
+
     #if _LIBCUDACXX_STD_VER > 14
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires (_Alloc_type == _AllocType::_Default) 
+      (requires (_Alloc_type == _AllocType::_Default)
         && (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
     #else
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires (_Alloc_type == _AllocType::_Default) 
+      (requires (_Alloc_type == _AllocType::_Default)
         && _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<
             _CUDA_VSTD::_One_of<_Properties, _OtherProperties...>>...>)
     #endif
@@ -552,11 +558,11 @@ public:
 
     #if _LIBCUDACXX_STD_VER > 14
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires(sizeof...(_Properties) == sizeof...(_OtherProperties)) 
+      (requires(sizeof...(_Properties) == sizeof...(_OtherProperties))
             && (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
     #else
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires (sizeof...(_Properties) == sizeof...(_OtherProperties)) 
+      (requires (sizeof...(_Properties) == sizeof...(_OtherProperties))
           && _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<
           _CUDA_VSTD::_One_of<_Properties, _OtherProperties...>>...>)
     #endif
@@ -568,11 +574,11 @@ public:
 
     #if _LIBCUDACXX_STD_VER > 14
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires (sizeof...(_Properties) == sizeof...(_OtherProperties)) 
+      (requires (sizeof...(_Properties) == sizeof...(_OtherProperties))
             && (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
     #else
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires (sizeof...(_Properties) == sizeof...(_OtherProperties)) 
+      (requires (sizeof...(_Properties) == sizeof...(_OtherProperties))
           && _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<
           _CUDA_VSTD::_One_of<_Properties, _OtherProperties...>>...>)
     #endif
