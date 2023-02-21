@@ -17,6 +17,7 @@ SDK_VER:
   - 11.2.2-devel
   - 11.3.1-devel
   - 11.4.3-devel
+  - 11.5.1-devel
   - 11.5.2-devel
   - 11.6.2-devel
   - 11.7.0-devel
@@ -107,6 +108,8 @@ exclude:
     SDK_VER: 11.3.1-devel
   - SDK_TYPE: nvhpc
     SDK_VER: 11.4.3-devel
+  - SDK_TYPE: nvhpc
+    SDK_VER: 11.5.1-devel
   - SDK_TYPE: nvhpc
     SDK_VER: 11.5.2-devel
   - SDK_TYPE: nvhpc
