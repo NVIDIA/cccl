@@ -66,7 +66,8 @@ cuda::atomic<int, cuda::thread_scope_block> x;
 
 The NVIDIA C++ Standard Library works across your entire codebase, both in and
   across host and device code.
-libcu++ is a C++ Standard Library for your entire system, not just
+libcu++ is a C++ Standard Library for your entire system, not just your CPU or
+  GPU.
 Everything in `cuda::` is `__host__ __device__`.
 
 libcu++ facilities are designed to be passed between host and device code.
