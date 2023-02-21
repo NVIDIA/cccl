@@ -28,6 +28,10 @@
 
 #include "detail/libcxx/include/barrier"
 
+#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#pragma GCC system_header
+#endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 #if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 700

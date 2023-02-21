@@ -104,9 +104,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
         __device__
         static inline uint32_t __lane_id()
         {
-            uint32_t __lane_id;
-            asm volatile ("mov.u32 %0, %%laneid;" : "=r"(__lane_id));
-            return __lane_id;
+            NV_IF_ELSE_TARGET(
+                NV_IS_DEVICE,
+                (
+                    uint32_t __lane_id;
+                    asm volatile ("mov.u32 %0, %%laneid;" : "=r"(__lane_id));
+                    return __lane_id;
+                ),
+                (
+                    return 0;
+                )
+            )
         }
     };
 

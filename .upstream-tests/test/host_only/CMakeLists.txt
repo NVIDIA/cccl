@@ -2,10 +2,10 @@ add_custom_target(libcudacxx_tu_tests)
 
 set(cpp_std_versions 11 14 17 20)
 
-set(cpp_11_exclusions)
-set(cpp_14_exclusions)
-set(cpp_17_exclusions)
-set(cpp_20_exclusions)
+set(cpp_11_exclusions "cuda/annotated_ptr" "cuda/std/mdspan")
+set(cpp_14_exclusions "cuda/annotated_ptr" "cuda/std/mdspan")
+set(cpp_17_exclusions "cuda/annotated_ptr")
+set(cpp_20_exclusions "cuda/annotated_ptr")
 
 function(libcudacxx_add_standalone_header_test test_file_output_var header_under_test version)
     # ex: build/.../header_tests/cuda/std/version.cpp
@@ -39,7 +39,7 @@ function(libcudacxx_add_standalone_header_test test_file_output_var header_under
 endfunction()
 
 # Don't generate CUDA targets, they fail currently.
-# file(GLOB cuda_headers LIST_DIRECTORIES false RELATIVE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/cuda/*)
+file(GLOB cuda_headers     LIST_DIRECTORIES false RELATIVE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/cuda/*)
 file(GLOB cuda_std_headers LIST_DIRECTORIES false RELATIVE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/cuda/std/*)
 
 foreach(version IN LISTS cpp_std_versions)

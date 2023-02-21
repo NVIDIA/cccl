@@ -56,6 +56,10 @@
 
 #include "detail/libcxx/include/atomic"
 
+#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#pragma GCC system_header
+#endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 using std::__detail::thread_scope;

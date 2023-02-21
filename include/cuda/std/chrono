@@ -24,6 +24,10 @@
 
 #include "detail/__pragma_push"
 
+#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#pragma GCC system_header
+#endif
+
 // Silence NVCC warnings `long double` arising from chrono floating pointer
 // user-defined literals which are defined in terms of `long double`.
 
@@ -79,5 +83,3 @@ _LIBCUDACXX_END_NAMESPACE_STD
 #include "detail/__pragma_pop"
 
 #endif //_CUDA_CHRONO
-
-
