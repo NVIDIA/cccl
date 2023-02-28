@@ -14,6 +14,8 @@
 
 #include "test_macros.h"
 
+#include "cuda_space_selector.h"
+
 struct UserAtomicType
 {
     int i;
@@ -133,7 +135,7 @@ struct TestEachFLoatingPointRefType {
 };
 
 template < template <class, template<typename, typename> class, cuda::thread_scope> class TestFunctor,
-    template<typename, typename> class Selector, cuda::thread_scope Scope
+    template<typename, typename> class Selector = shared_memory_selector, cuda::thread_scope Scope
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
     = cuda::thread_scope_system
 #endif

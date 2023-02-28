@@ -9,6 +9,9 @@
 
 #include <cuda/std/cstddef>
 
+#ifndef __CUDA_SPACE_SELECTOR_H
+#define __CUDA_SPACE_SELECTOR_H
+
 #if defined(__CUDACC__) && !defined(__NVCOMPILER)
 #define __exec_check_disable__ #pragma nv_exec_check_disable
 #else
@@ -189,3 +192,5 @@ using shared_memory_selector = memory_selector<T, device_shared_memory_provider,
 
 template<typename T, typename Initializer = constructor_initializer>
 using global_memory_selector = memory_selector<T, malloc_memory_provider, Initializer>;
+
+#endif // __CUDA_SPACE_SELECTOR_H

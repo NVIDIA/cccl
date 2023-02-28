@@ -1103,13 +1103,13 @@ using __cxx_atomic_ref_impl = __cxx_atomic_ref_base_impl<_Tp, _Sco>;
 
 #ifdef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
 
-template <class _Tp, int _Sco>
+template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>, int _Sco = _Ty::__sco>
 struct __cxx_atomic_poll_tester {
-    __cxx_atomic_impl<_Tp, _Sco> const volatile* __a;
+    _Ty const volatile* __a;
     _Tp __val;
     memory_order __order;
 
-    _LIBCUDACXX_INLINE_VISIBILITY __cxx_atomic_poll_tester(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a_, _Tp __val_, memory_order __order_)
+    _LIBCUDACXX_INLINE_VISIBILITY __cxx_atomic_poll_tester(_Ty const volatile* __a_, _Tp __val_, memory_order __order_)
       : __a(__a_)
       , __val(__val_)
       , __order(__order_)
@@ -1120,9 +1120,9 @@ struct __cxx_atomic_poll_tester {
     }
 };
 
-template <class _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow_fallback(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a, _Tp __val, memory_order __order) {
-    __libcpp_thread_poll_with_backoff(__cxx_atomic_poll_tester<_Tp, _Sco>(__a, __val, __order));
+template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>, int _Sco = _Ty::__sco>
+_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow_fallback(_Ty const volatile* __a, _Tp __val, memory_order __order) {
+    __libcpp_thread_poll_with_backoff(__cxx_atomic_poll_tester<_Ty>(__a, __val, __order));
 }
 
 #endif
@@ -1143,8 +1143,8 @@ template <class _Tp, int _Sco, typename enable_if<!__libcpp_platform_wait_uses_t
 _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_one(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
     __cxx_atomic_notify_all(__a);
 }
-template <class _Tp, int _Sco, typename enable_if<!__libcpp_platform_wait_uses_type<_Tp>::__value, int>::type = 1>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a, _Tp const __val, memory_order __order) {
+template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>, int _Sco = _Ty::__sco, typename enable_if<!__libcpp_platform_wait_uses_type<_Tp>::__value, int>::type = 1>
+_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(_Ty const volatile* __a, _Tp const __val, memory_order __order) {
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
     auto * const __c = __libcpp_contention_state(__a);
     __cxx_atomic_store(__cxx_atomic_rebind<_Sco>(&__c->__waiters), (ptrdiff_t)1, memory_order_relaxed);
@@ -1234,26 +1234,26 @@ struct __atomic_wait_and_notify_supported
 #endif
 {};
 
-template <class _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a, _Tp __val, memory_order __order) {
+template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>>
+_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(_Ty const volatile* __a, _Tp __val, memory_order __order) {
     static_assert(__atomic_wait_and_notify_supported<_Tp>::value, "atomic wait operations are unsupported on Pascal");
     __cxx_atomic_try_wait_slow_fallback(__a, __val, __order);
 }
 
-template <class _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_one(__cxx_atomic_impl<_Tp, _Sco> const volatile*) {
+template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>>
+_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_one(_Ty const volatile*) {
     static_assert(__atomic_wait_and_notify_supported<_Tp>::value, "atomic notify-one operations are unsupported on Pascal");
 }
 
-template <class _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp, _Sco> const volatile*) {
+template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>>
+_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(_Ty const volatile*) {
     static_assert(__atomic_wait_and_notify_supported<_Tp>::value, "atomic notify-all operations are unsupported on Pascal");
 }
 
 #endif // _LIBCUDACXX_HAS_PLATFORM_WAIT || !defined(_LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE)
 
-template <class _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_wait(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a, _Tp const __val, memory_order __order) {
+template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>>
+_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_wait(_Ty const volatile* __a, _Tp const __val, memory_order __order) {
     for(int __i = 0; __i < _LIBCUDACXX_POLLING_COUNT; ++__i) {
         if(!__cxx_nonatomic_compare_equal(__cxx_atomic_load(__a, __order), __val))
             return;
