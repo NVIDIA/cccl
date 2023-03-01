@@ -12,22 +12,19 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__functional/binary_function.h>
-#include <__functional/reference_wrapper.h>
-#include <__functional/unary_function.h>
-#include <__functional/weak_result_type.h>
 #include <type_traits>
 #include <typeinfo>
 #include <exception>
 #include <new>
 #include <utility>
 #include <__pragma_push>
-#else
+#endif //__cuda_std__
+
 #include "__functional/binary_function.h"
+#include "__functional/operations.h"
 #include "__functional/reference_wrapper.h"
 #include "__functional/unary_function.h"
 #include "__functional/weak_result_type.h"
-#endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -35,47 +32,11 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
-template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
-struct _LIBCUDACXX_TEMPLATE_VIS less : __binary_function<_Tp, _Tp, bool>
-{
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x < __y;}
-};
-
-#if _LIBCUDACXX_STD_VER > 11
-template <>
-struct _LIBCUDACXX_TEMPLATE_VIS less<void>
-{
-    template <class _T1, class _T2>
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-    _NOEXCEPT_(noexcept(_CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u)))
-    -> decltype        (_CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u))
-        { return        _CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
-};
-#endif
-
 #ifdef _LIBCUDACXX_CXX03_LANG
 
 #include <__functional_base_03>
 
 #endif  // !defined(_LIBCUDACXX_CXX03_LANG)
-
-#if _LIBCUDACXX_STD_VER > 11
-template <class _Tp, class, class = void>
-struct __is_transparent : false_type {};
-
-template <class _Tp, class _Up>
-struct __is_transparent<_Tp, _Up,
-                        __void_t<typename _Tp::is_transparent>>
-   : true_type {};
-#endif
 
 // allocator_arg_t
 

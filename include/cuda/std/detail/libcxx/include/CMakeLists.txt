@@ -29,11 +29,29 @@ set(files
   __concepts/totally_ordered.h
   __debug
   __functional/binary_function.h
+  __functional/binary_negate.h
+  __functional/bind_back.h
+  __functional/bind_front.h
+  __functional/bind.h
+  __functional/binder1st.h
+  __functional/binder2nd.h
+  __functional/compose.h
+  __functional/default_searcher.h
+  __functional/function.h
   __functional/hash.h
   __functional/identity.h
   __functional/invoke.h
+  __functional/is_transparent.h
+  __functional/mem_fn.h
+  __functional/mem_fun_ref.h
+  __functional/not_fn.h
+  __functional/operations.h
+  __functional/perfect_forward.h
+  __functional/pointer_to_binary_function.h
+  __functional/pointer_to_unary_function.h
   __functional/reference_wrapper.h
   __functional/unary_function.h
+  __functional/unary_negate.h
   __functional/unwrap_ref.h
   __functional/weak_result_type.h
   __functional_03

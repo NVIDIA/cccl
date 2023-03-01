@@ -1358,9 +1358,9 @@ is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
         return true;
 
 //  __first1 != __last1 && *__first1 != *__first2
-    typedef typename iterator_traits<_ForwardIterator1>::difference_type _D1;
-    _D1 __l1 = _CUDA_VSTD::distance(__first1, __last1);
-    if (__l1 == _D1(1))
+    typedef typename iterator_traits<_ForwardIterator1>::difference_type _Diff1;
+    _Diff1 __l1 = _CUDA_VSTD::distance(__first1, __last1);
+    if (__l1 == _Diff1(1))
         return false;
     _ForwardIterator2 __last2 = _CUDA_VSTD::next(__first2, __l1);
     // For each element in [f1, l1) see if there are the same number of
@@ -1374,14 +1374,14 @@ is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
                 break;
         if (__match == __i) {
             // Count number of *__i in [f2, l2)
-            _D1 __c2 = 0;
+            _Diff1 __c2 = 0;
             for (_ForwardIterator2 __j = __first2; __j != __last2; ++__j)
                 if (__pred(*__i, *__j))
                     ++__c2;
             if (__c2 == 0)
                 return false;
             // Count number of *__i in [__i, l1) (we can start with 1)
-            _D1 __c1 = 1;
+            _Diff1 __c1 = 1;
             for (_ForwardIterator1 __j = _CUDA_VSTD::next(__i); __j != __last1; ++__j)
                 if (__pred(*__i, *__j))
                     ++__c1;
@@ -1422,11 +1422,11 @@ __is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
     else if (__first2 == __last2)
         return false;
 
-    typedef typename iterator_traits<_ForwardIterator1>::difference_type _D1;
-    _D1 __l1 = _CUDA_VSTD::distance(__first1, __last1);
+    typedef typename iterator_traits<_ForwardIterator1>::difference_type _Diff1;
+    _Diff1 __l1 = _CUDA_VSTD::distance(__first1, __last1);
 
-    typedef typename iterator_traits<_ForwardIterator2>::difference_type _D2;
-    _D2 __l2 = _CUDA_VSTD::distance(__first2, __last2);
+    typedef typename iterator_traits<_ForwardIterator2>::difference_type _Diff2;
+    __Diff2 __l2 = _CUDA_VSTD::distance(__first2, __last2);
     if (__l1 != __l2)
         return false;
 
@@ -1441,14 +1441,14 @@ __is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
                 break;
         if (__match == __i) {
             // Count number of *__i in [f2, l2)
-            _D1 __c2 = 0;
+            _Diff1 __c2 = 0;
             for (_ForwardIterator2 __j = __first2; __j != __last2; ++__j)
                 if (__pred(*__i, *__j))
                     ++__c2;
             if (__c2 == 0)
                 return false;
             // Count number of *__i in [__i, l1) (we can start with 1)
-            _D1 __c1 = 1;
+            _Diff1 __c1 = 1;
             for (_ForwardIterator1 __j = _CUDA_VSTD::next(__i); __j != __last1; ++__j)
                 if (__pred(*__i, *__j))
                     ++__c1;

@@ -12,13 +12,14 @@
 
 #ifndef __cuda_std__
 #include <__config>
+#include <cstdlib>
 #endif // __cuda_std__
+
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
 #endif
 
-#ifndef _LIBCUDACXX_UNREACHABLE
 #ifdef __GNUC__
 #  define _LIBCUDACXX_UNREACHABLE() __builtin_unreachable()
 #elif __has_builtin(__builtin_unreachable)
@@ -27,10 +28,9 @@
 #ifdef __CUDA_ARCH__
 #  define _LIBCUDACXX_UNREACHABLE() __trap()
 #else
-#  define _LIBCUDACXX_UNREACHABLE() _CUDA_VSTD::abort()
-#endif
-#endif // has_builtin
-#endif // !_LIBCUDACXX_UNREACHABLE
+#  define _LIBCUDACXX_UNREACHABLE() ::abort()
+#endif // __CUDA_ARCH__
+#endif // !__GNUC__
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

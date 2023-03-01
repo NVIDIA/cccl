@@ -548,7 +548,7 @@ using invoke_result_t = typename invoke_result<_Fn, _Args...>::type;
 #if _LIBCUDACXX_STD_VER > 14
 
 template <class _Fn, class ..._Args>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 invoke_result_t<_Fn, _Args...>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 invoke_result_t<_Fn, _Args...>
 invoke(_Fn&& __f, _Args&&... __args)
     noexcept(is_nothrow_invocable_v<_Fn, _Args...>)
 {

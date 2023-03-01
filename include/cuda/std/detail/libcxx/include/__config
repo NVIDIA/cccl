@@ -2082,6 +2082,19 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_SYS_CLOCK_DURATION microseconds
 #endif
 
+// There are a handful of public standard library types that are intended to
+// support CTAD but don't need any explicit deduction guides to do so. This
+// macro is used to mark them as such, which suppresses the
+// '-Wctad-maybe-unsupported' compiler warning when CTAD is used in user code
+// with these classes.
+#if _LIBCUDACXX_STD_VER >= 17
+#    define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName)                                                                \
+      template <class ..._Tag>                                                                                         \
+      _ClassName(typename _Tag::__allow_ctad...) -> _ClassName<_Tag...>
+#else
+#  define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName) static_assert(true, "")
+#endif
+
 #if defined(__CUDA_ARCH__)
 #  define _LIBCUDACXX_CPO_ACCESSIBILITY static __device__
 #else

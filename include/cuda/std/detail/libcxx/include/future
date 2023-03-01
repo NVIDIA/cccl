@@ -1425,9 +1425,9 @@ promise<_Rp>::promise(allocator_arg_t, const _Alloc& __a0)
 {
     typedef __assoc_state_alloc<_Rp, _Alloc> _State;
     typedef typename __allocator_traits_rebind<_Alloc, _State>::type _A2;
-    typedef __allocator_destructor<_A2> _D2;
+    typedef __allocator_destructor<_A2> _Dest2;
     _A2 __a(__a0);
-    unique_ptr<_State, _D2> __hold(__a.allocate(1), _D2(__a, 1));
+    unique_ptr<_State, _Dest2> __hold(__a.allocate(1), _Dest2(__a, 1));
     ::new(static_cast<void*>(_CUDA_VSTD::addressof(*__hold.get()))) _State(__a0);
     __state_ = _CUDA_VSTD::addressof(*__hold.release());
 }
@@ -1587,9 +1587,9 @@ promise<_Rp&>::promise(allocator_arg_t, const _Alloc& __a0)
 {
     typedef __assoc_state_alloc<_Rp&, _Alloc> _State;
     typedef typename __allocator_traits_rebind<_Alloc, _State>::type _A2;
-    typedef __allocator_destructor<_A2> _D2;
+    typedef __allocator_destructor<_A2> _Dest2;
     _A2 __a(__a0);
-    unique_ptr<_State, _D2> __hold(__a.allocate(1), _D2(__a, 1));
+    unique_ptr<_State, _Dest2> __hold(__a.allocate(1), _Dest2(__a, 1));
     ::new(static_cast<void*>(_CUDA_VSTD::addressof(*__hold.get()))) _State(__a0);
     __state_ = _CUDA_VSTD::addressof(*__hold.release());
 }
@@ -1717,9 +1717,9 @@ promise<void>::promise(allocator_arg_t, const _Alloc& __a0)
 {
     typedef __assoc_sub_state_alloc<_Alloc> _State;
     typedef typename __allocator_traits_rebind<_Alloc, _State>::type _A2;
-    typedef __allocator_destructor<_A2> _D2;
+    typedef __allocator_destructor<_A2> _Dest2;
     _A2 __a(__a0);
-    unique_ptr<_State, _D2> __hold(__a.allocate(1), _D2(__a, 1));
+    unique_ptr<_State, _Dest2> __hold(__a.allocate(1), _Dest2(__a, 1));
     ::new(static_cast<void*>(_CUDA_VSTD::addressof(*__hold.get()))) _State(__a0);
     __state_ = _CUDA_VSTD::addressof(*__hold.release());
 }

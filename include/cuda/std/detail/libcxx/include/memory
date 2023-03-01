@@ -1198,7 +1198,7 @@ struct __has_construct : std::false_type {};
 
 template <class _Alloc, class _Pointer, class _Tp>
 struct __has_construct<_Alloc, _Pointer, _Tp, __void_t<
-    decltype(_CUDA_VSTD::declval<_Alloc>().construct(_CUDA_VSTD::declval<_Pointer>(), _CUDA_VSTD::declval<_Tp>()))>> 
+    decltype(_CUDA_VSTD::declval<_Alloc>().construct(_CUDA_VSTD::declval<_Pointer>(), _CUDA_VSTD::declval<_Tp>()))>>
     : std::true_type {};
 
 template <class _Alloc, class _Pointer, class = void>
@@ -1206,7 +1206,7 @@ struct __has_destroy : false_type {};
 
 template <class _Alloc, class _Pointer>
 struct __has_destroy<_Alloc, _Pointer, __void_t<
-    decltype(_CUDA_VSTD::declval<_Alloc>().destroy(_CUDA_VSTD::declval<_Pointer>()))>> 
+    decltype(_CUDA_VSTD::declval<_Alloc>().destroy(_CUDA_VSTD::declval<_Pointer>()))>>
     : std::true_type {};
 
 template <class _Alloc>
@@ -2616,136 +2616,136 @@ typename enable_if<
 >::type
 swap(unique_ptr<_Tp, _Dp>& __x, unique_ptr<_Tp, _Dp>& __y) _NOEXCEPT {__x.swap(__y);}
 
-template <class _T1, class _D1, class _T2, class _D2>
+template <class _T1, class _Dest1, class _T2, class _Dest2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator==(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y) {return __x.get() == __y.get();}
+operator==(const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __y) {return __x.get() == __y.get();}
 
-template <class _T1, class _D1, class _T2, class _D2>
+template <class _T1, class _Dest1, class _T2, class _Dest2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator!=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y) {return !(__x == __y);}
+operator!=(const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __y) {return !(__x == __y);}
 
-template <class _T1, class _D1, class _T2, class _D2>
+template <class _T1, class _Dest1, class _T2, class _Dest2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator< (const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
+operator< (const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __y)
 {
-    typedef typename unique_ptr<_T1, _D1>::pointer _P1;
-    typedef typename unique_ptr<_T2, _D2>::pointer _P2;
+    typedef typename unique_ptr<_T1, _Dest1>::pointer _P1;
+    typedef typename unique_ptr<_T2, _Dest2>::pointer _P2;
     typedef typename common_type<_P1, _P2>::type _Vp;
     return less<_Vp>()(__x.get(), __y.get());
 }
 
-template <class _T1, class _D1, class _T2, class _D2>
+template <class _T1, class _Dest1, class _T2, class _Dest2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator> (const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y) {return __y < __x;}
+operator> (const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __y) {return __y < __x;}
 
-template <class _T1, class _D1, class _T2, class _D2>
+template <class _T1, class _Dest1, class _T2, class _Dest2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator<=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y) {return !(__y < __x);}
+operator<=(const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __y) {return !(__y < __x);}
 
-template <class _T1, class _D1, class _T2, class _D2>
+template <class _T1, class _Dest1, class _T2, class _Dest2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator>=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y) {return !(__x < __y);}
+operator>=(const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __y) {return !(__x < __y);}
 
-template <class _T1, class _D1>
+template <class _T1, class _Dest1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator==(const unique_ptr<_T1, _D1>& __x, nullptr_t) _NOEXCEPT
+operator==(const unique_ptr<_T1, _Dest1>& __x, nullptr_t) _NOEXCEPT
 {
     return !__x;
 }
 
-template <class _T1, class _D1>
+template <class _T1, class _Dest1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator==(nullptr_t, const unique_ptr<_T1, _D1>& __x) _NOEXCEPT
+operator==(nullptr_t, const unique_ptr<_T1, _Dest1>& __x) _NOEXCEPT
 {
     return !__x;
 }
 
-template <class _T1, class _D1>
+template <class _T1, class _Dest1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator!=(const unique_ptr<_T1, _D1>& __x, nullptr_t) _NOEXCEPT
+operator!=(const unique_ptr<_T1, _Dest1>& __x, nullptr_t) _NOEXCEPT
 {
     return static_cast<bool>(__x);
 }
 
-template <class _T1, class _D1>
+template <class _T1, class _Dest1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator!=(nullptr_t, const unique_ptr<_T1, _D1>& __x) _NOEXCEPT
+operator!=(nullptr_t, const unique_ptr<_T1, _Dest1>& __x) _NOEXCEPT
 {
     return static_cast<bool>(__x);
 }
 
-template <class _T1, class _D1>
+template <class _T1, class _Dest1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator<(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+operator<(const unique_ptr<_T1, _Dest1>& __x, nullptr_t)
 {
-    typedef typename unique_ptr<_T1, _D1>::pointer _P1;
+    typedef typename unique_ptr<_T1, _Dest1>::pointer _P1;
     return less<_P1>()(__x.get(), nullptr);
 }
 
-template <class _T1, class _D1>
+template <class _T1, class _Dest1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator<(nullptr_t, const unique_ptr<_T1, _D1>& __x)
+operator<(nullptr_t, const unique_ptr<_T1, _Dest1>& __x)
 {
-    typedef typename unique_ptr<_T1, _D1>::pointer _P1;
+    typedef typename unique_ptr<_T1, _Dest1>::pointer _P1;
     return less<_P1>()(nullptr, __x.get());
 }
 
-template <class _T1, class _D1>
+template <class _T1, class _Dest1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+operator>(const unique_ptr<_T1, _Dest1>& __x, nullptr_t)
 {
     return nullptr < __x;
 }
 
-template <class _T1, class _D1>
+template <class _T1, class _Dest1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator>(nullptr_t, const unique_ptr<_T1, _D1>& __x)
+operator>(nullptr_t, const unique_ptr<_T1, _Dest1>& __x)
 {
     return __x < nullptr;
 }
 
-template <class _T1, class _D1>
+template <class _T1, class _Dest1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator<=(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+operator<=(const unique_ptr<_T1, _Dest1>& __x, nullptr_t)
 {
     return !(nullptr < __x);
 }
 
-template <class _T1, class _D1>
+template <class _T1, class _Dest1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator<=(nullptr_t, const unique_ptr<_T1, _D1>& __x)
+operator<=(nullptr_t, const unique_ptr<_T1, _Dest1>& __x)
 {
     return !(__x < nullptr);
 }
 
-template <class _T1, class _D1>
+template <class _T1, class _Dest1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator>=(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+operator>=(const unique_ptr<_T1, _Dest1>& __x, nullptr_t)
 {
     return !(__x < nullptr);
 }
 
-template <class _T1, class _D1>
+template <class _T1, class _Dest1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator>=(nullptr_t, const unique_ptr<_T1, _D1>& __x)
+operator>=(nullptr_t, const unique_ptr<_T1, _Dest1>& __x)
 {
     return !(nullptr < __x);
 }
@@ -3743,9 +3743,9 @@ shared_ptr<_Tp>::shared_ptr(_Yp* __p, _Dp __d, _Alloc __a,
 #endif  // _LIBCUDACXX_NO_EXCEPTIONS
         typedef __shared_ptr_pointer<_Yp*, _Dp, _Alloc> _CntrlBlk;
         typedef typename __allocator_traits_rebind<_Alloc, _CntrlBlk>::type _A2;
-        typedef __allocator_destructor<_A2> _D2;
+        typedef __allocator_destructor<_A2> _Dest2;
         _A2 __a2(__a);
-        unique_ptr<_CntrlBlk, _D2> __hold2(__a2.allocate(1), _D2(__a2, 1));
+        unique_ptr<_CntrlBlk, _Dest2> __hold2(__a2.allocate(1), _Dest2(__a2, 1));
         ::new(static_cast<void*>(_CUDA_VSTD::addressof(*__hold2.get())))
             _CntrlBlk(__p, __d, __a);
         __cntrl_ = _CUDA_VSTD::addressof(*__hold2.release());
@@ -3771,9 +3771,9 @@ shared_ptr<_Tp>::shared_ptr(nullptr_t __p, _Dp __d, _Alloc __a)
 #endif  // _LIBCUDACXX_NO_EXCEPTIONS
         typedef __shared_ptr_pointer<nullptr_t, _Dp, _Alloc> _CntrlBlk;
         typedef typename __allocator_traits_rebind<_Alloc, _CntrlBlk>::type _A2;
-        typedef __allocator_destructor<_A2> _D2;
+        typedef __allocator_destructor<_A2> _Dest2;
         _A2 __a2(__a);
-        unique_ptr<_CntrlBlk, _D2> __hold2(__a2.allocate(1), _D2(__a2, 1));
+        unique_ptr<_CntrlBlk, _Dest2> __hold2(__a2.allocate(1), _Dest2(__a2, 1));
         ::new(static_cast<void*>(_CUDA_VSTD::addressof(*__hold2.get())))
             _CntrlBlk(__p, __d, __a);
         __cntrl_ = _CUDA_VSTD::addressof(*__hold2.release());
@@ -3936,9 +3936,9 @@ shared_ptr<_Tp>::make_shared(_Args&& ...__args)
     static_assert( is_constructible<_Tp, _Args...>::value, "Can't construct object in make_shared" );
     typedef __shared_ptr_emplace<_Tp, allocator<_Tp> > _CntrlBlk;
     typedef allocator<_CntrlBlk> _A2;
-    typedef __allocator_destructor<_A2> _D2;
+    typedef __allocator_destructor<_A2> _Dest2;
     _A2 __a2;
-    unique_ptr<_CntrlBlk, _D2> __hold2(__a2.allocate(1), _D2(__a2, 1));
+    unique_ptr<_CntrlBlk, _Dest2> __hold2(__a2.allocate(1), _Dest2(__a2, 1));
     ::new(__hold2.get()) _CntrlBlk(__a2, _CUDA_VSTD::forward<_Args>(__args)...);
     shared_ptr<_Tp> __r;
     __r.__ptr_ = __hold2.get()->get();
@@ -3955,9 +3955,9 @@ shared_ptr<_Tp>::allocate_shared(const _Alloc& __a, _Args&& ...__args)
     static_assert( is_constructible<_Tp, _Args...>::value, "Can't construct object in allocate_shared" );
     typedef __shared_ptr_emplace<_Tp, _Alloc> _CntrlBlk;
     typedef typename __allocator_traits_rebind<_Alloc, _CntrlBlk>::type _A2;
-    typedef __allocator_destructor<_A2> _D2;
+    typedef __allocator_destructor<_A2> _Dest2;
     _A2 __a2(__a);
-    unique_ptr<_CntrlBlk, _D2> __hold2(__a2.allocate(1), _D2(__a2, 1));
+    unique_ptr<_CntrlBlk, _Dest2> __hold2(__a2.allocate(1), _Dest2(__a2, 1));
     ::new(static_cast<void*>(_CUDA_VSTD::addressof(*__hold2.get())))
         _CntrlBlk(__a, _CUDA_VSTD::forward<_Args>(__args)...);
     shared_ptr<_Tp> __r;
