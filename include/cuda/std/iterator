@@ -9,8 +9,6 @@
 #ifndef _CUDA_ITERATOR
 #define _CUDA_ITERATOR
 
-#include "initializer_list"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

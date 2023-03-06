@@ -13,11 +13,11 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <initializer_list>
 #endif // __cuda_std__
 
 #include "../__iterator/reverse_iterator.h"
 #include "../cstddef"
+#include "../initializer_list"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

@@ -140,7 +140,7 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #include <compare>
 #endif
-//#include <initializer_list>
+#include "initializer_list"
 
 // [tuple.helper]
 #include "__tuple/tuple_element.h"

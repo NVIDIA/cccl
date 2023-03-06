@@ -240,7 +240,6 @@ template <class T>
 #ifndef __cuda_std__
 #include <__config>
 #include <__debug>
-#include <initializer_list>
 #endif //__cuda_std__
 
 #include "__functional/binary_function.h"
@@ -283,7 +282,7 @@ template <class T>
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #include "compare"
 #endif
-//#include <initializer_list>
+#include "initializer_list"
 
 // [tuple.helper]
 #include "__tuple/tuple_element.h"
