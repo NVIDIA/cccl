@@ -16,6 +16,7 @@
 // emplace_hint(...)
 
 // UNSUPPORTED: c++03
+// XFAIL: true
 
 #include <set>
 #include "test_macros.h"

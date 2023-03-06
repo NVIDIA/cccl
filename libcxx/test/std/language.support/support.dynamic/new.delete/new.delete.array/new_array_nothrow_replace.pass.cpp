@@ -7,12 +7,10 @@
 //===----------------------------------------------------------------------===//
 
 // test operator new [] nothrow by replacing only operator new
+// XFAIL: clang-7, gcc-7
 
 // UNSUPPORTED: sanitizer-new-delete
 // XFAIL: libcpp-no-vcruntime
-
-// pre-gcc-9 appears to have a compiler bug that breaks this test
-// UNSUPPORTED: gcc-4, gcc-5, gcc-6, gcc-7, gcc-8
 
 #include <new>
 #include <cstddef>

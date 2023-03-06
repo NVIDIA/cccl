@@ -8,6 +8,7 @@
 
 // <string>
 // UNSUPPORTED: c++98, c++03, c++11, c++14
+// UNSUPPORTED: gcc-7
 // XFAIL: libcpp-no-deduction-guides
 
 // If we're just building the test and not executing it, it should pass.

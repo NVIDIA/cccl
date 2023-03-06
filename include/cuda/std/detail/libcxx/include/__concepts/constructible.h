@@ -72,14 +72,14 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
   requires()(
     (::new _Tp)
   ));
-  
+
 template<class _Tp>
 _LIBCUDACXX_CONCEPT __default_initializable = _LIBCUDACXX_FRAGMENT(__default_initializable_, _Tp);
 
 template<class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   _Default_initializable_,
-  requires(_Tp __unused = _Tp{}) (
+  requires(_Tp = _Tp{}) (
     requires(constructible_from<_Tp>),
     requires(__default_initializable<_Tp>)
   ));

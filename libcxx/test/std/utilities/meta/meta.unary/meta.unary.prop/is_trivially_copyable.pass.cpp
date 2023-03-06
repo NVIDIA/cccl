@@ -12,7 +12,7 @@
 
 // These compilers have not implemented Core 2094 which makes volatile
 // qualified types trivially copyable.
-// XFAIL: clang-3, clang-4, apple-clang-6, apple-clang-7, apple-clang-8, apple-clang-9.0, gcc
+// XFAIL: gcc-7, gcc-8, gcc-9
 
 // If we're just building the test and not executing it, it should pass.
 // UNSUPPORTED: no_execute

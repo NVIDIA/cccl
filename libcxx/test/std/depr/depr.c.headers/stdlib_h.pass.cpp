@@ -18,6 +18,9 @@
 // in an unevaluated context. For this reason we manually suppress the warning.
 #if defined(__clang__)
 #pragma clang diagnostic ignored "-Wnonnull"
+#if __clang_major__ > 10
+#pragma clang diagnostic ignored "-Wnon-power-of-two-alignment"
+#endif
 #endif
 
 #ifdef abs
