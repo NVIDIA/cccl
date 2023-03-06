@@ -47,9 +47,17 @@ int timespec_get( struct timespec *ts, int base); // C++17
 
 #ifndef __cuda_std__
 #include <__config>
+#endif // __cuda_std__
+
+#ifndef __CUDACC_RTC__
 #include <time.h>
+#else
+typedef long long int time_t;
+#endif // __CUDACC_RTC__
+
+#ifndef __cuda_std__
 #include <__pragma_push>
-#endif
+#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

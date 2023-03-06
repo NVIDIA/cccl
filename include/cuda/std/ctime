@@ -10,12 +10,6 @@
 #ifndef _CUDA_CTIME
 #define _CUDA_CTIME
 
-#ifndef __CUDACC_RTC__
-    #include <time.h>
-#else
-    typedef long long int time_t;
-#endif
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

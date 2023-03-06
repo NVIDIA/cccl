@@ -825,13 +825,17 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 
 #ifndef __cuda_std__
 #include <__config>
-#include <ctime>
 #include <type_traits>
 #include <ratio>
 #include <limits>
-#include <version>
+#endif // __cuda_std__
+
+#include "ctime"
+#include "version"
+
+#ifndef __cuda_std__
 #include <__pragma_push>
-#endif
+#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
