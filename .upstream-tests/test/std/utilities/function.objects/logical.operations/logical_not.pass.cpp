@@ -10,6 +10,8 @@
 
 // logical_not
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
@@ -20,7 +22,7 @@ int main(int, char**)
 {
     typedef cuda::std::logical_not<int> F;
     const F f = F();
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
+#if TEST_STD_VER <= 17
     static_assert((cuda::std::is_same<F::argument_type, int>::value), "" );
     static_assert((cuda::std::is_same<F::result_type, bool>::value), "" );
 #endif

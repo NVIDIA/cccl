@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++03, c++11, c++14, c++17
 
 // <functional>
 //
@@ -32,6 +32,7 @@ void test() {
 struct Foo { void operator()(int) const { } };
 Foo& get_foo() { static Foo foo; return foo; }
 
-int main() {
+int main(int, char**) {
     test();
+    return 0;
 }

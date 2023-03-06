@@ -11,9 +11,8 @@
 // not2
 //  deprecated in C++17
 
-// UNSUPPORTED: clang-4.0
-// UNSUPPORTED: c++98, c++03, c++11, c++14
-// REQUIRES: verify-support
+// UNSUPPORTED: c++03, c++11, c++14
+#define _LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS
 
 #include <functional>
 
@@ -26,7 +25,7 @@ struct Predicate {
 };
 
 int main(int, char**) {
-    std::not2(Predicate()); // expected-error{{'not2<Predicate>' is deprecated}}
+    std::not2(Predicate()); // expected-warning {{'not2<Predicate>' is deprecated}}
 
-  return 0;
+    return 0;
 }

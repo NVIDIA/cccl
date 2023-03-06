@@ -12,6 +12,10 @@
 
 // has weak result type
 
+// REQUIRES: c++03 || c++11 || c++14 || c++17
+
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <functional>
 #include <type_traits>
 

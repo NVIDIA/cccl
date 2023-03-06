@@ -6,9 +6,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11, c++14
 
 // <functional>
+
+#define _LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 // template<class F, class... Args>
 // invoke_result_t<F, Args...> invoke(F&& f, Args&&... args) // C++17

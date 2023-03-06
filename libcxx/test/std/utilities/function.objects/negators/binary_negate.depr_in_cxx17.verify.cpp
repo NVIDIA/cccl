@@ -8,25 +8,25 @@
 
 // <functional>
 
-// unary_negate
+// binary_negate
 //  deprecated in C++17
 
-// UNSUPPORTED: clang-4.0
-// UNSUPPORTED: c++98, c++03, c++11, c++14
-// REQUIRES: verify-support
+// UNSUPPORTED: c++03, c++11, c++14
+#define _LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS
 
 #include <functional>
 
 #include "test_macros.h"
 
 struct Predicate {
-    typedef int argument_type;
-    bool operator()(argument_type) const { return true; }
+    typedef int first_argument_type;
+    typedef int second_argument_type;
+    bool operator()(first_argument_type, second_argument_type) const { return true; }
 };
 
 int main(int, char**) {
-    std::unary_negate<Predicate> f((Predicate())); // expected-error{{'unary_negate<Predicate>' is deprecated}}
+    std::binary_negate<Predicate> f((Predicate())); // expected-warning {{'binary_negate<Predicate>' is deprecated}}
     (void)f;
 
-  return 0;
+    return 0;
 }

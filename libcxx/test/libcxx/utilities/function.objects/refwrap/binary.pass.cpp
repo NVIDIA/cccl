@@ -6,6 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: c++17, c++20
+
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 // <functional>
 
 // reference_wrapper

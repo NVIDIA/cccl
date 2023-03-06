@@ -6,8 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11
-// <cuda/std/functional>
+// UNSUPPORTED: c++03, c++11
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
+// <functional>
 
 // bit_not
 
@@ -15,11 +17,13 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 int main(int, char**)
 {
     typedef cuda::std::bit_not<int> F;
     const F f = F();
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
+#if TEST_STD_VER <= 17
     static_assert((cuda::std::is_same<F::argument_type, int>::value), "" );
     static_assert((cuda::std::is_same<F::result_type, int>::value), "" );
 #endif

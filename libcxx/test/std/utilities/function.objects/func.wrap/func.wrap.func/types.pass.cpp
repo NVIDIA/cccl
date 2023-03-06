@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: c++03
+
 // <functional>
 
 // template<Returnable R, CopyConstructible... ArgTypes>
@@ -67,7 +69,9 @@ public:
 template <class F, class return_type>
 void test_nullary_function ()
 {
+#if TEST_STD_VER <= 17
     static_assert((std::is_same<typename F::result_type, return_type>::value), "" );
+#endif
     static_assert((!has_argument_type<F>::value), "" );
     static_assert((!has_first_argument_type<F>::value), "" );
     static_assert((!has_second_argument_type<F>::value), "" );
@@ -76,8 +80,10 @@ void test_nullary_function ()
 template <class F, class return_type, class arg_type>
 void test_unary_function ()
 {
+#if TEST_STD_VER <= 17
     static_assert((std::is_same<typename F::result_type, return_type>::value), "" );
     static_assert((std::is_same<typename F::argument_type,  arg_type>::value), "" );
+#endif
     static_assert((!has_first_argument_type<F>::value), "" );
     static_assert((!has_second_argument_type<F>::value), "" );
 }
@@ -85,16 +91,20 @@ void test_unary_function ()
 template <class F, class return_type, class arg_type1, class arg_type2>
 void test_binary_function ()
 {
+#if TEST_STD_VER <= 17
     static_assert((std::is_same<typename F::result_type,        return_type>::value), "" );
     static_assert((std::is_same<typename F::first_argument_type,  arg_type1>::value), "" );
     static_assert((std::is_same<typename F::second_argument_type, arg_type2>::value), "" );
+#endif
     static_assert((!has_argument_type<F>::value), "" );
 }
 
 template <class F, class return_type>
 void test_other_function ()
 {
+#if TEST_STD_VER <= 17
     static_assert((std::is_same<typename F::result_type, return_type>::value), "" );
+#endif
     static_assert((!has_argument_type<F>::value), "" );
     static_assert((!has_first_argument_type<F>::value), "" );
     static_assert((!has_second_argument_type<F>::value), "" );

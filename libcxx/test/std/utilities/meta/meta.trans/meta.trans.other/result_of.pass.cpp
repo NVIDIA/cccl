@@ -10,9 +10,13 @@
 
 // result_of<Fn(ArgTypes...)>
 
+#define _LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <type_traits>
-#include <memory>
 #include <cassert>
+#include <functional>
+#include <memory>
 #include "test_macros.h"
 
 struct S

@@ -22,7 +22,7 @@ int main(int, char**)
 {
     typedef cuda::std::binary_negate<cuda::std::logical_and<int> > F;
     const F f = F(cuda::std::logical_and<int>());
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
+#if TEST_STD_VER <= 17
     static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "" );
     static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "" );
     static_assert((cuda::std::is_same<bool, F::result_type>::value), "" );
