@@ -118,6 +118,8 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #include "__utility/integer_sequence.h"
 #include "__utility/move.h"
 #include "__utility/unreachable.h"
+#include "cstdint"
+#include "version"
 
 // standard-mandated includes
 

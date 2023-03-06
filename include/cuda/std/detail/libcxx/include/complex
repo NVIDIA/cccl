@@ -249,6 +249,7 @@ template<class T, class charT, class traits>
 #endif //__cuda_std__
 
 #include "climits"
+#include "cstdint"
 #include "version"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

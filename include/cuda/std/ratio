@@ -10,7 +10,6 @@
 #ifndef _CUDA_RATIO
 #define _CUDA_RATIO
 
-#include "cstdint"
 #include "type_traits"
 
 #include "detail/__config"

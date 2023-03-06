@@ -235,8 +235,9 @@ uintmax_t wcstoumax(const wchar_t* restrict nptr, wchar_t** restrict endptr, int
 */
 
 #include <__config>
-#include <cstdint>
 #include <inttypes.h>
+
+#include "cstdint"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

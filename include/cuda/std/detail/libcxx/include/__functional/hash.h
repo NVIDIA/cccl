@@ -12,7 +12,6 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstdint>
 #include <cstring>
 #endif // __cuda_std__
 
@@ -30,6 +29,7 @@
 #include "../__utility/move.h"
 #include "../__utility/pair.h"
 #include "../__utility/swap.h"
+#include "../cstdint"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
