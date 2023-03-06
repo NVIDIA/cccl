@@ -242,11 +242,11 @@ template<class T, class charT, class traits>
 #ifndef __cuda_std__
 #include <__config>
 #include <stdexcept>
-#include <cmath>
 #include <sstream>
 #endif // __cuda_std__
 
 #include "climits"
+#include "cmath"
 #include "cstdint"
 #include "type_traits"
 #include "version"

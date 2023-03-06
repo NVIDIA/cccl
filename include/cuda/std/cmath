@@ -9,13 +9,10 @@
 #ifndef _CUDA_CMATH
 #define _CUDA_CMATH
 
-#ifndef __CUDACC_RTC__
-#include <math.h>
-#endif
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"
+
 #include "detail/libcxx/include/cmath"
 
 #include "detail/__pragma_pop"

@@ -9,8 +9,6 @@
 #ifndef _CUDA_COMPLEX
 #define _CUDA_COMPLEX
 
-#include "cmath"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

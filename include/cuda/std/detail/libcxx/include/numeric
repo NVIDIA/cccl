@@ -149,9 +149,9 @@ floating_point  midpoint(floating_point a, floating_point b);    // C++20
 #include <__config>
 #include <iterator>
 #include <functional>
-#include <cmath> // for isnormal
 #endif // __cuda_std__
 
+#include "cmath" // for isnormal
 #include "limits" // for numeric_limits
 #include "version"
 

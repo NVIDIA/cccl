@@ -302,8 +302,11 @@ long double    truncl(long double x);
 
 #ifndef __cuda_std__
 #include <__config>
-#include <math.h>
 #endif // __cuda_std__
+
+#if !defined(__CUDACC_RTC__) || !defined(__cuda_std__)
+#include <math.h>
+#endif
 
 #include "limits"
 #include "type_traits"
@@ -579,13 +582,13 @@ inline _LIBCUDACXX_INLINE_VISIBILITY long double hypot( long double x, long doub
 
 template <class _A1, class _A2, class _A3>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename _EnableIf
+__enable_if_t
 <
     is_arithmetic<_A1>::value &&
     is_arithmetic<_A2>::value &&
     is_arithmetic<_A3>::value,
     __promote<_A1, _A2, _A3>
->::type
+>
 hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) _NOEXCEPT
 {
     typedef typename __promote<_A1, _A2, _A3>::type __result_type;
@@ -598,7 +601,7 @@ hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) _NOEXCEPT
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR typename enable_if<is_floating_point<_A1>::value, bool>::type
+_LIBCUDACXX_CONSTEXPR __enable_if_t<is_floating_point<_A1>::value, bool>
 __libcpp_isnan_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 {
 #if defined(__CUDA_ARCH__)
@@ -612,7 +615,7 @@ __libcpp_isnan_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR typename enable_if<!is_floating_point<_A1>::value, bool>::type
+_LIBCUDACXX_CONSTEXPR __enable_if_t<!is_floating_point<_A1>::value, bool>
 __libcpp_isnan_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 {
     return isnan(__lcpp_x);
@@ -620,7 +623,7 @@ __libcpp_isnan_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR typename enable_if<is_floating_point<_A1>::value, bool>::type
+_LIBCUDACXX_CONSTEXPR __enable_if_t<is_floating_point<_A1>::value, bool>
 __libcpp_isinf_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 {
 #if defined(__CUDA_ARCH__)
@@ -634,7 +637,7 @@ __libcpp_isinf_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR typename enable_if<!is_floating_point<_A1>::value, bool>::type
+_LIBCUDACXX_CONSTEXPR __enable_if_t<!is_floating_point<_A1>::value, bool>
 __libcpp_isinf_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 {
     return isinf(__lcpp_x);
@@ -642,7 +645,7 @@ __libcpp_isinf_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR typename enable_if<is_floating_point<_A1>::value, bool>::type
+_LIBCUDACXX_CONSTEXPR __enable_if_t<is_floating_point<_A1>::value, bool>
 __libcpp_isfinite_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 {
 #if !defined(__CUDA_ARCH__) && __has_builtin(__builtin_isnan)
@@ -654,7 +657,7 @@ __libcpp_isfinite_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR typename enable_if<!is_floating_point<_A1>::value, bool>::type
+_LIBCUDACXX_CONSTEXPR __enable_if_t<!is_floating_point<_A1>::value, bool>
 __libcpp_isfinite_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 {
     return isfinite(__lcpp_x);
@@ -714,8 +717,8 @@ _LIBCUDACXX_CONSTEXPR _IntT __max_representable_int_for_float() _NOEXCEPT {
 template <class _IntT, class _RealT>
 _LIBCUDACXX_INLINE_VISIBILITY
 _IntT __clamp_to_integral(_RealT __r) _NOEXCEPT {
-  using _Lim = std::numeric_limits<_IntT>;
-  const _IntT _MaxVal = std::__max_representable_int_for_float<_IntT, _RealT>();
+  using _Lim = _CUDA_VSTD::numeric_limits<_IntT>;
+  const _IntT _MaxVal = _CUDA_VSTD::__max_representable_int_for_float<_IntT, _RealT>();
   if (__r >= ::nextafter(static_cast<_RealT>(_MaxVal), INFINITY)) {
     return _Lim::max();
   } else if (__r <= _Lim::lowest()) {
@@ -728,6 +731,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #ifndef __cuda_std__
 #include <__pragma_pop>
-#endif
+#endif // __cuda_std__
 
 #endif  // _LIBCUDACXX_CMATH
