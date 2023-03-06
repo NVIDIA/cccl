@@ -15,7 +15,6 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__functional_base>
 #include <cassert>
 #include <exception>
 #include <memory>
@@ -23,6 +22,7 @@
 #include <typeinfo>
 #endif // __cuda_std__
 
+#include "../__functional_base"
 #include "../__functional/binary_function.h"
 #include "../__functional/invoke.h"
 #include "../__functional/unary_function.h"

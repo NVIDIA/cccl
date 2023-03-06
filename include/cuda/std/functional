@@ -14,12 +14,8 @@
 
 #include "detail/__pragma_push"
 
-#include "detail/__functional_base"
-
 #include "detail/libcxx/include/functional"
 
 #include "detail/__pragma_pop"
 
 #endif //_CUDA_FUNCTIONAL
-
-

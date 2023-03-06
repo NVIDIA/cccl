@@ -499,8 +499,14 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 
 #ifndef __cuda_std__
 #include <__config>
+#else
+#ifndef __CUDACC_RTC__
+#include <errno.h>
+#endif
 #endif // __cuda_std__
 
+
+#include "__functional_base"
 #include "__functional/binary_function.h"
 #include "__functional/binary_negate.h"
 #include "__functional/bind_back.h"
@@ -528,6 +534,8 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include "__functional/unwrap_ref.h"
 #include "__functional/weak_result_type.h"
 
+#include "chrono"
+#include "climits"
 #include "iterator"
 #include "type_traits"
 #include "version"

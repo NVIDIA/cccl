@@ -139,6 +139,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #ifndef __cuda_std__
 #include <__pragma_pop>
-#endif
+#endif // __cuda_std__
 
 #endif  // _LIBCUDACXX_FUNCTIONAL_BASE

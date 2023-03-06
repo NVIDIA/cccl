@@ -651,7 +651,6 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #include <__config>
 #include <typeinfo>
 #include <new>
-#include <__functional_base>
 #include <stdexcept>
 #include <cstring>
 #if !defined(_LIBCUDACXX_HAS_NO_ATOMIC_HEADER)
@@ -659,6 +658,7 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #endif
 #endif //__cuda_std__
 
+#include "__functional_base"
 #include "__iterator/iterator_traits.h"
 #include "__iterator/iterator.h"
 #include "__memory/addressof.h"
