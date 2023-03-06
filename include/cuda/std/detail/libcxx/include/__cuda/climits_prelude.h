@@ -48,8 +48,8 @@
         #define ULONG_MAX UINT_MAX
     #endif
     #define LLONG_MIN (-LLONG_MAX - 1)
-    #define LLONG_MAX 0x7fffffffffffffff
-    #define ULLONG_MAX 0xffffffffffffffff
+    #define LLONG_MAX 0x7fffffffffffffffLL
+    #define ULLONG_MAX 0xffffffffffffffffUL
 
     #define __FLT_RADIX__ 2
     #define __FLT_MANT_DIG__ 24
