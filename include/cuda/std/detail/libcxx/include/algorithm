@@ -1440,7 +1440,7 @@ __is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
     _Diff1 __l1 = _CUDA_VSTD::distance(__first1, __last1);
 
     typedef typename iterator_traits<_ForwardIterator2>::difference_type _Diff2;
-    __Diff2 __l2 = _CUDA_VSTD::distance(__first2, __last2);
+    _Diff2 __l2 = _CUDA_VSTD::distance(__first2, __last2);
     if (__l1 != __l2)
         return false;
 

@@ -8,7 +8,6 @@
 
 // UNSUPPORTED: c++98, c++03, c++11, c++14, c++17
 // NOTE: we currently do not support c++20 <compare>
-// XFAIL: c++20
 
 // <compare>
 

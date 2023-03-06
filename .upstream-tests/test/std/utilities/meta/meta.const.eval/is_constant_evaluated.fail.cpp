@@ -23,7 +23,7 @@ int main(int, char**)
   // expected-error@+1 {{no member named 'is_constant_evaluated' in namespace 'std'}}
   bool b = cuda::std::is_constant_evaluated();
 #else
-  // expected-error@+1 {{static_assert failed}}
+  // expected-error-re@+1 {{{{(static_assert|static assertion)}} failed}}
   static_assert(!cuda::std::is_constant_evaluated(), "");
 #endif
   return 0;

@@ -31,7 +31,7 @@ int main(int, char**)
         typedef cuda::std::array<T, 3> C;
         C c = {1, 2, 3.5};
         cuda::std::get<3>(c) = 5.5; // expected-note {{requested here}}
-        // expected-error-re@array:* {{static_assert failed{{( due to requirement '3U[L]{0,2} < 3U[L]{0,2}')?}} "Index out of bounds in cuda::std::get<> (cuda::std::array)"}}
+        // expected-error-re@array:* {{{{(static_assert|static assertion)}} failed{{.*}} {{"?}}Index out of bounds in std::get<> (std::array){{"?}}}}
     }
 
   return 0;

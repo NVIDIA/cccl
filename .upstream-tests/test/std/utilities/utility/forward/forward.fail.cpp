@@ -25,7 +25,10 @@ int main(int, char**)
 {
     {
         (void)cuda::std::forward<A&>(source());  // expected-note {{requested here}}
-        // expected-error-re@*:* 1 {{{{(static_assert|static assertion)}} failed{{.*}}cannot forward an rvalue as an lvalue}}
+        // expected-error-re@__utility/forward.h:* {{{{(static_assert|static assertion)}} failed{{.*}} {{"?}}cannot forward an rvalue as an lvalue{{"?}}}}
+#if defined(TEST_COMPILER_CLANG) && __clang_major__ > 14
+        // expected-error {{ignoring return value of function declared with const attribute}}
+#endif
     }
     {
         const A ca = A();

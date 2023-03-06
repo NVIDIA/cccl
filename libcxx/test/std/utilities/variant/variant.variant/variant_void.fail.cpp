@@ -25,7 +25,7 @@
 
 int main(int, char**)
 {
-    // expected-error@variant:* 3 {{static_assert failed}}
+    // expected-error-re@variant:* 3 {{{{(static_assert|static assertion)}} failed{{.*}} {{"?}}variant can not have a void type as an alternative{{"?}}}}}
     std::variant<int, void> v; // expected-note {{requested here}}
     std::variant<int, const void> v2; // expected-note {{requested here}}
     std::variant<const volatile void, int> v3; // expected-note {{requested here}}

@@ -21,16 +21,16 @@ int main(int, char**) {
   const int *b = std::begin(arr), *e = std::end(arr);
   typedef input_iterator<const int*> Iter;
   {
-    // expected-error@algorithm:* {{"std::min_element requires a ForwardIterator"}}
     std::min_element(Iter(b), Iter(e));
+    // expected-error@algorithm:* {{std::min_element requires a ForwardIterator}}
   }
   {
-    // expected-error@algorithm:* {{"std::max_element requires a ForwardIterator"}}
     std::max_element(Iter(b), Iter(e));
+    // expected-error@algorithm:* {{std::max_element requires a ForwardIterator}}
   }
   {
-    // expected-error@algorithm:* {{"std::minmax_element requires a ForwardIterator"}}
     std::minmax_element(Iter(b), Iter(e));
+    // expected-error@algorithm:* {{std::minmax_element requires a ForwardIterator}}
   }
 
 
