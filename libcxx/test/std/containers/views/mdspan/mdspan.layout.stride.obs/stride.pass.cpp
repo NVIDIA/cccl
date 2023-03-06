@@ -53,8 +53,8 @@ int main(int, char**)
 
     // constraint: extents_­type?::?rank() > 0
     {
-        ext0d_t e{};
-        std::layout_stride::mapping<ext0d_t> m{ e, std::array<index_t,0>{} };
+        ext0d_t e0{};
+        std::layout_stride::mapping<ext0d_t> m{ e0, std::array<index_t,0>{} };
 
         unused( m );
 

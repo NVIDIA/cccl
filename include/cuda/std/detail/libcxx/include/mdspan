@@ -60,10 +60,6 @@
 #include "__mdspan/static_array.h"
 #include "__mdspan/submdspan.h"
 
-#include "array"
-#include "cstddef"
-#include "limits"
-#include "span"
 #include "version"
 
 #endif // _LIBCUDACXX_MDSPAN

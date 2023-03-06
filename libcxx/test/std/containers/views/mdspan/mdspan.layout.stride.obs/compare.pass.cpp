@@ -16,7 +16,6 @@ constexpr auto dyn = std::dynamic_extent;
 int main(int, char**)
 {
     using index_t = int;
-    using ext1d_t = std::extents<index_t,dyn>;
     using ext2d_t = std::extents<index_t,dyn,dyn>;
 
     {

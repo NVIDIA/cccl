@@ -15,8 +15,6 @@
 
 #include "detail/__pragma_push"
 
-#include "detail/libcxx/include/algorithm"
-#include "detail/libcxx/include/numeric"
 #include "detail/libcxx/include/mdspan"
 
 #include "detail/__pragma_pop"

@@ -35,6 +35,7 @@ struct TestExtentsRank< TEST_TYPE >
 
         // Makes sure that `rank()` returns a constexpr
         std::array<int,_exts.rank()> a;
+        (void)a;
     }
 };
 

@@ -49,6 +49,7 @@
 #endif // __cuda_std__
 
 #include "../__mdspan/macros.h"
+#include "../__type_traits/is_convertible.h"
 #include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -72,7 +73,7 @@ struct default_accessor {
   __MDSPAN_TEMPLATE_REQUIRES(
     class _OtherElementType,
     /* requires */ (
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType(*)[], element_type(*)[])
+      __MDSPAN_TRAIT(is_convertible, _OtherElementType(*)[], element_type(*)[])
     )
   )
   __MDSPAN_INLINE_FUNCTION

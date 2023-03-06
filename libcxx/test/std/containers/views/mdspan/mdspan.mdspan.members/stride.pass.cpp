@@ -35,7 +35,6 @@ int main(int, char**)
     }
 
     {
-        std::array<data_t, 1> d{42};
         std::mdspan<data_t, std::extents<index_t, dyn, dyn>, std::layout_left> m{d.data(), 16, 32};
 
         assert( m.stride(0) == 1  );

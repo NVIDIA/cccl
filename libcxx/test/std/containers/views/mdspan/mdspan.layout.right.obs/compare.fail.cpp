@@ -25,7 +25,7 @@ int main(int, char**)
         constexpr std::layout_right::mapping<ext2d_t> m0{ e0 };
         constexpr std::layout_right::mapping<ext3d_t> m1{ e1 };
 
-        static_assert( m0 == m1, "" ); // expected-error
+        static_assert( m0 == m1, "" );// expected-error {{static_assert failed due to requirement 'm0 == m1'}}
     }
 
     return 0;

@@ -29,11 +29,6 @@ int main(int, char**)
 {
     // From a span
     {
-        typedef int    data_t ;
-        typedef size_t index_t;
-
-        using my_ext = typename std::extents<size_t,dyn>;
-
         std::array<int,2> a{1, 128};
         std::span <int,2> s(a.data(), 2);
         std::layout_stride::mapping<std::extents<size_t,dyn, dyn>> m{std::dextents<size_t,2>{16, 32}, s};
@@ -43,9 +38,6 @@ int main(int, char**)
 
     // TEST(TestLayoutStrideListInitialization, test_list_initialization)
     {
-        typedef int    data_t ;
-        typedef size_t index_t;
-
         std::layout_stride::mapping<std::extents<size_t,dyn, dyn>> m{std::dextents<size_t,2>{16, 32}, std::array<int,2>{1, 128}};
 
         CHECK_MAPPING(m);
@@ -53,7 +45,6 @@ int main(int, char**)
 
     // From another mapping
     {
-        typedef int    data_t ;
         typedef size_t index_t;
 
         std::layout_stride::mapping<std::extents<index_t,dyn, dyn>> m0{std::dextents<index_t,2>{16, 32}, std::array<int,2>{1, 128}};

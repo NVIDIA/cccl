@@ -53,9 +53,6 @@ int main(int, char**)
 
     // TEST(TestLayoutLeftListInitialization, test_layout_left_extent_initialization)
     {
-        typedef int    data_t ;
-        typedef size_t index_t;
-
         std::layout_left::mapping<std::extents<size_t,dyn, dyn>> m{std::dextents<size_t,2>{16, 32}};
 
         static_assert( m.is_exhaustive()          == true, "" );

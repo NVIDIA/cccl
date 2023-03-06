@@ -81,7 +81,6 @@ int main(int, char**)
     // Constraint: N == rank() || N == rank_dynamic() is true
     {
         using      mdspan_t = std::mdspan< int, std::extents< int, dyn, dyn > >;
-        using other_index_t = int;
 
         static_assert( is_array_cons_avail_v< mdspan_t, int *, int, 1 > == false, "" );
     }

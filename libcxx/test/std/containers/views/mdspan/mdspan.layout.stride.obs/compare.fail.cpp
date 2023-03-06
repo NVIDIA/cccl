@@ -28,7 +28,7 @@ int main(int, char**)
         constexpr std::layout_stride::mapping<ext2d_t> m0{ e0, a0 };
         constexpr std::layout_stride::mapping<ext3d_t> m1{ e1, a1 };
 
-        static_assert( m0 == m1, "" ); // expected-error
+        static_assert( m0 == m1, "" ); // expected-error {{invalid operands to binary expression}}
     }
 
     return 0;

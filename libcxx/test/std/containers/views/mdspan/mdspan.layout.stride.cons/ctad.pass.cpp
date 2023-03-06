@@ -12,7 +12,9 @@
 #include <array>
 #include <cassert>
 
+#ifdef __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
 constexpr auto dyn = std::dynamic_extent;
+#endif
 
 int main(int, char**)
 {

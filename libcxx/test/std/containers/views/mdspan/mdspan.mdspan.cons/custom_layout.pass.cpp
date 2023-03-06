@@ -17,8 +17,6 @@ constexpr auto dyn = std::dynamic_extent;
 
 int main(int, char**)
 {
-    using map_t = Foo::layout_foo::template mapping<std::dextents<size_t ,2>>;
-
     {
         using  data_t = int;
         using   lay_t = Foo::layout_foo;
