@@ -10,8 +10,6 @@
 #ifndef _CUDA_TUPLE
 #define _CUDA_TUPLE
 
-#include "functional"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

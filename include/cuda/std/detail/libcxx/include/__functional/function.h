@@ -20,7 +20,6 @@
 #include <exception>
 #include <memory>
 #include <new>
-#include <tuple>
 #include <typeinfo>
 #endif // __cuda_std__
 
@@ -42,6 +41,7 @@
 #include "../__utility/move.h"
 #include "../__utility/piecewise_construct.h"
 #include "../__utility/swap.h"
+#include "../tuple"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

@@ -655,7 +655,6 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #include <iterator>
 #include <__functional_base>
 #include <iosfwd>
-#include <tuple>
 #include <stdexcept>
 #include <cstring>
 #if !defined(_LIBCUDACXX_HAS_NO_ATOMIC_HEADER)
@@ -692,6 +691,7 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #include "cstddef"
 #include "cstdint"
 #include "limits"
+#include "tuple"
 #include "type_traits"
 
 // standard-mandated includes

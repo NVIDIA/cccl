@@ -12,9 +12,15 @@
 
 #ifdef __cuda_std__
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmismatched-tags"
+#endif
+
 #if !defined(__CUDACC_RTC__)
 // Fetch utility to get primary template for ::std::tuple_size necessary for the specialization of
-// ::std::tuple_size<cuda::std::tuple> to enable structured bindings. See https://github.com/NVIDIA/libcudacxx/issues/316
+// ::std::tuple_size<cuda::std::tuple> to enable structured bindings.
+// See https://github.com/NVIDIA/libcudacxx/issues/316
 #include <utility>
 #endif
 
@@ -69,6 +75,10 @@ namespace std {
     {};
 }
 #endif // _LIBCUDACXX_STD_VER > 14
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+# endif
 
 #endif // __cuda_std__
 
