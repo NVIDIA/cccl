@@ -14,8 +14,6 @@
     #include <chrono>
 #endif //__CUDACC_RTC__
 
-#include "ratio"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

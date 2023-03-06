@@ -825,7 +825,6 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 
 #ifndef __cuda_std__
 #include <__config>
-#include <ratio>
 #endif // __cuda_std__
 
 #include "__type_traits/common_type.h"
@@ -835,6 +834,7 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #include "__type_traits/is_floating_point.h"
 #include "ctime"
 #include "limits"
+#include "ratio"
 #include "type_traits"
 
 // standard-mandated includes
