@@ -44,19 +44,19 @@ int main(int, char**)
   // Test that tuple_size<const T> is not incomplete when tuple_size<T>::value
   // is well-formed but not a constant expression.
   {
-    // expected-error@__tuple/tuple_size.h:* 1 {{is not a constant expression}}
+    // expected-error@__tuple_dir/tuple_size.h:* 1 {{is not a constant expression}}
     (void)std::tuple_size<const Dummy1>::value; // expected-note {{here}}
   }
   // Test that tuple_size<const T> is not incomplete when tuple_size<T>::value
   // is well-formed but not convertible to size_t.
   {
-    // expected-error@__tuple/tuple_size.h:* 1 {{value of type 'void ()' is not implicitly convertible to}}
+    // expected-error@__tuple_dir/tuple_size.h:* 1 {{value of type 'void ()' is not implicitly convertible to}}
     (void)std::tuple_size<const Dummy2>::value; // expected-note {{here}}
   }
   // Test that tuple_size<const T> generates an error when tuple_size<T> is
   // complete but ::value isn't a constant expression convertible to size_t.
   {
-    // expected-error@__tuple/tuple_size.h:* 1 {{no member named 'value'}}
+    // expected-error@__tuple_dir/tuple_size.h:* 1 {{no member named 'value'}}
     (void)std::tuple_size<const Dummy3>::value; // expected-note {{here}}
   }
 
