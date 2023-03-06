@@ -341,6 +341,19 @@ struct is_same<T, T> { enum {value = 1}; };
 #endif
 #endif
 
+#if defined(_LIBCUDACXX_HAS_NO_LOCALIZATION)
+#  define TEST_HAS_NO_LOCALIZATION
+#endif
+
+#if defined(_LIBCUDACXX_NO_HAS_CHAR8_T)
+#  define TEST_HAS_NO_CHAR8_T
+#endif
+
+#if defined(_LIBCUDACXX_HAS_NO_UNICODE_CHARS)
+#  define TEST_HAS_NO_UNICODE_CHARS
+#endif
+
+
 #if defined(__GNUC__) || defined(__clang__) || defined(__CUDACC_RTC__)
 template <class Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY

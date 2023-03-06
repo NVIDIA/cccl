@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 // <functional>
 
 // template <class T>
@@ -28,8 +30,10 @@ void
 test()
 {
     typedef std::hash<T> H;
-    static_assert((std::is_same<typename H::argument_type, T>::value), "" );
-    static_assert((std::is_same<typename H::result_type, std::size_t>::value), "" );
+#if TEST_STD_VER <= 17
+    static_assert((std::is_same<typename H::argument_type, T>::value), "");
+    static_assert((std::is_same<typename H::result_type, std::size_t>::value), "");
+#endif
     ASSERT_NOEXCEPT(H()(T()));
     H h;
 
@@ -54,7 +58,9 @@ int main(int, char**)
     test<unsigned char>();
     test<char16_t>();
     test<char32_t>();
+#ifndef TEST_HAS_NO_WIDE_CHARACTERS
     test<wchar_t>();
+#endif
     test<short>();
     test<unsigned short>();
     test<int>();
@@ -104,7 +110,7 @@ int main(int, char**)
     test<uintmax_t>();
     test<uintptr_t>();
 
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#ifndef TEST_HAS_NO_INT128_T
     test<__int128_t>();
     test<__uint128_t>();
 #endif

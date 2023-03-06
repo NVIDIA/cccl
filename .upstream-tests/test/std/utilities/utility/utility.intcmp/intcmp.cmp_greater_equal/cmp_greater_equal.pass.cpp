@@ -30,7 +30,7 @@ struct Tuple {
     if constexpr (cuda::std::is_signed_v<T>) {
       mid = T(-1);
     } else {
-      mid = max >> 1; 
+      mid = max >> 1;
     }
   }
 };
@@ -84,7 +84,7 @@ __host__ __device__ constexpr void test2(const cuda::std::tuple<Ts...>&, const U
 
 __host__ __device__ constexpr bool test() {
   cuda::std::tuple<
-#ifndef TEST_HAS_NO_INT128
+#ifndef TEST_HAS_NO_INT128_T
       __int128_t, __uint128_t,
 #endif
       unsigned long long, long long, unsigned long, long, unsigned int, int,

@@ -6,12 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 // <functional>
 
-// make sure that we can hash enumeration values
-// Not very portable
+// Make sure that we can hash enumeration values.
 
 #include "test_macros.h"
 
@@ -33,8 +32,10 @@ void
 test()
 {
     typedef std::hash<T> H;
-    static_assert((std::is_same<typename H::argument_type, T>::value), "" );
-    static_assert((std::is_same<typename H::result_type, std::size_t>::value), "" );
+#if TEST_STD_VER <= 17
+    static_assert((std::is_same<typename H::argument_type, T>::value), "");
+    static_assert((std::is_same<typename H::result_type, std::size_t>::value), "");
+#endif
     ASSERT_NOEXCEPT(H()(T()));
     typedef typename std::underlying_type<T>::type under_type;
 
