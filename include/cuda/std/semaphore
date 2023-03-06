@@ -14,8 +14,6 @@
 #ifndef _CUDA_SEMAPHORE
 #define _CUDA_SEMAPHORE
 
-#include "atomic"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

@@ -14,8 +14,6 @@
 #ifndef _CUDA_LATCH
 #define _CUDA_LATCH
 
-#include "atomic"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

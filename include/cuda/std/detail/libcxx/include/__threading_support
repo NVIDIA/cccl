@@ -13,6 +13,8 @@
 #ifndef __cuda_std__
 #include <__config>
 #include <errno.h>
+#else
+#include "__cuda/atomic_prelude.h"
 #endif // __cuda_std__
 
 #include "__functional/hash.h"

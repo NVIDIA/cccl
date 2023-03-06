@@ -18,8 +18,6 @@
 #ifndef _CUDA_BARRIER
 #define _CUDA_BARRIER
 
-#include "atomic"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"
