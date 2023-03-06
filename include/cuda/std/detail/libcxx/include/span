@@ -132,9 +132,18 @@ template<class R>
 #include <__config>
 #include <iterator>     // for iterators
 #include <array>        // for array
-#include <type_traits>  // for remove_cv, etc
 #endif // __cuda_std__
 
+#include "__type_traits/enable_if.h"
+#include "__type_traits/integral_constant.h"
+#include "__type_traits/is_array.h"
+#include "__type_traits/is_const.h"
+#include "__type_traits/is_convertible.h"
+#include "__type_traits/remove_cv.h"
+#include "__type_traits/remove_pointer.h"
+#include "__type_traits/type_identity.h"
+#include "__type_traits/void_t.h"
+#include "__utility/declval.h"
 #include "cstddef"      // for ptrdiff_t
 #include "version"
 

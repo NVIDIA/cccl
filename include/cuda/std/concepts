@@ -10,7 +10,6 @@
 #ifndef _CUDA_CONCEPTS
 #define _CUDA_CONCEPTS
 
-#include "type_traits"
 #include "utility"
 
 #include "detail/__config"

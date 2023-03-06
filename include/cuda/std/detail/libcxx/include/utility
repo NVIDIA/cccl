@@ -241,7 +241,6 @@ template <class T>
 #include <__config>
 #include <__debug>
 #include <initializer_list>
-#include <version>
 #endif //__cuda_std__
 
 #include "__functional/binary_function.h"
@@ -271,6 +270,9 @@ template <class T>
 #include "__utility/swap.h"
 #include "__utility/to_underlying.h"
 #include "__utility/unreachable.h"
+
+#include "type_traits"
+#include "version"
 
 // standard-mandated includes
 

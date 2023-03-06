@@ -89,7 +89,6 @@ void  operator delete[](void* ptr, void*) noexcept;
 #ifndef __cuda_std__
 #include <__config>
 #include <exception>
-#include <type_traits>
 #ifdef _LIBCUDACXX_NO_EXCEPTIONS
 #include <cstdlib>
 #endif
@@ -99,6 +98,7 @@ void  operator delete[](void* ptr, void*) noexcept;
 #endif // __cuda_std__
 
 #include "cstddef"
+#include "type_traits"
 #include "version"
 
 #ifndef __cuda_std__

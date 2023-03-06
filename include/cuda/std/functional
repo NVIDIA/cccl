@@ -10,8 +10,6 @@
 #ifndef _CUDA_FUNCTIONAL
 #define _CUDA_FUNCTIONAL
 
-#include "type_traits"
-#include "version"
 #include "iterator"
 // #include "memory"
 // #include "tuple"

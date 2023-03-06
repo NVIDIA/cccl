@@ -18,6 +18,7 @@
 #include <__pragma_push>
 #endif
 
+#include "__functional/hash.h"
 #include "climits"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

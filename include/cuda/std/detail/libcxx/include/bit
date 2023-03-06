@@ -56,11 +56,11 @@ namespace std {
 #ifndef __cuda_std__
 #include <__config>
 #include <limits>
-#include <type_traits>
 #include <__debug>
 #endif // __cuda_std__
 
 #include "cstdint"
+#include "type_traits"
 #include "version"
 
 #ifndef __cuda_std__

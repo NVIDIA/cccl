@@ -14,10 +14,8 @@
     #include <chrono>
 #endif //__CUDACC_RTC__
 
-#include "type_traits"
 #include "ratio"
 #include "limits"
-#include "version"
 
 #include "detail/__config"
 

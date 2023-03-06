@@ -11,8 +11,6 @@
 #define _CUDA_UTILITY
 
 #include "limits"
-#include "type_traits"
-#include "version"
 
 #include "detail/__config"
 

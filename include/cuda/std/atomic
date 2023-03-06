@@ -43,7 +43,6 @@
 #endif
 
 #include "cassert"
-#include "type_traits"
 
 #include "detail/__config"
 

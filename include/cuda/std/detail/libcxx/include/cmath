@@ -303,10 +303,14 @@ long double    truncl(long double x);
 #ifndef __cuda_std__
 #include <__config>
 #include <math.h>
-#include <version>
-#include <type_traits>
+#endif // __cuda_std__
+
+#include "type_traits"
+#include "version"
+
+#ifndef __cuda_std__
 #include <__pragma_push>
-#endif //stdexcept
+#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

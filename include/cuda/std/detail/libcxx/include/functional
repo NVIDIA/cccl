@@ -499,7 +499,6 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 
 #ifndef __cuda_std__
 #include <__config>
-#include <version>
 #endif // __cuda_std__
 
 #include "__functional/binary_function.h"
@@ -528,6 +527,9 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include "__functional/unary_negate.h"
 #include "__functional/unwrap_ref.h"
 #include "__functional/weak_result_type.h"
+
+#include "type_traits"
+#include "version"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

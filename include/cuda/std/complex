@@ -10,7 +10,6 @@
 #define _CUDA_COMPLEX
 
 #include "cmath"
-#include "type_traits"
 
 #include "detail/__config"
 

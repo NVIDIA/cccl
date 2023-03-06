@@ -104,7 +104,11 @@ template<> class numeric_limits<cv long double>;
 
 #ifndef __cuda_std__
 #include <__config>
-#include <type_traits>
+#endif //__cuda_std__
+
+#include "type_traits"
+
+#ifndef __cuda_std__
 #include <__pragma_push>
 #endif //__cuda_std__
 
@@ -407,7 +411,7 @@ protected:
 template <>
 class __libcpp_numeric_limits<long double, true>
 {
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE 
+#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 protected:
     typedef long double type;
 

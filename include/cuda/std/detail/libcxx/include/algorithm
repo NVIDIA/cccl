@@ -637,7 +637,6 @@ template <class BidirectionalIterator, class Compare>
 #ifndef __cuda_std__
 #include <__config>
 #include <initializer_list>
-#include <type_traits>
 #include <cstring>
 #include <utility> // needed to provide swap_ranges.
 #include <memory>
@@ -648,6 +647,7 @@ template <class BidirectionalIterator, class Compare>
 #endif // __cuda_std__
 
 #include "cstddef"
+#include "type_traits"
 #include "version"
 
 #ifndef __cuda_std__
@@ -756,23 +756,23 @@ public:
 
 template <typename _Integral>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-typename enable_if
+__enable_if_t
 <
     is_integral<_Integral>::value,
     _Integral
->::type
+>
 __half_positive(_Integral __value)
 {
-    return static_cast<_Integral>(static_cast<typename make_unsigned<_Integral>::type>(__value) / 2);
+    return static_cast<_Integral>(static_cast<__make_unsigned_t<_Integral>>(__value) / 2);
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-typename enable_if
+__enable_if_t
 <
     !is_integral<_Tp>::value,
     _Tp
->::type
+>
 __half_positive(_Tp __value)
 {
     return __value / 2;
@@ -1656,11 +1656,11 @@ __unwrap_iter(_Iter __i)
 
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_trivially_copy_assignable<_Tp>::value,
     _Tp*
->::type
+>
 __unwrap_iter(move_iterator<_Tp*> __i)
 {
     return __i.base();
@@ -1670,11 +1670,11 @@ __unwrap_iter(move_iterator<_Tp*> __i)
 
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
-typename enable_if
+__enable_if_t
 <
     is_trivially_copy_assignable<_Tp>::value,
     _Tp*
->::type
+>
 __unwrap_iter(__wrap_iter<_Tp*> __i)
 {
     return __i.base();
@@ -1682,11 +1682,11 @@ __unwrap_iter(__wrap_iter<_Tp*> __i)
 
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
-typename enable_if
+__enable_if_t
 <
     is_trivially_copy_assignable<_Tp>::value,
     const _Tp*
->::type
+>
 __unwrap_iter(__wrap_iter<const _Tp*> __i)
 {
     return __i.base();
@@ -1696,11 +1696,11 @@ __unwrap_iter(__wrap_iter<const _Tp*> __i)
 
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
-typename enable_if
+__enable_if_t
 <
     is_trivially_copy_assignable<_Tp>::value,
     __wrap_iter<_Tp*>
->::type
+>
 __unwrap_iter(__wrap_iter<_Tp*> __i)
 {
     return __i;
@@ -1720,12 +1720,12 @@ __copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 
 template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_same<__remove_const_t<_Tp>, _Up>::value &&
     is_trivially_copy_assignable<_Up>::value,
     _Up*
->::type
+>
 __copy(_Tp* __first, _Tp* __last, _Up* __result)
 {
     const size_t __n = static_cast<size_t>(__last - __first);
@@ -1756,12 +1756,12 @@ __copy_backward(_BidirectionalIterator __first, _BidirectionalIterator __last, _
 
 template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_same<__remove_const_t<_Tp>, _Up>::value &&
     is_trivially_copy_assignable<_Up>::value,
     _Up*
->::type
+>
 __copy_backward(_Tp* __first, _Tp* __last, _Up* __result)
 {
     const size_t __n = static_cast<size_t>(__last - __first);
@@ -1807,12 +1807,12 @@ copy_if(_InputIterator __first, _InputIterator __last,
 
 template<class _InputIterator, class _Size, class _OutputIterator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     __is_cpp17_input_iterator<_InputIterator>::value &&
    !__is_cpp17_random_access_iterator<_InputIterator>::value,
     _OutputIterator
->::type
+>
 copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
     typedef decltype(__convert_to_integral(__orig_n)) _IntegralSize;
@@ -1833,11 +1833,11 @@ copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 
 template<class _InputIterator, class _Size, class _OutputIterator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     __is_cpp17_random_access_iterator<_InputIterator>::value,
     _OutputIterator
->::type
+>
 copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
     typedef decltype(__convert_to_integral(__orig_n)) _IntegralSize;
@@ -1859,12 +1859,12 @@ __move(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 
 template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_same<__remove_const_t<_Tp>, _Up>::value &&
     is_trivially_copy_assignable<_Up>::value,
     _Up*
->::type
+>
 __move(_Tp* __first, _Tp* __last, _Up* __result)
 {
     const size_t __n = static_cast<size_t>(__last - __first);
@@ -1895,12 +1895,12 @@ __move_backward(_InputIterator __first, _InputIterator __last, _OutputIterator _
 
 template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_same<__remove_const_t<_Tp>, _Up>::value &&
     is_trivially_copy_assignable<_Up>::value,
     _Up*
->::type
+>
 __move_backward(_Tp* __first, _Tp* __last, _Up* __result)
 {
     const size_t __n = static_cast<size_t>(__last - __first);
@@ -2857,12 +2857,12 @@ public:
 
 private:
     typedef typename _Engine::result_type _Engine_result_type;
-    typedef typename conditional
+    typedef __conditional_t
         <
             sizeof(_Engine_result_type) <= sizeof(result_type),
                 result_type,
                 _Engine_result_type
-        >::type _Working_result_type;
+        > _Working_result_type;
 
     _Engine& __e_;
     size_t __w_;
@@ -3044,8 +3044,8 @@ typename uniform_int_distribution<_IntType>::result_type
 uniform_int_distribution<_IntType>::operator()(_URNG& __g, const param_type& __p)
 _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
 {
-    typedef typename conditional<sizeof(result_type) <= sizeof(uint32_t),
-                                            uint32_t, uint64_t>::type _UIntType;
+    typedef __conditional_t<sizeof(result_type) <= sizeof(uint32_t),
+                                            uint32_t, uint64_t> _UIntType;
     const _UIntType _Rp = _UIntType(__p.b()) - _UIntType(__p.a()) + _UIntType(1);
     if (_Rp == 1)
         return __p.a();

@@ -10,8 +10,6 @@
 #ifndef _CUDA_TUPLE
 #define _CUDA_TUPLE
 
-#include "type_traits"
-
 #include "functional"
 #include "utility"
 

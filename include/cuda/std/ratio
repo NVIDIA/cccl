@@ -10,8 +10,6 @@
 #ifndef _CUDA_RATIO
 #define _CUDA_RATIO
 
-#include "type_traits"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

@@ -119,7 +119,7 @@ struct __atomic_ptr_inc<_Tp[]> { };
 template <typename _Tp, int n>
 struct __atomic_ptr_inc<_Tp[n]> { };
 
-template <typename _Tp, typename _Td, _EnableIf<!is_floating_point<__cxx_atomic_underlying_t<_Tp>>::value, int> = 0>
+template <typename _Tp, typename _Td, __enable_if_t<!is_floating_point<__cxx_atomic_underlying_t<_Tp>>::value, int> = 0>
 inline auto __cxx_atomic_fetch_add(_Tp* __a, _Td __delta,
                            memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   constexpr auto __skip_v = __atomic_ptr_inc<__cxx_atomic_underlying_t<_Tp>>::value;
@@ -128,7 +128,7 @@ inline auto __cxx_atomic_fetch_add(_Tp* __a, _Td __delta,
                             __cxx_atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, _EnableIf<is_floating_point<__cxx_atomic_underlying_t<_Tp>>::value, int> = 0>
+template <typename _Tp, typename _Td, __enable_if_t<is_floating_point<__cxx_atomic_underlying_t<_Tp>>::value, int> = 0>
 inline auto __cxx_atomic_fetch_add(_Tp* __a, _Td __delta,
                            memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   auto __expected = __cxx_atomic_load(__a, memory_order_relaxed);
@@ -141,7 +141,7 @@ inline auto __cxx_atomic_fetch_add(_Tp* __a, _Td __delta,
   return __expected;
 }
 
-template <typename _Tp, typename _Td, _EnableIf<!is_floating_point<__cxx_atomic_underlying_t<_Tp>>::value, int> = 0>
+template <typename _Tp, typename _Td, __enable_if_t<!is_floating_point<__cxx_atomic_underlying_t<_Tp>>::value, int> = 0>
 inline auto __cxx_atomic_fetch_sub(_Tp* __a, _Td __delta,
                            memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   constexpr auto __skip_v = __atomic_ptr_inc<__cxx_atomic_underlying_t<_Tp>>::value;
@@ -150,7 +150,7 @@ inline auto __cxx_atomic_fetch_sub(_Tp* __a, _Td __delta,
                             __cxx_atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, _EnableIf<is_floating_point<__cxx_atomic_underlying_t<_Tp>>::value, int> = 0>
+template <typename _Tp, typename _Td, __enable_if_t<is_floating_point<__cxx_atomic_underlying_t<_Tp>>::value, int> = 0>
 inline auto __cxx_atomic_fetch_sub(_Tp* __a, _Td __delta,
                            memory_order __order) -> __cxx_atomic_underlying_t<_Tp> {
   auto __expected = __cxx_atomic_load(__a, memory_order_relaxed);

@@ -21,7 +21,6 @@
 #include <memory>
 #include <new>
 #include <tuple>
-#include <type_traits>
 #include <typeinfo>
 #endif // __cuda_std__
 
@@ -29,6 +28,16 @@
 #include "../__functional/invoke.h"
 #include "../__functional/unary_function.h"
 #include "../__iterator/iterator_traits.h"
+#include "../__type_traits/conditional.h"
+#include "../__type_traits/decay.h"
+#include "../__type_traits/enable_if.h"
+#include "../__type_traits/is_nothrow_copy_constructible.h"
+#include "../__type_traits/is_same.h"
+#include "../__type_traits/is_scalar.h"
+#include "../__type_traits/is_trivially_copy_constructible.h"
+#include "../__type_traits/is_trivially_destructible.h"
+#include "../__type_traits/is_void.h"
+#include "../__type_traits/remove_cvref.h"
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 #include "../__utility/piecewise_construct.h"

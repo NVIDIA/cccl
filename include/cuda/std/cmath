@@ -14,7 +14,6 @@
 #endif
 
 #include "limits"
-#include "type_traits"
 
 #include "detail/__config"
 

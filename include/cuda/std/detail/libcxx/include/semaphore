@@ -53,6 +53,9 @@ using binary_semaphore = counting_semaphore<1>;
 #include <__pragma_push>
 #endif
 
+#include "__type_traits/conditional.h"
+#include "type_traits"
+
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
 #endif
@@ -415,9 +418,9 @@ public:
 template<ptrdiff_t __least_max_value, int _Sco>
 using __semaphore_base =
 #ifdef _LIBCUDACXX_USE_NATIVE_SEMAPHORES
-    typename conditional<__least_max_value <= __sem_semaphore_base<_Sco>::max(),
-                        __sem_semaphore_base<_Sco>,
-                        __atomic_semaphore_base<_Sco, __least_max_value>>::type
+    __conditional_t<__least_max_value <= __sem_semaphore_base<_Sco>::max(),
+                    __sem_semaphore_base<_Sco>,
+                    __atomic_semaphore_base<_Sco, __least_max_value>>
 #else
     __atomic_semaphore_base<_Sco, __least_max_value>
 #endif

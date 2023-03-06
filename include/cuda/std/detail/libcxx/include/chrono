@@ -825,12 +825,20 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 
 #ifndef __cuda_std__
 #include <__config>
-#include <type_traits>
 #include <ratio>
 #include <limits>
 #endif // __cuda_std__
 
+#include "__type_traits/common_type.h"
+#include "__type_traits/enable_if.h"
+#include "__type_traits/integral_constant.h"
+#include "__type_traits/is_convertible.h"
+#include "__type_traits/is_floating_point.h"
 #include "ctime"
+#include "type_traits"
+
+// standard-mandated includes
+#include "concepts"
 #include "version"
 
 #ifndef __cuda_std__
@@ -945,11 +953,11 @@ struct __duration_cast<_FromDuration, _ToDuration, _Period, false, false>
 template <class _ToDuration, class _Rep, class _Period>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR
-typename enable_if
+__enable_if_t
 <
     __is_duration<_ToDuration>::value,
     _ToDuration
->::type
+>
 duration_cast(const duration<_Rep, _Period>& __fd)
 {
     return __duration_cast<duration<_Rep, _Period>, _ToDuration>()(__fd);
@@ -976,11 +984,11 @@ public:
 #if _LIBCUDACXX_STD_VER > 11
 template <class _ToDuration, class _Rep, class _Period>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-typename enable_if
+__enable_if_t
 <
     __is_duration<_ToDuration>::value,
     _ToDuration
->::type
+>
 floor(const duration<_Rep, _Period>& __d)
 {
     _ToDuration __t = duration_cast<_ToDuration>(__d);
@@ -991,11 +999,11 @@ floor(const duration<_Rep, _Period>& __d)
 
 template <class _ToDuration, class _Rep, class _Period>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-typename enable_if
+__enable_if_t
 <
     __is_duration<_ToDuration>::value,
     _ToDuration
->::type
+>
 ceil(const duration<_Rep, _Period>& __d)
 {
     _ToDuration __t = duration_cast<_ToDuration>(__d);
@@ -1006,11 +1014,11 @@ ceil(const duration<_Rep, _Period>& __d)
 
 template <class _ToDuration, class _Rep, class _Period>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-typename enable_if
+__enable_if_t
 <
     __is_duration<_ToDuration>::value,
     _ToDuration
->::type
+>
 round(const duration<_Rep, _Period>& __d)
 {
     _ToDuration __lower = floor<_ToDuration>(__d);
@@ -1082,25 +1090,25 @@ public:
     template <class _Rep2>
         _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
         explicit duration(const _Rep2& __r,
-            typename enable_if
+            __enable_if_t
             <
                is_convertible<_Rep2, rep>::value &&
                (treat_as_floating_point<rep>::value ||
                !treat_as_floating_point<_Rep2>::value)
-            >::type* = 0)
+            >* = 0)
                 : __rep_(static_cast<rep>(__r)) {}
 
     // conversions
     template <class _Rep2, class _Period2>
         _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
         duration(const duration<_Rep2, _Period2>& __d,
-            typename enable_if
+            __enable_if_t
             <
                 __no_overflow<_Period2, period>::value && (
                 treat_as_floating_point<rep>::value ||
                 (__no_overflow<_Period2, period>::type::den == 1 &&
                  !treat_as_floating_point<_Rep2>::value))
-            >::type* = 0)
+            >* = 0)
                 : __rep_(_CUDA_VSTD::chrono::duration_cast<duration>(__d).count()) {}
 
     // observer
@@ -1276,11 +1284,11 @@ operator-(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2
 template <class _Rep1, class _Period, class _Rep2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR
-typename enable_if
+__enable_if_t
 <
     is_convertible<_Rep2, typename common_type<_Rep1, _Rep2>::type>::value,
     duration<typename common_type<_Rep1, _Rep2>::type, _Period>
->::type
+>
 operator*(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
 {
     typedef typename common_type<_Rep1, _Rep2>::type _Cr;
@@ -1291,11 +1299,11 @@ operator*(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
 template <class _Rep1, class _Period, class _Rep2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR
-typename enable_if
+__enable_if_t
 <
     is_convertible<_Rep1, typename common_type<_Rep1, _Rep2>::type>::value,
     duration<typename common_type<_Rep1, _Rep2>::type, _Period>
->::type
+>
 operator*(const _Rep1& __s, const duration<_Rep2, _Period>& __d)
 {
     return __d * __s;
@@ -1306,12 +1314,12 @@ operator*(const _Rep1& __s, const duration<_Rep2, _Period>& __d)
 template <class _Rep1, class _Period, class _Rep2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR
-typename enable_if
+__enable_if_t
 <
     !__is_duration<_Rep2>::value &&
       is_convertible<_Rep2, typename common_type<_Rep1, _Rep2>::type>::value,
     duration<typename common_type<_Rep1, _Rep2>::type, _Period>
->::type
+>
 operator/(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
 {
     typedef typename common_type<_Rep1, _Rep2>::type _Cr;
@@ -1334,12 +1342,12 @@ operator/(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2
 template <class _Rep1, class _Period, class _Rep2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR
-typename enable_if
+__enable_if_t
 <
     !__is_duration<_Rep2>::value &&
       is_convertible<_Rep2, typename common_type<_Rep1, _Rep2>::type>::value,
     duration<typename common_type<_Rep1, _Rep2>::type, _Period>
->::type
+>
 operator%(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
 {
     typedef typename common_type<_Rep1, _Rep2>::type _Cr;
@@ -1383,10 +1391,10 @@ public:
     template <class _Duration2>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     time_point(const time_point<clock, _Duration2>& t,
-        typename enable_if
+        __enable_if_t
         <
             is_convertible<_Duration2, duration>::value
-        >::type* = 0)
+        >* = 0)
             : __d_(t.time_since_epoch()) {}
 
     // observer
@@ -1426,11 +1434,11 @@ time_point_cast(const time_point<_Clock, _Duration>& __t)
 #if _LIBCUDACXX_STD_VER > 11
 template <class _ToDuration, class _Clock, class _Duration>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-typename enable_if
+__enable_if_t
 <
     __is_duration<_ToDuration>::value,
     time_point<_Clock, _ToDuration>
->::type
+>
 floor(const time_point<_Clock, _Duration>& __t)
 {
     return time_point<_Clock, _ToDuration>{floor<_ToDuration>(__t.time_since_epoch())};
@@ -1438,11 +1446,11 @@ floor(const time_point<_Clock, _Duration>& __t)
 
 template <class _ToDuration, class _Clock, class _Duration>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-typename enable_if
+__enable_if_t
 <
     __is_duration<_ToDuration>::value,
     time_point<_Clock, _ToDuration>
->::type
+>
 ceil(const time_point<_Clock, _Duration>& __t)
 {
     return time_point<_Clock, _ToDuration>{ceil<_ToDuration>(__t.time_since_epoch())};
@@ -1450,11 +1458,11 @@ ceil(const time_point<_Clock, _Duration>& __t)
 
 template <class _ToDuration, class _Clock, class _Duration>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-typename enable_if
+__enable_if_t
 <
     __is_duration<_ToDuration>::value,
     time_point<_Clock, _ToDuration>
->::type
+>
 round(const time_point<_Clock, _Duration>& __t)
 {
     return time_point<_Clock, _ToDuration>{round<_ToDuration>(__t.time_since_epoch())};
@@ -1462,11 +1470,11 @@ round(const time_point<_Clock, _Duration>& __t)
 
 template <class _Rep, class _Period>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-typename enable_if
+__enable_if_t
 <
     numeric_limits<_Rep>::is_signed,
     duration<_Rep, _Period>
->::type
+>
 abs(duration<_Rep, _Period> __d)
 {
     return __d >= __d.zero() ? +__d : -__d;

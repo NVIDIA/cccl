@@ -147,9 +147,7 @@ template <class... Types>
 
 #ifndef __cuda_std__
 #include <__config>
-#include <type_traits>
 #include <utility>
-#include <__pragma_push>
 #endif // __cuda_std__
 
 #include "__functional_base"
@@ -173,6 +171,7 @@ template <class... Types>
 #include "climits"
 #include "cstdint"
 #include "cstddef"
+#include "type_traits"
 #include "version"
 
 // standard-mandated includes
@@ -181,6 +180,10 @@ template <class... Types>
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #include "compare"
 #endif
+
+#ifndef __cuda_std__
+#include <__pragma_push>
+#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

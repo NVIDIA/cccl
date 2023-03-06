@@ -12,19 +12,26 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <type_traits>
 #include <typeinfo>
 #include <exception>
 #include <new>
 #include <utility>
-#include <__pragma_push>
-#endif //__cuda_std__
+#endif // __cuda_std__
 
 #include "__functional/binary_function.h"
 #include "__functional/operations.h"
 #include "__functional/reference_wrapper.h"
 #include "__functional/unary_function.h"
 #include "__functional/weak_result_type.h"
+#include "__type_traits/integral_constant.h"
+#include "__type_traits/is_constructible.h"
+#include "__type_traits/is_convertible.h"
+#include "__type_traits/remove_cvref.h"
+#include "__utility/forward.h"
+
+#ifndef __cuda_std__
+#include <__pragma_push>
+#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

@@ -550,11 +550,20 @@ void atomic_signal_fence(memory_order m) noexcept;
 #include <__config>
 #include <__threading_support>
 #include <cstring>
-#include <type_traits>
 #endif // __cuda_std__
 
+#include "__type_traits/conditional.h"
+#include "__type_traits/enable_if.h"
+#include "__type_traits/is_assignable.h"
+#include "__type_traits/is_floating_point.h"
+#include "__type_traits/is_integral.h"
+#include "__type_traits/is_same.h"
+#include "__type_traits/is_trivially_copyable.h"
+#include "__type_traits/underlying_type.h"
+#include "__utility/forward.h"
 #include "cstddef"
 #include "cstdint"
+#include "type_traits"
 #include "version"
 
 #ifndef __cuda_std__
@@ -690,12 +699,12 @@ static_assert((is_same<underlying_type<memory_order>::type, __memory_order_under
 // the default operator= in an object is not volatile, a byte-by-byte copy
 // is required.
 template <typename _Tp, typename _Tv> _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if<is_assignable<_Tp&, _Tv>::value>::type
+__enable_if_t<is_assignable<_Tp&, _Tv>::value>
 __cxx_atomic_assign_volatile(_Tp& __a_value, _Tv const& __val) {
   __a_value = __val;
 }
 template <typename _Tp, typename _Tv> _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if<is_assignable<_Tp&, _Tv>::value>::type
+__enable_if_t<is_assignable<_Tp&, _Tv>::value>
 __cxx_atomic_assign_volatile(_Tp volatile& __a_value, _Tv volatile const& __val) {
   volatile char* __to = reinterpret_cast<volatile char*>(&__a_value);
   volatile char* __end = __to + sizeof(_Tp);
@@ -1075,9 +1084,9 @@ template<typename _Tp> struct __cxx_is_always_lock_free {
 
 template <typename _Tp, int _Sco>
 struct __cxx_atomic_impl_conditional {
-    using type = typename conditional<__cxx_is_always_lock_free<_Tp>::__value,
+    using type = __conditional_t<__cxx_is_always_lock_free<_Tp>::__value,
                                                 __cxx_atomic_base_impl<_Tp, _Sco>,
-                                                __cxx_atomic_lock_impl<_Tp, _Sco> >::type;
+                                                __cxx_atomic_lock_impl<_Tp, _Sco> >;
 };
 
 template <typename _Tp, int _Sco,
@@ -1132,7 +1141,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow_fallback(_Ty const
 
 #ifdef _LIBCUDACXX_HAS_PLATFORM_WAIT
 
-template <class _Tp, int _Sco, typename enable_if<!__libcpp_platform_wait_uses_type<_Tp>::__value, int>::type = 1>
+template <class _Tp, int _Sco, __enable_if_t<!__libcpp_platform_wait_uses_type<_Tp>::__value, int> = 1>
 _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
     auto * const __c = __libcpp_contention_state(__a);
@@ -1142,11 +1151,11 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp
         __libcpp_platform_wake(&__c->__version, true);
 #endif
 }
-template <class _Tp, int _Sco, typename enable_if<!__libcpp_platform_wait_uses_type<_Tp>::__value, int>::type = 1>
+template <class _Tp, int _Sco, __enable_if_t<!__libcpp_platform_wait_uses_type<_Tp>::__value, int> = 1>
 _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_one(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
     __cxx_atomic_notify_all(__a);
 }
-template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>, int _Sco = _Ty::__sco, typename enable_if<!__libcpp_platform_wait_uses_type<_Tp>::__value, int>::type = 1>
+template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>, int _Sco = _Ty::__sco, __enable_if_t<!__libcpp_platform_wait_uses_type<_Tp>::__value, int> = 1>
 _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(_Ty const volatile* __a, _Tp const __val, memory_order __order) {
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
     auto * const __c = __libcpp_contention_state(__a);
@@ -1166,7 +1175,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(_Ty const volatile
 #endif // _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
 }
 
-template <class _Tp, int _Sco, typename enable_if<__libcpp_platform_wait_uses_type<_Tp>::__value, int>::type = 1>
+template <class _Tp, int _Sco, __enable_if_t<__libcpp_platform_wait_uses_type<_Tp>::__value, int> = 1>
 _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a, _Tp __val, memory_order) {
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
     auto * const __c = __libcpp_contention_state(__a);
@@ -1178,7 +1187,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(__cxx_atomic_impl<
     __cxx_atomic_fetch_sub(__cxx_atomic_rebind<_Sco>(&__c->__waiters), (ptrdiff_t)1, memory_order_relaxed);
 #endif
 }
-template <class _Tp, int _Sco, typename enable_if<__libcpp_platform_wait_uses_type<_Tp>::__value, int>::type = 1>
+template <class _Tp, int _Sco, __enable_if_t<__libcpp_platform_wait_uses_type<_Tp>::__value, int> = 1>
 _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
     auto * const __c = __libcpp_contention_state(__a);
@@ -1187,7 +1196,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp
 #endif
         __libcpp_platform_wake((_Tp*)__a, true);
 }
-template <class _Tp, int _Sco, typename enable_if<__libcpp_platform_wait_uses_type<_Tp>::__value, int>::type = 1>
+template <class _Tp, int _Sco, __enable_if_t<__libcpp_platform_wait_uses_type<_Tp>::__value, int> = 1>
 _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_one(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
     auto * const __c = __libcpp_contention_state(__a);
@@ -1727,11 +1736,11 @@ struct __atomic_base_bitwise<_Tp, true, _Storage> : public __atomic_base_arithme
 };
 
 template <typename _Tp, bool _Cq, typename _Storage>
-using __atomic_select_base = typename conditional<is_floating_point<_Tp>::value,
-                                            __atomic_base_arithmetic<_Tp, _Cq, _Storage>,
-                                            typename conditional<is_integral<_Tp>::value,
+using __atomic_select_base = __conditional_t<is_floating_point<_Tp>::value,
+                                             __atomic_base_arithmetic<_Tp, _Cq, _Storage>,
+                                             __conditional_t<is_integral<_Tp>::value,
                                                 __atomic_base_bitwise<_Tp, _Cq, _Storage>,
-                                                __atomic_base_core<_Tp, _Cq, _Storage> >::type >::type;
+                                                __atomic_base_core<_Tp, _Cq, _Storage> >>;
 
 template <typename _Tp, int _Sco = 0, typename _Base = __atomic_select_base<_Tp, false, __cxx_atomic_impl<_Tp, _Sco>>>
 struct __atomic_base : public _Base {
@@ -2244,11 +2253,11 @@ void atomic_notify_all(atomic<_Tp>* __o) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
->::type
+>
 atomic_fetch_add(volatile atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 {
     return __o->fetch_add(__op);
@@ -2256,11 +2265,11 @@ atomic_fetch_add(volatile atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
->::type
+>
 atomic_fetch_add(atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 {
     return __o->fetch_add(__op);
@@ -2286,11 +2295,11 @@ atomic_fetch_add(atomic<_Tp*>* __o, ptrdiff_t __op) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
->::type
+>
 atomic_fetch_add_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
 {
     return __o->fetch_add(__op, __m);
@@ -2298,11 +2307,11 @@ atomic_fetch_add_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m)
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
->::type
+>
 atomic_fetch_add_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
 {
     return __o->fetch_add(__op, __m);
@@ -2329,11 +2338,11 @@ atomic_fetch_add_explicit(atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) _
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
->::type
+>
 atomic_fetch_sub(volatile atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 {
     return __o->fetch_sub(__op);
@@ -2341,11 +2350,11 @@ atomic_fetch_sub(volatile atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
->::type
+>
 atomic_fetch_sub(atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 {
     return __o->fetch_sub(__op);
@@ -2371,11 +2380,11 @@ atomic_fetch_sub(atomic<_Tp*>* __o, ptrdiff_t __op) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
->::type
+>
 atomic_fetch_sub_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
 {
     return __o->fetch_sub(__op, __m);
@@ -2383,11 +2392,11 @@ atomic_fetch_sub_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m)
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
     _Tp
->::type
+>
 atomic_fetch_sub_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
 {
     return __o->fetch_sub(__op, __m);
@@ -2414,11 +2423,11 @@ atomic_fetch_sub_explicit(atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) _
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
     _Tp
->::type
+>
 atomic_fetch_and(volatile atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 {
     return __o->fetch_and(__op);
@@ -2426,11 +2435,11 @@ atomic_fetch_and(volatile atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
     _Tp
->::type
+>
 atomic_fetch_and(atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 {
     return __o->fetch_and(__op);
@@ -2440,11 +2449,11 @@ atomic_fetch_and(atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
     _Tp
->::type
+>
 atomic_fetch_and_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
 {
     return __o->fetch_and(__op, __m);
@@ -2452,11 +2461,11 @@ atomic_fetch_and_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m)
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
     _Tp
->::type
+>
 atomic_fetch_and_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
 {
     return __o->fetch_and(__op, __m);
@@ -2466,11 +2475,11 @@ atomic_fetch_and_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEP
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
     _Tp
->::type
+>
 atomic_fetch_or(volatile atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 {
     return __o->fetch_or(__op);
@@ -2478,11 +2487,11 @@ atomic_fetch_or(volatile atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
     _Tp
->::type
+>
 atomic_fetch_or(atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 {
     return __o->fetch_or(__op);
@@ -2492,11 +2501,11 @@ atomic_fetch_or(atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
     _Tp
->::type
+>
 atomic_fetch_or_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
 {
     return __o->fetch_or(__op, __m);
@@ -2504,11 +2513,11 @@ atomic_fetch_or_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) 
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
     _Tp
->::type
+>
 atomic_fetch_or_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
 {
     return __o->fetch_or(__op, __m);
@@ -2518,11 +2527,11 @@ atomic_fetch_or_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
     _Tp
->::type
+>
 atomic_fetch_xor(volatile atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 {
     return __o->fetch_xor(__op);
@@ -2530,11 +2539,11 @@ atomic_fetch_xor(volatile atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
     _Tp
->::type
+>
 atomic_fetch_xor(atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 {
     return __o->fetch_xor(__op);
@@ -2544,11 +2553,11 @@ atomic_fetch_xor(atomic<_Tp>* __o, _Tp __op) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
     _Tp
->::type
+>
 atomic_fetch_xor_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
 {
     return __o->fetch_xor(__op, __m);
@@ -2556,11 +2565,11 @@ atomic_fetch_xor_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m)
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
+__enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
     _Tp
->::type
+>
 atomic_fetch_xor_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) _NOEXCEPT
 {
     return __o->fetch_xor(__op, __m);
