@@ -19,6 +19,7 @@
 #endif
 
 #include <cuda/std/concepts>
+#include <cuda/std/type_traits>
 
 #include "type_classification/moveconstructible.h"
 #include "type_classification/semiregular.h"

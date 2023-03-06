@@ -15,9 +15,11 @@
 #endif //__cuda_std__
 
 #include "../__concepts/__concept_macros.h"
+#include "../__type_traits/is_arithmetic.h"
 #include "../__type_traits/is_floating_point.h"
 #include "../__type_traits/is_integral.h"
 #include "../__type_traits/is_signed_integer.h"
+#include "../__type_traits/is_signed.h"
 #include "../__type_traits/is_unsigned_integer.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

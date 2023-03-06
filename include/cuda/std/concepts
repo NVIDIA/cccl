@@ -10,8 +10,6 @@
 #ifndef _CUDA_CONCEPTS
 #define _CUDA_CONCEPTS
 
-#include "utility"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"
@@ -21,5 +19,3 @@
 #include "detail/__pragma_pop"
 
 #endif //_CUDA_CONCEPTS
-
-

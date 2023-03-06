@@ -45,17 +45,17 @@ struct __decay {
 template <class _Up>
 struct __decay<_Up, true> {
 public:
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename conditional
+    typedef _LIBCUDACXX_NODEBUG_TYPE __conditional_t
                      <
                          is_array<_Up>::value,
                          __remove_extent_t<_Up>*,
-                         typename conditional
+                         __conditional_t
                          <
                               is_function<_Up>::value,
-                              typename add_pointer<_Up>::type,
+                              __add_pointer_t<_Up>,
                               __remove_cv_t<_Up>
-                         >::type
-                     >::type type;
+                         >
+                     > type;
 };
 
 template <class _Tp>
