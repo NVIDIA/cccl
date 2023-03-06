@@ -80,9 +80,7 @@ class resource_ref {
 */
 // clang-format on
 
-#ifndef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-#error "<cuda/memory_resource> is experimental and requires LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to be defined"
-#endif
+#ifdef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <cuda/stream_ref>
 
@@ -622,5 +620,7 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 #endif // _LIBCUDACXX_STD_VER > 11
 
 #include <cuda/std/detail/__pragma_pop>
+
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_LIBCUDACXX_BEGIN_NAMESPACE_CUDA

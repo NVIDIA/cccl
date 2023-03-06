@@ -39,9 +39,7 @@ private:
 }  // cuda
 */
 
-#ifndef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-#error "<cuda/stream_ref> is experimental and requires LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to be defined"
-#endif
+#ifdef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <cuda_runtime_api.h> // cuda_runtime_api needs to come first
 // clang-format on
@@ -186,5 +184,7 @@ public:
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/detail/__pragma_pop>
+
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA_STREAM_REF
