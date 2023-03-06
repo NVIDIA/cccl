@@ -18,6 +18,8 @@
 
 // constexpr atomic<T>::atomic(T value)
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <cuda/std/atomic>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>

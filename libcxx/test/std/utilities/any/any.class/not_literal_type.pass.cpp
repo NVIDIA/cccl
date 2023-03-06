@@ -12,6 +12,8 @@
 
 // [Note any is a not a literal type --end note]
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <any>
 #include <type_traits>
 

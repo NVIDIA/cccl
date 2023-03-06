@@ -19,6 +19,8 @@
 //   typedef Category  iterator_category;
 // };
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <iterator>
 #include <type_traits>
 

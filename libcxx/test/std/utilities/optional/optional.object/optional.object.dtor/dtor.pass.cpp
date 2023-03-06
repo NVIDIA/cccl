@@ -11,6 +11,8 @@
 
 // ~optional();
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <optional>
 #include <type_traits>
 #include <cassert>

@@ -11,7 +11,7 @@
 // is_literal_type
 
 // is_literal_type has been deprecated in C++17
-#pragma nv_diag_suppress 1215
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/type_traits>
 #include <cuda/std/cstddef>       // for cuda::std::nullptr_t

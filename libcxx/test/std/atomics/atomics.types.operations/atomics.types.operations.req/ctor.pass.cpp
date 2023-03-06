@@ -17,6 +17,8 @@
 
 // constexpr atomic<T>::atomic(T value)
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <atomic>
 #include <type_traits>
 #include <cassert>

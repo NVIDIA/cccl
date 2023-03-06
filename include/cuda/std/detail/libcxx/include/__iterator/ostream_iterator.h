@@ -27,10 +27,14 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _CharT = char, class _Traits = char_traits<_CharT> >
 class _LIBCUDACXX_TEMPLATE_VIS ostream_iterator
+#if _LIBCUDACXX_STD_VER <= 14 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<output_iterator_tag, void, void, void, void>
+#endif
 {
+_LIBCUDACXX_SUPPRESS_DEPRECATED_POP
 public:
     typedef _CharT char_type;
     typedef _Traits traits_type;

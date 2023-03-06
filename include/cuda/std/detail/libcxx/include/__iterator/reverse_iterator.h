@@ -33,14 +33,18 @@ template <class _Tp>
 struct __is_cpp17_stashing_iterator<_Tp, __void_t<typename _Tp::__stashing_iterator_tag>>
   : true_type {};
 
+_LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
 template <class _Iter>
 class _LIBCUDACXX_TEMPLATE_VIS reverse_iterator
+#if _LIBCUDACXX_STD_VER <= 14 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<typename iterator_traits<_Iter>::iterator_category,
                       typename iterator_traits<_Iter>::value_type,
                       typename iterator_traits<_Iter>::difference_type,
                       typename iterator_traits<_Iter>::pointer,
                       typename iterator_traits<_Iter>::reference>
+#endif
 {
+_LIBCUDACXX_SUPPRESS_DEPRECATED_POP
 private:
     /*mutable*/ _Iter __t;  // no longer used as of LWG #2360, not removed due to ABI break
 

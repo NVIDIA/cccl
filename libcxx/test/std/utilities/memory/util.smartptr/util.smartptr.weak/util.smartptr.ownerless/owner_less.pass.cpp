@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define _LIBCCUDACXX_DISABLE_DEPRECATION_WARNINGS
-
 // <memory>
 
 // template <class T> struct owner_less;
@@ -46,6 +44,7 @@
 //
 //     typedef unspecified is_transparent;
 // };
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <memory>
 #include <cassert>

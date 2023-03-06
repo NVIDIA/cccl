@@ -53,7 +53,7 @@ int main(int, char**) {
     any_cast<no_copy>(static_cast<any &&>(a)); // OK
 
     // expected-error-re@any:* {{static_assert failed{{.*}} "ValueType is required to be an rvalue reference or a CopyConstructible type"}}
-    // expected-error@any:* {{static_cast from 'typename remove_reference<no_move &>::type' (aka 'no_move') to 'no_move' uses deleted function}}
+    // expected-error@any:* {{static_cast from '__libcpp_remove_reference_t<no_move &>' (aka 'no_move') to 'no_move' uses deleted function}}
     any_cast<no_move>(static_cast<any &&>(a));
 
   return 0;

@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 // raw_storage_iterator
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <memory>
 #include <type_traits>

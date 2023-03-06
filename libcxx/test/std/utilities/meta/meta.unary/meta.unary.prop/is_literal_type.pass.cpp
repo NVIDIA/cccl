@@ -9,6 +9,7 @@
 // type_traits
 
 // is_literal_type
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <type_traits>
 #include <cstddef>       // for std::nullptr_t
