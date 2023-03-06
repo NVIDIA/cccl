@@ -17,6 +17,8 @@
 
 // https://bugs.llvm.org/show_bug.cgi?id=16343
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <cmath>
 #include <functional>
 #include <cassert>

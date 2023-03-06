@@ -15,6 +15,8 @@
 // template<Returnable R, CopyConstructible Fn, CopyConstructible... Types>
 //   unspecified bind(Fn, Types...);
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <stdio.h>
 
 #include <functional>

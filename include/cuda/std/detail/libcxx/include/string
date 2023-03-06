@@ -4222,7 +4222,7 @@ template<class _CharT, class _Traits, class _Allocator>
 template <class _CharT, class _Allocator>
 struct _LIBCUDACXX_TEMPLATE_VIS
     hash<basic_string<_CharT, char_traits<_CharT>, _Allocator> >
-    : public unary_function<
+    : public __unary_function<
           basic_string<_CharT, char_traits<_CharT>, _Allocator>, size_t>
 {
     size_t

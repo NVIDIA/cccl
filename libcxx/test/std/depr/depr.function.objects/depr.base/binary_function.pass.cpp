@@ -10,6 +10,8 @@
 // REQUIRES: c++98 || c++03 || c++11 || c++14
 // binary_function was removed in C++17
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 // template <class Arg1, class Arg2, class Result>
 // struct binary_function
 // {

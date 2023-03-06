@@ -35,7 +35,7 @@ public:
 
 template <>
 struct hash<type_index>
-    : public unary_function<type_index, size_t>
+    : public __unary_function<type_index, size_t>
 {
     size_t operator()(type_index index) const noexcept;
 };
@@ -90,7 +90,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS hash;
 
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS hash<type_index>
-    : public unary_function<type_index, size_t>
+    : public __unary_function<type_index, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     size_t operator()(type_index __index) const _NOEXCEPT

@@ -549,7 +549,7 @@ template<class T> struct owner_less;
 
 template<class T>
 struct owner_less<shared_ptr<T> >
-    : binary_function<shared_ptr<T>, shared_ptr<T>, bool>
+    : __binary_function<shared_ptr<T>, shared_ptr<T>, bool>
 {
     typedef bool result_type;
     bool operator()(shared_ptr<T> const&, shared_ptr<T> const&) const noexcept;
@@ -559,7 +559,7 @@ struct owner_less<shared_ptr<T> >
 
 template<class T>
 struct owner_less<weak_ptr<T> >
-    : binary_function<weak_ptr<T>, weak_ptr<T>, bool>
+    : __binary_function<weak_ptr<T>, weak_ptr<T>, bool>
 {
     typedef bool result_type;
     bool operator()(weak_ptr<T> const&, weak_ptr<T> const&) const noexcept;
@@ -4764,7 +4764,7 @@ template <class _Tp> struct owner_less;
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS owner_less<shared_ptr<_Tp> >
-    : binary_function<shared_ptr<_Tp>, shared_ptr<_Tp>, bool>
+    : __binary_function<shared_ptr<_Tp>, shared_ptr<_Tp>, bool>
 {
     typedef bool result_type;
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -4780,7 +4780,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS owner_less<shared_ptr<_Tp> >
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS owner_less<weak_ptr<_Tp> >
-    : binary_function<weak_ptr<_Tp>, weak_ptr<_Tp>, bool>
+    : __binary_function<weak_ptr<_Tp>, weak_ptr<_Tp>, bool>
 {
     typedef bool result_type;
     _LIBCUDACXX_INLINE_VISIBILITY

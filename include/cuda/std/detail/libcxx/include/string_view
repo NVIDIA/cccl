@@ -786,7 +786,7 @@ typedef basic_string_view<wchar_t>  wstring_view;
 // [string.view.hash]
 template<class _CharT>
 struct _LIBCUDACXX_TEMPLATE_VIS hash<basic_string_view<_CharT, char_traits<_CharT> > >
-    : public unary_function<basic_string_view<_CharT, char_traits<_CharT> >, size_t>
+    : public __unary_function<basic_string_view<_CharT, char_traits<_CharT> >, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     size_t operator()(const basic_string_view<_CharT, char_traits<_CharT> > __val) const _NOEXCEPT {

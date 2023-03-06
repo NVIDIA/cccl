@@ -198,7 +198,7 @@ __thread_specific_ptr<_Tp>::set_pointer(pointer __p)
 
 template<>
 struct _LIBCUDACXX_TEMPLATE_VIS hash<__thread_id>
-    : public unary_function<__thread_id, size_t>
+    : public __unary_function<__thread_id, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     size_t operator()(__thread_id __v) const _NOEXCEPT

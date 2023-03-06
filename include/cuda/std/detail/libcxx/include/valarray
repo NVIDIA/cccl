@@ -470,7 +470,7 @@ public:
 };
 
 template <class _Tp>
-struct __unary_plus : unary_function<_Tp, _Tp>
+struct __unary_plus : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -478,7 +478,7 @@ struct __unary_plus : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __bit_not  : unary_function<_Tp, _Tp>
+struct __bit_not  : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -486,7 +486,7 @@ struct __bit_not  : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __bit_shift_left : binary_function<_Tp, _Tp, _Tp>
+struct __bit_shift_left : __binary_function<_Tp, _Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x, const _Tp& __y) const
@@ -494,7 +494,7 @@ struct __bit_shift_left : binary_function<_Tp, _Tp, _Tp>
 };
 
 template <class _Tp>
-struct __bit_shift_right : binary_function<_Tp, _Tp, _Tp>
+struct __bit_shift_right : __binary_function<_Tp, _Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x, const _Tp& __y) const
@@ -502,7 +502,7 @@ struct __bit_shift_right : binary_function<_Tp, _Tp, _Tp>
 };
 
 template <class _Tp, class _Fp>
-struct __apply_expr   : unary_function<_Tp, _Tp>
+struct __apply_expr   : __unary_function<_Tp, _Tp>
 {
 private:
     _Fp __f_;
@@ -516,7 +516,7 @@ public:
 };
 
 template <class _Tp>
-struct __abs_expr : unary_function<_Tp, _Tp>
+struct __abs_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -524,7 +524,7 @@ struct __abs_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __acos_expr : unary_function<_Tp, _Tp>
+struct __acos_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -532,7 +532,7 @@ struct __acos_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __asin_expr : unary_function<_Tp, _Tp>
+struct __asin_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -540,7 +540,7 @@ struct __asin_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __atan_expr : unary_function<_Tp, _Tp>
+struct __atan_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -548,7 +548,7 @@ struct __atan_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __atan2_expr : binary_function<_Tp, _Tp, _Tp>
+struct __atan2_expr : __binary_function<_Tp, _Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x, const _Tp& __y) const
@@ -556,7 +556,7 @@ struct __atan2_expr : binary_function<_Tp, _Tp, _Tp>
 };
 
 template <class _Tp>
-struct __cos_expr : unary_function<_Tp, _Tp>
+struct __cos_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -564,7 +564,7 @@ struct __cos_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __cosh_expr : unary_function<_Tp, _Tp>
+struct __cosh_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -572,7 +572,7 @@ struct __cosh_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __exp_expr : unary_function<_Tp, _Tp>
+struct __exp_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -580,7 +580,7 @@ struct __exp_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __log_expr : unary_function<_Tp, _Tp>
+struct __log_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -588,7 +588,7 @@ struct __log_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __log10_expr : unary_function<_Tp, _Tp>
+struct __log10_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -596,7 +596,7 @@ struct __log10_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __pow_expr : binary_function<_Tp, _Tp, _Tp>
+struct __pow_expr : __binary_function<_Tp, _Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x, const _Tp& __y) const
@@ -604,7 +604,7 @@ struct __pow_expr : binary_function<_Tp, _Tp, _Tp>
 };
 
 template <class _Tp>
-struct __sin_expr : unary_function<_Tp, _Tp>
+struct __sin_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -612,7 +612,7 @@ struct __sin_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __sinh_expr : unary_function<_Tp, _Tp>
+struct __sinh_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -620,7 +620,7 @@ struct __sinh_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __sqrt_expr : unary_function<_Tp, _Tp>
+struct __sqrt_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -628,7 +628,7 @@ struct __sqrt_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __tan_expr : unary_function<_Tp, _Tp>
+struct __tan_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
@@ -636,7 +636,7 @@ struct __tan_expr : unary_function<_Tp, _Tp>
 };
 
 template <class _Tp>
-struct __tanh_expr : unary_function<_Tp, _Tp>
+struct __tanh_expr : __unary_function<_Tp, _Tp>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const

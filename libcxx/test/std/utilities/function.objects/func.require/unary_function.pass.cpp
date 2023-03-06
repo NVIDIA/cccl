@@ -12,6 +12,8 @@
 
 // unary_function
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <functional>
 #include <type_traits>
 
