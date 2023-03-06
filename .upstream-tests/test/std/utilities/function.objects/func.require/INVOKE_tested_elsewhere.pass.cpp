@@ -10,7 +10,7 @@
 
 // The tests for INVOKE (f, t1, t2, ..., tN) live in the "test/libcxx" tree
 // since they require calling the implementation specific "__invoke" and
-// "__invoke_constexpr" functions.
+// "__invoke" functions.
 
 int main(int, char**) {
   return 0;
