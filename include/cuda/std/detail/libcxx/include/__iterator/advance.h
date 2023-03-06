@@ -13,11 +13,11 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstdlib>
 #endif // __cuda_std__
 
 #include "../__assert"
 #include "../__iterator/iterator_traits.h"
+#include "../cstdlib"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

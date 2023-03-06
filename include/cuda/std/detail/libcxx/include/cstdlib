@@ -84,6 +84,13 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 #ifndef __cuda_std__
 #include <__config>
 #include <stdlib.h>
+#endif //__cuda_std__
+
+#ifndef __CUDACC_RTC__
+# include <cstdlib>
+#endif
+
+#ifndef __cuda_std__
 #include <__pragma_push>
 #endif //__cuda_std__
 

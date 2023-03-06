@@ -105,10 +105,6 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 
 #ifndef __cuda_std__
 #include <__config>
-#else
-#ifndef __CUDACC_RTC__
-# include <cstdlib>
-#endif
 #endif // __cuda_std__
 
 #include "__algorithm/swap_ranges.h"
