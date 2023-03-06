@@ -48,7 +48,6 @@
 #ifndef __cuda_std__
 #include <__config>
 #include <tuple> // apply
-#include <utility> // pair
 #endif // __cuda_std__
 
 #include "../__mdspan/dynamic_extent.h"
@@ -66,6 +65,7 @@
 #include "../__type_traits/remove_const.h"
 #include "../__type_traits/remove_reference.h"
 #include "../__utility/move.h"
+#include "../__utility/pair.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

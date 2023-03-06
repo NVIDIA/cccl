@@ -15,7 +15,6 @@
 #include <typeinfo>
 #include <exception>
 #include <new>
-#include <utility>
 #endif // __cuda_std__
 
 #include "__functional/binary_function.h"

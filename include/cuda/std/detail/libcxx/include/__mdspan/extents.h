@@ -48,7 +48,6 @@
 #include <__config>
 #include <array>
 #include <span>
-#include <utility>
 #endif // __cuda_std__
 
 #include "../__mdspan/macros.h"
@@ -62,6 +61,7 @@
 #include "../__type_traits/is_convertible.h"
 #include "../__type_traits/is_nothrow_constructible.h"
 #include "../__type_traits/make_unsigned.h"
+#include "../__utility/integer_sequence.h"
 #include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

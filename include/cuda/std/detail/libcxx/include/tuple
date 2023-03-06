@@ -147,7 +147,6 @@ template <class... Types>
 
 #ifndef __cuda_std__
 #include <__config>
-#include <utility>
 #endif // __cuda_std__
 
 #include "__functional_base"
@@ -166,15 +165,17 @@ template <class... Types>
 #include "__utility/forward.h"
 #include "__utility/integer_sequence.h"
 #include "__utility/move.h"
+#include "__utility/pair.h"
 #include "__utility/piecewise_construct.h"
 #include "__utility/swap.h"
 #include "climits"
-#include "cstdint"
 #include "cstddef"
+#include "cstdint"
+#include "utility"
 #include "type_traits"
-#include "version"
 
 // standard-mandated includes
+#include "version"
 
 // [tuple.syn]
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR

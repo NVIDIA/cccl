@@ -53,7 +53,6 @@
 #endif
 #include <numeric>
 #include <span>
-#include <utility>
 #endif // __cuda_std__
 
 #include "../__mdspan/compressed_pair.h"
@@ -68,6 +67,7 @@
 #include "../__type_traits/is_convertible.h"
 #include "../__type_traits/is_nothrow_constructible.h"
 #include "../__type_traits/remove_const.h"
+#include "../__utility/integer_sequence.h"
 #include "../__utility/move.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

@@ -49,7 +49,6 @@
 #include <__config>
 #include <array>
 #include <span>
-#include <utility>
 #endif // __cuda_std__
 
 #include "../__mdspan/default_accessor.h"
@@ -64,6 +63,9 @@
 #include "../__type_traits/remove_pointer.h"
 #include "../__type_traits/remove_reference.h"
 #include "../__type_traits/remove_all_extents.h"
+#include "../__utility/as_const.h"
+#include "../__utility/integer_sequence.h"
+#include "../__utility/move.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

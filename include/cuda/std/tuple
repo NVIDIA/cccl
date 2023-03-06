@@ -11,7 +11,6 @@
 #define _CUDA_TUPLE
 
 #include "functional"
-#include "utility"
 
 #include "detail/__config"
 

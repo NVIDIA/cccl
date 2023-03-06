@@ -1,4 +1,5 @@
 set(files
+  __algorithm/swap_ranges.h
   __cuda/climits_prelude.h
   __cuda/cstddef_prelude.h
   __cuda/cstdint_prelude.h

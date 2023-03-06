@@ -638,13 +638,13 @@ template <class BidirectionalIterator, class Compare>
 #include <__config>
 #include <initializer_list>
 #include <cstring>
-#include <utility> // needed to provide swap_ranges.
 #include <memory>
 #include <functional>
 #include <iterator>
 #include <__debug>
 #endif // __cuda_std__
 
+#include "__algorithm/swap_ranges.h"
 #include "bit"
 #include "cstddef"
 #include "type_traits"

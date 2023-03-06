@@ -110,6 +110,7 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #include <__debug>
 #endif // __cuda_std__
 
+#include "__algorithm/swap_ranges.h"
 #include "__iterator/reverse_iterator.h"
 #include "__tuple/sfinae_helpers.h"
 #include "__tuple/structured_bindings.h"

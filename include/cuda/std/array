@@ -15,7 +15,6 @@
 
 #include "cassert"
 #include "iterator"
-#include "utility"
 #include "initializer_list"
 
 #include "detail/__config"

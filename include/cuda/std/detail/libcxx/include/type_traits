@@ -616,18 +616,6 @@ __decay_t<_Tp> __decay_copy(_Tp&& __t)
     return _CUDA_VSTD::forward<_Tp>(__t);
 }
 
-// swap_ranges
-
-template <class _ForwardIterator1, class _ForwardIterator2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_ForwardIterator2
-swap_ranges(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2)
-{
-    for(; __first1 != __last1; ++__first1, (void) ++__first2)
-        swap(*__first1, *__first2);
-    return __first2;
-}
-
 // iter_swap
 
 template <class _ForwardIterator1, class _ForwardIterator2>
