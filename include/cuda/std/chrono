@@ -15,7 +15,6 @@
 #endif //__CUDACC_RTC__
 
 #include "ratio"
-#include "limits"
 
 #include "detail/__config"
 

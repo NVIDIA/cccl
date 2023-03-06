@@ -305,6 +305,7 @@ long double    truncl(long double x);
 #include <math.h>
 #endif // __cuda_std__
 
+#include "limits"
 #include "type_traits"
 #include "version"
 

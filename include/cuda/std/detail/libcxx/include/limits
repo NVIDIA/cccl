@@ -104,7 +104,11 @@ template<> class numeric_limits<cv long double>;
 
 #ifndef __cuda_std__
 #include <__config>
-#endif //__cuda_std__
+#else
+#ifdef __CUDACC_RTC__
+#include "climits"
+#endif // __CUDACC_RTC__
+#endif // __cuda_std__
 
 #include "type_traits"
 

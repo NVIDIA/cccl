@@ -652,7 +652,6 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #include <typeinfo>
 #include <new>
 #include <utility>
-#include <limits>
 #include <iterator>
 #include <__functional_base>
 #include <iosfwd>
@@ -692,6 +691,7 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #include "__utility/piecewise_construct.h"
 #include "cstddef"
 #include "cstdint"
+#include "limits"
 #include "type_traits"
 
 // standard-mandated includes

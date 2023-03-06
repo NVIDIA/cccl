@@ -13,8 +13,6 @@
 #include <math.h>
 #endif
 
-#include "limits"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

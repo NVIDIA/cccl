@@ -61,6 +61,7 @@
 #include "__mdspan/submdspan.h"
 
 #include "cstddef"
+#include "limits"
 #include "version"
 
 #endif // _LIBCUDACXX_MDSPAN

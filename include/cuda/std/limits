@@ -10,10 +10,6 @@
 #ifndef _CUDA_LIMITS
 #define _CUDA_LIMITS
 
-#ifdef __CUDACC_RTC__
-#include "climits"
-#endif
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"
@@ -23,5 +19,3 @@
 #include "detail/__pragma_pop"
 
 #endif //_CUDA_LIMITS
-
-
