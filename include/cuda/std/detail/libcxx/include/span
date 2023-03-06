@@ -132,6 +132,7 @@ template<class R>
 #include <__config>
 #endif // __cuda_std__
 
+#include "__assert" // all public C++ headers provide the assertion handler
 #include "__fwd/array.h"
 #include "__fwd/span.h"
 #include "__fwd/string.h"

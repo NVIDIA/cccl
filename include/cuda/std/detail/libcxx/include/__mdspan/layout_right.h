@@ -48,7 +48,7 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__debug"
+#include "../__assert"
 #include "../__mdspan/extents.h"
 #include "../__mdspan/layout_stride.h"
 #include "../__mdspan/macros.h"

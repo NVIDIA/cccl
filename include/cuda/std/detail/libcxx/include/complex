@@ -245,6 +245,7 @@ template<class T, class charT, class traits>
 #include <sstream>
 #endif // __cuda_std__
 
+#include "__assert" // all public C++ headers provide the assertion handler
 #include "__type_traits/enable_if.h"
 #include "__type_traits/is_arithmetic.h"
 #include "__type_traits/is_floating_point.h"

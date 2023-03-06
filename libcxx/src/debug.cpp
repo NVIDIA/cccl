@@ -1,12 +1,14 @@
-//===-------------------------- debug.cpp ---------------------------------===//
+//===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 //===----------------------------------------------------------------------===//
 
 #include "__config"
+#include "__assert"
 #include "__debug"
 #include "functional"
 #include "algorithm"
@@ -21,27 +23,6 @@
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-std::string __libcpp_debug_info::what() const {
-  string msg = __file_;
-  msg += ":" + to_string(__line_) + ": _LIBCUDACXX_ASSERT '";
-  msg += __pred_;
-  msg += "' failed. ";
-  msg += __msg_;
-  return msg;
-}
-_LIBCUDACXX_NORETURN void __libcpp_abort_debug_function(__libcpp_debug_info const& info) {
-    std::fprintf(stderr, "%s\n", info.what().c_str());
-    std::abort();
-}
-
-_LIBCUDACXX_SAFE_STATIC __libcpp_debug_function_type
-    __libcpp_debug_function = __libcpp_abort_debug_function;
-
-bool __libcpp_set_debug_function(__libcpp_debug_function_type __func) {
-  __libcpp_debug_function = __func;
-  return true;
-}
 
 _LIBCUDACXX_FUNC_VIS
 __libcpp_db*
@@ -438,7 +419,7 @@ __libcpp_db::__less_than_comparable(const void* __i, const void* __j) const
     __i_node* j = __find_iterator(__j);
     __c_node* ci = i != nullptr ? i->__c_ : nullptr;
     __c_node* cj = j != nullptr ? j->__c_ : nullptr;
-    return ci != nullptr && ci == cj;
+    return ci == cj;
 }
 
 void

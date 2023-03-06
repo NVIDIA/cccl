@@ -1,100 +1,45 @@
 // -*- C++ -*-
-//===--------------------------- __debug ----------------------------------===//
+//===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX_DEBUG_H
-#define _LIBCUDACXX_DEBUG_H
+#ifndef _LIBCUDACXX___DEBUG
+#define _LIBCUDACXX___DEBUG
 
 #ifndef __cuda_std__
 #include <__config>
-#if defined(_LIBCUDACXX_HAS_NO_NULLPTR)
-#  include "cstddef"
-#endif
-#if _LIBCUDACXX_DEBUG_LEVEL >= 1 || defined(_LIBCUDACXX_BUILDING_LIBRARY)
-#  include <cstdlib>
-#  include <cstdio>
-#  include "cstddef"
-#endif
-#else
-#ifndef __CUDACC_RTC__
-#include <assert.h>
-#endif //__CUDACC_RTC__
 #endif //__cuda_std__
 
-#include "iosfwd"
-
-#ifndef __cuda_std__
-#include <__pragma_push>
-#endif //__cuda_std__
+#include "__assert"
+#include "__type_traits/is_constant_evaluated.h"
+#include "cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
 #endif
 
-#if _LIBCUDACXX_DEBUG_LEVEL >= 1 && !defined(_LIBCUDACXX_ASSERT)
-# define _LIBCUDACXX_ASSERT(x, m) ((x) ? (void)0 : \
-  _CUDA_VSTD::__libcpp_debug_function(_CUDA_VSTD::__libcpp_debug_info(__FILE__, __LINE__, #x, m)))
+#if defined(_LIBCUDACXX_ENABLE_DEBUG_MODE) && !defined(_LIBCUDACXX_CXX03_LANG) && !defined(_LIBCUDACXX_DEBUG_RANDOMIZE_UNSPECIFIED_STABILITY)
+# define _LIBCUDACXX_DEBUG_RANDOMIZE_UNSPECIFIED_STABILITY
 #endif
 
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
-#ifndef _LIBCUDACXX_DEBUG_ASSERT
-#define _LIBCUDACXX_DEBUG_ASSERT(x, m) _LIBCUDACXX_ASSERT(x, m)
-#endif
-#define _LIBCUDACXX_DEBUG_MODE(...) __VA_ARGS__
+#if defined(_LIBCUDACXX_ENABLE_DEBUG_MODE) && !defined(_LIBCUDACXX_DEBUG_ITERATOR_BOUNDS_CHECKING)
+# define _LIBCUDACXX_DEBUG_ITERATOR_BOUNDS_CHECKING
 #endif
 
-#ifndef _LIBCUDACXX_ASSERT
-#   define _LIBCUDACXX_ASSERT(x, m) ((void)0)
-#endif
-#ifndef _LIBCUDACXX_DEBUG_ASSERT
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
+#   define _LIBCUDACXX_DEBUG_ASSERT(x, m) _LIBCUDACXX_ASSERT(::std::__libcpp_is_constant_evaluated() || (x), m)
+#else
 #   define _LIBCUDACXX_DEBUG_ASSERT(x, m) ((void)0)
 #endif
-#ifndef _LIBCUDACXX_DEBUG_MODE
-#define _LIBCUDACXX_DEBUG_MODE(...) ((void)0)
-#endif
+
+#if defined(_LIBCUDACXX_ENABLE_DEBUG_MODE) || defined(_LIBCUDACXX_BUILDING_LIBRARY)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_debug_info {
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-  __libcpp_debug_info()
-      : __file_(nullptr), __line_(-1), __pred_(nullptr), __msg_(nullptr) {}
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-  __libcpp_debug_info(const char* __f, int __l, const char* __p, const char* __m)
-    : __file_(__f), __line_(__l), __pred_(__p), __msg_(__m) {}
-
-  _LIBCUDACXX_FUNC_VIS std::string what() const;
-
-  const char* __file_;
-  int __line_;
-  const char* __pred_;
-  const char* __msg_;
-};
-
-/// __libcpp_debug_function_type - The type of the assertion failure handler.
-typedef void(*__libcpp_debug_function_type)(__libcpp_debug_info const&);
-
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
-/// __libcpp_debug_function - The handler function called when a _LIBCUDACXX_ASSERT
-///    fails.
-extern _LIBCUDACXX_EXPORTED_FROM_ABI __libcpp_debug_function_type __libcpp_debug_function;
-#endif
-
-/// __libcpp_abort_debug_function - A debug handler that aborts when called.
-_LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS
-void __libcpp_abort_debug_function(__libcpp_debug_info const&);
-
-/// __libcpp_set_debug_function - Set the debug handler to the specified
-///    function.
-_LIBCUDACXX_FUNC_VIS
-bool __libcpp_set_debug_function(__libcpp_debug_function_type __func);
-
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2 || defined(_LIBCUDACXX_BUILDING_LIBRARY)
 
 struct _LIBCUDACXX_TYPE_VIS __c_node;
 
@@ -104,15 +49,9 @@ struct _LIBCUDACXX_TYPE_VIS __i_node
     __i_node* __next_;
     __c_node* __c_;
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     __i_node(const __i_node&) = delete;
     __i_node& operator=(const __i_node&) = delete;
-#else
-private:
-    __i_node(const __i_node&);
-    __i_node& operator=(const __i_node&);
-public:
-#endif
+
     _LIBCUDACXX_INLINE_VISIBILITY
     __i_node(void* __i, __i_node* __next, __c_node* __c)
         : __i_(__i), __next_(__next), __c_(__c) {}
@@ -127,17 +66,11 @@ struct _LIBCUDACXX_TYPE_VIS __c_node
     __i_node** end_;
     __i_node** cap_;
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     __c_node(const __c_node&) = delete;
     __c_node& operator=(const __c_node&) = delete;
-#else
-private:
-    __c_node(const __c_node&);
-    __c_node& operator=(const __c_node&);
-public:
-#endif
+
     _LIBCUDACXX_INLINE_VISIBILITY
-    __c_node(void* __c, __c_node* __next)
+    explicit __c_node(void* __c, __c_node* __next)
         : __c_(__c), __next_(__next), beg_(nullptr), end_(nullptr), cap_(nullptr) {}
     virtual ~__c_node();
 
@@ -154,13 +87,13 @@ template <class _Cont>
 struct _C_node
     : public __c_node
 {
-    _C_node(void* __c, __c_node* __n)
+    explicit _C_node(void* __c, __c_node* __n)
         : __c_node(__c, __n) {}
 
-    virtual bool __dereferenceable(const void*) const;
-    virtual bool __decrementable(const void*) const;
-    virtual bool __addable(const void*, ptrdiff_t) const;
-    virtual bool __subscriptable(const void*, ptrdiff_t) const;
+    bool __dereferenceable(const void*) const override;
+    bool __decrementable(const void*) const override;
+    bool __addable(const void*, ptrdiff_t) const override;
+    bool __subscriptable(const void*, ptrdiff_t) const override;
 };
 
 template <class _Cont>
@@ -212,17 +145,11 @@ class _LIBCUDACXX_TYPE_VIS __libcpp_db
     __i_node** __iend_;
     size_t   __isz_;
 
-    __libcpp_db();
+    explicit __libcpp_db();
 public:
-#ifndef _LIBCUDACXX_CXX03_LANG
     __libcpp_db(const __libcpp_db&) = delete;
     __libcpp_db& operator=(const __libcpp_db&) = delete;
-#else
-private:
-    __libcpp_db(const __libcpp_db&);
-    __libcpp_db& operator=(const __libcpp_db&);
-public:
-#endif
+
     ~__libcpp_db();
 
     class __db_c_iterator;
@@ -237,7 +164,7 @@ public:
 
     template <class _Cont>
     _LIBCUDACXX_INLINE_VISIBILITY static __c_node* __create_C_node(void *__mem, void *__c, __c_node *__next) {
-        return ::new(__mem) _C_node<_Cont>(__c, __next);
+        return ::new (__mem) _C_node<_Cont>(__c, __next);
     }
 
     template <class _Cont>
@@ -281,14 +208,68 @@ private:
 _LIBCUDACXX_FUNC_VIS __libcpp_db* __get_db();
 _LIBCUDACXX_FUNC_VIS const __libcpp_db* __get_const_db();
 
+_LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_DEBUG_LEVEL >= 2 || defined(_LIBCUDACXX_BUILDING_LIBRARY)
+#endif // defined(_LIBCUDACXX_ENABLE_DEBUG_MODE) || defined(_LIBCUDACXX_BUILDING_LIBRARY)
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+template <class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_insert_c(_Tp* __c) {
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
+    if (!__libcpp_is_constant_evaluated())
+        __get_db()->__insert_c(__c);
+#else
+    (void)(__c);
+#endif
+}
+
+template <class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_insert_i(_Tp* __i) {
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
+    if (!__libcpp_is_constant_evaluated())
+        __get_db()->__insert_i(__i);
+#else
+    (void)(__i);
+#endif
+}
+
+template <class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_erase_c(_Tp* __c) {
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
+    if (!__libcpp_is_constant_evaluated())
+        __get_db()->__erase_c(__c);
+#else
+    (void)(__c);
+#endif
+}
+
+template <class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_swap(_Tp* __lhs, _Tp* __rhs) {
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
+    if (!__libcpp_is_constant_evaluated())
+        __get_db()->swap(__lhs, __rhs);
+#else
+    (void)(__lhs);
+    (void)(__rhs);
+#endif
+}
+
+template <class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_invalidate_all(_Tp* __c) {
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
+    if (!__libcpp_is_constant_evaluated())
+        __get_db()->__invalidate_all(__c);
+#else
+    (void)(__c);
+#endif
+}
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#ifndef __cuda_std__
-  #include <__pragma_pop>
-#endif
-
-#endif  // _LIBCUDACXX_DEBUG_H
-
+#endif // _LIBCUDACXX___DEBUG

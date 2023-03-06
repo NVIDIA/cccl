@@ -11,6 +11,7 @@
 #define _LIBCUDACXX___NODE_HANDLE
 
 #include <__config>
+#include "__assert" // all public C++ headers provide the assertion handler
 #include <memory>
 #include <optional>
 

@@ -1,14 +1,7 @@
 set(files
+  __assert
   __algorithm/swap_ranges.h
-  __cuda/atomic_prelude.h
-  __cuda/atomic.h
-  __cuda/barrier.h
-  __cuda/chrono.h
-  __cuda/climits_prelude.h
-  __cuda/cstddef_prelude.h
-  __cuda/cstdint_prelude.h
-  __cuda/latch.h
-  __cuda/semaphore.h
+  __availability
   __bit_reference
   __bsd_locale_defaults.h
   __bsd_locale_fallbacks.h
@@ -37,6 +30,15 @@ set(files
   __concepts/semiregular.h
   __concepts/swappable.h
   __concepts/totally_ordered.h
+  __cuda/atomic_prelude.h
+  __cuda/atomic.h
+  __cuda/barrier.h
+  __cuda/chrono.h
+  __cuda/climits_prelude.h
+  __cuda/cstddef_prelude.h
+  __cuda/cstdint_prelude.h
+  __cuda/latch.h
+  __cuda/semaphore.h
   __debug
   __functional/binary_function.h
   __functional/binary_negate.h
@@ -279,6 +281,7 @@ set(files
   __utility/swap.h
   __utility/to_underlying.h
   __utility/unreachable.h
+  __verbose_abort
   algorithm
   any
   array

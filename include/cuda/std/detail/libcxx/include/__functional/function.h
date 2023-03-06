@@ -21,6 +21,7 @@
 #include <typeinfo>
 #endif // __cuda_std__
 
+#include "__assert"
 #include "../__debug"
 #include "../__functional_base"
 #include "../__functional/binary_function.h"

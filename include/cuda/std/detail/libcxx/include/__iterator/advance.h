@@ -16,7 +16,7 @@
 #include <cstdlib>
 #endif // __cuda_std__
 
-#include "../__debug"
+#include "../__assert"
 #include "../__iterator/iterator_traits.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

@@ -129,7 +129,7 @@ public:
                 : __i{}
 #endif
     {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         __get_db()->__insert_i(this);
 #endif
     }
@@ -138,11 +138,11 @@ public:
             __enable_if_t<is_convertible<_Up, iterator_type>::value>* = 0) _NOEXCEPT
             : __i(__u.base())
     {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         __get_db()->__iterator_copy(this, &__u);
 #endif
     }
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
     __wrap_iter(const __wrap_iter& __x)
         : __i(__x.base())
@@ -167,7 +167,7 @@ public:
 #endif
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG reference operator*() const _NOEXCEPT
     {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__dereferenceable(this),
                        "Attempted to dereference a non-dereferenceable iterator");
 #endif
@@ -175,7 +175,7 @@ public:
     }
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG pointer  operator->() const _NOEXCEPT
     {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__dereferenceable(this),
                        "Attempted to dereference a non-dereferenceable iterator");
 #endif
@@ -183,7 +183,7 @@ public:
     }
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter& operator++() _NOEXCEPT
     {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__dereferenceable(this),
                        "Attempted to increment non-incrementable iterator");
 #endif
@@ -195,7 +195,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter& operator--() _NOEXCEPT
     {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__decrementable(this),
                        "Attempted to decrement non-decrementable iterator");
 #endif
@@ -208,7 +208,7 @@ public:
         {__wrap_iter __w(*this); __w += __n; return __w;}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter& operator+=(difference_type __n) _NOEXCEPT
     {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__addable(this, __n),
                    "Attempted to add/subtract iterator outside of valid range");
 #endif
@@ -221,7 +221,7 @@ public:
         {*this += -__n; return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG reference    operator[](difference_type __n) const _NOEXCEPT
     {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__subscriptable(this, __n),
                    "Attempted to subscript iterator outside of valid range");
 #endif
@@ -231,7 +231,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG iterator_type base() const _NOEXCEPT {return __i;}
 
 private:
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter(const void* __p, iterator_type __x) : __i(__x)
     {
         __get_db()->__insert_ic(this, __p);
@@ -332,7 +332,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) _NOEXCEPT
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     _LIBCUDACXX_ASSERT(__get_const_db()->__less_than_comparable(&__x, &__y),
                    "Attempted to compare incomparable iterators");
 #endif
@@ -410,7 +410,7 @@ auto
 operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) _NOEXCEPT
 -> decltype(__x.base() - __y.base())
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     _LIBCUDACXX_ASSERT(__get_const_db()->__less_than_comparable(&__x, &__y),
                    "Attempted to subtract incompatible iterators");
 #endif
@@ -422,7 +422,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 typename __wrap_iter<_Iter1>::difference_type
 operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) _NOEXCEPT
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     _LIBCUDACXX_ASSERT(__get_const_db()->__less_than_comparable(&__x, &__y),
                    "Attempted to subtract incompatible iterators");
 #endif

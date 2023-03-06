@@ -423,7 +423,7 @@ public:
     unordered_set()
         _NOEXCEPT_(is_nothrow_default_constructible<__table>::value)
         {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
             __get_db()->__insert_c(this);
 #endif
         }
@@ -537,7 +537,7 @@ public:
             {return __table_.__emplace_unique(_CUDA_VSTD::forward<_Args>(__args)...);}
     template <class... _Args>
         _LIBCUDACXX_INLINE_VISIBILITY
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         iterator emplace_hint(const_iterator __p, _Args&&... __args)
         {
             _LIBCUDACXX_ASSERT(__get_const_db()->__find_c_from_i(&__p) == this,
@@ -554,7 +554,7 @@ public:
     pair<iterator, bool> insert(value_type&& __x)
         {return __table_.__insert_unique(_CUDA_VSTD::move(__x));}
     _LIBCUDACXX_INLINE_VISIBILITY
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     iterator insert(const_iterator __p, value_type&& __x)
         {
             _LIBCUDACXX_ASSERT(__get_const_db()->__find_c_from_i(&__p) == this,
@@ -575,7 +575,7 @@ public:
         {return __table_.__insert_unique(__x);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     iterator insert(const_iterator __p, const value_type& __x)
         {
             _LIBCUDACXX_ASSERT(__get_const_db()->__find_c_from_i(&__p) == this,
@@ -724,7 +724,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     void reserve(size_type __n) {__table_.reserve(__n);}
 
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
 
     bool __dereferenceable(const const_iterator* __i) const
         {return __table_.__dereferenceable(__i);}
@@ -735,7 +735,7 @@ public:
     bool __subscriptable(const const_iterator* __i, ptrdiff_t __n) const
         {return __table_.__addable(__i, __n);}
 
-#endif  // _LIBCUDACXX_DEBUG_LEVEL >= 2
+#endif  // _LIBCUDACXX_ENABLE_DEBUG_MODE
 
 };
 
@@ -800,7 +800,7 @@ unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(size_type __n,
         const hasher& __hf, const key_equal& __eql)
     : __table_(__hf, __eql)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__n);
@@ -811,7 +811,7 @@ unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(size_type __n,
         const hasher& __hf, const key_equal& __eql, const allocator_type& __a)
     : __table_(__hf, __eql, __a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__n);
@@ -822,7 +822,7 @@ template <class _InputIterator>
 unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(
         _InputIterator __first, _InputIterator __last)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     insert(__first, __last);
@@ -835,7 +835,7 @@ unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(
         const hasher& __hf, const key_equal& __eql)
     : __table_(__hf, __eql)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__n);
@@ -849,7 +849,7 @@ unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(
         const hasher& __hf, const key_equal& __eql, const allocator_type& __a)
     : __table_(__hf, __eql, __a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__n);
@@ -862,7 +862,7 @@ unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(
         const allocator_type& __a)
     : __table_(__a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -872,7 +872,7 @@ unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(
         const unordered_set& __u)
     : __table_(__u.__table_)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__u.bucket_count());
@@ -884,7 +884,7 @@ unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(
         const unordered_set& __u, const allocator_type& __a)
     : __table_(__u.__table_, __a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__u.bucket_count());
@@ -900,7 +900,7 @@ unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(
     _NOEXCEPT_(is_nothrow_move_constructible<__table>::value)
     : __table_(_CUDA_VSTD::move(__u.__table_))
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
     __get_db()->swap(this, &__u);
 #endif
@@ -911,7 +911,7 @@ unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(
         unordered_set&& __u, const allocator_type& __a)
     : __table_(_CUDA_VSTD::move(__u.__table_), __a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     if (__a != __u.get_allocator())
@@ -920,7 +920,7 @@ unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(
         while (__u.size() != 0)
             __table_.__insert_unique(_CUDA_VSTD::move(__u.__table_.remove(__i++)->__value_));
     }
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     else
         __get_db()->swap(this, &__u);
 #endif
@@ -930,7 +930,7 @@ template <class _Value, class _Hash, class _Pred, class _Alloc>
 unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(
         initializer_list<value_type> __il)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     insert(__il.begin(), __il.end());
@@ -942,7 +942,7 @@ unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(
         const key_equal& __eql)
     : __table_(__hf, __eql)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__n);
@@ -955,7 +955,7 @@ unordered_set<_Value, _Hash, _Pred, _Alloc>::unordered_set(
         const key_equal& __eql, const allocator_type& __a)
     : __table_(__hf, __eql, __a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__n);
@@ -1085,7 +1085,7 @@ public:
     unordered_multiset()
         _NOEXCEPT_(is_nothrow_default_constructible<__table>::value)
         {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
             __get_db()->__insert_c(this);
 #endif
         }
@@ -1355,7 +1355,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     void reserve(size_type __n) {__table_.reserve(__n);}
 
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
 
     bool __dereferenceable(const const_iterator* __i) const
         {return __table_.__dereferenceable(__i);}
@@ -1366,7 +1366,7 @@ public:
     bool __subscriptable(const const_iterator* __i, ptrdiff_t __n) const
         {return __table_.__addable(__i, __n);}
 
-#endif  // _LIBCUDACXX_DEBUG_LEVEL >= 2
+#endif  // _LIBCUDACXX_ENABLE_DEBUG_MODE
 
 };
 
@@ -1429,7 +1429,7 @@ unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         size_type __n, const hasher& __hf, const key_equal& __eql)
     : __table_(__hf, __eql)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__n);
@@ -1441,7 +1441,7 @@ unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         const allocator_type& __a)
     : __table_(__hf, __eql, __a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__n);
@@ -1452,7 +1452,7 @@ template <class _InputIterator>
 unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         _InputIterator __first, _InputIterator __last)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     insert(__first, __last);
@@ -1465,7 +1465,7 @@ unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         const hasher& __hf, const key_equal& __eql)
     : __table_(__hf, __eql)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__n);
@@ -1479,7 +1479,7 @@ unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         const hasher& __hf, const key_equal& __eql, const allocator_type& __a)
     : __table_(__hf, __eql, __a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__n);
@@ -1492,7 +1492,7 @@ unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         const allocator_type& __a)
     : __table_(__a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -1502,7 +1502,7 @@ unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         const unordered_multiset& __u)
     : __table_(__u.__table_)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__u.bucket_count());
@@ -1514,7 +1514,7 @@ unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         const unordered_multiset& __u, const allocator_type& __a)
     : __table_(__u.__table_, __a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__u.bucket_count());
@@ -1530,7 +1530,7 @@ unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
     _NOEXCEPT_(is_nothrow_move_constructible<__table>::value)
     : __table_(_CUDA_VSTD::move(__u.__table_))
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
     __get_db()->swap(this, &__u);
 #endif
@@ -1541,7 +1541,7 @@ unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         unordered_multiset&& __u, const allocator_type& __a)
     : __table_(_CUDA_VSTD::move(__u.__table_), __a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     if (__a != __u.get_allocator())
@@ -1550,7 +1550,7 @@ unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         while (__u.size() != 0)
             __table_.__insert_multi(_CUDA_VSTD::move(__u.__table_.remove(__i++)->__value_));
     }
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     else
         __get_db()->swap(this, &__u);
 #endif
@@ -1560,7 +1560,7 @@ template <class _Value, class _Hash, class _Pred, class _Alloc>
 unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         initializer_list<value_type> __il)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     insert(__il.begin(), __il.end());
@@ -1572,7 +1572,7 @@ unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         const key_equal& __eql)
     : __table_(__hf, __eql)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__n);
@@ -1585,7 +1585,7 @@ unordered_multiset<_Value, _Hash, _Pred, _Alloc>::unordered_multiset(
         const key_equal& __eql, const allocator_type& __a)
     : __table_(__hf, __eql, __a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __table_.rehash(__n);

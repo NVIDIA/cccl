@@ -149,6 +149,7 @@ template <class... Types>
 #include <__config>
 #endif // __cuda_std__
 
+#include "__assert" // all public C++ headers provide the assertion handler
 #include "__functional_base"
 #include "__functional/unwrap_ref.h"
 #include "__fwd/array.h"

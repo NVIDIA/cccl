@@ -892,7 +892,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY basic_string& operator=(const value_type* __s) {return assign(__s);}
     basic_string& operator=(value_type __c);
 
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     _LIBCUDACXX_INLINE_VISIBILITY
     iterator begin() _NOEXCEPT
         {return iterator(this, __get_pointer());}
@@ -918,7 +918,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     const_iterator end() const _NOEXCEPT
         {return const_iterator(__get_pointer() + size());}
-#endif  // _LIBCUDACXX_DEBUG_LEVEL >= 2
+#endif  // _LIBCUDACXX_ENABLE_DEBUG_MODE
     _LIBCUDACXX_INLINE_VISIBILITY
     reverse_iterator rbegin() _NOEXCEPT
         {return reverse_iterator(end());}
@@ -1421,14 +1421,14 @@ public:
     bool __is_long() const _NOEXCEPT
         {return bool(__r_.first().__s.__size_ & __short_mask);}
 
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
 
     bool __dereferenceable(const const_iterator* __i) const;
     bool __decrementable(const const_iterator* __i) const;
     bool __addable(const const_iterator* __i, ptrdiff_t __n) const;
     bool __subscriptable(const const_iterator* __i, ptrdiff_t __n) const;
 
-#endif  // _LIBCUDACXX_DEBUG_LEVEL >= 2
+#endif  // _LIBCUDACXX_ENABLE_DEBUG_MODE
 
 private:
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1684,21 +1684,21 @@ inline
 void
 basic_string<_CharT, _Traits, _Allocator>::__invalidate_all_iterators()
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__invalidate_all(this);
-#endif  // _LIBCUDACXX_DEBUG_LEVEL >= 2
+#endif  // _LIBCUDACXX_ENABLE_DEBUG_MODE
 }
 
 template <class _CharT, class _Traits, class _Allocator>
 inline
 void
 basic_string<_CharT, _Traits, _Allocator>::__invalidate_iterators_past(size_type
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
                                                                         __pos
 #endif
                                                                       )
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __c_node* __c = __get_db()->__find_c_and_lock(this);
     if (__c)
     {
@@ -1716,7 +1716,7 @@ basic_string<_CharT, _Traits, _Allocator>::__invalidate_iterators_past(size_type
         }
         __get_db()->unlock();
     }
-#endif  // _LIBCUDACXX_DEBUG_LEVEL >= 2
+#endif  // _LIBCUDACXX_ENABLE_DEBUG_MODE
 }
 
 template <class _CharT, class _Traits, class _Allocator>
@@ -1724,7 +1724,7 @@ inline
 basic_string<_CharT, _Traits, _Allocator>::basic_string()
     _NOEXCEPT_(is_nothrow_default_constructible<allocator_type>::value)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __zero();
@@ -1740,7 +1740,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(const allocator_type& __
 #endif
 : __r_(__second_tag(), __a)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
     __zero();
@@ -1802,7 +1802,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(const _CharT* __s, const
 {
     _LIBCUDACXX_ASSERT(__s != nullptr, "basic_string(const char*, allocator) detected nullptr");
     __init(__s, traits_type::length(__s));
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -1813,7 +1813,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(const _CharT* __s, size_
 {
     _LIBCUDACXX_ASSERT(__n == 0 || __s != nullptr, "basic_string(const char*, n) detected nullptr");
     __init(__s, __n);
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -1825,7 +1825,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(const _CharT* __s, size_
 {
     _LIBCUDACXX_ASSERT(__n == 0 || __s != nullptr, "basic_string(const char*, n, allocator) detected nullptr");
     __init(__s, __n);
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -1838,7 +1838,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(const basic_string& __st
         __r_.first().__r = __str.__r_.first().__r;
     else
         __init(_CUDA_VSTD::__to_raw_pointer(__str.__get_long_pointer()), __str.__get_long_size());
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -1852,7 +1852,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(
         __r_.first().__r = __str.__r_.first().__r;
     else
         __init(_CUDA_VSTD::__to_raw_pointer(__str.__get_long_pointer()), __str.__get_long_size());
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -1870,7 +1870,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(basic_string&& __str)
     : __r_(_CUDA_VSTD::move(__str.__r_))
 {
     __str.__zero();
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
     if (__is_long())
         __get_db()->swap(this, &__str);
@@ -1889,7 +1889,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(basic_string&& __str, co
         __r_.first().__r = __str.__r_.first().__r;
         __str.__zero();
     }
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
     if (__is_long())
         __get_db()->swap(this, &__str);
@@ -1927,7 +1927,7 @@ inline
 basic_string<_CharT, _Traits, _Allocator>::basic_string(size_type __n, _CharT __c)
 {
     __init(__n, __c);
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -1938,7 +1938,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(size_type __n, _CharT __
     : __r_(__second_tag(), __a)
 {
     __init(__n, __c);
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -1953,7 +1953,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(const basic_string& __st
     if (__pos > __str_sz)
         this->__throw_out_of_range();
     __init(__str.data() + __pos, _CUDA_VSTD::min(__n, __str_sz - __pos));
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -1968,7 +1968,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(const basic_string& __st
     if (__pos > __str_sz)
         this->__throw_out_of_range();
     __init(__str.data() + __pos, __str_sz - __pos);
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -1982,7 +1982,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(
     __self_view __sv0 = __t;
     __self_view __sv = __sv0.substr(__pos, __n);
     __init(__sv.data(), __sv.size());
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -1993,7 +1993,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(const _Tp & __t)
 {
     __self_view __sv = __t;
     __init(__sv.data(), __sv.size());
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -2005,7 +2005,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(const _Tp & __t, const _
 {
     __self_view __sv = __t;
     __init(__sv.data(), __sv.size());
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -2074,7 +2074,7 @@ inline
 basic_string<_CharT, _Traits, _Allocator>::basic_string(_InputIterator __first, _InputIterator __last)
 {
     __init(__first, __last);
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -2087,7 +2087,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(_InputIterator __first, 
     : __r_(__second_tag(), __a)
 {
     __init(__first, __last);
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -2100,7 +2100,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(
     initializer_list<_CharT> __il)
 {
     __init(__il.begin(), __il.end());
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -2113,7 +2113,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(
     : __r_(__second_tag(), __a)
 {
     __init(__il.begin(), __il.end());
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__insert_c(this);
 #endif
 }
@@ -2123,7 +2123,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(
 template <class _CharT, class _Traits, class _Allocator>
 basic_string<_CharT, _Traits, _Allocator>::~basic_string()
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     __get_db()->__erase_c(this);
 #endif
     if (__is_long())
@@ -2648,7 +2648,7 @@ typename enable_if
 >::type
 basic_string<_CharT, _Traits, _Allocator>::insert(const_iterator __pos, _InputIterator __first, _InputIterator __last)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     _LIBCUDACXX_ASSERT(__get_const_db()->__find_c_from_i(&__pos) == this,
         "string::insert(iterator, range) called with an iterator not"
         " referring to this string");
@@ -2667,7 +2667,7 @@ typename enable_if
 >::type
 basic_string<_CharT, _Traits, _Allocator>::insert(const_iterator __pos, _ForwardIterator __first, _ForwardIterator __last)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     _LIBCUDACXX_ASSERT(__get_const_db()->__find_c_from_i(&__pos) == this,
         "string::insert(iterator, range) called with an iterator not"
         " referring to this string");
@@ -2783,7 +2783,7 @@ inline
 typename basic_string<_CharT, _Traits, _Allocator>::iterator
 basic_string<_CharT, _Traits, _Allocator>::insert(const_iterator __pos, size_type __n, value_type __c)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     _LIBCUDACXX_ASSERT(__get_const_db()->__find_c_from_i(&__pos) == this,
         "string::insert(iterator, n, value) called with an iterator not"
         " referring to this string");
@@ -3004,7 +3004,7 @@ inline
 typename basic_string<_CharT, _Traits, _Allocator>::iterator
 basic_string<_CharT, _Traits, _Allocator>::erase(const_iterator __pos)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     _LIBCUDACXX_ASSERT(__get_const_db()->__find_c_from_i(&__pos) == this,
         "string::erase(iterator) called with an iterator not"
         " referring to this string");
@@ -3022,7 +3022,7 @@ inline
 typename basic_string<_CharT, _Traits, _Allocator>::iterator
 basic_string<_CharT, _Traits, _Allocator>::erase(const_iterator __first, const_iterator __last)
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     _LIBCUDACXX_ASSERT(__get_const_db()->__find_c_from_i(&__first) == this,
         "string::erase(iterator,  iterator) called with an iterator not"
         " referring to this string");
@@ -3293,7 +3293,7 @@ basic_string<_CharT, _Traits, _Allocator>::swap(basic_string& __str)
                     __is_nothrow_swappable<allocator_type>::value)
 #endif
 {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     if (!__is_long())
         __get_db()->__invalidate_all(this);
     if (!__str.__is_long())
@@ -4280,7 +4280,7 @@ void erase_if(basic_string<_CharT, _Traits, _Allocator>& __str, _Predicate __pre
 { __str.erase(_CUDA_VSTD::remove_if(__str.begin(), __str.end(), __pred), __str.end()); }
 #endif
 
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
+#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
 
 template<class _CharT, class _Traits, class _Allocator>
 bool
@@ -4314,7 +4314,7 @@ basic_string<_CharT, _Traits, _Allocator>::__subscriptable(const const_iterator*
     return this->data() <= __p && __p < this->data() + this->size();
 }
 
-#endif  // _LIBCUDACXX_DEBUG_LEVEL >= 2
+#endif  // _LIBCUDACXX_ENABLE_DEBUG_MODE
 
 _LIBCUDACXX_EXTERN_TEMPLATE(class _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS basic_string<char>)
 _LIBCUDACXX_EXTERN_TEMPLATE(class _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS basic_string<wchar_t>)

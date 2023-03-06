@@ -110,7 +110,9 @@ template<> class numeric_limits<cv long double>;
 #endif // __CUDACC_RTC__
 #endif // __cuda_std__
 
+#include "__assert" // all public C++ headers provide the assertion handler
 #include "type_traits"
+#include "version"
 
 #ifndef __cuda_std__
 #include <__pragma_push>
@@ -127,10 +129,6 @@ template<> class numeric_limits<cv long double>;
 #if defined(__IBMCPP__)
 #include "support/ibm/limits.h"
 #endif // __IBMCPP__
-
-#ifndef __cuda_std__
-#include <version>
-#endif //__cuda_std__
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -49,7 +49,7 @@ using binary_semaphore = counting_semaphore<1>;
 #include <__config>
 #endif // __cuda_std__
 
-#include "__debug"
+#include "__assert" // all public C++ headers provide the assertion handler
 #include "__type_traits/conditional.h"
 #include "atomic"
 #include "type_traits"

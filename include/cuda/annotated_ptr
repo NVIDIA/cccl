@@ -243,7 +243,7 @@ class annotated_ptr: public __detail_ap::__annotated_ptr_base<_Property> {
     __host__ __device__ explicit annotated_ptr(pointer __p)
       : __repr(__p)
       {
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2 && defined(__CUDA_ARCH__)
+#if defined(_LIBCUDACXX_ENABLE_DEBUG_MODE) && defined(__CUDA_ARCH__)
       _LIBCUDACXX_DEBUG_ASSERT(std::is_same<_Property, shared>::value && __isShared(__p) || __isGlobal(__p));
 #endif
     }
@@ -261,7 +261,7 @@ class annotated_ptr: public __detail_ap::__annotated_ptr_base<_Property> {
                     std::is_same<_RuntimeProperty, access_property>::value,
                     "This method requires RuntimeProperty=global|normal|streaming|persisting|access_property");
 
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2 && defined(__CUDA_ARCH__)
+#if defined(_LIBCUDACXX_ENABLE_DEBUG_MODE) && defined(__CUDA_ARCH__)
       _LIBCUDACXX_DEBUG_ASSERT(__isGlobal(__p) == true);
 #endif
     }
