@@ -23,6 +23,10 @@
 #include "../__type_traits/make_unsigned.h"
 #include "../limits"
 
+#ifndef __cuda_std__
+#include <__pragma_push>
+#endif // __cuda_std__
+
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
 #endif
@@ -106,5 +110,9 @@ bool in_range(_Up __u) noexcept
 #endif // _LIBCUDACXX_STD_VER > 17
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#ifndef __cuda_std__
+#include <__pragma_pop>
+#endif // __cuda_std__
 
 #endif // _LIBCUDACXX___UTILITY_CMP_H
