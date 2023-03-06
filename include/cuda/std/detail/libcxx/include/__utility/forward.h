@@ -17,6 +17,7 @@
 
 #include "../__type_traits/is_reference.h"
 #include "../__type_traits/remove_reference.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

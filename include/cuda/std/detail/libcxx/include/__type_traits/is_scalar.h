@@ -20,6 +20,7 @@
 #include "../__type_traits/is_member_pointer.h"
 #include "../__type_traits/is_null_pointer.h"
 #include "../__type_traits/is_pointer.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -30,8 +31,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)
 
 template<class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_scalar 
-    : public integral_constant<bool, _LIBCUDACXX_IS_SCALAR(_Tp)> 
+struct _LIBCUDACXX_TEMPLATE_VIS is_scalar
+    : public integral_constant<bool, _LIBCUDACXX_IS_SCALAR(_Tp)>
     {};
 
 #if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

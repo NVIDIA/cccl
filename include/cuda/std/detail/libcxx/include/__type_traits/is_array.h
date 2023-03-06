@@ -12,10 +12,10 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstddef>
 #endif // __cuda_std__
 
 #include "../__type_traits/integral_constant.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_ARRAY) && !defined(_LIBCUDACXX_USE_IS_ARRAY_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_array 
+struct _LIBCUDACXX_TEMPLATE_VIS is_array
     : public integral_constant<bool, _LIBCUDACXX_IS_ARRAY(_Tp)>
     {};
 

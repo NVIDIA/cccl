@@ -47,7 +47,6 @@
 #ifndef __cuda_std__
 #include <__config>
 #include <array>
-#include <cstddef>
 #include <span>
 #include <utility> // integer_sequence
 #endif // __cuda_std__
@@ -57,6 +56,7 @@
 #include "../__mdspan/maybe_static_value.h"
 #include "../__mdspan/standard_layout_static_array.h"
 #include "../__mdspan/type_list.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

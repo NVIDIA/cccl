@@ -46,7 +46,6 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <version>
 #endif //__cuda_std__
 
 #include "__mdspan/default_accessor.h"
@@ -60,5 +59,8 @@
 #include "__mdspan/macros.h"
 #include "__mdspan/static_array.h"
 #include "__mdspan/submdspan.h"
+
+#include "cstddef"
+#include "version"
 
 #endif // _LIBCUDACXX_MDSPAN

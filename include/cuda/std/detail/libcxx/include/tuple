@@ -147,7 +147,6 @@ template <class... Types>
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstddef>
 #include <type_traits>
 #include <utility>
 #include <__pragma_push>
@@ -173,6 +172,7 @@ template <class... Types>
 #include "__utility/swap.h"
 #include "climits"
 #include "cstdint"
+#include "cstddef"
 #include "version"
 
 // standard-mandated includes

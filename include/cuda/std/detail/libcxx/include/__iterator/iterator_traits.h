@@ -13,7 +13,6 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstddef>
 #endif // __cuda_std__
 
 #include "../__fwd/pair.h"
@@ -21,6 +20,7 @@
 #include "../__type_traits/is_convertible.h"
 #include "../__type_traits/remove_cv.h"
 #include "../__type_traits/void_t.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -39,9 +39,9 @@ struct __has_iterator_typedefs
 {
 private:
     struct __two {char __lx; char __lxx;};
-    template <class _Up> 
+    template <class _Up>
     _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_INLINE_VISIBILITY static __two __test(...);
-    template <class _Up> 
+    template <class _Up>
     _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_INLINE_VISIBILITY static char __test(
         __void_t<typename _Up::iterator_category>* = 0,
     	__void_t<typename _Up::difference_type>* = 0,
@@ -58,9 +58,9 @@ struct __has_iterator_category
 {
 private:
     struct __two {char __lx; char __lxx;};
-    template <class _Up> 
+    template <class _Up>
     _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_INLINE_VISIBILITY static __two __test(...);
-    template <class _Up> 
+    template <class _Up>
     _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_INLINE_VISIBILITY static char __test(typename _Up::iterator_category* = 0);
 public:
     static const bool value = sizeof(__test<_Tp>(0)) == 1;

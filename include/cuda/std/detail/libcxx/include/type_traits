@@ -416,8 +416,11 @@ namespace std
 */
 #ifndef __cuda_std__
 #include <__config>
-#include <cstddef>
-#endif //__cuda_std__
+#else
+#ifndef __CUDACC_RTC__
+#include <type_traits>
+#endif // __CUDACC_RTC__
+#endif // __cuda_std__
 
 #include "__functional/identity.h"
 #include "__functional/invoke.h"
@@ -554,6 +557,7 @@ namespace std
 #include "__utility/move.h"
 #include "__utility/swap.h"
 #include "cstdint"
+#include "cstddef"
 #include "version"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -676,49 +680,5 @@ struct __has_operator_addressof
 #endif  // _LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#if _LIBCUDACXX_STD_VER > 11
-// std::byte
-#ifdef _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
-_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
-#else
-namespace std  // purposefully not versioned
-{
-#endif //_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
-template <class _Integer>
-  _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr typename enable_if<is_integral_v<_Integer>, byte>::type &
-  operator<<=(byte& __lhs, _Integer __shift) noexcept
-  { return __lhs = __lhs << __shift; }
-
-template <class _Integer>
-  _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr typename enable_if<is_integral_v<_Integer>, byte>::type
-  operator<< (byte  __lhs, _Integer __shift) noexcept
-  { return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) << __shift)); }
-
-template <class _Integer>
-  _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr typename enable_if<is_integral_v<_Integer>, byte>::type &
-  operator>>=(byte& __lhs, _Integer __shift) noexcept
-  { return __lhs = __lhs >> __shift; }
-
-template <class _Integer>
-  _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr typename enable_if<is_integral_v<_Integer>, byte>::type
-  operator>> (byte  __lhs, _Integer __shift) noexcept
-  { return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) >> __shift)); }
-
-template <class _Integer>
-  _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr typename enable_if<is_integral_v<_Integer>, _Integer>::type
-  to_integer(byte __b) noexcept { return static_cast<_Integer>(__b); }
-
-#ifdef _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
-_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
-#else
-}
-#endif //_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
-#endif // _LIBCUDACXX_STD_VER > 11
 
 #endif  // _LIBCUDACXX_TYPE_TRAITS

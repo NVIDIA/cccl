@@ -47,7 +47,6 @@
 #ifndef __cuda_std__
 #include <__config>
 #include <array>
-#include <cstddef>
 #include <span>
 #include <utility> // integer_sequence
 #endif // __cuda_std__
@@ -59,6 +58,7 @@
 #include "../__mdspan/no_unique_address.h"
 #endif
 #include "../__type_traits/enable_if.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

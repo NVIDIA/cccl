@@ -17,7 +17,6 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstddef>
 #endif // __cuda_std__
 
 #include "../__functional/invoke.h"
@@ -35,6 +34,7 @@
 #include "../__type_traits/remove_reference.h"
 #include "../__utility/forward.h"
 
+#include "../cstddef"
 #include "../tuple"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

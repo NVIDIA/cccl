@@ -22,6 +22,7 @@
 #include "../__type_traits/nat.h"
 #include "../__type_traits/remove_cv.h"
 #include "../__type_traits/type_list.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

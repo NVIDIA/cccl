@@ -13,12 +13,12 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstddef>
 #include <iosfwd> // for forward declarations of char_traits and basic_istream
 #endif // __cuda_std__
 
 #include "../__iterator/iterator.h"
 #include "../__memory/addressof.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

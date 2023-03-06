@@ -12,12 +12,12 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstddef>
 #endif // __cuda_std__
 
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_function.h"
 #include "../__type_traits/remove_cv.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -55,7 +55,7 @@ template <class _Tp, class _Up> struct __libcpp_is_member_pointer<_Tp _Up::*> {
 };
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_member_function_pointer
-    : public integral_constant<bool, __libcpp_is_member_pointer<__remove_cv_t<_Tp> >::__is_func > 
+    : public integral_constant<bool, __libcpp_is_member_pointer<__remove_cv_t<_Tp> >::__is_func >
     {};
 
 #if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

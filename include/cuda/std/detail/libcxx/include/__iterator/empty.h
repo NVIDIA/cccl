@@ -13,9 +13,10 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstddef>
 #include <initializer_list>
 #endif // __cuda_std__
+
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

@@ -46,15 +46,14 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstddef>  // size_t
 #include <limits>   // numeric_limits
 #include <span>  // dynamic_extent
 #endif // __cuda_std__
 
 #include "../__mdspan/macros.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD

@@ -12,9 +12,7 @@
 #define _CUDA_SPAN
 
 #include "array"
-#include "cstddef"
 #include "type_traits"
-#include "version"
 #include "iterator"
 #include "utility"
 

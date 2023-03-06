@@ -10,13 +10,6 @@
 #ifndef _CUDA_TYPE_TRAITS
 #define _CUDA_TYPE_TRAITS
 
-#ifndef __CUDACC_RTC__
-    #include <type_traits>
-#endif //__CUDACC_RTC__
-
-#include "cstddef"
-#include "version"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

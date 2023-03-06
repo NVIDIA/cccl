@@ -12,7 +12,6 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstddef>
 #endif // __cuda_std__
 
 #include "../__type_traits/add_lvalue_reference.h"
@@ -27,6 +26,7 @@
 #include "../__type_traits/is_void.h"
 #include "../__type_traits/nat.h"
 #include "../__utility/declval.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

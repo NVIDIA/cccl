@@ -1,3 +1,4 @@
+// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -7,33 +8,24 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_MAKE_TUPLE_INDICES_H
-#define _LIBCUDACXX___TUPLE_MAKE_TUPLE_INDICES_H
+#ifndef _LIBCUDACXX___CUDA_CSTDDEF_PRELUDE_H
+#define _LIBCUDACXX___CUDA_CSTDDEF_PRELUDE_H
 
 #ifndef __cuda_std__
-#include <__config>
+#error "<__cuda/cstddef_prelude> should only be included in from <cuda/std/cstddef>"
 #endif // __cuda_std__
 
-#include "../__utility/integer_sequence.h"
-#include "../cstddef"
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
-
-#ifndef _LIBCUDACXX_CXX03_LANG
+#ifndef __CUDACC_RTC__
+#include <cstddef>
+#include <stddef.h>
+#else
+#define offsetof(type, member) (cuda::std::size_t)((char*)&(((type *)0)->member) - (char*)0)
+#endif //__CUDACC_RTC__
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <size_t _Ep, size_t _Sp = 0>
-struct __make_tuple_indices
-{
-    static_assert(_Sp <= _Ep, "__make_tuple_indices input error");
-    typedef __make_indices_imp<_Ep, _Sp> type;
-};
+typedef decltype(nullptr) nullptr_t;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_CXX03_LANG
-
-#endif // _LIBCUDACXX___TUPLE_MAKE_TUPLE_INDICES_H
+#endif // _LIBCUDACXX___CUDA_CSTDDEF_PRELUDE_H

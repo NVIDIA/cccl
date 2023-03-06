@@ -43,7 +43,8 @@ template<class E> const E* end(initializer_list<E> il) noexcept; // constexpr in
 */
 
 #include <__config>
-#include <cstddef>
+
+#include "cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

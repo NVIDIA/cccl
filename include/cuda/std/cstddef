@@ -10,30 +10,11 @@
 #ifndef _CUDA_CSTDDEF
 #define _CUDA_CSTDDEF
 
-#ifndef __CUDACC_RTC__
-    #include <cstddef>
-    #include <stddef.h>
-#else
-    #define offsetof(type, member) (cuda::std::size_t)((char*)&(((type *)0)->member) - (char*)0)
-#endif //__CUDACC_RTC__
-
-#include "version"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-typedef decltype(nullptr) nullptr_t;
-
-_LIBCUDACXX_END_NAMESPACE_STD
-
 #include "detail/libcxx/include/cstddef"
-
-#if _LIBCUDACXX_STD_VER > 14
-    #include "type_traits"
-#endif
 
 #include "detail/__pragma_pop"
 

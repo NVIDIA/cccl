@@ -35,7 +35,15 @@ Types:
 
 #ifndef __cuda_std__
 #include <__config>
-#include <version>
+#else
+#include "__cuda/cstddef_prelude.h"
+#endif //__cuda_std__
+
+#include "__type_traits/enable_if.h"
+#include "__type_traits/is_integral.h"
+#include "version"
+
+#ifndef __cuda_std__
 #include <__pragma_push>
 #endif //__cuda_std__
 
@@ -125,16 +133,41 @@ constexpr byte  operator~ (byte __b) noexcept
     ));
 }
 
+template <class _Integer>
+  _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr __enable_if_t<is_integral_v<_Integer>, byte> &
+  operator<<=(byte& __lhs, _Integer __shift) noexcept
+  { return __lhs = __lhs << __shift; }
+
+template <class _Integer>
+  _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr __enable_if_t<is_integral_v<_Integer>, byte>
+  operator<< (byte  __lhs, _Integer __shift) noexcept
+  { return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) << __shift)); }
+
+template <class _Integer>
+  _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr __enable_if_t<is_integral_v<_Integer>, byte> &
+  operator>>=(byte& __lhs, _Integer __shift) noexcept
+  { return __lhs = __lhs >> __shift; }
+
+template <class _Integer>
+  _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr __enable_if_t<is_integral_v<_Integer>, byte>
+  operator>> (byte  __lhs, _Integer __shift) noexcept
+  { return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) >> __shift)); }
+
+template <class _Integer>
+  _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr __enable_if_t<is_integral_v<_Integer>, _Integer>
+  to_integer(byte __b) noexcept { return static_cast<_Integer>(__b); }
+
 #ifdef _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 #else
 }
 #endif //_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
-
-#ifndef __cuda_std__
-#include <type_traits>  // rest of byte
-#endif
-#endif
+#endif // _LIBCUDACXX_STD_VER > 11
 
 #ifndef __cuda_std__
 #include <__pragma_pop>

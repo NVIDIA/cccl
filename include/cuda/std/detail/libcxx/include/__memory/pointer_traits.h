@@ -12,7 +12,6 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstddef>
 #endif //__cuda_std__
 
 #include "../__memory/addressof.h"
@@ -26,6 +25,7 @@
 #include "../__type_traits/is_void.h"
 #include "../__type_traits/void_t.h"
 #include "../__utility/declval.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -141,7 +141,7 @@ struct __has_rebind
 {
 private:
     template <class _Xp> _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
-    _LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH 
+    _LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
     template <class _Xp> _LIBCUDACXX_INLINE_VISIBILITY static true_type __test(typename _Xp::template rebind<_Up>* = 0);
     _LIBCUDACXX_SUPPRESS_DEPRECATED_POP
 public:

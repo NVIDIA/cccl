@@ -14,12 +14,12 @@
 #include <__config>
 #include <iosfwd>
 #if defined(_LIBCUDACXX_HAS_NO_NULLPTR)
-#  include <cstddef>
+#  include "cstddef"
 #endif
 #if _LIBCUDACXX_DEBUG_LEVEL >= 1 || defined(_LIBCUDACXX_BUILDING_LIBRARY)
 #  include <cstdlib>
 #  include <cstdio>
-#  include <cstddef>
+#  include "cstddef"
 #endif
 #include <__pragma_push>
 #endif //__cuda_std__

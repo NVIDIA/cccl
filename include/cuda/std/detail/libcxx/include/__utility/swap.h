@@ -12,7 +12,6 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstddef>
 #endif // __cuda_std__
 
 #include "../__type_traits/enable_if.h"
@@ -22,6 +21,7 @@
 #include "../__type_traits/is_nothrow_move_constructible.h"
 #include "../__type_traits/is_swappable.h"
 #include "../__utility/move.h"
+#include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -30,9 +30,9 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY 
+inline _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 __swap_result_t<_Tp>
-swap(_Tp& __x, _Tp& __y) _NOEXCEPT_(is_nothrow_move_constructible<_Tp>::value && 
+swap(_Tp& __x, _Tp& __y) _NOEXCEPT_(is_nothrow_move_constructible<_Tp>::value &&
                                     is_nothrow_move_assignable<_Tp>::value) {
   _Tp __t(_CUDA_VSTD::move(__x));
   __x = _CUDA_VSTD::move(__y);
