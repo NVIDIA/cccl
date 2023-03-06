@@ -19,7 +19,6 @@
 #define _CUDA_BARRIER
 
 #include "atomic"
-#include "chrono"
 
 #include "detail/__config"
 
