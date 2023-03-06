@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,14 +29,14 @@ int main(int, char**)
 {
     {
         typedef std::unordered_set<NotConstructible,
-                                   test_hash<std::hash<NotConstructible> >,
-                                   test_compare<std::equal_to<NotConstructible> >,
+                                   test_hash<NotConstructible>,
+                                   test_equal_to<NotConstructible>,
                                    test_allocator<NotConstructible>
                                    > C;
         C c;
         LIBCPP_ASSERT(c.bucket_count() == 0);
-        assert(c.hash_function() == test_hash<std::hash<NotConstructible> >());
-        assert(c.key_eq() == test_compare<std::equal_to<NotConstructible> >());
+        assert(c.hash_function() == test_hash<NotConstructible>());
+        assert(c.key_eq() == test_equal_to<NotConstructible>());
         assert(c.get_allocator() == (test_allocator<NotConstructible>()));
         assert(c.size() == 0);
         assert(c.empty());
@@ -46,14 +47,14 @@ int main(int, char**)
 #if TEST_STD_VER >= 11
     {
         typedef std::unordered_set<NotConstructible,
-                                   test_hash<std::hash<NotConstructible> >,
-                                   test_compare<std::equal_to<NotConstructible> >,
+                                   test_hash<NotConstructible>,
+                                   test_equal_to<NotConstructible>,
                                    min_allocator<NotConstructible>
                                    > C;
         C c;
         LIBCPP_ASSERT(c.bucket_count() == 0);
-        assert(c.hash_function() == test_hash<std::hash<NotConstructible> >());
-        assert(c.key_eq() == test_compare<std::equal_to<NotConstructible> >());
+        assert(c.hash_function() == test_hash<NotConstructible>());
+        assert(c.key_eq() == test_equal_to<NotConstructible>());
         assert(c.get_allocator() == (min_allocator<NotConstructible>()));
         assert(c.size() == 0);
         assert(c.empty());
@@ -64,15 +65,15 @@ int main(int, char**)
     {
         typedef explicit_allocator<NotConstructible> A;
         typedef std::unordered_set<NotConstructible,
-                                   test_hash<std::hash<NotConstructible> >,
-                                   test_compare<std::equal_to<NotConstructible> >,
+                                   test_hash<NotConstructible>,
+                                   test_equal_to<NotConstructible>,
                                    A
                                    > C;
         {
         C c;
         LIBCPP_ASSERT(c.bucket_count() == 0);
-        assert(c.hash_function() == test_hash<std::hash<NotConstructible> >());
-        assert(c.key_eq() == test_compare<std::equal_to<NotConstructible> >());
+        assert(c.hash_function() == test_hash<NotConstructible>());
+        assert(c.key_eq() == test_equal_to<NotConstructible>());
         assert(c.get_allocator() == A());
         assert(c.size() == 0);
         assert(c.empty());
@@ -84,8 +85,8 @@ int main(int, char**)
         A a;
         C c(a);
         LIBCPP_ASSERT(c.bucket_count() == 0);
-        assert(c.hash_function() == test_hash<std::hash<NotConstructible> >());
-        assert(c.key_eq() == test_compare<std::equal_to<NotConstructible> >());
+        assert(c.hash_function() == test_hash<NotConstructible>());
+        assert(c.key_eq() == test_equal_to<NotConstructible>());
         assert(c.get_allocator() == a);
         assert(c.size() == 0);
         assert(c.empty());

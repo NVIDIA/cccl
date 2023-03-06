@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
+// UNSUPPORTED: c++03
 
 // <map>
 
@@ -29,7 +30,7 @@ int main(int, char**)
     {
         typedef std::pair<MoveOnly, MoveOnly> V;
         typedef std::pair<const MoveOnly, MoveOnly> VC;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef test_allocator<VC> A;
         typedef std::multimap<MoveOnly, MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -68,7 +69,7 @@ int main(int, char**)
     {
         typedef std::pair<MoveOnly, MoveOnly> V;
         typedef std::pair<const MoveOnly, MoveOnly> VC;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef test_allocator<VC> A;
         typedef std::multimap<MoveOnly, MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -107,7 +108,7 @@ int main(int, char**)
     {
         typedef std::pair<MoveOnly, MoveOnly> V;
         typedef std::pair<const MoveOnly, MoveOnly> VC;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef other_allocator<VC> A;
         typedef std::multimap<MoveOnly, MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -196,7 +197,7 @@ int main(int, char**)
     {
         typedef std::pair<MoveOnly, MoveOnly> V;
         typedef std::pair<const MoveOnly, MoveOnly> VC;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef min_allocator<VC> A;
         typedef std::multimap<MoveOnly, MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -235,7 +236,7 @@ int main(int, char**)
     {
         typedef std::pair<MoveOnly, MoveOnly> V;
         typedef std::pair<const MoveOnly, MoveOnly> VC;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef explicit_allocator<VC> A;
         typedef std::multimap<MoveOnly, MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;

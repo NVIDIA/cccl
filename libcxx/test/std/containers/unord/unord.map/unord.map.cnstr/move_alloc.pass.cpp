@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
+// UNSUPPORTED: c++03
 
 // <unordered_map>
 
@@ -35,8 +36,8 @@ int main(int, char**)
         typedef std::pair<int, std::string> P;
         typedef test_allocator<std::pair<const int, std::string>> A;
         typedef std::unordered_map<int, std::string,
-                                   test_hash<std::hash<int> >,
-                                   test_compare<std::equal_to<int> >,
+                                   test_hash<int>,
+                                   test_equal_to<int>,
                                    A
                                    > C;
         P a[] =
@@ -50,8 +51,8 @@ int main(int, char**)
         };
         C c0(a, a + sizeof(a)/sizeof(a[0]),
             7,
-            test_hash<std::hash<int> >(8),
-            test_compare<std::equal_to<int> >(9),
+            test_hash<int>(8),
+            test_equal_to<int>(9),
             A(10)
            );
         C c(std::move(c0), A(12));
@@ -61,8 +62,8 @@ int main(int, char**)
         assert(c.at(2) == "two");
         assert(c.at(3) == "three");
         assert(c.at(4) == "four");
-        assert(c.hash_function() == test_hash<std::hash<int> >(8));
-        assert(c.key_eq() == test_compare<std::equal_to<int> >(9));
+        assert(c.hash_function() == test_hash<int>(8));
+        assert(c.key_eq() == test_equal_to<int>(9));
         assert(c.get_allocator() == A(12));
         assert(!c.empty());
         assert(static_cast<std::size_t>(std::distance(c.begin(), c.end())) == c.size());
@@ -76,8 +77,8 @@ int main(int, char**)
         typedef std::pair<int, std::string> P;
         typedef test_allocator<std::pair<const int, std::string>> A;
         typedef std::unordered_map<int, std::string,
-                                   test_hash<std::hash<int> >,
-                                   test_compare<std::equal_to<int> >,
+                                   test_hash<int>,
+                                   test_equal_to<int>,
                                    A
                                    > C;
         P a[] =
@@ -91,8 +92,8 @@ int main(int, char**)
         };
         C c0(a, a + sizeof(a)/sizeof(a[0]),
             7,
-            test_hash<std::hash<int> >(8),
-            test_compare<std::equal_to<int> >(9),
+            test_hash<int>(8),
+            test_equal_to<int>(9),
             A(10)
            );
         C c(std::move(c0), A(10));
@@ -102,8 +103,8 @@ int main(int, char**)
         assert(c.at(2) == "two");
         assert(c.at(3) == "three");
         assert(c.at(4) == "four");
-        assert(c.hash_function() == test_hash<std::hash<int> >(8));
-        assert(c.key_eq() == test_compare<std::equal_to<int> >(9));
+        assert(c.hash_function() == test_hash<int>(8));
+        assert(c.key_eq() == test_equal_to<int>(9));
         assert(c.get_allocator() == A(10));
         assert(!c.empty());
         assert(static_cast<std::size_t>(std::distance(c.begin(), c.end())) == c.size());
@@ -117,8 +118,8 @@ int main(int, char**)
         typedef std::pair<int, std::string> P;
         typedef min_allocator<std::pair<const int, std::string>> A;
         typedef std::unordered_map<int, std::string,
-                                   test_hash<std::hash<int> >,
-                                   test_compare<std::equal_to<int> >,
+                                   test_hash<int>,
+                                   test_equal_to<int>,
                                    A
                                    > C;
         P a[] =
@@ -132,8 +133,8 @@ int main(int, char**)
         };
         C c0(a, a + sizeof(a)/sizeof(a[0]),
             7,
-            test_hash<std::hash<int> >(8),
-            test_compare<std::equal_to<int> >(9),
+            test_hash<int>(8),
+            test_equal_to<int>(9),
             A()
            );
         C c(std::move(c0), A());
@@ -143,8 +144,8 @@ int main(int, char**)
         assert(c.at(2) == "two");
         assert(c.at(3) == "three");
         assert(c.at(4) == "four");
-        assert(c.hash_function() == test_hash<std::hash<int> >(8));
-        assert(c.key_eq() == test_compare<std::equal_to<int> >(9));
+        assert(c.hash_function() == test_hash<int>(8));
+        assert(c.key_eq() == test_equal_to<int>(9));
         assert(c.get_allocator() == A());
         assert(!c.empty());
         assert(static_cast<std::size_t>(std::distance(c.begin(), c.end())) == c.size());
@@ -158,8 +159,8 @@ int main(int, char**)
         typedef std::pair<int, std::string> P;
         typedef explicit_allocator<std::pair<const int, std::string>> A;
         typedef std::unordered_map<int, std::string,
-                                   test_hash<std::hash<int> >,
-                                   test_compare<std::equal_to<int> >,
+                                   test_hash<int>,
+                                   test_equal_to<int>,
                                    A
                                    > C;
         P a[] =
@@ -173,8 +174,8 @@ int main(int, char**)
         };
         C c0(a, a + sizeof(a)/sizeof(a[0]),
             7,
-            test_hash<std::hash<int> >(8),
-            test_compare<std::equal_to<int> >(9),
+            test_hash<int>(8),
+            test_equal_to<int>(9),
             A{}
            );
         C c(std::move(c0), A{});
@@ -184,8 +185,8 @@ int main(int, char**)
         assert(c.at(2) == "two");
         assert(c.at(3) == "three");
         assert(c.at(4) == "four");
-        assert(c.hash_function() == test_hash<std::hash<int> >(8));
-        assert(c.key_eq() == test_compare<std::equal_to<int> >(9));
+        assert(c.hash_function() == test_hash<int>(8));
+        assert(c.key_eq() == test_equal_to<int>(9));
         assert(c.get_allocator() == A{});
         assert(!c.empty());
         assert(static_cast<std::size_t>(std::distance(c.begin(), c.end())) == c.size());

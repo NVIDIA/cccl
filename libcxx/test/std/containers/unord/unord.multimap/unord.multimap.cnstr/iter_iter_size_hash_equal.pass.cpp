@@ -13,7 +13,8 @@
 // class unordered_multimap
 
 // template <class InputIterator>
-//     unordered_multimap(InputIterator first, InputIterator last, size_type n);
+//     unordered_multimap(InputIterator first, InputIterator last, size_type n,
+//                   const hasher& hf, const key_equal& eql);
 
 #include <unordered_map>
 #include <string>
@@ -25,8 +26,8 @@
 
 #include "test_macros.h"
 #include "test_iterators.h"
-#include "../../../check_consecutive.h"
 #include "../../../NotConstructible.h"
+#include "../../../check_consecutive.h"
 #include "../../../test_compare.h"
 #include "../../../test_hash.h"
 #include "test_allocator.h"
@@ -36,8 +37,8 @@ int main(int, char**)
 {
     {
         typedef std::unordered_multimap<int, std::string,
-                                   test_hash<std::hash<int> >,
-                                   test_compare<std::equal_to<int> >,
+                                   test_hash<int>,
+                                   test_equal_to<int>,
                                    test_allocator<std::pair<const int, std::string> >
                                    > C;
         typedef std::pair<int, std::string> P;
@@ -51,9 +52,11 @@ int main(int, char**)
             P(2, "four"),
         };
         C c(input_iterator<P*>(a), input_iterator<P*>(a + sizeof(a)/sizeof(a[0])),
-            10
+            7,
+            test_hash<int>(8),
+            test_equal_to<int>(9)
            );
-        LIBCPP_ASSERT(c.bucket_count() == 11);
+        LIBCPP_ASSERT(c.bucket_count() == 7);
         assert(c.size() == 6);
         typedef std::pair<C::const_iterator, C::const_iterator> Eq;
         Eq eq = c.equal_range(1);
@@ -82,15 +85,15 @@ int main(int, char**)
         assert(static_cast<std::size_t>(std::distance(c.cbegin(), c.cend())) == c.size());
         assert(std::fabs(c.load_factor() - (float)c.size()/c.bucket_count()) < FLT_EPSILON);
         assert(c.max_load_factor() == 1);
-        assert(c.hash_function() == test_hash<std::hash<int> >());
-        assert(c.key_eq() == test_compare<std::equal_to<int> >());
+        assert(c.hash_function() == test_hash<int>(8));
+        assert(c.key_eq() == test_equal_to<int>(9));
         assert((c.get_allocator() == test_allocator<std::pair<const int, std::string> >()));
     }
 #if TEST_STD_VER >= 11
     {
         typedef std::unordered_multimap<int, std::string,
-                                   test_hash<std::hash<int> >,
-                                   test_compare<std::equal_to<int> >,
+                                   test_hash<int>,
+                                   test_equal_to<int>,
                                    min_allocator<std::pair<const int, std::string> >
                                    > C;
         typedef std::pair<int, std::string> P;
@@ -104,9 +107,11 @@ int main(int, char**)
             P(2, "four"),
         };
         C c(input_iterator<P*>(a), input_iterator<P*>(a + sizeof(a)/sizeof(a[0])),
-            10
+            7,
+            test_hash<int>(8),
+            test_equal_to<int>(9)
            );
-        LIBCPP_ASSERT(c.bucket_count() == 11);
+        LIBCPP_ASSERT(c.bucket_count() == 7);
         assert(c.size() == 6);
         typedef std::pair<C::const_iterator, C::const_iterator> Eq;
         Eq eq = c.equal_range(1);
@@ -135,8 +140,8 @@ int main(int, char**)
         assert(static_cast<std::size_t>(std::distance(c.cbegin(), c.cend())) == c.size());
         assert(std::fabs(c.load_factor() - (float)c.size()/c.bucket_count()) < FLT_EPSILON);
         assert(c.max_load_factor() == 1);
-        assert(c.hash_function() == test_hash<std::hash<int> >());
-        assert(c.key_eq() == test_compare<std::equal_to<int> >());
+        assert(c.hash_function() == test_hash<int>(8));
+        assert(c.key_eq() == test_equal_to<int>(9));
         assert((c.get_allocator() == min_allocator<std::pair<const int, std::string> >()));
     }
 #endif

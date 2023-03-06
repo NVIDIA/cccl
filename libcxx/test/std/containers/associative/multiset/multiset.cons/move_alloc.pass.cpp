@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
+// UNSUPPORTED: c++03
 
 // <set>
 
@@ -16,6 +17,7 @@
 
 #include <set>
 #include <cassert>
+#include <iterator>
 
 #include "test_macros.h"
 #include "MoveOnly.h"
@@ -27,7 +29,7 @@ int main(int, char**)
 {
     {
         typedef MoveOnly V;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef test_allocator<V> A;
         typedef std::multiset<MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -65,7 +67,7 @@ int main(int, char**)
     }
     {
         typedef MoveOnly V;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef test_allocator<V> A;
         typedef std::multiset<MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -103,7 +105,7 @@ int main(int, char**)
     }
     {
         typedef MoveOnly V;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef other_allocator<V> A;
         typedef std::multiset<MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;

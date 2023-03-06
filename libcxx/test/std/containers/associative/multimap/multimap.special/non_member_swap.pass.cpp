@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 //===----------------------------------------------------------------------===//
 
@@ -101,7 +102,7 @@ int main(int, char**)
     }
     {
         typedef test_allocator<V> A;
-        typedef test_compare<std::less<int> > C;
+        typedef test_less<int> C;
         typedef std::multimap<int, double, C, A> M;
         V ar1[] =
         {
@@ -135,7 +136,7 @@ int main(int, char**)
     }
     {
         typedef other_allocator<V> A;
-        typedef test_compare<std::less<int> > C;
+        typedef test_less<int> C;
         typedef std::multimap<int, double, C, A> M;
         V ar1[] =
         {
@@ -245,7 +246,7 @@ int main(int, char**)
     }
     {
         typedef min_allocator<V> A;
-        typedef test_compare<std::less<int> > C;
+        typedef test_less<int> C;
         typedef std::multimap<int, double, C, A> M;
         V ar1[] =
         {

@@ -35,15 +35,15 @@ int main(int, char**)
         3,
         3
     };
-    typedef test_compare<std::less<V> > C;
+    typedef test_less<V> C;
     std::set<V, C> m(input_iterator<const V*>(ar),
                      input_iterator<const V*>(ar+sizeof(ar)/sizeof(ar[0])), C(5));
     assert(m.value_comp() == C(5));
     assert(m.size() == 3);
-    assert(distance(m.begin(), m.end()) == 3);
+    assert(std::distance(m.begin(), m.end()) == 3);
     assert(*m.begin() == 1);
-    assert(*next(m.begin()) == 2);
-    assert(*next(m.begin(), 2) == 3);
+    assert(*std::next(m.begin()) == 2);
+    assert(*std::next(m.begin(), 2) == 3);
 
   return 0;
 }

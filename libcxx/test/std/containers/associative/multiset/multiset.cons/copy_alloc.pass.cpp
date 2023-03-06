@@ -6,65 +6,99 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <set>
+// <map>
 
-// class multiset
+// class multimap
 
-// multiset(const multiset& m, const allocator_type& a);
+// multimap(const multimap& m, const allocator_type& a);
 
-#include <set>
+#include <map>
 #include <cassert>
 
 #include "test_macros.h"
 #include "../../../test_compare.h"
 #include "test_allocator.h"
+#include "min_allocator.h"
 
 int main(int, char**)
 {
-    typedef int V;
+    {
+    typedef std::pair<const int, double> V;
     V ar[] =
     {
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3
+        V(1, 1),
+        V(1, 1.5),
+        V(1, 2),
+        V(2, 1),
+        V(2, 1.5),
+        V(2, 2),
+        V(3, 1),
+        V(3, 1.5),
+        V(3, 2),
     };
-    typedef test_compare<std::less<int> > C;
+    typedef test_less<int> C;
     typedef test_allocator<V> A;
-    std::multiset<int, C, A> mo(ar, ar+sizeof(ar)/sizeof(ar[0]), C(5), A(7));
-    std::multiset<int, C, A> m(mo, A(3));
+    std::multimap<int, double, C, A> mo(ar, ar+sizeof(ar)/sizeof(ar[0]), C(5), A(7));
+    std::multimap<int, double, C, A> m(mo, A(3));
+    assert(m == mo);
     assert(m.get_allocator() == A(3));
     assert(m.key_comp() == C(5));
-    assert(m.size() == 9);
-    assert(distance(m.begin(), m.end()) == 9);
-    assert(*next(m.begin(), 0) == 1);
-    assert(*next(m.begin(), 1) == 1);
-    assert(*next(m.begin(), 2) == 1);
-    assert(*next(m.begin(), 3) == 2);
-    assert(*next(m.begin(), 4) == 2);
-    assert(*next(m.begin(), 5) == 2);
-    assert(*next(m.begin(), 6) == 3);
-    assert(*next(m.begin(), 7) == 3);
-    assert(*next(m.begin(), 8) == 3);
 
     assert(mo.get_allocator() == A(7));
     assert(mo.key_comp() == C(5));
-    assert(mo.size() == 9);
-    assert(distance(mo.begin(), mo.end()) == 9);
-    assert(*next(mo.begin(), 0) == 1);
-    assert(*next(mo.begin(), 1) == 1);
-    assert(*next(mo.begin(), 2) == 1);
-    assert(*next(mo.begin(), 3) == 2);
-    assert(*next(mo.begin(), 4) == 2);
-    assert(*next(mo.begin(), 5) == 2);
-    assert(*next(mo.begin(), 6) == 3);
-    assert(*next(mo.begin(), 7) == 3);
-    assert(*next(mo.begin(), 8) == 3);
+    }
+#if TEST_STD_VER >= 11
+    {
+    typedef std::pair<const int, double> V;
+    V ar[] =
+    {
+        V(1, 1),
+        V(1, 1.5),
+        V(1, 2),
+        V(2, 1),
+        V(2, 1.5),
+        V(2, 2),
+        V(3, 1),
+        V(3, 1.5),
+        V(3, 2),
+    };
+    typedef test_less<int> C;
+    typedef min_allocator<V> A;
+    std::multimap<int, double, C, A> mo(ar, ar+sizeof(ar)/sizeof(ar[0]), C(5), A());
+    std::multimap<int, double, C, A> m(mo, A());
+    assert(m == mo);
+    assert(m.get_allocator() == A());
+    assert(m.key_comp() == C(5));
+
+    assert(mo.get_allocator() == A());
+    assert(mo.key_comp() == C(5));
+    }
+    {
+    typedef std::pair<const int, double> V;
+    V ar[] =
+    {
+        V(1, 1),
+        V(1, 1.5),
+        V(1, 2),
+        V(2, 1),
+        V(2, 1.5),
+        V(2, 2),
+        V(3, 1),
+        V(3, 1.5),
+        V(3, 2),
+    };
+    typedef test_less<int> C;
+    typedef explicit_allocator<V> A;
+    std::multimap<int, double, C, A> mo(ar, ar+sizeof(ar)/sizeof(ar[0]), C(5), A{});
+    std::multimap<int, double, C, A> m(mo, A{});
+    assert(m == mo);
+    assert(m.get_allocator() == A{});
+    assert(m.key_comp() == C(5));
+
+    assert(mo.get_allocator() == A{});
+    assert(mo.key_comp() == C(5));
+    }
+#endif
 
   return 0;
 }

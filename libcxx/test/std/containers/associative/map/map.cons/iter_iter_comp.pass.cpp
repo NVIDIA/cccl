@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 //===----------------------------------------------------------------------===//
 
@@ -36,14 +37,14 @@ int main(int, char**)
         V(3, 1.5),
         V(3, 2),
     };
-    typedef test_compare<std::less<int> > C;
+    typedef test_less<int> C;
     std::map<int, double, C> m(ar, ar+sizeof(ar)/sizeof(ar[0]), C(5));
     assert(m.key_comp() == C(5));
     assert(m.size() == 3);
-    assert(distance(m.begin(), m.end()) == 3);
+    assert(std::distance(m.begin(), m.end()) == 3);
     assert(*m.begin() == V(1, 1));
-    assert(*next(m.begin()) == V(2, 1));
-    assert(*next(m.begin(), 2) == V(3, 1));
+    assert(*std::next(m.begin()) == V(2, 1));
+    assert(*std::next(m.begin(), 2) == V(3, 1));
     }
 #if TEST_STD_VER >= 11
     {
@@ -60,14 +61,14 @@ int main(int, char**)
         V(3, 1.5),
         V(3, 2),
     };
-    typedef test_compare<std::less<int> > C;
+    typedef test_less<int> C;
     std::map<int, double, C, min_allocator<std::pair<const int, double>>> m(ar, ar+sizeof(ar)/sizeof(ar[0]), C(5));
     assert(m.key_comp() == C(5));
     assert(m.size() == 3);
-    assert(distance(m.begin(), m.end()) == 3);
+    assert(std::distance(m.begin(), m.end()) == 3);
     assert(*m.begin() == V(1, 1));
-    assert(*next(m.begin()) == V(2, 1));
-    assert(*next(m.begin(), 2) == V(3, 1));
+    assert(*std::next(m.begin()) == V(2, 1));
+    assert(*std::next(m.begin(), 2) == V(3, 1));
     }
 #endif
 

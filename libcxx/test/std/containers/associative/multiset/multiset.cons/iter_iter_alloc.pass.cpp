@@ -3,94 +3,42 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: c++03
 
 // <set>
 
 // class multiset
 
-// template <class InputIterator>
-//     multiset(InputIterator first, InputIterator last,
-//         const value_compare& comp, const allocator_type& a);
+// multiset(initializer_list<value_type> il, const key_compare& comp, const allocator_type& a);
 
 #include <set>
 #include <cassert>
-
 #include "test_macros.h"
-#include "test_iterators.h"
 #include "../../../test_compare.h"
 #include "test_allocator.h"
 
 int main(int, char**)
 {
-    {
-    typedef int V;
-    V ar[] =
-    {
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3
-    };
-    typedef test_compare<std::less<V> > C;
-    typedef test_allocator<V> A;
-    std::multiset<V, C, A> m(input_iterator<const V*>(ar),
-                        input_iterator<const V*>(ar+sizeof(ar)/sizeof(ar[0])),
-                        C(5), A(7));
-    assert(m.value_comp() == C(5));
-    assert(m.get_allocator() == A(7));
-    assert(m.size() == 9);
-    assert(distance(m.begin(), m.end()) == 9);
-    assert(*next(m.begin(), 0) == 1);
-    assert(*next(m.begin(), 1) == 1);
-    assert(*next(m.begin(), 2) == 1);
-    assert(*next(m.begin(), 3) == 2);
-    assert(*next(m.begin(), 4) == 2);
-    assert(*next(m.begin(), 5) == 2);
-    assert(*next(m.begin(), 6) == 3);
-    assert(*next(m.begin(), 7) == 3);
-    assert(*next(m.begin(), 8) == 3);
-    }
-#if TEST_STD_VER > 11
-    {
-    typedef int V;
-    V ar[] =
-    {
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3
-    };
-    typedef test_allocator<V> A;
-    typedef test_compare<std::less<int> > C;
-    A a;
-    std::multiset<V, C, A> m(ar, ar+sizeof(ar)/sizeof(ar[0]), a);
-
-    assert(m.size() == 9);
-    assert(distance(m.begin(), m.end()) == 9);
-    assert(*next(m.begin(), 0) == 1);
-    assert(*next(m.begin(), 1) == 1);
-    assert(*next(m.begin(), 2) == 1);
-    assert(*next(m.begin(), 3) == 2);
-    assert(*next(m.begin(), 4) == 2);
-    assert(*next(m.begin(), 5) == 2);
-    assert(*next(m.begin(), 6) == 3);
-    assert(*next(m.begin(), 7) == 3);
-    assert(*next(m.begin(), 8) == 3);
-    assert(m.get_allocator() == a);
-    }
-#endif
+    typedef test_less<int> Cmp;
+    typedef test_allocator<int> A;
+    typedef std::multiset<int, Cmp, A> C;
+    typedef C::value_type V;
+    C m({1, 2, 3, 4, 5, 6}, Cmp(10), A(4));
+    assert(m.size() == 6);
+    assert(std::distance(m.begin(), m.end()) == 6);
+    C::const_iterator i = m.cbegin();
+    assert(*i == V(1));
+    assert(*++i == V(2));
+    assert(*++i == V(3));
+    assert(*++i == V(4));
+    assert(*++i == V(5));
+    assert(*++i == V(6));
+    assert(m.key_comp() == Cmp(10));
+    assert(m.get_allocator() == A(4));
 
   return 0;
 }

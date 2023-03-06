@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
+// UNSUPPORTED: c++03
 
 // <set>
 
@@ -27,7 +28,7 @@ int main(int, char**)
 {
     {
         typedef MoveOnly V;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef test_allocator<V> A;
         typedef std::set<MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -66,7 +67,7 @@ int main(int, char**)
     }
     {
         typedef MoveOnly V;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef test_allocator<V> A;
         typedef std::set<MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -101,11 +102,11 @@ int main(int, char**)
         assert(m3 == m2);
         assert(m3.get_allocator() == A(5));
         assert(m3.key_comp() == C(5));
-        assert(m1.empty());
+        LIBCPP_ASSERT(m1.empty());
     }
     {
         typedef MoveOnly V;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef other_allocator<V> A;
         typedef std::set<MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -144,7 +145,7 @@ int main(int, char**)
     }
     {
         typedef MoveOnly V;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef min_allocator<V> A;
         typedef std::set<MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;

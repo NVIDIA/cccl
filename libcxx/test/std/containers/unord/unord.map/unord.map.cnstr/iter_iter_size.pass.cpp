@@ -13,8 +13,7 @@
 // class unordered_map
 
 // template <class InputIterator>
-//     unordered_map(InputIterator first, InputIterator last, size_type n,
-//                   const hasher& hf);
+//     unordered_map(InputIterator first, InputIterator last, size_type n);
 
 #include <unordered_map>
 #include <string>
@@ -35,8 +34,8 @@ int main(int, char**)
 {
     {
         typedef std::unordered_map<int, std::string,
-                                   test_hash<std::hash<int> >,
-                                   test_compare<std::equal_to<int> >,
+                                   test_hash<int>,
+                                   test_equal_to<int>,
                                    test_allocator<std::pair<const int, std::string> >
                                    > C;
         typedef std::pair<int, std::string> P;
@@ -50,17 +49,16 @@ int main(int, char**)
             P(2, "four"),
         };
         C c(input_iterator<P*>(a), input_iterator<P*>(a + sizeof(a)/sizeof(a[0])),
-            7,
-            test_hash<std::hash<int> >(8)
+            10
            );
-        LIBCPP_ASSERT(c.bucket_count() == 7);
+        LIBCPP_ASSERT(c.bucket_count() == 11);
         assert(c.size() == 4);
         assert(c.at(1) == "one");
         assert(c.at(2) == "two");
         assert(c.at(3) == "three");
         assert(c.at(4) == "four");
-        assert(c.hash_function() == test_hash<std::hash<int> >(8));
-        assert(c.key_eq() == test_compare<std::equal_to<int> >());
+        assert(c.hash_function() == test_hash<int>());
+        assert(c.key_eq() == test_equal_to<int>());
         assert(c.get_allocator() ==
                (test_allocator<std::pair<const int, std::string> >()));
         assert(!c.empty());
@@ -72,8 +70,8 @@ int main(int, char**)
 #if TEST_STD_VER >= 11
     {
         typedef std::unordered_map<int, std::string,
-                                   test_hash<std::hash<int> >,
-                                   test_compare<std::equal_to<int> >,
+                                   test_hash<int>,
+                                   test_equal_to<int>,
                                    min_allocator<std::pair<const int, std::string> >
                                    > C;
         typedef std::pair<int, std::string> P;
@@ -87,17 +85,16 @@ int main(int, char**)
             P(2, "four"),
         };
         C c(input_iterator<P*>(a), input_iterator<P*>(a + sizeof(a)/sizeof(a[0])),
-            7,
-            test_hash<std::hash<int> >(8)
+            10
            );
-        LIBCPP_ASSERT(c.bucket_count() == 7);
+        LIBCPP_ASSERT(c.bucket_count() == 11);
         assert(c.size() == 4);
         assert(c.at(1) == "one");
         assert(c.at(2) == "two");
         assert(c.at(3) == "three");
         assert(c.at(4) == "four");
-        assert(c.hash_function() == test_hash<std::hash<int> >(8));
-        assert(c.key_eq() == test_compare<std::equal_to<int> >());
+        assert(c.hash_function() == test_hash<int>());
+        assert(c.key_eq() == test_equal_to<int>());
         assert(c.get_allocator() ==
                (min_allocator<std::pair<const int, std::string> >()));
         assert(!c.empty());

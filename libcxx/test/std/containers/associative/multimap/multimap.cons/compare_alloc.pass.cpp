@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,7 +24,7 @@
 int main(int, char**)
 {
     {
-    typedef test_compare<std::less<int> > C;
+    typedef test_less<int> C;
     typedef test_allocator<std::pair<const int, double> > A;
     std::multimap<int, double, C, A> m(C(4), A(5));
     assert(m.empty());
@@ -33,7 +34,7 @@ int main(int, char**)
     }
 #if TEST_STD_VER >= 11
     {
-    typedef test_compare<std::less<int> > C;
+    typedef test_less<int> C;
     typedef min_allocator<std::pair<const int, double> > A;
     std::multimap<int, double, C, A> m(C(4), A());
     assert(m.empty());
@@ -42,7 +43,7 @@ int main(int, char**)
     assert(m.get_allocator() == A());
     }
     {
-    typedef test_compare<std::less<int> > C;
+    typedef test_less<int> C;
     typedef explicit_allocator<std::pair<const int, double> > A;
     std::multimap<int, double, C, A> m(C(4), A{});
     assert(m.empty());

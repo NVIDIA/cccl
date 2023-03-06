@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
+// UNSUPPORTED: c++03
 
 // <map>
 
@@ -16,6 +16,7 @@
 
 #include <map>
 #include <cassert>
+#include <iterator>
 
 #include "test_macros.h"
 #include "MoveOnly.h"
@@ -29,7 +30,7 @@ int main(int, char**)
     {
         typedef std::pair<MoveOnly, MoveOnly> V;
         typedef std::pair<const MoveOnly, MoveOnly> VC;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef test_allocator<VC> A;
         typedef std::map<MoveOnly, MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -68,7 +69,7 @@ int main(int, char**)
     {
         typedef std::pair<MoveOnly, MoveOnly> V;
         typedef std::pair<const MoveOnly, MoveOnly> VC;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef test_allocator<VC> A;
         typedef std::map<MoveOnly, MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -107,7 +108,7 @@ int main(int, char**)
     {
         typedef std::pair<MoveOnly, MoveOnly> V;
         typedef std::pair<const MoveOnly, MoveOnly> VC;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef other_allocator<VC> A;
         typedef std::map<MoveOnly, MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -196,7 +197,7 @@ int main(int, char**)
     {
         typedef std::pair<MoveOnly, MoveOnly> V;
         typedef std::pair<const MoveOnly, MoveOnly> VC;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef min_allocator<VC> A;
         typedef std::map<MoveOnly, MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;
@@ -235,7 +236,7 @@ int main(int, char**)
     {
         typedef std::pair<MoveOnly, MoveOnly> V;
         typedef std::pair<const MoveOnly, MoveOnly> VC;
-        typedef test_compare<std::less<MoveOnly> > C;
+        typedef test_less<MoveOnly> C;
         typedef explicit_allocator<VC> A;
         typedef std::map<MoveOnly, MoveOnly, C, A> M;
         typedef std::move_iterator<V*> I;

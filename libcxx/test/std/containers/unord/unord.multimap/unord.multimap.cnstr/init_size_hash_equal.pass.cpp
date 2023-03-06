@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
+// UNSUPPORTED: c++03
 
 // <unordered_map>
 
@@ -36,8 +37,8 @@ int main(int, char**)
 {
     {
         typedef std::unordered_multimap<int, std::string,
-                                   test_hash<std::hash<int> >,
-                                   test_compare<std::equal_to<int> >,
+                                   test_hash<int>,
+                                   test_equal_to<int>,
                                    test_allocator<std::pair<const int, std::string> >
                                    > C;
         typedef std::pair<int, std::string> P;
@@ -50,8 +51,8 @@ int main(int, char**)
                 P(2, "four"),
             },
             7,
-            test_hash<std::hash<int> >(8),
-            test_compare<std::equal_to<int> >(9)
+            test_hash<int>(8),
+            test_equal_to<int>(9)
            );
         LIBCPP_ASSERT(c.bucket_count() == 7);
         assert(c.size() == 6);
@@ -82,14 +83,14 @@ int main(int, char**)
         assert(static_cast<std::size_t>(std::distance(c.cbegin(), c.cend())) == c.size());
         assert(std::fabs(c.load_factor() - (float)c.size()/c.bucket_count()) < FLT_EPSILON);
         assert(c.max_load_factor() == 1);
-        assert(c.hash_function() == test_hash<std::hash<int> >(8));
-        assert(c.key_eq() == test_compare<std::equal_to<int> >(9));
+        assert(c.hash_function() == test_hash<int>(8));
+        assert(c.key_eq() == test_equal_to<int>(9));
         assert((c.get_allocator() == test_allocator<std::pair<const int, std::string> >()));
     }
     {
         typedef std::unordered_multimap<int, std::string,
-                                   test_hash<std::hash<int> >,
-                                   test_compare<std::equal_to<int> >,
+                                   test_hash<int>,
+                                   test_equal_to<int>,
                                    min_allocator<std::pair<const int, std::string> >
                                    > C;
         typedef std::pair<int, std::string> P;
@@ -102,8 +103,8 @@ int main(int, char**)
                 P(2, "four"),
             },
             7,
-            test_hash<std::hash<int> >(8),
-            test_compare<std::equal_to<int> >(9)
+            test_hash<int>(8),
+            test_equal_to<int>(9)
            );
         LIBCPP_ASSERT(c.bucket_count() == 7);
         assert(c.size() == 6);
@@ -134,8 +135,8 @@ int main(int, char**)
         assert(static_cast<std::size_t>(std::distance(c.cbegin(), c.cend())) == c.size());
         assert(std::fabs(c.load_factor() - (float)c.size()/c.bucket_count()) < FLT_EPSILON);
         assert(c.max_load_factor() == 1);
-        assert(c.hash_function() == test_hash<std::hash<int> >(8));
-        assert(c.key_eq() == test_compare<std::equal_to<int> >(9));
+        assert(c.hash_function() == test_hash<int>(8));
+        assert(c.key_eq() == test_equal_to<int>(9));
         assert((c.get_allocator() == min_allocator<std::pair<const int, std::string> >()));
     }
 
