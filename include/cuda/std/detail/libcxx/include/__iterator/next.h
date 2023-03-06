@@ -13,9 +13,9 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cassert>
 #endif // __cuda_std__
 
+#include "../__debug"
 #include "../__iterator/advance.h"
 #include "../__iterator/iterator_traits.h"
 #include "../__type_traits/enable_if.h"

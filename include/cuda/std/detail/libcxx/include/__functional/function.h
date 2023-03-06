@@ -21,6 +21,7 @@
 #include <typeinfo>
 #endif // __cuda_std__
 
+#include "../__debug"
 #include "../__functional_base"
 #include "../__functional/binary_function.h"
 #include "../__functional/invoke.h"
@@ -40,7 +41,6 @@
 #include "../__utility/move.h"
 #include "../__utility/piecewise_construct.h"
 #include "../__utility/swap.h"
-#include "../cassert"
 #include "../tuple"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
