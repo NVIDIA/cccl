@@ -172,6 +172,7 @@ template <class... Types>
 #include "__utility/move.h"
 #include "__utility/piecewise_construct.h"
 #include "__utility/swap.h"
+#include "climits"
 
 // standard-mandated includes
 

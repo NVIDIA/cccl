@@ -245,9 +245,11 @@ template<class T, class charT, class traits>
 #include <stdexcept>
 #include <cmath>
 #include <sstream>
-#include <version>
 #include <__pragma_push>
 #endif //__cuda_std__
+
+#include "climits"
+#include "version"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

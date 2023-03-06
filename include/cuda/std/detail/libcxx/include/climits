@@ -39,6 +39,11 @@ Macros:
 
 #ifndef __cuda_std__
 #include <__config>
+#else
+#include "__cuda/climits_prelude.h"
+#endif //__cuda_std__
+
+#ifndef __cuda_std__
 #include <limits.h>
 #include <__pragma_push>
 #endif //__cuda_std__
@@ -55,8 +60,16 @@ Macros:
 #include "support/ibm/limits.h"
 #endif // __IBMCPP__
 
+// ICC defines __CHAR_BIT__ by default
+// accept that, but assert it is what we expect
+#ifdef __CHAR_BIT__
+    static_assert(__CHAR_BIT__ == 8, "");
+#else
+    #define __CHAR_BIT__ 8
+#endif
+
 #ifndef __cuda_std__
 #include <__pragma_pop>
-#endif
+#endif //__cuda_std__
 
 #endif  // _LIBCUDACXX_CLIMITS

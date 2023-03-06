@@ -11,7 +11,6 @@
 #define _CUDA_RATIO
 
 #include "cstdint"
-#include "climits"
 #include "type_traits"
 
 #include "detail/__config"

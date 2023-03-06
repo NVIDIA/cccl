@@ -11,7 +11,7 @@
 #define _CUDA_LIMITS
 
 #ifdef __CUDACC_RTC__
-    #include "climits"
+#include "climits"
 #endif
 #include "type_traits"
 #include "version"

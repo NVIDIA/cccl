@@ -77,8 +77,6 @@
     #define UINTMAX_C(X) ((uintmax_t)(X))
 #endif //__CUDACC_RTC__
 
-#include "version"
-#include "climits"
 #include "detail/__config"
 
 #include "detail/__pragma_push"

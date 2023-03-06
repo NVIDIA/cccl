@@ -1,4 +1,5 @@
 set(files
+  __cuda/climits_prelude.h
   __bit_reference
   __bsd_locale_defaults.h
   __bsd_locale_fallbacks.h
