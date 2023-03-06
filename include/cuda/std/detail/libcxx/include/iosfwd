@@ -94,8 +94,10 @@ typedef fpos<char_traits<wchar_t>::state_type> wstreampos;
 #ifndef __cuda_std__
 #include <__config>
 #include <wchar.h>  // for mbstate_t
-#include <__pragma_push>
 #endif //__cuda_std__
+
+#include "__fwd/string.h"
+#include "version"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -104,17 +106,6 @@ typedef fpos<char_traits<wchar_t>::state_type> wstreampos;
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 class _LIBCUDACXX_TYPE_VIS ios_base;
-
-template<class _CharT>  struct _LIBCUDACXX_TEMPLATE_VIS char_traits;
-template<> struct char_traits<char>;
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
-template<> struct char_traits<char8_t>;
-#endif
-template<> struct char_traits<char16_t>;
-template<> struct char_traits<char32_t>;
-template<> struct char_traits<wchar_t>;
-
-template<class _Tp>     class _LIBCUDACXX_TEMPLATE_VIS allocator;
 
 template <class _CharT, class _Traits = char_traits<_CharT> >
     class _LIBCUDACXX_TEMPLATE_VIS basic_ios;
@@ -208,22 +199,10 @@ typedef long int streamoff;         // for char_traits in <string>
 typedef long long streamoff;        // for char_traits in <string>
 #endif
 
-template <class _CharT,             // for <stdexcept>
-          class _Traits = char_traits<_CharT>,
-          class _Allocator = allocator<_CharT> >
-    class _LIBCUDACXX_TEMPLATE_VIS basic_string;
-typedef basic_string<char, char_traits<char>, allocator<char> > string;
-typedef basic_string<wchar_t, char_traits<wchar_t>, allocator<wchar_t> > wstring;
-
-
 // Include other forward declarations here
 template <class _Tp, class _Alloc = allocator<_Tp> >
 class _LIBCUDACXX_TEMPLATE_VIS vector;
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#ifndef __cuda_std__
-#include <__pragma_pop>
-#endif //__cuda_std__
 
 #endif  // _LIBCUDACXX_IOSFWD

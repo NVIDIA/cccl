@@ -521,6 +521,8 @@ basic_string<char32_t> operator "" s( const char32_t *str, size_t len ); // C++1
 
 #include <__debug>
 
+#include "__fwd/string.h"
+
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
 #endif

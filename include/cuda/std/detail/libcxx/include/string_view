@@ -181,6 +181,8 @@ namespace std {
 #include <version>
 #include <__debug>
 
+#include "__fwd/string_view.h"
+
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
 #endif
@@ -188,10 +190,9 @@ namespace std {
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
 
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template<class _CharT, class _Traits = char_traits<_CharT> >
+template<class _CharT, class _Traits>
 class _LIBCUDACXX_TEMPLATE_VIS basic_string_view {
 public:
     // types
