@@ -893,25 +893,6 @@ __to_raw_pointer(const _Pointer& __p, _None...) _NOEXCEPT
 }
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
-template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
-_Tp*
-to_address(_Tp* __p) _NOEXCEPT
-{
-    static_assert(!is_function_v<_Tp>, "_Tp is a function type");
-    return __p;
-}
-
-template <class _Pointer>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-auto
-to_address(const _Pointer& __p) _NOEXCEPT
-{
-    return _CUDA_VSTD::__to_raw_pointer(__p);
-}
-#endif
-
 template <class _Tp, class = void>
 struct __has_size_type : false_type {};
 
