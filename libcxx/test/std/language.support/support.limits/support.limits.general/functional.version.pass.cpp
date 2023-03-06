@@ -104,8 +104,11 @@
 
 #elif TEST_STD_VER == 17
 
-# ifdef __cpp_lib_bind_front
-#   error "__cpp_lib_bind_front should not be defined before c++2a"
+# ifndef __cpp_lib_bind_front
+#   error "__cpp_lib_bind_front should be defined in c++17"
+# endif
+# if __cpp_lib_bind_front != 201907L
+#   error "__cpp_lib_bind_front should have the value 201907L in c++17"
 # endif
 
 # if !defined(_LIBCUDACXX_VERSION)
@@ -159,17 +162,11 @@
 
 #elif TEST_STD_VER > 17
 
-# if !defined(_LIBCUDACXX_VERSION)
-#   ifndef __cpp_lib_bind_front
-#     error "__cpp_lib_bind_front should be defined in c++2a"
-#   endif
-#   if __cpp_lib_bind_front != 201811L
-#     error "__cpp_lib_bind_front should have the value 201811L in c++2a"
-#   endif
-# else // _LIBCUDACXX_VERSION
-#   ifdef __cpp_lib_bind_front
-#     error "__cpp_lib_bind_front should not be defined because it is unimplemented in libc++!"
-#   endif
+# ifndef __cpp_lib_bind_front
+#   error "__cpp_lib_bind_front should be defined in c++2a"
+# endif
+# if __cpp_lib_bind_front != 201907L
+#   error "__cpp_lib_bind_front should have the value 201907L in c++2a"
 # endif
 
 # if !defined(_LIBCUDACXX_VERSION)

@@ -32,7 +32,7 @@
     __cpp_lib_chrono_udls                          201304L [C++14]
     __cpp_lib_clamp                                201603L [C++17]
     __cpp_lib_complex_udls                         201309L [C++14]
-    __cpp_lib_concepts                             201806L [C++2a]
+    __cpp_lib_concepts                             202002L [C++14]
     __cpp_lib_constexpr_misc                       201811L [C++2a]
     __cpp_lib_constexpr_swap_algorithms            201806L [C++2a]
     __cpp_lib_destroying_delete                    201806L [C++2a]
@@ -517,8 +517,11 @@
 #   error "__cpp_lib_complex_udls should have the value 201309L in c++14"
 # endif
 
-# ifdef __cpp_lib_concepts
-#   error "__cpp_lib_concepts should not be defined before c++2a"
+# ifndef __cpp_lib_concepts
+#   error "__cpp_lib_concepts should be defined in c++14"
+# endif
+# if __cpp_lib_concepts != 202002L
+#   error "__cpp_lib_concepts should have the value 202002L in c++14"
 # endif
 
 # ifdef __cpp_lib_constexpr_misc
@@ -904,8 +907,11 @@
 #   error "__cpp_lib_atomic_ref should not be defined before c++2a"
 # endif
 
-# ifdef __cpp_lib_bind_front
-#   error "__cpp_lib_bind_front should not be defined before c++2a"
+# ifndef __cpp_lib_bind_front
+#   error "__cpp_lib_bind_front should be defined in c++17"
+# endif
+# if __cpp_lib_bind_front != 201907L
+#   error "__cpp_lib_bind_front should have the value 201907L in c++17"
 # endif
 
 # ifdef __cpp_lib_bit_cast
@@ -971,8 +977,11 @@
 #   error "__cpp_lib_complex_udls should have the value 201309L in c++17"
 # endif
 
-# ifdef __cpp_lib_concepts
-#   error "__cpp_lib_concepts should not be defined before c++2a"
+# ifndef __cpp_lib_concepts
+#   error "__cpp_lib_concepts should be defined in c++17"
+# endif
+# if __cpp_lib_concepts != 202002L
+#   error "__cpp_lib_concepts should have the value 202002L in c++17"
 # endif
 
 # ifdef __cpp_lib_constexpr_misc
@@ -1529,17 +1538,11 @@
 #   endif
 # endif
 
-# if !defined(_LIBCUDACXX_VERSION)
-#   ifndef __cpp_lib_bind_front
-#     error "__cpp_lib_bind_front should be defined in c++2a"
-#   endif
-#   if __cpp_lib_bind_front != 201811L
-#     error "__cpp_lib_bind_front should have the value 201811L in c++2a"
-#   endif
-# else // _LIBCUDACXX_VERSION
-#   ifdef __cpp_lib_bind_front
-#     error "__cpp_lib_bind_front should not be defined because it is unimplemented in libc++!"
-#   endif
+# ifndef __cpp_lib_bind_front
+#   error "__cpp_lib_bind_front should be defined in c++2a"
+# endif
+# if __cpp_lib_bind_front != 201907L
+#   error "__cpp_lib_bind_front should have the value 201907L in c++2a"
 # endif
 
 # if !defined(_LIBCUDACXX_VERSION)
@@ -1623,17 +1626,11 @@
 #   error "__cpp_lib_complex_udls should have the value 201309L in c++2a"
 # endif
 
-# if !defined(_LIBCUDACXX_VERSION)
-#   ifndef __cpp_lib_concepts
-#     error "__cpp_lib_concepts should be defined in c++2a"
-#   endif
-#   if __cpp_lib_concepts != 201806L
-#     error "__cpp_lib_concepts should have the value 201806L in c++2a"
-#   endif
-# else // _LIBCUDACXX_VERSION
-#   ifdef __cpp_lib_concepts
-#     error "__cpp_lib_concepts should not be defined because it is unimplemented in libc++!"
-#   endif
+# ifndef __cpp_lib_concepts
+#   error "__cpp_lib_concepts should be defined in c++2a"
+# endif
+# if __cpp_lib_concepts != 202002L
+#   error "__cpp_lib_concepts should have the value 202002L in c++2a"
 # endif
 
 # if !defined(_LIBCUDACXX_VERSION)

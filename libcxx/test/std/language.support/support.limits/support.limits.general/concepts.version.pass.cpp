@@ -14,8 +14,7 @@
 
 */
 
-// XFAIL
-// #include <concepts>
+#include <concepts>
 #include <cassert>
 #include "test_macros.h"
 
@@ -23,13 +22,19 @@ int main(int, char**)
 {
 //  ensure that the macros that are supposed to be defined in <concepts> are defined.
 
-/*
-#if !defined(__cpp_lib_fooby)
-# error "__cpp_lib_fooby is not defined"
-#elif __cpp_lib_fooby < 201606L
-# error "__cpp_lib_fooby has an invalid value"
+#if TEST_STD_VER < 14
+
+# ifdef __cpp_lib_concepts
+#   error "__cpp_lib_concepts should not be defined before c++14"
+# endif
+
+#else
+#if !defined(__cpp_lib_concepts)
+# error "__cpp_lib_concepts is not defined"
+#elif __cpp_lib_concepts < 202002L
+# error "__cpp_lib_concepts has an invalid value"
 #endif
-*/
+#endif // TEST_STD_VER < 14
 
   return 0;
 }
