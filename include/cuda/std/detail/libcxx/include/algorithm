@@ -642,10 +642,10 @@ template <class BidirectionalIterator, class Compare>
 #include <memory>
 #include <functional>
 #include <iterator>
-#include <bit>
 #include <__debug>
 #endif // __cuda_std__
 
+#include "bit"
 #include "cstddef"
 #include "type_traits"
 #include "version"
