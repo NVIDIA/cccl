@@ -2,6 +2,7 @@ set(files
   __algorithm/swap_ranges.h
   __cuda/atomic_prelude.h
   __cuda/atomic.h
+  __cuda/barrier.h
   __cuda/chrono.h
   __cuda/climits_prelude.h
   __cuda/cstddef_prelude.h
