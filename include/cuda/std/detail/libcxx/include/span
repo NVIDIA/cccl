@@ -264,13 +264,13 @@ public:
                 __is_span_compatible_container<_Container, _Tp>::value, nullptr_t> = nullptr>
     _LIBCUDACXX_INLINE_VISIBILITY
         constexpr span(      _Container& __c) noexcept(noexcept(_CUDA_VSTD::data(__c)))
-        : __data{_CUDA_VSTD::data(__c)} { _LIBCUDACXX_ASSERT(_Extent == _CUDA::VSTD::size(__c), "size mismatch in span's constructor (other span)"); }
+        : __data{_CUDA_VSTD::data(__c)} { _LIBCUDACXX_ASSERT(_Extent == _CUDA_VSTD::size(__c), "size mismatch in span's constructor (other span)"); }
 
     template <class _Container, enable_if_t<
                 __is_span_compatible_container<_Container, _Tp>::value, nullptr_t> = nullptr>
     _LIBCUDACXX_INLINE_VISIBILITY
         constexpr span(const _Container& __c) noexcept(noexcept(_CUDA_VSTD::data(__c)))
-        : __data{_CUDA_VSTD::data(__c)} { _LIBCUDACXX_ASSERT(_Extent == _CUDA::VSTD::size(__c), "size mismatch in span's constructor (other span)"); }
+        : __data{_CUDA_VSTD::data(__c)} { _LIBCUDACXX_ASSERT(_Extent == _CUDA_VSTD::size(__c), "size mismatch in span's constructor (other span)"); }
 
 //  ~span() noexcept = default;
 

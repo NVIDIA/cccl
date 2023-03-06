@@ -6,23 +6,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-//UNSUPPORTED: c++11
+//UNSUPPORTED: c++11, c++14
 
 #include <mdspan>
 #include <array>
 #include <cassert>
 
-#ifdef __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
-constexpr auto dyn = std::dynamic_extent;
-#endif
-
 int main(int, char**)
 {
 #ifdef __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
     {
-        typedef int    data_t ;
-        typedef size_t index_t;
-
         std::layout_stride::mapping m{std::dextents<size_t,2>{16, 32}, std::array{1, 128}};
 
         assert( m.is_exhaustive() == false);

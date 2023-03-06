@@ -61,7 +61,7 @@ class layout_foo::mapping {
     using layout_type = layout_foo;
   private:
 
-    static_assert(std::detail::__is_extents_v<extents_type>,
+    static_assert(std::__detail::__is_extents_v<extents_type>,
                   "layout_foo::mapping must be instantiated with a specialization of std::extents.");
     static_assert(extents_type::rank() < 3, "layout_foo only supports 0D, 1D and 2D");
 
@@ -148,7 +148,7 @@ class layout_foo::mapping {
        #endif
     }
 
-    __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr_DEFAULTED mapping& operator=(mapping const&) noexcept = default;
+    __MDSPAN_INLINE_FUNCTION_DEFAULTED mapping& operator=(mapping const&) noexcept = default;
 
     __MDSPAN_INLINE_FUNCTION
     constexpr const extents_type& extents() const noexcept {

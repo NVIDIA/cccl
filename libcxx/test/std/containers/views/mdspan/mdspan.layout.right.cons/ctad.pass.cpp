@@ -6,10 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-//UNSUPPORTED: c++11
-
 // No CTAD in C++14 or earlier
-//UNSUPPORTED: c++14
+//UNSUPPORTED: c++11, c++14
 
 #include <mdspan>
 #include <cassert>
@@ -19,9 +17,6 @@ int main(int, char**)
 {
 #ifdef __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
     {
-        typedef int    data_t ;
-        typedef size_t index_t;
-
         std::layout_right::mapping m{std::extents{16, 32}};
 
         static_assert( m.is_exhaustive() == true, "" );
