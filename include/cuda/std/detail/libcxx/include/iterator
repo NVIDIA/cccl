@@ -677,10 +677,6 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 
 #ifndef __cuda_std__
 #include <__config>
-#include <iosfwd> // for forward declarations of vector and string.
-#ifdef __APPLE__
-#include <Availability.h>
-#endif
 #endif //__cuda_std__
 
 #include "__iterator/access.h"
@@ -710,6 +706,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "__type_traits/is_pointer.h"
 #include "cstddef"
 #include "initializer_list"
+#include "iosfwd" // for forward declarations of vector and string.
 #include "type_traits"
 #include "version"
 

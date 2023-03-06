@@ -16,6 +16,7 @@
 #endif // __cuda_std__
 
 #include "../__iterator/iterator.h"
+#include "../__iterator/iterator_traits.h"
 #include "../__memory/addressof.h"
 #include "../__utility/move.h"
 #include "../cstddef"

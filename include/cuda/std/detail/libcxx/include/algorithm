@@ -639,11 +639,24 @@ template <class BidirectionalIterator, class Compare>
 #include <cstring>
 #include <memory>
 #include <functional>
-#include <iterator>
 #include <__debug>
 #endif // __cuda_std__
 
 #include "__algorithm/swap_ranges.h"
+#include "__iterator/distance.h"
+#include "__iterator/iterator_traits.h"
+#include "__iterator/move_iterator.h"
+#include "__iterator/next.h"
+#include "__iterator/prev.h"
+#include "__iterator/reverse_iterator.h"
+#include "__iterator/wrap_iter.h"
+#include "__type_traits/common_type.h"
+#include "__type_traits/enable_if.h"
+#include "__type_traits/is_integral.h"
+#include "__type_traits/is_same.h"
+#include "__type_traits/is_trivially_copy_assignable.h"
+#include "__type_traits/make_unsigned.h"
+#include "__type_traits/remove_const.h"
 #include "bit"
 #include "cstddef"
 #include "initializer_list"

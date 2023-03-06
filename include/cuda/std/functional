@@ -10,8 +10,6 @@
 #ifndef _CUDA_FUNCTIONAL
 #define _CUDA_FUNCTIONAL
 
-#include "iterator"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

@@ -13,13 +13,13 @@
 #ifndef __cuda_std__
 #include <__config>
 #include <chrono>
-#include <iosfwd>
 #include <errno.h>
 #include <__pragma_push>
 #endif
 
 #include "__functional/hash.h"
 #include "climits"
+#include "iosfwd"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
