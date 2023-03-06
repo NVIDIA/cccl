@@ -9,17 +9,10 @@
 #ifndef _CUDA_ARRAY
 #define _CUDA_ARRAY
 
-#ifndef __CUDACC_RTC__
-# include <cstdlib>
-#endif
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"
 
-#include "detail/libcxx/include/algorithm"
-#include "detail/libcxx/include/cstdlib"
-#include "detail/libcxx/include/stdexcept"
 #include "detail/libcxx/include/array"
 
 #include "detail/__pragma_pop"

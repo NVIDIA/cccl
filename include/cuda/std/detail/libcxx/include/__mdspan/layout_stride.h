@@ -47,7 +47,6 @@
 #ifndef __cuda_std__
 #include <__config>
 #include <algorithm>
-#include <array>
 #if __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20
 #include<concepts>
 #endif
@@ -69,6 +68,7 @@
 #include "../__type_traits/remove_const.h"
 #include "../__utility/integer_sequence.h"
 #include "../__utility/move.h"
+#include "../array"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

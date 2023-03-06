@@ -47,7 +47,6 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <array>
 #include <span>
 #endif // __cuda_std__
 
@@ -68,6 +67,7 @@
 #include "../__utility/as_const.h"
 #include "../__utility/integer_sequence.h"
 #include "../__utility/move.h"
+#include "../array"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

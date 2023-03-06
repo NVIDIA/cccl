@@ -46,7 +46,6 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <array>
 #include <span>
 #endif // __cuda_std__
 
@@ -62,6 +61,7 @@
 #include "../__type_traits/is_nothrow_constructible.h"
 #include "../__type_traits/make_unsigned.h"
 #include "../__utility/integer_sequence.h"
+#include "../array"
 #include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

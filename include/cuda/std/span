@@ -11,8 +11,6 @@
 #ifndef _CUDA_SPAN
 #define _CUDA_SPAN
 
-#include "array"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

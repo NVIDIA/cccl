@@ -46,7 +46,6 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <array>
 #include <span>
 #endif // __cuda_std__
 
@@ -56,6 +55,7 @@
 #include "../__mdspan/standard_layout_static_array.h"
 #include "../__mdspan/type_list.h"
 #include "../__utility/integer_sequence.h"
+#include "../array"
 #include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
