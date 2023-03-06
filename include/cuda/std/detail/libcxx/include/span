@@ -132,8 +132,16 @@ template<class R>
 #include <__config>
 #endif // __cuda_std__
 
+#include "__fwd/array.h"
+#include "__fwd/span.h"
+#include "__fwd/string.h"
+#include "__iterator/data.h"
+#include "__iterator/distance.h"
+#include "__iterator/size.h"
+#include "__iterator/iterator_traits.h"
 #include "__iterator/reverse_iterator.h"
 #include "__iterator/wrap_iter.h"
+#include "__memory/pointer_traits.h"
 #include "__type_traits/enable_if.h"
 #include "__type_traits/integral_constant.h"
 #include "__type_traits/is_array.h"
@@ -155,10 +163,6 @@ template<class R>
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _LIBCUDACXX_STD_VER > 11
-
-_LIBCUDACXX_INLINE_VAR constexpr size_t dynamic_extent = numeric_limits<size_t>::max();
-template <typename _Tp, size_t _Extent = dynamic_extent> class span;
-
 
 template <class _Tp>
 struct __is_span_impl : public false_type {};

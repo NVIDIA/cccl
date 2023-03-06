@@ -63,6 +63,7 @@
 #include "array"
 #include "cstddef"
 #include "limits"
+#include "span"
 #include "version"
 
 #endif // _LIBCUDACXX_MDSPAN

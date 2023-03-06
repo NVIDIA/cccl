@@ -11,8 +11,6 @@
 #ifndef _CUDA_MDSPAN
 #define _CUDA_MDSPAN
 
-#include "span"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

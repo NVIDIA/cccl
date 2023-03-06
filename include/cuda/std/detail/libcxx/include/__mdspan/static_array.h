@@ -46,9 +46,9 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <span>
 #endif // __cuda_std__
 
+#include "../__fwd/span.h" // dynamic_extent
 #include "../__mdspan/dynamic_extent.h"
 #include "../__mdspan/macros.h"
 #include "../__mdspan/maybe_static_value.h"
