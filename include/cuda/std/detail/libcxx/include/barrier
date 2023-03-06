@@ -47,13 +47,13 @@ namespace std
 #include <__config>
 #include <__threading_support>
 #include <atomic>
-#include <cassert>
 #ifndef _LIBCUDACXX_HAS_NO_TREE_BARRIER
 #  include <thread>
 #  include <vector>
 #endif
 #endif // __cuda_std__
 
+#include "cassert"
 #include "cstddef"
 
 #ifndef __cuda_std__

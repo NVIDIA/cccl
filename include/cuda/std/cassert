@@ -10,11 +10,6 @@
 #ifndef _CUDA_CASSERT
 #define _CUDA_CASSERT
 
-#ifndef __CUDACC_RTC__
-
-#include <cassert>
-#include <assert.h>
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"
@@ -22,7 +17,5 @@
 #include "detail/libcxx/include/cassert"
 
 #include "detail/__pragma_pop"
-
-#endif //__CUDACC_RTC__
 
 #endif //_CUDA_CASSERT

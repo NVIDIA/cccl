@@ -132,7 +132,6 @@ namespace std {
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cassert>
 #endif // __cuda_std__
 
 #include "__concepts/__concept_macros.h"
@@ -160,6 +159,7 @@ namespace std {
 #include "__concepts/swappable.h"
 #include "__concepts/totally_ordered.h"
 
+#include "cassert"
 #include "version"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

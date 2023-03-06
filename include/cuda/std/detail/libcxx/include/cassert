@@ -21,5 +21,12 @@ Macros:
 #include <__pragma_push>
 #include <assert.h>
 #include <__pragma_pop>
-#endif //__cuda_std__
 
+#else
+
+#ifndef __CUDACC_RTC__
+#include <cassert>
+#include <assert.h>
+#endif //__CUDACC_RTC__
+
+#endif // __cuda_std__

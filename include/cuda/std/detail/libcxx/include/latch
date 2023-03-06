@@ -42,9 +42,13 @@ namespace std
 #include <__config>
 #include <__threading_support>
 #include <atomic>
-#include <cassert>
+#endif // __cuda_std__
+
+#include "cassert"
+
+#ifndef __cuda_std__
 #include <__pragma_push>
-#endif
+#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

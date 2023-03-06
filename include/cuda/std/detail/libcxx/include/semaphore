@@ -49,12 +49,15 @@ using binary_semaphore = counting_semaphore<1>;
 #include <__config>
 #include <__threading_support>
 #include <atomic>
-#include <cassert>
-#include <__pragma_push>
-#endif
+#endif // __cuda_std__
 
 #include "__type_traits/conditional.h"
+#include "cassert"
 #include "type_traits"
+
+#ifndef __cuda_std__
+#include <__pragma_push>
+#endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

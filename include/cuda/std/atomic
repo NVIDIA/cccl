@@ -42,8 +42,6 @@
 #define _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(__x) (__x <= 8)
 #endif
 
-#include "cassert"
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"

@@ -561,6 +561,7 @@ void atomic_signal_fence(memory_order m) noexcept;
 #include "__type_traits/is_trivially_copyable.h"
 #include "__type_traits/underlying_type.h"
 #include "__utility/forward.h"
+#include "cassert"
 #include "cstddef"
 #include "cstdint"
 #include "type_traits"
