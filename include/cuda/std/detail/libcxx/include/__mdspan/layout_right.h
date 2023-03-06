@@ -48,6 +48,7 @@
 #include <__config>
 #endif // __cuda_std__
 
+#include "../__debug"
 #include "../__mdspan/extents.h"
 #include "../__mdspan/layout_stride.h"
 #include "../__mdspan/macros.h"
@@ -176,7 +177,7 @@ class layout_right::mapping {
          if(__stride != static_cast<size_t>(__other.stride(__r-1)))
            __throw_runtime_error("Assigning layout_stride to layout_right with invalid strides.");
          #else
-         assert(__stride == static_cast<size_t>(__other.stride(__r-1)));
+         _LIBCUDACXX_ASSERT(__stride == static_cast<size_t>(__other.stride(__r-1)), "");
          #endif
          __stride *= __extents.extent(__r-1);
        }

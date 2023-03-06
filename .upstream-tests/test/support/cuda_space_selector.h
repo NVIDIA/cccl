@@ -7,6 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 
 #ifndef __CUDA_SPACE_SELECTOR_H

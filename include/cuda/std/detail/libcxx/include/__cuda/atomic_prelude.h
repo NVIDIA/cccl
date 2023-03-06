@@ -16,6 +16,7 @@
 #endif // __cuda_std__
 
 #ifndef __CUDACC_RTC__
+    #include "../cassert" // TRANSITION: Fix transitive includes
     #include <atomic>
     static_assert(ATOMIC_BOOL_LOCK_FREE == 2, "");
     static_assert(ATOMIC_CHAR_LOCK_FREE == 2, "");

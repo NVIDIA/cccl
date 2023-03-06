@@ -105,13 +105,13 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__debug>
 #else
 #ifndef __CUDACC_RTC__
 # include <cstdlib>
 #endif
 #endif // __cuda_std__
 
+#include "__debug"
 #include "__algorithm/swap_ranges.h"
 #include "__iterator/reverse_iterator.h"
 #include "__tuple/sfinae_helpers.h"
@@ -125,7 +125,6 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #include "__utility/move.h"
 #include "__utility/unreachable.h"
 #include "algorithm"
-#include "cassert"
 #include "cstdint"
 #include "cstdlib"
 #include "limits"

@@ -159,7 +159,7 @@ namespace std {
 #include "__concepts/swappable.h"
 #include "__concepts/totally_ordered.h"
 
-#include "cassert"
+#include "__debug"
 #include "version"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

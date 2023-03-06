@@ -20,6 +20,10 @@
 #  include <cstdio>
 #  include "cstddef"
 #endif
+#else
+#ifndef __CUDACC_RTC__
+#include <assert.h>
+#endif //__CUDACC_RTC__
 #endif //__cuda_std__
 
 #include "iosfwd"

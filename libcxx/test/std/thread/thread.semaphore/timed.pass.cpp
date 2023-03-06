@@ -14,6 +14,7 @@
 #include <semaphore>
 #include <thread>
 #include <chrono>
+#include <cassert>
 
 #include "test_macros.h"
 

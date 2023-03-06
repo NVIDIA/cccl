@@ -13,6 +13,7 @@
 
 #include <semaphore>
 #include <thread>
+#include <cassert>
 
 #include "test_macros.h"
 
