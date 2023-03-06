@@ -10,11 +10,6 @@
 #ifndef _CUDA_CFLOAT
 #define _CUDA_CFLOAT
 
-#ifndef __CUDACC_RTC__
-    #include <cfloat>
-    #include <float.h>
-#endif //__CUDACC_RTC__
-
 #include "detail/__config"
 
 #include "detail/__pragma_push"
