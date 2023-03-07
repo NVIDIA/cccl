@@ -2025,7 +2025,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #if defined(__CUDA_ARCH__)
 #  define _LIBCUDACXX_CPO_ACCESSIBILITY __device__
 #else
-#  define _LIBCUDACXX_CPO_ACCESSIBILITY inline
+#  define _LIBCUDACXX_CPO_ACCESSIBILITY _LIBCUDACXX_INLINE_VAR
 #endif
 
 #endif // __cplusplus
