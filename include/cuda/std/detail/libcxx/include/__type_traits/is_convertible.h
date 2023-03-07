@@ -53,16 +53,16 @@ template <class _Ty>
 struct is_convertible<volatile _Ty&, const volatile _Ty&> : true_type {};
 
 template <class _Ty>
-_INLINE_VAR constexpr bool is_convertible_v<_Ty&, volatile _Ty&> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v<_Ty&, volatile _Ty&> = true;
 
 template <class _Ty>
-_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, volatile _Ty&> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, volatile _Ty&> = true;
 
 template <class _Ty>
-_INLINE_VAR constexpr bool is_convertible_v<_Ty&, const volatile _Ty&> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v<_Ty&, const volatile _Ty&> = true;
 
 template <class _Ty>
-_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, const volatile _Ty&> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, const volatile _Ty&> = true;
 #endif // _LIBCUDACXX_COMPILER_MSVC
 
 #else  // __has_builtin(__is_convertible_to) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
