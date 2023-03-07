@@ -28,21 +28,21 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 struct _LIBCUDACXX_TYPE_VIS in_place_t {
     explicit in_place_t() = default;
 };
-_LIBCUDACXX_CPO_ACCESSIBILITY inline constexpr in_place_t in_place{};
+_LIBCUDACXX_CPO_ACCESSIBILITY constexpr in_place_t in_place{};
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS in_place_type_t {
     explicit in_place_type_t() = default;
 };
 template <class _Tp>
-_LIBCUDACXX_CPO_ACCESSIBILITY inline constexpr in_place_type_t<_Tp> in_place_type{};
+_LIBCUDACXX_CPO_ACCESSIBILITY constexpr in_place_type_t<_Tp> in_place_type{};
 
 template <size_t _Idx>
 struct _LIBCUDACXX_TEMPLATE_VIS in_place_index_t {
     explicit in_place_index_t() = default;
 };
 template <size_t _Idx>
-_LIBCUDACXX_CPO_ACCESSIBILITY inline constexpr in_place_index_t<_Idx> in_place_index{};
+_LIBCUDACXX_CPO_ACCESSIBILITY constexpr in_place_index_t<_Idx> in_place_index{};
 
 template <class _Tp> struct __is_inplace_type_imp : false_type {};
 template <class _Tp> struct __is_inplace_type_imp<in_place_type_t<_Tp>> : true_type {};

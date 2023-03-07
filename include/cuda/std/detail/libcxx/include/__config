@@ -2023,9 +2023,9 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #endif
 
 #if defined(__CUDA_ARCH__)
-#  define _LIBCUDACXX_CPO_ACCESSIBILITY static
+#  define _LIBCUDACXX_CPO_ACCESSIBILITY __device__
 #else
-#  define _LIBCUDACXX_CPO_ACCESSIBILITY
+#  define _LIBCUDACXX_CPO_ACCESSIBILITY inline
 #endif
 
 #endif // __cplusplus

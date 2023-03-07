@@ -221,10 +221,4 @@
 #undef _LIBCUDACXX_END_NAMESPACE_CPO
 #define _LIBCUDACXX_END_NAMESPACE_CPO } }
 
-#if defined(__CUDA_ARCH__)
-#  define _LIBCUDACXX_CPO_ACCESSIBILITY static
-#else
-#  define _LIBCUDACXX_CPO_ACCESSIBILITY
-#endif
-
 #endif //__cuda_std__

@@ -84,7 +84,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
     move_constructible<_Tp> &&
     assignable_from<_Tp&, _Tp>;
 
-#else // ^^^ CXX20 ^^^ / vvv CXX17 vvv 
+#else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 
   template<class _Tp, class _Up>
   _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -95,10 +95,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
 
   template<class _Tp, class _Up>
   _LIBCUDACXX_CONCEPT __unqualified_swappable_with = _LIBCUDACXX_FRAGMENT(__unqualified_swappable_with_, _Tp, _Up);
-    
+
   template<class _Tp, class _Up, size_t _Size, class = void>
   _LIBCUDACXX_INLINE_VAR constexpr bool __swappable_arrays = false;
-  
+
   template<class _Tp>
   _LIBCUDACXX_CONCEPT_FRAGMENT(
     __exchangeable_,
@@ -107,7 +107,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
       requires(move_constructible<_Tp>),
       requires(assignable_from<_Tp&, _Tp>)
     ));
-     
+
   template<class _Tp>
   _LIBCUDACXX_CONCEPT __exchangeable = _LIBCUDACXX_FRAGMENT(__exchangeable_, _Tp);
 #endif // _LIBCUDACXX_STD_VER < 20
@@ -128,7 +128,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
 
     // 2.2   Otherwise, if `E1` and `E2` are lvalues of array types with equal extent and...
     _LIBCUDACXX_TEMPLATE(class _Tp, class _Up, size_t _Size)
-      (requires __swappable_arrays<_Tp, _Up, _Size>)      
+      (requires __swappable_arrays<_Tp, _Up, _Size>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp(& __t)[_Size], _Up(& __u)[_Size]) const
       noexcept(__noexcept_swappable_arrays<_Tp, _Up>)
     {
@@ -140,7 +140,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
 
     // 2.3   Otherwise, if `E1` and `E2` are lvalues of the same type `T` that models...
     _LIBCUDACXX_TEMPLATE(class _Tp)
-      (requires __exchangeable<_Tp>)      
+      (requires __exchangeable<_Tp>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp& __x, _Tp& __y) const
       noexcept(is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_assignable_v<_Tp>)
     {
@@ -157,7 +157,7 @@ template<class _Tp, class _Up, class _Size>
       requires(extent_v<_Tp> == extent_v<_Up>),
       typename(decltype(__swap(__t[0], __u[0])))
     ));
-    
+
   template<class _Tp, class _Up, size_t _Size>
   _LIBCUDACXX_INLINE_VAR constexpr bool __swappable_arrays<_Tp, _Up, _Size, void_t<type_identity_t<_Tp>>> =
     _LIBCUDACXX_FRAGMENT(__swappable_arrays_, _Tp, _Up, _CUDA_VSTD::integral_constant<size_t, _Size>);
@@ -170,7 +170,7 @@ template<class _Tp, class _Up, class _Size>
 _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo {
-  _LIBCUDACXX_CPO_ACCESSIBILITY _LIBCUDACXX_INLINE_VAR constexpr auto swap = __swap::__fn{};
+  _LIBCUDACXX_CPO_ACCESSIBILITY constexpr auto swap = __swap::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
