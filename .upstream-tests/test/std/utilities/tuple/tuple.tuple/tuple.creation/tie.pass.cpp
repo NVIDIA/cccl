@@ -48,6 +48,7 @@ __host__ __device__ constexpr bool test_tie_constexpr() {
 int main(int, char**)
 {
     {
+#ifndef __CUDA_ARCH__
         int i = 0;
         const char *_s = "C++";
         // cuda::std::string not supported
@@ -56,6 +57,7 @@ int main(int, char**)
         cuda::std::tie(i, cuda::std::ignore, s) = cuda::std::make_tuple(42, 3.14, _s);
         assert(i == 42);
         assert(s == _s);
+#endif
     }
 #if TEST_STD_VER > 11
     {

@@ -399,6 +399,13 @@ inline void DoNotOptimize(Tp const& value) {
 # define _STATIC_MEMBER_IMPL(type) static type v;
 #endif
 
+#if defined(__CUDA_ARCH__)
+#  define STATIC_TEST_GLOBAL_VAR static __device__
+#else
+#  define STATIC_TEST_GLOBAL_VAR
+#endif
+
+
 #define STATIC_MEMBER_VAR(name, type) \
   __host__ __device__ static type& name() { \
     _STATIC_MEMBER_IMPL(type); \

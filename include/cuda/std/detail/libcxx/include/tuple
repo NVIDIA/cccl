@@ -1246,7 +1246,10 @@ struct __ignore_t
 };
 
 namespace {
-  _LIBCUDACXX_INLINE_VAR constexpr __ignore_t<unsigned char> ignore = __ignore_t<unsigned char>();
+#ifdef __CUDA_ARCH__
+    static
+#endif
+    _LIBCUDACXX_INLINE_VAR constexpr __ignore_t<unsigned char> ignore = __ignore_t<unsigned char>();
 }
 
 template <class... _Tp>

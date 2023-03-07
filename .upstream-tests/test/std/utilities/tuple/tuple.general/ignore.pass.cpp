@@ -49,10 +49,12 @@ constexpr bool test_ignore_constexpr()
 }
 
 int main(int, char**) {
+#ifndef __CUDA_ARCH__
     {
         constexpr auto& ignore_v = cuda::std::ignore;
         ((void)ignore_v);
     }
+#endif
     {
         static_assert(test_ignore_constexpr(), "");
     }

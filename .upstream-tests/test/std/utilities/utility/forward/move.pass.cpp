@@ -37,8 +37,8 @@ __device__ const int& cx = x;
 template <class QualInt>
 __host__ __device__ QualInt get() TEST_NOEXCEPT { return static_cast<QualInt>(x); }
 
-_LIBCUDACXX_CPO_ACCESSIBILITY int copy_ctor = 0;
-_LIBCUDACXX_CPO_ACCESSIBILITY int move_ctor = 0;
+STATIC_TEST_GLOBAL_VAR int copy_ctor = 0;
+STATIC_TEST_GLOBAL_VAR int move_ctor = 0;
 
 struct A {
     __host__ __device__ A() {}
