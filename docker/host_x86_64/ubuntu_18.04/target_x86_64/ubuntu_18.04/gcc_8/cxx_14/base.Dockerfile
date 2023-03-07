@@ -63,13 +63,6 @@ RUN set -o pipefail; cd /sw/gpgpu/libcudacxx/build\
  -DLIBCUDACXX_TEST_STANDARD_VER=c++$COMPILER_CXX_DIALECT\
  2>&1 | tee /sw/gpgpu/libcudacxx/build/cmake_libcudacxx.log
 
-# Build tests if requested.
-RUN set -o pipefail; cd /sw/gpgpu/libcudacxx\
- && LIBCUDACXX_COMPUTE_ARCHS=$LIBCUDACXX_COMPUTE_ARCHS\
- LIBCUDACXX_SKIP_BASE_TESTS_BUILD=$LIBCUDACXX_SKIP_BASE_TESTS_BUILD\
- /sw/gpgpu/libcudacxx/utils/nvidia/linux/perform_tests.bash\
- --skip-tests-runs\
- 2>&1 | tee /sw/gpgpu/libcudacxx/build/build_lit_all.log
 
 # Build tests for sm6x if requested.
 RUN set -o pipefail; cd /sw/gpgpu/libcudacxx\
@@ -104,4 +97,3 @@ RUN set -o pipefail; cd /sw/gpgpu/libcudacxx\
 RUN cd /sw/gpgpu/libcudacxx/build && tar -cvf logs.tar *.log
 
 WORKDIR /sw/gpgpu/libcudacxx
-
