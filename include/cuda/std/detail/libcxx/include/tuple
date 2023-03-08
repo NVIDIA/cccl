@@ -413,6 +413,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, 
     _LIBCUDACXX_CONSTEXPR __tuple_impl()
         _NOEXCEPT_(__all<is_nothrow_default_constructible<_Tp>::value...>::value) {}
 
+
     // Handle non-allocator, full initialization
     template <size_t ..._Uf, class ..._Tf,
               size_t ..._Ul, class ..._Tl, class ..._Up,
@@ -720,22 +721,32 @@ class _LIBCUDACXX_TEMPLATE_VIS tuple
     };
 
     template <class _Tuple, bool _DisableIfLValue>
-    using _EnableImplicitTupleLikeConstructor = _EnableIf<
-                         _CheckTupleLikeConstructor<
+    struct _EnableImplicitTupleLikeConstructor_Wrapper {
+        static constexpr bool value = _CheckTupleLikeConstructor<
                              __tuple_like_with_size<_Tuple, sizeof...(_Tp)>::value
                              && !_PackExpandsToThisTuple<_Tuple>::value
                              && (!is_lvalue_reference<_Tuple>::value || !_DisableIfLValue)
-                         >::template __enable_implicit<_Tuple>::value,
+                         >::template __enable_implicit<_Tuple>::value;
+    };
+
+    template <class _Tuple, bool _DisableIfLValue>
+    using _EnableImplicitTupleLikeConstructor = _EnableIf<
+                         _EnableImplicitTupleLikeConstructor_Wrapper<_Tuple, _DisableIfLValue>::value,
                          bool
                       >;
 
     template <class _Tuple, bool _DisableIfLValue>
-    using _EnableExplicitTupleLikeConstructor = _EnableIf<
-                         _CheckTupleLikeConstructor<
+    struct _EnableExplicitTupleLikeConstructor_Wrapper {
+        static constexpr bool value = _CheckTupleLikeConstructor<
                              __tuple_like_with_size<_Tuple, sizeof...(_Tp)>::value
                              && !_PackExpandsToThisTuple<_Tuple>::value
                              && (!is_lvalue_reference<_Tuple>::value || !_DisableIfLValue)
-                         >::template __enable_explicit<_Tuple>::value,
+                         >::template __enable_explicit<_Tuple>::value;
+    };
+
+    template <class _Tuple, bool _DisableIfLValue>
+    using _EnableExplicitTupleLikeConstructor = _EnableIf<
+                         _EnableExplicitTupleLikeConstructor_Wrapper<_Tuple, _DisableIfLValue>::value,
                          bool
                       >;
 
