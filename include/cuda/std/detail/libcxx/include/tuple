@@ -685,19 +685,24 @@ class _LIBCUDACXX_TEMPLATE_VIS tuple
     template <class _Dummy>
     struct _CheckTupleLikeConstructor<true, true, _Dummy>
     {
+        template <class _Tuple>
+        struct _PreferTupleLikeConstructorImpl :
+            _Or<
+                // Don't attempt the two checks below if the tuple we are given
+                // has the same type as this tuple.
+                _IsSame<__remove_cvref_t<_Tuple>, tuple>,
+                _Lazy<_And,
+                    _Not<is_constructible<_Tp..., _Tuple>>,
+                    _Not<is_convertible<_Tuple, _Tp...>>
+                >
+            >
+        { };
+
         // This trait is used to disable the tuple-like constructor when
         // the UTypes... constructor should be selected instead.
         // See LWG issue #2549.
         template <class _Tuple>
-        using _PreferTupleLikeConstructor = _Or<
-            // Don't attempt the two checks below if the tuple we are given
-            // has the same type as this tuple.
-            _IsSame<__remove_cvref_t<_Tuple>, tuple>,
-            _Lazy<_And,
-                _Not<is_constructible<_Tp..., _Tuple>>,
-                _Not<is_convertible<_Tuple, _Tp...>>
-            >
-        >;
+        using _PreferTupleLikeConstructor = _PreferTupleLikeConstructorImpl<_Tuple>;
 
         template <class _Tuple>
         struct __enable_implicit {
@@ -1016,18 +1021,28 @@ public:
             : __base_(__t) {}
 
     template <typename _Tuple>
-    using _EnableIfTupleLikeConstructor = typename enable_if<
-            _CheckTupleLikeConstructor<
+    struct _EnableIfTupleLikeConstructorImpl {
+        static constexpr auto value = _CheckTupleLikeConstructor<
                 __tuple_like_with_size<_Tuple, sizeof...(_Tp)>::value
-            >::template __enable_implicit<_Tuple>::value,
+            >::template __enable_implicit<_Tuple>::value;
+    };
+
+    template <typename _Tuple>
+    using _EnableIfTupleLikeConstructor = typename enable_if<
+            _EnableIfTupleLikeConstructorImpl<_Tuple>::value,
             bool
         >::type;
 
     template <typename _Tuple>
-    using _EnableIfTupleLikeExplicitConstructor = typename enable_if<
-            _CheckTupleLikeConstructor<
+    struct _EnableIfTupleLikeExplicitConstructorImpl {
+        static constexpr auto value = _CheckTupleLikeConstructor<
                 __tuple_like_with_size<_Tuple, sizeof...(_Tp)>::value
-            >::template __enable_explicit<_Tuple>::value,
+            >::template __enable_explicit<_Tuple>::value;
+    };
+
+    template <typename _Tuple>
+    using _EnableIfTupleLikeExplicitConstructor = typename enable_if<
+            _EnableIfTupleLikeExplicitConstructorImpl<_Tuple>::value,
             bool
         >::type;
 
