@@ -98,20 +98,14 @@ __indexed<_Idx, _Tp> __at_index(__indexed<_Idx, _Tp> const&);
 
 } // namespace __indexer_detail
 
-// MSVC 14.11 loses its mind over the below if the decltype occurs at global scope
 template <size_t _Idx, class ..._Types>
-struct __type_pack_element_impl {
-    using __at = decltype(
-        __indexer_detail::__at_index<_Idx>(
-            __indexer_detail::__indexer<
-                __tuple_types<_Types...>,
-                typename __make_tuple_indices<sizeof...(_Types)>::type
-            >{}));
-};
-
-template <size_t _Idx, class ..._Types>
-using __type_pack_element _LIBCUDACXX_NODEBUG_TYPE =
-    typename __type_pack_element_impl<_Idx, _Types...>::__at::type;
+using __type_pack_element _LIBCUDACXX_NODEBUG_TYPE = typename decltype(
+    __indexer_detail::__at_index<_Idx>(
+        __indexer_detail::__indexer<
+            __tuple_types<_Types...>,
+            typename __make_tuple_indices<sizeof...(_Types)>::type
+        >{})
+  )::type;
 #endif
 
 template <size_t _Ip, class ..._Types>
