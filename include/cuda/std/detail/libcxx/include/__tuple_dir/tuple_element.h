@@ -49,7 +49,36 @@ struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, const volatile _Tp>
 
 #ifndef _LIBCUDACXX_CXX03_LANG
 
-#if !__has_builtin(__type_pack_element)
+#ifdef _LIBCUDACXX_COMPILER_MSVC
+
+namespace __indexer_detail {
+
+template <size_t _Idx, class ..._Types>
+struct _nth_of;
+
+template <class _Head, class ..._Tail>
+struct _nth_of<0, _Head, _Tail...> {
+    using type = _Head;
+};
+
+template <size_t _Idx, class _Head, class ..._Tail>
+struct _nth_of<_Idx, _Head, _Tail...> {
+    using type = typename _nth_of<_Idx-1, _Tail...>::type;
+};
+
+template <size_t _Idx, class ..._Types>
+struct nth_of {
+    static_assert(_Idx < sizeof...(_Types), "");
+    using _impl = _nth_of<_Idx, _Types...>;
+    using type = typename _impl::type;
+};
+
+} // namespace __indexer_detail
+
+template <size_t _Idx, class ..._Types>
+using __type_pack_element _LIBCUDACXX_NODEBUG_TYPE = typename __indexer_detail::nth_of<_Idx, _Types...>::type;
+
+#elif !__has_builtin(__type_pack_element)
 
 namespace __indexer_detail {
 
