@@ -840,10 +840,10 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #include "ctime"
 #include "limits"
 #include "ratio"
-#include "type_traits"
 
 // standard-mandated includes
-#include "concepts"
+// TODO: Fix CPOs in split H/D compilation or inform users of what may happen
+// #include "concepts"
 #include "version"
 
 #ifndef __cuda_std__
