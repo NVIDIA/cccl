@@ -43,16 +43,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // Let COND_RES(X, Y) be:
 #ifdef _LIBCUDACXX_COMPILER_MSVC // Workaround for DevCom-1627396
 template <class _Xp, class _Yp>
-using __cond_res_if_right =
-    decltype(false ? _CUDA_VSTD::declval<_Xp(&)()>()() : _CUDA_VSTD::declval<_Yp(&)()>()());
-
+struct __cond_res_if_right_wrapper {
+    using __type = decltype(false ? _CUDA_VSTD::declval<_Xp(&)()>()() : _CUDA_VSTD::declval<_Yp(&)()>()());
+};
+template <class _Xp, class _Yp>
+using __cond_res_if_right = typename __cond_res_if_right_wrapper<_Xp, _Yp>::__type;
 template <class _Tp, class _Up, class = void>
 struct __cond_res_workaround {};
 
 template <class _Tp, class _Up>
 struct __cond_res_workaround<_Tp, _Up, void_t<__cond_res_if_right<_Tp, _Up>>> {
     using _RTp = remove_cvref_t<_Tp>;
-    using type = conditional_t<is_same_v<_RTp, remove_cvref_t<_Up>> && 
+    using type = conditional_t<is_same_v<_RTp, remove_cvref_t<_Up>> &&
                                (is_scalar_v<_RTp> || is_array_v<_RTp>) &&
                                ((is_lvalue_reference_v<_Tp> && is_rvalue_reference_v<_Up>) || (is_rvalue_reference_v<_Tp> && is_lvalue_reference_v<_Up>)),
                  decay_t<__copy_cv_t<remove_reference_t<_Tp>, remove_reference_t<_Up>>>, __cond_res_if_right<_Tp, _Up>>;
@@ -108,7 +110,7 @@ struct __common_ref_rr {};
 
 template<class _Ap, class _Bp>
 struct __common_ref_rr<_Ap&&, _Bp&&, enable_if_t<
-                            is_convertible_v<_Ap&&, __common_ref_C<_Ap, _Bp>> 
+                            is_convertible_v<_Ap&&, __common_ref_C<_Ap, _Bp>>
                          && is_convertible_v<_Bp&&, __common_ref_C<_Ap, _Bp>>>>
 {
     using __type = __common_ref_C<_Ap, _Bp>;
@@ -165,9 +167,9 @@ struct common_reference<_Tp>
 
 // bullet 3 - sizeof...(T) == 2
 template <class _Tp, class _Up, class = void> struct __common_reference_sub_bullet3;
-template <class _Tp, class _Up, class = void> struct __common_reference_sub_bullet2 
+template <class _Tp, class _Up, class = void> struct __common_reference_sub_bullet2
     : __common_reference_sub_bullet3<_Tp, _Up> {};
-template <class _Tp, class _Up, class = void> struct __common_reference_sub_bullet1 
+template <class _Tp, class _Up, class = void> struct __common_reference_sub_bullet1
     : __common_reference_sub_bullet2<_Tp, _Up> {};
 
 // sub-bullet 1 - If T1 and T2 are reference types and COMMON-REF(T1, T2) is well-formed, then
@@ -175,7 +177,7 @@ template <class _Tp, class _Up, class = void> struct __common_reference_sub_bull
 template <class _Tp, class _Up> struct common_reference<_Tp, _Up> : __common_reference_sub_bullet1<_Tp, _Up> {};
 
 template <class _Tp, class _Up>
-struct __common_reference_sub_bullet1<_Tp, _Up, void_t<__common_ref_t<_Tp, _Up>, 
+struct __common_reference_sub_bullet1<_Tp, _Up, void_t<__common_ref_t<_Tp, _Up>,
     enable_if_t<is_reference_v<_Tp> && is_reference_v<_Up>>>>
 {
     using type = __common_ref_t<_Tp, _Up>;
