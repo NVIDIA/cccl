@@ -19,17 +19,21 @@ __host__ __device__
 void test_proclaim_return_type(Fn&& fn, T expected, As... as)
 {
   {
-    auto f = cuda::proclaim_return_type<T>(cuda::std::forward<Fn>(fn));
+    auto f1 = cuda::proclaim_return_type<T>(cuda::std::forward<Fn>(fn));
 
-    assert(f(as...) == expected);
-    assert(cuda::std::move(f)(as...) == expected);
+    assert(f1(as...) == expected);
+
+    auto f2{f1};
+    assert(cuda::std::move(f2)(as...) == expected);
   }
 
   {
-    const auto f = cuda::proclaim_return_type<T>(fn);
+    const auto f1 = cuda::proclaim_return_type<T>(fn);
 
-    assert(f(as...) == expected);
-    assert(cuda::std::move(f)(as...) == expected);
+    assert(f1(as...) == expected);
+
+    auto f2{f1};
+    assert(cuda::std::move(f2)(as...) == expected);
   }
 }
 
