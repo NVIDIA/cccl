@@ -15,9 +15,7 @@
 
 #include <cuda/std/utility>
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
+#include "test_macros.h"
 
 int main(int, char**) {
     cuda::std::piecewise_construct_t x = cuda::std::piecewise_construct;

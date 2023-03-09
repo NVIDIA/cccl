@@ -24,10 +24,6 @@
 
 #include "test_macros.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 class A
 {
     __host__ __device__ A(const A&);

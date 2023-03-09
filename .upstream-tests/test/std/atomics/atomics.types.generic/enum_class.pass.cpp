@@ -56,10 +56,6 @@
 
 #include "cuda_space_selector.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 enum class foo_bar_enum : uint8_t {
   foo,
   bar,

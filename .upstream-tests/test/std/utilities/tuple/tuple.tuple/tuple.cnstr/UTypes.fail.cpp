@@ -13,7 +13,7 @@
 // template <class... UTypes>
 //   explicit tuple(UTypes&&... u);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
 // UNSUPPORTED: nvrtc
 
 /*
@@ -24,9 +24,7 @@
 #include <cuda/std/tuple>
 #include <cuda/std/cassert>
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
+#include "test_macros.h"
 
 class MoveOnly
 {

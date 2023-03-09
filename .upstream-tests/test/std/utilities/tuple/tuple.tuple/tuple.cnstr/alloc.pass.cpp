@@ -29,10 +29,6 @@
 #include "../alloc_first.h"
 #include "../alloc_last.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 template <class T = void>
 struct NonDefaultConstructible {
   __host__ __device__ constexpr NonDefaultConstructible() {

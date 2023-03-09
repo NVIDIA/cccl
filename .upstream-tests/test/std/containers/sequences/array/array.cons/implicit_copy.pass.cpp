@@ -28,10 +28,6 @@
 #define TEST_NOT_COPY_ASSIGNABLE(T) static_assert(!cuda::std::is_copy_assignable<T>::value, "")
 #endif
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 struct NoDefault {
   __host__ __device__ NoDefault(int) {}
 };

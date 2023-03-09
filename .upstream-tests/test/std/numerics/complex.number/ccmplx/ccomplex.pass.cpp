@@ -12,10 +12,6 @@
 
 #include "test_macros.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 int main(int, char**)
 {
     cuda::std::complex<double> d;

@@ -30,10 +30,6 @@ __host__ __device__ constexpr bool check_idx( size_t idx, double val )
 }
 #endif
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 int main(int, char**)
 {
     {

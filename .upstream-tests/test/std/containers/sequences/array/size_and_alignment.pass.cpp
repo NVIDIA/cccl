@@ -24,10 +24,6 @@
 #pragma warning(disable: 4324)
 #endif
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 template <class T, size_t Size>
 struct MyArray {
   T elems[Size];

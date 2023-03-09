@@ -18,10 +18,6 @@
 
 #include "cuda_space_selector.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 template<typename Barrier,
     template<typename, typename> typename Selector,
     typename Initializer = constructor_initializer>

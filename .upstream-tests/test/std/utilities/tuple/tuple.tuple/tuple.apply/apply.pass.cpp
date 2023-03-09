@@ -31,10 +31,6 @@
 // Disable the missing braces warning for this reason.
 #include "disable_missing_braces_warning.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 __host__ __device__
 constexpr int constexpr_sum_fn() { return 0; }
 

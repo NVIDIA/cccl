@@ -163,7 +163,3 @@ struct is_stride_avail< T
 
 template< class T, class RankType >
 constexpr bool is_stride_avail_v = is_stride_avail< T, RankType >::value;
-
-// Workaround for variables that are only used in static_assert's
-template< typename T >
-__host__ __device__ constexpr bool unused( T && ) { return true; }

@@ -25,10 +25,6 @@
 
 #include "test_macros.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 #if TEST_STD_VER > 11
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_constexpr() {
     int v = 12;

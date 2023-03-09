@@ -17,11 +17,9 @@
 // https://github.com/NVIDIA/libcudacxx/issues/160
 
 #include <cuda/atomic>
-#include "cuda_space_selector.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
+#include "cuda_space_selector.h"
+#include "test_macros.h"
 
 template <template<typename, typename> typename Selector>
 struct TestFn {

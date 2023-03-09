@@ -23,10 +23,6 @@
 #include "test_macros.h"
 #include "DefaultOnly.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 struct NoDefault {
     NoDefault() = delete;
     __host__ __device__ explicit NoDefault(int) { }

@@ -36,10 +36,6 @@
 #include "test_macros.h"
 #include "archetypes.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 // Overloads
 // ---------------
 // (1)  pair(const T1&, const T2&) -> pair<T1, T2>

@@ -21,10 +21,6 @@
 
 #include "test_macros.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 template <typename Span>
 __host__ __device__
 constexpr bool testConstexprSpan(Span sp)

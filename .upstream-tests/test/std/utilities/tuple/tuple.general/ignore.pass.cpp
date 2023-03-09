@@ -18,10 +18,6 @@
 
 #include "test_macros.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 __host__ __device__
 constexpr bool test_ignore_constexpr()
 {

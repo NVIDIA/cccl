@@ -25,10 +25,6 @@
 #include "test_macros.h"
 #include "MoveOnly.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 struct NothrowConstruct
 {
     __host__ __device__ constexpr NothrowConstruct(int) noexcept {};

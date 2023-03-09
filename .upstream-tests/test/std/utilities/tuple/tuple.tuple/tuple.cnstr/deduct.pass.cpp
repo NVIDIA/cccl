@@ -34,10 +34,6 @@
 #include "test_macros.h"
 #include "archetypes.h"
 
-template <typename T>
-__host__ __device__
-constexpr bool unused(T &&) {return true;}
-
 // Overloads
 //  using A = Allocator
 //  using AT = cuda::std::allocator_arg_t
