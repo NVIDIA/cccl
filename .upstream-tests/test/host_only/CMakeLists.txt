@@ -24,7 +24,7 @@ function(libcudacxx_add_standalone_header_test test_file_output_var header_under
 
     if ("${header_excluded}" EQUAL "-1")
         add_library(${executable_name} OBJECT ${test_cpp})
-        target_include_directories(${executable_name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+        target_include_directories(${executable_name} PRIVATE ${libcudacxx_SOURCE_DIR}/include)
         target_compile_options(${executable_name} PRIVATE
         $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
         -Wall -Werror>
@@ -39,8 +39,8 @@ function(libcudacxx_add_standalone_header_test test_file_output_var header_under
 endfunction()
 
 # Don't generate CUDA targets, they fail currently.
-file(GLOB cuda_headers     LIST_DIRECTORIES false RELATIVE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/cuda/*)
-file(GLOB cuda_std_headers LIST_DIRECTORIES false RELATIVE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/cuda/std/*)
+file(GLOB cuda_headers     LIST_DIRECTORIES false RELATIVE ${libcudacxx_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/cuda/*)
+file(GLOB cuda_std_headers LIST_DIRECTORIES false RELATIVE ${libcudacxx_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/cuda/std/*)
 
 foreach(version IN LISTS cpp_std_versions)
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")

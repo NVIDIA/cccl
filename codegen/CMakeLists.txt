@@ -10,10 +10,10 @@ add_executable(codegen
 add_custom_target(
     run ALL
     COMMAND codegen
-    BYPRODUCS "${CMAKE_BINARY_DIR}/__atomic_generated"
+    BYPRODUCS "${libcudacxx_BINARY_DIR}/__atomic_generated"
 )
 
 install(
-    FILES "${CMAKE_BINARY_DIR}/__atomic_generated"
-    DESTINATION "${CMAKE_SOURCE_DIR}/../include/cuda/std/detail/"
+    FILES "${libcudacxx_BINARY_DIR}/__atomic_generated"
+    DESTINATION "${libcudacxx_SOURCE_DIR}/../include/cuda/std/detail/"
 )

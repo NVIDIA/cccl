@@ -1,14 +1,23 @@
-# 3.15 is the minimum.
-# 3.17 for NVC++.
-# 3.18 for C++17 + CUDA.
+# 3.15 is the minimum for including the project with add_subdirectory.
+# 3.21 is the minimum for the developer build.
 cmake_minimum_required(VERSION 3.15)
 
 # Determine whether libcudacxx is the top-level project or included into
 # another project via add_subdirectory().
-if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-  set(LIBCUDACXX_TOPLEVEL_PROJECT ON)
+enable_language(CXX) # For CMAKE_CXX_COMPILER_ID
+
+if(DEFINED CCCL_TOPLEVEL_PROJECT)
+  set(LIBCUDACXX_TOPLEVEL_PROJECT ${CCCL_TOPLEVEL_PROJECT})
 else()
-  set(LIBCUDACXX_TOPLEVEL_PROJECT OFF)
+  if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
+    set(LIBCUDACXX_TOPLEVEL_PROJECT ON)
+  else()
+    set(LIBCUDACXX_TOPLEVEL_PROJECT OFF)
+  endif()
+endif()
+
+if (LIBCUDACXX_TOPLEVEL_PROJECT)
+  cmake_minimum_required(VERSION 3.21)
 endif()
 
 set(PACKAGE_NAME libcudacxx)
@@ -16,7 +25,10 @@ set(PACKAGE_VERSION 11.0)
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 project(libcudacxx NONE)
 
-include(cmake/libcudacxxInstallRules.cmake)
+option(libcudacxx_ENABLE_INSTALL_RULES "Enable installation of libcu++" ${LIBCUDACXX_TOPLEVEL_PROJECT})
+if (libcudacxx_ENABLE_INSTALL_RULES)
+  include(cmake/libcudacxxInstallRules.cmake)
+endif()
 
 if (NOT LIBCUDACXX_TOPLEVEL_PROJECT)
   include(cmake/libcudacxxAddSubdir.cmake)
@@ -35,8 +47,8 @@ if (libcudacxx_ENABLE_CMAKE_TESTS)
   return()
 endif()
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-set(LLVM_PATH "${CMAKE_SOURCE_DIR}" CACHE STRING "" FORCE)
+set(CMAKE_MODULE_PATH "${libcudacxx_SOURCE_DIR}/cmake")
+set(LLVM_PATH "${libcudacxx_SOURCE_DIR}" CACHE STRING "" FORCE)
 
 # Configuration options.
 option(LIBCUDACXX_ENABLE_CUDA "Enable the CUDA language support." ON)
