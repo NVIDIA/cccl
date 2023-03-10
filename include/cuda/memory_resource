@@ -148,8 +148,9 @@ _LIBCUDACXX_CONCEPT __has_upstream_resource = _LIBCUDACXX_FRAGMENT(__has_upstrea
 /// class forward_property
 /// \brief The \c forward_property crtp template simplifies the user facing side of forwarding properties
 ///        We can just derive from it to properly forward all properties
+_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__forward_property)
 template <class _Derived, class _Upstream>
-struct forward_property {
+struct __fn {
   #if defined(__CUDACC__) && !defined(__NVCOMPILER)
   #pragma nv_exec_check_disable
   #endif
@@ -169,6 +170,10 @@ struct forward_property {
     return get_property(__res.upstream_resource(), __prop);
   }
 };
+_LIBCUDACXX_END_NAMESPACE_CPO
+
+template <class _Derived, class _Upstream>
+using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
 /// class get_property
 /// \brief The \c get_property crtp temaplate simplifies the user facing side of forwarding properties
