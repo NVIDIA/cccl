@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
+// UNSUPPORTED: nvrtc
 // UNSUPPORTED: windows
 
 // cuda::get_property
