@@ -11,7 +11,6 @@
 // Test that int8_t and the like are exported from stdint.h not inttypes.h
 
 // RUN: %build_module
-// XFAIL: !c++11
 
 #include <stdint.h>
 
