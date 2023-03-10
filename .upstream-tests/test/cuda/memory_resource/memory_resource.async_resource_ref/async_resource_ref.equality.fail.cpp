@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
+// UNSUPPORTED: windows
 // UNSUPPORTED: nvrtc
 
 // cuda::mr::async_resource_ref equality
