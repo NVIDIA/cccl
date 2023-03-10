@@ -10,7 +10,6 @@
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: windows
-// XFAIL: clang-7, clang-8
 // cuda::forward_property
 
 #define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
