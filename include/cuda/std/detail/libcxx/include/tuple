@@ -739,23 +739,24 @@ class _LIBCUDACXX_TEMPLATE_VIS tuple
         const typename tuple_element<_Jp, tuple<_Up...> >::type&& get(const tuple<_Up...>&&) _NOEXCEPT;
 public:
 
+    template<bool _Dummy>
     struct _EnableConstructor {
         static constexpr bool __implicit_default =
-            _CheckArgsConstructor<true>::template __enable_implicit_default<>::value;
+            _CheckArgsConstructor<_Dummy>::template __enable_implicit_default<>::value;
         static constexpr bool __explicit_default =
-            _CheckArgsConstructor<true>::template __enable_explicit_default<>::value;
+            _CheckArgsConstructor<_Dummy>::template __enable_explicit_default<>::value;
 
         static constexpr bool __implicit_variadic =
-            _CheckArgsConstructor<true>::template __enable_implicit<_Tp const&...>::value;
+            _CheckArgsConstructor<_Dummy>::template __enable_implicit<_Tp const&...>::value;
         static constexpr bool __explicit_variadic =
-            _CheckArgsConstructor<true>::template __enable_explicit<_Tp const&...>::value;
+            _CheckArgsConstructor<_Dummy>::template __enable_explicit<_Tp const&...>::value;
     };
 
-    template <class _Enable = _EnableConstructor, __enable_if_t<_Enable::__implicit_default, bool> = false>
+    template <bool _Dummy = true, __enable_if_t<_EnableConstructor<_Dummy>::__implicit_default, bool> = false>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
     tuple() _NOEXCEPT_(__all<is_nothrow_default_constructible<_Tp>::value...>::value) {}
 
-    template <class _Enable = _EnableConstructor, __enable_if_t<_Enable::__explicit_default, bool> = false>
+    template <bool _Dummy = true, __enable_if_t<_EnableConstructor<_Dummy>::__explicit_default, bool> = false>
     explicit _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
     tuple() _NOEXCEPT_(__all<is_nothrow_default_constructible<_Tp>::value...>::value) {}
 
@@ -788,7 +789,7 @@ public:
                     typename __make_tuple_indices<sizeof...(_Tp), 0>::type(),
                     __tuple_types<_Tp...>()) {}
 
-    template <class _Enable = _EnableConstructor, __enable_if_t<_Enable::__implicit_variadic, bool> = false>
+    template <bool _Dummy = true, __enable_if_t<_EnableConstructor<_Dummy>::__implicit_variadic, bool> = false>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     tuple(const _Tp& ... __t) _NOEXCEPT_((__all<is_nothrow_copy_constructible<_Tp>::value...>::value))
         : __base_(typename __make_tuple_indices<sizeof...(_Tp)>::type(),
@@ -798,7 +799,7 @@ public:
                 __t...
                ) {}
 
-    template <class _Enable = _EnableConstructor, __enable_if_t<_Enable::__explicit_variadic, bool> = false>
+    template <bool _Dummy = true, __enable_if_t<_EnableConstructor<_Dummy>::__explicit_variadic, bool> = false>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     explicit tuple(const _Tp& ... __t) _NOEXCEPT_((__all<is_nothrow_copy_constructible<_Tp>::value...>::value))
         : __base_(typename __make_tuple_indices<sizeof...(_Tp)>::type(),
@@ -808,8 +809,7 @@ public:
                 __t...
                ) {}
 
-    template <class _Alloc, class _Enable = _EnableConstructor,
-              __enable_if_t<_Enable::__implicit_variadic, bool> = false>
+    template <class _Alloc, bool _Dummy = true, __enable_if_t<_EnableConstructor<_Dummy>::__implicit_variadic, bool> = false>
       _LIBCUDACXX_INLINE_VISIBILITY
       tuple(allocator_arg_t, const _Alloc& __a, const _Tp& ... __t)
         : __base_(allocator_arg_t(), __a,
@@ -820,8 +820,7 @@ public:
                 __t...
                ) {}
 
-    template <class _Alloc, class _Enable = _EnableConstructor,
-              __enable_if_t<_Enable::__explicit_variadic, bool> = false>
+    template <class _Alloc, bool _Dummy = true, __enable_if_t<_EnableConstructor<_Dummy>::__explicit_variadic, bool> = false>
       _LIBCUDACXX_INLINE_VISIBILITY
       explicit
       tuple(allocator_arg_t, const _Alloc& __a, const _Tp& ... __t)
