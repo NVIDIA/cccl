@@ -64,13 +64,13 @@ For each type `T` and [`cuda::thread_scope`] `S`, the value of
 
 __global__ void example_kernel(int *gmem, int *pinned_mem) {
   // This atomic is suitable for all threads in the system.
-  cuda::atomic_ref<int, cuda::thread_scope_system> a(pinned_mem);
+  cuda::atomic_ref<int, cuda::thread_scope_system> a(*pinned_mem);
 
   // This atomic has the same type as the previous one (`a`).
-  cuda::atomic_ref<int> b(pinned_mem);
+  cuda::atomic_ref<int> b(*pinned_mem);
 
   // This atomic is suitable for all threads on the current processor (e.g. GPU).
-  cuda::atomic_ref<int, cuda::thread_scope_device> c(gmem);
+  cuda::atomic_ref<int, cuda::thread_scope_device> c(*gmem);
 
   __shared__ int shared_v;
   // This atomic is suitable for threads in the same thread block.
