@@ -7,7 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-//UNSUPPORTED: c++11, nvrtc && nvcc-12.0, nvrtc && nvcc-12.1
+// UNSUPPORTED: c++11, nvrtc && nvcc-12.0, nvrtc && nvcc-12.1
+// UNSUPPORTED: msvc && c++14, msvc && c++17
 
 // No CTAD in C++14 or earlier
 //UNSUPPORTED: c++14

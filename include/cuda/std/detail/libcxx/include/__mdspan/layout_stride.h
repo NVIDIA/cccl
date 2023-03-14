@@ -451,7 +451,9 @@ struct layout_stride {
     )
     __MDSPAN_FORCE_INLINE_FUNCTION
     constexpr index_type operator()(_Indices... __idxs) const noexcept {
-      return __impl::_call_op_impl(*this, static_cast<index_type>(__idxs)...);
+      // Should the op_impl operate in terms of `index_type` rather than `size_t`?
+      // Casting `size_t` to `index_type` here.
+      return static_cast<index_type>(__impl::_call_op_impl(*this, static_cast<index_type>(__idxs)...));
     }
 
     __MDSPAN_INLINE_FUNCTION static constexpr bool is_always_unique() noexcept { return true; }

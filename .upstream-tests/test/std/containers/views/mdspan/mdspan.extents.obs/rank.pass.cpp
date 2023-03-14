@@ -7,11 +7,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-//UNSUPPORTED: c++11, nvrtc && nvcc-12.0, nvrtc && nvcc-12.1
+// UNSUPPORTED: c++11, nvrtc && nvcc-12.0, nvrtc && nvcc-12.1
+// UNSUPPORTED: msvc && c++14, msvc && c++17
 
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
 #include "../mdspan.extents.util/extents_util.hpp"
+
+#include <test_macros.h>
 
 template <class> struct TestExtentsRank;
 template <size_t... Extents, size_t... DynamicSizes>
@@ -36,6 +39,7 @@ struct TestExtentsRank< TEST_TYPE >
 
         // Makes sure that `rank()` returns a constexpr
         cuda::std::array<int,_exts.rank()> a;
+        unused(a);
     }
 };
 

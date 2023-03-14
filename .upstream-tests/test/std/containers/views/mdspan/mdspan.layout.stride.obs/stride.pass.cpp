@@ -7,11 +7,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-//UNSUPPORTED: c++11, nvrtc && nvcc-12.0, nvrtc && nvcc-12.1
+// UNSUPPORTED: c++11, nvrtc && nvcc-12.0, nvrtc && nvcc-12.1
+// UNSUPPORTED: msvc && c++14, msvc && c++17
 
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
 #include "../mdspan.layout.util/layout_util.hpp"
+
+#include <test_macros.h>
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
@@ -54,8 +57,8 @@ int main(int, char**)
 
     // constraint: extents_­type?::?rank() > 0
     {
-        ext0d_t e{};
-        cuda::std::layout_stride::mapping<ext0d_t> m{ e, cuda::std::array<index_t,0>{} };
+        ext0d_t e0d{};
+        cuda::std::layout_stride::mapping<ext0d_t> m{ e0d, cuda::std::array<index_t,0>{} };
 
         unused( m );
 

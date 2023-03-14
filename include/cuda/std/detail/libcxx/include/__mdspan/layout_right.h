@@ -212,7 +212,7 @@ class layout_right::mapping {
     )
     __MDSPAN_HOST_DEVICE
     constexpr index_type operator()(_Indices... __idxs) const noexcept {
-      return __compute_offset(__rank_count<0, extents_type::rank()>(), __idxs...);
+      return __compute_offset(__rank_count<0, extents_type::rank()>(), static_cast<index_type>(__idxs)...);
     }
 
     __MDSPAN_INLINE_FUNCTION static constexpr bool is_always_unique() noexcept { return true; }

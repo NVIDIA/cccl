@@ -208,7 +208,8 @@ class layout_left::mapping {
     )
     __MDSPAN_HOST_DEVICE
     constexpr index_type operator()(_Indices... __idxs) const noexcept {
-      return __compute_offset(__rank_count<0, extents_type::rank()>(), __idxs...);
+      // Immediately cast incoming indices to `index_type`
+      return __compute_offset(__rank_count<0, extents_type::rank()>(), static_cast<index_type>(__idxs)...);
     }
 
 

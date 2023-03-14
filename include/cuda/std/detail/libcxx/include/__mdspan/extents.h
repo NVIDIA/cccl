@@ -98,14 +98,20 @@ static constexpr false_type __check_compatible_extents(
   false_type, _CUDA_VSTD::integer_sequence<size_t, _Extents...>, _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>
 ) noexcept { return { }; }
 
+// This helper prevents ICE's on MSVC.
+template <size_t _Lhs, size_t _Rhs>
+struct __compare_extent_compatible : integral_constant<bool,
+    _Lhs == dynamic_extent ||
+    _Rhs == dynamic_extent ||
+    _Lhs == _Rhs>
+{};
+
 template <size_t... _Extents, size_t... _OtherExtents>
 static integral_constant<
   bool,
   __MDSPAN_FOLD_AND(
     (
-      _Extents == dynamic_extent
-        || _OtherExtents == dynamic_extent
-        || _Extents == _OtherExtents
+      __compare_extent_compatible<_Extents, _OtherExtents>::value
     ) /* && ... */
   )
 >

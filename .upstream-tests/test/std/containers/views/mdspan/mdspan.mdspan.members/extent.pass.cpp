@@ -7,7 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-//UNSUPPORTED: c++11, nvrtc && nvcc-12.0, nvrtc && nvcc-12.1
+// UNSUPPORTED: c++11, nvrtc && nvcc-12.0, nvrtc && nvcc-12.1
+// UNSUPPORTED: msvc && c++14, msvc && c++17
 
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
@@ -43,7 +44,6 @@ int main(int, char**)
     }
 
     {
-        cuda::std::array<data_t, 1> d{42};
         cuda::std::mdspan<data_t, cuda::std::extents<index_t, dyn, dyn>, cuda::std::layout_left> m{d.data(), 16, 32};
 
         assert( m.extent(0) == 16 );
@@ -64,4 +64,3 @@ int main(int, char**)
 
     return 0;
 }
-

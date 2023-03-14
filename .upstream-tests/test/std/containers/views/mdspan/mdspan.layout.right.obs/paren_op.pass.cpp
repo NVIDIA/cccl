@@ -7,12 +7,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-//UNSUPPORTED: c++11, nvrtc && nvcc-12.0, nvrtc && nvcc-12.1
+// UNSUPPORTED: c++11, nvrtc && nvcc-12.0, nvrtc && nvcc-12.1
+// UNSUPPORTED: msvc && c++14, msvc && c++17
 
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
 #include "../my_int.hpp"
 #include "../mdspan.layout.util/layout_util.hpp"
+
+#include <test_macros.h>
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
