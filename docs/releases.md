@@ -21,3 +21,5 @@ The latest ABI version is always the default.
 | 1.7.0       | 4, 3, 2         | CUDA 11.6              | `atomic_ref`, 128 bit support         |
 | 1.8.0       | 4, 3, 2         | CUDA 11.7              | `<cuda/std/bit>`, `<cuda/std/array>`  |
 | 1.8.1       | 4, 3, 2         | CUDA 11.8              | Bugfixes and documentation updates    |
+| 1.9.0       | 4, 3, 2         | CUDA 12.0              | `float/double` support for `atomic`   |
+| 2.1.0       | 4, 3, 2         |                        | `span`, `mdspan`, `concepts`          |

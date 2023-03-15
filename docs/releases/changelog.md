@@ -10,6 +10,70 @@ It pulls in the latest version of upstream libc++ and marks the beginning of
   automatic tracking of upstream.
 -->
 
+## libcu++ 2.1.0
+
+Adds `<cuda/std/span>`, `<cuda/std/mdspan>`, and `<cuda/std/concepts>` to libcu++.
+
+We are excited to announce the release of libcudacxx 2.1. While there are no breaking changes in this release, we are increasing the semantic major version to better synchronize our release versions with [Thrust](https://github.com/NVIDIA/thrust) and [CUB](https://github.com/NVIDIA/cub) repositories. This effort aims to better unify our libraries, and ensure that users can more easily determine which versions of each library are compatible with one another. We are making this change because we want to start thinking about these three projects not as independent libraries, but as three parts of a single, [Core CUDA C++ Library (CCCL)](https://github.com/NVIDIA/cccl). In the near future, before the next release, we plan to merge the three libraries into a single monorepository at [nvidia/cccl](https://github.com/NVIDIA/cccl). We believe that this consolidation will make it even easier for users to take advantage of the powerful features and optimizations available in our CUDA libraries.
+
+In an effort to modernize our codebase and introduce new features, we have consolidated the list of supported compilers. For 2.1.0 we support as host compilers the GNU Compiler Collection (gcc) down to version `7.5` and LLVMs clang down to version `7.1.0`.
+
+Supported ABI Versions: 4 (default), 3, and 2.
+
+### New Features
+
+- #313: Add `cuda/std/span` and backport it to C++14
+- #299: Add `cuda/std/mdspan` and backport it to C++14.
+  - Thanks Yu You for this contribution.
+- #349: Add `cuda/std/concepts` and backport them to C++14. You will be able to utilize C++20 concepts already in C++14/17 through existing SFINAE techniques.
+ - #333: Add support for structured bindings for `cuda::std::tuple`, `cuda::std::pair` and `cuda::std::array`.
+
+### Issues Fixed
+
+- #328: Docs: Fix broken links.
+  - Thanks chaosink for this contribution.
+- #329: Block local memory tests on pascal.
+- #332: Add support for clang-15.
+- #317: Fix structured binding support.
+- #331: Correct issues with CMake install rules.
+- #301: Move and update "memory model" docs.
+- #323: Fix broken links in documentation.
+- #232: Document `<nv/target>` in an example.
+- #257: Add documentation for atomic_ref.
+- #336: Fetch host `<utility>` to populate `tuple_size`.
+- #340: Add tests for host only TUs and fix several found issues.
+- #335: Modularize `<type_traits>`.
+- #330: Modularize `<iterator>`.
+- #345: Fix warning about unqualified move.
+- #342: Silence deprecation and attribute warnings when building libcu++.
+- #344: Remove invalid qualification of `initializer_list`.
+- #347: Fix errors in atomic with small aggregates and enum classes.
+- #352: Make lerp usable on device.
+- #346: Add more dialects to host only TU tests.
+- #360: Add check for deduction guides macro to functional/reference_wrapper.h.
+- #359: Fix definition of `disjunction` for MSVC.
+- #364: Split memcpy_async tests into a few other tests.
+- #365: Remove gcc-6 from the compose file.
+- #350: Modularize `<utility>`.
+- #107: Description of policy for backporting Standard C++ features.
+- #128: Fix a typo in the `cuda::` heterogeneous policy.
+- #369: Fix cuda::atomic_thread_fence example.
+- #110: Fixed rename errors.
+- #353: Update thread scope for synchronization domains.
+- #367: Fix warnings in several headers.
+- #379: Update atomics backend to be compatible with `atomic_ref`.
+- #378: Prevent conflict with MSVC macros in 14.35.
+- #355: Modularize `<functional>`.
+- #309: Add an experimental `{async_}resource_ref`.
+- #372: Improve handling of internal headers and modularization.
+- #383: Fix various issues in CPOs and `tuple`.
+- #386: Fix proclaim_return_type copy constructor.
+- #389: Fix atomic_ref example in docs.
+  - Thanks Daniel Jünger for this contribution.
+- #388: Fix `_EnableConstructor` in `cuda::std::tuple` to be dependent on a template argument.
+- #384: Move the `unused` helper function into `test_macros.h`.
+- #391: Fix issues in mdspan found on MSVC.
+
 ## libcu++ 1.9.0
 
 Adds `float` and `double` support to `cuda::std::atomic` and `cuda::atomic`.

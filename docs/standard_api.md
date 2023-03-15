@@ -27,14 +27,15 @@ Feature availability:
   - `void_t`
   - Trait operations: `conjunction`,`negation`,`disjunction`
   - `invoke_result`
-- C++20 `<concepts>` are available in C++14
+- C++20 `<concepts>` are available in C++14.
   - all standard concepts are available in C++14 and C++17. However, they need to be used similar to type traits as language concepts are not available.
-- C++20 `<span>` is mostly available in C++14
+- C++20 `<span>` is mostly available in C++14.
   - With the exception of the range based constructors all features are available in C++14 and C++17. The range based constructors are emulated but not 100% equivalent.
-- C++20 features of `<functional>` have been partially ported to C++17
-  - `bind_front` is available in C++17
-- C++23 `<mdspan>` is available in C++17
-  - mdspan is feature complete in C++17 onwards
+- C++20 features of `<functional>` have been partially ported to C++17.
+  - `bind_front` is available in C++17.
+- C++23 `<mdspan>` is available in C++17.
+  - mdspan is feature complete in C++17 onwards.
+  - mdspan on msvc is only supported in C++20 and onwards.
 
 ## Synchronization Library
 
@@ -65,4 +66,3 @@ Any Standard C++ header not listed below is omitted.
 [`<cuda/std/semaphore>`]: https://en.cppreference.com/w/cpp/header/semaphore
 [`<cuda/std/cassert>`]: https://en.cppreference.com/w/cpp/header/cassert
 [`<cuda/std/cstddef>`]: https://en.cppreference.com/w/cpp/header/cstddef
-
