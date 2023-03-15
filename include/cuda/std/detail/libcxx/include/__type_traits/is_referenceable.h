@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -26,8 +26,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
 
 template <class _Tp>
-struct __libcpp_is_referenceable 
-  : public integral_constant<bool, _LIBCUDACXX_IS_REFERENCEABLE(_Tp)> 
+struct __libcpp_is_referenceable
+  : public integral_constant<bool, _LIBCUDACXX_IS_REFERENCEABLE(_Tp)>
   {};
 
 #else

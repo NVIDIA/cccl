@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,8 +28,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_UNSIGNED) && !defined(_LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK) && !(defined(_LIBCUDACXX_APPLE_CLANG_VER) && _LIBCUDACXX_APPLE_CLANG_VER < 1400)
 
 template<class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_unsigned 
-    : public integral_constant<bool, _LIBCUDACXX_IS_UNSIGNED(_Tp)> 
+struct _LIBCUDACXX_TEMPLATE_VIS is_unsigned
+    : public integral_constant<bool, _LIBCUDACXX_IS_UNSIGNED(_Tp)>
     {};
 
 #if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -37,7 +37,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_unsigned_v = _LIBCUDACXX_IS_UNSIGNED(_Tp);
 #endif
 
-#else 
+#else
 
 template <class _Tp, bool = is_integral<_Tp>::value>
 struct __libcpp_is_unsigned_impl : public _BoolConstant<(_Tp(0) < _Tp(-1))> {};

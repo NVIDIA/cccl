@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -56,7 +56,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     typename(common_type_t<_Tp, _Up>),
     typename(common_type_t<_Up, _Tp>)
   ));
-   
+
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT _Common_type_exists = _LIBCUDACXX_FRAGMENT(__common_type_exists_, _Tp, _Up);
 
@@ -68,7 +68,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Tp>()),
     static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Up>())
   ));
-   
+
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT _Common_type_constructible = _LIBCUDACXX_FRAGMENT(__common_type_constructible_, _Tp, _Up);
 

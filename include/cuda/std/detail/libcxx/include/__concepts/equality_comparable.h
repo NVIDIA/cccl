@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -51,7 +51,7 @@ concept equality_comparable_with =
       __make_const_lvalue_ref<_Tp>,
       __make_const_lvalue_ref<_Up>>> &&
   __weakly_equality_comparable_with<_Tp, _Up>;
-  
+
 #elif _LIBCUDACXX_STD_VER > 11
 
 template<class _Tp>
@@ -77,7 +77,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
    requires(__boolean_testable<decltype(__u != __t)>)));
 
 template<class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT __weakly_equality_comparable_with = 
+_LIBCUDACXX_CONCEPT __weakly_equality_comparable_with =
   _LIBCUDACXX_FRAGMENT(__weakly_equality_comparable_with_, _Tp, _Up);
 
 template<class _Tp>
@@ -95,7 +95,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
       __make_const_lvalue_ref<_Tp>,
       __make_const_lvalue_ref<_Up>>>),
     requires(__weakly_equality_comparable_with<_Tp, _Up>)));
-  
+
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT equality_comparable_with = _LIBCUDACXX_FRAGMENT(__equality_comparable_with_, _Tp, _Up);
 

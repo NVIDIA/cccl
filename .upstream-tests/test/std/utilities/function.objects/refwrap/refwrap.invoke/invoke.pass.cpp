@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -169,7 +169,7 @@ test_int_1()
     }
     // member data pointer
     {
-    // gcc complains about a non existing parenthesis without the needless alias 
+    // gcc complains about a non existing parenthesis without the needless alias
     using ptr_to_member = int A_int_1::*;
     ptr_to_member fp = &A_int_1::data_;
     cuda::std::reference_wrapper<int A_int_1::*> r1(fp);

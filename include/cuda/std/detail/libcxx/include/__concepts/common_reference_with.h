@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -46,7 +46,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     typename(common_reference_t<_Tp, _Up>),
     typename(common_reference_t<_Up, _Tp>)
   ));
-   
+
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT _Common_reference_exists = _LIBCUDACXX_FRAGMENT(__common_reference_exists_, _Tp, _Up);
 

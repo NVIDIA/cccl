@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,7 +29,7 @@ template<typename, typename _Tp> struct __select_2nd { typedef _LIBCUDACXX_NODEB
 #if defined(_LIBCUDACXX_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
 
 template <class _T1, class _T2> struct _LIBCUDACXX_TEMPLATE_VIS is_assignable
-    : public integral_constant<bool, _LIBCUDACXX_IS_ASSIGNABLE(_T1, _T2)> 
+    : public integral_constant<bool, _LIBCUDACXX_IS_ASSIGNABLE(_T1, _T2)>
     {};
 
 #if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

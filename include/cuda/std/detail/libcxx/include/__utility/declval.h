@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,7 +23,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // Suppress deprecation notice for volatile-qualified return type resulting
 // from volatile-qualified types _Tp.
 _LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
-template <class _Tp> 
+template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _Tp&& __declval(int);
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _Tp __declval(long);
