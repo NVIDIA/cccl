@@ -15,6 +15,8 @@
 #error "<__cuda/chrono> should only be included in from <cuda/std/chrono>"
 #endif // __cuda_std__
 
+#include <nv/target>
+
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
 #endif
@@ -26,17 +28,19 @@ namespace chrono {
 inline _LIBCUDACXX_INLINE_VISIBILITY
 system_clock::time_point system_clock::now() _NOEXCEPT
 {
-#ifdef __CUDA_ARCH__
+NV_DISPATCH_TARGET(
+NV_IS_DEVICE, (
     uint64_t __time;
     asm volatile("mov.u64 %0, %%globaltimer;":"=l"(__time)::);
     return time_point(duration_cast<duration>(nanoseconds(__time)));
-#else
+),
+NV_IS_HOST, (
     return time_point(duration_cast<duration>(nanoseconds(
             ::std::chrono::duration_cast<::std::chrono::nanoseconds>(
                 ::std::chrono::system_clock::now().time_since_epoch()
             ).count()
            )));
-#endif
+));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
