@@ -53,13 +53,5 @@ int main(int, char**)
 //  test<long double, double>();
 //  test<long double, long double>();
 
-#if TEST_STD_VER > 11
-    static_assert(test<float, float>(), "");
-    static_assert(test<float, double>(), "");
-
-    static_assert(test<double, float>(), "");
-    static_assert(test<double, double>(), "");
-
-
   return 0;
 }

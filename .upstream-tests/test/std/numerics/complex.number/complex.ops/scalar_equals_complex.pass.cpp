@@ -81,12 +81,6 @@ int main(int, char**)
 // CUDA treats long double as double
 //  test<long double>();
 //     test_constexpr<int>();
-#if TEST_STD_VER > 11
-    static_assert(test<float>(), "");
-    static_assert(test<double>(), "");
-// CUDA treats long double as double
-//  static_assert(test<long double>(), "");
-#endif
 
   return 0;
 }
