@@ -10,6 +10,9 @@
 
 // We use <stdio.h> instead of <iostream> to avoid relying on the host system's
 // C++ standard library.
+#ifndef _LIBCUDACXX_FORCE_INCLUDE_H
+#define _LIBCUDACXX_FORCE_INCLUDE_H
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -92,3 +95,4 @@ int main(int argc, char** argv)
 
 #define main fake_main
 
+#endif

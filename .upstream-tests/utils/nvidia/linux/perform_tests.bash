@@ -71,7 +71,7 @@ function section_separator {
 LIBCXX_LOG=$(mktemp)
 LIBCUDACXX_LOG=$(mktemp)
 
-KNOWN_COMPUTE_ARCHS="50 52 53 60 61 62 70 72 75 80 86 87 90"
+KNOWN_COMPUTE_ARCHS="50 52 53 60 61 62 70 72 75 80 86 87 89 90"
 
 function report_and_exit {
   # If any of the lines searched for below aren't present in the log files, the
@@ -370,4 +370,3 @@ fi
 ################################################################################
 
 report_and_exit
-
