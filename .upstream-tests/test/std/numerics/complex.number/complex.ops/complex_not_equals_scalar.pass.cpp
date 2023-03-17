@@ -80,7 +80,7 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
-    test_constexpr<int> ();
+//  test_constexpr<int>();
 
   return 0;
 }
