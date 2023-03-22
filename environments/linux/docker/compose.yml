@@ -3,7 +3,6 @@ services:
   ubuntu22.04:
     image: "local/cccl-ubuntu22.04"
     tty: true
-    profiles: ["base"]
     build:
       cache_from:
         - "local/cccl-ubuntu22.04:latest"
@@ -14,7 +13,7 @@ services:
       args: &ubuntu22-args
         BUILDKIT_INLINE_CACHE: "1"
         USE_LLVM_INSTALLER: "1"
-        ROOT_IMAGE: "nvcr.io/nvidia/cuda:12.0.0-devel-ubuntu22.04"
+        ROOT_IMAGE: "nvcr.io/nvidia/cuda:12.1.0-devel-ubuntu22.04"
         COMPILERS: "g++-11 g++-12 clang-11 clang-12 clang-13 clang-14 clang-15"
     deploy: &deploy-template
       resources:
@@ -27,7 +26,6 @@ services:
   ubuntu20.04:
     image: "local/cccl-ubuntu20.04"
     tty: true
-    profiles: ["base"]
     build:
       cache_from:
         - "local/cccl-ubuntu20.04:latest"
@@ -38,14 +36,13 @@ services:
       args: &ubuntu20-args
         BUILDKIT_INLINE_CACHE: "1"
         USE_LLVM_INSTALLER: 0
-        ROOT_IMAGE: "nvcr.io/nvidia/cuda:12.0.0-devel-ubuntu20.04"
+        ROOT_IMAGE: "nvcr.io/nvidia/cuda:12.1.0-devel-ubuntu20.04"
         COMPILERS: "g++-8 g++-9 g++-10 clang-8 clang-9 clang-10"
     deploy: *deploy-template
 
   ubuntu18.04:
     image: "local/cccl-ubuntu18.04"
     tty: true
-    profiles: ["base"]
     build:
       cache_from:
         - "local/cccl-ubuntu18.04:latest"
@@ -56,7 +53,7 @@ services:
       args: &ubuntu18-args
         BUILDKIT_INLINE_CACHE: "1"
         USE_LLVM_INSTALLER: 0
-        ROOT_IMAGE: "nvcr.io/nvidia/cuda:12.0.0-devel-ubuntu18.04"
+        ROOT_IMAGE: "nvcr.io/nvidia/cuda:12.1.0-devel-ubuntu18.04"
         COMPILERS: "g++-6 g++-7 clang-7"
     deploy: *deploy-template
 
@@ -81,7 +78,7 @@ services:
       service: ubuntu22.04
     image: "libcudacxx/gcc-11"
     container_name: gcc-11
-    profiles: ["gcc-11"]
+    profiles: ["gcc-11", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -94,7 +91,7 @@ services:
       service: ubuntu22.04
     image: "libcudacxx/gcc-12"
     container_name: gcc-12
-    profiles: ["gcc-12"]
+    profiles: ["gcc-12", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -107,7 +104,7 @@ services:
       service: ubuntu22.04
     image: "libcudacxx/clang-11"
     container_name: clang-11
-    profiles: ["clang-11"]
+    profiles: ["clang-11", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -120,7 +117,7 @@ services:
       service: ubuntu22.04
     image: "libcudacxx/clang-12"
     container_name: clang-12
-    profiles: ["clang-12"]
+    profiles: ["clang-12", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -133,7 +130,7 @@ services:
       service: ubuntu22.04
     image: "libcudacxx/clang-13"
     container_name: clang-13
-    profiles: ["clang-13"]
+    profiles: ["clang-13", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -146,7 +143,7 @@ services:
       service: ubuntu22.04
     image: "libcudacxx/clang-14"
     container_name: clang-14
-    profiles: ["clang-14"]
+    profiles: ["clang-14", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -159,7 +156,7 @@ services:
       service: ubuntu22.04
     image: "libcudacxx/clang-15"
     container_name: clang-15
-    profiles: ["clang-15"]
+    profiles: ["clang-15", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -174,7 +171,7 @@ services:
       service: ubuntu20.04
     image: "libcudacxx/gcc-8"
     container_name: gcc-8
-    profiles: ["gcc-8"]
+    profiles: ["gcc-8", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -187,7 +184,7 @@ services:
       service: ubuntu20.04
     image: "libcudacxx/gcc-9"
     container_name: gcc-9
-    profiles: ["gcc-9"]
+    profiles: ["gcc-9", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -200,7 +197,7 @@ services:
       service: ubuntu20.04
     image: "libcudacxx/gcc-10"
     container_name: gcc-10
-    profiles: ["gcc-10"]
+    profiles: ["gcc-10", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -213,7 +210,7 @@ services:
       service: ubuntu20.04
     image: "libcudacxx/clang-8"
     container_name: clang-8
-    profiles: ["clang-8"]
+    profiles: ["clang-8", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -226,7 +223,7 @@ services:
       service: ubuntu20.04
     image: "libcudacxx/clang-9"
     container_name: clang-9
-    profiles: ["clang-9"]
+    profiles: ["clang-9", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -239,7 +236,7 @@ services:
       service: ubuntu20.04
     image: "libcudacxx/clang-10"
     container_name: clang-10
-    profiles: ["clang-10"]
+    profiles: ["clang-10", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -254,7 +251,7 @@ services:
       service: ubuntu18.04
     image: "libcudacxx/gcc-7"
     container_name: gcc-7
-    profiles: ["gcc-7"]
+    profiles: ["gcc-7", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
@@ -267,7 +264,7 @@ services:
       service: ubuntu18.04
     image: "libcudacxx/clang-7"
     container_name: clang-7
-    profiles: ["clang-7"]
+    profiles: ["clang-7", "all", "base"]
     build:
       context: ../../../
       dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
