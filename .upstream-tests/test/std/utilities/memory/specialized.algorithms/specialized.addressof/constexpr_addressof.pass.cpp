@@ -31,16 +31,16 @@ struct A
     int n;
 };
 
-__device__ constexpr int i = 0;
-static_assert(cuda::std::addressof(i) == &i, "");
+__device__ constexpr int global_integer = 0;
+static_assert(cuda::std::addressof(global_integer) == &global_integer, "");
 
-__device__ constexpr double d = 0.0;
-static_assert(cuda::std::addressof(d) == &d, "");
+__device__ constexpr double global_double = 0.0;
+static_assert(cuda::std::addressof(global_double) == &global_double, "");
 
 #ifndef __CUDA_ARCH__ // fails in __cudaRegisterVariable
-__device__ constexpr A a{};
-__device__ constexpr const A* ap = cuda::std::addressof(a);
-static_assert(&(ap->n) == &(a.n), "");
+__device__ constexpr A global_struct{};
+__device__ constexpr const A* address = cuda::std::addressof(global_struct);
+static_assert(&(address->n) == &(global_struct.n), "");
 #endif
 #endif
 

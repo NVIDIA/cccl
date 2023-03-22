@@ -79,7 +79,8 @@ constexpr bool testConstexprSpan()
     ASSERT_NOEXCEPT(cuda::std::span<T>   {s1});
 
     return
-        s1.data() == nullptr && s1.size() == 0
+        s0.data() == nullptr && s0.size() == 0
+    &&  s1.data() == nullptr && s1.size() == 0
     &&  s2.data() == nullptr && s2.size() == 0;
 }
 
@@ -95,6 +96,7 @@ void testRuntimeSpan()
     ASSERT_NOEXCEPT(cuda::std::span<T, 0>{s1});
     ASSERT_NOEXCEPT(cuda::std::span<T>   {s1});
 
+    assert(s0.data() == nullptr && s0.size() == 0);
     assert(s1.data() == nullptr && s1.size() == 0);
     assert(s2.data() == nullptr && s2.size() == 0);
 }

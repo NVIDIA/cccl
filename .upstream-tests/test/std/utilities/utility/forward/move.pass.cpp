@@ -31,11 +31,11 @@ __host__ __device__ const move_only csource() {return move_only();}
 
 __host__ __device__ void test(move_only) {}
 
-__device__ int x = 42;
-__device__ const int& cx = x;
+__device__ int global_var = 42;
+__device__ const int& global_reference = global_var;
 
 template <class QualInt>
-__host__ __device__ QualInt get() TEST_NOEXCEPT { return static_cast<QualInt>(x); }
+__host__ __device__ QualInt get() TEST_NOEXCEPT { return static_cast<QualInt>(global_var); }
 
 STATIC_TEST_GLOBAL_VAR int copy_ctor = 0;
 STATIC_TEST_GLOBAL_VAR int move_ctor = 0;
@@ -60,10 +60,10 @@ __host__ __device__ constexpr bool test_constexpr_move() {
 int main(int, char**)
 {
     { // Test return type and noexcept.
-        static_assert(cuda::std::is_same<decltype(cuda::std::move(x)), int&&>::value, "");
-        ASSERT_NOEXCEPT(cuda::std::move(x));
-        static_assert(cuda::std::is_same<decltype(cuda::std::move(cx)), const int&&>::value, "");
-        ASSERT_NOEXCEPT(cuda::std::move(cx));
+        static_assert(cuda::std::is_same<decltype(cuda::std::move(global_var)), int&&>::value, "");
+        ASSERT_NOEXCEPT(cuda::std::move(global_var));
+        static_assert(cuda::std::is_same<decltype(cuda::std::move(global_reference)), const int&&>::value, "");
+        ASSERT_NOEXCEPT(cuda::std::move(global_reference));
         static_assert(cuda::std::is_same<decltype(cuda::std::move(42)), int&&>::value, "");
         ASSERT_NOEXCEPT(cuda::std::move(42));
         static_assert(cuda::std::is_same<decltype(cuda::std::move(get<const int&&>())), const int&&>::value, "");
