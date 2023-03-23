@@ -38,12 +38,12 @@ struct decay {
 #else
 
 template <class _Up, bool>
-struct __decay {
+struct __decay_impl {
     typedef _LIBCUDACXX_NODEBUG_TYPE __remove_cv_t<_Up> type;
 };
 
 template <class _Up>
-struct __decay<_Up, true> {
+struct __decay_impl<_Up, true> {
 public:
     typedef _LIBCUDACXX_NODEBUG_TYPE __conditional_t
                      <
@@ -64,7 +64,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS decay
 private:
     typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tp> _Up;
 public:
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename __decay<_Up, __libcpp_is_referenceable<_Up>::value>::type type;
+  typedef _LIBCUDACXX_NODEBUG_TYPE typename __decay_impl<_Up, __libcpp_is_referenceable<_Up>::value>::type type;
 };
 #endif // defined(_LIBCUDACXX_DECAY) && !defined(_LIBCUDACXX_USE_DECAY_FALLBACK)
 

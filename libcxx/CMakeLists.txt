@@ -612,6 +612,9 @@ function(cxx_add_warning_flags target)
       -Wno-literal-suffix
       -Wno-c++14-compat
       -Wno-noexcept-type)
+  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "IntelLLVM")
+    target_add_compile_flags_if_supported(${target} PRIVATE
+      -fno-fast-math)
   endif()
   if (LIBCXX_ENABLE_WERROR)
     target_add_compile_flags_if_supported(${target} PRIVATE -Werror)

@@ -43,6 +43,13 @@ if (NOT MSVC)
      --compiler-options=-Wextra")
 endif()
 
+# Intel OneAPI compiler has fast math enabled by default which breaks almost all floating point tests
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM")
+  set(LIBCUDACXX_TEST_COMPILER_FLAGS
+    "${LIBCUDACXX_TEST_COMPILER_FLAGS} \
+    --compiler-options=-fno-fast-math")
+endif()
+
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
   set(LIBCUDACXX_TEST_COMPILER_FLAGS
     "${LIBCUDACXX_TEST_COMPILER_FLAGS} \

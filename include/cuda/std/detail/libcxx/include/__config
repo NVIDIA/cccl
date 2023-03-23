@@ -648,8 +648,8 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR(...) __has_virtual_destructor(__VA_ARGS__)
 #endif
 
-#if __check_builtin(is_literal)
-#define _LIBCUDACXX_IS_LITERAL(...) __is_literal(__VA_ARGS__)
+#if __check_builtin(is_literal_type)
+#define _LIBCUDACXX_IS_LITERAL(...) __is_literal_type(__VA_ARGS__)
 #endif
 
 #if !defined(_LIBCUDACXX_HAS_NO_ASAN) && !__has_feature(address_sanitizer)
@@ -680,6 +680,10 @@ typedef __char32_t char32_t;
 
 #if __check_builtin(builtin_addressof)
 #define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
+#endif
+
+#if __check_builtin(decay)
+#define _LIBCUDACXX_DECAY(...) __decay(__VA_ARGS__)
 #endif
 
 #if __check_builtin(is_array)
@@ -2033,6 +2037,20 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #else
 #  define _LIBCUDACXX_CPO_ACCESSIBILITY _LIBCUDACXX_INLINE_VAR
 #endif
+
+#if defined(__INTEL_LLVM_COMPILER)
+#  define _LIBCUDACXX_USE_DECAY_FALLBACK
+#  define _LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK
+#  define _LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK
+#  define _LIBCUDACXX_USE_REMOVE_ALL_EXTENTS_FALLBACK
+#  define _LIBCUDACXX_USE_REMOVE_CONST_FALLBACK
+#  define _LIBCUDACXX_USE_REMOVE_CV_FALLBACK
+#  define _LIBCUDACXX_USE_REMOVE_CVREF_FALLBACK
+#  define _LIBCUDACXX_USE_REMOVE_EXTENT_FALLBACK
+#  define _LIBCUDACXX_USE_REMOVE_POINTER_FALLBACK
+#  define _LIBCUDACXX_USE_REMOVE_VOLATILE_FALLBACK
+#  define _LIBCUDACXX_USE_REMOVE_REFERENCE_T_FALLBACK
+#endif // __INTEL_LLVM_COMPILER
 
 #endif // __cplusplus
 
