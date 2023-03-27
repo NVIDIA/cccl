@@ -9,14 +9,13 @@ FROM ${ROOT_IMAGE} AS devenv
 
 ARG COMPILERS="gcc clang"
 
-ARG CMAKE_VER=3.23.1
+ARG CMAKE_VER=3.25.1
 ARG CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-Linux-x86_64.sh
 
 ARG UBUNTU_TOOL_DEB_REPO=https://ppa.launchpadcontent.net/ubuntu-toolchain-r/ppa/ubuntu
 ARG UBUNTU_TOOL_FINGER=60C317803A41BA51845E371A1E9377A2BA9EF27F
 
 ARG LLVM_INSTALLER=https://apt.llvm.org/llvm.sh
-ARG USE_LLVM_INSTALLER=1
 
 # `-y` answers yes to any interactive prompts.
 # `-qq` because apt is noisy
@@ -44,10 +43,6 @@ RUN function comment() { :; }; \
     ${APT_GET} --no-install-recommends install apt-utils curl wget git zip unzip tar \
         sudo make software-properties-common ninja-build ccache pkg-config \
         python3 python3-wheel python3-pip; \
-    comment "Install GCC and Clang"; \
-    # Unattended installation hack
-    if [ "${USE_LLVM_INSTALLER}" -eq "1" ]; then echo "\n" | bash /tmp/llvm.sh all; fi; \
-    ${APT_GET} install gcc g++ ${COMPILERS}; \
     comment "Install CMake"; \
     sh /tmp/cmake.sh --skip-license --prefix=/usr; \
     comment "Install Python utils"; \
@@ -65,6 +60,16 @@ ARG CUDACXX_PATH=/usr/local/cuda/bin/nvcc
 
 ARG HOST_CXX=gcc
 ARG CXX_DIALECT=11
+
+RUN function comment() { :; }; \
+    comment "Install GCC and Clang"; \
+    ${APT_GET} update; \
+    # Unattended installation hack
+    # Install twice because
+    if [ "${HOST_CXX}" = "clang++-15" ]; then echo "\n" | bash /tmp/llvm.sh 15; fi; \
+    if [ "${HOST_CXX}" = "clang++-16" ]; then echo "\n" | bash /tmp/llvm.sh 16; fi; \
+    ${APT_GET} install gcc g++ "${HOST_CXX}";
+
 
 # Attempt to load env from cccl/cuda
 ARG TEST_WITH_NVRTC=OFF
@@ -87,7 +92,7 @@ RUN cmake -S /libcudacxx -B /build \
         -DLIBCXX_ENABLE_FILESYSTEM=OFF \
         -DCMAKE_CXX_COMPILER=${HOST_CXX} \
         -DCMAKE_CUDA_COMPILER=${CUDACXX_PATH} \
-        -DCMAKE_CUDA_FLAGS="-allow-unsupported-compiler"
+        -DCMAKE_CUDA_FLAGS="-allow-unsupported-compiler -std=c++14"
 
 RUN ninja -C /build libcudacxx_tu_tests && ninja -C /build clean
 RUN ninja -C /build cxx
