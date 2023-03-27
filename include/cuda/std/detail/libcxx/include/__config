@@ -682,7 +682,8 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
 #endif
 
-#if __check_builtin(decay)
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(decay)
 #define _LIBCUDACXX_DECAY(...) __decay(__VA_ARGS__)
 #endif
 
@@ -755,35 +756,43 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_ARRAY_RANK(...) __array_rank(__VA_ARGS__)
 #endif
 
-#if __check_builtin(remove_all_extents)
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_all_extents)
 #define _LIBCUDACXX_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)
 #endif
 
-#if __check_builtin(remove_const)
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_const)
 #define _LIBCUDACXX_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
 #endif
 
-#if __check_builtin(remove_cv)
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_cv)
 #define _LIBCUDACXX_REMOVE_CV(...) __remove_cv(__VA_ARGS__)
 #endif
 
-#if __check_builtin(remove_cvref)
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_cvref)
 #define _LIBCUDACXX_REMOVE_CVREF(...) __remove_cvref(__VA_ARGS__)
 #endif
 
-#if __check_builtin(remove_extent)
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_extent)
 #define _LIBCUDACXX_REMOVE_EXTENT(...) __remove_extent(__VA_ARGS__)
 #endif
 
-#if __check_builtin(remove_pointer)
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_pointer)
 #define _LIBCUDACXX_REMOVE_POINTER(...) __remove_pointer(__VA_ARGS__)
 #endif
 
-#if __check_builtin(remove_reference_t)
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_reference_t)
 #define _LIBCUDACXX_REMOVE_REFERENCE_T(...) __remove_reference_t(__VA_ARGS__)
 #endif
 
-#if __check_builtin(remove_volatile)
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_volatile)
 #define _LIBCUDACXX_REMOVE_VOLATILE(...) __remove_volatile(__VA_ARGS__)
 #endif
 
