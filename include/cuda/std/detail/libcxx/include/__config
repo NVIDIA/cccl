@@ -717,7 +717,8 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_IS_REFERENCE(...) __is_reference(__VA_ARGS__)
 #endif
 
-#if __check_builtin(is_referenceable)
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(is_referenceable)
 #define _LIBCUDACXX_IS_REFERENCEABLE(...) __is_referenceable(__VA_ARGS__)
 #endif
 
@@ -740,11 +741,13 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_IS_VOID(...) __is_void(__VA_ARGS__)
 #endif
 
-#if __check_builtin(make_signed)
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(make_signed)
 #define _LIBCUDACXX_MAKE_SIGNED(...) __make_signed(__VA_ARGS__)
 #endif
 
-#if __check_builtin(make_unsigned)
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(make_unsigned)
 #define _LIBCUDACXX_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
 #endif
 
