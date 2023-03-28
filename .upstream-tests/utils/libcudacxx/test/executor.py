@@ -39,7 +39,7 @@ class LocalExecutor(Executor):
         cmd = cmd or [exe_path]
         if work_dir == '.':
             work_dir = os.getcwd()
-        out, err, rc = executeCommand(cmd, cwd=work_dir, env=env)
+        out, err, rc = executeCommand(cmd, cwd=work_dir, env=env, timeout=self.timeout)
         return (cmd, out, err, rc)
 
 

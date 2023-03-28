@@ -188,6 +188,7 @@ class Configuration(object):
 
     def configure_executor(self):
         exec_str = self.get_lit_conf('executor', "None")
+        exec_timeout = self.get_lit_conf('maxIndividualTestTime', "None")
         te = eval(exec_str)
         if te:
             self.lit_config.note("Using executor: %r" % exec_str)
@@ -200,6 +201,8 @@ class Configuration(object):
                                       " executor.")
         else:
             te = LocalExecutor()
+            if exec_timeout:
+                te.timeout = exec_timeout
             if self.lit_config.useValgrind:
                 te = ValgrindExecutor(self.lit_config.valgrindArgs, te)
         self.executor = te
