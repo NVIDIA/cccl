@@ -54,26 +54,33 @@ services:
         ROOT_IMAGE: "nvcr.io/nvidia/cuda:12.1.0-devel-ubuntu18.04"
     deploy: *deploy-template
 
-##### Not used yet
-##  nvhpc-ubuntu22.04:
-##    image: "local/cccl-nvhpc-ubuntu22.04"
-##    tty: true
-##    profiles: ["base"]
-##    build:
-##      context: .
-##      dockerfile: ubuntu.base.Dockerfile
-##      target: devenv
-##      args:
-##        ROOT_IMAGE: "nvcr.io/nvidia/nvhpc:22.7-devel-cuda11.7-ubuntu22.04"
-##    deploy: *deploy-template
 
 ## Configured images ##
 ### Ubuntu 22.04 images:
+  nvhpc:
+    image: "libcudacxx/nvhpc"
+    tty: true
+    profiles: ["nvhpc", "all", "base"]
+    build:
+      cache_from:
+        - "local/nvhpc:latest"
+        - "local/nvhpc:cached"
+      context: ../../../
+      dockerfile: environments/linux/docker/nvhpc.base.Dockerfile
+      target: libcudacxx-configured
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        ROOT_IMAGE: "nvcr.io/nvidia/nvhpc:23.1-devel-cuda12.0-ubuntu22.04"
+    deploy: *deploy-template
+
   icc-2022:
     image: "libcudacxx/icc-2022"
     profiles: ["icc-2022", "all", "base"]
     tty: true
     build:
+      cache_from:
+        - "local/icc-2022:latest"
+        - "local/icc-2022:cached"
       context: ../../../
       dockerfile: environments/linux/docker/icc.base.Dockerfile
       target: libcudacxx-configured
