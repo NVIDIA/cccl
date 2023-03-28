@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_LIMITS
-#define _CUDA_LIMITS
+#ifndef _CUDA_STD_LIMITS
+#define _CUDA_STD_LIMITS
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_LIMITS
+#endif // _CUDA_STD_LIMITS

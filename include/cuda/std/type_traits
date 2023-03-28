@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_TYPE_TRAITS
-#define _CUDA_TYPE_TRAITS
+#ifndef _CUDA_STD_TYPE_TRAITS
+#define _CUDA_STD_TYPE_TRAITS
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_TYPE_TRAITS
+#endif // _CUDA_STD_TYPE_TRAITS

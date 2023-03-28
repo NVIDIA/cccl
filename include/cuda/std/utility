@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_UTILITY
-#define _CUDA_UTILITY
+#ifndef _CUDA_STD_UTILITY
+#define _CUDA_STD_UTILITY
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_UTILITY
+#endif // _CUDA_STD_UTILITY

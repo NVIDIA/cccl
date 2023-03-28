@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_FUNCTIONAL
-#define _CUDA_FUNCTIONAL
+#ifndef _CUDA_STD_FUNCTIONAL
+#define _CUDA_STD_FUNCTIONAL
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_FUNCTIONAL
+#endif // _CUDA_STD_FUNCTIONAL

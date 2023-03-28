@@ -12,8 +12,8 @@
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif
 
-#ifndef _CUDA_SEMAPHORE
-#define _CUDA_SEMAPHORE
+#ifndef _CUDA_STD_SEMAPHORE
+#define _CUDA_STD_SEMAPHORE
 
 #include "detail/__config"
 
@@ -23,4 +23,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_SEMAPHORE
+#endif // _CUDA_STD_SEMAPHORE

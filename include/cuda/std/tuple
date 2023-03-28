@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_TUPLE
-#define _CUDA_TUPLE
+#ifndef _CUDA_STD_TUPLE
+#define _CUDA_STD_TUPLE
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_TUPLE
+#endif // _CUDA_STD_TUPLE

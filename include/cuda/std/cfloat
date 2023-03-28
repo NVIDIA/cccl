@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_CFLOAT
-#define _CUDA_CFLOAT
+#ifndef _CUDA_STD_CFLOAT
+#define _CUDA_STD_CFLOAT
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_CFLOAT
+#endif // _CUDA_STD_CFLOAT

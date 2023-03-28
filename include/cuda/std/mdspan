@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_MDSPAN
-#define _CUDA_MDSPAN
+#ifndef _CUDA_STD_MDSPAN
+#define _CUDA_STD_MDSPAN
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif // _CUDA_MDSPAN
+#endif // _CUDA_STD_MDSPAN

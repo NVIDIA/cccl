@@ -8,4 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#ifndef _CUDA_BARRIER
+#define _CUDA_BARRIER
+
 #include "std/barrier"
+
+#endif // _CUDA_BARRIER

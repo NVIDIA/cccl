@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_CONCEPTS
-#define _CUDA_CONCEPTS
+#ifndef _CUDA_STD_CONCEPTS
+#define _CUDA_STD_CONCEPTS
 
 #include "detail/__config"
 
@@ -18,4 +18,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_CONCEPTS
+#endif // _CUDA_STD_CONCEPTS

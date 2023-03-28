@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_CTIME
-#define _CUDA_CTIME
+#ifndef _CUDA_STD_CTIME
+#define _CUDA_STD_CTIME
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_CTIME
+#endif // _CUDA_STD_CTIME

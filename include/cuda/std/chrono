@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_CHRONO
-#define _CUDA_CHRONO
+#ifndef _CUDA_STD_CHRONO
+#define _CUDA_STD_CHRONO
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_CHRONO
+#endif // _CUDA_STD_CHRONO

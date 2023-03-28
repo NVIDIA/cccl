@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_CSTDINT
-#define _CUDA_CSTDINT
+#ifndef _CUDA_STD_CSTDINT
+#define _CUDA_STD_CSTDINT
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_CSTDINT
+#endif // _CUDA_STD_CSTDINT

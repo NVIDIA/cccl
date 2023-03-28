@@ -8,4 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#ifndef _CUDA_SEMAPHORE
+#define _CUDA_SEMAPHORE
+
 #include "std/semaphore"
+
+#endif // _CUDA_SEMAPHORE

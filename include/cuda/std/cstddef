@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_CSTDDEF
-#define _CUDA_CSTDDEF
+#ifndef _CUDA_STD_CSTDDEF
+#define _CUDA_STD_CSTDDEF
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_CSTDDEF
+#endif // _CUDA_STD_CSTDDEF

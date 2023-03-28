@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_RATIO
-#define _CUDA_RATIO
+#ifndef _CUDA_STD_RATIO
+#define _CUDA_STD_RATIO
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_RATIO
+#endif // _CUDA_STD_RATIO

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_CASSERT
-#define _CUDA_CASSERT
+#ifndef _CUDA_STD_CASSERT
+#define _CUDA_STD_CASSERT
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_CASSERT
+#endif // _CUDA_STD_CASSERT

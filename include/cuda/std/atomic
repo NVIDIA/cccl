@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_ATOMIC
-#define _CUDA_ATOMIC
+#ifndef _CUDA_STD_ATOMIC
+#define _CUDA_STD_ATOMIC
 
 #include "detail/__config"
 
@@ -19,4 +19,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_ATOMIC
+#endif // _CUDA_STD_ATOMIC

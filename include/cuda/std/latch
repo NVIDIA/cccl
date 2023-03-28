@@ -12,8 +12,8 @@
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif
 
-#ifndef _CUDA_LATCH
-#define _CUDA_LATCH
+#ifndef _CUDA_STD_LATCH
+#define _CUDA_STD_LATCH
 
 #include "detail/__config"
 
@@ -23,4 +23,4 @@
 
 #include "detail/__pragma_pop"
 
-#endif //_CUDA_LATCH
+#endif // _CUDA_STD_LATCH
