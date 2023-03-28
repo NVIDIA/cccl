@@ -110,7 +110,7 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 #endif // __CUDA_ARCH__
 #endif // !__GNUC__
 
-#ifdef _LIBCUDACXX_COMPILER_PGI
+#ifdef _LIBCUDACXX_COMPILER_NVHPC
 #define _LIBCUDACXX_UNREACHABLE_AFTER_SWITCH()
 #else
 #define _LIBCUDACXX_UNREACHABLE_AFTER_SWITCH() _LIBCUDACXX_UNREACHABLE()

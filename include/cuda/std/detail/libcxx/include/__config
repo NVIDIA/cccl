@@ -201,8 +201,8 @@ extern "C++" {
 #define __has_include(...) 0
 #endif
 
-#if defined(__PGIC__)
-#  define _LIBCUDACXX_COMPILER_PGI
+#if defined(__NVHPC__)
+#  define _LIBCUDACXX_COMPILER_NVHPC
 #elif defined(__clang__)
 #  define _LIBCUDACXX_COMPILER_CLANG
 #  ifndef __apple_build_version__
@@ -1088,7 +1088,7 @@ typedef __char32_t char32_t;
 
 #define _LIBCUDACXX_HAS_NO_VECTOR_EXTENSION
 
-#elif defined(_LIBCUDACXX_COMPILER_NVRTC) || defined(_LIBCUDACXX_COMPILER_PGI)
+#elif defined(_LIBCUDACXX_COMPILER_NVRTC) || defined(_LIBCUDACXX_COMPILER_NVHPC)
 
 #if !defined(__cpp_constexpr) || __cpp_constexpr < 201304L
 #define _LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR
@@ -1142,7 +1142,7 @@ typedef __char32_t char32_t;
 
 #endif // _LIBCUDACXX_COMPILER_[CLANG|GCC|MSVC|IBM|NVRTC]
 
-#if defined(_LIBCUDACXX_COMPILER_PGI) && !defined(__cuda_std__)
+#if defined(_LIBCUDACXX_COMPILER_NVHPC) && !defined(__cuda_std__)
 // Forcefully disable visibility controls when used as the standard library with NVC++.
 // TODO: reevaluate.
 #define _LIBCUDACXX_HIDE_FROM_ABI
@@ -1821,16 +1821,16 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 // #  define _LIBCUDACXX_HAS_C_ATOMIC_IMP
 #if defined(_LIBCUDACXX_COMPILER_CLANG)
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#elif defined(_LIBCUDACXX_COMPILER_GCC) || defined(_LIBCUDACXX_COMPILER_PGI)
+#elif defined(_LIBCUDACXX_COMPILER_GCC) || defined(_LIBCUDACXX_COMPILER_NVHPC)
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#elif defined(_LIBCUDACXX_COMPILER_PGI)
+#elif defined(_LIBCUDACXX_COMPILER_NVHPC)
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
 #elif defined(_LIBCUDACXX_COMPILER_MSVC)
 #  define _LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL
 #endif
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#if defined(_LIBCUDACXX_COMPILER_NVCC) || defined(_LIBCUDACXX_COMPILER_NVRTC) || defined(_LIBCUDACXX_COMPILER_PGI) || defined(__CUDACC__)
+#if defined(_LIBCUDACXX_COMPILER_NVCC) || defined(_LIBCUDACXX_COMPILER_NVRTC) || defined(_LIBCUDACXX_COMPILER_NVHPC) || defined(__CUDACC__)
 #  define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
 #endif
 
@@ -1892,7 +1892,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_FALLTHROUGH() ((void)0)
 #elif __has_cpp_attribute(clang::fallthrough)
 #  define _LIBCUDACXX_FALLTHROUGH() [[clang::fallthrough]]
-#elif defined(_LIBCUDACXX_COMPILER_PGI)
+#elif defined(_LIBCUDACXX_COMPILER_NVHPC)
 #  define _LIBCUDACXX_FALLTHROUGH()
 #elif __has_attribute(fallthough) || _GNUC_VER >= 700
 #  define _LIBCUDACXX_FALLTHROUGH() __attribute__((__fallthrough__))
