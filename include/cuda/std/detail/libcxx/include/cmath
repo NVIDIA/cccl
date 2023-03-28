@@ -304,7 +304,7 @@ long double    truncl(long double x);
 #include <__config>
 #endif // __cuda_std__
 
-#if !defined(__CUDACC_RTC__) || !defined(__cuda_std__)
+#if !defined(__CUDACC_RTC__) || !defined(__cuda_std__) || defined(_LIBCUDACXX_COMPILER_NVHPC)
 #include <math.h>
 #endif
 
@@ -325,7 +325,6 @@ long double    truncl(long double x);
 #define INFINITY __builtin_huge_val()
 #define NAN      __builtin_nan()
 #endif
-
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
