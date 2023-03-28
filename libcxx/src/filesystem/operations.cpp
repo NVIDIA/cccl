@@ -348,7 +348,7 @@ struct FileDescriptor {
   file_status get_status() const { return m_status; }
   StatT const& get_stat() const { return m_stat; }
 
-#ifndef _LIBCUDACXX_COMPILER_PGI
+#ifndef _LIBCUDACXX_COMPILER_NVHPC
   // NVC++ doesn't like static / unnamed namespace functions that aren't used, rather aggresively.
   bool status_known() const { return _CUDA_VSTD_FS::status_known(m_status); }
 #endif
@@ -1598,7 +1598,7 @@ static int CompareRootDir(PathParser *LHS, PathParser *RHS) {
 static int CompareRelative(PathParser *LHSPtr, PathParser *RHSPtr) {
   auto &LHS = *LHSPtr;
   auto &RHS = *RHSPtr;
-  
+
   int res;
   while (LHS && RHS) {
     if ((res = (*LHS).compare(*RHS)) != 0)
