@@ -42,14 +42,14 @@ RUN function comment() { :; }; \
     comment "Install basic build tools"; \
     ${APT_GET} --no-install-recommends install apt-utils curl wget git zip unzip tar \
         sudo make software-properties-common ninja-build ccache pkg-config \
-        python3 python3-wheel python3-pip; \
+        python3 python3-dev python3-wheel python3-pip; \
     comment "Install CMake"; \
     sh /tmp/cmake.sh --skip-license --prefix=/usr; \
     comment "Install Python utils"; \
     update-alternatives --quiet --install /usr/bin/python python $(which python3) 3; \
     update-alternatives --quiet --set python $(which python3); \
-    python3 -m pip install psutil setuptools wheel; \
-    python3 -m pip install lit; \
+    python3 -m pip install setuptools wheel; \
+    python3 -m pip install psutil lit; \
     rm -rf /var/lib/apt/lists/*
 
 # Assemble libcudacxx specific bits
