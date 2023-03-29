@@ -201,6 +201,7 @@ class Configuration(object):
                                       " executor.")
         else:
             te = LocalExecutor()
+            te.timeout = 0
             if exec_timeout:
                 te.timeout = exec_timeout
             if self.lit_config.useValgrind:
