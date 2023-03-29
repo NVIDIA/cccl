@@ -170,7 +170,7 @@ template<class _Tp, class _Up, class _Size>
 _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo {
-  _LIBCUDACXX_CPO_ACCESSIBILITY constexpr auto swap = __swap::__fn{};
+  _LIBCUDACXX_CPO_ACCESSIBILITY auto swap = __swap::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

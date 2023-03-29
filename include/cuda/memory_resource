@@ -200,7 +200,7 @@ struct __fn {
 _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo {
-  _LIBCUDACXX_CPO_ACCESSIBILITY constexpr auto get_property = __get_property::__fn{};
+  _LIBCUDACXX_CPO_ACCESSIBILITY auto get_property = __get_property::__fn{};
 } // namespace __cpo
 
 namespace mr
