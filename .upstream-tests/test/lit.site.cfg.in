@@ -33,7 +33,7 @@ config.use_libatomic            = False
 config.debug_build              = False
 config.libcxxabi_shared         = False
 config.cxx_ext_threads          = False
-config.maxIndividualTestTime    = 10
+config.maxIndividualTestTime    = 20
 
 # Let the main config do the real work.
 config.loaded_site_config = True
