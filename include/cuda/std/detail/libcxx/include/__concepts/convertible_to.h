@@ -52,7 +52,7 @@ template<class _From, class _To>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __convertible_to_,
   requires()(
-    requires(is_convertible_v<_From, _To>),
+    requires(_LIBCUDACXX_TRAIT(is_convertible, _From, _To)),
     requires(__test_conversion<_From, _To>)
   ));
 

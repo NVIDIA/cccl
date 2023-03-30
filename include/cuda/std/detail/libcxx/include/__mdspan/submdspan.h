@@ -572,14 +572,14 @@ __MDSPAN_TEMPLATE_REQUIRES(
   class _ET, class _EXT, class _LP, class _AP, class... _SliceSpecs,
   /* requires */ (
     (
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_same, _LP, layout_left)
-        || __MDSPAN_TRAIT(_CUDA_VSTD::is_same, _LP, layout_right)
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_same, _LP, layout_left)
+        || _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_same, _LP, layout_right)
         || __detail::_is_layout_stride<_LP>::value
     ) &&
     __MDSPAN_FOLD_AND((
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, size_t)
-        || __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, tuple<size_t, size_t>)
-        || __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, full_extent_t)
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, size_t)
+        || _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, tuple<size_t, size_t>)
+        || _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, full_extent_t)
     ) /* && ... */) &&
     sizeof...(_SliceSpecs) == _EXT::rank()
   )

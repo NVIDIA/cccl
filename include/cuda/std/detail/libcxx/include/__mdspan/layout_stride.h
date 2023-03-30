@@ -295,8 +295,8 @@ struct layout_stride {
       /* requires */ (
         // MSVC 19.32 does not like using index_type here, requires the typename _Extents::index_type
         // error C2641: cannot deduce template arguments for '_CUDA_VSTD::layout_stride::mapping'
-        __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, const remove_const_t<_IntegralTypes>&, typename _Extents::index_type) &&
-        __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, typename _Extents::index_type, const remove_const_t<_IntegralTypes>&)
+        _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, const remove_const_t<_IntegralTypes>&, typename _Extents::index_type) &&
+        _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, typename _Extents::index_type, const remove_const_t<_IntegralTypes>&)
       )
     )
     __MDSPAN_INLINE_FUNCTION
@@ -332,8 +332,8 @@ struct layout_stride {
       /* requires */ (
         // MSVC 19.32 does not like using index_type here, requires the typename _Extents::index_type
         // error C2641: cannot deduce template arguments for '_CUDA_VSTD::layout_stride::mapping'
-        __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, const remove_const_t<_IntegralTypes>&, typename _Extents::index_type) &&
-        __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, typename _Extents::index_type, const remove_const_t<_IntegralTypes>&)
+        _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, const remove_const_t<_IntegralTypes>&, typename _Extents::index_type) &&
+        _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, typename _Extents::index_type, const remove_const_t<_IntegralTypes>&)
       )
     )
     __MDSPAN_INLINE_FUNCTION
@@ -368,7 +368,7 @@ struct layout_stride {
     __MDSPAN_TEMPLATE_REQUIRES(
       class _StridedLayoutMapping,
       /* requires */ (
-        __MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, extents_type, typename _StridedLayoutMapping::extents_type) &&
+        _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, extents_type, typename _StridedLayoutMapping::extents_type) &&
         __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping> &&
         _StridedLayoutMapping::is_always_unique() &&
         _StridedLayoutMapping::is_always_strided()
@@ -378,7 +378,7 @@ struct layout_stride {
     template<class _StridedLayoutMapping>
     requires(
          __detail::__layout_mapping_alike<_StridedLayoutMapping> &&
-         __MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, extents_type, typename _StridedLayoutMapping::extents_type) &&
+         _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, extents_type, typename _StridedLayoutMapping::extents_type) &&
          _StridedLayoutMapping::is_always_unique() &&
          _StridedLayoutMapping::is_always_strided()
     )
@@ -445,8 +445,8 @@ struct layout_stride {
       class... _Indices,
       /* requires */ (
         sizeof...(_Indices) == _Extents::rank() &&
-        __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _Indices, index_type) /*&& ...*/ ) &&
-        __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Indices) /*&& ...*/)
+        __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _Indices, index_type) /*&& ...*/ ) &&
+        __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Indices) /*&& ...*/)
       )
     )
     __MDSPAN_FORCE_INLINE_FUNCTION

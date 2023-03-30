@@ -26,11 +26,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _LIBCUDACXX_STD_VER > 14
 template <class _Ty, class... _Others>
-_LIBCUDACXX_CONCEPT _One_of = (_CUDA_VSTD::is_same_v<_Ty, _Others> || ...);
+_LIBCUDACXX_CONCEPT _One_of = (is_same_v<_Ty, _Others> || ...);
 #elif _LIBCUDACXX_STD_VER > 11
 template <class _Ty, class... _Others>
-_LIBCUDACXX_CONCEPT _One_of =
-    _CUDA_VSTD::disjunction_v<_CUDA_VSTD::is_same<_Ty, _Others>...>;
+_LIBCUDACXX_CONCEPT _One_of = _LIBCUDACXX_TRAIT(disjunction, is_same<_Ty, _Others>...);
 #endif // _LIBCUDACXX_STD_VER > 11
 
 _LIBCUDACXX_END_NAMESPACE_STD

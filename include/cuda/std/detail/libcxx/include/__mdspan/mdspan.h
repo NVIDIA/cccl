@@ -156,9 +156,9 @@ public:
     requires(
        // Directly using rank_dynamic()>0 here doesn't work for nvcc
        (extents_type::rank_dynamic() >0) &&
-       __MDSPAN_TRAIT(_CUDA_VSTD::is_default_constructible, data_handle_type) &&
-       __MDSPAN_TRAIT(_CUDA_VSTD::is_default_constructible, mapping_type) &&
-       __MDSPAN_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)
+       _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, data_handle_type) &&
+       _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, mapping_type) &&
+       _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)
      ) = default;
 #endif
   __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mdspan(const mdspan&) = default;
@@ -167,11 +167,11 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class... _SizeTypes,
     /* requires */ (
-      __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */) &&
-      __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */) &&
+      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */) &&
+      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */) &&
       ((sizeof...(_SizeTypes) == rank()) || (sizeof...(_SizeTypes) == rank_dynamic())) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)
     )
   )
   __MDSPAN_INLINE_FUNCTION
@@ -183,11 +183,11 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class _SizeType, size_t _Np,
     /* requires */ (
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType) &&
       ((_Np == rank()) || (_Np == rank_dynamic())) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)
     )
   )
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
@@ -199,11 +199,11 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class _SizeType, size_t _Np,
     /* requires */ (
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType) &&
       ((_Np == rank()) || (_Np == rank_dynamic())) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)
     )
   )
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
@@ -215,15 +215,15 @@ public:
   __MDSPAN_FUNCTION_REQUIRES(
     (__MDSPAN_INLINE_FUNCTION constexpr),
     mdspan, (data_handle_type __p, const extents_type& __exts), ,
-    /* requires */ (__MDSPAN_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type) &&
-                    __MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type))
+    /* requires */ (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type) &&
+                    _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type))
   ) : __members(_CUDA_VSTD::move(__p), __map_acc_pair_t(mapping_type(__exts), accessor_type()))
   { }
 
   __MDSPAN_FUNCTION_REQUIRES(
     (__MDSPAN_INLINE_FUNCTION constexpr),
     mdspan, (data_handle_type __p, const mapping_type& __m), ,
-    /* requires */ (__MDSPAN_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type))
+    /* requires */ (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type))
   ) : __members(_CUDA_VSTD::move(__p), __map_acc_pair_t(__m, accessor_type()))
   { }
 
@@ -235,16 +235,16 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class _OtherElementType, class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor,
     /* requires */ (
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, typename _OtherLayoutPolicy::template mapping<_OtherExtents>) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, accessor_type, _OtherAccessor)
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, typename _OtherLayoutPolicy::template mapping<_OtherExtents>) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, accessor_type, _OtherAccessor)
     )
   )
   __MDSPAN_INLINE_FUNCTION
   constexpr mdspan(const mdspan<_OtherElementType, _OtherExtents, _OtherLayoutPolicy, _OtherAccessor>& __other)
     : __members(__other.__ptr_ref(), __map_acc_pair_t(__other.__mapping_ref(), __other.__accessor_ref()))
   {
-      static_assert(__MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, data_handle_type, typename _OtherAccessor::data_handle_type),"Incompatible data_handle_type for mdspan construction");
-      static_assert(__MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents),"Incompatible extents for mdspan construction");
+      static_assert(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, data_handle_type, typename _OtherAccessor::data_handle_type),"Incompatible data_handle_type for mdspan construction");
+      static_assert(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents),"Incompatible extents for mdspan construction");
       /*
        * TODO: Check precondition
        * For each rank index __r of extents_type, static_extent(__r) == dynamic_extent || static_extent(__r) == __other.extent(__r) is true.
@@ -267,8 +267,8 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class... _SizeTypes,
     /* requires */ (
-      __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */) &&
-      __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */) &&
+      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */) &&
+      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */) &&
       (rank() == sizeof...(_SizeTypes))
     )
   )
@@ -282,8 +282,8 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class _SizeType,
     /* requires */ (
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)
     )
   )
   __MDSPAN_FORCE_INLINE_FUNCTION
@@ -295,8 +295,8 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class _SizeType,
     /* requires */ (
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)
     )
   )
   __MDSPAN_FORCE_INLINE_FUNCTION
@@ -309,8 +309,8 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class _Index,
     /* requires */ (
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _Index, index_type) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Index) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _Index, index_type) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Index) &&
       extents_type::rank() == 1
     )
   )
@@ -325,8 +325,8 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class... _SizeTypes,
     /* requires */ (
-      __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */) &&
-      __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */) &&
+      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */) &&
+      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */) &&
       extents_type::rank() == sizeof...(_SizeTypes)
     )
   )
@@ -339,8 +339,8 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class _SizeType,
     /* requires */ (
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)
     )
   )
   __MDSPAN_FORCE_INLINE_FUNCTION
@@ -352,8 +352,8 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class _SizeType,
     /* requires */ (
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)
     )
   )
   __MDSPAN_FORCE_INLINE_FUNCTION
@@ -418,7 +418,7 @@ private:
 #if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
 __MDSPAN_TEMPLATE_REQUIRES(
   class _ElementType, class... _SizeTypes,
-  /* requires */ __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(is_integral, _SizeTypes) /* && ... */) &&
+  /* requires */ __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(is_integral, _SizeTypes) /* && ... */) &&
   (sizeof...(_SizeTypes) > 0)
 )
 explicit mdspan(_ElementType*, _SizeTypes...)
@@ -426,12 +426,12 @@ explicit mdspan(_ElementType*, _SizeTypes...)
 
 __MDSPAN_TEMPLATE_REQUIRES(
   class _Pointer,
-  (__MDSPAN_TRAIT(is_pointer, _CUDA_VSTD::remove_reference_t<_Pointer>))
+  (_LIBCUDACXX_TRAIT(is_pointer, _CUDA_VSTD::remove_reference_t<_Pointer>))
 )
 mdspan(_Pointer&&) -> mdspan<_CUDA_VSTD::remove_pointer_t<_CUDA_VSTD::remove_reference_t<_Pointer>>, extents<size_t>>;
 __MDSPAN_TEMPLATE_REQUIRES(
   class _CArray,
-  (__MDSPAN_TRAIT(is_array, _CArray) && (rank_v<_CArray> == 1))
+  (_LIBCUDACXX_TRAIT(is_array, _CArray) && (rank_v<_CArray> == 1))
 )
 mdspan(_CArray&) -> mdspan<_CUDA_VSTD::remove_all_extents_t<_CArray>, extents<size_t, _CUDA_VSTD::extent_v<_CArray,0>>>;
 

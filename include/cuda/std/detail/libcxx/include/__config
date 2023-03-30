@@ -2057,6 +2057,12 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_CPO_ACCESSIBILITY _LIBCUDACXX_INLINE_VAR constexpr
 #endif
 
+#if _LIBCUDACXX_STD_VER > 14
+#  define _LIBCUDACXX_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
+#else
+#  define _LIBCUDACXX_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
+#endif
+
 #endif // __cplusplus
 
 #endif // _LIBCUDACXX_CONFIG

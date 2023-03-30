@@ -54,30 +54,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
       swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u));
     };
 
-  struct __fn;
-
-#if defined(_LIBCUDACXX_COMPILER_NVCC)
-#  if (CUDART_VERSION >= 11050)
-#    pragma nv_diag_suppress 2642
-#  else
-#    pragma diag_suppress 2642
-#  endif
-#endif
-  template<class _Tp, class _Up, size_t _Size>
-  concept __swappable_arrays =
-    !__unqualified_swappable_with<_Tp(&)[_Size], _Up(&)[_Size]> &&
-    extent_v<_Tp> == extent_v<_Up> &&
-    requires(_Tp(& __t)[_Size], _Up(& __u)[_Size], const __fn& __swap) {
-      __swap(__t[0], __u[0]);
-    };
-#if defined(_LIBCUDACXX_COMPILER_NVCC)
-#  if (CUDART_VERSION >= 11050)
-#    pragma nv_diag_default 2642
-#  else
-#    pragma diag_default 2642
-#  endif
-#endif
-
   template<class _Tp>
   concept __exchangeable =
     !__unqualified_swappable_with<_Tp&, _Tp&> &&
@@ -96,9 +72,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
   template<class _Tp, class _Up>
   _LIBCUDACXX_CONCEPT __unqualified_swappable_with = _LIBCUDACXX_FRAGMENT(__unqualified_swappable_with_, _Tp, _Up);
 
-  template<class _Tp, class _Up, size_t _Size, class = void>
-  _LIBCUDACXX_INLINE_VAR constexpr bool __swappable_arrays = false;
-
   template<class _Tp>
   _LIBCUDACXX_CONCEPT_FRAGMENT(
     __exchangeable_,
@@ -111,6 +84,29 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
   template<class _Tp>
   _LIBCUDACXX_CONCEPT __exchangeable = _LIBCUDACXX_FRAGMENT(__exchangeable_, _Tp);
 #endif // _LIBCUDACXX_STD_VER < 20
+
+
+#if _LIBCUDACXX_STD_VER > 17 && !defined(_LIBCUDACXX_COMPILER_PGI) // nvbug4051640
+  struct __fn;
+
+#if defined(_LIBCUDACXX_COMPILER_NVCC)
+#  pragma nv_diag_suppress 2642
+#endif // _LIBCUDACXX_COMPILER_NVCC
+  template<class _Tp, class _Up, size_t _Size>
+  concept __swappable_arrays =
+    !__unqualified_swappable_with<_Tp(&)[_Size], _Up(&)[_Size]> &&
+    extent_v<_Tp> == extent_v<_Up> &&
+    requires(_Tp(& __t)[_Size], _Up(& __u)[_Size], const __fn& __swap) {
+      __swap(__t[0], __u[0]);
+    };
+#if defined(_LIBCUDACXX_COMPILER_NVCC)
+#  pragma nv_diag_default 2642
+#endif // _LIBCUDACXX_COMPILER_NVCC
+#else
+  template<class _Tp, class _Up, size_t _Size, class = void>
+  _LIBCUDACXX_INLINE_VAR constexpr bool __swappable_arrays = false;
+#endif // _LIBCUDACXX_STD_VER < 20 || defined(_LIBCUDACXX_COMPILER_PGI)
+
 
   template<class _Tp, class _Up, class = void>
   _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_swappable_arrays = false;
@@ -142,26 +138,26 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
     _LIBCUDACXX_TEMPLATE(class _Tp)
       (requires __exchangeable<_Tp>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp& __x, _Tp& __y) const
-      noexcept(is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_assignable_v<_Tp>)
+      noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp) && _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Tp))
     {
       __y = _CUDA_VSTD::exchange(__x, _CUDA_VSTD::move(__y));
     }
   };
 
-#if _LIBCUDACXX_STD_VER < 20
-template<class _Tp, class _Up, class _Size>
+#if _LIBCUDACXX_STD_VER < 20 || defined(_LIBCUDACXX_COMPILER_PGI)
+  template<class _Tp, class _Up, class _Size>
   _LIBCUDACXX_CONCEPT_FRAGMENT(
     __swappable_arrays_,
     requires(_Tp(& __t)[_Size::value], _Up(& __u)[_Size::value], const __fn& __swap)(
       requires(!__unqualified_swappable_with<_Tp(&)[_Size::value], _Up(&)[_Size::value]>),
-      requires(extent_v<_Tp> == extent_v<_Up>),
-      typename(decltype(__swap(__t[0], __u[0])))
+      requires(_LIBCUDACXX_TRAIT(extent, _Tp) == _LIBCUDACXX_TRAIT(extent, _Up)),
+      (__swap(__t[0], __u[0]))
     ));
 
   template<class _Tp, class _Up, size_t _Size>
   _LIBCUDACXX_INLINE_VAR constexpr bool __swappable_arrays<_Tp, _Up, _Size, void_t<type_identity_t<_Tp>>> =
     _LIBCUDACXX_FRAGMENT(__swappable_arrays_, _Tp, _Up, _CUDA_VSTD::integral_constant<size_t, _Size>);
-#endif // _LIBCUDACXX_STD_VER < 20
+#endif // _LIBCUDACXX_STD_VER < 20 || defined(_LIBCUDACXX_COMPILER_PGI)
 
   template<class _Tp, class _Up>
   _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_swappable_arrays<_Tp, _Up, void_t<type_identity_t<_Tp>>> =

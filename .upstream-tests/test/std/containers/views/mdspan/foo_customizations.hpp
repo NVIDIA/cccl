@@ -83,7 +83,7 @@ class layout_foo::mapping {
     __MDSPAN_TEMPLATE_REQUIRES(
       class OtherExtents,
       /* requires */ (
-        __MDSPAN_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents)
+        _LIBCUDACXX_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents)
       )
     )
     __MDSPAN_CONDITIONAL_EXPLICIT((!cuda::std::is_convertible<OtherExtents, extents_type>::value)) // needs two () due to comma
@@ -100,7 +100,7 @@ class layout_foo::mapping {
     __MDSPAN_TEMPLATE_REQUIRES(
       class OtherExtents,
       /* requires */ (
-        __MDSPAN_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents)
+        _LIBCUDACXX_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents)
       )
     )
     __MDSPAN_CONDITIONAL_EXPLICIT((!cuda::std::is_convertible<OtherExtents, extents_type>::value)) // needs two () due to comma
@@ -112,7 +112,7 @@ class layout_foo::mapping {
     __MDSPAN_TEMPLATE_REQUIRES(
       class OtherExtents,
       /* requires */ (
-        __MDSPAN_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents) &&
+        _LIBCUDACXX_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents) &&
         (extents_type::rank() <= 1)
       )
     )
@@ -125,7 +125,7 @@ class layout_foo::mapping {
     __MDSPAN_TEMPLATE_REQUIRES(
       class OtherExtents,
       /* requires */ (
-        __MDSPAN_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents)
+        _LIBCUDACXX_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents)
       )
     )
     __MDSPAN_CONDITIONAL_EXPLICIT((extents_type::rank() > 0))

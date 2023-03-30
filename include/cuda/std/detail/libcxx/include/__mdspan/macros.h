@@ -249,7 +249,7 @@
 #define __MDSPAN_INSTANTIATE_ONLY_IF_USED \
   __MDSPAN_TEMPLATE_REQUIRES( \
     class __instantiate_only_if_used_tparam=void, \
-    ( __MDSPAN_TRAIT(_CUDA_VSTD::is_void, __instantiate_only_if_used_tparam) ) \
+    ( _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_void, __instantiate_only_if_used_tparam) ) \
   ) \
   /**/
 
@@ -610,20 +610,8 @@ _LIBCUDACXX_END_NAMESPACE_STD
 #  define __MDSPAN_FOLD_COMMA(...) _CUDA_VSTD::__fold_compatibility_impl::__fold_comma_impl((__VA_ARGS__)...)
 
 #  define __MDSPAN_FOLD_AND_TEMPLATE(...) \
-  __MDSPAN_TRAIT(_CUDA_VSTD::is_same, __fold_compatibility_impl::__bools<(__VA_ARGS__)..., true>, __fold_compatibility_impl::__bools<true, (__VA_ARGS__)...>)
+  _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_same, __fold_compatibility_impl::__bools<(__VA_ARGS__)..., true>, __fold_compatibility_impl::__bools<true, (__VA_ARGS__)...>)
 
-#endif
-
-// </editor-fold> end fold expressions }}}1
-//==============================================================================
-
-//==============================================================================
-// <editor-fold desc="Variable template compatibility"> {{{1
-
-#if __MDSPAN_USE_VARIABLE_TEMPLATES
-#  define __MDSPAN_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
-#else
-#  define __MDSPAN_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
 #endif
 
 // </editor-fold> end Variable template compatibility }}}1

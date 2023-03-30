@@ -16,7 +16,7 @@
 // UNSUPPORTED: asan, msan
 
 // TODO GLIBC uses a different string for positive and negative NAN numbers.
-// XFAIL: linux-gnu
+// XFAIL: linux
 
 // If we're just building the test and not executing it, it should pass.
 // UNSUPPORTED: no_execute

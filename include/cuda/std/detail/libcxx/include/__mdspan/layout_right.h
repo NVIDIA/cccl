@@ -123,7 +123,7 @@ class layout_right::mapping {
     __MDSPAN_TEMPLATE_REQUIRES(
       class _OtherExtents,
       /* requires */ (
-        __MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)
+        _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)
       )
     )
     __MDSPAN_CONDITIONAL_EXPLICIT((!_CUDA_VSTD::is_convertible<_OtherExtents, extents_type>::value)) // needs two () due to comma
@@ -140,7 +140,7 @@ class layout_right::mapping {
     __MDSPAN_TEMPLATE_REQUIRES(
       class _OtherExtents,
       /* requires */ (
-        __MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents) &&
+        _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents) &&
         (extents_type::rank() <= 1)
       )
     )
@@ -158,7 +158,7 @@ class layout_right::mapping {
     __MDSPAN_TEMPLATE_REQUIRES(
       class _OtherExtents,
       /* requires */ (
-        __MDSPAN_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)
+        _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)
       )
     )
     __MDSPAN_CONDITIONAL_EXPLICIT((extents_type::rank() > 0))
@@ -205,8 +205,8 @@ class layout_right::mapping {
       /* requires */ (
         (sizeof...(_Indices) == extents_type::rank()) &&
         __MDSPAN_FOLD_AND(
-           (__MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _Indices, index_type) &&
-            __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Indices))
+           (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _Indices, index_type) &&
+            _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Indices))
         )
       )
     )

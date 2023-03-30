@@ -84,11 +84,11 @@ struct __no_unique_address_emulation {
 template <class _Tp, size_t _Disambiguator>
 struct __no_unique_address_emulation<
     _Tp, _Disambiguator,
-    _CUDA_VSTD::enable_if_t<__MDSPAN_TRAIT(_CUDA_VSTD::is_empty, _Tp) &&
+    _CUDA_VSTD::enable_if_t<_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) &&
                 // If the type isn't trivially destructible, its destructor
                 // won't be called at the right time, so don't use this
                 // specialization
-                __MDSPAN_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp)>> :
+                _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp)>> :
 #ifdef __MDSPAN_COMPILER_MSVC
     // MSVC doesn't allow you to access public static member functions of a type
     // when you *happen* to privately inherit from that type.

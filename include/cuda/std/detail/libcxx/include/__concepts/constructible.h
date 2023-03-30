@@ -60,7 +60,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
   __constructible_from_,
   requires()(
     requires(destructible<_Tp>),
-    requires(is_constructible_v<_Tp, _Args...>)
+    requires(_LIBCUDACXX_TRAIT(is_constructible, _Tp, _Args...))
   ));
 
 template<class _Tp, class... _Args>

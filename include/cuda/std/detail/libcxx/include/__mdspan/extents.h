@@ -274,8 +274,8 @@ public:
     /* requires */ (
       // TODO: check whether the other version works with newest NVCC, doesn't with 11.4
       // NVCC seems to pick up rank_dynamic from the wrong extents type???
-      __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */) &&
-      __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */) &&
+      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */) &&
+      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */) &&
       // NVCC chokes on the fold thingy here so wrote the workaround
       ((sizeof...(_Integral) == __detail::__count_dynamic_extents<_Extents...>::val) ||
        (sizeof...(_Integral) == sizeof...(_Extents)))
@@ -285,8 +285,8 @@ public:
     __MDSPAN_TEMPLATE_REQUIRES(
     class... _Integral,
     /* requires */ (
-       __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */) &&
-       __MDSPAN_FOLD_AND(__MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */) &&
+       __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */) &&
+       __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */) &&
        ((sizeof...(_Integral) == rank_dynamic()) || (sizeof...(_Integral) == rank()))
       )
     )
@@ -323,8 +323,8 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class _IndexType, size_t _Np,
     /* requires */ (
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType) &&
       ((_Np == __detail::__count_dynamic_extents<_Extents...>::val) ||
        (_Np == sizeof...(_Extents)))
     )
@@ -333,8 +333,8 @@ public:
     __MDSPAN_TEMPLATE_REQUIRES(
         class _IndexType, size_t _Np,
         /* requires */ (
-          __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type) &&
-          __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType) &&
+          _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type) &&
+          _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType) &&
           (_Np == rank() || _Np == rank_dynamic())
     )
   )
@@ -373,8 +373,8 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class _IndexType, size_t _Np,
     /* requires */ (
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type) &&
-      __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type) &&
+      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType) &&
       ((_Np == __detail::__count_dynamic_extents<_Extents...>::val) ||
        (_Np == sizeof...(_Extents)))
     )
@@ -383,8 +383,8 @@ public:
     __MDSPAN_TEMPLATE_REQUIRES(
         class _IndexType, size_t _Np,
         /* requires */ (
-          __MDSPAN_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type) &&
-          __MDSPAN_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType) &&
+          _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type) &&
+          _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType) &&
           (_Np == rank() || _Np == rank_dynamic())
     )
   )

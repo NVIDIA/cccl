@@ -73,7 +73,7 @@ struct default_accessor {
   __MDSPAN_TEMPLATE_REQUIRES(
     class _OtherElementType,
     /* requires */ (
-      __MDSPAN_TRAIT(is_convertible, _OtherElementType(*)[], element_type(*)[])
+      _LIBCUDACXX_TRAIT(is_convertible, _OtherElementType(*)[], element_type(*)[])
     )
   )
   __MDSPAN_INLINE_FUNCTION

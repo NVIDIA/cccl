@@ -194,7 +194,7 @@ struct __is_span_compatible_container<_Tp, _ElementType,
         // is not a specialization of array
             enable_if_t<!__is_std_array<_Tp>::value, nullptr_t>,
         // is_array_v<Container> is false,
-            enable_if_t<!is_array_v<_Tp>, nullptr_t>,
+            enable_if_t<!_LIBCUDACXX_TRAIT(is_array, _Tp), nullptr_t>,
         // data(cont) and size(cont) are well formed
             decltype(data(declval<_Tp>())),
             decltype(size(declval<_Tp>())),

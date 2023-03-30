@@ -104,7 +104,7 @@ template <class _Tp, class _Up, class _Enable = void> struct __compressed_pair {
 template <class _Tp, class _Up>
 struct __compressed_pair<
     _Tp, _Up,
-    _CUDA_VSTD::enable_if_t<__MDSPAN_TRAIT(_CUDA_VSTD::is_empty, _Tp) && !__MDSPAN_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
+    _CUDA_VSTD::enable_if_t<_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) && !_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
     : private _Tp {
   _Up __u_val;
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp &__first() noexcept {
@@ -141,7 +141,7 @@ struct __compressed_pair<
 template <class _Tp, class _Up>
 struct __compressed_pair<
     _Tp, _Up,
-    _CUDA_VSTD::enable_if_t<!__MDSPAN_TRAIT(_CUDA_VSTD::is_empty, _Tp) && __MDSPAN_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
+    _CUDA_VSTD::enable_if_t<!_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
     : private _Up {
   _Tp __t_val;
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp &__first() noexcept { return __t_val; }
@@ -179,7 +179,7 @@ struct __compressed_pair<
 template <class _Tp, class _Up>
 struct __compressed_pair<
     _Tp, _Up,
-    _CUDA_VSTD::enable_if_t<__MDSPAN_TRAIT(_CUDA_VSTD::is_empty, _Tp) && __MDSPAN_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
+    _CUDA_VSTD::enable_if_t<_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
     // We need to use the __no_unique_address_emulation wrapper here to avoid
     // base class ambiguities.
 #ifdef __MDSPAN_COMPILER_MSVC

@@ -33,16 +33,16 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // [concepts.arithmetic], arithmetic concepts
 
 template<class _Tp>
-_LIBCUDACXX_CONCEPT integral = is_integral_v<_Tp>;
+_LIBCUDACXX_CONCEPT integral = _LIBCUDACXX_TRAIT(is_integral, _Tp);
 
 template<class _Tp>
-_LIBCUDACXX_CONCEPT signed_integral = integral<_Tp> && is_signed_v<_Tp>;
+_LIBCUDACXX_CONCEPT signed_integral = integral<_Tp> && _LIBCUDACXX_TRAIT(is_signed, _Tp);
 
 template<class _Tp>
 _LIBCUDACXX_CONCEPT unsigned_integral = integral<_Tp> && !signed_integral<_Tp>;
 
 template<class _Tp>
-_LIBCUDACXX_CONCEPT floating_point = is_floating_point_v<_Tp>;
+_LIBCUDACXX_CONCEPT floating_point = _LIBCUDACXX_TRAIT(is_floating_point, _Tp);
 
 // Concept helpers for the internal type traits for the fundamental types.
 template <class _Tp>
