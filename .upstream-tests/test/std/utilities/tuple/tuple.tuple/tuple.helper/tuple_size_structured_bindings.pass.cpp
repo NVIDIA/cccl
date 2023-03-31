@@ -137,7 +137,9 @@ public:
 __host__ __device__ void test_after_tuple_size_specialization() {
   Test const t{99};
   auto& [p] = t;
+#if !(defined(_LIBCUDACXX_COMPILER_NVRTC) && defined(__CUDA_ARCH__)) // nvbug4053842
   assert(p == -1);
+#endif
 }
 
 int main(int, char**) {

@@ -49,13 +49,58 @@ namespace std {
       : _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>
     {};
 
+    template <class _Tp, size_t _Size>
+    struct tuple_size<const _CUDA_VSTD::array<_Tp, _Size>>
+      : _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>
+    {};
+
+    template <class _Tp, size_t _Size>
+    struct tuple_size<volatile _CUDA_VSTD::array<_Tp, _Size>>
+      : _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>
+    {};
+
+    template <class _Tp, size_t _Size>
+    struct tuple_size<const volatile _CUDA_VSTD::array<_Tp, _Size>>
+      : _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>
+    {};
+
     template<size_t _Ip, class _Tp, size_t _Size>
     struct tuple_element<_Ip, _CUDA_VSTD::array<_Tp, _Size>>
       : _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::array<_Tp, _Size>>
     {};
 
+    template<size_t _Ip, class _Tp, size_t _Size>
+    struct tuple_element<_Ip, const _CUDA_VSTD::array<_Tp, _Size>>
+      : _CUDA_VSTD::tuple_element<_Ip, const _CUDA_VSTD::array<_Tp, _Size>>
+    {};
+
+    template<size_t _Ip, class _Tp, size_t _Size>
+    struct tuple_element<_Ip, volatile _CUDA_VSTD::array<_Tp, _Size>>
+      : _CUDA_VSTD::tuple_element<_Ip, volatile _CUDA_VSTD::array<_Tp, _Size>>
+    {};
+
+    template<size_t _Ip, class _Tp, size_t _Size>
+    struct tuple_element<_Ip, const volatile _CUDA_VSTD::array<_Tp, _Size>>
+      : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::array<_Tp, _Size>>
+    {};
+
     template <class _Tp, class _Up>
     struct tuple_size<_CUDA_VSTD::pair<_Tp, _Up>>
+      : _CUDA_VSTD::tuple_size<_CUDA_VSTD::pair<_Tp, _Up>>
+    {};
+
+    template <class _Tp, class _Up>
+    struct tuple_size<const _CUDA_VSTD::pair<_Tp, _Up>>
+      : _CUDA_VSTD::tuple_size<_CUDA_VSTD::pair<_Tp, _Up>>
+    {};
+
+    template <class _Tp, class _Up>
+    struct tuple_size<volatile _CUDA_VSTD::pair<_Tp, _Up>>
+      : _CUDA_VSTD::tuple_size<_CUDA_VSTD::pair<_Tp, _Up>>
+    {};
+
+    template <class _Tp, class _Up>
+    struct tuple_size<const volatile _CUDA_VSTD::pair<_Tp, _Up>>
       : _CUDA_VSTD::tuple_size<_CUDA_VSTD::pair<_Tp, _Up>>
     {};
 
@@ -64,14 +109,59 @@ namespace std {
       : _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::pair<_Tp, _Up>>
     {};
 
+    template<size_t _Ip, class _Tp, class _Up>
+    struct tuple_element<_Ip, const _CUDA_VSTD::pair<_Tp, _Up>>
+      : _CUDA_VSTD::tuple_element<_Ip, const _CUDA_VSTD::pair<_Tp, _Up>>
+    {};
+
+    template<size_t _Ip, class _Tp, class _Up>
+    struct tuple_element<_Ip, volatile _CUDA_VSTD::pair<_Tp, _Up>>
+      : _CUDA_VSTD::tuple_element<_Ip, volatile _CUDA_VSTD::pair<_Tp, _Up>>
+    {};
+
+    template<size_t _Ip, class _Tp, class _Up>
+    struct tuple_element<_Ip, const volatile _CUDA_VSTD::pair<_Tp, _Up>>
+      : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::pair<_Tp, _Up>>
+    {};
+
     template <class... _Tp>
     struct tuple_size<_CUDA_VSTD::tuple<_Tp...>>
+      : _CUDA_VSTD::tuple_size<_CUDA_VSTD::tuple<_Tp...>>
+    {};
+
+    template <class... _Tp>
+    struct tuple_size<const _CUDA_VSTD::tuple<_Tp...>>
+      : _CUDA_VSTD::tuple_size<_CUDA_VSTD::tuple<_Tp...>>
+    {};
+
+    template <class... _Tp>
+    struct tuple_size<volatile _CUDA_VSTD::tuple<_Tp...>>
+      : _CUDA_VSTD::tuple_size<_CUDA_VSTD::tuple<_Tp...>>
+    {};
+
+    template <class... _Tp>
+    struct tuple_size<const volatile _CUDA_VSTD::tuple<_Tp...>>
       : _CUDA_VSTD::tuple_size<_CUDA_VSTD::tuple<_Tp...>>
     {};
 
     template<size_t _Ip, class... _Tp>
     struct tuple_element<_Ip, _CUDA_VSTD::tuple<_Tp...>>
       : _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::tuple<_Tp...>>
+    {};
+
+    template<size_t _Ip, class... _Tp>
+    struct tuple_element<_Ip, const _CUDA_VSTD::tuple<_Tp...>>
+      : _CUDA_VSTD::tuple_element<_Ip, const _CUDA_VSTD::tuple<_Tp...>>
+    {};
+
+    template<size_t _Ip, class... _Tp>
+    struct tuple_element<_Ip, volatile _CUDA_VSTD::tuple<_Tp...>>
+      : _CUDA_VSTD::tuple_element<_Ip, volatile _CUDA_VSTD::tuple<_Tp...>>
+    {};
+
+    template<size_t _Ip, class... _Tp>
+    struct tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
+      : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
     {};
 }
 #endif // _LIBCUDACXX_STD_VER > 14
