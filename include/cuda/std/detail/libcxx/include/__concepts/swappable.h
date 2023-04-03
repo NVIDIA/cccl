@@ -86,7 +86,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
 #endif // _LIBCUDACXX_STD_VER < 20
 
 
-#if _LIBCUDACXX_STD_VER > 17 && !defined(_LIBCUDACXX_COMPILER_PGI) // nvbug4051640
+#if _LIBCUDACXX_STD_VER > 17 && !defined(_LIBCUDACXX_COMPILER_NVHPC) // nvbug4051640
   struct __fn;
 
 #if defined(_LIBCUDACXX_COMPILER_NVCC)
@@ -105,7 +105,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
 #else
   template<class _Tp, class _Up, size_t _Size, class = void>
   _LIBCUDACXX_INLINE_VAR constexpr bool __swappable_arrays = false;
-#endif // _LIBCUDACXX_STD_VER < 20 || defined(_LIBCUDACXX_COMPILER_PGI)
+#endif // _LIBCUDACXX_STD_VER < 20 || defined(_LIBCUDACXX_COMPILER_NVHPC)
 
 
   template<class _Tp, class _Up, class = void>
@@ -144,7 +144,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
     }
   };
 
-#if _LIBCUDACXX_STD_VER < 20 || defined(_LIBCUDACXX_COMPILER_PGI)
+#if _LIBCUDACXX_STD_VER < 20 || defined(_LIBCUDACXX_COMPILER_NVHPC)
   template<class _Tp, class _Up, class _Size>
   _LIBCUDACXX_CONCEPT_FRAGMENT(
     __swappable_arrays_,
@@ -157,7 +157,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
   template<class _Tp, class _Up, size_t _Size>
   _LIBCUDACXX_INLINE_VAR constexpr bool __swappable_arrays<_Tp, _Up, _Size, void_t<type_identity_t<_Tp>>> =
     _LIBCUDACXX_FRAGMENT(__swappable_arrays_, _Tp, _Up, _CUDA_VSTD::integral_constant<size_t, _Size>);
-#endif // _LIBCUDACXX_STD_VER < 20 || defined(_LIBCUDACXX_COMPILER_PGI)
+#endif // _LIBCUDACXX_STD_VER < 20 || defined(_LIBCUDACXX_COMPILER_NVHPC)
 
   template<class _Tp, class _Up>
   _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_swappable_arrays<_Tp, _Up, void_t<type_identity_t<_Tp>>> =
