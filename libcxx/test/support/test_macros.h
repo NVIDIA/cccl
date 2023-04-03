@@ -68,7 +68,7 @@
 #define TEST_HAS_BUILTIN_IDENTIFIER(X) 0
 #endif
 
-#if defined(__PGIC__)
+#if defined(__NVHPC__)
 # define TEST_COMPILER_PGI
 #elif defined(__clang__)
 # define TEST_COMPILER_CLANG

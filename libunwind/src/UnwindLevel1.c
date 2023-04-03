@@ -237,7 +237,7 @@ unwind_phase2(unw_context_t *uc, unw_cursor_t *cursor, _Unwind_Exception *except
     }
   }
 
-#ifndef __PGIC__
+#ifndef __NVHPC__
   // Clean up phase did not resume at the frame that the search phase
   // said it would...
   return _URC_FATAL_PHASE2_ERROR;

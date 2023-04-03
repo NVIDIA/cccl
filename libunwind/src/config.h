@@ -52,7 +52,7 @@
   #endif
 #endif
 
-#if defined(__PGIC__)
+#if defined(__NVHPC__)
   #undef _LIBUNWIND_DISABLE_VISIBILITY_ANNOTATIONS
   #define _LIBUNWIND_DISABLE_VISIBILITY_ANNOTATIONS
 #endif
@@ -74,7 +74,7 @@
 #define XSTR(a) STR(a)
 #define SYMBOL_NAME(name) XSTR(__USER_LABEL_PREFIX__) #name
 
-#if defined(__PGIC__) && defined(__linux__)
+#if defined(__NVHPC__) && defined(__linux__)
   #define __ELF__
 #endif
 

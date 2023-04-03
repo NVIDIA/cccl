@@ -91,13 +91,13 @@ class CXXCompiler(object):
               patchlevel = macros['__CUDACC_VER_BUILD__']
               if '__LIBCUDACXX_NVRTC_TEST__' in macros.keys():
                 self.is_nvrtc = True
-          elif '__PGIC__' in macros.keys():
+          elif '__NVHPC__' in macros.keys():
               compiler_type = "pgi"
               # PGI, unfortunately, adds an extra space between the macro name
               # and macro value in their macro dump mode.
-              major_ver = macros['__PGIC__'].strip()
-              minor_ver = macros['__PGIC_MINOR__'].strip()
-              patchlevel = macros['__PGIC_PATCHLEVEL__'].strip()
+              major_ver = macros['__NVHPC__'].strip()
+              minor_ver = macros['__NVHPC_MINOR__'].strip()
+              patchlevel = macros['__NVHPC_PATCHLEVEL__'].strip()
           elif '__INTEL_COMPILER' in macros.keys():
               compiler_type = "icc"
               major_ver = int(macros['__INTEL_COMPILER']) / 100
@@ -281,7 +281,7 @@ class CXXCompiler(object):
         for l in lines:
             # PGI also outputs the file contents from -E -dM for some reason; handle that
             if not l.startswith('#define '):
-                if '__PGIC__' not in parsed_macros.keys():
+                if '__NVHPC__' not in parsed_macros.keys():
                     assert False, "a line not starting with '#define' encountered in predefined macro dump"
                 else:
                     continue

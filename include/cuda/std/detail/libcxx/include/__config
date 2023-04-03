@@ -85,7 +85,7 @@ extern "C++" {
 #define _LIBCUDACXX_CXX03_LANG
 #endif
 
-#if defined(__PGIC__) && defined(__linux__)
+#if defined(__NVHPC__) && defined(__linux__)
     #define __ELF__
 #endif
 
