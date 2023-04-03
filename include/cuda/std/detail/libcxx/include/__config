@@ -85,7 +85,7 @@ extern "C++" {
 #define _LIBCUDACXX_CXX03_LANG
 #endif
 
-#if defined(__NVHPC__) && defined(__linux__)
+#if defined(__NVCOMPILER) && defined(__linux__)
     #define __ELF__
 #endif
 
@@ -201,7 +201,7 @@ extern "C++" {
 #define __has_include(...) 0
 #endif
 
-#if defined(__NVHPC__)
+#if defined(__NVCOMPILER)
 #  define _LIBCUDACXX_COMPILER_NVHPC
 #elif defined(__clang__)
 #  define _LIBCUDACXX_COMPILER_CLANG

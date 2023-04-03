@@ -115,7 +115,7 @@ set(_libcudacxx_add_libunwind OFF)
 
 # Configure options needed to build the standalone static library.
 if (LIBCUDACXX_ENABLE_STATIC_LIBRARY)
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "PGI" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "NVCXX")
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "NVHPC")
     option(LIBUNWIND_ENABLE_PEDANTIC OFF)
     add_definitions(-D__USER_LABEL_PREFIX__=)
   endif()

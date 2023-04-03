@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pgi
+// UNSUPPORTED: nvhpc
 // RUN: %build %noexceptions
 // RUN: %run
 

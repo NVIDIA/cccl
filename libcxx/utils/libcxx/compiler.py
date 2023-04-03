@@ -91,13 +91,13 @@ class CXXCompiler(object):
               patchlevel = macros['__CUDACC_VER_BUILD__']
               if '__LIBCUDACXX_NVRTC_TEST__' in macros.keys():
                 self.is_nvrtc = True
-          elif '__NVHPC__' in macros.keys():
-              compiler_type = "pgi"
-              # PGI, unfortunately, adds an extra space between the macro name
+          elif '__NVCOMPILER' in macros.keys():
+              compiler_type = "nvhpc"
+              # nvhpc, unfortunately, adds an extra space between the macro name
               # and macro value in their macro dump mode.
-              major_ver = macros['__NVHPC__'].strip()
-              minor_ver = macros['__NVHPC_MINOR__'].strip()
-              patchlevel = macros['__NVHPC_PATCHLEVEL__'].strip()
+              major_ver = macros['__NVCOMPILER'].strip()
+              minor_ver = macros['___NVCOMPILER_MINOR__'].strip()
+              patchlevel = macros['___NVCOMPILER_PATCHLEVEL__'].strip()
           elif '__INTEL_COMPILER' in macros.keys():
               compiler_type = "icc"
               major_ver = int(macros['__INTEL_COMPILER']) / 100
@@ -279,9 +279,9 @@ class CXXCompiler(object):
         parsed_macros = {}
         lines = [l.strip() for l in out.split('\n') if l.strip()]
         for l in lines:
-            # PGI also outputs the file contents from -E -dM for some reason; handle that
+            # NVHPC also outputs the file contents from -E -dM for some reason; handle that
             if not l.startswith('#define '):
-                if '__NVHPC__' not in parsed_macros.keys():
+                if '__NVCOMPILER' not in parsed_macros.keys():
                     assert False, "a line not starting with '#define' encountered in predefined macro dump"
                 else:
                     continue

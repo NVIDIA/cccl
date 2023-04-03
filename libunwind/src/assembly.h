@@ -15,7 +15,7 @@
 #ifndef UNWIND_ASSEMBLY_H
 #define UNWIND_ASSEMBLY_H
 
-#if defined(__NVHPC__) && defined(__linux__)
+#if defined(__NVCOMPILER) && defined(__linux__)
   #define __ELF__
 #endif
 

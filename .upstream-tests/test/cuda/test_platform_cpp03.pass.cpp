@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pgi, nvc++
+// UNSUPPORTED: nvhpc, nvc++
 
 #include <nv/target>
 

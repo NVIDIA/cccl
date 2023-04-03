@@ -10,7 +10,7 @@
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
 // UNSUPPORTED: nvrtc
 
-// nvcc doesn't propagate pgi's or icc's preprocessor failures
-// UNSUPPORTED: pgi, icc
+// nvcc doesn't propagate nvhpc's or icc's preprocessor failures
+// UNSUPPORTED: nvhpc, icc
 
 #error This test should not compile.

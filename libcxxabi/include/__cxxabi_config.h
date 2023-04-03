@@ -62,7 +62,7 @@
 #if defined(__clang__)
 #define _LIBCXXABI_COMPILER_CLANG
 #elif defined(__NVCOMPILER)
-#define _LIBCXXABI_COMPILER_PGI
+#define _LIBCXXABI_COMPILER_NVHPC
 #elif defined(__GNUC__)
 #define _LIBCXXABI_COMPILER_GCC
 #endif

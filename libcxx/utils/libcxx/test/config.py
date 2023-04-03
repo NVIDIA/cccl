@@ -743,7 +743,7 @@ class Configuration(object):
                                  and self.cxx_stdlib_under_test != 'libc++'):
             self.lit_config.note('using the system cxx headers')
             return
-        if self.cxx.type != 'nvcc' and self.cxx.type != 'pgi':
+        if self.cxx.type != 'nvcc' and self.cxx.type != 'nvhpc':
             self.cxx.compile_flags += ['-nostdinc++']
         if cxx_headers is None:
             cxx_headers = os.path.join(self.libcxx_src_root, 'include')
@@ -828,8 +828,8 @@ class Configuration(object):
         enable_exceptions = self.get_lit_bool('enable_exceptions', True)
         if not enable_exceptions:
             self.config.available_features.add('libcpp-no-exceptions')
-            if 'pgi' in self.config.available_features:
-                # PGI reports all expressions as `noexcept(true)` with its
+            if 'nvhpc' in self.config.available_features:
+                # NVHPC reports all expressions as `noexcept(true)` with its
                 # "no exceptions" mode. Override the setting from CMake as
                 # a temporary workaround for that.
                 pass
@@ -845,7 +845,7 @@ class Configuration(object):
             self.config.available_features.add('libcpp-no-rtti')
             if self.cxx.type == 'nvcc':
                 self.cxx.compile_flags += ['-Xcompiler']
-            if 'pgi' in self.config.available_features:
+            if 'nvhpc' in self.config.available_features:
                 self.cxx.compile_flags += ['--no_rtti']
             elif 'msvc' in self.config.available_features:
                 self.cxx.compile_flags += ['/GR-']
@@ -902,10 +902,10 @@ class Configuration(object):
         # Configure libraries
         if self.cxx_stdlib_under_test == 'libc++':
             if self.get_lit_conf('name') != 'libcu++':
-                if 'pgi' not in self.config.available_features or not self.cxx.is_nvrtc:
+                if 'nvhpc' not in self.config.available_features or not self.cxx.is_nvrtc:
                     if self.cxx.type == 'nvcc':
                         self.cxx.link_flags += ['-Xcompiler']
-                    if self.cxx.type != 'pgi':
+                    if self.cxx.type != 'nvhpc':
                         self.cxx.link_flags += ['-nodefaultlibs']
 
                     # FIXME: Handle MSVCRT as part of the ABI library handling.
@@ -1268,8 +1268,8 @@ class Configuration(object):
         if self.get_lit_conf('libcxx_gdb'):
             sub.append(('%libcxx_gdb', self.get_lit_conf('libcxx_gdb')))
 
-        sub.append(['%syntaxonly', '-fsyntax-only' if self.cxx.type != 'pgi' else ''])
-        sub.append(['%noexceptions', '-fno-exceptions' if self.cxx.type != 'pgi' else ''])
+        sub.append(['%syntaxonly', '-fsyntax-only' if self.cxx.type != 'nvhpc' else ''])
+        sub.append(['%noexceptions', '-fno-exceptions' if self.cxx.type != 'nvhpc' else ''])
 
     def can_use_deployment(self):
         # Check if the host is on an Apple platform using clang.

@@ -310,7 +310,7 @@ class DefaultAllocator {
   BumpPointerAllocator Alloc;
 
 public:
-#ifndef __NVHPC__
+#ifndef __NVCOMPILER
   void reset() { Alloc.reset(); }
 #endif
 

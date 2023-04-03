@@ -62,8 +62,8 @@
 #define TEST_HAS_BUILTIN_IDENTIFIER(X) 0
 #endif
 
-#if defined(__NVHPC__)
-# define TEST_COMPILER_PGI
+#if defined(__NVCOMPILER)
+# define TEST_COMPILER_NVHPC
 #elif defined(__clang__)
 # define TEST_COMPILER_CLANG
 # if defined(__apple_build_version__)

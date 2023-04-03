@@ -144,7 +144,7 @@ function(cxx_link_system_libraries target)
   target_add_compile_flags_if_supported(${target} PRIVATE "/Zl")
   target_add_compile_flags_if_supported(${target} PRIVATE "-Wno-deprecated-declarations")
   target_add_compile_flags_if_supported(${target} PRIVATE "-Wno-attributes")
-  if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "PGI")
+  if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "NVHPC")
     target_add_link_flags_if_supported(${target} PRIVATE "/nodefaultlib")
   endif()
 

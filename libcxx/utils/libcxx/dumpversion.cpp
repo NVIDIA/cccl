@@ -25,11 +25,11 @@ int main()
     #if defined(__LIBCUDACXX_NVRTC_TEST__)
       is_nvrtc = "True";
     #endif
-  #elif defined(__NVHPC__)
-    compiler_type = "pgi";
-    major_version = __NVHPC__;
-    minor_version = __NVHPC_MINOR__;
-    patch_level   = __NVHPC_PATCHLEVEL__;
+  #elif defined(__NVCOMPILER)
+    compiler_type = "nvhpc";
+    major_version = __NVCOMPILER;
+    minor_version = ___NVCOMPILER_MINOR__;
+    patch_level   = ___NVCOMPILER_PATCHLEVEL__;
   #elif defined(__INTEL_COMPILER)
     compiler_type = "icc";
     major_version = __INTEL_COMPILER / 100;

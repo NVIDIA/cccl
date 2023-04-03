@@ -315,7 +315,7 @@ if (LIBUNWIND_USES_ARM_EHABI AND NOT LIBUNWIND_SUPPORTS_FUNWIND_TABLES_FLAG)
 endif()
 
 add_cxx_compile_flags_if_supported(-fno-exceptions)
-if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
+if (CMAKE_C_COMPILER_ID STREQUAL "NVHPC")
     add_cxx_compile_flags_if_supported(--no_rtti)
 else()
     add_cxx_compile_flags_if_supported(-fno-rtti)

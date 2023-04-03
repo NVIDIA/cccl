@@ -17,7 +17,7 @@ set(LIBUNWIND_C_SOURCES
     Unwind-sjlj.c
     )
 set(C99_FLAG "-std=c99")
-if (CMAKE_CXX_COMPILER_ID STREQUAL PGI)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "NVHPC")
     set(C99_FLAG "-c99")
 endif()
 
@@ -128,8 +128,7 @@ if (LIBUNWIND_ENABLE_SHARED)
   if(CMAKE_C_COMPILER_ID STREQUAL MSVC)
     target_compile_options(unwind_shared PRIVATE /GR-)
   # Check the CXX ID because CMake is perplexed about NVCXX as the C compiler.
-  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL PGI)
-  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL NVCXX)
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "NVHPC")
   else()
     target_compile_options(unwind_shared PRIVATE -fno-rtti)
   endif()
@@ -159,8 +158,7 @@ if (LIBUNWIND_ENABLE_STATIC)
   if(CMAKE_C_COMPILER_ID STREQUAL MSVC)
     target_compile_options(unwind_static PRIVATE /GR-)
   # Check the CXX ID because CMake is perplexed about NVCXX as the C compiler.
-  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL PGI)
-  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL NVCXX)
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "NVHPC")
   else()
     target_compile_options(unwind_static PRIVATE -fno-rtti)
   endif()

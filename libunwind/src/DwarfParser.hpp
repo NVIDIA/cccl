@@ -762,7 +762,7 @@ bool CFI_Parser<A>::parseInstructions(A &addressSpace, pint_t instructions,
       }
       break;
 #else
-#ifndef __NVHPC__
+#ifndef __NVCOMPILER
       (void)arch;
 #endif
 #endif
