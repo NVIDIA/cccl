@@ -332,12 +332,10 @@ long double    truncl(long double x);
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_LIBCUDACXX_COMPILER_NVHPC)
 using ::signbit;
 using ::isfinite;
 using ::isinf;
 using ::isnan;
-#endif // !defined(_LIBCUDACXX_COMPILER_NVHPC)
 
 using ::acos;
 using ::acosf;
@@ -392,7 +390,6 @@ using ::abs;
 
 #ifndef _LIBCUDACXX_COMPILER_NVRTC
 
-#if !defined(_LIBCUDACXX_COMPILER_NVHPC)
 using ::fpclassify;
 using ::isnormal;
 using ::isgreater;
@@ -402,7 +399,6 @@ using ::islessequal;
 using ::islessgreater;
 
 using ::isunordered;
-#endif // !defined(_LIBCUDACXX_COMPILER_NVHPC)
 
 using ::float_t;
 using ::double_t;

@@ -1138,8 +1138,6 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_ALWAYS_INLINE __attribute__ ((__always_inline__))
 #define _LIBCUDACXX_NORETURN __attribute__ ((noreturn))
 
-#define _GLIBCXX_INCLUDE_NEXT_C_HEADERS
-
 #endif // _LIBCUDACXX_COMPILER_[CLANG|GCC|MSVC|IBM|NVRTC]
 
 #if defined(_LIBCUDACXX_COMPILER_NVHPC) && !defined(__cuda_std__)
