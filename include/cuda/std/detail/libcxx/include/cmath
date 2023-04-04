@@ -304,8 +304,12 @@ long double    truncl(long double x);
 #include <__config>
 #endif // __cuda_std__
 
-#if !defined(__CUDACC_RTC__) || !defined(__cuda_std__) || defined(_LIBCUDACXX_COMPILER_NVHPC)
+#if !defined(__CUDACC_RTC__) || !defined(__cuda_std__)
 #include <math.h>
+#endif
+
+#if defined(__cuda_std__) && defined(_LIBCUDACXX_COMPILER_NVHPC)
+#include <cmath>
 #endif
 
 #include "limits"
@@ -328,10 +332,12 @@ long double    truncl(long double x);
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if !defined(_LIBCUDACXX_COMPILER_NVHPC)
 using ::signbit;
 using ::isfinite;
 using ::isinf;
 using ::isnan;
+#endif // !defined(_LIBCUDACXX_COMPILER_NVHPC)
 
 using ::acos;
 using ::acosf;
@@ -386,6 +392,7 @@ using ::abs;
 
 #ifndef _LIBCUDACXX_COMPILER_NVRTC
 
+#if !defined(_LIBCUDACXX_COMPILER_NVHPC)
 using ::fpclassify;
 using ::isnormal;
 using ::isgreater;
@@ -395,6 +402,7 @@ using ::islessequal;
 using ::islessgreater;
 
 using ::isunordered;
+#endif // !defined(_LIBCUDACXX_COMPILER_NVHPC)
 
 using ::float_t;
 using ::double_t;
