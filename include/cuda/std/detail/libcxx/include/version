@@ -210,6 +210,9 @@ __cpp_lib_void_t                                        201411L <type_traits>
 #if _LIBCUDACXX_STD_VER > 11
 # define __cpp_lib_chrono_udls                          201304L
 # define __cpp_lib_complex_udls                         201309L
+#ifdef _LIBCUDACXX_IS_CONSTANT_EVALUATED
+# define __cpp_lib_constexpr_complex                    201711L
+#endif
 # define __cpp_lib_concepts                             202002L
 # define __cpp_lib_exchange_function                    201304L
 # define __cpp_lib_generic_associative_lookup           201304L
@@ -323,14 +326,15 @@ __cpp_lib_void_t                                        201411L <type_traits>
 #   define __cpp_lib_char8_t                            201811L
 # endif
 // # define __cpp_lib_constexpr_algorithms                 201806L
-// # define __cpp_lib_constexpr_complex                    201711L
 // # define __cpp_lib_constexpr_dynamic_alloc              201907L
 // # define __cpp_lib_constexpr_functional                 201907L
 // # define __cpp_lib_constexpr_iterator                   201811L
 // # define __cpp_lib_constexpr_memory                     201811L
+// # define __cpp_lib_constexpr_misc                       201811L
 // # define __cpp_lib_constexpr_numeric                    201911L
 // # define __cpp_lib_constexpr_string                     201907L
 // # define __cpp_lib_constexpr_string_view                201811L
+// # define __cpp_lib_constexpr_swap_algorithms            201806L
 // # define __cpp_lib_constexpr_tuple                      201811L
 // # define __cpp_lib_constexpr_utility                    201811L
 // # define __cpp_lib_constexpr_vector                     201907L

@@ -27,6 +27,8 @@ Feature availability:
   - `void_t`
   - Trait operations: `conjunction`,`negation`,`disjunction`
   - `invoke_result`
+- C++20 constexpr `<complex>` is available in C++14.
+  - all operation on complex are made constexpr if `is_constant_evaluated` is supported.
 - C++20 `<concepts>` are available in C++14.
   - all standard concepts are available in C++14 and C++17. However, they need to be used similar to type traits as language concepts are not available.
 - C++20 `<span>` is mostly available in C++14.

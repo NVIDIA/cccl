@@ -140,6 +140,12 @@ feature_test_macros = sorted([ add_version_header(x) for x in [
    },
    "headers": ["complex"]
   },
+  {"name": "__cpp_lib_constexpr_complex",
+   "values": {
+      "c++14": 201711L
+    },
+    "headers": ["complex"],
+  },
   {"name": "__cpp_lib_quoted_string_io",
    "values": {
      "c++14": 201304L,

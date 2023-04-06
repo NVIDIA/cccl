@@ -20,20 +20,15 @@
 #include "../cases.h"
 
 template <class T>
-__host__ __device__ void
-test(const cuda::std::complex<T>& lhs, const cuda::std::complex<T>& rhs, cuda::std::complex<T> x)
-{
-    assert(lhs * rhs == x);
-}
-
-template <class T>
-__host__ __device__ void
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool
 test()
 {
     cuda::std::complex<T> lhs(1.5, 2.5);
     cuda::std::complex<T> rhs(1.5, 2.5);
     cuda::std::complex<T>   x(-4.0, 7.5);
-    test(lhs, rhs, x);
+    assert(lhs * rhs == x);
+
+    return true;
 }
 
 // test edges
@@ -160,6 +155,15 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
+#if TEST_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+#if !defined(__GNUC__) || (__GNUC__ > 7) // GCC 7 does not support constexpr is_nan and friends
+    static_assert(test<float>(), "");
+    static_assert(test<double>(), "");
+// CUDA treats long double as double
+//  static_assert(test<long double>(), "");
+#endif
+#endif
+
     test_edges();
 
   return 0;

@@ -17,7 +17,6 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
 
-
 #include "test_macros.h"
 #include "../cases.h"
 

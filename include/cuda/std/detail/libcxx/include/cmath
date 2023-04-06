@@ -602,14 +602,18 @@ hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) _NOEXCEPT
 }
 #endif
 
+#ifndef _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
+#define _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+#else
+#define _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX
+#endif // _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
+
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR __enable_if_t<is_floating_point<_A1>::value, bool>
-__libcpp_isnan_or_builtin(_A1 __lcpp_x) _NOEXCEPT
+__constexpr_isnan(_A1 __lcpp_x) _NOEXCEPT
 {
-#if defined(__CUDA_ARCH__)
-    return __isnan(__lcpp_x);
-#elif __has_builtin(__builtin_isnan)
+#if __has_builtin(__builtin_isnan)
     return __builtin_isnan(__lcpp_x);
 #else
     return isnan(__lcpp_x);
@@ -619,7 +623,7 @@ __libcpp_isnan_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR __enable_if_t<!is_floating_point<_A1>::value, bool>
-__libcpp_isnan_or_builtin(_A1 __lcpp_x) _NOEXCEPT
+__constexpr_isnan(_A1 __lcpp_x) _NOEXCEPT
 {
     return isnan(__lcpp_x);
 }
@@ -627,11 +631,9 @@ __libcpp_isnan_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR __enable_if_t<is_floating_point<_A1>::value, bool>
-__libcpp_isinf_or_builtin(_A1 __lcpp_x) _NOEXCEPT
+__constexpr_isinf(_A1 __lcpp_x) _NOEXCEPT
 {
-#if defined(__CUDA_ARCH__)
-    return __isinf(__lcpp_x);
-#elif __has_builtin(__builtin_isnan)
+#if __has_builtin(__builtin_isinf)
     return __builtin_isinf(__lcpp_x);
 #else
     return isinf(__lcpp_x);
@@ -641,7 +643,7 @@ __libcpp_isinf_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR __enable_if_t<!is_floating_point<_A1>::value, bool>
-__libcpp_isinf_or_builtin(_A1 __lcpp_x) _NOEXCEPT
+__constexpr_isinf(_A1 __lcpp_x) _NOEXCEPT
 {
     return isinf(__lcpp_x);
 }
@@ -649,9 +651,9 @@ __libcpp_isinf_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR __enable_if_t<is_floating_point<_A1>::value, bool>
-__libcpp_isfinite_or_builtin(_A1 __lcpp_x) _NOEXCEPT
+__constexpr_isfinite(_A1 __lcpp_x) _NOEXCEPT
 {
-#if !defined(__CUDA_ARCH__) && __has_builtin(__builtin_isnan)
+#if __has_builtin(__builtin_isfinite)
     return __builtin_isfinite(__lcpp_x);
 #else
     return isfinite(__lcpp_x);
@@ -661,10 +663,240 @@ __libcpp_isfinite_or_builtin(_A1 __lcpp_x) _NOEXCEPT
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR __enable_if_t<!is_floating_point<_A1>::value, bool>
-__libcpp_isfinite_or_builtin(_A1 __lcpp_x) _NOEXCEPT
+__constexpr_isfinite(_A1 __lcpp_x) _NOEXCEPT
 {
     return isfinite(__lcpp_x);
 }
+
+#if defined(_MSC_VER) || defined(__CUDACC_RTC__)
+template <class _A1>
+_LIBCUDACXX_INLINE_VISIBILITY
+_A1 __constexpr_copysign(_A1 __x, _A1 __y) _NOEXCEPT
+{
+    return copysign(__x, __y);
+}
+#else
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 float __constexpr_copysign(float __x, float __y) _NOEXCEPT {
+    return __builtin_copysignf(__x, __y);
+}
+
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 double __constexpr_copysign(double __x, double __y) _NOEXCEPT {
+    return __builtin_copysign(__x, __y);
+}
+
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 long double __constexpr_copysign(long double __x, long double __y) _NOEXCEPT {
+    return __builtin_copysignl(__x, __y);
+}
+
+template <class _A1, class _A2>
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 typename __enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value,
+                                __promote<_A1, _A2> >::type
+    __constexpr_copysign(_A1 __x, _A2 __y) _NOEXCEPT {
+    typedef typename __promote<_A1, _A2>::type __result_type;
+    static_assert((!(_IsSame<_A1, __result_type>::value && _IsSame<_A2, __result_type>::value)), "");
+    return __builtin_copysign((__result_type)__x, (__result_type)__y);
+}
+#endif // !_MSC_VER
+
+#if defined(_MSC_VER) || defined(__CUDACC_RTC__)
+template <class _A1>
+_LIBCUDACXX_INLINE_VISIBILITY
+_A1 __constexpr_fabs(_A1 __x) _NOEXCEPT
+{
+    return fabs(__x);
+}
+#else
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 float __constexpr_fabs(float __x) _NOEXCEPT {
+    return __builtin_fabsf(__x);
+}
+
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 double __constexpr_fabs(double __x) _NOEXCEPT {
+    return __builtin_fabs(__x);
+}
+
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 long double __constexpr_fabs(long double __x) _NOEXCEPT {
+    return __builtin_fabsl(__x);
+}
+
+template <class _Tp, __enable_if_t<is_integral<_Tp>::value, int> = 0>
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 double __constexpr_fabs(_Tp __x) _NOEXCEPT {
+    return __builtin_fabs(static_cast<double>(__x));
+}
+#endif // !_MSC_VER
+
+#if defined(_MSC_VER) || defined(__CUDACC_RTC__)
+template <class _A1>
+_LIBCUDACXX_INLINE_VISIBILITY
+_A1 __constexpr_fmax(_A1 __x, _A1 __y) _NOEXCEPT
+{
+    return fmax(__x, __y);
+}
+#else
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX float __constexpr_fmax(float __x, float __y) noexcept {
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
+    if (__constexpr_isnan(__x))
+      return __y;
+    if (__constexpr_isnan(__y))
+      return __x;
+    return __x < __y ? __y : __x;
+  }
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+  return __builtin_fmaxf(__x, __y);
+}
+
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX double __constexpr_fmax(double __x, double __y) noexcept {
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
+    if (__constexpr_isnan(__x))
+      return __y;
+    if (__constexpr_isnan(__y))
+      return __x;
+    return __x < __y ? __y : __x;
+  }
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+  return __builtin_fmax(__x, __y);
+}
+
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX long double __constexpr_fmax(long double __x, long double __y) noexcept {
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
+    if (__constexpr_isnan(__x))
+      return __y;
+    if (__constexpr_isnan(__y))
+      return __x;
+    return __x < __y ? __y : __x;
+  }
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+  return __builtin_fmax(__x, __y);
+}
+
+template <class _Tp, class _Up, __enable_if_t<is_arithmetic<_Tp>::value && is_arithmetic<_Up>::value, int> = 0>
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX typename __promote<_Tp, _Up>::type
+__constexpr_fmax(_Tp __x, _Up __y) _NOEXCEPT {
+  using __result_type = typename __promote<_Tp, _Up>::type;
+  return _CUDA_VSTD::__constexpr_fmax(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
+}
+#endif // !_MSC_VER
+
+#if defined(_MSC_VER) || defined(__CUDACC_RTC__)
+template <class _A1>
+_LIBCUDACXX_INLINE_VISIBILITY
+_A1 __constexpr_logb(_A1 __x)
+{
+    return logb(__x);
+}
+#else
+template <class _Tp>
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX _Tp __constexpr_logb(_Tp __x) {
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
+    if (__x == _Tp(0)) {
+      // raise FE_DIVBYZERO
+      return -numeric_limits<_Tp>::infinity();
+    }
+
+    if (__constexpr_isinf(__x))
+      return numeric_limits<_Tp>::infinity();
+
+    if (__constexpr_isnan(__x))
+      return numeric_limits<_Tp>::quiet_NaN();
+
+    __x = __constexpr_fabs(__x);
+    unsigned long long __exp = 0;
+    while (__x >= numeric_limits<_Tp>::radix) {
+      __x /= numeric_limits<_Tp>::radix;
+      __exp += 1;
+    }
+    return _Tp(__exp);
+  }
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+  return __builtin_logb(__x);
+}
+#endif // !_MSVC
+
+#if defined(_MSC_VER) || defined(__CUDACC_RTC__)
+template <class _Tp>
+inline _LIBCUDACXX_INLINE_VISIBILITY
+_Tp __constexpr_scalbn(_Tp __x, int __i) {
+    return static_cast<_Tp>(scalbn(static_cast<double>(__x), __i));
+}
+
+template <>
+inline _LIBCUDACXX_INLINE_VISIBILITY
+float __constexpr_scalbn<float>(float __x, int __i) {
+    return scalbnf(__x, __i);
+}
+
+template <>
+inline _LIBCUDACXX_INLINE_VISIBILITY
+double __constexpr_scalbn<double>(double __x, int __i) {
+    return scalbn(__x, __i);
+}
+
+#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+template <>
+inline _LIBCUDACXX_INLINE_VISIBILITY
+long double __constexpr_scalbn<long double>(long double __x, int __i) {
+    return scalbnl(__x, __i);
+}
+#endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#else
+template <class _Tp>
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX _Tp __constexpr_scalbn(_Tp __x, int __exp) {
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+ if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
+    if (__x == _Tp(0))
+      return __x;
+
+    if (__constexpr_isinf(__x))
+      return __x;
+
+    if (__exp == _Tp(0))
+      return __x;
+
+    if (__constexpr_isnan(__x))
+      return numeric_limits<_Tp>::quiet_NaN();
+
+    _Tp __mult(1);
+    if (__exp > 0) {
+      __mult = numeric_limits<_Tp>::radix;
+      --__exp;
+    } else {
+      ++__exp;
+      __exp = -__exp;
+      __mult /= numeric_limits<_Tp>::radix;
+    }
+
+    while (__exp > 0) {
+      if (!(__exp & 1)) {
+        __mult *= __mult;
+        __exp >>= 1;
+      } else {
+        __x *= __mult;
+        --__exp;
+      }
+    }
+    return __x;
+  }
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+  return __builtin_scalbn(__x, __exp);
+}
+#endif // !_MSC_VER
 
 #if _LIBCUDACXX_STD_VER > 17
 template <typename _Fp>

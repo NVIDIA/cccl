@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool
 test()
 {
     cuda::std::complex<T> c;
@@ -29,6 +29,8 @@ test()
     c = -1.5;
     assert(c.real() == -1.5);
     assert(c.imag() == 0);
+
+    return true;
 }
 
 int main(int, char**)
@@ -37,6 +39,12 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
+#if TEST_STD_VER > 11
+    static_assert(test<float>(), "");
+    static_assert(test<double>(), "");
+// CUDA treats long double as double
+//  static_assert(test<long double>(), "");
+#endif
 
   return 0;
 }

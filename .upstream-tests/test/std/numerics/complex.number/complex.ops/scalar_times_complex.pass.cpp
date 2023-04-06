@@ -19,20 +19,15 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void
-test(const T& lhs, const cuda::std::complex<T>& rhs, cuda::std::complex<T> x)
-{
-    assert(lhs * rhs == x);
-}
-
-template <class T>
-__host__ __device__ void
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool
 test()
 {
     T lhs(1.5);
     cuda::std::complex<T> rhs(1.5, 2.5);
     cuda::std::complex<T>   x(2.25, 3.75);
-    test(lhs, rhs, x);
+    assert(lhs * rhs == x);
+
+    return true;
 }
 
 int main(int, char**)
@@ -41,6 +36,12 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
+#if TEST_STD_VER > 11
+    static_assert(test<float>(), "");
+    static_assert(test<double>(), "");
+// CUDA treats long double as double
+//  static_assert(test<long double>(), "");
+#endif
 
   return 0;
 }

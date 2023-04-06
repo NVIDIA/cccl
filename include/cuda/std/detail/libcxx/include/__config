@@ -661,6 +661,10 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK __attribute__((__no_sanitize__("unsigned-integer-overflow")))
 #endif
 
+#if __check_builtin(builtin_bit_cast)
+#define _LIBCUDACXX_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
+#endif
+
 #if __check_builtin(builtin_launder)
 #define _LIBCUDACXX_LAUNDER(...) __builtin_launder(__VA_ARGS__)
 #endif
@@ -950,6 +954,10 @@ typedef __char32_t char32_t;
 #endif
 #endif
 
+#if _GNUC_VER >= 1100
+#define _LIBCUDACXX_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
+#endif
+
 #define _LIBCUDACXX_ALWAYS_INLINE __attribute__ ((__always_inline__))
 
 #define _LIBCUDACXX_DISABLE_EXTENSION_WARNING __extension__
@@ -1011,6 +1019,10 @@ typedef __char32_t char32_t;
 
 #if _MSC_VER > 1924
 #  define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
+#endif
+
+#if _MSC_VER > 1926
+#  define _LIBCUDACXX_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
 #endif
 
 #define _LIBCUDACXX_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
@@ -1939,6 +1951,15 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 
 #if !defined(__cpp_coroutines) || __cpp_coroutines < 201703L
 #define _LIBCUDACXX_HAS_NO_COROUTINES
+#endif
+
+// We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
+#if !defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
+#elif defined(__CUDACC_RTC__)
+#define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
+#elif defined(_MSC_VER)
+#define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #endif
 
 // FIXME: Correct this macro when either (A) a feature test macro for the

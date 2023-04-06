@@ -110,7 +110,7 @@ int main(int, char**)
     test<float>();
     test<double>();
 // CUDA treats long double as double
-//  test<long double>();();
+//  test<long double>();
     test_edges();
 
   return 0;

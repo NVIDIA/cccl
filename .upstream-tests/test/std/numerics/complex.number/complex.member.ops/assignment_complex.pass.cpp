@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class T, class X>
-__host__ __device__ void
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool
 test()
 {
     cuda::std::complex<T> c;
@@ -36,6 +36,8 @@ test()
     c = c3;
     assert(c.real() == 3.5);
     assert(c.imag() == -4.5);
+
+    return true;
 }
 
 int main(int, char**)
@@ -52,6 +54,14 @@ int main(int, char**)
 //  test<long double, float>();
 //  test<long double, double>();
 //  test<long double, long double>();
+
+#if TEST_STD_VER > 11
+    static_assert(test<float, float>(), "");
+    static_assert(test<float, double>(), "");
+
+    static_assert(test<double, float>(), "");
+    static_assert(test<double, double>(), "");
+#endif // TEST_STD_VER > 11
 
   return 0;
 }

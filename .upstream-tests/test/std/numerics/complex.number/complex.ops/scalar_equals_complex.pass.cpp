@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void
+__host__ __device__ TEST_CONSTEXPR_CXX14 void
 test_constexpr()
 {
 #if TEST_STD_VER > 11
@@ -47,31 +47,33 @@ test_constexpr()
 }
 
 template <class T>
-__host__ __device__ void
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool
 test()
 {
     {
-    T lhs(-2.5);
-    cuda::std::complex<T> rhs(1.5,  2.5);
-    assert(!(lhs == rhs));
+        T lhs(-2.5);
+        cuda::std::complex<T> rhs(1.5,  2.5);
+        assert(!(lhs == rhs));
     }
     {
-    T lhs(-2.5);
-    cuda::std::complex<T> rhs(1.5,  0);
-    assert(!(lhs == rhs));
+        T lhs(-2.5);
+        cuda::std::complex<T> rhs(1.5,  0);
+        assert(!(lhs == rhs));
     }
     {
-    T lhs(1.5);
-    cuda::std::complex<T> rhs(1.5, 2.5);
-    assert(!(lhs == rhs));
+        T lhs(1.5);
+        cuda::std::complex<T> rhs(1.5, 2.5);
+        assert(!(lhs == rhs));
     }
     {
-    T lhs(1.5);
-    cuda::std::complex<T> rhs(1.5, 0);
-    assert(lhs == rhs);
+        T lhs(1.5);
+        cuda::std::complex<T> rhs(1.5, 0);
+        assert(lhs == rhs);
     }
 
     test_constexpr<T> ();
+
+    return true;
 }
 
 int main(int, char**)
@@ -81,6 +83,12 @@ int main(int, char**)
 // CUDA treats long double as double
 //  test<long double>();
 //     test_constexpr<int>();
+#if TEST_STD_VER > 11
+    static_assert(test<float>(), "");
+    static_assert(test<double>(), "");
+// CUDA treats long double as double
+//  static_assert(test<long double>(), "");
+#endif
 
   return 0;
 }

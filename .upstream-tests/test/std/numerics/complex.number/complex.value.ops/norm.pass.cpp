@@ -20,11 +20,13 @@
 #include "../cases.h"
 
 template <class T>
-__host__ __device__ void
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool
 test()
 {
     cuda::std::complex<T> z(3, 4);
     assert(norm(z) == 25);
+
+    return true;
 }
 
 __host__ __device__ void test_edges()
@@ -61,7 +63,14 @@ int main(int, char**)
     test<float>();
     test<double>();
 // CUDA treats long double as double
-//  test<long double>();();
+//  test<long double>();
+#if TEST_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+    static_assert(test<float>(), "");
+    static_assert(test<double>(), "");
+// CUDA treats long double as double
+//  static_assert(test<long double>(), "");
+#endif
+
     test_edges();
 
   return 0;

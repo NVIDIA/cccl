@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <complex>
+// <cuda/std/complex>
 
 // test cases
 
@@ -285,4 +285,4 @@ __host__ __device__ void is_about(long double x, long double y)
     assert(cuda::std::abs((x-y)/(x+y)) < 1.e-14);
 }
 */
-#endif  // CASES_H
+#endif // CASES_H
