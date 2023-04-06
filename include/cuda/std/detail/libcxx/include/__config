@@ -1150,9 +1150,9 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_ALWAYS_INLINE __attribute__ ((__always_inline__))
 #define _LIBCUDACXX_NORETURN __attribute__ ((noreturn))
 
-#if __has_builtin(__builtin_is_constant_evaluated)
+#if __has_builtin(__builtin_is_constant_evaluated) && _LIBCUDACXX_STD_VER > 11
 #define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
-#endif // __has_builtin(__builtin_is_constant_evaluated)
+#endif // __has_builtin(__builtin_is_constant_evaluated) && _LIBCUDACXX_STD_VER > 11
 
 #endif // _LIBCUDACXX_COMPILER_[CLANG|GCC|MSVC|IBM|NVRTC]
 
