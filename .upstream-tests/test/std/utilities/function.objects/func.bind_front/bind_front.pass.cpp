@@ -176,6 +176,9 @@ __host__ __device__ constexpr bool test() {
 
   // Make sure we don't treat cuda::std::reference_wrapper specially.
 #if TEST_STD_VER > 17
+#if defined(TEST_COMPILER_NVRTC) // reference_wrapper requires `addressof` which is currently not supported with nvrtc
+  if (!cuda::std::__libcpp_is_constant_evaluated())
+#endif // TEST_COMPILER_NVRTC
   {
       auto add = [](cuda::std::reference_wrapper<int> a, cuda::std::reference_wrapper<int> b) {
         return a.get() + b.get();

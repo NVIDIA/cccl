@@ -168,7 +168,8 @@ __host__ __device__
 void test_is_not_constructible()
 {
     static_assert((!cuda::std::is_constructible<T, A0>::value), "");
-#ifndef TEST_COMPILER_C1XX
+#if !defined(TEST_COMPILER_C1XX) \
+ && !(defined(TEST_COMPILER_CLANG) && __clang_major__ >= 16)
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
     LIBCPP11_STATIC_ASSERT((!cuda::std::__libcpp_is_constructible<T, A0>::type::value), "");
