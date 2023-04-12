@@ -28,10 +28,17 @@ install(DIRECTORY "${libcudacxx_SOURCE_DIR}/lib/cmake/libcudacxx"
 # Need to configure a file to store CMAKE_INSTALL_INCLUDEDIR
 # since it can be defined by the user. This is common to work around collisions
 # with the CTK installed headers.
+set(install_location "${CMAKE_INSTALL_LIBDIR}/cmake/libcudacxx")
+# Transform to a list of directories, replace each directory with "../"
+# and convert back to a string
+string(REGEX REPLACE "/" ";" from_install_prefix "${install_location}")
+list(TRANSFORM from_install_prefix REPLACE ".+" "../")
+list(JOIN from_install_prefix "" from_install_prefix)
+
 configure_file("${libcudacxx_SOURCE_DIR}/lib/cmake/libcudacxx/libcudacxx-header-search.cmake.in"
   "${libcudacxx_BINARY_DIR}/lib/cmake/libcudacxx/libcudacxx-header-search.cmake"
   @ONLY
 )
 install(FILES "${libcudacxx_BINARY_DIR}/lib/cmake/libcudacxx/libcudacxx-header-search.cmake"
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/libcudacxx"
+  DESTINATION "${install_location}"
 )
