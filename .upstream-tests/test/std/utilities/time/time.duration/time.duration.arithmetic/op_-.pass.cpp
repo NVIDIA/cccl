@@ -44,6 +44,8 @@ int main(int, char**)
     static_assert( (cuda::std::is_same< decltype(zero-one), D1>::value), "");
     static_assert( (cuda::std::is_same< decltype(-one),     D1>::value), "");
     static_assert( (cuda::std::is_same< decltype(+one),     D1>::value), "");
+    unused(zero);
+    unused(one);
     }
 
   return 0;

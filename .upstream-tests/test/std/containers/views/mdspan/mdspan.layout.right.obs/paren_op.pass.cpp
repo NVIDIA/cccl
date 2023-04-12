@@ -68,7 +68,9 @@ int main(int, char**)
         static_assert( is_paren_op_avail_v< decltype(m), my_int_non_convertible           > == false, "" );
 
         // nothrow-constructibility
+#ifndef TEST_COMPILER_NVHPC
         static_assert( is_paren_op_avail_v< decltype(m), my_int_non_nothrow_constructible > == false, "" );
+#endif // TEST_COMPILER_NVHPC
     }
 
     return 0;

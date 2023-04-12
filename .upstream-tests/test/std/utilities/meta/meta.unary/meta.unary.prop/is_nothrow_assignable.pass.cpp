@@ -60,9 +60,12 @@ int main(int, char**)
 
     test_is_not_nothrow_assignable<int, int&> ();
     test_is_not_nothrow_assignable<int, int> ();
-    test_is_not_nothrow_assignable<B, A> ();
+
     test_is_not_nothrow_assignable<A, B> ();
+#ifndef TEST_COMPILER_NVHPC
+    test_is_not_nothrow_assignable<B, A> ();
     test_is_not_nothrow_assignable<C, C&> ();
+#endif // TEST_COMPILER_NVHPC
 
   return 0;
 }

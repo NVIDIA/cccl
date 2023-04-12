@@ -10,27 +10,35 @@
 
 // UNSUPPORTED: pre-sm-70
 
-#ifndef __NVCOMPILER
 #pragma nv_diag_suppress static_var_with_dynamic_init
-#endif
 #pragma nv_diag_suppress set_but_not_used
 
 #include <cuda/barrier>
 
-int main(int argc, char ** argv)
+#include "cuda_space_selector.h"
+
+__device__
+void test()
 {
-#if __CUDA_ARCH__ >= 800
-    __shared__ cuda::barrier<cuda::thread_scope_block> b;
-    init(&b, 2);
+    shared_memory_selector<cuda::barrier<cuda::thread_scope_block>, constructor_initializer> sel;
+    SHARED cuda::barrier<cuda::thread_scope_block>* b;
+    b = sel.construct();
+    init(b, 2);
 
     uint64_t token;
     asm volatile ("mbarrier.arrive.b64 %0, [%1];"
         : "=l"(token)
-        : "l"(cuda::device::barrier_native_handle(b))
+        : "l"(cuda::device::barrier_native_handle(*b))
         : "memory");
     (void)token;
 
-    b.arrive_and_wait();
+    b->arrive_and_wait();
+}
+
+int main(int argc, char ** argv)
+{
+#if __CUDA_ARCH__ >= 800
+  test();
 #endif
 
     return 0;

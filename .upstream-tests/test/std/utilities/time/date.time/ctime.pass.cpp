@@ -38,17 +38,17 @@ int main(int, char**)
     cuda::std::clock_t c = 0;
     cuda::std::size_t s = 0;
     cuda::std::time_t t = 0;
-    ((void)c); // Prevent unused warning
-    ((void)s); // Prevent unused warning
-    ((void)t); // Prevent unused warning
+    unused(c); // Prevent unused warning
+    unused(s); // Prevent unused warning
+    unused(t); // Prevent unused warning
 #ifndef __CUDACC_RTC__
     cuda::std::tm tm = {};
     char str[3];
-    ((void)tm); // Prevent unused warning
-    ((void)str); // Prevent unused warning
+    unused(tm); // Prevent unused warning
+    unused(str); // Prevent unused warning
 #if TEST_STD_VER > 14 && defined(TEST_HAS_C11_FEATURES)
     cuda::std::timespec tmspec = {};
-    ((void)tmspec); // Prevent unused warning
+    unused(tmspec); // Prevent unused warning
 #endif
 
     static_assert((cuda::std::is_same<decltype(cuda::std::clock()), cuda::std::clock_t>::value), "");

@@ -285,8 +285,10 @@ static_assert(!check_equality_comparable_with < int (&)(),
               int (S::*)() const volatile&& noexcept > (), "");
 
 static_assert(check_equality_comparable_with<int (S::*)(), int (S::*)()>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(
     check_equality_comparable_with<int (S::*)(), int (S::*)() noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(
     !check_equality_comparable_with<int (S::*)(), int (S::*)() const>(), "");
 static_assert(!check_equality_comparable_with<int (S::*)(),
@@ -379,8 +381,10 @@ static_assert(!check_equality_comparable_with < int (S::*)() noexcept,
 
 static_assert(
     check_equality_comparable_with<int (S::*)() const, int (S::*)() const>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(check_equality_comparable_with<int (S::*)() const,
                                              int (S::*)() const noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(!check_equality_comparable_with<int (S::*)() const,
                                               int (S::*)() volatile>(), "");
 static_assert(!check_equality_comparable_with<
@@ -469,8 +473,10 @@ static_assert(!check_equality_comparable_with < int (S::*)() const noexcept,
 
 static_assert(check_equality_comparable_with<int (S::*)() volatile,
                                              int (S::*)() volatile>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(check_equality_comparable_with<int (S::*)() volatile,
                                              int (S::*)() volatile noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(!check_equality_comparable_with<int (S::*)() volatile,
                                               int (S::*)() const volatile>(), "");
 static_assert(!check_equality_comparable_with<
@@ -552,9 +558,11 @@ static_assert(!check_equality_comparable_with < int (S::*)() volatile noexcept,
 
 static_assert(check_equality_comparable_with<int (S::*)() const volatile,
                                              int (S::*)() const volatile>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(
     check_equality_comparable_with<int (S::*)() const volatile,
                                    int (S::*)() const volatile noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(!check_equality_comparable_with<int (S::*)() const volatile,
                                               int (S::*)() &>(), "");
 static_assert(!check_equality_comparable_with<int (S::*)() const volatile,
@@ -635,8 +643,10 @@ static_assert(!check_equality_comparable_with < int (S::*)()
               int (S::*)() const volatile&& noexcept > (), "");
 
 static_assert(check_equality_comparable_with<int (S::*)() &, int (S::*)() &>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(
     check_equality_comparable_with<int (S::*)() &, int (S::*)() & noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(
     !check_equality_comparable_with<int (S::*)() &, int (S::*)() const&>(), "");
 static_assert(!check_equality_comparable_with<int (S::*)() &,
@@ -700,8 +710,10 @@ static_assert(!check_equality_comparable_with < int (S::*)() & noexcept,
 
 static_assert(
     check_equality_comparable_with<int (S::*)() const&, int (S::*)() const&>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(check_equality_comparable_with<int (S::*)() const&,
                                              int (S::*)() const & noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(!check_equality_comparable_with<int (S::*)() const&,
                                               int (S::*)() volatile&>(), "");
 static_assert(!check_equality_comparable_with<
@@ -758,8 +770,10 @@ static_assert(!check_equality_comparable_with < int (S::*)() const& noexcept,
 
 static_assert(check_equality_comparable_with<int (S::*)() volatile&,
                                              int (S::*)() volatile&>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(check_equality_comparable_with<
               int (S::*)() volatile&, int (S::*)() volatile & noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(!check_equality_comparable_with<int (S::*)() volatile&,
                                               int (S::*)() const volatile&>(), "");
 static_assert(
@@ -809,9 +823,11 @@ static_assert(!check_equality_comparable_with < int (S::*)() volatile& noexcept,
 
 static_assert(check_equality_comparable_with<int (S::*)() const volatile&,
                                              int (S::*)() const volatile&>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(
     check_equality_comparable_with<int (S::*)() const volatile&,
                                    int (S::*)() const volatile & noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(!check_equality_comparable_with<int (S::*)() const volatile&,
                                               int (S::*)() &&>(), "");
 static_assert(!check_equality_comparable_with < int (S::*)() const volatile&,
@@ -857,8 +873,10 @@ static_assert(!check_equality_comparable_with < int (S::*)()
 
 static_assert(
     check_equality_comparable_with<int (S::*)() &&, int (S::*)() &&>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(check_equality_comparable_with<int (S::*)() &&,
                                              int (S::*)() && noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(
     !check_equality_comparable_with<int (S::*)() &&, int (S::*)() const&&>(), "");
 static_assert(!check_equality_comparable_with < int (S::*)() &&,
@@ -889,8 +907,10 @@ static_assert(!check_equality_comparable_with < int (S::*)() && noexcept,
 
 static_assert(check_equality_comparable_with<int (S::*)() const&&,
                                              int (S::*)() const&&>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(check_equality_comparable_with<int (S::*)() const&&,
                                              int (S::*)() const && noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(!check_equality_comparable_with<int (S::*)() const&&,
                                               int (S::*)() volatile&&>(), "");
 static_assert(!check_equality_comparable_with < int (S::*)() const&&,
@@ -913,8 +933,10 @@ static_assert(!check_equality_comparable_with < int (S::*)() const&& noexcept,
 
 static_assert(check_equality_comparable_with<int (S::*)() volatile&&,
                                              int (S::*)() volatile&&>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(check_equality_comparable_with<
               int (S::*)() volatile&&, int (S::*)() volatile && noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(!check_equality_comparable_with<int (S::*)() volatile&&,
                                               int (S::*)() const volatile&&>(), "");
 static_assert(!check_equality_comparable_with < int (S::*)() volatile&&,
@@ -932,9 +954,11 @@ static_assert(!check_equality_comparable_with <
 
 static_assert(check_equality_comparable_with<int (S::*)() const volatile&&,
                                              int (S::*)() const volatile&&>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(
     check_equality_comparable_with<int (S::*)() const volatile&&,
                                    int (S::*)() const volatile && noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(
     check_equality_comparable_with<int (S::*)() const volatile && noexcept,
                                    int (S::*)() const volatile && noexcept>(), "");

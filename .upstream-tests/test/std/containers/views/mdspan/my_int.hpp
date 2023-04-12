@@ -1,6 +1,8 @@
 #ifndef _MY_INT_HPP
 #define _MY_INT_HPP
 
+#include "test_macros.h"
+
 struct my_int_non_convertible;
 
 struct my_int

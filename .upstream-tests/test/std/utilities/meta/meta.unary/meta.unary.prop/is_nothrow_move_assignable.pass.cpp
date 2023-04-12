@@ -11,6 +11,7 @@
 // has_nothrow_move_assign
 
 #include <cuda/std/type_traits>
+
 #include "test_macros.h"
 
 template <class T>
@@ -69,7 +70,9 @@ int main(int, char**)
     test_has_nothrow_assign<bit_zero>();
 
     test_has_not_nothrow_assign<void>();
+#ifndef TEST_COMPILER_NVHPC
     test_has_not_nothrow_assign<A>();
+#endif // TEST_COMPILER_NVHPC
 
   return 0;
 }

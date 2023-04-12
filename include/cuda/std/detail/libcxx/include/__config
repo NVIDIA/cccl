@@ -1154,6 +1154,14 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // __has_builtin(__builtin_is_constant_evaluated) && _LIBCUDACXX_STD_VER > 11
 
+#ifdef _LIBCUDACXX_COMPILER_NVHPC
+#define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
+#endif
+
+#if __has_builtin(__has_unique_object_representations)
+#define _LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS(...) __has_unique_object_representations(__VA_ARGS__)
+#endif
+
 #endif // _LIBCUDACXX_COMPILER_[CLANG|GCC|MSVC|IBM|NVRTC]
 
 #if defined(_LIBCUDACXX_COMPILER_NVHPC) && !defined(__cuda_std__)

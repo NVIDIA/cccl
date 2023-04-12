@@ -91,15 +91,15 @@ class CXXCompiler(object):
               patchlevel = macros['__CUDACC_VER_BUILD__']
               if '__LIBCUDACXX_NVRTC_TEST__' in macros.keys():
                 self.is_nvrtc = True
-          elif '__NVCOMPILER ' in macros.keys():
-              compiler_type = "nvhpc"
+          elif '__NVCOMPILER' in macros.keys():
+              compiler_type = 'nvhpc'
               # NVHPC, unfortunately, adds an extra space between the macro name
               # and macro value in their macro dump mode.
-              major_ver = macros['__NVCOMPILER'].strip()
-              minor_ver = macros['___NVCOMPILER_MINOR__'].strip()
-              patchlevel = macros['___NVCOMPILER_PATCHLEVEL__'].strip()
+              major_ver = macros['__NVCOMPILER_MAJOR__'].strip()
+              minor_ver = macros['__NVCOMPILER_MINOR__'].strip()
+              patchlevel = macros['__NVCOMPILER_PATCHLEVEL__'].strip()
           elif '__INTEL_COMPILER' in macros.keys():
-              compiler_type = "icc"
+              compiler_type = 'icc'
               major_ver = int(macros['__INTEL_COMPILER']) / 100
               minor_ver = (int(macros['__INTEL_COMPILER']) % 100) / 10
               patchlevel = int(macros['__INTEL_COMPILER']) % 10

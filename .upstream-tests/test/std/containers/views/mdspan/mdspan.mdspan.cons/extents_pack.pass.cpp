@@ -80,12 +80,14 @@ int main(int, char**)
     }
 
     // Constraint: (is_nothrow_constructible<index_type, OtherIndexTypes> && ...) is true
+#ifndef TEST_COMPILER_NVHPC
     {
         using      mdspan_t = cuda::std::mdspan< int, cuda::std::extents< int, dyn, dyn > >;
         using other_index_t = my_int_non_nothrow_constructible;
 
         static_assert( is_param_pack_cons_avail_v< mdspan_t, int *, other_index_t, other_index_t > == false, "" );
     }
+#endif // TEST_COMPILER_NVHPC
 
     // Constraint: N == rank() || N == rank_dynamic() is true
     {

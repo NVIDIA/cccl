@@ -8,7 +8,6 @@
 
 // UNSUPPORTED: c++98, c++03, c++11, c++14
 
-// XFAIL: nvhpc
 // TODO: there's multiple failures that appear to be all about overload resolution and SFINAE,
 // and they will require further debugging to pinpoint the root cause of (almost certainly a
 // compiler bug)
@@ -519,6 +518,7 @@ void call_operator_sfinae_test() {
         using T = decltype(cuda::std::not_fn(fn));
         static_assert(cuda::std::is_invocable<T, bool>::value, "");
         // static_assert(!cuda::std::is_invocable<T, cuda::std::string>::value, "");
+        unused(fn);
     }
 #endif
 }
@@ -618,9 +618,14 @@ void call_operator_noexcept_test()
         using T = ConstCallable<bool>;
         T value(true);
         auto ret = cuda::std::not_fn(value);
+#ifndef TEST_COMPILER_NVHPC
         static_assert(!noexcept(ret()), "call should not be noexcept");
+#endif // TEST_COMPILER_NVHPC
         auto const& cret = ret;
+#ifndef TEST_COMPILER_NVHPC
         static_assert(!noexcept(cret()), "call should not be noexcept");
+#endif // TEST_COMPILER_NVHPC
+        unused(cret);
     }
     {
         using T = NoExceptCallable<bool>;
@@ -634,9 +639,12 @@ void call_operator_noexcept_test()
 // TODO: nvcc gets this wrong, investigate
 #ifndef __CUDACC__
         static_assert(noexcept(ret()), "call should be noexcept");
+#endif // __CUDACC__
         auto const& cret = ret;
+#ifndef __CUDACC__
         static_assert(noexcept(cret()), "call should be noexcept");
-#endif
+#endif // __CUDACC__
+        unused(cret);
     }
     {
         using T = NoExceptCallable<NoExceptEvilBool>;
@@ -646,17 +654,25 @@ void call_operator_noexcept_test()
 // TODO: nvcc gets this wrong, investigate
 #ifndef __CUDACC__
         static_assert(noexcept(ret()), "call should not be noexcept");
+#endif // __CUDACC__
         auto const& cret = ret;
+#ifndef __CUDACC__
         static_assert(noexcept(cret()), "call should not be noexcept");
-#endif
+#endif // __CUDACC__
+        unused(cret);
     }
     {
         using T = NoExceptCallable<EvilBool>;
         T value(true);
         auto ret = cuda::std::not_fn(value);
+#ifndef TEST_COMPILER_NVHPC
         static_assert(!noexcept(ret()), "call should not be noexcept");
+#endif // TEST_COMPILER_NVHPC
         auto const& cret = ret;
+#ifndef TEST_COMPILER_NVHPC
         static_assert(!noexcept(cret()), "call should not be noexcept");
+#endif // TEST_COMPILER_NVHPC
+        unused(cret);
     }
 }
 

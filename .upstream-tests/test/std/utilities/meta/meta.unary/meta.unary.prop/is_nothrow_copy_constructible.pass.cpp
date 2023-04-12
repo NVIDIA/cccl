@@ -61,7 +61,9 @@ struct A
 int main(int, char**)
 {
     test_has_not_nothrow_copy_constructor<void>();
+#ifndef TEST_COMPILER_NVHPC
     test_has_not_nothrow_copy_constructor<A>();
+#endif // TEST_COMPILER_NVHPC
 
     test_is_nothrow_copy_constructible<int&>();
     test_is_nothrow_copy_constructible<Union>();

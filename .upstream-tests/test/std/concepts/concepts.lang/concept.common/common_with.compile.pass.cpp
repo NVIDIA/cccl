@@ -96,7 +96,9 @@ static_assert(CheckCommonWith<const volatile int*, volatile int*>(), "");
 static_assert(CheckCommonWith<const volatile int*, const volatile int*>(), "");
 
 static_assert(CheckCommonWith<int (*)(), int (*)()>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(CheckCommonWith<int (*)(), int (*)() noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 #ifdef INVESTIGATE_COMPILER_BUG
 static_assert(CheckCommonWith<int (&)(), int (&)()>(), "");
 #endif // INVESTIGATE_COMPILER_BUG
@@ -104,23 +106,33 @@ static_assert(CheckCommonWith<int (&)(), int (&)()>(), "");
 static_assert(CheckCommonWith<int (&)(), int (&)() noexcept>(), "");
 #endif // TEST_STD_VER > 17
 static_assert(CheckCommonWith<int (&)(), int (*)()>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(CheckCommonWith<int (&)(), int (*)() noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 
 struct S {};
 static_assert(CheckCommonWith<int S::*, int S::*>(), "");
 static_assert(CheckCommonWith<int S::*, const int S::*>(), "");
 static_assert(CheckCommonWith<int (S::*)(), int (S::*)()>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(CheckCommonWith<int (S::*)(), int (S::*)() noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(CheckCommonWith<int (S::*)() const, int (S::*)() const>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(
     CheckCommonWith<int (S::*)() const, int (S::*)() const noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(CheckCommonWith<int (S::*)() volatile, int (S::*)() volatile>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(
     CheckCommonWith<int (S::*)() volatile, int (S::*)() volatile noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 static_assert(CheckCommonWith<int (S::*)() const volatile,
                               int (S::*)() const volatile>(), "");
+#ifndef TEST_COMPILER_NVHPC
 static_assert(CheckCommonWith<int (S::*)() const volatile,
                               int (S::*)() const volatile noexcept>(), "");
+#endif // TEST_COMPILER_NVHPC
 
 // nonsense
 static_assert(!CheckCommonWith<double, float*>(), "");

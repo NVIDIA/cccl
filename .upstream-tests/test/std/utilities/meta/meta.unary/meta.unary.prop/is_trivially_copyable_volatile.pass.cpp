@@ -15,7 +15,6 @@
 // XFAIL: clang-3, clang-4, apple-clang-6, apple-clang-7, apple-clang-8, apple-clang-9.0
 // XFAIL: gcc-4.8, gcc-5, gcc-6, gcc-7, gcc-8, gcc-9
 // XFAIL: icc
-// XFAIL: nvhpc
 
 // When we marked this XFAIL for MSVC, QA reported that it unexpectedly passed.
 // When we stopped marking it XFAIL for MSVC, QA reported that it unexpectedly

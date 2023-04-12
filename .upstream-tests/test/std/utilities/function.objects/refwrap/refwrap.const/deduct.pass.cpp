@@ -18,7 +18,7 @@
 // #include <cuda/std/functional>
 #include <cuda/std/utility>
 
-#pragma nv_diag_suppress set_but_not_used
+#include "test_macros.h"
 
 int main(int, char**) {
     int i = 0;
@@ -26,11 +26,14 @@ int main(int, char**) {
     static_assert(cuda::std::is_same_v<decltype(ri), cuda::std::reference_wrapper<int>>);
     cuda::std::reference_wrapper ri2(ri);
     static_assert(cuda::std::is_same_v<decltype(ri2), cuda::std::reference_wrapper<int>>);
+    unused(ri2);
+
     const int j = 0;
     cuda::std::reference_wrapper rj(j);
     static_assert(cuda::std::is_same_v<decltype(rj), cuda::std::reference_wrapper<const int>>);
     cuda::std::reference_wrapper rj2(rj);
     static_assert(cuda::std::is_same_v<decltype(rj2), cuda::std::reference_wrapper<const int>>);
+    unused(rj2);
 
     return 0;
 }

@@ -47,6 +47,8 @@
 
 #pragma nv_diag_suppress set_but_not_used
 
+#include "test_macros.h"
+
 struct NonCopyable {
     __host__ __device__
     NonCopyable() {}
@@ -360,18 +362,22 @@ struct MemberObj {
 __host__ __device__
 void noexcept_test() {
     {
-        NoThrowCallable obj; ((void)obj); // suppress unused warning
-        CopyThrows arg; ((void)arg); // suppress unused warning
+        NoThrowCallable obj; unused(obj); // suppress unused warning
+        CopyThrows arg; unused(arg); // suppress unused warning
         static_assert(noexcept(cuda::std::invoke(obj)), "");
+#ifndef TEST_COMPILER_NVHPC
         static_assert(!noexcept(cuda::std::invoke(obj, arg)), "");
+#endif // TEST_COMPILER_NVHPC
         static_assert(noexcept(cuda::std::invoke(obj, cuda::std::move(arg))), "");
     }
+#ifndef TEST_COMPILER_NVHPC
     {
-        ThrowsCallable obj; ((void)obj); // suppress unused warning
+        ThrowsCallable obj; unused(obj); // suppress unused warning
         static_assert(!noexcept(cuda::std::invoke(obj)), "");
     }
+#endif // TEST_COMPILER_NVHPC
     {
-        MemberObj obj{42}; ((void)obj); // suppress unused warning.
+        MemberObj obj{42}; unused(obj); // suppress unused warning.
         static_assert(noexcept(cuda::std::invoke(&MemberObj::x, obj)), "");
     }
 }

@@ -70,7 +70,7 @@ services:
       target: libcudacxx-configured
       args:
         BUILDKIT_INLINE_CACHE: "1"
-        ROOT_IMAGE: "nvcr.io/nvidia/nvhpc:23.1-devel-cuda12.0-ubuntu22.04"
+        ROOT_IMAGE: "nvcr.io/nvidia/nvhpc:23.3-devel-cuda12.0-ubuntu22.04"
     deploy: *deploy-template
 
   icc-2022:

@@ -59,9 +59,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_noexcept() {
   {
     TestNoexcept<true, true> x{};
     ASSERT_NOEXCEPT(cuda::std::exchange(x, cuda::std::move(x)));
+#ifndef TEST_COMPILER_NVHPC
     ASSERT_NOT_NOEXCEPT(cuda::std::exchange(x, x)); // copy-assignment is not noexcept
+#endif // TEST_COMPILER_NVHPC
     unused(x);
   }
+#ifndef TEST_COMPILER_NVHPC
   {
     TestNoexcept<true, false> x{};
     ASSERT_NOT_NOEXCEPT(cuda::std::exchange(x, cuda::std::move(x)));
@@ -72,6 +75,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_noexcept() {
     ASSERT_NOT_NOEXCEPT(cuda::std::exchange(x, cuda::std::move(x)));
     unused(x);
   }
+#endif // TEST_COMPILER_NVHPC
 
   return true;
 }

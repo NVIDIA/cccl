@@ -15,13 +15,13 @@
 // TODO: Remove pointless comparison suppression when compiler fixes short-circuiting
 #pragma nv_diag_suppress 186
 
-#ifndef __NVCOMPILER
 #pragma nv_diag_suppress static_var_with_dynamic_init
-#endif
 #pragma nv_diag_suppress declared_but_not_referenced
 
 #include <cuda_pipeline.h>
 #include <cuda/barrier>
+
+#include "cuda_space_selector.h"
 
 using nvcuda::experimental::pipeline;
 
@@ -37,7 +37,7 @@ bool operator==(int4 a, int4 b) {
 
 template <typename T>
 __device__ void arrive_on_device_copy(T* global_array, T* shared_array, unsigned copy_count,
-    cuda::barrier<cuda::thread_scope_block>& barrier)
+    cuda::barrier<cuda::thread_scope_block>* barrier)
 {
     pipeline pipe;
 
@@ -46,9 +46,9 @@ __device__ void arrive_on_device_copy(T* global_array, T* shared_array, unsigned
         memcpy_async(shared_array[idx], global_array[idx], pipe);
     }
 
-    pipe.arrive_on(barrier);
+    pipe.arrive_on(*barrier);
 
-    barrier.arrive_and_wait();
+    barrier->arrive_and_wait();
 
     for (unsigned i = 0; i < copy_count; ++i) {
         // Rotate thread indexes for check
@@ -64,10 +64,12 @@ __device__ bool arrive_on_test(char* global_buffer, size_t buffer_size)
     assert(blockDim.y == 1 && blockDim.z == 1);
 
     extern __shared__ char shared_buffer[];
-    __shared__ cuda::barrier<cuda::thread_scope_block> barrier;
+    shared_memory_selector<cuda::barrier<cuda::thread_scope_block>, constructor_initializer> sel;
+    SHARED cuda::barrier<cuda::thread_scope_block>* barrier;
+    barrier = sel.construct();
 
     if (threadIdx.x == 0) {
-        init(&barrier, blockDim.x);
+        init(barrier, blockDim.x);
     }
     __syncthreads();
 
