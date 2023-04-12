@@ -22,6 +22,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 using cuda::std::nullptr_t;
 
 struct Empty {};

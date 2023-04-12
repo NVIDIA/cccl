@@ -271,6 +271,9 @@ template <class T>
 #include "__utility/to_underlying.h"
 #include "__utility/unreachable.h"
 
+#include "__memory/construct_at.h"
+#include "__memory/voidify.h"
+
 #include "limits"
 #include "type_traits"
 #include "version"

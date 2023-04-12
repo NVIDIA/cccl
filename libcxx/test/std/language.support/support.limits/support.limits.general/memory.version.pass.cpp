@@ -16,6 +16,7 @@
 /*  Constant                                      Value
     __cpp_lib_addressof_constexpr                 201603L [C++17]
     __cpp_lib_allocator_traits_is_always_equal    201411L [C++17]
+    __cpp_lib_constexpr_dynamic_alloc             201907L [C++20]
     __cpp_lib_enable_shared_from_this             201603L [C++17]
     __cpp_lib_make_unique                         201304L [C++14]
     __cpp_lib_ranges                              201811L [C++2a]
@@ -35,6 +36,10 @@
 
 # ifdef __cpp_lib_allocator_traits_is_always_equal
 #   error "__cpp_lib_allocator_traits_is_always_equal should not be defined before c++17"
+# endif
+
+# ifdef __cpp_lib_constexpr_dynamic_alloc
+#   error "__cpp_lib_constexpr_dynamic_alloc should not be defined before c++20"
 # endif
 
 # ifdef __cpp_lib_enable_shared_from_this
@@ -69,6 +74,10 @@
 
 # ifdef __cpp_lib_allocator_traits_is_always_equal
 #   error "__cpp_lib_allocator_traits_is_always_equal should not be defined before c++17"
+# endif
+
+# ifdef __cpp_lib_constexpr_dynamic_alloc
+#   error "__cpp_lib_constexpr_dynamic_alloc should not be defined before c++20"
 # endif
 
 # ifdef __cpp_lib_enable_shared_from_this
@@ -118,6 +127,10 @@
 # endif
 # if __cpp_lib_allocator_traits_is_always_equal != 201411L
 #   error "__cpp_lib_allocator_traits_is_always_equal should have the value 201411L in c++17"
+# endif
+
+# ifdef __cpp_lib_constexpr_dynamic_alloc
+#   error "__cpp_lib_constexpr_dynamic_alloc should not be defined before c++20"
 # endif
 
 # ifndef __cpp_lib_enable_shared_from_this
@@ -185,6 +198,13 @@
 # endif
 # if __cpp_lib_allocator_traits_is_always_equal != 201411L
 #   error "__cpp_lib_allocator_traits_is_always_equal should have the value 201411L in c++2a"
+# endif
+
+# ifndef __cpp_lib_constexpr_dynamic_alloc
+#   error "__cpp_lib_constexpr_dynamic_alloc should be defined in c++2a"
+# endif
+# if __cpp_lib_constexpr_dynamic_alloc != 201907L
+#   error "__cpp_lib_constexpr_dynamic_alloc should have the value 201907L in c++2a"
 # endif
 
 # ifndef __cpp_lib_enable_shared_from_this
