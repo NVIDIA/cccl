@@ -16,12 +16,18 @@
 #include "cuda_space_selector.h"
 #include "large_type.h"
 
+template<cuda::thread_scope scope, uint8_t PipelineStages>
 __host__ __device__
-auto get_group() {
+cuda::pipeline<scope> get_pipeline(cuda::pipeline_shared_state<scope, PipelineStages> * pipe_state) {
     NV_DISPATCH_TARGET(
-    NV_IS_DEVICE, return cooperative_groups::this_thread_block();,
-    NV_IS_HOST,   return cuda::__single_thread_group{};
-    )
+    NV_IS_DEVICE,(
+        auto group = cooperative_groups::this_thread_block();
+        return make_pipeline(group, pipe_state);
+    ),
+    NV_IS_HOST,(
+        auto group =  cuda::__single_thread_group{};
+        return make_pipeline(group, pipe_state);
+    ))
 }
 
 template <
@@ -44,8 +50,7 @@ void test_fully_specialized()
     T * dest = dest_sel.construct(static_cast<T>(0));
     cuda::pipeline_shared_state<Scope, PipelineStages> * pipe_state = pipe_state_sel.construct();
 
-    auto group = get_group();
-    auto pipe = make_pipeline(group, pipe_state);
+    auto pipe = get_pipeline(pipe_state);
 
     assert(*source == 12);
     assert(*dest == 0);
