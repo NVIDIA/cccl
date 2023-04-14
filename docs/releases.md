@@ -23,3 +23,4 @@ The latest ABI version is always the default.
 | 1.8.1       | 4, 3, 2         | CUDA 11.8              | Bugfixes and documentation updates    |
 | 1.9.0       | 4, 3, 2         | CUDA 12.0              | `float/double` support for `atomic`   |
 | 2.1.0       | 4, 3, 2         |                        | `span`, `mdspan`, `concepts`          |
+| 2.1.1       | 4, 3, 2         |                        | Bugfixes and compiler support changes |
