@@ -10,49 +10,44 @@
 
 #ifndef __CUDA_ARCH__
     #include <thread>
+#else
+    #if __CUDA_ARCH__ < 350
+        #error "This test requires CUDA dynamic parallelism to work."
+    #endif
 #endif
 
 template<typename... Fs>
 __host__ __device__
 void concurrent_agents_launch(Fs ...fs)
 {
-#ifdef __CUDA_ARCH__
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,(
+        assert(blockDim.x == sizeof...(Fs));
+        using fptr = void (*)(void *);
 
-    #if __CUDA_ARCH__ < 350
-        #error "This test requires CUDA dynamic parallelism to work."
-    #endif
+        fptr device_threads[] = {
+            [](void * data) {
+                (*reinterpret_cast<Fs *>(data))();
+            }...
+        };
 
-    assert(blockDim.x == sizeof...(Fs));
+        void * device_thread_data[] = {
+            reinterpret_cast<void *>(&fs)...
+        };
 
-    using fptr = void (*)(void *);
+        __syncthreads();
 
-    fptr device_threads[] = {
-        [](void * data) {
-            (*reinterpret_cast<Fs *>(data))();
-        }...
-    };
+        device_threads[threadIdx.x](device_thread_data[threadIdx.x]);
 
-    void * device_thread_data[] = {
-        reinterpret_cast<void *>(&fs)...
-    };
+        __syncthreads();
+    ),(
+        std::thread threads[]{
+            std::thread{ std::forward<Fs>(fs) }...
+        };
 
-    __syncthreads();
-
-    device_threads[threadIdx.x](device_thread_data[threadIdx.x]);
-
-    __syncthreads();
-
-#else
-
-    std::thread threads[]{
-        std::thread{ std::forward<Fs>(fs) }...
-    };
-
-    for (auto && thread : threads)
-    {
-        thread.join();
-    }
-
-#endif
+        for (auto && thread : threads)
+        {
+            thread.join();
+        }
+    ))
 }
 

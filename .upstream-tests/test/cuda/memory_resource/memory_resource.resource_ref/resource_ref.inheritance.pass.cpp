@@ -134,19 +134,20 @@ extern "C" void __cxa_pure_virtual() {
 }
 
 int main(int, char**) {
-#ifndef __CUDA_ARCH__
-  // Test some basic combinations of properties w/o state
-  test_resource_ref<property_with_value<short>, property_with_value<int> >();
-  test_resource_ref<property_with_value<short>, property_without_value<int> >();
-  test_resource_ref<property_without_value<short>,
-                    property_without_value<int> >();
+    NV_IF_TARGET(NV_IS_HOST,(
+        // Test some basic combinations of properties w/o state
+        test_resource_ref<property_with_value<short>, property_with_value<int> >();
+        test_resource_ref<property_with_value<short>, property_without_value<int> >();
+        test_resource_ref<property_without_value<short>,
+                          property_without_value<int> >();
 
-  test_resource_ref_from_pointer<property_with_value<short>,
-                                 property_with_value<int> >();
-  test_resource_ref_from_pointer<property_with_value<short>,
-                                 property_without_value<int> >();
-  test_resource_ref_from_pointer<property_without_value<short>,
-                                 property_without_value<int> >();
-#endif
-  return 0;
+        test_resource_ref_from_pointer<property_with_value<short>,
+                                      property_with_value<int> >();
+        test_resource_ref_from_pointer<property_with_value<short>,
+                                      property_without_value<int> >();
+        test_resource_ref_from_pointer<property_without_value<short>,
+                                      property_without_value<int> >();
+    ))
+
+    return 0;
 }

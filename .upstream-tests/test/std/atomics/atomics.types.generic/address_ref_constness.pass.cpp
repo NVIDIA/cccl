@@ -135,22 +135,31 @@ void test()
 
 int main(int, char**)
 {
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
-    test<const cuda::std::atomic_ref<int*>, int*, local_memory_selector>();
-    test<const cuda::atomic_ref<int*, cuda::thread_scope_system>, int*, local_memory_selector>();
-    test<const cuda::atomic_ref<int*, cuda::thread_scope_device>, int*, local_memory_selector>();
-    test<const cuda::atomic_ref<int*, cuda::thread_scope_block>, int*, local_memory_selector>();
-#endif
-#ifdef __CUDA_ARCH__
-    test<const cuda::std::atomic_ref<int*>, int*, shared_memory_selector>();
-    test<const cuda::atomic_ref<int*, cuda::thread_scope_system>, int*, shared_memory_selector>();
-    test<const cuda::atomic_ref<int*, cuda::thread_scope_device>, int*, shared_memory_selector>();
-    test<const cuda::atomic_ref<int*, cuda::thread_scope_block>, int*, shared_memory_selector>();
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,(
+        test<const cuda::std::atomic_ref<int*>, int*, local_memory_selector>();
+        test<const cuda::atomic_ref<int*, cuda::thread_scope_system>, int*, local_memory_selector>();
+        test<const cuda::atomic_ref<int*, cuda::thread_scope_device>, int*, local_memory_selector>();
+        test<const cuda::atomic_ref<int*, cuda::thread_scope_block>, int*, local_memory_selector>();
+    ),
+    NV_PROVIDES_SM_70,(
+        test<const cuda::std::atomic_ref<int*>, int*, local_memory_selector>();
+        test<const cuda::atomic_ref<int*, cuda::thread_scope_system>, int*, local_memory_selector>();
+        test<const cuda::atomic_ref<int*, cuda::thread_scope_device>, int*, local_memory_selector>();
+        test<const cuda::atomic_ref<int*, cuda::thread_scope_block>, int*, local_memory_selector>();
+    ))
 
-    test<const cuda::std::atomic_ref<int*>, int*, global_memory_selector>();
-    test<const cuda::atomic_ref<int*, cuda::thread_scope_system>, int*, global_memory_selector>();
-    test<const cuda::atomic_ref<int*, cuda::thread_scope_device>, int*, global_memory_selector>();
-    test<const cuda::atomic_ref<int*, cuda::thread_scope_block>, int*, global_memory_selector>();
-#endif
-  return 0;
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        test<const cuda::std::atomic_ref<int*>, int*, shared_memory_selector>();
+        test<const cuda::atomic_ref<int*, cuda::thread_scope_system>, int*, shared_memory_selector>();
+        test<const cuda::atomic_ref<int*, cuda::thread_scope_device>, int*, shared_memory_selector>();
+        test<const cuda::atomic_ref<int*, cuda::thread_scope_block>, int*, shared_memory_selector>();
+
+        test<const cuda::std::atomic_ref<int*>, int*, global_memory_selector>();
+        test<const cuda::atomic_ref<int*, cuda::thread_scope_system>, int*, global_memory_selector>();
+        test<const cuda::atomic_ref<int*, cuda::thread_scope_device>, int*, global_memory_selector>();
+        test<const cuda::atomic_ref<int*, cuda::thread_scope_block>, int*, global_memory_selector>();
+    ))
+
+    return 0;
 }

@@ -85,7 +85,7 @@ void test_const_array(const T (&array)[Sz])
     assert ( cuda::std::ssize(array) == Sz );
 }
 
-__device__ static constexpr int arrA [] { 1, 2, 3 };
+STATIC_TEST_GLOBAL_VAR constexpr int arrA [] { 1, 2, 3 };
 
 int main(int, char**)
 {
@@ -144,9 +144,9 @@ int main(int, char**)
     static_assert( cuda::std::is_signed_v<                      decltype(cuda::std::ssize(sc))>, "");
     static_assert( cuda::std::numeric_limits<                   decltype(cuda::std::ssize(sc))>::max()  > 60000, "");
     static_assert( cuda::std::numeric_limits<cuda::std::make_signed_t<decltype(cuda::std:: size(sc))>>::max() < 60000, "");
-#ifdef __CUDA_ARCH__
-    assert (cuda::std::ssize(sc) == 60000);
-#endif
+    NV_IF_TARGET(NV_IS_DEVICE,
+        assert (cuda::std::ssize(sc) == 60000);
+    )
     LIBCPP_ASSERT_NOT_NOEXCEPT(cuda::std::ssize(sc));
 
   return 0;

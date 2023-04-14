@@ -137,15 +137,15 @@ class layout_foo::mapping {
         * TODO: check precondition
         * other.required_span_size() is a representable value of type index_type
         */
-       #ifndef __CUDA_ARCH__
-       size_t stride = 1;
-       for(rank_type r=__extents.rank(); r>0; r--) {
-         assert(stride == other.stride(r-1));
-         //if(stride != other.stride(r-1))
-         //  throw std::runtime_error("Assigning layout_stride to layout_foo with invalid strides.");
-         stride *= __extents.extent(r-1);
-       }
-       #endif
+      NV_IF_TARGET(NV_IS_HOST,(
+        size_t stride = 1;
+        for(rank_type r=__extents.rank(); r>0; r--) {
+          assert(stride == other.stride(r-1));
+          //if(stride != other.stride(r-1))
+          //  throw std::runtime_error("Assigning layout_stride to layout_foo with invalid strides.");
+          stride *= __extents.extent(r-1);
+        }
+      ))
     }
 
     __MDSPAN_INLINE_FUNCTION_DEFAULTED __MDSPAN_CONSTEXPR_14_DEFAULTED mapping& operator=(mapping const&) noexcept = default;

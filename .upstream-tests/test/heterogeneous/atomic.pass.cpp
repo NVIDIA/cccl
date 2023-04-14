@@ -246,9 +246,9 @@ int main(int arg, char ** argv)
 {
     validate_not_lock_free();
 
-#ifndef __CUDA_ARCH__
-    kernel_invoker();
-#endif
+    NV_IF_TARGET(NV_IS_HOST,(
+        kernel_invoker();
+    ))
 
     return 0;
 }

@@ -27,10 +27,7 @@ struct TestFn {
   void operator()() const {
     typedef cuda::std::atomic<T> A;
 
-#ifdef __CUDA_ARCH__
-    __shared__
-#endif
-    A * t;
+    SHARED A * t;
 #ifdef __CUDA_ARCH__
     if (threadIdx.x == 0) {
 #endif
@@ -54,10 +51,7 @@ struct TestFn {
 
     concurrent_agents_launch(agent_notify, agent_wait);
 
-#ifdef __CUDA_ARCH__
-    __shared__
-#endif
-    volatile A * vt;
+    SHARED volatile A * vt;
 #ifdef __CUDA_ARCH__
     if (threadIdx.x == 0) {
 #endif
@@ -84,9 +78,9 @@ struct TestFn {
 
 int main(int, char**)
 {
-#ifndef __CUDA_ARCH__
-    cuda_thread_count = 2;
-#endif
+    NV_IF_TARGET(NV_IS_HOST,
+        cuda_thread_count = 2;
+    )
 
     TestEachAtomicType<TestFn, shared_memory_selector>()();
 

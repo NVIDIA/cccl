@@ -33,30 +33,38 @@ void test()
     cuda::std::atomic_flag & f = *sel.construct();
     f.clear();
     assert(f.test_and_set() == 0);
-    {
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
+
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,(
         typedef cuda::std::atomic_flag A;
         TEST_ALIGNAS_TYPE(A) char storage[sizeof(A)] = {1};
         A& zero = *new (storage) A();
         assert(!zero.test_and_set());
-        // cudafe crashes on trying to interpret the line below when compiling with Clang
-        // TODO: file a compiler bug
-#if !(defined(__clang__) && defined(__CUDACC__))
         zero.~A();
-#endif
-#endif
-    }
+    ),
+    NV_PROVIDES_SM_70,(
+        typedef cuda::std::atomic_flag A;
+        TEST_ALIGNAS_TYPE(A) char storage[sizeof(A)] = {1};
+        A& zero = *new (storage) A();
+        assert(!zero.test_and_set());
+        zero.~A();
+    ))
 }
 
 int main(int, char**)
 {
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
-    test<local_memory_selector>();
-#endif
-#ifdef __CUDA_ARCH__
-    test<shared_memory_selector>();
-    test<global_memory_selector>();
-#endif
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,(
+        test<local_memory_selector>();
+    ),
+    NV_PROVIDES_SM_70,(
+        test<local_memory_selector>();
+    ))
 
-  return 0;
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        test<shared_memory_selector>();
+        test<global_memory_selector>();
+    ))
+
+    return 0;
 }

@@ -154,20 +154,21 @@ void test_conversion_from_async_resource_ref() {
 }
 
 int main(int, char**) {
-#ifndef __CUDA_ARCH__
-  test_conversion_from_resource_ref<property_with_value<short>,
-                                    property_with_value<int> >();
-  test_conversion_from_resource_ref<property_with_value<short>,
-                                    property_without_value<int> >();
-  test_conversion_from_resource_ref<property_without_value<short>,
-                                    property_without_value<int> >();
-
-  test_conversion_from_async_resource_ref<property_with_value<short>,
+    NV_IF_TARGET(NV_IS_HOST,(
+        test_conversion_from_resource_ref<property_with_value<short>,
                                           property_with_value<int> >();
-  test_conversion_from_async_resource_ref<property_with_value<short>,
+        test_conversion_from_resource_ref<property_with_value<short>,
                                           property_without_value<int> >();
-  test_conversion_from_async_resource_ref<property_without_value<short>,
+        test_conversion_from_resource_ref<property_without_value<short>,
                                           property_without_value<int> >();
-#endif
-  return 0;
+
+        test_conversion_from_async_resource_ref<property_with_value<short>,
+                                                property_with_value<int> >();
+        test_conversion_from_async_resource_ref<property_with_value<short>,
+                                                property_without_value<int> >();
+        test_conversion_from_async_resource_ref<property_without_value<short>,
+                                                property_without_value<int> >();
+    ))
+
+    return 0;
 }

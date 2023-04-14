@@ -64,10 +64,10 @@ __host__ __device__ __noinline__
 void test_select_destination()
 {
     test_fully_specialized<T, SourceSelector, local_memory_selector>();
-#ifdef __CUDA_ARCH__
-    test_fully_specialized<T, SourceSelector, shared_memory_selector>();
-    test_fully_specialized<T, SourceSelector, global_memory_selector>();
-#endif
+    NV_IF_TARGET(NV_IS_DEVICE, (
+        test_fully_specialized<T, SourceSelector, shared_memory_selector>();
+        test_fully_specialized<T, SourceSelector, global_memory_selector>();
+    ))
 }
 
 template <class T>
@@ -75,8 +75,8 @@ __host__ __device__ __noinline__
 void test_select_source()
 {
     test_select_destination<T, local_memory_selector>();
-#ifdef __CUDA_ARCH__
-    test_select_destination<T, shared_memory_selector>();
-    test_select_destination<T, global_memory_selector>();
-#endif
+    NV_IF_TARGET(NV_IS_DEVICE, (
+        test_select_destination<T, shared_memory_selector>();
+        test_select_destination<T, global_memory_selector>();
+    ))
 }

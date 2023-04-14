@@ -15,12 +15,7 @@
 #include <cuda/stream_ref>
 #include <cuda/std/cassert>
 
-int main(int argc, char** argv) {
-#ifndef __CUDA_ARCH__
-  { // passing case
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
-    cuda::stream_ref ref{stream};
+void test_ready(cuda::stream_ref& ref) {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
     try {
       assert(ref.ready());
@@ -30,8 +25,16 @@ int main(int argc, char** argv) {
 #else
     assert(ref.ready());
 #endif // _LIBCUDACXX_NO_EXCEPTIONS
-    cudaStreamDestroy(stream);
-  }
-#endif
-  return 0;
+}
+
+int main(int argc, char** argv) {
+    NV_IF_TARGET(NV_IS_HOST,( // passing case
+        cudaStream_t stream;
+        cudaStreamCreate(&stream);
+        cuda::stream_ref ref{stream};
+        test_ready(ref);
+        cudaStreamDestroy(stream);
+    ))
+
+    return 0;
 }

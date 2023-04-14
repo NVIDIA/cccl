@@ -101,9 +101,10 @@ void test_allocate_async() {
 }
 
 int main(int, char**) {
-#ifndef __CUDA_ARCH__
-  test_allocate();
-  test_allocate_async();
-#endif
-  return 0;
+    NV_IF_TARGET(NV_IS_HOST,(
+        test_allocate();
+        test_allocate_async();
+    ))
+
+    return 0;
 }

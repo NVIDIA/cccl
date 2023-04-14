@@ -58,24 +58,24 @@ using system_barrier = cuda::barrier<cuda::thread_scope_system, Comp>;
 
 int main(int, char**)
 {
-#ifndef __CUDA_ARCH__
-  cuda_thread_count = 2;
+    NV_IF_ELSE_TARGET(NV_IS_HOST,(
+        cuda_thread_count = 2;
 
-  test<std_barrier, local_memory_selector>();
-  test<block_barrier, local_memory_selector>();
-  test<device_barrier, local_memory_selector>();
-  test<system_barrier, local_memory_selector>();
-#else
-  test<std_barrier, shared_memory_selector>();
-  test<block_barrier, shared_memory_selector>();
-  test<device_barrier, shared_memory_selector>();
-  test<system_barrier, shared_memory_selector>();
+        test<std_barrier, local_memory_selector>();
+        test<block_barrier, local_memory_selector>();
+        test<device_barrier, local_memory_selector>();
+        test<system_barrier, local_memory_selector>();
+    ),(
+        test<std_barrier, shared_memory_selector>();
+        test<block_barrier, shared_memory_selector>();
+        test<device_barrier, shared_memory_selector>();
+        test<system_barrier, shared_memory_selector>();
 
-  test<std_barrier, global_memory_selector>();
-  test<block_barrier, global_memory_selector>();
-  test<device_barrier, global_memory_selector>();
-  test<system_barrier, global_memory_selector>();
-#endif
+        test<std_barrier, global_memory_selector>();
+        test<block_barrier, global_memory_selector>();
+        test<device_barrier, global_memory_selector>();
+        test<system_barrier, global_memory_selector>();
+    ))
 
-  return 0;
+    return 0;
 }

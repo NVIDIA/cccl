@@ -39,20 +39,20 @@ static_assert(has_value_type<cuda::stream_ref>, "");
 
 
 int main(int argc, char** argv) {
-#ifndef __CUDA_ARCH__
-  { // default construction
-    cuda::stream_ref ref;
-    static_assert(noexcept(cuda::stream_ref{}), "");
-    assert(ref.get() == reinterpret_cast<cudaStream_t>(0));
-  }
+    NV_IF_TARGET(NV_IS_HOST,(
+        { // default construction
+          cuda::stream_ref ref;
+          static_assert(noexcept(cuda::stream_ref{}), "");
+          assert(ref.get() == reinterpret_cast<cudaStream_t>(0));
+        }
 
-  { // from stream
-    cudaStream_t stream = reinterpret_cast<cudaStream_t>(42);
-    cuda::stream_ref ref{stream};
-    static_assert(noexcept(cuda::stream_ref{stream}), "");
-    assert(ref.get() == reinterpret_cast<cudaStream_t>(42));
-  }
-#endif // __CUDA_ARCH__
+        { // from stream
+          cudaStream_t stream = reinterpret_cast<cudaStream_t>(42);
+          cuda::stream_ref ref{stream};
+          static_assert(noexcept(cuda::stream_ref{stream}), "");
+          assert(ref.get() == reinterpret_cast<cudaStream_t>(42));
+        }
+    ))
 
-  return 0;
+    return 0;
 }

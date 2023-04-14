@@ -32,11 +32,7 @@
 #include "test_macros.h"
 #include "disable_missing_braces_warning.h"
 
-#ifdef __CUDA_ARCH__
-__device__ int count = 0;
-#else
-int count = 0;
-#endif
+STATIC_TEST_GLOBAL_VAR int count = 0;
 
 struct A_int_0
 {

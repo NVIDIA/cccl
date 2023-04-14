@@ -149,14 +149,15 @@ void test_select_pipeline()
 
 int main(int argc, char ** argv)
 {
-#ifndef __CUDA_ARCH__
-    cuda_thread_count = 64;
-#else
-    test_select_pipeline<uint8_t>();
-    test_select_pipeline<uint16_t>();
-    test_select_pipeline<uint32_t>();
-    test_select_pipeline<uint64_t>();
-#endif
+    NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+        cuda_thread_count = 64;,
+    (
+        test_select_pipeline<uint8_t>();
+        test_select_pipeline<uint16_t>();
+        test_select_pipeline<uint32_t>();
+        test_select_pipeline<uint64_t>();
+    ))
 
     return 0;
 }

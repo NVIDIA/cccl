@@ -24,10 +24,7 @@ template<template<typename, typename> class Selector>
 __host__ __device__
 void test()
 {
-#ifdef __CUDA_ARCH__
-    __shared__
-#endif
-    cuda::std::atomic_flag * t;
+    SHARED cuda::std::atomic_flag * t;
 #ifdef __CUDA_ARCH__
     if (threadIdx.x == 0) {
 #endif
@@ -50,10 +47,7 @@ void test()
 
     concurrent_agents_launch(agent_notify, agent_wait);
 
-#ifdef __CUDA_ARCH__
-    __shared__
-#endif
-    volatile cuda::std::atomic_flag * vt;
+    SHARED volatile cuda::std::atomic_flag * vt;
 #ifdef __CUDA_ARCH__
     if (threadIdx.x == 0) {
 #endif
@@ -79,9 +73,9 @@ void test()
 
 int main(int, char**)
 {
-#ifndef __CUDA_ARCH__
-    cuda_thread_count = 2;
-#endif
+    NV_IF_TARGET(NV_IS_HOST,
+        cuda_thread_count = 2;
+    )
 
     test<shared_memory_selector>();
 

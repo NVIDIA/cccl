@@ -17,14 +17,14 @@
 
 int main(int argc, char ** argv)
 {
-#ifdef __CUDA_ARCH__
-  auto f = cuda::proclaim_return_type<double>(
-      [] __device__ () -> int { return 42; });
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
+        auto f = cuda::proclaim_return_type<double>(
+            [] __device__ () -> int { return 42; });
 
-  assert(f() == 42);
-#else
-#error shall fail
-#endif
+        assert(f() == 42);
+    ),
+        static_assert(false);
+    )
 
-  return 0;
+    return 0;
 }

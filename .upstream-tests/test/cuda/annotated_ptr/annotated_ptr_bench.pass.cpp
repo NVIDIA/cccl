@@ -109,51 +109,52 @@ void bench() {
    }
 #endif
 
-#ifdef __CUDA_ARCH__
-   annotated_ptr_timing_dev(arr0, arr1);
-#else
-   assert_rt(cudaDeviceSynchronize());
-   annotated_ptr_timing<<<blocks,threads>>>(arr0, arr1);
-   assert_rt(cudaDeviceSynchronize());
-#endif
+   NV_IF_ELSE_TARGET(NV_IS_DEVICE,(
+      annotated_ptr_timing_dev(arr0, arr1);
+   ),(
+      assert_rt(cudaDeviceSynchronize());
+      annotated_ptr_timing<<<blocks,threads>>>(arr0, arr1);
+      assert_rt(cudaDeviceSynchronize());
+   ))
 
    for (size_t i = 0; i < ARR_SZ; ++i) {
      arr0[i] = static_cast<int>(i);
      arr1[i] = 0;
    }
 
-#ifdef __CUDA_ARCH__
-   annotated_ptr_timing_dev(arr0, arr1);
-#else
-   assert_rt(cudaDeviceSynchronize());
-   assert_rt(cudaEventCreate(&start));
-   assert_rt(cudaEventCreate(&stop));
-   assert_rt(cudaEventRecord(start));
-   annotated_ptr_timing<<<blocks,threads>>>(arr0, arr1);
-   assert_rt(cudaEventRecord(stop));
-   assert_rt(cudaEventSynchronize(stop));
-   assert_rt(cudaEventElapsedTime(&annotated_time, start, stop));
-   assert_rt(cudaEventDestroy(start));
-   assert_rt(cudaEventDestroy(stop));
-   assert_rt(cudaDeviceSynchronize());
+   NV_IF_ELSE_TARGET(NV_IS_DEVICE,(
+      annotated_ptr_timing_dev(arr0, arr1);
+   ),(
+      assert_rt(cudaDeviceSynchronize());
+      assert_rt(cudaEventCreate(&start));
+      assert_rt(cudaEventCreate(&stop));
+      assert_rt(cudaEventRecord(start));
+      annotated_ptr_timing<<<blocks,threads>>>(arr0, arr1);
+      assert_rt(cudaEventRecord(stop));
+      assert_rt(cudaEventSynchronize(stop));
+      assert_rt(cudaEventElapsedTime(&annotated_time, start, stop));
+      assert_rt(cudaEventDestroy(start));
+      assert_rt(cudaEventDestroy(stop));
+      assert_rt(cudaDeviceSynchronize());
 
-   for (size_t i = 0; i < ARR_SZ; ++i) {
-     if (arr1[i] != (int)i) {
-       DPRINTF("arr1[%d] == %d, should be:%d\n", i, arr1[i], i);
-       assert(arr1[i] == static_cast<int>(i));
-     }
+      for (size_t i = 0; i < ARR_SZ; ++i) {
+      if (arr1[i] != (int)i) {
+         DPRINTF("arr1[%d] == %d, should be:%d\n", i, arr1[i], i);
+         assert(arr1[i] == static_cast<int>(i));
+      }
 
-     arr1[i] = 0;
-   }
-#endif
+      arr1[i] = 0;
+      }
+   ))
 
-#ifdef __CUDA_ARCH__
-   free(arr0);
-   free(arr1);
-#else
-   assert_rt(cudaFree(arr0));
-   assert_rt(cudaFree(arr1));
-#endif
+   NV_IF_ELSE_TARGET(NV_IS_DEVICE,(
+      free(arr0);
+      free(arr1);
+   ),(
+      assert_rt(cudaFree(arr0));
+      assert_rt(cudaFree(arr1));
+   ))
+
    printf("array(ms):%f, arrotated_ptr(ms):%f\n",
 	  pointer_time, annotated_time);
 }

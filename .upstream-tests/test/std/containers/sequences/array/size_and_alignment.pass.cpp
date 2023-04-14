@@ -70,9 +70,9 @@ int main(int, char**) {
   test_type<char>();
   test_type<int>();
   test_type<double>();
-#if !defined(__CUDA_ARCH__)
-  test_type<long double>();
-#endif
+  NV_IF_TARGET(NV_IS_HOST,
+    test_type<long double>();
+  )
   test_type<cuda::std::max_align_t>();
   test_type<TestType1>();
   test_type<TestType2>();

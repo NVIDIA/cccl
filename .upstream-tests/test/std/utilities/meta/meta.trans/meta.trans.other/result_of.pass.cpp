@@ -105,7 +105,7 @@ void test_no_result()
 #endif
 }
 
-#if defined(__NVCC__) 
+#if defined(__NVCC__)
 template <class Ret, class Fn>
 __host__ __device__
 void test_lambda(Fn &&)
@@ -426,13 +426,13 @@ int main(int, char**)
 #endif
     test_no_result<PMD(ND&)>();
     }
-#if defined(__NVCC__) 
+#if defined(__NVCC__)
     { // extended lambda
-#if defined(__CUDA_ARCH__)
-    test_lambda<int>([] __host__ __device__ () -> int { return 42; });
-    test_lambda<double>([] __host__ __device__ () -> double { return 42.0; });
-    test_lambda<SD>([] __host__ __device__ () -> SD { return {}; });
-#endif
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        test_lambda<int>([] __host__ __device__ () -> int { return 42; });
+        test_lambda<double>([] __host__ __device__ () -> double { return 42.0; });
+        test_lambda<SD>([] __host__ __device__ () -> SD { return {}; });
+    ))
     test_lambda<double>(cuda::proclaim_return_type<double>(
         [] __device__ () -> double { return 42.0; }));
     }

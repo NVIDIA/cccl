@@ -56,13 +56,15 @@ struct TestFn {
 
 int main(int, char**)
 {
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
-    TestFn<local_memory_selector>()();
-#endif
-#ifdef __CUDA_ARCH__
+  NV_DISPATCH_TARGET(
+  NV_IS_HOST, TestFn<local_memory_selector>()();,
+  NV_PROVIDES_SM_70, TestFn<local_memory_selector>()();
+  )
+
+  NV_IF_TARGET(NV_IS_DEVICE,(
     TestFn<shared_memory_selector>()();
     TestFn<global_memory_selector>()();
-#endif
+  ))
 
   return 0;
 }

@@ -125,12 +125,12 @@ int main(int, char**)
 
 #if TEST_STD_VER > 14
     {
-        #ifndef __CUDA_ARCH__
+    NV_IF_TARGET(NV_IS_HOST,(
         typedef cuda::std::reverse_iterator<const C *> RI;
         constexpr RI it1 = cuda::std::make_reverse_iterator(&gC+1);
 
         static_assert(it1->get() == gC.get(), "");
-        #endif
+    ))
     }
 #endif
     {

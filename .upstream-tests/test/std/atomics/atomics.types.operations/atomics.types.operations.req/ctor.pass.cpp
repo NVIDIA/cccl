@@ -70,14 +70,20 @@ struct TestFunc {
 
 int main(int, char**)
 {
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
-    TestFunc<UserType, local_memory_selector, cuda::thread_scope_system>()();
-    TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_system>()();
-#endif
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,(
+        TestFunc<UserType, local_memory_selector, cuda::thread_scope_system>()();
+        TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_system>()();
+    ),
+    NV_PROVIDES_SM_60,(
+        TestFunc<UserType, local_memory_selector, cuda::thread_scope_system>()();
+        TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_system>()();
+    ))
+
     TestFunc<UserType, local_memory_selector, cuda::thread_scope_device>()();
     TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_device>()();
     TestFunc<UserType, local_memory_selector, cuda::thread_scope_block>()();
     TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_block>()();
 
-  return 0;
+    return 0;
 }

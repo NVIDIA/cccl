@@ -405,6 +405,12 @@ inline void DoNotOptimize(Tp const& value) {
 #  define STATIC_TEST_GLOBAL_VAR
 #endif
 
+#if defined(__CUDA_ARCH__)
+#  define TEST_ACCESSIBLE __device__
+#else
+#  define TEST_ACCESSIBLE
+#endif
+
 
 #define STATIC_MEMBER_VAR(name, type) \
   __host__ __device__ static type& name() { \

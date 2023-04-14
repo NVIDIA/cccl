@@ -14,9 +14,9 @@
 
 int main(int argc, char ** argv)
 {
-#ifndef __CUDA_ARCH__
-    cuda_thread_count = 4;
-#endif
+    NV_IF_TARGET(NV_IS_HOST,
+        cuda_thread_count = 4;
+    )
 
     test_select_source<storage<int32_t>>();
 

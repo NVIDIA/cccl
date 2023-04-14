@@ -33,13 +33,11 @@ int main(int, char**)
     assert(f(36, 36));
     assert(!f(36, 6));
     assert(f(6, 36));
-#ifndef __CUDA_ARCH__
-    {
+    NV_IF_TARGET(NV_IS_HOST,(
         // test total ordering of int* for less_equal<int*> and
         // less_equal<void>.
         do_pointer_comparison_test<int, cuda::std::less_equal>();
-    }
-#endif
+    ))
 #if TEST_STD_VER > 11
     typedef cuda::std::less_equal<> F2;
     const F2 f2 = F2();

@@ -169,17 +169,23 @@ int main(int, char**)
     // a *reasonable* subset of all the possible combinations to provide enough
     // confidence that this all actually works
 
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
-    test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_block, local_memory_selector>();
-    test_for_all_types<cuda_atomic_ref    , cuda::thread_scope_block, local_memory_selector>();
-#endif
-#ifdef __CUDA_ARCH__
-    test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_block, shared_memory_selector>();
-    test_for_all_types<cuda_atomic_ref    , cuda::thread_scope_block, shared_memory_selector>();
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,(
+        test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_block, local_memory_selector>();
+        test_for_all_types<cuda_atomic_ref    , cuda::thread_scope_block, local_memory_selector>();
+    ),
+    NV_PROVIDES_SM_70,(
+        test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_block, local_memory_selector>();
+        test_for_all_types<cuda_atomic_ref    , cuda::thread_scope_block, local_memory_selector>();
+    ))
 
-    test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_device, global_memory_selector>();
-    test_for_all_types<cuda_atomic_ref    , cuda::thread_scope_device, global_memory_selector>();
-#endif
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_block, shared_memory_selector>();
+        test_for_all_types<cuda_atomic_ref    , cuda::thread_scope_block, shared_memory_selector>();
 
-  return 0;
+        test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_device, global_memory_selector>();
+        test_for_all_types<cuda_atomic_ref    , cuda::thread_scope_device, global_memory_selector>();
+    ))
+
+    return 0;
 }

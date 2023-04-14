@@ -39,16 +39,17 @@ __device__ __host__ __noinline__
 T* alloc(bool shared = false) {
   T* arr = nullptr;
 
-#ifdef __CUDA_ARCH__
-  if (!shared) {
-    arr = (T*)malloc(N * sizeof(T));
-  } else {
-    __shared__ T data[N];
-    arr = data;
-  }
-#else
-  assert_rt(cudaMallocManaged((void**) &arr, N * sizeof(T)));
-#endif
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+  (
+    if (!shared) {
+      arr = (T*)malloc(N * sizeof(T));
+    } else {
+      __shared__ T data[N];
+      arr = data;
+    }
+  ),
+    assert_rt(cudaMallocManaged((void**) &arr, N * sizeof(T)));
+  )
 
   for (int i = 0; i < N; ++i) {
     arr[i] = i;
@@ -59,9 +60,10 @@ T* alloc(bool shared = false) {
 template<typename T>
 __device__ __host__ __noinline__
 void dealloc(T* arr, bool shared) {
-#ifdef __CUDA_ARCH__
-  if (!shared) free(arr);
-#else
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+  (
+    if (!shared) free(arr);
+  ),
     assert_rt(cudaFree(arr));
-#endif
+  )
 }

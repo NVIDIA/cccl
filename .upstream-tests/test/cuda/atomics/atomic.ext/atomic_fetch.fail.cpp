@@ -49,13 +49,17 @@ struct TestFn {
 
 int main(int, char**)
 {
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
-    TestFn<__half, local_memory_selector, cuda::thread_scope::thread_scope_thread>()();
-#endif
-#ifdef __CUDA_ARCH__
-    TestFn<__half, shared_memory_selector, cuda::thread_scope::thread_scope_thread>()();
-    TestFn<__half, global_memory_selector, cuda::thread_scope::thread_scope_thread>()();
-#endif
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,
+        TestFn<__half, local_memory_selector, cuda::thread_scope::thread_scope_thread>()();,
+    NV_PROVIDES_SM_70,(
+        TestFn<__half, local_memory_selector, cuda::thread_scope::thread_scope_thread>()();
+    ))
 
-  return 0;
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        TestFn<__half, shared_memory_selector, cuda::thread_scope::thread_scope_thread>()();
+        TestFn<__half, global_memory_selector, cuda::thread_scope::thread_scope_thread>()();
+    ))
+
+    return 0;
 }

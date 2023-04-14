@@ -42,12 +42,12 @@ void shared_mem_test() {
 // TODO: is this needed?
 __device__ __host__ __noinline__
 void test_all() {
-#ifdef __CUDA_ARCH__
-  all_tests();
-#else
-  shared_mem_test<<<1, 1, 0, 0>>>();
-  assert_rt(cudaStreamSynchronize(0));
-#endif
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,(
+    all_tests();
+  ), (
+    shared_mem_test<<<1, 1, 0, 0>>>();
+    assert_rt(cudaStreamSynchronize(0));
+  ))
 }
 
 int main(int argc, char ** argv)

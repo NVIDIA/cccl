@@ -29,17 +29,10 @@
 #include "test_macros.h"
 
 struct IncompleteType;
-#ifdef __CUDA_ARCH__
-__device__ extern IncompleteType inc1;
-__device__ extern IncompleteType inc2;
-__device__ IncompleteType const& cinc1 = inc1;
-__device__ IncompleteType const& cinc2 = inc2;
-#else
-extern IncompleteType inc1;
-extern IncompleteType inc2;
-IncompleteType const& cinc1 = inc1;
-IncompleteType const& cinc2 = inc2;
-#endif
+TEST_ACCESSIBLE extern IncompleteType inc1;
+TEST_ACCESSIBLE extern IncompleteType inc2;
+TEST_ACCESSIBLE IncompleteType const& cinc1 = inc1;
+TEST_ACCESSIBLE IncompleteType const& cinc2 = inc2;
 
 int main(int, char**) {
     using IT = IncompleteType;
@@ -60,10 +53,5 @@ int main(int, char**) {
 }
 
 struct IncompleteType {};
-#ifdef __CUDA_ARCH__
-__device__ IncompleteType inc1;
-__device__ IncompleteType inc2;
-#else
-IncompleteType inc1;
-IncompleteType inc2;
-#endif
+TEST_ACCESSIBLE IncompleteType inc1;
+TEST_ACCESSIBLE IncompleteType inc2;

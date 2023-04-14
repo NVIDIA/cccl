@@ -20,26 +20,24 @@
 __device__
 void test()
 {
-    shared_memory_selector<cuda::barrier<cuda::thread_scope_block>, constructor_initializer> sel;
-    SHARED cuda::barrier<cuda::thread_scope_block>* b;
-    b = sel.construct();
-    init(b, 2);
+    __shared__ cuda::barrier<cuda::thread_scope_block> b;
+    init(&b, 2);
 
     uint64_t token;
     asm volatile ("mbarrier.arrive.b64 %0, [%1];"
         : "=l"(token)
-        : "l"(cuda::device::barrier_native_handle(*b))
+        : "l"(cuda::device::barrier_native_handle(b))
         : "memory");
     (void)token;
 
-    b->arrive_and_wait();
+    b.arrive_and_wait();
 }
 
 int main(int argc, char ** argv)
 {
-#if __CUDA_ARCH__ >= 800
-  test();
-#endif
+    NV_IF_TARGET(NV_PROVIDES_SM_80,
+        test();
+    )
 
     return 0;
 }

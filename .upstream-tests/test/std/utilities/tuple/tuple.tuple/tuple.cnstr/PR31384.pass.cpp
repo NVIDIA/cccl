@@ -23,11 +23,7 @@
 
 #include "test_macros.h"
 
-#ifdef __CUDA_ARCH__
-__device__ int count = 0;
-#else
-int count = 0;
-#endif
+STATIC_TEST_GLOBAL_VAR int count = 0;
 
 struct Explicit {
   Explicit() = default;

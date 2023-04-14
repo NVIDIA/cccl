@@ -108,63 +108,52 @@ void test_write_access(In i) {
 __device__ __host__ __noinline__
 void all_tests() {
   S* arr = alloc<S, N>(false);
-#ifdef __CUDA_ARCH__
-  S* sarr = alloc<S, N>(true);
-#endif
 
   test_read_access(cuda::annotated_ptr<S, cuda::access_property::normal>(arr), arr);
   test_read_access(cuda::annotated_ptr<S, cuda::access_property::streaming>(arr), arr);
   test_read_access(cuda::annotated_ptr<S, cuda::access_property::persisting>(arr), arr);
   test_read_access(cuda::annotated_ptr<S, cuda::access_property::global>(arr), arr);
   test_read_access(cuda::annotated_ptr<S, cuda::access_property>(arr), arr);
-#ifdef __CUDA_ARCH__
-  test_read_access(cuda::annotated_ptr<S, cuda::access_property::shared>(sarr), sarr);
-#endif
 
   test_read_access(cuda::annotated_ptr<const S, cuda::access_property::normal>(arr), arr);
   test_read_access(cuda::annotated_ptr<const S, cuda::access_property::streaming>(arr), arr);
   test_read_access(cuda::annotated_ptr<const S, cuda::access_property::persisting>(arr), arr);
   test_read_access(cuda::annotated_ptr<const S, cuda::access_property::global>(arr), arr);
   test_read_access(cuda::annotated_ptr<const S, cuda::access_property>(arr), arr);
-#ifdef __CUDA_ARCH__
-  test_read_access(cuda::annotated_ptr<const S, cuda::access_property::shared>(sarr), sarr);
-#endif
 
   test_read_access(cuda::annotated_ptr<volatile S, cuda::access_property::normal>(arr), arr);
   test_read_access(cuda::annotated_ptr<volatile S, cuda::access_property::streaming>(arr), arr);
   test_read_access(cuda::annotated_ptr<volatile S, cuda::access_property::persisting>(arr), arr);
   test_read_access(cuda::annotated_ptr<volatile S, cuda::access_property::global>(arr), arr);
   test_read_access(cuda::annotated_ptr<volatile S, cuda::access_property>(arr), arr);
-#ifdef __CUDA_ARCH__
-  test_read_access(cuda::annotated_ptr<volatile S, cuda::access_property::shared>(sarr), sarr);
-#endif
 
   test_read_access(cuda::annotated_ptr<const volatile S, cuda::access_property::normal>(arr), arr);
   test_read_access(cuda::annotated_ptr<const volatile S, cuda::access_property::streaming>(arr), arr);
   test_read_access(cuda::annotated_ptr<const volatile S, cuda::access_property::persisting>(arr), arr);
   test_read_access(cuda::annotated_ptr<const volatile S, cuda::access_property::global>(arr), arr);
   test_read_access(cuda::annotated_ptr<const volatile S, cuda::access_property>(arr), arr);
-#ifdef __CUDA_ARCH__
-  test_read_access(cuda::annotated_ptr<const volatile S, cuda::access_property::shared>(sarr), sarr);
-#endif
 
   test_write_access(cuda::annotated_ptr<S, cuda::access_property::normal>(arr));
   test_write_access(cuda::annotated_ptr<S, cuda::access_property::streaming>(arr));
   test_write_access(cuda::annotated_ptr<S, cuda::access_property::persisting>(arr));
   test_write_access(cuda::annotated_ptr<S, cuda::access_property::global>(arr));
   test_write_access(cuda::annotated_ptr<S, cuda::access_property>(arr));
-#ifdef __CUDA_ARCH__
-  test_write_access(cuda::annotated_ptr<S, cuda::access_property::shared>(sarr));
-#endif
 
   test_write_access(cuda::annotated_ptr<volatile S, cuda::access_property::normal>(arr));
   test_write_access(cuda::annotated_ptr<volatile S, cuda::access_property::streaming>(arr));
   test_write_access(cuda::annotated_ptr<volatile S, cuda::access_property::persisting>(arr));
   test_write_access(cuda::annotated_ptr<volatile S, cuda::access_property::global>(arr));
   test_write_access(cuda::annotated_ptr<volatile S, cuda::access_property>(arr));
-#ifdef __CUDA_ARCH__
-  test_write_access(cuda::annotated_ptr<volatile S, cuda::access_property::shared>(sarr));
-#endif
+
+  NV_IF_TARGET(NV_IS_DEVICE,(
+      S* sarr = alloc<S, N>(true);
+      test_read_access(cuda::annotated_ptr<S, cuda::access_property::shared>(sarr), sarr);
+      test_read_access(cuda::annotated_ptr<const S, cuda::access_property::shared>(sarr), sarr);
+      test_read_access(cuda::annotated_ptr<volatile S, cuda::access_property::shared>(sarr), sarr);
+      test_read_access(cuda::annotated_ptr<const volatile S, cuda::access_property::shared>(sarr), sarr);
+      test_write_access(cuda::annotated_ptr<S, cuda::access_property::shared>(sarr));
+      test_write_access(cuda::annotated_ptr<volatile S, cuda::access_property::shared>(sarr));
+  ))
 }
 
 int main(int argc, char ** argv)

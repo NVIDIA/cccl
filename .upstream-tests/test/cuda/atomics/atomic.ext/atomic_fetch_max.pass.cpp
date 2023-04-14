@@ -113,16 +113,22 @@ struct TestFnDispatch {
 
 int main(int, char**)
 {
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
-    TestEachIntegralType<TestFnDispatch, local_memory_selector>()();
-    TestEachFloatingPointType<TestFnDispatch, local_memory_selector>()();
-#endif
-#ifdef __CUDA_ARCH__
-    TestEachIntegralType<TestFnDispatch, shared_memory_selector>()();
-    TestEachFloatingPointType<TestFnDispatch, shared_memory_selector>()();
-    TestEachIntegralType<TestFnDispatch, global_memory_selector>()();
-    TestEachFloatingPointType<TestFnDispatch, global_memory_selector>()();
-#endif
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,(
+        TestEachIntegralType<TestFnDispatch, local_memory_selector>()();
+        TestEachFloatingPointType<TestFnDispatch, local_memory_selector>()();
+    ),
+    NV_PROVIDES_SM_70,(
+        TestEachIntegralType<TestFnDispatch, local_memory_selector>()();
+        TestEachFloatingPointType<TestFnDispatch, local_memory_selector>()();
+    ))
 
-  return 0;
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        TestEachIntegralType<TestFnDispatch, shared_memory_selector>()();
+        TestEachFloatingPointType<TestFnDispatch, shared_memory_selector>()();
+        TestEachIntegralType<TestFnDispatch, global_memory_selector>()();
+        TestEachFloatingPointType<TestFnDispatch, global_memory_selector>()();
+    ))
+
+    return 0;
 }

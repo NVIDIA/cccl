@@ -185,8 +185,9 @@ void test_async_resource_ref() {
 } // namespace resource_test
 
 int main(int, char**) {
-#ifndef __CUDA_ARCH__
-  resource_test::test_async_resource_ref();
-#endif
-  return 0;
+    NV_IF_TARGET(NV_IS_HOST,(
+      resource_test::test_async_resource_ref();
+    ))
+
+    return 0;
 }

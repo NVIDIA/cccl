@@ -32,12 +32,13 @@ public:
     STATIC_MEMBER_VAR(allocate_called, bool);
 
     __device__ __host__ static cuda::std::pair<T*, cuda::std::size_t>& deallocate_called() {
-        #ifdef __CUDA_ARCH__
-        __shared__ cuda::std::pair<T*, cuda::std::size_t> v;
-        #else
-        static cuda::std::pair<T*, cuda::std::size_t> v = 0;
-        #endif
-        return v;
+        NV_IF_ELSE_TARGET(NV_IS_DEVICE,(
+            __shared__ cuda::std::pair<T*, cuda::std::size_t> v;
+            return v;
+        ),(
+            static cuda::std::pair<T*, cuda::std::size_t> v = 0;
+            return v;
+        ))
     }
 
     __device__ __host__ A1(const A1& a) TEST_NOEXCEPT : id_(a.id()) {copy_called() = true;}

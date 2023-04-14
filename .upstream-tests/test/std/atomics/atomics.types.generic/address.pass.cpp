@@ -122,16 +122,22 @@ do_test()
     assert(obj == T(5*sizeof(X)));
     assert((obj -= cuda::std::ptrdiff_t(3)) == T(2*sizeof(X)));
     assert(obj == T(2*sizeof(X)));
-#if __cplusplus > 201703L
-    {
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
+
+#if TEST_STD_VER > 17
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,(
         TEST_ALIGNAS_TYPE(A) char storage[sizeof(A)] = {23};
         A& zero = *new (storage) A();
         assert(zero == T(0));
         zero.~A();
-#endif
-    }
-#endif
+    ),
+    NV_PROVIDES_SM_70,(
+        TEST_ALIGNAS_TYPE(A) char storage[sizeof(A)] = {23};
+        A& zero = *new (storage) A();
+        assert(zero == T(0));
+        zero.~A();
+    ))
+#endif // TEST_STD_VER > 17
 }
 
 template <class A, class T, template<typename, typename> class Selector>
@@ -166,27 +172,36 @@ void test_std()
 
 int main(int, char**)
 {
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
-    test_std<cuda::std::atomic<int*>, int*, local_memory_selector>();
-    test<cuda::atomic<int*, cuda::thread_scope_system>, int*, local_memory_selector>();
-    test<cuda::atomic<int*, cuda::thread_scope_device>, int*, local_memory_selector>();
-    test<cuda::atomic<int*, cuda::thread_scope_block>, int*, local_memory_selector>();
-#endif
-#ifdef __CUDA_ARCH__
-    test_std<cuda::std::atomic<int*>, int*, shared_memory_selector>();
-    test<cuda::atomic<int*, cuda::thread_scope_system>, int*, shared_memory_selector>();
-    test<cuda::atomic<int*, cuda::thread_scope_device>, int*, shared_memory_selector>();
-    test<cuda::atomic<int*, cuda::thread_scope_block>, int*, shared_memory_selector>();
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,(
+        test_std<cuda::std::atomic<int*>, int*, local_memory_selector>();
+        test<cuda::atomic<int*, cuda::thread_scope_system>, int*, local_memory_selector>();
+        test<cuda::atomic<int*, cuda::thread_scope_device>, int*, local_memory_selector>();
+        test<cuda::atomic<int*, cuda::thread_scope_block>, int*, local_memory_selector>();
+    ),
+    NV_PROVIDES_SM_70,(
+        test_std<cuda::std::atomic<int*>, int*, local_memory_selector>();
+        test<cuda::atomic<int*, cuda::thread_scope_system>, int*, local_memory_selector>();
+        test<cuda::atomic<int*, cuda::thread_scope_device>, int*, local_memory_selector>();
+        test<cuda::atomic<int*, cuda::thread_scope_block>, int*, local_memory_selector>();
+    ))
 
-    // note: this _should_ be test_std, but for some reason that's resulting in an
-    // unspecified launch failure, and I'm unsure what function is not __device__
-    // and causes that to happen
-    // the only difference is whether atomic_init is done or not, and that
-    // _seems_ to be appropriately tested by the atomic_init test for cuda::std::
-    test<cuda::std::atomic<int*>, int*, global_memory_selector>();
-    test<cuda::atomic<int*, cuda::thread_scope_system>, int*, global_memory_selector>();
-    test<cuda::atomic<int*, cuda::thread_scope_device>, int*, global_memory_selector>();
-    test<cuda::atomic<int*, cuda::thread_scope_block>, int*, global_memory_selector>();
-#endif
-  return 0;
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        test_std<cuda::std::atomic<int*>, int*, shared_memory_selector>();
+        test<cuda::atomic<int*, cuda::thread_scope_system>, int*, shared_memory_selector>();
+        test<cuda::atomic<int*, cuda::thread_scope_device>, int*, shared_memory_selector>();
+        test<cuda::atomic<int*, cuda::thread_scope_block>, int*, shared_memory_selector>();
+
+        // note: this _should_ be test_std, but for some reason that's resulting in an
+        // unspecified launch failure, and I'm unsure what function is not __device__
+        // and causes that to happen
+        // the only difference is whether atomic_init is done or not, and that
+        // _seems_ to be appropriately tested by the atomic_init test for cuda::std::
+        test<cuda::std::atomic<int*>, int*, global_memory_selector>();
+        test<cuda::atomic<int*, cuda::thread_scope_system>, int*, global_memory_selector>();
+        test<cuda::atomic<int*, cuda::thread_scope_device>, int*, global_memory_selector>();
+        test<cuda::atomic<int*, cuda::thread_scope_block>, int*, global_memory_selector>();
+    ))
+
+    return 0;
 }

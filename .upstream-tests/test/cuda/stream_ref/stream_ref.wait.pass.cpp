@@ -15,23 +15,26 @@
 #include <cuda/stream_ref>
 #include <cuda/std/cassert>
 
-int main(int argc, char** argv) {
-#ifndef __CUDA_ARCH__
-  { // passing case
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
-    cuda::stream_ref ref{stream};
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-    try {
+void test_wait(cuda::stream_ref& ref) {
+  #ifndef _LIBCUDACXX_NO_EXCEPTIONS
+      try {
+        ref.wait();
+      } catch (...) {
+        assert(false && "Should not have thrown");
+      }
+  #else
       ref.wait();
-    } catch (...) {
-      assert(false && "Should not have thrown");
-    }
-#else
-    ref.wait();
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
-    cudaStreamDestroy(stream);
-  }
-#endif
-  return 0;
+  #endif // _LIBCUDACXX_NO_EXCEPTIONS
+}
+
+int main(int argc, char** argv) {
+    NV_IF_TARGET(NV_IS_HOST,( // passing case
+        cudaStream_t stream;
+        cudaStreamCreate(&stream);
+        cuda::stream_ref ref{stream};
+        test_wait(ref);
+        cudaStreamDestroy(stream);
+    ))
+
+    return 0;
 }

@@ -145,9 +145,9 @@ void test_const_array( const T (&array)[Sz] ) {
 #endif
     }
 
-__device__ static constexpr int global_array [] { 1, 2, 3 };
+STATIC_TEST_GLOBAL_VAR constexpr int global_array [] { 1, 2, 3 };
 #if TEST_STD_VER > 14
-__device__ static constexpr const int global_const_array[] = {0,1,2,3,4};
+STATIC_TEST_GLOBAL_VAR constexpr const int global_const_array[] = {0,1,2,3,4};
 #endif
 
 int main(int, char**) {

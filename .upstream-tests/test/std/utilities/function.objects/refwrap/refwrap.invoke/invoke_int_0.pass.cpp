@@ -24,13 +24,7 @@
 
 // 0 args, return int
 
-#if defined(__CUDA_ARCH__)
-#  define TEST_ACCCESSIBLE __device__
-#else
-#  define TEST_ACCCESSIBLE
-#endif
-
-TEST_ACCCESSIBLE int count = 0;
+STATIC_TEST_GLOBAL_VAR int count = 0;
 
 __host__ __device__ int f_int_0()
 {

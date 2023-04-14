@@ -27,10 +27,7 @@ struct TestFn {
   void operator()() const {
     typedef cuda::std::atomic_ref<T> A;
 
-#ifdef __CUDA_ARCH__
-    __shared__
-#endif
-    T * t;
+    SHARED T * t;
     {
 #ifdef __CUDA_ARCH__
         if (threadIdx.x == 0) {
@@ -66,9 +63,9 @@ struct TestFn {
 
 int main(int, char**)
 {
-#ifndef __CUDA_ARCH__
-    cuda_thread_count = 2;
-#endif
+    NV_IF_TARGET(NV_IS_HOST,
+        cuda_thread_count = 2;
+    )
 
     TestEachAtomicRefType<TestFn, shared_memory_selector>()();
 

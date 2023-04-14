@@ -212,16 +212,16 @@ void arrive_on()
 
 int main(int argc, char ** argv)
 {
-#ifndef __CUDA_ARCH__
+  NV_IF_TARGET(NV_IS_HOST,
     arrive_on();
-#endif
+  )
 
-#ifdef __CUDACC_RTC__
+#ifdef TEST_COMPILER_NVRTC
     int cuda_thread_count = 64;
     int cuda_block_shmem_size = 40000;
 
     arrive_on_nvrtc(cuda_block_shmem_size - sizeof(cuda::barrier<cuda::thread_scope_block>) - sizeof(char *));
-#endif
+#endif // TEST_COMPILER_NVRTC
 
     return 0;
 }

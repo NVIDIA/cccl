@@ -90,8 +90,9 @@ void test_equality() {
 }
 
 int main(int, char**) {
-#ifndef __CUDA_ARCH__
-  test_equality();
-#endif
-  return 0;
+    NV_IF_TARGET(NV_IS_HOST,(
+        test_equality();
+    ))
+
+    return 0;
 }

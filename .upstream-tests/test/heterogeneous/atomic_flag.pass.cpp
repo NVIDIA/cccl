@@ -65,9 +65,9 @@ void kernel_invoker()
 
 int main(int argc, char ** argv)
 {
-#ifndef __CUDA_ARCH__
-    kernel_invoker();
-#endif
+    NV_IF_TARGET(NV_IS_HOST,(
+        kernel_invoker();
+    ))
 
     return 0;
 }

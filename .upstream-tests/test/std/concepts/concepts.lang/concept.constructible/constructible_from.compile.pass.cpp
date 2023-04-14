@@ -79,9 +79,10 @@ __host__ __device__ void test() {
 
   test<double, int>();
   test<double, float>();
-#ifndef __CUDA_ARCH__
-  test<double, long double>();
-#endif
+
+  NV_IF_TARGET(NV_IS_HOST,(
+      test<double, long double>();
+  ))
 
   test<void>();
   test<void, bool>();

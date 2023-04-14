@@ -38,13 +38,8 @@ struct MoveAssignable {
   MoveAssignable& operator=(MoveAssignable&&) = default;
 };
 
-#ifdef __CUDA_ARCH__
-__device__ static int copied = 0;
-__device__ static int moved = 0;
-#else
-static int copied = 0;
-static int moved = 0;
-#endif
+STATIC_TEST_GLOBAL_VAR int copied = 0;
+STATIC_TEST_GLOBAL_VAR int moved = 0;
 
 struct CountAssign {
   __host__ __device__ static void reset() { copied = moved = 0; }

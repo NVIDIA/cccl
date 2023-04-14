@@ -146,10 +146,10 @@ template <class T,
 __host__ __device__ __noinline__
 void test_select_barrier()
 {
-#ifdef __CUDA_ARCH__
-    test_select_scope<T, SourceSelector, DestSelector, shared_memory_selector>();
-    test_select_scope<T, SourceSelector, DestSelector, global_memory_selector>();
-#endif
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        test_select_scope<T, SourceSelector, DestSelector, shared_memory_selector>();
+        test_select_scope<T, SourceSelector, DestSelector, global_memory_selector>();
+    ))
 }
 
 template <class T,
@@ -158,18 +158,18 @@ template <class T,
 __host__ __device__ __noinline__
 void test_select_destination()
 {
-#ifdef __CUDA_ARCH__
-    test_select_barrier<T, SourceSelector, shared_memory_selector>();
-    test_select_barrier<T, SourceSelector, global_memory_selector>();
-#endif
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        test_select_barrier<T, SourceSelector, shared_memory_selector>();
+        test_select_barrier<T, SourceSelector, global_memory_selector>();
+    ))
 }
 
 template <class T>
 __host__ __device__ __noinline__
 void test_select_source()
 {
-#ifdef __CUDA_ARCH__
-    test_select_destination<T, shared_memory_selector>();
-    test_select_destination<T, global_memory_selector>();
-#endif
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        test_select_destination<T, shared_memory_selector>();
+        test_select_destination<T, global_memory_selector>();
+    ))
 }

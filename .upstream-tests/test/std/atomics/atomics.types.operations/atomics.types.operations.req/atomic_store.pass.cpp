@@ -46,13 +46,18 @@ struct TestFn {
 
 int main(int, char**)
 {
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 700
-    TestEachAtomicType<TestFn, local_memory_selector>()();
-#endif
-#ifdef __CUDA_ARCH__
-    TestEachAtomicType<TestFn, shared_memory_selector>()();
-    TestEachAtomicType<TestFn, global_memory_selector>()();
-#endif
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,(
+        TestEachAtomicType<TestFn, local_memory_selector>()();
+    ),
+    NV_PROVIDES_SM_70,(
+        TestEachAtomicType<TestFn, local_memory_selector>()();
+    ))
 
-  return 0;
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        TestEachAtomicType<TestFn, shared_memory_selector>()();
+        TestEachAtomicType<TestFn, global_memory_selector>()();
+    ))
+
+    return 0;
 }

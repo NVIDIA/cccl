@@ -63,17 +63,18 @@ void test(bool add_delay = false)
 
 int main(int, char**)
 {
-#ifndef __CUDA_ARCH__
-  //Required by concurrent_agents_launch to know how many we're launching
-  cuda_thread_count = 2;
+    NV_IF_ELSE_TARGET(NV_IS_HOST,(
+        //Required by concurrent_agents_launch to know how many we're launching
+        cuda_thread_count = 2;
 
-  test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>();
-  test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>(true);
-#else
-  test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>();
-  test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>();
-  test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>(true);
-  test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>(true);
-#endif
-  return 0;
+        test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>();
+        test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>(true);
+    ),(
+      test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>();
+      test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>();
+      test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>(true);
+      test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>(true);
+    ))
+
+    return 0;
 }

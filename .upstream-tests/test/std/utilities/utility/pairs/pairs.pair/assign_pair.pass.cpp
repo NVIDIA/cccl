@@ -48,11 +48,7 @@ struct CountAssign {
 };
 
 struct Incomplete;
-#ifdef __CUDA_ARCH__
-__device__ extern Incomplete inc_obj;
-#else
-extern Incomplete inc_obj;
-#endif
+TEST_ACCESSIBLE extern Incomplete inc_obj;
 
 int main(int, char**)
 {
@@ -105,8 +101,4 @@ int main(int, char**)
 }
 
 struct Incomplete {};
-#ifdef __CUDA_ARCH__
-__device__ Incomplete inc_obj;
-#else
-Incomplete inc_obj;
-#endif
+TEST_ACCESSIBLE Incomplete inc_obj;

@@ -30,16 +30,14 @@ void test_memcpy_async() {
     init(&bar2, 1);
     init(&bar3, 1);
 
-#ifdef __CUDA_ARCH__
-    arr0 = (int*)malloc(ARR_SZ * sizeof(int));
-    arr1 = (int*)malloc(ARR_SZ * sizeof(int));
-
-    auto group = cooperative_groups::this_thread_block();
-#else
-    assert_rt(cudaMallocManaged((void**) &arr0, ARR_SZ * sizeof(int)));
-    assert_rt(cudaMallocManaged((void**) &arr1, ARR_SZ * sizeof(int)));
-    assert_rt(cudaDeviceSynchronize());
-#endif
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,(
+        arr0 = (int*)malloc(ARR_SZ * sizeof(int));
+        arr1 = (int*)malloc(ARR_SZ * sizeof(int));
+    ),(
+        assert_rt(cudaMallocManaged((void**) &arr0, ARR_SZ * sizeof(int)));
+        assert_rt(cudaMallocManaged((void**) &arr1, ARR_SZ * sizeof(int)));
+        assert_rt(cudaDeviceSynchronize());
+    ))
 
     cuda::annotated_ptr<int, cuda::access_property> ann0{arr0, ap};
     cuda::annotated_ptr<int, cuda::access_property> ann1{arr1, ap};
@@ -76,41 +74,43 @@ void test_memcpy_async() {
         arr1[i] = 0;
     }
 
-#ifdef __CUDA_ARCH__
-    cuda::memcpy_async(group, ann1, ann0, ARR_SZ * sizeof(int), bar2);
-    //cuda::memcpy_async(group, ann1, cann0, ARR_SZ * sizeof(int), bar2);
-    bar2.arrive_and_wait();
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        auto group = cooperative_groups::this_thread_block();
 
-    for (size_t i = 0; i < ARR_SZ; ++i) {
-        if (arr1[i] != (int)i) {
-            DPRINTF(stderr, "%p:&arr1[i] == %d, should be:%lu\n", &arr1[i], arr1[i], i);
-            assert(arr1[i] == i);
+        cuda::memcpy_async(group, ann1, ann0, ARR_SZ * sizeof(int), bar2);
+        //cuda::memcpy_async(group, ann1, cann0, ARR_SZ * sizeof(int), bar2);
+        bar2.arrive_and_wait();
+
+        for (size_t i = 0; i < ARR_SZ; ++i) {
+            if (arr1[i] != (int)i) {
+                DPRINTF(stderr, "%p:&arr1[i] == %d, should be:%lu\n", &arr1[i], arr1[i], i);
+                assert(arr1[i] == i);
+            }
+
+            arr1[i] = 0;
         }
 
-        arr1[i] = 0;
-    }
+        cuda::memcpy_async(group, arr1, ann0, ARR_SZ * sizeof(int), bar3);
+        //cuda::memcpy_async(group, arr1, cann0, ARR_SZ * sizeof(int), bar3);
+        bar3.arrive_and_wait();
 
-    cuda::memcpy_async(group, arr1, ann0, ARR_SZ * sizeof(int), bar3);
-    //cuda::memcpy_async(group, arr1, cann0, ARR_SZ * sizeof(int), bar3);
-    bar3.arrive_and_wait();
+        for (size_t i = 0; i < ARR_SZ; ++i) {
+            if (arr1[i] != (int)i) {
+                DPRINTF(stderr, "%p:&arr1[i] == %d, should be:%lu\n", &arr1[i], arr1[i], i);
+                assert(arr1[i] == i);
+            }
 
-    for (size_t i = 0; i < ARR_SZ; ++i) {
-        if (arr1[i] != (int)i) {
-            DPRINTF(stderr, "%p:&arr1[i] == %d, should be:%lu\n", &arr1[i], arr1[i], i);
-            assert(arr1[i] == i);
+            arr1[i] = 0;
         }
+    ))
 
-        arr1[i] = 0;
-    }
-#endif
-
-#ifdef __CUDA_ARCH__
-    free(arr0);
-    free(arr1);
-#else
-    assert_rt(cudaFree(arr0));
-    assert_rt(cudaFree(arr1));
-#endif
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,(
+      free(arr0);
+      free(arr1);
+    ),(
+      assert_rt(cudaFree(arr0));
+      assert_rt(cudaFree(arr1));
+    ))
 }
 
 int main(int argc, char ** argv)

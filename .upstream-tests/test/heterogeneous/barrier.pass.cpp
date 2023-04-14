@@ -48,11 +48,10 @@ struct barrier_and_token_with_completion
             assert(completed.load() == false);
             completed.store(true);
 
-#ifdef __CUDA_ARCH__
+        NV_IF_ELSE_TARGET(NV_IS_HOST,
+            completed_from_host = true;,
             completed_from_device = true;
-#else
-            completed_from_host = true;
-#endif
+        )
         }
     };
 
@@ -232,15 +231,15 @@ void kernel_invoker()
 
 int main(int arg, char ** argv)
 {
-#ifndef __CUDA_ARCH__
-    kernel_invoker();
+    NV_IF_TARGET(NV_IS_HOST,(
+        kernel_invoker();
 
-    if (check_managed_memory_support(true))
-    {
-        assert(completed_from_host);
-    }
-    assert(completed_from_device);
-#endif
+        if (check_managed_memory_support(true))
+        {
+            assert(completed_from_host);
+        }
+        assert(completed_from_device);
+    ))
 
     return 0;
 }
