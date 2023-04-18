@@ -106,7 +106,7 @@ void test_resource_ref() {
 template <class... Properties>
 cuda::mr::resource_ref<Properties...>
 indirection(resource_base<Properties...>* res) {
-  return {*res};
+  return {res};
 }
 
 template <class... Properties>

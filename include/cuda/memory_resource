@@ -525,7 +525,16 @@ public:
           && (((_Alloc_type == _AllocType::_Default) && resource_with<_Resource, _Properties...>) //
             ||((_Alloc_type == _AllocType::_Async) && async_resource_with<_Resource, _Properties...>)))) //
      basic_resource_ref(_Resource& __res) noexcept
-        : _Resource_ref_base<_Alloc_type>(&__res, &__alloc_vtable<_Alloc_type, _Resource>)
+        : _Resource_ref_base<_Alloc_type>(_CUDA_VSTD::addressof(__res), &__alloc_vtable<_Alloc_type, _Resource>)
+        , _Filtered_vtable<_Properties...>(_Filtered_vtable<_Properties...>::template _Create<_Resource>())
+    {}
+
+    _LIBCUDACXX_TEMPLATE(class _Resource)
+        (requires (!_Is_basic_resource_ref<_Resource>
+          && (((_Alloc_type == _AllocType::_Default) && resource_with<_Resource, _Properties...>) //
+            ||((_Alloc_type == _AllocType::_Async) && async_resource_with<_Resource, _Properties...>)))) //
+     basic_resource_ref(_Resource* __res) noexcept
+        : _Resource_ref_base<_Alloc_type>(__res, &__alloc_vtable<_Alloc_type, _Resource>)
         , _Filtered_vtable<_Properties...>(_Filtered_vtable<_Properties...>::template _Create<_Resource>())
     {}
 

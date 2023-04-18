@@ -128,7 +128,7 @@ void test_async_resource_ref() {
 template <class... Properties>
 cuda::mr::async_resource_ref<Properties...>
 indirection(async_resource_base<Properties...>* res) {
-  return {*res};
+  return {res};
 }
 
 template <class... Properties>
