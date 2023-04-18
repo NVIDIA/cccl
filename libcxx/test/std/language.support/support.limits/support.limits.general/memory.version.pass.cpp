@@ -200,11 +200,8 @@
 #   error "__cpp_lib_allocator_traits_is_always_equal should have the value 201411L in c++2a"
 # endif
 
-# ifndef __cpp_lib_constexpr_dynamic_alloc
-#   error "__cpp_lib_constexpr_dynamic_alloc should be defined in c++2a"
-# endif
-# if __cpp_lib_constexpr_dynamic_alloc != 201907L
-#   error "__cpp_lib_constexpr_dynamic_alloc should have the value 201907L in c++2a"
+# ifdef __cpp_lib_constexpr_dynamic_alloc
+#   error "__cpp_lib_constexpr_dynamic_alloc should not be defined before c++20"
 # endif
 
 # ifndef __cpp_lib_enable_shared_from_this

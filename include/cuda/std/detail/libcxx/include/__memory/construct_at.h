@@ -30,8 +30,11 @@
 #endif
 
 #if defined(__cuda_std__) && _LIBCUDACXX_STD_VER > 17 // need to backfill ::std::construct_at
-#if  defined(_LIBCUDACXX_COMPILER_NVRTC) \
- || (defined(_LIBCUDACXX_COMPILER_CLANG) && __clang_major__ <= 10) // clang 10 supports c++20 but does not implement construct_at
+#ifndef _LIBCUDACXX_COMPILER_NVRTC
+#include <memory>
+#endif // _LIBCUDACXX_COMPILER_NVRTC
+
+#ifndef __cpp_lib_constexpr_dynamic_alloc
 namespace std {
 template <class _Tp, class... _Args, class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args) {
@@ -42,9 +45,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp* construct_at(_Tp* __location, _Args
 #endif
 }
 } // namespace std
-#else
-#include <memory>
-#endif // !_LIBCUDACXX_COMPILER_NVRTC && ! old clang
+#endif // __cpp_lib_constexpr_dynamic_alloc
 #endif // __cuda_std__ && _LIBCUDACXX_STD_VER > 17
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD

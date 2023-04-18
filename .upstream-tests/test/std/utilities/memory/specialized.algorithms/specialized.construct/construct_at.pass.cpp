@@ -117,8 +117,11 @@ static_assert(!can_construct_at((int*)nullptr, 1, '2', 3.0));
 static_assert(!can_construct_at(contiguous_iterator<Foo*>(), 1, '2', 3.0));
 #endif
 // Can't construct function pointers.
+
+#ifndef _LIBCUDACXX_COMPILER_MSVC // nvbug 4075886
 static_assert(!can_construct_at((int(*)())nullptr));
 static_assert(!can_construct_at((int(*)())nullptr, nullptr));
+#endif // _LIBCUDACXX_COMPILER_MSVC
 
 int main(int, char**)
 {

@@ -204,7 +204,7 @@ Status
     ------------------------------------------------- -----------------
     ``__cpp_lib_constexpr_algorithms``                *unimplemented*
     ------------------------------------------------- -----------------
-    ``__cpp_lib_constexpr_dynamic_alloc``             ``201907L``
+    ``__cpp_lib_constexpr_dynamic_alloc``             *unimplemented*
     ------------------------------------------------- -----------------
     ``__cpp_lib_constexpr_functional``                *unimplemented*
     ------------------------------------------------- -----------------
