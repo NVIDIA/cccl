@@ -1,0 +1,40 @@
+name: Assign Issues for Triage 
+
+on:
+  issues:
+    types:
+      - opened
+      
+env:
+ GH_TOKEN: ${{ github.token }}
+
+jobs:
+  assign_issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Calculate assignee
+        id: calculate_assignee
+        run: |
+          USERS=("jrhemstad" "jrhemstad" "jrhemstad" "jrhemstad" "jrhemstad")
+          WEEK=$(date +%U)
+          INDEX=$(( (WEEK - 1) % 5 ))
+          echo "ASSIGNEE=${USERS[$INDEX]}" >> $GITHUB_ENV
+
+      - name: Get User ID
+        run: |
+          gh api graphql -f query='
+            query{ user(login: "${{ env.ASSIGNEE }}") 
+                    { id } }' > user_info.json
+          
+           echo 'ASSIGNEE_ID='$(jq '.data.user.id' user_info.json) >> $GITHUB_ENV
+      
+      - name: Assign issue
+        run: |
+           gh api graphql -f query='
+                        mutation { 
+                         addAssigneesToAssignable(input: 
+                               {assignableId: "${{ github.event.issue.node_id }}", 
+                                assigneeIds: [ ${{ env.ASSIGNEE_ID }} ]
+                                }) 
+                                   { clientMutationId } 
+                               }'

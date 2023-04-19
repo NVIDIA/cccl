@@ -1,0 +1,54 @@
+name: Feature Request
+description: Suggest an idea to improve CCCL
+title: '[FEA]: '
+labels: ['Feature']
+body:
+  - type: checkboxes
+      id: check-duplicates
+      attributes:
+        label: Is this a duplicate?
+        description: Check for duplicate issues.
+        options:
+          - label: I confirmed there appear to be no [duplicate issues](https://github.com/NVIDIA/cccl/issues) for this request and that I agree to the [Code of Conduct](CODE_OF_CONDUCT.md)
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Is your feature request related to a problem? Please describe.
+      description: A clear and concise description of what the problem is, e.g., "I would like to be able to..."
+      placeholder: I would like an overload of `cuco::static_map::insert` that returns the success of each insertion. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Describe the solution you'd like
+      description: A clear and concise description of what you want to happen.
+      placeholder: |
+        Add a new overload of `insert` that takes an output iterator range assignable from `bool` that indicates the success of each insert.
+        Example API: 
+        template <typename InputIt, typename OutputIt>
+        void insert(InputIt first_input, InputIt last_input, OutputIt first_input, cudaStream_t stream = 0);
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe alternatives you've considered
+      description:
+        If applicable, please add a clear and concise description of any alternative solutions or features you've
+        considered.
+      placeholder: You can implement this yourself with the device-side API, but it would be more convenient as a bulk function.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context about the request here.
+      placeholder: This would be useful for sparse embedding tables in DL usecases. 
+    validations:
+      required: false
