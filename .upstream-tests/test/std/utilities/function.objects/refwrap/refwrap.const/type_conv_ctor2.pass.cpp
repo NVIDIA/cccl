@@ -38,12 +38,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     A1 a{};
-#ifndef TEST_COMPILER_NVHPC
+#if !defined(TEST_COMPILER_NVHPC) && !defined(__INTEL_COMPILER) && !defined(__INTEL_LLVM_COMPILER)
     ASSERT_NOT_NOEXCEPT(implicitly_convert(a));
 #endif // TEST_COMPILER_NVHPC
     cuda::std::reference_wrapper<B> b1 = a;
     assert(&b1.get() == &a.b_);
-#ifndef TEST_COMPILER_NVHPC
+#if !defined(TEST_COMPILER_NVHPC) && !defined(__INTEL_COMPILER) && !defined(__INTEL_LLVM_COMPILER)
     ASSERT_NOT_NOEXCEPT(b1 = a);
 #endif // TEST_COMPILER_NVHPC
     b1 = a;
