@@ -15,6 +15,7 @@
 // template <class... Tuples> tuple<CTypes...> tuple_cat(Tuples&&... tpls);
 
 // UNSUPPORTED: c++98, c++03
+// UNSUPPORTED: nvhpc-23.1
 
 
 #include <cuda/std/tuple>

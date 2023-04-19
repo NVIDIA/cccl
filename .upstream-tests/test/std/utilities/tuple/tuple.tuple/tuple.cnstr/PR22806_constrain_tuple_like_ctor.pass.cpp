@@ -9,7 +9,7 @@
 
 
 // UNSUPPORTED: c++98, c++03
-
+// UNSUPPORTED: nvhpc-23.1
 
 // <cuda/std/tuple>
 
