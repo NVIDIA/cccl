@@ -1024,10 +1024,6 @@ typedef __char32_t char32_t;
 
 #define _LIBCUDACXX_DISABLE_EXTENSION_WARNING
 
-#ifdef __cuda_std__
-# undef __cpp_lib_transparent_operators
-#endif // __cuda_std__
-
 #elif defined(_LIBCUDACXX_COMPILER_IBM)
 
 #define _ATTRIBUTE(x) __attribute__((x))
