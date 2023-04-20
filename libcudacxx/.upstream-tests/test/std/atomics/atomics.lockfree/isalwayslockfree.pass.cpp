@@ -21,9 +21,9 @@
 TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 // NVRTC doesn't include host atomic making this feature test invalid
-// TODO: Should we define __cpp_lib_atomic_is_always_lock_free for NVRTC?
-#if !defined(__CUDACC_RTC__)
-#if !defined(__cpp_lib_atomic_is_always_lock_free)
+// TODO: Should we define __cccl_lib_atomic_is_always_lock_free for NVRTC?
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if !defined(__cccl_lib_atomic_is_always_lock_free)
 # error Feature test macro missing.
 #endif
 #endif
