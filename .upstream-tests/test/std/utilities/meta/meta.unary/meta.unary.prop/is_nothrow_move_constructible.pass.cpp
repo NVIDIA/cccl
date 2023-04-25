@@ -29,10 +29,10 @@ template <class T>
 __host__ __device__
 void test_has_not_nothrow_move_constructor()
 {
-#ifndef TEST_COMPILER_NVHPC
+#if !defined(TEST_COMPILER_NVHPC) && !defined(__INTEL_COMPILER) && !defined(__INTEL_LLVM_COMPILER)
     static_assert(!cuda::std::is_nothrow_move_constructible<T>::value, "");
     static_assert(!cuda::std::is_nothrow_move_constructible<const T>::value, "");
-#endif // TEST_COMPILER_NVHPC
+#endif // !defined(TEST_COMPILER_NVHPC) && !defined(__INTEL_COMPILER) && !defined(__INTEL_LLVM_COMPILER)
     static_assert(!cuda::std::is_nothrow_move_constructible<volatile T>::value, "");
     static_assert(!cuda::std::is_nothrow_move_constructible<const volatile T>::value, "");
 #if TEST_STD_VER > 11

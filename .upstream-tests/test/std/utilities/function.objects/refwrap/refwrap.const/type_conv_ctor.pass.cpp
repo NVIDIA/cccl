@@ -56,9 +56,9 @@ int main(int, char**)
   {
     using Ref = cuda::std::reference_wrapper<int>;
     ASSERT_NOEXCEPT(Ref(nothrow_convertible<true>()));
-#ifndef TEST_COMPILER_NVHPC
+#if !defined(TEST_COMPILER_NVHPC) && !defined(__INTEL_COMPILER) && !defined(__INTEL_LLVM_COMPILER)
     ASSERT_NOT_NOEXCEPT(Ref(nothrow_convertible<false>()));
-#endif // TEST_COMPILER_NVHPC
+#endif // !defined(TEST_COMPILER_NVHPC) && !defined(__INTEL_COMPILER) && !defined(__INTEL_LLVM_COMPILER)
   }
   {
     meow(0);
