@@ -210,7 +210,10 @@ class LibcxxTestFormat(object):
                 if rc == 0:
                     res = lit.Test.PASS if retry_count == 0 else lit.Test.FLAKYPASS
                     return lit.Test.Result(res, report)
-                elif rc != 0 and retry_count + 1 == max_retry:
+                # Rarely devices are unavailable, so just restart the test to avoid false negatives.
+                elif rc != 0 and "cudaErrorDevicesUnavailable" in out and max_retry <= 5:
+                    max_retry += 1
+                elif rc != 0 and retry_count + 1 >= max_retry:
                     report += "Compiled test failed unexpectedly!"
                     return lit.Test.Result(lit.Test.FAIL, report)
 
