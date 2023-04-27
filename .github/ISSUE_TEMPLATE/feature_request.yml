@@ -16,7 +16,7 @@ body:
     attributes:
       label: Is your feature request related to a problem? Please describe.
       description: A clear and concise description of what the problem is, e.g., "I would like to be able to..."
-      placeholder: I would like an overload of `cuco::static_map::insert` that returns the success of each insertion. 
+      placeholder: I would like to be able to use the equivalent of `std::variant` in both host and device code. 
     validations:
       required: true
 
@@ -26,10 +26,7 @@ body:
       label: Describe the solution you'd like
       description: A clear and concise description of what you want to happen.
       placeholder: |
-        Add a new overload of `insert` that takes an output iterator range assignable from `bool` that indicates the success of each insert.
-        Example API: 
-        template <typename InputIt, typename OutputIt>
-        void insert(InputIt first_input, InputIt last_input, OutputIt first_input, cudaStream_t stream = 0);
+        Provide the header `<cuda/std/variant>` that implements a heterogeneous `cuda::std::variant` type. 
     validations:
       required: true
 
@@ -40,7 +37,7 @@ body:
       description:
         If applicable, please add a clear and concise description of any alternative solutions or features you've
         considered.
-      placeholder: You can implement this yourself with the device-side API, but it would be more convenient as a bulk function.
+      placeholder: The alternatives to a `variant` are unappealing. They usually involve using a raw `union` which is not type safe and has none of the convenient machinery like `std::visit`. 
     validations:
       required: false
 

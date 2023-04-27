@@ -27,12 +27,26 @@ body:
     validations:
       required: true
 
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which CCCL component does this apply to?
+      multiple: false
+      options:
+        - Thrust
+        - CUB
+        - libcu++
+        - Not sure
+    validations:
+      required: true
+
   - type: textarea
     id: description
     attributes:
       label: Describe the bug
       description: A clear and concise description of what problem you are running into.
-      placeholder: "cuco::static_map::insert fails to insert all keys."  
+      placeholder: "Attempting to use structured bindings with `cuda::std::tuple` fails to compile."  
     validations:
       required: true
 
@@ -42,10 +56,13 @@ body:
       label: How to Reproduce
       description: Steps used to reproduce the bug.
       placeholder: |
-        1. Construct a cuco::static_map<int,int> with capacity for 100,000 elements.
-        2. Insert 50,000 unique key-values.
-        3. Perform '`find`' for all the same keys.
-        4. Not all keys are found.
+        0. See godbolt link below for exact reproducer
+        1. Construct a `cuda::std::tuple`
+        2. Use structured bindings to destructure the elements of the tuple.
+        3. Compilation fails with the error message:
+        ```
+<source>(5): error: cannot bind to non-public member "cuda::std::__4::tuple<_Tp...>::__base_ [with _Tp=<int, int>]"
+    auto [a,b] = t;
     validations:
       required: true
 
@@ -54,7 +71,7 @@ body:
     attributes:
       label: Expected behavior
       description: A clear and concise description of what you expected to happen.
-      placeholder: "`cuco::static_map::find` will find all inserted keys."
+      placeholder: "Using structured bindings with `cuda::std::tuple` should successfully compile and destructure the elements of the tuple."
     validations:
       required: true
 
@@ -63,7 +80,7 @@ body:
     attributes:
       label: Reproduction link
       description: If applicable, please provide a Compiler Explorer (godbolt) link to help explain your problem.
-      placeholder:  https://godbolt.org/z/M1szv5e1b
+      placeholder:  https://godbolt.org/z/dT5nMcf7W
     validations:
       required: false
 
