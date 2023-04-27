@@ -11,6 +11,20 @@ body:
         options:
           - label: I confirmed there appear to be no [duplicate issues](https://github.com/NVIDIA/cccl/issues) for this request and that I agree to the [Code of Conduct](CODE_OF_CONDUCT.md)
 
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which CCCL component does this apply to?
+      multiple: false
+      options:
+        - Thrust
+        - CUB
+        - libcu++
+        - Not sure
+    validations:
+      required: true
+      
   - type: textarea
     id: description
     attributes:
@@ -46,6 +60,6 @@ body:
     attributes:
       label: Additional context
       description: Add any other context about the request here.
-      placeholder: This would be useful for sparse embedding tables in DL usecases. 
+      placeholder: This would be a helpful vocabulary type that could replace a lot of custom and error prone code. 
     validations:
       required: false
