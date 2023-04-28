@@ -13,14 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Calculate assignee
+        if: ${{ ! contains(fromJSON('["OWNER", "MEMBER", "CONTRIBUTOR"]'), github.event.issue.author_association)}}
         id: calculate_assignee
         run: |
-          USERS=("jrhemstad" "jrhemstad" "jrhemstad" "jrhemstad" "jrhemstad")
+          USERS=("allisonvacanti" "senior-zero" "jrhemstad" "elstehle" "wmaxey" "miscco" "griwes")
           WEEK=$(date +%U)
-          INDEX=$(( (WEEK - 1) % 5 ))
+          INDEX=$(( WEEK % 7 ))
           echo "ASSIGNEE=${USERS[$INDEX]}" >> $GITHUB_ENV
 
       - name: Get User ID
+        if: ${{ ! contains(fromJSON('["OWNER", "MEMBER", "CONTRIBUTOR"]'), github.event.issue.author_association)}}
         run: |
           gh api graphql -f query='
             query{ user(login: "${{ env.ASSIGNEE }}") 
@@ -29,6 +31,7 @@ jobs:
            echo 'ASSIGNEE_ID='$(jq '.data.user.id' user_info.json) >> $GITHUB_ENV
       
       - name: Assign issue
+        if: ${{ ! contains(fromJSON('["OWNER", "MEMBER", "CONTRIBUTOR"]'), github.event.issue.author_association)}}
         run: |
            gh api graphql -f query='
                         mutation { 
