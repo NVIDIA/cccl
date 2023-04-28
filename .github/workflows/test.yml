@@ -22,7 +22,7 @@ jobs:
     runs-on: linux-${{ matrix.arch }}-gpu-${{ matrix.gpu }}-${{ matrix.driver }}-1
     container:
       options: -u root
-      image: rapidsai/devcontainers:23.04-cpp-${{ matrix.tag }}-ubuntu22.04
+      image: rapidsai/devcontainers:23.06-cpp-${{ matrix.tag }}-ubuntu22.04
       env:
         CUDA_VERSION: "${{ matrix.cuda }}"
         NVIDIA_VISIBLE_DEVICES: "${{ env.NVIDIA_VISIBLE_DEVICES }}"
