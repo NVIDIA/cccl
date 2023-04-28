@@ -1,0 +1,31 @@
+name: CI (GPU)
+
+on:
+  push:
+    branches:
+      - main
+      - "pull-request/[0-9]+"
+
+concurrency:
+  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build-gpu:
+    if: github.repository == 'NVIDIA/stdexec'
+    name: GPU (${{ matrix.name }}, CUDA ${{ matrix.cuda }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "clang 16",   cuda: "12.0", cxx: "clang++", tag: "llvm16-cuda12.0", gpu: "v100", sm: "70", driver: "latest", arch: "amd64" }
+    runs-on: linux-${{ matrix.arch }}-gpu-${{ matrix.gpu }}-${{ matrix.driver }}-1
+    container:
+      options: -u root
+      image: rapidsai/devcontainers:23.04-cpp-${{ matrix.tag }}-ubuntu22.04
+      env:
+        CUDA_VERSION: "${{ matrix.cuda }}"
+        NVIDIA_VISIBLE_DEVICES: "${{ env.NVIDIA_VISIBLE_DEVICES }}"
+    steps:
+      - name: Run nvidia-smi to make sure GPU is working
+        run: nvidia-smi
