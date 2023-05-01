@@ -19,7 +19,7 @@ jobs:
       max-parallel: 8
       matrix:
         gcc: [7, 8, 9, 10]
-        ctk: [11.0, 12.1]
+        ctk: ["11.0", "12.1"]
         cxx: [11, 14, 17]
         #cpu: [amd64, arm64] 
     #runs-on: linux-${{ matrix.cpu }}-cpu4
