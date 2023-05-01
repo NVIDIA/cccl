@@ -23,6 +23,14 @@ jobs:
         #cxx: [11, 14, 17]
         cpu: [amd64] #[amd64, arm64] 
         include:
+          - compiler: gcc11
+            ubuntu: "22.04"
+          - compiler: gcc12
+            ubuntu: "22.04"
+          - compiler: llvm15
+            ubuntu: "22.04"
+          - compiler: llvm16
+            ubuntu: "22.04"
     runs-on: linux-${{ matrix.cpu }}-cpu4
     container:
       options: -u root
