@@ -47,9 +47,10 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Print working dir
         run: pwd
       - name: list
         run: ls
       - name: Build Thrust tests
-        run: ./ci/build_thrust.sh
+        run: bash ./ci/build_thrust.sh
