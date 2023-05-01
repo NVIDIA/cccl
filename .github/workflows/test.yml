@@ -16,6 +16,7 @@ jobs:
     name: Build (${{ matrix.cpu }}, gcc ${{ matrix.gcc }}, C++${{ matrix.cxx }}, CUDA ${{ matrix.ctk }})
     strategy:
       fail-fast: false
+      max-parallel: 8
       matrix:
         gcc: [7, 8, 9, 10]
         ctk: [11, 12.1]
