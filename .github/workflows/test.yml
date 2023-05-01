@@ -11,51 +11,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Build configurations for CUDA 12.1
-  cuda12_1:
+  build:
     if: github.repository == 'NVIDIA/cccl'
-    name: Build (CUDA 12.1, ${{ matrix.compiler }}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
+    name: Build (CUDA ${{matrix.cuda}}, ${{ matrix.compiler }}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
     strategy:
       fail-fast: false
       max-parallel: 8
       matrix:
-        compiler: [gcc7, gcc8, gcc9, gcc10, llvm9, llvm10, llvm11, llvm12, llvm13, llvm14]
-        ubuntu: ["20.04"]
-        #cxx: [11, 14, 17]
-        cpu: [amd64] #[amd64, arm64] 
-        # Add configurations for newer gcc/clang that require Ubuntu 22.04
         include:
-          - compiler: gcc11
-            ubuntu: "22.04"
-          - compiler: gcc12
-            ubuntu: "22.04"
-          - compiler: llvm15
-            ubuntu: "22.04"
-          - compiler: llvm16
-            ubuntu: "22.04"
+          - cuda: '12.1' ubuntu: '20.04' cpu: 'amd64' compiler: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'llvm9', 'llvm10', 'llvm11', 'llvm12', 'llvm13', 'llvm14']
+          - cuda: '12.1' ubuntu: '22.04' cpu: 'amd64' compiler: ['gcc11', 'gcc12', 'llvm15', 'llvm16']
+          - cuda: '11.0' ubuntu: '18.04' cpu: 'amd64' compiler: ['gcc7', 'gcc8', 'gcc9', 'llvm9']
     runs-on: linux-${{ matrix.cpu }}-cpu4
     container:
       options: -u root
       image: rapidsai/devcontainers:23.06-cpp-${{ matrix.compiler }}-cuda12.1-ubuntu${{ matrix.ubuntu }}
-    steps:
-      - name: Echo matrix
-        run: echo "${{matrix.compiler}}"
-  # Build configurations for CUDA 11.0
-  cuda11_0:
-    if: github.repository == 'NVIDIA/cccl'
-    name: Build (CUDA 11.0, ${{matrix.compiler}}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
-    strategy:
-      fail-fast: false
-      max-parallel: 8
-      matrix:
-        compiler: [gcc7, gcc8, gcc9, llvm9]
-        ubuntu: ["18.04"]
-        #cxx: [11, 14, 17]
-        cpu: [amd64] #[amd64, arm64] 
-    runs-on: linux-${{ matrix.cpu }}-cpu4
-    container:
-      options: -u root
-      image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler}}-cuda11.0-ubuntu${{ matrix.ubuntu }}
     steps:
       - name: Echo matrix
         run: echo "${{matrix.compiler}}"
