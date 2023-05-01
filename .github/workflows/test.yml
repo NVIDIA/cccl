@@ -11,6 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Build configurations for CUDA 12.1
   cuda12_1:
     if: github.repository == 'NVIDIA/cccl'
     name: Build (CUDA 12.1, ${{ matrix.compiler }}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
@@ -22,6 +23,7 @@ jobs:
         ubuntu: ["20.04"]
         #cxx: [11, 14, 17]
         cpu: [amd64] #[amd64, arm64] 
+        # Add configurations for newer gcc/clang that require Ubuntu 22.04
         include:
           - compiler: gcc11
             ubuntu: "22.04"
@@ -38,6 +40,7 @@ jobs:
     steps:
       - name: Echo matrix
         run: echo "${{matrix.compiler}}"
+  # Build configurations for CUDA 11.0
   cuda11_0:
     if: github.repository == 'NVIDIA/cccl'
     name: Build (CUDA 11.0, ${{matrix.compiler}}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
