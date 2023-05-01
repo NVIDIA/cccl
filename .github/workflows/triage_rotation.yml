@@ -11,9 +11,9 @@ env:
 jobs:
   assign_issues:
     runs-on: ubuntu-latest
+    if: ${{ ! contains(fromJSON('["OWNER", "MEMBER", "CONTRIBUTOR", "COLLABORATOR"]'), github.event.issue.author_association)}}
     steps:
       - name: Calculate assignee
-        if: ${{ ! contains(fromJSON('["OWNER", "MEMBER", "CONTRIBUTOR", "COLLABORATOR"]'), github.event.issue.author_association)}}
         id: calculate_assignee
         run: |
           USERS=("allisonvacanti" "senior-zero" "jrhemstad" "elstehle" "wmaxey" "miscco" "griwes")
@@ -22,7 +22,6 @@ jobs:
           echo "ASSIGNEE=${USERS[$INDEX]}" >> $GITHUB_ENV
 
       - name: Get User ID
-        if: ${{ ! contains(fromJSON('["OWNER", "MEMBER", "CONTRIBUTOR", "COLLABORATOR"]'), github.event.issue.author_association)}}
         run: |
           gh api graphql -f query='
             query{ user(login: "${{ env.ASSIGNEE }}") 
@@ -31,7 +30,6 @@ jobs:
            echo 'ASSIGNEE_ID='$(jq '.data.user.id' user_info.json) >> $GITHUB_ENV
       
       - name: Assign issue
-        if: ${{ ! contains(fromJSON('["OWNER", "MEMBER", "CONTRIBUTOR", "COLLABORATOR"]'), github.event.issue.author_association)}}
         run: |
            gh api graphql -f query='
                         mutation { 
@@ -41,3 +39,17 @@ jobs:
                                 }) 
                                    { clientMutationId } 
                                }'
+
+      - name: add-triage-label
+        run: |
+          issue_url=${{ github.event.issue.html_url }}
+          gh issue edit ${issue_url} --add-label "Needs Triage"
+      
+      - name: add-comment-to-issue
+        run: |
+           issue_url=${{ github.event.issue.html_url }}
+           author=${{ github.event.issue.user.login }}
+           gh issue comment ${issue_url} --body "Hi @${author}!
+             
+             Thanks for submitting this issue - the CCCL team has been notified and we'll get back to you as soon as we can!
+             In the mean time, feel free to add any relevant information to this issue."
