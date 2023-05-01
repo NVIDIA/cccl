@@ -44,5 +44,7 @@ jobs:
       options: -u root
       image: rapidsai/devcontainers:23.06-cpp-${{ matrix.compiler }}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
     steps:
+      - name: Print working dir
+        run: pwd
       - name: Build Thrust tests
         run: ./ci/build_thrust.sh
