@@ -11,22 +11,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  cuda12.1:
     if: github.repository == 'NVIDIA/cccl'
-    name: Build (${{ matrix.cpu }}, gcc ${{ matrix.gcc }}, C++${{ matrix.cxx }}, CUDA ${{ matrix.ctk }})
+    name: Build (CUDA 12.1, gcc ${{ matrix.gcc }}, C++${{ matrix.cxx }})
     strategy:
       fail-fast: false
       max-parallel: 8
       matrix:
         gcc: [7, 8, 9, 10]
-        ctk: ["11.0", "12.1"]
         cxx: [11, 14, 17]
         #cpu: [amd64, arm64] 
     #runs-on: linux-${{ matrix.cpu }}-cpu4
     runs-on: linux-amd64-cpu4
     container:
       options: -u root
-      image: rapidsai/devcontainers:23.06-cpp-gcc${{ matrix.gcc }}-cuda${{ matrix.ctk }}-ubuntu20.04
+      image: rapidsai/devcontainers:23.06-cpp-gcc${{ matrix.gcc }}-cuda12.1-ubuntu20.04
     steps:
       - name: Echo matrix
-        run: echo ${{ matrix.gcc }}, ${{matrix.ctk}}, ${{matrix.cxx}}, ${{matrix.cpu}}
+        run: echo "gcc ${{ matrix.gcc }}, std ${{matrix.cxx}}"
