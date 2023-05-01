@@ -19,9 +19,9 @@ jobs:
       max-parallel: 8
       matrix:
         include:
-          - cuda: '12.1' ubuntu: '20.04' cpu: 'amd64' compiler: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'llvm9', 'llvm10', 'llvm11', 'llvm12', 'llvm13', 'llvm14']
-          - cuda: '12.1' ubuntu: '22.04' cpu: 'amd64' compiler: ['gcc11', 'gcc12', 'llvm15', 'llvm16']
-          - cuda: '11.0' ubuntu: '18.04' cpu: 'amd64' compiler: ['gcc7', 'gcc8', 'gcc9', 'llvm9']
+          - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'llvm9', 'llvm10', 'llvm11', 'llvm12', 'llvm13', 'llvm14']}
+          - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: ['gcc11', 'gcc12', 'llvm15', 'llvm16']}
+          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: ['gcc7', 'gcc8', 'gcc9', 'llvm9']}
     runs-on: linux-${{ matrix.cpu }}-cpu4
     container:
       options: -u root
