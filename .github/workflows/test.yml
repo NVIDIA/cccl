@@ -13,7 +13,7 @@ concurrency:
 jobs:
   cuda12_1:
     if: github.repository == 'NVIDIA/cccl'
-    name: Build (CUDA 12.1, ${{ matrix.compiler }}, Ubuntu ${{ matrix.ubuntu }})
+    name: Build (CUDA 12.1, ${{ matrix.compiler }}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
     strategy:
       fail-fast: false
       max-parallel: 8
@@ -21,9 +21,9 @@ jobs:
         compiler: [gcc7, gcc8, gcc9, gcc10, llvm9, llvm10, llvm11, llvm12, llvm13, llvm14]
         ubuntu: ["20.04"]
         #cxx: [11, 14, 17]
-        #cpu: [amd64, arm64] 
-    #runs-on: linux-${{ matrix.cpu }}-cpu4
-    runs-on: linux-amd64-cpu4
+        cpu: [amd64] #[amd64, arm64] 
+        include:
+    runs-on: linux-${{ matrix.cpu }}-cpu4
     container:
       options: -u root
       image: rapidsai/devcontainers:23.06-cpp-${{ matrix.compiler }}-cuda12.1-ubuntu${{ matrix.ubuntu }}
@@ -32,7 +32,7 @@ jobs:
         run: echo "${{matrix.compiler}}"
   cuda11_0:
     if: github.repository == 'NVIDIA/cccl'
-    name: Build (CUDA 11.0, ${{matrix.compiler}}, Ubuntu ${{ matrix.ubuntu }})
+    name: Build (CUDA 11.0, ${{matrix.compiler}}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
     strategy:
       fail-fast: false
       max-parallel: 8
@@ -40,9 +40,8 @@ jobs:
         compiler: [gcc7, gcc8, gcc9, llvm9]
         ubuntu: ["18.04"]
         #cxx: [11, 14, 17]
-        #cpu: [amd64, arm64] 
-    #runs-on: linux-${{ matrix.cpu }}-cpu4
-    runs-on: linux-amd64-cpu4
+        cpu: [amd64] #[amd64, arm64] 
+    runs-on: linux-${{ matrix.cpu }}-cpu4
     container:
       options: -u root
       image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler}}-cuda11.0-ubuntu${{ matrix.ubuntu }}
