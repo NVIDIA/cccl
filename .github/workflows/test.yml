@@ -54,3 +54,24 @@ jobs:
         run: ls
       - name: Build Thrust tests
         run: bash ./ci/build_thrust.sh
+      - name: Upload Thrust build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: thrust-build-artifacts
+          path: ./thrust/build/
+  test:
+    name: Run tests
+    needs: build
+    runs-on: linux-amd64-gpu-v100-latest-1
+    container:
+      options: -u root
+      image: rapidsai/devcontainers:23.06-cpp-gcc12-cuda12.1-ubuntu22.04
+      env:
+        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
+    steps:
+      - name: Download Thrust build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: thrust-build-artifacts
+      - name: Run Thrust tests
+        run: ctest --test-dir build --output-on-failure
