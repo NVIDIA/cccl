@@ -3,14 +3,12 @@
 # Clone Thrust repository
 git clone https://github.com/NVIDIA/thrust.git
 
-# Change to the Thrust directory
-cd thrust
+# Configure Thrust
+cmake -S thrust -B thrust/build -GNinja -DTHRUST_DISABLE_ARCH_BY_DEFAULT=ON -DTHRUST_ENABLE_COMPUTE_70=ON 
 
 # Build Thrust tests
-mkdir build
-cd build
-cmake -GNinja -DTHRUST_DISABLE_ARCH_BY_DEFAULT=ON -DTHRUST_ENABLE_COMPUTE_70=ON ..
-ninja
+cmake --build thrust/build
+
 
 # Run Thrust tests
 #ctest --output-on-failure
