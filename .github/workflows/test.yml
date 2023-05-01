@@ -32,7 +32,7 @@ jobs:
         run: echo "${{matrix.compiler}}"
   cuda11_0:
     if: github.repository == 'NVIDIA/cccl'
-    name: Build (CUDA 11.0, gcc ${{ matrix.gcc }}, Ubuntu ${{ matrix.ubuntu }})
+    name: Build (CUDA 11.0, ${{matrix.compiler}}, Ubuntu ${{ matrix.ubuntu }})
     strategy:
       fail-fast: false
       max-parallel: 8
