@@ -13,13 +13,13 @@ concurrency:
 jobs:
   cuda12_1:
     if: github.repository == 'NVIDIA/cccl'
-    name: Build (CUDA 12.1, gcc ${{ matrix.gcc }}, C++${{ matrix.cxx }})
+    name: Build (CUDA 12.1, gcc ${{ matrix.gcc }})
     strategy:
       fail-fast: false
       max-parallel: 8
       matrix:
         gcc: [7, 8, 9, 10]
-        cxx: [11, 14, 17]
+        #cxx: [11, 14, 17]
         #cpu: [amd64, arm64] 
     #runs-on: linux-${{ matrix.cpu }}-cpu4
     runs-on: linux-amd64-cpu4
@@ -31,13 +31,13 @@ jobs:
         run: echo "gcc ${{ matrix.gcc }}, std ${{matrix.cxx}}"
   cuda11_0:
     if: github.repository == 'NVIDIA/cccl'
-    name: Build (CUDA 11.0, gcc ${{ matrix.gcc }}, C++${{ matrix.cxx }})
+    name: Build (CUDA 11.0, gcc ${{ matrix.gcc }})
     strategy:
       fail-fast: false
       max-parallel: 8
       matrix:
         gcc: [7, 8, 9]
-        cxx: [11, 14, 17]
+        #cxx: [11, 14, 17]
         #cpu: [amd64, arm64] 
     #runs-on: linux-${{ matrix.cpu }}-cpu4
     runs-on: linux-amd64-cpu4
@@ -46,4 +46,4 @@ jobs:
       image: rapidsai/devcontainers:23.06-cpp-gcc${{ matrix.gcc }}-cuda11.0-ubuntu18.04
     steps:
       - name: Echo matrix
-        run: echo "gcc ${{ matrix.gcc }}, std ${{matrix.cxx}}"
+        run: echo "gcc ${{ matrix.gcc }}"
