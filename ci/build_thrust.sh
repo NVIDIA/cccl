@@ -9,7 +9,7 @@ cd thrust
 # Build Thrust tests
 mkdir build
 cd build
-cmake -G ninja ..
+cmake -GNinja ..
 ninja
 
 # Run Thrust tests
