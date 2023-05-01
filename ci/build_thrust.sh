@@ -9,7 +9,7 @@ cd thrust
 # Build Thrust tests
 mkdir build
 cd build
-cmake -GNinja ..
+cmake -GNinja -DTHRUST_DISABLE_ARCH_BY_DEFAULT=ON -DTHRUST_ENABLE_COMPUTE_70=ON ..
 ninja
 
 # Run Thrust tests
