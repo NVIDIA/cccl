@@ -69,5 +69,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: thrust-build-artifacts
+          path: build
       - name: Run Thrust tests
         run: pwd && ls && ctest --test-dir build --output-on-failure
