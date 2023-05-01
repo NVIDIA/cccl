@@ -39,7 +39,7 @@ jobs:
           #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm14'}
           #- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'llvm15'}
           #- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'llvm16'}
-    runs-on: linux-${{ matrix.cpu }}-cpu4
+    runs-on: linux-${{ matrix.cpu }}-cpu16
     container:
       options: -u root
       image: rapidsai/devcontainers:23.06-cpp-${{ matrix.compiler }}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
