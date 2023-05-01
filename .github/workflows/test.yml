@@ -44,6 +44,9 @@ jobs:
       options: -u root
       image: rapidsai/devcontainers:23.06-cpp-${{ matrix.compiler }}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Print working dir
         run: pwd
       - name: list
