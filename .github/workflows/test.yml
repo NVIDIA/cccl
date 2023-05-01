@@ -20,29 +20,29 @@ jobs:
       matrix:
         include:
           # gcc
-          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'gcc7'}
-          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'gcc8'}
-          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'gcc9'}
-          - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc7'}
-          - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc8'}
-          - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc9'}
-          - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc10'}
-          - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'gcc11'}
+          #- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'gcc7'}
+          #- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'gcc8'}
+          #- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'gcc9'}
+          #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc7'}
+          #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc8'}
+          #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc9'}
+          #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc10'}
+          #- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'gcc11'}
           - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'gcc12'}
           # clang
-          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'llvm9'}
-          - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm9'}
-          - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm10'}
-          - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm11'}
-          - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm12'}
-          - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm13'}
-          - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm14'}
-          - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'llvm15'}
-          - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'llvm16'}
+          #- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'llvm9'}
+          #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm9'}
+          #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm10'}
+          #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm11'}
+          #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm12'}
+          #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm13'}
+          #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm14'}
+          #- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'llvm15'}
+          #- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'llvm16'}
     runs-on: linux-${{ matrix.cpu }}-cpu4
     container:
       options: -u root
       image: rapidsai/devcontainers:23.06-cpp-${{ matrix.compiler }}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
     steps:
-      - name: Echo matrix
-        run: echo "${{matrix.compiler}}"
+      - name: Build Thrust tests
+        run: ./ci/test_thrust.sh
