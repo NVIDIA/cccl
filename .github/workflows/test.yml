@@ -74,4 +74,4 @@ jobs:
         with:
           name: thrust-build-artifacts
       - name: Run Thrust tests
-        run: ctest --test-dir build --output-on-failure
+        run: pwd && ls && ctest --test-dir build --output-on-failure
