@@ -28,7 +28,7 @@ jobs:
           #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc9'}
           #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc10'}
           #- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'gcc11'}
-          - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'gcc12'}
+          - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '12'}
           # clang
           #- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'llvm9'}
           #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm9'}
@@ -42,16 +42,12 @@ jobs:
     runs-on: linux-${{ matrix.cpu }}-cpu16
     container:
       options: -u root
-      image: rapidsai/devcontainers:23.06-cpp-${{ matrix.compiler }}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
+      image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Print working dir
-        run: pwd
-      - name: list
-        run: ls
       - name: Build Thrust tests
         run: bash ./ci/build_thrust.sh
       - name: Upload Thrust build artifacts
