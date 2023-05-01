@@ -1,0 +1,44 @@
+
+name: test app authentication
+
+on:
+  pull_request:
+
+jobs:
+  test-app-token:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@36464acb844fc53b9b8b2401da68844f6b05ebb0
+        with:
+          app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
+          private_key: ${{ secrets.CCCL_AUTH_APP_PEM }}
+      - name: Test token
+        shell: bash --noprofile --norc -x -eo pipefail {0}
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          echo "gh auth status:";
+          gh auth status;
+          github_user=;
+          if [[ -f ~/.config/gh/hosts.yml ]]; then
+            "github_user=$(grep --color=never 'user:' ~/.config/gh/hosts.yml | cut -d ':' -f2 | tr -d '[:space:]' || echo '')";
+          fi
+          if [[ -z "${github_user:-}" ]]; then
+            github_user="$(gh api user --jq '.login')";
+          fi
+          echo "GITHUB_USER: ${github_user}";
+          if [[ -n "${github_user:-}" ]]; then
+            echo "current scopes:";
+            gh api -i -X GET --silent rate_limit   \
+            2>/dev/null                            \
+            | grep -i 'x-oauth-scopes:'            \
+            | cut -d' ' -f1 --complement           \
+            | tr -d ',';
+            echo "user orgs:";
+            gh api "/users/${github_user}/orgs" --jq '.[].login' \
+                -H "Accept: application/vnd.github+json" \
+              | grep --color=never -E "(${allowed_orgs})";
+          fi
