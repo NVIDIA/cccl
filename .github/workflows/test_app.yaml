@@ -2,7 +2,7 @@
 name: test app authentication
 
 on:
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   test-app-token:
