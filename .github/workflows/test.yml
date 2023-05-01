@@ -28,7 +28,7 @@ jobs:
           #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc9'}
           #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc10'}
           #- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'gcc11'}
-          - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '12'}
+          - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '12'}}
           # clang
           #- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'llvm9'}
           #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm9'}
