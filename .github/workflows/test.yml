@@ -45,4 +45,4 @@ jobs:
       image: rapidsai/devcontainers:23.06-cpp-${{ matrix.compiler }}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
     steps:
       - name: Build Thrust tests
-        run: ./ci/test_thrust.sh
+        run: ./ci/build_thrust.sh

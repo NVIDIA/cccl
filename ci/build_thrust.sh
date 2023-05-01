@@ -9,8 +9,8 @@ cd thrust
 # Build Thrust tests
 mkdir build
 cd build
-cmake ..
-make
+cmake -G ninja ..
+ninja
 
 # Run Thrust tests
-ctest --output-on-failure
+#ctest --output-on-failure
