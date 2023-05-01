@@ -19,27 +19,26 @@ jobs:
       max-parallel: 8
       matrix:
         include:
-          # Ubuntu 20.04
+          # gcc
+          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'gcc7'}
+          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'gcc8'}
+          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'gcc9'}
           - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc7'}
           - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc8'}
           - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc9'}
           - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'gcc10'}
+          - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'gcc11'}
+          - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'gcc12'}
+          # clang
+          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'llvm9'}
           - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm9'}
           - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm10'}
           - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm11'}
           - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm12'}
           - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm13'}
           - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: 'llvm14'}
-          # Ubuntu 22.04
-          - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'gcc11'}
-          - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'gcc12'}
           - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'llvm15'}
           - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: 'llvm16'}
-          # Ubuntu 18.04
-          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'gcc7'}
-          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'gcc8'}
-          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'gcc9'}
-          - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: 'llvm9'}
     runs-on: linux-${{ matrix.cpu }}-cpu4
     container:
       options: -u root
