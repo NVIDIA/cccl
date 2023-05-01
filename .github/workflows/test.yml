@@ -25,7 +25,7 @@ jobs:
     runs-on: linux-${{ matrix.cpu }}-cpu4
     container:
       options: -u root
-      image: rapidsai/devcontainers:23.06-cpp-${{ matrix.compiler }}-cuda12.1-ubuntu${{ matrix.ubuntu }}
+      image: rapidsai/devcontainers:23.06-cpp-${{ matrix.compiler }}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
     steps:
       - name: Echo matrix
         run: echo "${{matrix.compiler}}"
