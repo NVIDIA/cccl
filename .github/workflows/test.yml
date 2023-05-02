@@ -60,12 +60,14 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Build Thrust tests
-        run: bash ./ci/build_thrust.sh
+        run: bash ./ci/build_thrust.sh 
+      - name: tar Thrust build artifacts
+        run: tar czf thrust-build-artifacts.tar.gz ./thrust
       - name: Upload Thrust build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: thrust-build-artifacts
-          path: ./thrust/
+          path: thrust-build-artifacts.tar.gz
   test:
     name: Run tests
     needs: build
@@ -81,5 +83,11 @@ jobs:
         with:
           name: thrust-build-artifacts
           path: thrust
+      - name Untar Thrust build artifacts
+        run: tar xzf thrust-build-artifacts.tar.gz
       - name: Run Thrust tests
-        run: pwd && ls && ctest --test-dir thrust/build --output-on-failure
+        run: | 
+          pwd 
+          ll thrust/build/bin
+          chmod -R +x thrust/build/bin/*
+          ctest --test-dir thrust/build --output-on-failure
