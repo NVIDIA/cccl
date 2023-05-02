@@ -83,7 +83,7 @@ jobs:
         with:
           name: thrust-build-artifacts
           path: thrust
-      - name Untar Thrust build artifacts
+      - name: Untar Thrust build artifacts
         run: tar xzf thrust-build-artifacts.tar.gz
       - name: Run Thrust tests
         run: | 
