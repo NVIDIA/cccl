@@ -83,7 +83,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: thrust-build-artifacts
-          path: thrust
       - name: Untar Thrust build artifacts
         run: tar xzf thrust-build-artifacts.tar.gz
       - name: Run Thrust tests
