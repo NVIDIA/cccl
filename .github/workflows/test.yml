@@ -48,6 +48,13 @@ jobs:
       options: -u root
       image: rapidsai/devcontainers:${{env.DEVCONTAINTER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
     steps:
+      - name: Verify compiler version
+        run: |
+          version=$("${{matrix.compiler.exe}}" --version | head -n1 | cut -d' ' -f3 | cut -d. -f1)
+          if [[ "${version}" != "${{ matrix.compiler.version }}" ]]; then
+            echo "Compiler version does not match: found ${version}, expected ${{ matrix.compiler.version }}"
+            exit 1
+          fi
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
