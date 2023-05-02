@@ -1,11 +1,5 @@
 name: CI (GPU)
 
-env:
-  SCCACHE_BUCKET: rapids-sccache-east
-  SCCACHE_REGION: us-east-2
-  SCCACHE_IDLE_TIMEOUT: 32768
-  SCCACHE_S3_USE_SSL: true
-  SCCACHE_S3_NO_CREDENTIALS: false
 
 defaults:
   run:
@@ -79,6 +73,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Build Thrust tests
+        env:
+          SCCACHE_BUCKET: rapids-sccache-east
+          SCCACHE_REGION: us-east-2
+          SCCACHE_IDLE_TIMEOUT: 32768
+          SCCACHE_S3_USE_SSL: true
+          SCCACHE_S3_NO_CREDENTIALS: false
         run: bash ./ci/build_thrust.sh 
       - name: Clean up object files
         run: rm -rf ./thrust/build/testing
