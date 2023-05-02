@@ -1,8 +1,7 @@
 name: CI (GPU)
 
-defaults:
- env:
-   DEVCONTAINER_VERSION: '23.06'
+env:
+  DEVCONTAINER_VERSION: '23.06'
 
 on:
   push:
