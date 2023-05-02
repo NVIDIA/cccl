@@ -80,7 +80,7 @@ jobs:
           SCCACHE_S3_NO_CREDENTIALS: false
         run: |
           sccache -s
-          bash ./ci/build_thrust.sh 
+          time bash ./ci/build_thrust.sh 
           sccache -s
       - name: tar Thrust build artifacts
         run: |
