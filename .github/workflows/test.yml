@@ -76,7 +76,7 @@ jobs:
       - name: Get AWS credentials for sccache bucket
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-nvidia
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2 
           role-duration-seconds: 43200 # 12 hours
       - uses: actions/checkout@v3
