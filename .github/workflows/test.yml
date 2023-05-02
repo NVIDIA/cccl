@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build:
     if: github.repository == 'NVIDIA/cccl'
-    name: Build (CUDA ${{matrix.cuda}}, ${{ matrix.compiler }}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
+    name: Build (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
     strategy:
       fail-fast: false
       max-parallel: 8
