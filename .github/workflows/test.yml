@@ -63,6 +63,8 @@ jobs:
           persist-credentials: false
       - name: Build Thrust tests
         run: bash ./ci/build_thrust.sh 
+      - name: Clean up object files
+        run: rm -rf ./thrust/build/testing
       - name: tar Thrust build artifacts
         run: |
           tar czf thrust-build-artifacts.tar.gz ./thrust
