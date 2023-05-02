@@ -79,7 +79,6 @@ jobs:
           SCCACHE_S3_USE_SSL: true
           SCCACHE_S3_NO_CREDENTIALS: false
         run: |
-          sccache -s
           time bash ./ci/build_thrust.sh 
           sccache -s
       - name: tar Thrust build artifacts
