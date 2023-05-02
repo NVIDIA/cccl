@@ -15,21 +15,6 @@ concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
   cancel-in-progress: true
 
-permissions:
-  actions: none
-  checks: none
-  contents: read
-  deployments: none
-  discussions: none
-  id-token: write
-  issues: none
-  packages: read
-  pages: none
-  pull-requests: read
-  repository-projects: none
-  security-events: none
-  statuses: none
-
 jobs:
   build:
     if: github.repository == 'NVIDIA/cccl'
@@ -64,6 +49,9 @@ jobs:
     container:
       options: -u root
       image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
+    permissions:
+      id-token: write 
+      contents: read 
     steps:
 #      - name: Verify compiler version
 #        run: |
