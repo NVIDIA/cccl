@@ -54,7 +54,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: thrust-build-artifacts
-          path: ./thrust/build/
+          path: ./thrust/
   test:
     name: Run tests
     needs: build
@@ -69,6 +69,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: thrust-build-artifacts
-          path: build
+          path: thrust
       - name: Run Thrust tests
-        run: pwd && ls && ctest --test-dir build --output-on-failure
+        run: pwd && ls && ctest --test-dir thrust/build --output-on-failure
