@@ -48,6 +48,8 @@ jobs:
     container:
       options: -u root
       image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
+    permissions:
+      id-token: write
     steps:
 #      - name: Verify compiler version
 #        run: |
@@ -57,6 +59,12 @@ jobs:
 #            exit 1
 #          fi
 #          echo "Sucessfully found ${{matrix.compiler.name}} ${version}"
+      - name: Get AWS credentials for sccache bucket
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-nvidia
+          aws-region: us-east-2 
+          role-duration-seconds: 43200 # 12 hours
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
