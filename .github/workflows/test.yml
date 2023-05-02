@@ -61,7 +61,9 @@ jobs:
       - name: Build Thrust tests
         run: bash ./ci/build_thrust.sh 
       - name: tar Thrust build artifacts
-        run: tar czf thrust-build-artifacts.tar.gz ./thrust
+        run: |
+          tar czf thrust-build-artifacts.tar.gz ./thrust
+          echo "tarball size: $(du -h thrust-build-artifacts.tar.gz | cut -f1)"
       - name: Upload Thrust build artifacts
         uses: actions/upload-artifact@v3
         with:
