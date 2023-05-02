@@ -91,6 +91,6 @@ jobs:
       - name: Run Thrust tests
         run: | 
           pwd 
-          ll thrust/build/bin
+          ls
           chmod -R +x thrust/build/bin/*
           ctest --test-dir thrust/build --output-on-failure
