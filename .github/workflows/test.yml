@@ -1,5 +1,9 @@
 name: CI (GPU)
 
+defaults:
+  run:
+    shell: bash
+
 on:
   push:
     branches:
@@ -41,7 +45,6 @@ jobs:
         #- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '16', exe: 'clang++'}}
 
     runs-on: linux-${{ matrix.cpu }}-cpu16
-    shell: bash
     container:
       options: -u root
       image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
