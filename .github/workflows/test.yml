@@ -26,6 +26,7 @@ jobs:
       - name: Compute matrix
         id: compute-matrix
         run: |
+          cat ./ci/matrix.yaml
           MATRIX=$(yq -r . ./ci/matrix.yaml | jq -c '.[]')
           echo "${MATRIX}"
 
