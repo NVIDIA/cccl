@@ -1,21 +1,21 @@
 #gcc
-- {cuda: '11.0', u#buntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
-- {cuda: '11.0', u#buntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
-- {cuda: '11.0', u#buntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
-- {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
-- {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
-- {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
-- {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '10', exe: 'g++'}}
-- {cuda: '12.1', u#buntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '11', exe: 'g++'}}
-- {cuda: '12.1', u#buntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '12', exe: 'g++'}}
+- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
+- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
+- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
+- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
+- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
+- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
+- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '10', exe: 'g++'}}
+- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '11', exe: 'g++'}}
+- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '12', exe: 'g++'}}
 
  #clang
-- {cuda: '11.0', u#buntu: '18.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}}
-- {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}}
-- {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '10', exe: 'clang++'}}
-- {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '11', exe: 'clang++'}}
-- {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '12', exe: 'clang++'}}
-- {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '13', exe: 'clang++'}}
-- {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '14', exe: 'clang++'}}
-- {cuda: '12.1', u#buntu: '22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '15', exe: 'clang++'}}
-- {cuda: '12.1', u#buntu: '22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '16', exe: 'clang++'}}
+- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}}
+- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}}
+- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '10', exe: 'clang++'}}
+- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '11', exe: 'clang++'}}
+- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '13', exe: 'clang++'}}
+- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '13', exe: 'clang++'}}
+- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '14', exe: 'clang++'}}
+- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '15', exe: 'clang++'}}
+- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '16', exe: 'clang++'}}
