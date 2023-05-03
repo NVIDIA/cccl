@@ -16,99 +16,111 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    if: github.repository == 'NVIDIA/cccl'
-    name: Build (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
-    strategy:
-      fail-fast: false
-      max-parallel: 8
-      matrix:
-        include:
-        #- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
-        #- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
-        #- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
-        #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
-        #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
-        #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
-        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '10', exe: 'g++'}}
-        #- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '11', exe: 'g++'}}
-        #- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '12', exe: 'g++'}}
-        
-        # clang
-        #- {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}}
-        #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}}
-        #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '10', exe: 'clang++'}}
-        #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '11', exe: 'clang++'}}
-        #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '12', exe: 'clang++'}}
-        #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '13', exe: 'clang++'}}
-        #- {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '14', exe: 'clang++'}}
-        #- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '15', exe: 'clang++'}}
-        #- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '16', exe: 'clang++'}}
+  compute-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      MATRIX: ${{ steps.compute-matrix.outputs.MATRIX }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Compute matrix
+        id: compute-matrix
+        run: |
+          MATRIX=$(yq -r . ./ci/matrix.yaml | jq -c '.[]')
+          echo "${MATRIX}"
 
-    runs-on: linux-${{ matrix.cpu }}-cpu16
-    container:
-      options: -u root
-      image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
-    permissions:
-      id-token: write 
-      contents: read 
-    steps:
-#      - name: Verify compiler version
-#        run: |
-#          version=$("${{matrix.compiler.exe}}" --version | head -n1 | cut -d' ' -f3 | cut -d. -f1)
-#          if [[ "${version}" != "${{ matrix.compiler.version }}" ]]; then
-#            echo "Compiler version does not match: found ${version}, expected ${{ matrix.compiler.version }}"
-#            exit 1
-#          fi
-#          echo "Sucessfully found ${{matrix.compiler.name}} ${version}"
-      - name: Get AWS credentials for sccache bucket
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
-          aws-region: us-east-2 
-          role-duration-seconds: 43200 # 12 hours
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Build Thrust tests
-        env:
-          SCCACHE_BUCKET: rapids-sccache-east
-          SCCACHE_REGION: us-east-2
-          SCCACHE_IDLE_TIMEOUT: 32768
-          SCCACHE_S3_USE_SSL: true
-          SCCACHE_S3_NO_CREDENTIALS: false
-        run: |
-          time bash ./ci/build_thrust.sh 
-          sccache -s
-      - name: tar Thrust build artifacts
-        run: |
-          tar czf thrust-build-artifacts.tar.gz ./thrust
-          echo "tarball size: $(du -h thrust-build-artifacts.tar.gz | cut -f1)"
-      - name: Upload Thrust build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: thrust-build-artifacts
-          path: thrust-build-artifacts.tar.gz
-  test:
-    name: Run tests
-    needs: build
-    runs-on: linux-amd64-gpu-v100-latest-1
-    container:
-      options: -u root
-      image: rapidsai/devcontainers:23.06-cpp-gcc12-cuda12.1-ubuntu22.04
-      env:
-        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
-    steps:
-      - name: Download Thrust build artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: thrust-build-artifacts
-      - name: Untar Thrust build artifacts
-        run: tar xzf thrust-build-artifacts.tar.gz
-      - name: Run Thrust tests
-        run: | 
-          pwd 
-          ls
-          chmod -R +x thrust/build/bin/*
-          ctest --test-dir thrust/build --output-on-failure
+  #build:
+  #  if: github.repository #== 'NVIDIA/cccl'
+  #  name: Build (CUDA ${{m#atrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
+  #  strategy:
+  #    fail-fast: false
+  #    max-parallel: 8
+  #    matrix:
+  #      include:
+  #      - {cuda: '11.0', u#buntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
+  #      - {cuda: '11.0', u#buntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
+  #      - {cuda: '11.0', u#buntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
+  #      - {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
+  #      - {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
+  #      - {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
+  #      - {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '10', exe: 'g++'}}
+  #      - {cuda: '12.1', u#buntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '11', exe: 'g++'}}
+  #      - {cuda: '12.1', u#buntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '12', exe: 'g++'}}
+  #      
+  #       clang
+  #      - {cuda: '11.0', u#buntu: '18.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}}
+  #      - {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}}
+  #      - {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '10', exe: 'clang++'}}
+  #      - {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '11', exe: 'clang++'}}
+  #      - {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '12', exe: 'clang++'}}
+  #      - {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '13', exe: 'clang++'}}
+  #      - {cuda: '12.1', u#buntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '14', exe: 'clang++'}}
+  #      - {cuda: '12.1', u#buntu: '22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '15', exe: 'clang++'}}
+  #      - {cuda: '12.1', u#buntu: '22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '16', exe: 'clang++'}}
+  #  runs-on: linux-${{ mat#rix.cpu }}-cpu16
+  #  container:
+  #    options: -u root
+  #    image: rapidsai/devc#ontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
+  #  permissions:
+  #    id-token: write 
+  #    contents: read 
+  #  steps:
+# #     - name: Verify comp#iler version
+# #       run: |
+# #         version=$("${{m#atrix.compiler.exe}}" --version | head -n1 | cut -d' ' -f3 | cut -d. -f1)
+# #         if [[ "${versio#n}" != "${{ matrix.compiler.version }}" ]]; then
+# #           echo "Compile#r version does not match: found ${version}, expected ${{ matrix.compiler.version }}"
+# #           exit 1
+# #         fi
+# #         echo "Sucessful#ly found ${{matrix.compiler.name}} ${version}"
+  #    - name: Get AWS cred#entials for sccache bucket
+  #      uses: aws-actions/#configure-aws-credentials@v2
+  #      with:
+  #        role-to-assume: #arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+  #        aws-region: us-e#ast-2 
+  #        role-duration-se#conds: 43200 # 12 hours
+  #    - uses: actions/chec#kout@v3
+  #      with:
+  #        fetch-depth: 0
+  #        persist-credenti#als: false
+  #    - name: Build Thrust# tests
+  #      env:
+  #        SCCACHE_BUCKET: #rapids-sccache-east
+  #        SCCACHE_REGION: #us-east-2
+  #        SCCACHE_IDLE_TIM#EOUT: 32768
+  #        SCCACHE_S3_USE_S#SL: true
+  #        SCCACHE_S3_NO_CR#EDENTIALS: false
+  #      run: |
+  #        time bash ./ci/b#uild_thrust.sh 
+  #        sccache -s
+  #    - name: tar Thrust b#uild artifacts
+  #      run: |
+  #        tar czf thrust-b#uild-artifacts.tar.gz ./thrust
+  #        echo "tarball si#ze: $(du -h thrust-build-artifacts.tar.gz | cut -f1)"
+  #    - name: Upload Thrus#t build artifacts
+  #      uses: actions/uplo#ad-artifact@v3
+  #      with:
+  #        name: thrust-bui#ld-artifacts
+  #        path: thrust-bui#ld-artifacts.tar.gz
+  #test:
+  #  name: Run tests
+  #  needs: build
+  #  runs-on: linux-amd64-g#pu-v100-latest-1
+  #  container:
+  #    options: -u root
+  #    image: rapidsai/devc#ontainers:23.06-cpp-gcc12-cuda12.1-ubuntu22.04
+  #    env:
+  #      NVIDIA_VISIBLE_DEV#ICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
+  #  steps:
+  #    - name: Download Thr#ust build artifacts
+  #      uses: actions/down#load-artifact@v3
+  #      with:
+  #        name: thrust-bui#ld-artifacts
+  #    - name: Untar Thrust# build artifacts
+  #      run: tar xzf thrus#t-build-artifacts.tar.gz
+  #    - name: Run Thrust t#ests
+  #      run: | 
+  #        pwd 
+  #        ls
+  #        chmod -R +x thru#st/build/bin/*
+  #        ctest --test-dir# thrust/build --output-on-failure
