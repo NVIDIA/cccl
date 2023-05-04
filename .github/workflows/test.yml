@@ -27,8 +27,8 @@ jobs:
         id: compute-matrix
         run: |
           cat ./ci/matrix.yaml
-          MATRIX=$(yq -r . ./ci/matrix.yaml | jq -c '.[]')
-          echo "${MATRIX}"
+          MATRIX=$(yq -o=json ./ci/matrix.yaml)
+          echo "MATRIX=${MATRIX}" | tee -a "$GITHUB_OUTPUT"
 
   #build:
   #  if: github.repository #== 'NVIDIA/cccl'
