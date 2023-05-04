@@ -36,7 +36,7 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 8
-      matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
+      matrix: ${{ needs.compute-matrix.outputs.MATRIX }}
     runs-on: linux-${{ matrix.cpu }}-cpu16
     container:
       options: -u root
