@@ -28,7 +28,8 @@ jobs:
         run: |
           cat ./ci/matrix.yaml
           MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '.[]')
-          echo "MATRIX=${MATRIX}" | tee -a "$GITHUB_OUTPUT"
+          printf -v MATRIX_STRING 'MATRIX=%q' "${MATRIX}"
+          echo "${MATRIX_STRING}" | tee -a "${GITHUB_OUTPUT}"
 
   #build:
   #  if: github.repository #== 'NVIDIA/cccl'
