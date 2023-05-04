@@ -31,6 +31,7 @@ jobs:
           echo "MATRIX={\"include\":$MATRIX}" | tee -a "$GITHUB_OUTPUT"
 
   build:
+    needs: compute-matrix
     if: github.repository == 'NVIDIA/cccl'
     name: Build (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
     strategy:
