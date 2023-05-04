@@ -28,7 +28,8 @@ jobs:
         run: |
           cat ./ci/matrix.yaml
           MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c)
-          echo "MATRIX=${MATRIX}" | tee -a "$GITHUB_OUTPUT"
+          \"$MATRIX\
+          echo "MATRIX=\"${MATRIX}\"" | tee -a "$GITHUB_OUTPUT"
 
   build:
     if: github.repository == 'NVIDIA/cccl'
@@ -36,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 8
-      matrix: ${{ needs.compute-matrix.outputs.MATRIX }}
+      matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
     runs-on: linux-${{ matrix.cpu }}-cpu16
     container:
       options: -u root
