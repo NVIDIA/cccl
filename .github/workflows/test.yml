@@ -23,7 +23,8 @@ jobs:
       fail-fast: false
       max-parallel: 8
       matrix: 
-        std: [11, 14, 17, 20]
+        lib: [thrust, cub, libcudacxx]
+        std: ['11', '14', '17', '20']
         include:
         - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
         - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
