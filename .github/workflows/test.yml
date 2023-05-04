@@ -26,12 +26,12 @@ jobs:
         lib: [thrust, cub, libcudacxx]
         std: ['11', '14', '17', '20']
         include:
-        - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
-        - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
-        - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
-        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
-        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
-        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
+        - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}, unique: 0}
+        - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}, unique: 1}
+        - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}, unique: 2}
+        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}, unique: 3}
+        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}, unique: 4}
+        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}, unique: 5}
     steps:
       - name: test
         run: echo "hello"
