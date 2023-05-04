@@ -32,7 +32,8 @@ jobs:
         - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
         - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
     steps:
-      -run: echo "hello"
+      - name: test
+        run: echo "hello"
 
   #compute-matrix:
   #  runs-on: ubuntu-latest
