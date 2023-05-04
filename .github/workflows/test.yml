@@ -16,38 +16,54 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  compute-matrix:
+  test-matrix:
     runs-on: ubuntu-latest
-    outputs:
-      MATRIX: ${{ steps.compute-matrix.outputs.MATRIX }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      - name: Compute matrix
-        id: compute-matrix
-        run: |
-          cat ./ci/matrix.yaml
-          MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '.')
-          echo "MATRIX=$MATRIX" | tee -a "$GITHUB_OUTPUT"
-
-  build:
-    needs: compute-matrix
-    if: github.repository == 'NVIDIA/cccl'
     name: Build (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, C++-${{matrix.std}}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
     strategy:
       fail-fast: false
       max-parallel: 8
-      matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
-    runs-on: linux-${{ matrix.cpu }}-cpu16
-    container:
-      options: -u root
-      image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
-    permissions:
-      id-token: write 
-      contents: read 
-    steps:
-      - name: test
-        run: echo "hello"
+      matrix: 
+        std: [11, 14, 17, 20]
+        include:
+        - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
+        - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
+        - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
+        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
+        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}
+        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}}
+
+  #compute-matrix:
+  #  runs-on: ubuntu-latest
+  #  outputs:
+  #    MATRIX: ${{ steps.compute-matrix.outputs.MATRIX }}
+  #  steps:
+  #    - name: Checkout repo
+  #      uses: actions/checkout@v3
+  #    - name: Compute matrix
+  #      id: compute-matrix
+  #      run: |
+  #        cat ./ci/matrix.yaml
+  #        MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '.')
+  #        echo "MATRIX=$MATRIX" | tee -a "$GITHUB_OUTPUT"
+
+  #build:
+  #  needs: compute-matrix
+  #  if: github.repository == 'NVIDIA/cccl'
+  #  name: Build (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, C++-${{matrix.std}}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
+  #  strategy:
+  #    fail-fast: false
+  #    max-parallel: 8
+  #    matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
+  #  runs-on: linux-${{ matrix.cpu }}-cpu16
+  #  container:
+  #    options: -u root
+  #    image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
+  #  permissions:
+  #    id-token: write 
+  #    contents: read 
+  #  steps:
+  #    - name: test
+  #      run: echo "hello"
   #  steps:
 # #     - name: Verify compiler version
 # #       run: |
