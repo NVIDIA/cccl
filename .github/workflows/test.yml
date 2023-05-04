@@ -27,7 +27,7 @@ jobs:
         id: compute-matrix
         run: |
           cat ./ci/matrix.yaml
-          MATRIX=$(yq -o=json ./ci/matrix.yaml)
+          MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '.[]')
           echo "MATRIX=${MATRIX}" | tee -a "$GITHUB_OUTPUT"
 
   #build:
