@@ -134,8 +134,6 @@ namespace std {
 #include <__config>
 #endif // __cuda_std__
 
-#if !defined(_MSC_VER) || _LIBCUDACXX_STD_VER > 17
-
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__concepts/__concept_macros.h"
 #include "__concepts/_One_of.h"
@@ -167,7 +165,5 @@ namespace std {
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
 #endif
-
-#endif // !defined(_MSC_VER) || _LIBCUDACXX_STD_VER > 17
 
 #endif // _LIBCUDACXX_CONCEPTS

@@ -42,12 +42,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Let COND_RES(X, Y) be:
 #ifdef _LIBCUDACXX_COMPILER_MSVC // Workaround for DevCom-1627396
+template <class _Tp>
+_Tp __returns_exactly() noexcept; // not defined
+
 template <class _Xp, class _Yp>
-struct __cond_res_if_right_wrapper {
-    using __type = decltype(false ? _CUDA_VSTD::declval<_Xp(&)()>()() : _CUDA_VSTD::declval<_Yp(&)()>()());
-};
-template <class _Xp, class _Yp>
-using __cond_res_if_right = typename __cond_res_if_right_wrapper<_Xp, _Yp>::__type;
+using __cond_res_if_right = decltype(false ? __returns_exactly<_Xp>() : __returns_exactly<_Yp>());
+
 template <class _Tp, class _Up, class = void>
 struct __cond_res_workaround {};
 

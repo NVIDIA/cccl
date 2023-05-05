@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
-// UNSUPPORTED: windows && (c++11 || c++14 || c++17)
 
 // template<class T>
 // concept copy_constructible;
@@ -21,6 +20,7 @@
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
 #include "type_classification/moveconstructible.h"
 
 using cuda::std::copy_constructible;
@@ -130,12 +130,14 @@ struct CopyCtorHasMutableRef {
 };
 static_assert(!copy_constructible<CopyCtorHasMutableRef>, "");
 
+#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC chokes on the deleted copy constructor
 struct CopyCtorProhibitsMutableRef {
   CopyCtorProhibitsMutableRef(CopyCtorProhibitsMutableRef&&) noexcept = default;
   CopyCtorProhibitsMutableRef(const CopyCtorProhibitsMutableRef&) = default;
   CopyCtorProhibitsMutableRef(CopyCtorProhibitsMutableRef&) = delete;
 };
 static_assert(!copy_constructible<CopyCtorProhibitsMutableRef>, "");
+#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
 
 struct CopyAssignHasMutableRef {
   CopyAssignHasMutableRef&
@@ -144,6 +146,7 @@ struct CopyAssignHasMutableRef {
 };
 static_assert(!copy_constructible<CopyAssignHasMutableRef>, "");
 
+#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC chokes on the deleted copy assignment
 struct CopyAssignProhibitsMutableRef {
   CopyAssignProhibitsMutableRef&
   operator=(CopyAssignProhibitsMutableRef&&) noexcept = default;
@@ -153,6 +156,7 @@ struct CopyAssignProhibitsMutableRef {
   operator=(CopyAssignProhibitsMutableRef&) = delete;
 };
 static_assert(!copy_constructible<CopyAssignProhibitsMutableRef>, "");
+#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
 
 struct CopyCtorOnly {
   CopyCtorOnly(CopyCtorOnly&&) noexcept = delete;

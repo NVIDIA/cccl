@@ -9,7 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
 // UNSUPPORTED: gcc-8, gcc-9
-// UNSUPPORTED: windows && (c++11 || c++14 || c++17)
 
 // template<class F, class... Args>
 // concept relation;

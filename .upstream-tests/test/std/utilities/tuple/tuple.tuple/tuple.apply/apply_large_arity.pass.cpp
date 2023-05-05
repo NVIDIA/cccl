@@ -8,7 +8,8 @@
 
 // UNSUPPORTED: c++98, c++03, c++11, c++14
 // UNSUPPORTED: nvrtc
-
+// UNSUPPORTED: windows
+// We run out of heap space with windows
 
 // <cuda/std/tuple>
 

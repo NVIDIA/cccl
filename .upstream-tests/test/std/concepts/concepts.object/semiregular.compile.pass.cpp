@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
-// UNSUPPORTED: windows && (c++11 || c++14 || c++17)
 
 // template<class T>
 // concept semiregular = see below;
@@ -86,7 +85,9 @@ static_assert(!semiregular<volatile_copy_assignment volatile>, "");
 static_assert(semiregular<cv_copy_assignment const volatile>, "");
 static_assert(!semiregular<no_copy_constructor>, "");
 static_assert(!semiregular<no_copy_assignment>, "");
+#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
 static_assert(!semiregular<no_copy_assignment_mutable>, "");
+#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
 static_assert(!semiregular<derived_from_noncopyable>, "");
 static_assert(!semiregular<has_noncopyable>, "");
 static_assert(!semiregular<has_const_member>, "");
@@ -99,8 +100,10 @@ static_assert(!semiregular<deleted_assignment_from_const_rvalue>, "");
 // Not default_initialzable
 static_assert(!semiregular<no_copy_constructor>, "");
 static_assert(!semiregular<no_copy_assignment>, "");
+#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
 static_assert(cuda::std::is_copy_assignable_v<no_copy_assignment_mutable>, "");
 static_assert(!semiregular<no_copy_assignment_mutable>, "");
+#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
 static_assert(!semiregular<derived_from_noncopyable>, "");
 static_assert(!semiregular<has_noncopyable>, "");
 

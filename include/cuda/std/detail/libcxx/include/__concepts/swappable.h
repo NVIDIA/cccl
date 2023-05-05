@@ -35,6 +35,10 @@
 #pragma GCC system_header
 #endif
 
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#pragma nv_diag_suppress 461 // nonstandard cast to array type ignored
+#endif
+
 #if _LIBCUDACXX_STD_VER > 11
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
@@ -212,5 +216,9 @@ _LIBCUDACXX_CONCEPT swappable_with = _LIBCUDACXX_FRAGMENT(__swappable_with_, _Tp
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX_STD_VER > 11
+
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#pragma nv_diag_default 461 // nonstandard cast to array type ignored
+#endif
 
 #endif // _LIBCUDACXX___CONCEPTS_SWAPPABLE_H

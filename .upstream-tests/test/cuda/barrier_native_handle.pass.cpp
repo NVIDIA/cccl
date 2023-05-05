@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pre-sm-70
+// UNSUPPORTED: pre-sm-80
 
 #pragma nv_diag_suppress static_var_with_dynamic_init
 #pragma nv_diag_suppress set_but_not_used

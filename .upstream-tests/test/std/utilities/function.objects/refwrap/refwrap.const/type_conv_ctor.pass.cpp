@@ -63,10 +63,12 @@ int main(int, char**)
   {
     meow(0);
   }
+#if !defined(TEST_COMPILER_C1XX)
   {
     extern cuda::std::reference_wrapper<int> purr();
     ASSERT_SAME_TYPE(decltype(true ? purr() : 0), int);
   }
+#endif // !defined(TEST_COMPILER_C1XX)
 #if TEST_STD_VER > 14
 #if (!defined(__GNUC__) || __GNUC__ >= 8) // gcc-7 is broken wrt ctad
   {

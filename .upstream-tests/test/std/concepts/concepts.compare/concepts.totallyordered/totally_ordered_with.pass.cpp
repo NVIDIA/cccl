@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
-// UNSUPPORTED: windows && (c++11 || c++14 || c++17)
 
 // template<class T>
 // concept totally_ordered_with;
@@ -1035,12 +1034,16 @@ static_assert(!check_totally_ordered_with<member_three_way_comparable,
 
 static_assert(
     check_totally_ordered_with<explicit_operators, explicit_operators>(), "");
+#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC has a bug where it considers the conversion with C++17 and below
 static_assert(!check_totally_ordered_with<equality_comparable_with_ec1,
                                           equality_comparable_with_ec1>(), "");
+#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
 static_assert(check_totally_ordered_with<different_return_types,
                                          different_return_types>(), "");
+#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC has a bug where it considers the conversion with C++17 and below
 static_assert(!check_totally_ordered_with<explicit_operators,
                                           equality_comparable_with_ec1>(), "");
+#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
 static_assert(
     check_totally_ordered_with<explicit_operators, different_return_types>(), "");
 

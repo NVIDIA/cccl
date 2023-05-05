@@ -48,6 +48,7 @@
 #include "../__type_traits/is_nothrow_move_constructible.h"
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/is_swappable.h"
+#include "../__type_traits/make_const_lvalue_ref.h"
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 #include "../__utility/piecewise_construct.h"
@@ -166,7 +167,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
         : first(), second() {}
 
     template <bool _Dummy = true, __enable_if_t<
-             _CheckArgsDep<_Dummy>::template __enable_explicit<_T1 const&, _T2 const&>::value
+             _CheckArgsDep<_Dummy>::template __enable_explicit<__make_const_lvalue_ref<_T1>, __make_const_lvalue_ref<_T2>>::value
     >* = nullptr>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     explicit pair(_T1 const& __t1, _T2 const& __t2)
@@ -175,7 +176,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
         : first(__t1), second(__t2) {}
 
     template<bool _Dummy = true, __enable_if_t<
-            _CheckArgsDep<_Dummy>::template __enable_implicit<_T1 const&, _T2 const&>::value
+            _CheckArgsDep<_Dummy>::template __enable_implicit<__make_const_lvalue_ref<_T1>, __make_const_lvalue_ref<_T2>>::value
     >* = nullptr>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     pair(_T1 const& __t1, _T2 const& __t2)

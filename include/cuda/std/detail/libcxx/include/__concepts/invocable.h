@@ -44,7 +44,7 @@ template<class _Fn, class... _Args>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   _Invocable_,
   requires(_Fn&& __fn, _Args&&... __args) //
-  (_CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__fn), _CUDA_VSTD::forward<_Args>(__args)...)));
+  (_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fn>(__fn), _CUDA_VSTD::forward<_Args>(__args)...)));
 
 template<class _Fn, class... _Args>
 _LIBCUDACXX_CONCEPT invocable = _LIBCUDACXX_FRAGMENT(_Invocable_, _Fn, _Args...);

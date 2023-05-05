@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
-// UNSUPPORTED: windows && (c++11 || c++14 || c++17)
 
 // We voluntarily use cuda::std::default_initializable on types that have redundant
 // or ignored cv-qualifiers -- don't warn about it.
