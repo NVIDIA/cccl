@@ -30,10 +30,48 @@ jobs:
           MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.include, .std] | [ combinations | .[0] + {std: .[1]} ] | {include: .}')
           echo "MATRIX=$MATRIX" | tee -a "$GITHUB_OUTPUT"
 
-  build:
+  thrust:
     needs: compute-matrix
     if: github.repository == 'NVIDIA/cccl'
-    name: Build (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, C++-${{matrix.std}}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
+    name: Thrust (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, C++-${{matrix.std}}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
+    runs-on: linux-${{ matrix.cpu }}-cpu4
+    container:
+      options: -u root
+      image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
+    permissions:
+      id-token: write 
+      contents: read 
+    steps:
+      - name: test
+        run: echo "hello"
+
+  libcudacxx:
+    needs: compute-matrix
+    if: github.repository == 'NVIDIA/cccl'
+    name: libcudacxx (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, C++-${{matrix.std}}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
+    runs-on: linux-${{ matrix.cpu }}-cpu4
+    container:
+      options: -u root
+      image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
+    permissions:
+      id-token: write 
+      contents: read 
+    steps:
+      - name: test
+        run: echo "hello"
+
+  cub:
+    needs: compute-matrix
+    if: github.repository == 'NVIDIA/cccl'
+    name: CUB (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, C++-${{matrix.std}}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
     strategy:
       fail-fast: false
       max-parallel: 8
