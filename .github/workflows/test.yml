@@ -16,96 +16,76 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-matrix:
+  compute-matrix:
     runs-on: ubuntu-latest
+    outputs:
+      MATRIX: ${{ steps.compute-matrix.outputs.MATRIX }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Compute matrix
+        id: compute-matrix
+        run: |
+          cat ./ci/matrix.yaml
+          MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.include, .std] | [ combinations | .[0] + {std: .[1]} ]')
+          echo "MATRIX=$MATRIX" | tee -a "$GITHUB_OUTPUT"
+
+  build:
+    needs: compute-matrix
+    if: github.repository == 'NVIDIA/cccl'
     name: Build (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, C++-${{matrix.std}}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
     strategy:
       fail-fast: false
       max-parallel: 8
-      matrix: 
-        lib: [thrust, cub, libcudacxx]
-        std: ['11', '14', '17', '20']
-        include:
-        - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}, one: 0}
-        - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}, two: 1}
-        - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}, three: 2}
-        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}, four: 3}
-        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}, five: 4}
-        - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}, six: 5}
+      matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
+    runs-on: linux-${{ matrix.cpu }}-cpu4
+    container:
+      options: -u root
+      image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
+    permissions:
+      id-token: write 
+      contents: read 
     steps:
       - name: test
         run: echo "hello"
-
-  #compute-matrix:
-  #  runs-on: ubuntu-latest
-  #  outputs:
-  #    MATRIX: ${{ steps.compute-matrix.outputs.MATRIX }}
-  #  steps:
-  #    - name: Checkout repo
-  #      uses: actions/checkout@v3
-  #    - name: Compute matrix
-  #      id: compute-matrix
-  #      run: |
-  #        cat ./ci/matrix.yaml
-  #        MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '.')
-  #        echo "MATRIX=$MATRIX" | tee -a "$GITHUB_OUTPUT"
-
-  #build:
-  #  needs: compute-matrix
-  #  if: github.repository == 'NVIDIA/cccl'
-  #  name: Build (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, C++-${{matrix.std}}, Ubuntu ${{ matrix.ubuntu }}, CPU ${{matrix.cpu}})
-  #  strategy:
-  #    fail-fast: false
-  #    max-parallel: 8
-  #    matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
-  #  runs-on: linux-${{ matrix.cpu }}-cpu16
-  #  container:
-  #    options: -u root
-  #    image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
-  #  permissions:
-  #    id-token: write 
-  #    contents: read 
-  #  steps:
-  #    - name: test
-  #      run: echo "hello"
-  #  steps:
-# #     - name: Verify compiler version
-# #       run: |
-# #         version=$("${{matrix.compiler.exe}}" --version | head -n1 | cut -d' ' -f3 | cut -d. -f1)
-# #         if [[ "${version}" != "${{ matrix.compiler.version }}" ]]; then
-# #           echo "Compiler version does not match: found ${version}, expected ${{ matrix.compiler.version }}"
-# #           exit 1
-# #         fi
-# #         echo "Sucessfully found ${{matrix.compiler.name}} ${version}"
-  #    - name: Get AWS credentials for sccache bucket
-  #      uses: aws-actions/configure-aws-credentials@v2
-  #      with:
-  #        role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
-  #        aws-region: us-east-2 
-  #        role-duration-seconds: 43200 # 12 hours
-  #    - uses: actions/checkout@v3
-  #      with:
-  #        fetch-depth: 0
-  #        persist-credentials: false
-  #    - name: Build Thrust tests
-  #      env:
-  #        SCCACHE_BUCKET: rapids-sccache-east
-  #        SCCACHE_REGION: us-east-2
-  #        SCCACHE_IDLE_TIMEOUT: 32768
-  #        SCCACHE_S3_USE_SSL: true
-  #        SCCACHE_S3_NO_CREDENTIALS: false
-  #      run: |
-  #        time bash ./ci/build_thrust.sh 
-  #        sccache -s
-  #    - name: tar Thrust build artifacts
-  #      run: |
-  #        tar czf thrust-build-artifacts.tar.gz ./thrust
-  #        echo "tarball size: $(du -h thrust-build-artifacts.tar.gz | cut -f1)"
-  #    - name: Upload Thrust build artifacts
-  #      uses: actions/upload-artifact@v3
-  #      with:
-  #        name: thrust-build-artifacts
-  #        path: thrust-build-artifacts.tar.gz
+    #steps:
+#   #   - name: Verify compiler version
+#   #     run: |
+#   #       version=$("${{matrix.compiler.exe}}" --version | head -n1 | cut -d' ' -f3 | cut -d. -f1)
+#   #       if [[ "${version}" != "${{ matrix.compiler.version }}" ]]; then
+#   #         echo "Compiler version does not match: found ${version}, expected ${{ matrix.compiler.version }}"
+#   #         exit 1
+#   #       fi
+#   #       echo "Sucessfully found ${{matrix.compiler.name}} ${version}"
+    #  - name: Get AWS credentials for sccache bucket
+    #    uses: aws-actions/configure-aws-credentials@v2
+    #    with:
+    #      role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+    #      aws-region: us-east-2 
+    #      role-duration-seconds: 43200 # 12 hours
+    #  - uses: actions/checkout@v3
+    #    with:
+    #      fetch-depth: 0
+    #      persist-credentials: false
+    #  - name: Build Thrust tests
+    #    env:
+    #      SCCACHE_BUCKET: rapids-sccache-east
+    #      SCCACHE_REGION: us-east-2
+    #      SCCACHE_IDLE_TIMEOUT: 32768
+    #      SCCACHE_S3_USE_SSL: true
+    #      SCCACHE_S3_NO_CREDENTIALS: false
+    #    run: |
+    #      time bash ./ci/build_thrust.sh 
+    #      sccache -s
+    #  - name: tar Thrust build artifacts
+    #    run: |
+    #      tar czf thrust-build-artifacts.tar.gz ./thrust
+    #      echo "tarball size: $(du -h thrust-build-artifacts.tar.gz | cut -f1)"
+    #  - name: Upload Thrust build artifacts
+    #    uses: actions/upload-artifact@v3
+    #    with:
+    #      name: thrust-build-artifacts
+    #      path: thrust-build-artifacts.tar.gz
   #test:
   #  name: Run tests
   #  needs: build
