@@ -22,6 +22,7 @@
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/is_array.h"
 #include "../__type_traits/is_constant_evaluated.h"
+#include "../__type_traits/is_trivially_constructible.h"
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 
@@ -50,15 +51,19 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp* construct_at(_Tp* __location, _Args
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-// construct_at
+// There is a performance issue with placement new, where EDG based compiler insert a nullptr check that is superfluous
+// Because this is a noticable performance regression, we specialize for trivially constructible types
+// This is possible because we are calling ::new ignoring any user defined overloads of operator placement new
 
+// construct_at
 #if _LIBCUDACXX_STD_VER > 17
 
 #if defined(__CUDACC__)
 #pragma nv_exec_check_disable
 #endif
 template <class _Tp, class... _Args, class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _Tp* construct_at(_Tp* __location, _Args&&... __args) {
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+__enable_if_t<!is_trivially_constructible_v<_Tp, _Args...>, _Tp*> construct_at(_Tp* __location, _Args&&... __args) {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
 #if defined(__cuda_std__)
   // Need to go through `std::construct_at` as that is the explicitly blessed function
@@ -69,13 +74,22 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _Tp* construct_a
   return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
 }
 
+template <class _Tp, class... _Args, class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+__enable_if_t<is_trivially_constructible_v<_Tp, _Args...>, _Tp*> construct_at(_Tp* __location, _Args&&... __args) {
+  _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
+  *__location = _Tp{_CUDA_VSTD::forward<_Args>(__args)...};
+  return __location;
+}
+
 #endif // _LIBCUDACXX_STD_VER > 17
 
 #if defined(__CUDACC__)
 #pragma nv_exec_check_disable
 #endif
 template <class _Tp, class... _Args, class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _Tp* __construct_at(_Tp* __location, _Args&&... __args) {
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+__enable_if_t<!_LIBCUDACXX_TRAIT(is_trivially_constructible, _Tp, _Args...), _Tp*> __construct_at(_Tp* __location, _Args&&... __args) {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
 #if defined(__cuda_std__) && _LIBCUDACXX_STD_VER > 17
   // Need to go through `std::construct_at` as that is the explicitly blessed function
@@ -84,6 +98,14 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _Tp* __construct
   }
 #endif // __cuda_std__ && _LIBCUDACXX_STD_VER > 17
   return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
+}
+
+template <class _Tp, class... _Args, class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+__enable_if_t<_LIBCUDACXX_TRAIT(is_trivially_constructible, _Tp, _Args...), _Tp*> __construct_at(_Tp* __location, _Args&&... __args) {
+  _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
+  *__location = _Tp{_CUDA_VSTD::forward<_Args>(__args)...};
+  return __location;
 }
 
 // destroy_at
