@@ -27,14 +27,10 @@ void test()
   SHARED Latch * l;
   l = sel.construct(2);
 
-#ifdef __CUDA_ARCH__
-  if (threadIdx.x == 0) {
-#endif
-  l->count_down();
-#ifdef __CUDA_ARCH__
-  }
-  __syncthreads();
-#endif
+  execute_on_main_thread([&]{
+    l->count_down();
+  });
+
   auto count_downer = LAMBDA (){
     l->count_down();
   };

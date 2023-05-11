@@ -27,14 +27,10 @@ void test()
   SHARED Semaphore * s;
   s = sel.construct(2);
 
-#ifdef __CUDA_ARCH__
-  if (threadIdx.x == 0) {
-#endif
-  s->release();
-  s->acquire();
-#ifdef __CUDA_ARCH__
-  }
-#endif
+  execute_on_main_thread([&]{
+    s->release();
+    s->acquire();
+  });
 
   auto acquirer = LAMBDA (){
     s->acquire();
@@ -45,13 +41,9 @@ void test()
 
   concurrent_agents_launch(acquirer, releaser);
 
-#ifdef __CUDA_ARCH__
-  if (threadIdx.x == 0) {
-#endif
-  s->acquire();
-#ifdef __CUDA_ARCH__
-  }
-#endif
+  execute_on_main_thread([&]{
+    s->acquire();
+  });
 }
 
 int main(int, char**)

@@ -166,18 +166,14 @@ class layout_left::mapping {
         * TODO: check precondition
         * __other.required_span_size() is a representable value of type index_type
         */
-       #ifndef __CUDA_ARCH__
-       size_t __stride = 1;
-       for(rank_type __r=0; __r<__extents.rank(); __r++) {
-         #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-         if(__stride != static_cast<size_t>(__other.stride(__r)))
-           __throw_runtime_error("Assigning layout_stride to layout_left with invalid strides.");
-         #else
-           _LIBCUDACXX_ASSERT(__stride == static_cast<size_t>(__other.stride(__r)), "");
-         #endif
-         __stride *= __extents.extent(__r);
-       }
-       #endif
+      NV_IF_TARGET(NV_IS_HOST,(
+        size_t __stride = 1;
+        for(rank_type __r=0; __r<__extents.rank(); __r++) {
+          _LIBCUDACXX_THROW_RUNTIME_ERROR(__stride == static_cast<size_t>(__other.stride(__r)),
+                                          "Assigning layout_stride to layout_left with invalid strides.");
+          __stride *= __extents.extent(__r);
+        }
+      ))
     }
 
     __MDSPAN_INLINE_FUNCTION_DEFAULTED __MDSPAN_CONSTEXPR_14_DEFAULTED mapping& operator=(mapping const&) noexcept = default;

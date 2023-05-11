@@ -27,38 +27,28 @@ void test()
   SHARED Semaphore * s;
   s = sel.construct(2);
 
-#ifdef __CUDA_ARCH__
-  if (threadIdx.x == 0) {
-#endif
-  assert(s->try_acquire());
-  s->release();
-  assert(s->try_acquire());
-  s->release(2);
-#ifdef __CUDA_ARCH__
-  }
-#endif
-
-#ifdef __CUDA_ARCH__
-  if (threadIdx.x == 1) {
-#else
-  std::thread t([&](){
-#endif
+  execute_on_main_thread([&]{
     assert(s->try_acquire());
-#ifdef __CUDA_ARCH__
-  }
-  __syncthreads();
-#else
+    s->release();
+    assert(s->try_acquire());
+    s->release(2);
   });
-  t.join();
-#endif
 
-#ifdef __CUDA_ARCH__
-  if (threadIdx.x == 0) {
-#endif
-  assert(s->try_acquire());
-#ifdef __CUDA_ARCH__
-  }
-#endif
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
+    if (threadIdx.x == 1) {
+      assert(s->try_acquire());
+    }
+    __syncthreads();
+  ),(
+    std::thread t([&](){
+      assert(s->try_acquire());
+    });
+    t.join();
+  ))
+
+  execute_on_main_thread([&]{
+    assert(s->try_acquire());
+  });
 }
 
 int main(int, char**)

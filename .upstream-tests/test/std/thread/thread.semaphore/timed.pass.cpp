@@ -30,15 +30,10 @@ void test()
 
   auto const start = cuda::std::chrono::high_resolution_clock::now();
 
-#ifdef __CUDA_ARCH__
-  if (threadIdx.x == 0) {
-#endif
-  assert(!s->try_acquire_until(start + cuda::std::chrono::milliseconds(250)));
-  assert(!s->try_acquire_for(cuda::std::chrono::milliseconds(250)));
-#ifdef __CUDA_ARCH__
-  }
-  __syncthreads();
-#endif
+  execute_on_main_thread([&]{
+    assert(!s->try_acquire_until(start + cuda::std::chrono::milliseconds(250)));
+    assert(!s->try_acquire_for(cuda::std::chrono::milliseconds(250)));
+  });
 
   auto releaser = LAMBDA (){
     //cuda::std::this_thread::sleep_for(cuda::std::chrono::milliseconds(250));
@@ -54,14 +49,10 @@ void test()
 
   concurrent_agents_launch(acquirer, releaser);
 
-#ifdef __CUDA_ARCH__
-  if (threadIdx.x == 0) {
-#endif
-  auto const end = cuda::std::chrono::high_resolution_clock::now();
-  assert(end - start < cuda::std::chrono::seconds(10));
-#ifdef __CUDA_ARCH__
-  }
-#endif
+  execute_on_main_thread([&]{
+    auto const end = cuda::std::chrono::high_resolution_clock::now();
+    assert(end - start < cuda::std::chrono::seconds(10));
+  });
 }
 
 int main(int, char**)

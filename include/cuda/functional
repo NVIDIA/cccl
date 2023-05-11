@@ -71,12 +71,12 @@ class __return_type_wrapper {
  public:
   __return_type_wrapper() = delete;
 
-  _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 
+  _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
   __return_type_wrapper(__return_type_wrapper const&) = default;
 
   template <class _Fn,
             class = _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::is_same<_CUDA_VSTD::__decay_t<_Fn>, _DecayFn>::value>>
-  _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY 
+  _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
   explicit __return_type_wrapper(_Fn &&__fn) noexcept
     : __fn_(_CUDA_VSTD::forward<_Fn>(__fn)) {}
 

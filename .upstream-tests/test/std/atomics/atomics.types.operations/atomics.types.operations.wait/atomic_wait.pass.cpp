@@ -28,17 +28,12 @@ struct TestFn {
     typedef cuda::std::atomic<T> A;
 
     SHARED A * t;
-#ifdef __CUDA_ARCH__
-    if (threadIdx.x == 0) {
-#endif
-    t = (A *)malloc(sizeof(A));
-    cuda::std::atomic_init(t, T(1));
-    assert(cuda::std::atomic_load(t) == T(1));
-    cuda::std::atomic_wait(t, T(0));
-#ifdef __CUDA_ARCH__
-    }
-    __syncthreads();
-#endif
+    execute_on_main_thread([&]{
+      t = (A *)malloc(sizeof(A));
+      cuda::std::atomic_init(t, T(1));
+      assert(cuda::std::atomic_load(t) == T(1));
+      cuda::std::atomic_wait(t, T(0));
+    });
 
     auto agent_notify = LAMBDA (){
       cuda::std::atomic_store(t, T(3));
@@ -52,17 +47,12 @@ struct TestFn {
     concurrent_agents_launch(agent_notify, agent_wait);
 
     SHARED volatile A * vt;
-#ifdef __CUDA_ARCH__
-    if (threadIdx.x == 0) {
-#endif
-    vt = (volatile A *)malloc(sizeof(A));
-    cuda::std::atomic_init(vt, T(2));
-    assert(cuda::std::atomic_load(vt) == T(2));
-    cuda::std::atomic_wait(vt, T(1));
-#ifdef __CUDA_ARCH__
-    }
-    __syncthreads();
-#endif
+    execute_on_main_thread([&]{
+      vt = (volatile A *)malloc(sizeof(A));
+      cuda::std::atomic_init(vt, T(2));
+      assert(cuda::std::atomic_load(vt) == T(2));
+      cuda::std::atomic_wait(vt, T(1));
+    });
 
     auto agent_notify_v = LAMBDA (){
       cuda::std::atomic_store(vt, T(4));

@@ -25,16 +25,11 @@ __host__ __device__
 void test()
 {
     SHARED cuda::std::atomic_flag * t;
-#ifdef __CUDA_ARCH__
-    if (threadIdx.x == 0) {
-#endif
-    t = new cuda::std::atomic_flag();
-    cuda::std::atomic_flag_clear(t);
-    cuda::std::atomic_flag_wait(t, true);
-#ifdef __CUDA_ARCH__
-    }
-    __syncthreads();
-#endif
+    execute_on_main_thread([&]{
+        t = new cuda::std::atomic_flag();
+        cuda::std::atomic_flag_clear(t);
+        cuda::std::atomic_flag_wait(t, true);
+    });
 
     auto agent_notify = LAMBDA (){
         assert(cuda::std::atomic_flag_test_and_set(t) == false);
@@ -48,16 +43,11 @@ void test()
     concurrent_agents_launch(agent_notify, agent_wait);
 
     SHARED volatile cuda::std::atomic_flag * vt;
-#ifdef __CUDA_ARCH__
-    if (threadIdx.x == 0) {
-#endif
-    vt = new cuda::std::atomic_flag();
-    cuda::std::atomic_flag_clear(vt);
-    cuda::std::atomic_flag_wait(vt, true);
-#ifdef __CUDA_ARCH__
-    }
-    __syncthreads();
-#endif
+    execute_on_main_thread([&]{
+        vt = new cuda::std::atomic_flag();
+        cuda::std::atomic_flag_clear(vt);
+        cuda::std::atomic_flag_wait(vt, true);
+    });
 
     auto agent_notify_v = LAMBDA (){
         assert(cuda::std::atomic_flag_test_and_set(vt) == false);

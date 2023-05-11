@@ -32,11 +32,10 @@ void test(bool add_delay = false)
   if (add_delay)
     delay = cuda::std::chrono::duration<int>(1);
 
-#ifdef __CUDA_ARCH__
-  auto * tok = threadIdx.x == 0 ? new auto(b->arrive()) : nullptr;
-#else
-  auto * tok = new auto(b->arrive());
-#endif
+  typename Barrier::arrival_token* tok = nullptr;
+  execute_on_main_thread([&]{
+    tok = new auto(b->arrive());
+  });
 
   auto awaiter = LAMBDA (){
     const auto until_time = cuda::std::chrono::system_clock::now() + delay;
@@ -47,16 +46,11 @@ void test(bool add_delay = false)
   };
   concurrent_agents_launch(awaiter, arriver);
 
-#ifdef __CUDA_ARCH__
-  if (threadIdx.x == 0) {
-#endif
+  execute_on_main_thread([&]{
     auto tok2 = b->arrive(2);
     const auto until_time = cuda::std::chrono::system_clock::now() + delay;
     while(b->try_wait_until(cuda::std::move(tok2), until_time) == false) {}
-#ifdef __CUDA_ARCH__
-  }
-  __syncthreads();
-#endif
+  });
 }
 
 

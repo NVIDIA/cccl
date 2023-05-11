@@ -28,11 +28,11 @@ void test()
   SHARED Barrier * b;
   b = sel.construct(2);
 
-#ifdef __CUDA_ARCH__
-  auto * tok = threadIdx.x == 0 ? new auto(b->arrive()) : nullptr;
-#else
-  auto * tok = new auto(b->arrive());
-#endif
+  typename Barrier::arrival_token* tok = nullptr;
+  execute_on_main_thread([&]{
+    tok = new auto(b->arrive());
+  });
+
   auto awaiter = LAMBDA (){
     b->wait(cuda::std::move(*tok));
   };
@@ -42,15 +42,10 @@ void test()
 
   concurrent_agents_launch(awaiter, arriver);
 
-#ifdef __CUDA_ARCH__
-  if (threadIdx.x == 0) {
-#endif
-  auto tok2 = b->arrive(2);
-  b->wait(cuda::std::move(tok2));
-#ifdef __CUDA_ARCH__
-  }
-  __syncthreads();
-#endif
+  execute_on_main_thread([&]{
+    auto tok2 = b->arrive(2);
+    b->wait(cuda::std::move(tok2));
+  });
 }
 
 int main(int, char**)

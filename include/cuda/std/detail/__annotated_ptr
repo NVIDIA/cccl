@@ -88,11 +88,11 @@ namespace __detail_ap {
   template <>
   inline __device__
   void* __associate_descriptor(void* __ptr, std::uint64_t __prop) {
-#if __CUDA_ARCH__ >= 800
-    return __nv_associate_access_property(__ptr, __prop);
-#else
-    return __ptr;
-#endif
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,(
+      return __nv_associate_access_property(__ptr, __prop);
+    ),(
+      return __ptr;
+    ))
   }
 
   template<>
@@ -104,13 +104,13 @@ namespace __detail_ap {
   template<typename _Type, typename _Property>
   __host__ __device__
   _Type* __associate(_Type* __ptr, _Property __prop) {
-#ifdef __CUDA_ARCH__
-    return static_cast<_Type*>(__associate_descriptor(
-	    __associate_address_space(const_cast<void*>(static_cast<const void*>(__ptr)), __prop),
-	    __prop));
-#else
-    return __ptr;
-#endif
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,(
+      return static_cast<_Type*>(__associate_descriptor(
+        __associate_address_space(const_cast<void*>(static_cast<const void*>(__ptr)), __prop),
+        __prop));
+    ),(
+      return __ptr;
+    ))
   }
 
 

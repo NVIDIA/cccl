@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#ifndef _CONCURRENT_AGENTS_H
+#define _CONCURRENT_AGENTS_H
+
 #ifndef __CUDA_ARCH__
     #include <thread>
 #else
@@ -15,6 +18,28 @@
         #error "This test requires CUDA dynamic parallelism to work."
     #endif
 #endif
+
+#include "test_macros.h"
+
+#if defined(__CUDACC__) && !defined(_LIBCUDACXX_COMPILER_NVHPC) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define TEST_EXEC_CHECK_DISABLE #pragma nv_exec_check_disable
+#else
+#define TEST_EXEC_CHECK_DISABLE
+#endif
+
+TEST_EXEC_CHECK_DISABLE
+template<class Fun>
+__host__ __device__
+void execute_on_main_thread(Fun&& fun) {
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
+        if (threadIdx.x == 0) {
+            fun();
+        }
+        __syncthreads();
+     ),(
+        fun();
+     ))
+}
 
 template<typename... Fs>
 __host__ __device__
@@ -51,3 +76,4 @@ void concurrent_agents_launch(Fs ...fs)
     ))
 }
 
+#endif // _CONCURRENT_AGENTS_H

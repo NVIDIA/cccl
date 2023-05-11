@@ -28,21 +28,13 @@ struct TestFn {
     typedef cuda::std::atomic_ref<T> A;
 
     SHARED T * t;
-    {
-#ifdef __CUDA_ARCH__
-        if (threadIdx.x == 0) {
-#endif
+      execute_on_main_thread([&]{
         t = (T *)malloc(sizeof(A));
         A a(*t);
         a.store(T(1));
         assert(a.load() == T(1));
         a.wait(T(0));
-#ifdef __CUDA_ARCH__
-        }
-    __syncthreads();
-#endif
-    }
-
+    });
 
     {
         A a(*t);
