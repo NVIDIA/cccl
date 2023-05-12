@@ -58,9 +58,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // construct_at
 #if _LIBCUDACXX_STD_VER > 17
 
-#if defined(__CUDACC__)
-#pragma nv_exec_check_disable
-#endif
+_LIBCUDACXX_DISABLE_EXEC_CHECK
 template <class _Tp, class... _Args, class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 __enable_if_t<!is_trivially_constructible_v<_Tp, _Args...>, _Tp*> construct_at(_Tp* __location, _Args&&... __args) {
@@ -84,9 +82,7 @@ __enable_if_t<is_trivially_constructible_v<_Tp, _Args...>, _Tp*> construct_at(_T
 
 #endif // _LIBCUDACXX_STD_VER > 17
 
-#if defined(__CUDACC__)
-#pragma nv_exec_check_disable
-#endif
+_LIBCUDACXX_DISABLE_EXEC_CHECK
 template <class _Tp, class... _Args, class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 __enable_if_t<!_LIBCUDACXX_TRAIT(is_trivially_constructible, _Tp, _Args...), _Tp*> __construct_at(_Tp* __location, _Args&&... __args) {

@@ -2121,6 +2121,12 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
 #endif
 
+#if defined(__CUDACC__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_DISABLE_EXEC_CHECK #pragma nv_exec_check_disable
+#else
+#define _LIBCUDACXX_DISABLE_EXEC_CHECK
+#endif
+
 #endif // __cplusplus
 
 #endif // _LIBCUDACXX_CONFIG

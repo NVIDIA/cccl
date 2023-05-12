@@ -151,17 +151,13 @@ _LIBCUDACXX_CONCEPT __has_upstream_resource = _LIBCUDACXX_FRAGMENT(__has_upstrea
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__forward_property)
 template <class _Derived, class _Upstream>
 struct __fn {
-  #if defined(_LIBCUDACXX_COMPILER_NVCC)
-  #pragma nv_exec_check_disable
-  #endif
+  _LIBCUDACXX_DISABLE_EXEC_CHECK
   _LIBCUDACXX_TEMPLATE(class _Property)
     (requires (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_INLINE_VISIBILITY friend constexpr void get_property(const _Derived&, _Property) noexcept {}
 
   // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
-  #if defined(_LIBCUDACXX_COMPILER_NVCC)
-  #pragma nv_exec_check_disable
-  #endif
+  _LIBCUDACXX_DISABLE_EXEC_CHECK
   _LIBCUDACXX_TEMPLATE(class _Property, class _Derived2 = _Derived)
     (requires property_with_value<_Property> _LIBCUDACXX_AND has_property<_Upstream, _Property> _LIBCUDACXX_AND
               __has_upstream_resource<_Derived2, _Upstream>)
@@ -180,16 +176,12 @@ using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 ///        We can always tell people to just derive from it to properly forward all properties
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__get_property)
 struct __fn {
-  #if defined(_LIBCUDACXX_COMPILER_NVCC)
-  #pragma nv_exec_check_disable
-  #endif
+  _LIBCUDACXX_DISABLE_EXEC_CHECK
   _LIBCUDACXX_TEMPLATE(class _Upstream, class _Property)
     (requires (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(const _Upstream&, _Property) const noexcept {}
 
-  #if defined(_LIBCUDACXX_COMPILER_NVCC)
-  #pragma nv_exec_check_disable
-  #endif
+  _LIBCUDACXX_DISABLE_EXEC_CHECK
   _LIBCUDACXX_TEMPLATE(class _Upstream, class _Property)
     (requires (property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __property_value_t<_Property> operator()(
