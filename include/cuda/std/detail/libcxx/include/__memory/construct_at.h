@@ -72,10 +72,17 @@ __enable_if_t<!is_trivially_constructible_v<_Tp, _Args...>, _Tp*> construct_at(_
   return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
 }
 
+_LIBCUDACXX_DISABLE_EXEC_CHECK
 template <class _Tp, class... _Args, class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 __enable_if_t<is_trivially_constructible_v<_Tp, _Args...>, _Tp*> construct_at(_Tp* __location, _Args&&... __args) {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
+#if defined(__cuda_std__)
+  // Need to go through `std::construct_at` as that is the explicitly blessed function
+  if (__libcpp_is_constant_evaluated()) {
+    return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
+  }
+#endif // __cuda_std__
   *__location = _Tp{_CUDA_VSTD::forward<_Args>(__args)...};
   return __location;
 }
@@ -96,10 +103,17 @@ __enable_if_t<!_LIBCUDACXX_TRAIT(is_trivially_constructible, _Tp, _Args...), _Tp
   return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
 }
 
+_LIBCUDACXX_DISABLE_EXEC_CHECK
 template <class _Tp, class... _Args, class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 __enable_if_t<_LIBCUDACXX_TRAIT(is_trivially_constructible, _Tp, _Args...), _Tp*> __construct_at(_Tp* __location, _Args&&... __args) {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
+#if defined(__cuda_std__) && _LIBCUDACXX_STD_VER > 17
+  // Need to go through `std::construct_at` as that is the explicitly blessed function
+  if (__libcpp_is_constant_evaluated()) {
+    return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
+  }
+#endif // __cuda_std__ && _LIBCUDACXX_STD_VER > 17
   *__location = _Tp{_CUDA_VSTD::forward<_Args>(__args)...};
   return __location;
 }

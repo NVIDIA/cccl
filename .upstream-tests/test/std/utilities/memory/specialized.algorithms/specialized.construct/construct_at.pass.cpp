@@ -41,6 +41,11 @@ struct Counted {
     __host__ __device__ constexpr ~Counted() { --count_; }
 };
 
+union union_t {
+    int first{42};
+    double second;
+};
+
 __host__ __device__ constexpr bool test()
 {
     {
@@ -64,6 +69,14 @@ __host__ __device__ constexpr bool test()
         assert(res == &foo);
         assert(*res == Foo(42, 'x', 123.89));
         assert(count == 1);
+    }
+
+    // switching of the active member of a union must work
+    {
+        union_t with_int{};
+        double* res = cuda::std::construct_at(&with_int.second, 123.89);
+        assert(res == &with_int.second);
+        assert(*res == 123.89);
     }
 
 #if 0 // we do not support std::allocator
