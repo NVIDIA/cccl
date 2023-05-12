@@ -49,7 +49,7 @@
 #endif // __cuda_std__
 
 #include "../__mdspan/macros.h"
-#if !defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #include "../__mdspan/no_unique_address.h"
 #endif
 #include "../__mdspan/static_array.h"
@@ -126,7 +126,7 @@ struct __extents_tag { };
 
 template <class _ThisIndexType, size_t... _Extents>
 class extents
-#if !defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   : private __detail::__no_unique_address_emulation<
       __detail::__partially_static_sizes_tagged<__detail::__extents_tag, _ThisIndexType , size_t, _Extents...>>
 #endif
@@ -140,8 +140,8 @@ public:
 // internal typedefs which for technical reasons are public
   using __storage_t = __detail::__partially_static_sizes_tagged<__detail::__extents_tag, index_type, size_t, _Extents...>;
 
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
-  __MDSPAN_NO_UNIQUE_ADDRESS __storage_t __storage_;
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+  _LIBCUDACXX_NO_UNIQUE_ADDRESS __storage_t __storage_;
 #else
   using __base_t = __detail::__no_unique_address_emulation<__storage_t>;
 #endif
@@ -151,7 +151,7 @@ public:
 
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr
   __storage_t& __storage() noexcept {
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     return __storage_;
 #else
     return this->__base_t::__ref();
@@ -159,7 +159,7 @@ public:
   }
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr __storage_t const& __storage() const noexcept {
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     return __storage_;
 #else
     return this->__base_t::__ref();
@@ -204,7 +204,7 @@ public:
     );
   }
 
-#if !defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   __MDSPAN_INLINE_FUNCTION constexpr explicit
   extents(__base_t&& __b) noexcept
     : __base_t(_CUDA_VSTD::move(__b))
@@ -248,13 +248,13 @@ public:
     (_CUDA_VSTD::numeric_limits<index_type>::max() < _CUDA_VSTD::numeric_limits<_OtherIndexType>::max()))
   constexpr extents(const extents<_OtherIndexType, _OtherExtents...>& __other)
     noexcept
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : __storage_{
 #else
     : __base_t(__base_t{__storage_t{
 #endif
         __other.__storage().__enable_psa_conversion()
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #else
       }})
@@ -293,7 +293,7 @@ public:
 #endif
   __MDSPAN_INLINE_FUNCTION
   explicit constexpr extents(_Integral... __exts) noexcept
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : __storage_{
 #else
     : __base_t(__base_t{typename __base_t::__stored_type{
@@ -302,7 +302,7 @@ public:
         __detail::__construct_psa_from_dynamic_exts_values_tag_t,
         __detail::__construct_psa_from_all_exts_values_tag_t>(),
         static_cast<index_type>(__exts)...
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #else
       }})
@@ -343,7 +343,7 @@ public:
   __MDSPAN_INLINE_FUNCTION
   constexpr
   extents(_CUDA_VSTD::array<_IndexType, _Np> const& __exts) noexcept
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : __storage_{
 #else
     : __base_t(__base_t{typename __base_t::__stored_type{
@@ -352,7 +352,7 @@ public:
         __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
         __detail::__construct_psa_from_all_exts_array_tag_t>(),
       _CUDA_VSTD::array<_IndexType,_Np>{__exts}
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #else
       }})
@@ -393,7 +393,7 @@ public:
   __MDSPAN_INLINE_FUNCTION
   constexpr
   extents(_CUDA_VSTD::span<_IndexType, _Np> __exts) noexcept
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : __storage_{
 #else
     : __base_t(__base_t{typename __base_t::__stored_type{
@@ -402,7 +402,7 @@ public:
         __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
         __detail::__construct_psa_from_all_exts_array_tag_t>(),
       __exts
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #else
       }})
@@ -421,13 +421,13 @@ public:
   __MDSPAN_INLINE_FUNCTION
   constexpr explicit
   extents(__storage_t const& __sto ) noexcept
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : __storage_{
 #else
     : __base_t(__base_t{
 #endif
         __sto
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #else
       })
@@ -485,11 +485,11 @@ public:  // (but not really)
     // strides could accidentally end up with the same types in their hierarchies
     // somehow (which would cause layout_stride::mapping to not be standard_layout)
     return extents(
-#if !defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       __base_t{
 #endif
         _CUDA_VSTD::move(__bs.template __with_tag<__detail::__extents_tag>())
-#if !defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #endif
     );

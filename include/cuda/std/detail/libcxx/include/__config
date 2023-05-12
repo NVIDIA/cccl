@@ -10,16 +10,38 @@
 #ifndef _LIBCUDACXX_CONFIG
 #define _LIBCUDACXX_CONFIG
 
+#if defined(__NVCOMPILER)
+#  define _LIBCUDACXX_COMPILER_NVHPC
+#elif defined(__clang__)
+#  define _LIBCUDACXX_COMPILER_CLANG
+#  ifndef __apple_build_version__
+#    define _LIBCUDACXX_CLANG_VER (__clang_major__ * 100 + __clang_minor__)
+#  endif
+#elif defined(__GNUC__)
+#  define _LIBCUDACXX_COMPILER_GCC
+#elif defined(_MSC_VER)
+#  define _LIBCUDACXX_COMPILER_MSVC
+#elif defined(__IBMCPP__)
+#  define _LIBCUDACXX_COMPILER_IBM
+#elif defined(__CUDACC_RTC__)
+#  define _LIBCUDACXX_COMPILER_NVRTC
+#endif
+
+#if defined(__NVCC__)
+// This is not mutually exclusive with other compilers, as NVCC uses a host
+// compiler.
+#  define _LIBCUDACXX_COMPILER_NVCC
+#endif
+
 #if defined(_MSC_VER) && !defined(__clang__)
-  #define _LIBCUDACXX_HAS_PRAGMA_MSVC_WARNING
-  #if !defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)
-    #define _LIBCUDACXX_USE_PRAGMA_MSVC_WARNING
-  #endif
+#  define _LIBCUDACXX_HAS_PRAGMA_MSVC_WARNING
+#  if !defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)
+#    define _LIBCUDACXX_USE_PRAGMA_MSVC_WARNING
+#  endif
 #else
-  #define _LIBCUDACXX_HAS_PRAGMA_GCC_SYSTEM_HEADER
-  #if !defined(_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER)
-    #define _LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER
-  #endif
+#  if !defined(_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#    define _LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER
+#  endif
 #endif
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -35,22 +57,14 @@ extern "C++" {
 
 #ifdef __GNUC__
 #  define _GNUC_VER (__GNUC__ * 100 + __GNUC_MINOR__)
-// The _GNUC_VER_NEW macro better represents the new GCC versioning scheme
-// introduced in GCC 5.0.
-#  define _GNUC_VER_NEW (_GNUC_VER * 10 + __GNUC_PATCHLEVEL__)
 #else
 #  define _GNUC_VER 0
-#  define _GNUC_VER_NEW 0
 #endif
 
 #define _LIBCUDACXX_VERSION 10000
 
 #ifndef _LIBCUDACXX_ABI_VERSION
 #  define _LIBCUDACXX_ABI_VERSION 1
-#endif
-
-#ifndef __STDC_HOSTED__
-#  define _LIBCUDACXX_FREESTANDING
 #endif
 
 #ifndef _LIBCUDACXX_STD_VER
@@ -64,7 +78,7 @@ extern "C++" {
 #    elif _MSVC_LANG <= 202002L
 #      define _LIBCUDACXX_STD_VER 20
 #    else
-#      define _LIBCUDACXX_STD_VER 22 // current year, or date of c++2b ratification
+#      define _LIBCUDACXX_STD_VER 23 // current year, or date of c++2b ratification
 #    endif
 #  else
 #    if __cplusplus <= 201103L
@@ -76,7 +90,7 @@ extern "C++" {
 #    elif __cplusplus <= 202002L
 #      define _LIBCUDACXX_STD_VER 20
 #    else
-#      define _LIBCUDACXX_STD_VER 22 // current year, or date of c++2b ratification
+#      define _LIBCUDACXX_STD_VER 23 // current year, or date of c++2b ratification
 #    endif
 #  endif
 #endif  // _LIBCUDACXX_STD_VER
@@ -85,7 +99,8 @@ extern "C++" {
 #define _LIBCUDACXX_CXX03_LANG
 #endif
 
-#if defined(__NVCOMPILER) && defined(__linux__)
+#if (defined(_LIBCUDACXX_COMPILER_NVHPC) && defined(__linux__)) \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
     #define __ELF__
 #endif
 
@@ -101,7 +116,7 @@ extern "C++" {
 #  error Unknown object file format
 #endif
 
-#if defined(_LIBCUDACXX_ABI_UNSTABLE) || _LIBCUDACXX_ABI_VERSION >= 2
+#if defined(_LIBCUDACXX_ABI_UNSTABLE) || _LIBCUDACXX_ABI_VERSION >= 2 || defined(__cuda_std__)
 // Change short string representation so that string data starts at offset 0,
 // improving its alignment in some cases.
 #  define _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT
@@ -158,13 +173,6 @@ extern "C++" {
        use _LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR instead
 #endif
 
-#define _LIBCUDACXX_CONCAT1(_LIBCUDACXX_X,_LIBCUDACXX_Y) _LIBCUDACXX_X##_LIBCUDACXX_Y
-#define _LIBCUDACXX_CONCAT(_LIBCUDACXX_X,_LIBCUDACXX_Y) _LIBCUDACXX_CONCAT1(_LIBCUDACXX_X,_LIBCUDACXX_Y)
-
-#ifndef _LIBCUDACXX_ABI_NAMESPACE
-# define _LIBCUDACXX_ABI_NAMESPACE _LIBCUDACXX_CONCAT(__,_LIBCUDACXX_ABI_VERSION)
-#endif
-
 #ifndef __has_attribute
 #define __has_attribute(__x) 0
 #endif
@@ -201,29 +209,6 @@ extern "C++" {
 #define __has_include(...) 0
 #endif
 
-#if defined(__NVCOMPILER)
-#  define _LIBCUDACXX_COMPILER_NVHPC
-#elif defined(__clang__)
-#  define _LIBCUDACXX_COMPILER_CLANG
-#  ifndef __apple_build_version__
-#    define _LIBCUDACXX_CLANG_VER (__clang_major__ * 100 + __clang_minor__)
-#  endif
-#elif defined(__GNUC__)
-#  define _LIBCUDACXX_COMPILER_GCC
-#elif defined(_MSC_VER)
-#  define _LIBCUDACXX_COMPILER_MSVC
-#elif defined(__IBMCPP__)
-#  define _LIBCUDACXX_COMPILER_IBM
-#elif defined(__CUDACC_RTC__)
-#  define _LIBCUDACXX_COMPILER_NVRTC
-#endif
-
-#if defined(__NVCC__)
-// This is not mutually exclusive with other compilers, as NVCC uses a host
-// compiler.
-#  define _LIBCUDACXX_COMPILER_NVCC
-#endif
-
 #if !defined(_LIBCUDACXX_COMPILER_NVCC) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
 // If NVCC is not being used <complex> can safely use `long double` without warnings
 #  define _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
@@ -247,7 +232,7 @@ extern "C++" {
 #elif defined(_LIBCUDACXX_ABI_FORCE_MICROSOFT)
 #  define _LIBCUDACXX_ABI_MICROSOFT
 #else
-#  if defined(_WIN32) && defined(_MSC_VER)
+#  if defined(_WIN32) && defined(_LIBCUDACXX_COMPILER_MSVC)
 #    define _LIBCUDACXX_ABI_MICROSOFT
 #  else
 #    define _LIBCUDACXX_ABI_ITANIUM
@@ -318,7 +303,7 @@ extern "C++" {
 #  define _LIBCUDACXX_MSVCRT_LIKE
 // If mingw not explicitly detected, assume using MS C runtime only if
 // a MS compatibility version is specified.
-#  if defined(_MSC_VER) && !defined(__MINGW32__)
+#  if defined(_LIBCUDACXX_COMPILER_MSVC) && !defined(__MINGW32__)
 #    define _LIBCUDACXX_MSVCRT // Using Microsoft's C Runtime library
 #  endif
 #  if (defined(_M_AMD64) || defined(__x86_64__)) || (defined(_M_ARM) || defined(__arm__))
@@ -368,6 +353,12 @@ extern "C++" {
 #  define _LIBCUDACXX_USING_DEV_RANDOM
 #endif
 
+#ifndef _LIBCUDACXX_LITTLE_ENDIAN
+#if defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  define _LIBCUDACXX_LITTLE_ENDIAN
+#endif
+#endif // _LIBCUDACXX_LITTLE_ENDIAN
+
 #if !defined(_LIBCUDACXX_LITTLE_ENDIAN) && !defined(_LIBCUDACXX_BIG_ENDIAN)
 #  include <endian.h>
 #  if __BYTE_ORDER == __LITTLE_ENDIAN
@@ -410,40 +401,418 @@ extern "C++" {
 #  endif // __linux__
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-# define _LIBCUDACXX_ALIGNOF(_Tp) alignof(_Tp)
-#elif defined(_LIBCUDACXX_COMPILER_CLANG)
-# define _LIBCUDACXX_ALIGNOF(_Tp) _Alignof(_Tp)
-#else
-// This definition is potentially buggy, but it's only taken with GCC in C++03,
-// which we barely support anyway. See llvm.org/PR39713
-# define _LIBCUDACXX_ALIGNOF(_Tp) __alignof(_Tp)
+#if defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  define __alignof(x) alignof(x)
+#endif // _LIBCUDACXX_COMPILER_NVRTC
+
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#  define __alignof__ __alignof
 #endif
 
+#define _LIBCUDACXX_ALIGNOF(_Tp) alignof(_Tp)
 #define _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
 
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)
-#define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type *)0)->member))
-#else
-#define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !offsetof(type, member)
-#endif
-
-#if defined(_LIBCUDACXX_COMPILER_CLANG)
-
-// _LIBCUDACXX_ALTERNATE_STRING_LAYOUT is an old name for
-// _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT left here for backward compatibility.
-#if (defined(__APPLE__) && !defined(__i386__) && !defined(__x86_64__) &&       \
-     (!defined(__arm__) || __ARM_ARCH_7K__ >= 2)) ||                           \
-    defined(_LIBCUDACXX_ALTERNATE_STRING_LAYOUT)
-#define _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT
-#endif
-
-#if __has_feature(cxx_alignas)
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#  define _ALIGNAS_TYPE(x) alignas(x)
+#  define _ALIGNAS(x) __declspec(align(x))
+#elif __has_feature(cxx_alignas)
 #  define _ALIGNAS_TYPE(x) alignas(x)
 #  define _ALIGNAS(x) alignas(x)
 #else
 #  define _ALIGNAS_TYPE(x) __attribute__((__aligned__(_LIBCUDACXX_ALIGNOF(x))))
 #  define _ALIGNAS(x) __attribute__((__aligned__(x)))
+#endif // !_LIBCUDACXX_COMPILER_MSVC && !__has_feature(cxx_alignas)
+
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#define _LIBCUDACXX_ALWAYS_INLINE __forceinline
+#else
+#define _LIBCUDACXX_ALWAYS_INLINE __attribute__ ((__always_inline__))
+#endif // !_LIBCUDACXX_COMPILER_MSVC
+
+#if defined(__cuda_std__)
+#define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) (size <= 8)
+#elif defined(_LIBCUDACXX_COMPILER_CLANG) || defined(_LIBCUDACXX_COMPILER_GCC)
+#define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
+#endif // __cuda_std__
+
+// https://bugs.llvm.org/show_bug.cgi?id=44517
+#define __check_builtin(__x) (__has_builtin(__##__x) || \
+                              __has_keyword(__##__x) || \
+                              __has_feature(__x))
+
+// We work around old clang versions (before clang-10) not supporting __has_builtin via __check_builtin
+// We work around old intel versions (before 2021.3)   not supporting __has_builtin via __check_builtin
+// We work around old nvhpc versions (before 2022.11)  not supporting __has_builtin via __check_builtin
+// MSVC needs manual handling, has no real way of checking builtins so all is manual
+// GCC  needs manual handling, before gcc-10 as that finally supports __has_builtin
+
+#if __check_builtin(array_rank)
+#define _LIBCUDACXX_ARRAY_RANK(...) __array_rank(__VA_ARGS__)
+#endif // __check_builtin(array_rank)
+
+// nvhpc has a bug where it supports __builtin_addressof but does not mark it via __check_builtin
+#if __check_builtin(builtin_addressof)                       \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 700) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVHPC)
+#define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
+#endif // __check_builtin(builtin_addressof)
+
+#if __check_builtin(builtin_bit_cast) \
+ || (defined(_LIBCUDACXX_COMPILER_MSVC) && _MSC_VER  > 1925)
+#define _LIBCUDACXX_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
+#endif // __check_builtin(builtin_bit_cast)
+
+#if __check_builtin(builtin_is_constant_evaluated)           \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 900) \
+ || (defined(_LIBCUDACXX_COMPILER_MSVC) && _MSC_VER  > 1924)
+#define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
+#endif // __check_builtin(builtin_is_constant_evaluated)
+
+// NVCC and NVRTC in C++11 mode freaks out about `__builtin_is_constant_evaluated`.
+#if _LIBCUDACXX_STD_VER < 14              \
+ && (defined(_LIBCUDACXX_COMPILER_NVCC)   \
+ ||  defined(_LIBCUDACXX_COMPILER_NVRTC)  \
+ ||  defined(_LIBCUDACXX_COMPILER_NVHPC))
+#undef _LIBCUDACXX_IS_CONSTANT_EVALUATED
+#endif // _LIBCUDACXX_STD_VER < 14 && defined(_LIBCUDACXX_COMPILER_NVCC)
+
+#if __check_builtin(builtin_launder)                         \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 700)
+#define _LIBCUDACXX_LAUNDER(...) __builtin_launder(__VA_ARGS__)
+#endif // __check_builtin(builtin_launder)
+
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(decay)
+#define _LIBCUDACXX_DECAY(...) __decay(__VA_ARGS__)
+#endif // __check_builtin(decay)
+
+#if __check_builtin(has_nothrow_assign)                      \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_HAS_NOTHROW_ASSIGN(...) __has_nothrow_assign(__VA_ARGS__)
+#endif // __check_builtin(has_nothrow_assign)
+
+#if __check_builtin(has_nothrow_constructor)                 \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR(...) __has_nothrow_constructor(__VA_ARGS__)
+#endif // __check_builtin(has_nothrow_constructor)
+
+#if __check_builtin(has_nothrow_copy)                        \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
+#endif // __check_builtin(has_nothrow_copy)
+
+#if __check_builtin(has_trivial_constructor)                 \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR(...) __has_trivial_constructor(__VA_ARGS__)
+#endif // __check_builtin(has_trivial_constructor)
+
+#if __check_builtin(has_trivial_destructor)                  \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
+#endif // __check_builtin(has_trivial_destructor)
+
+#if __check_builtin(has_unique_object_representations)       \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 700)
+#define _LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS(...) __has_unique_object_representations(__VA_ARGS__)
+#endif // __check_builtin(has_unique_object_representations)
+
+#if __check_builtin(has_virtual_destructor)                  \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR(...) __has_virtual_destructor(__VA_ARGS__)
+#endif // __check_builtin(has_virtual_destructor)
+
+#if __check_builtin(is_aggregate)                            \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 700) \
+ || (defined(_LIBCUDACXX_COMPILER_MSVC) && _MSC_VER  > 1914) \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_AGGREGATE(...) __is_aggregate(__VA_ARGS__)
+#endif // __check_builtin(is_aggregate)
+
+#if __check_builtin(is_array)
+#define _LIBCUDACXX_IS_ARRAY(...) __is_array(__VA_ARGS__)
+#endif // __check_builtin(is_array)
+
+// TODO: Clang incorrectly reports that __is_array is true for T[0].
+//       Re-enable the branch once https://llvm.org/PR54705 is fixed.
+#if defined(_LIBCUDACXX_COMPILER_CLANG)
+#define _LIBCUDACXX_USE_IS_ARRAY_FALLBACK
+#endif // _LIBCUDACXX_COMPILER_CLANG
+
+#if __check_builtin(is_assignable)     \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)
+#define _LIBCUDACXX_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
+#endif // __check_builtin(is_assignable)
+
+#if __check_builtin(is_base_of)                              \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_BASE_OF(...) __is_base_of(__VA_ARGS__)
+#endif // __check_builtin(is_base_of)
+
+#if __check_builtin(is_class)                                \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_CLASS(...) __is_class(__VA_ARGS__)
+#endif // __check_builtin(is_class)
+
+#if __check_builtin(is_constructible)                       \
+ || (defined(_LIBCUDACXX_COMPILER_GCC) && _GNUC_VER >= 800) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                      \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
+#endif // __check_builtin(is_constructible)
+
+#if __check_builtin(is_convertible_to) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC) \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_CONVERTIBLE_TO(...) __is_convertible_to(__VA_ARGS__)
+#endif // __check_builtin(is_convertible_to)
+
+#if __check_builtin(is_destructible)   \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)
+#define _LIBCUDACXX_IS_DESTRUCTIBLE(...) __is_destructible(__VA_ARGS__)
+#endif // __check_builtin(is_destructible)
+
+#if __check_builtin(is_empty)                                \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_EMPTY(...) __is_empty(__VA_ARGS__)
+#endif // __check_builtin(is_empty)
+
+#if __check_builtin(is_enum)                                 \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_ENUM(...) __is_enum(__VA_ARGS__)
+#endif // __check_builtin(is_enum)
+
+#if __check_builtin(is_final)                                \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 407) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_FINAL(...) __is_final(__VA_ARGS__)
+#endif // __check_builtin(is_final)
+
+#if __check_builtin(is_function)       \
+ && !defined(_LIBCUDACXX_COMPILER_NVCC)
+#define _LIBCUDACXX_IS_FUNCTION(...) __is_function(__VA_ARGS__)
+#endif // __check_builtin(is_function)
+
+#if __check_builtin(is_literal_type)                         \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 406) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_LITERAL(...) __is_literal_type(__VA_ARGS__)
+#endif // __check_builtin(is_literal_type)
+
+#if __check_builtin(is_lvalue_reference)
+#define _LIBCUDACXX_IS_LVALUE_REFERENCE(...) __is_lvalue_reference(__VA_ARGS__)
+#endif // __check_builtin(is_lvalue_reference)
+
+#if __check_builtin(is_nothrow_assignable) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)     \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(...) __is_nothrow_assignable(__VA_ARGS__)
+#endif // __check_builtin(is_nothrow_assignable)
+
+#if __check_builtin(is_nothrow_constructible) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)        \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(...) __is_nothrow_constructible(__VA_ARGS__)
+#endif // __check_builtin(is_nothrow_constructible)
+
+#if __check_builtin(is_nothrow_destructible) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_NOTHROW_DESTRUCTIBLE(...) __is_nothrow_destructible(__VA_ARGS__)
+#endif // __check_builtin(is_nothrow_destructible)
+
+#if __check_builtin(is_object)
+#define _LIBCUDACXX_IS_OBJECT(...) __is_object(__VA_ARGS__)
+#endif // __check_builtin(is_object)
+
+#if __check_builtin(is_pod)                                  \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_POD(...) __is_pod(__VA_ARGS__)
+#endif // __check_builtin(is_pod)
+
+// libstdc++ defines this as a function, breaking functionality
+#if 0 // __check_builtin(is_pointer)
+#define _LIBCUDACXX_IS_POINTER(...) __is_pointer(__VA_ARGS__)
+#endif // __check_builtin(is_pointer)
+
+#if __check_builtin(is_polymorphic)                          \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_POLYMORPHIC(...) __is_polymorphic(__VA_ARGS__)
+#endif // __check_builtin(is_polymorphic)
+
+#if __check_builtin(is_reference)
+#define _LIBCUDACXX_IS_REFERENCE(...) __is_reference(__VA_ARGS__)
+#endif // __check_builtin(is_reference)
+
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(is_referenceable)
+#define _LIBCUDACXX_IS_REFERENCEABLE(...) __is_referenceable(__VA_ARGS__)
+#endif // __check_builtin(is_referenceable)
+
+#if __check_builtin(is_rvalue_reference)
+#define _LIBCUDACXX_IS_RVALUE_REFERENCE(...) __is_rvalue_reference(__VA_ARGS__)
+#endif // __check_builtin(is_rvalue_reference)
+
+#if __check_builtin(is_same)            \
+ && !defined(_LIBCUDACXX_COMPILER_NVCC)
+#define _LIBCUDACXX_IS_SAME(...) __is_same(__VA_ARGS__)
+#endif // __check_builtin(is_same)
+
+// libstdc++ defines this as a function, breaking functionality
+#if 0 // __check_builtin(is_scalar)
+#define _LIBCUDACXX_IS_SCALAR(...) __is_scalar(__VA_ARGS__)
+#endif // __check_builtin(is_scalar)
+
+// libstdc++ defines this as a function, breaking functionality
+#if 0 // __check_builtin(is_signed)
+#define _LIBCUDACXX_IS_SIGNED(...) __is_signed(__VA_ARGS__)
+#endif // __check_builtin(is_signed)
+
+#if __check_builtin(is_standard_layout)                      \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 407) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_STANDARD_LAYOUT(...) __is_standard_layout(__VA_ARGS__)
+#endif // __check_builtin(is_standard_layout)
+
+#if __check_builtin(is_trivial)                              \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 405) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_TRIVIAL(...) __is_trivial(__VA_ARGS__)
+#endif // __check_builtin(is_trivial)
+
+#if __check_builtin(is_trivially_assignable)                 \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 501) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
+#endif // __check_builtin(is_trivially_assignable)
+
+#if __check_builtin(is_trivially_constructible)              \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 501) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
+#endif // __check_builtin(is_trivially_constructible)
+
+#if __check_builtin(is_trivially_copyable)                   \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 501) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_TRIVIALLY_COPYABLE(...) __is_trivially_copyable(__VA_ARGS__)
+#endif // __check_builtin(is_trivially_copyable)
+
+#if __check_builtin(is_trivially_destructible) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)
+#define _LIBCUDACXX_IS_TRIVIALLY_DESTRUCTIBLE(...) __is_trivially_destructible(__VA_ARGS__)
+#endif // __check_builtin(is_trivially_destructible)
+
+#if __check_builtin(is_union)                                \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_IS_UNION(...) __is_union(__VA_ARGS__)
+#endif // __check_builtin(is_union)
+
+#if __check_builtin(is_unsigned)
+#define _LIBCUDACXX_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
+#endif // __check_builtin(is_unsigned)
+
+// libstdc++ defines this as a function, breaking functionality
+#if 0 // __check_builtin(is_void)
+#define _LIBCUDACXX_IS_VOID(...) __is_void(__VA_ARGS__)
+#endif // __check_builtin(is_void)
+
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(make_signed)
+#define _LIBCUDACXX_MAKE_SIGNED(...) __make_signed(__VA_ARGS__)
+#endif // __check_builtin(make_signed)
+
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(make_unsigned)
+#define _LIBCUDACXX_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
+#endif // __check_builtin(make_unsigned)
+
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_all_extents)
+#define _LIBCUDACXX_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)
+#endif // __check_builtin(remove_all_extents)
+
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_const)
+#define _LIBCUDACXX_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
+#endif // __check_builtin(remove_const)
+
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_cv)
+#define _LIBCUDACXX_REMOVE_CV(...) __remove_cv(__VA_ARGS__)
+#endif // __check_builtin(remove_cv)
+
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_cvref)
+#define _LIBCUDACXX_REMOVE_CVREF(...) __remove_cvref(__VA_ARGS__)
+#endif // __check_builtin(remove_cvref)
+
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_extent)
+#define _LIBCUDACXX_REMOVE_EXTENT(...) __remove_extent(__VA_ARGS__)
+#endif // __check_builtin(remove_extent)
+
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_pointer)
+#define _LIBCUDACXX_REMOVE_POINTER(...) __remove_pointer(__VA_ARGS__)
+#endif // __check_builtin(remove_pointer)
+
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_reference_t)
+#define _LIBCUDACXX_REMOVE_REFERENCE_T(...) __remove_reference_t(__VA_ARGS__)
+#endif // __check_builtin(remove_reference_t)
+
+// Disabled due to libstdc++ conflict
+#if 0 // __check_builtin(remove_volatile)
+#define _LIBCUDACXX_REMOVE_VOLATILE(...) __remove_volatile(__VA_ARGS__)
+#endif // __check_builtin(remove_volatile)
+
+#if __check_builtin(underlying_type)                         \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 407) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC)                       \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#define _LIBCUDACXX_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
+#endif // __check_builtin(underlying_type)
+
+#if defined(_LIBCUDACXX_COMPILER_CLANG)
+
+// _LIBCUDACXX_ALTERNATE_STRING_LAYOUT is an old name for
+// _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT left here for backward compatibility.
+#if defined(_LIBCUDACXX_ALTERNATE_STRING_LAYOUT)
+#define _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT
 #endif
 
 #if __cplusplus < 201103L
@@ -451,22 +820,8 @@ typedef __char16_t char16_t;
 typedef __char32_t char32_t;
 #endif
 
-#if !(__has_feature(cxx_exceptions)) && !defined(_LIBCUDACXX_NO_EXCEPTIONS)
-#define _LIBCUDACXX_NO_EXCEPTIONS
-#endif
-
-#if !(__has_feature(cxx_rtti)) && !defined(_LIBCUDACXX_NO_RTTI)
-#define _LIBCUDACXX_NO_RTTI
-#endif
-
 #if !(__has_feature(cxx_strong_enums))
 #define _LIBCUDACXX_HAS_NO_STRONG_ENUMS
-#endif
-
-#if __has_feature(cxx_attributes)
-#  define _LIBCUDACXX_NORETURN [[noreturn]]
-#else
-#  define _LIBCUDACXX_NORETURN __attribute__ ((noreturn))
 #endif
 
 #if !(__has_feature(cxx_lambdas))
@@ -518,365 +873,20 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_HAS_NO_NOEXCEPT
 #endif
 
-#define __check_builtin(__x) (__has_builtin(__##__x) || \
-                              __has_keyword(__##__x) || \
-                              __has_feature(__x))
-
-#if __check_builtin(is_base_of)
-#define _LIBCUDACXX_IS_BASE_OF(...) __is_base_of(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_final)
-#define _LIBCUDACXX_IS_FINAL(...) __is_final(__VA_ARGS__)
-#endif
-
-#if __check_builtin(underlying_type)
-#define _LIBCUDACXX_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_constructible)
-#define _LIBCUDACXX_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_destructible)
-#define _LIBCUDACXX_IS_DESTRUCTIBLE(...) __is_destructible(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_trivially_constructible)
-#define _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
-#endif
-
-// https://bugs.llvm.org/show_bug.cgi?id=44517
-#if __check_builtin(is_trivially_destructible)
-#define _LIBCUDACXX_IS_TRIVIALLY_DESTRUCTIBLE(...) __is_trivially_destructible(__VA_ARGS__)
-#endif
-
-// https://bugs.llvm.org/show_bug.cgi?id=44517
-#if __check_builtin(is_nothrow_constructible)
-#define _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(...) __is_nothrow_constructible(__VA_ARGS__)
-#endif
-
-// https://bugs.llvm.org/show_bug.cgi?id=44517
-#if __check_builtin(is_nothrow_assignable)
-#define _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(...) __is_nothrow_assignable(__VA_ARGS__)
-#endif
-
-// https://bugs.llvm.org/show_bug.cgi?id=44517
-#if __check_builtin(is_assignable)
-#define _LIBCUDACXX_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
-#endif
-
-// https://bugs.llvm.org/show_bug.cgi?id=44517
-#if __check_builtin(is_same) && !defined(_LIBCUDACXX_COMPILER_NVCC)
-#define _LIBCUDACXX_IS_SAME(...) __is_same(__VA_ARGS__)
-#endif
-
-#if __check_builtin(has_trivial_constructor)
-#define _LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR(...) __has_trivial_constructor(__VA_ARGS__)
-#endif
-
-#if __check_builtin(has_nothrow_constructor)
-#define _LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR(...) __has_nothrow_constructor(__VA_ARGS__)
-#endif
-
-#if __check_builtin(has_nothrow_copy)
-#define _LIBCUDACXX_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
-#endif
-
-#if __check_builtin(has_nothrow_assign)
-#define _LIBCUDACXX_HAS_NOTHROW_ASSIGN(...) __has_nothrow_assign(__VA_ARGS__)
-#endif
-
-#if __check_builtin(has_trivial_destructor)
-#define _LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_trivially_assignable)
-#define _LIBCUDACXX_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_trivially_copyable)
-#define _LIBCUDACXX_IS_TRIVIALLY_COPYABLE(...) __is_trivially_copyable(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_trivial)
-#define _LIBCUDACXX_IS_TRIVIAL(...) __is_trivial(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_convertible_to)
-#define _LIBCUDACXX_IS_CONVERTIBLE_TO(...) __is_convertible_to(__VA_ARGS__)
-#endif
-
-// https://bugs.llvm.org/show_bug.cgi?id=44517
-#if __check_builtin(is_function) && !defined(_LIBCUDACXX_COMPILER_NVCC)
-#define _LIBCUDACXX_IS_FUNCTION(...) __is_function(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_union)
-#define _LIBCUDACXX_IS_UNION(...) __is_union(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_class)
-#define _LIBCUDACXX_IS_CLASS(...) __is_class(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_aggregate)
-#define _LIBCUDACXX_IS_AGGREGATE(...) __is_aggregate(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_pod)
-#define _LIBCUDACXX_IS_POD(...) __is_pod(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_standard_layout)
-#define _LIBCUDACXX_IS_STANDARD_LAYOUT(...) __is_standard_layout(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_enum)
-#define _LIBCUDACXX_IS_ENUM(...) __is_enum(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_empty)
-#define _LIBCUDACXX_IS_EMPTY(...) __is_empty(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_polymorphic)
-#define _LIBCUDACXX_IS_POLYMORPHIC(...) __is_polymorphic(__VA_ARGS__)
-#endif
-
-#if __check_builtin(has_virtual_destructor)
-#define _LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR(...) __has_virtual_destructor(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_literal_type)
-#define _LIBCUDACXX_IS_LITERAL(...) __is_literal_type(__VA_ARGS__)
-#endif
-
-#if !defined(_LIBCUDACXX_HAS_NO_ASAN) && !__has_feature(address_sanitizer)
-#define _LIBCUDACXX_HAS_NO_ASAN
-#endif
-
 // Allow for build-time disabling of unsigned integer sanitization
 #if !defined(_LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK) && __has_attribute(no_sanitize)
 #define _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK __attribute__((__no_sanitize__("unsigned-integer-overflow")))
-#endif
-
-#if __check_builtin(builtin_bit_cast)
-#define _LIBCUDACXX_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
-#endif
-
-#if __check_builtin(builtin_launder)
-#define _LIBCUDACXX_LAUNDER(...) __builtin_launder(__VA_ARGS__)
-#endif
-
-#if __check_builtin(has_unique_object_representations)
-#define _LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS(...) __has_unique_object_representations(__VA_ARGS__)
-#endif
-
-#if !defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-#define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
-#endif
-
-// NVCC in C++11 mode freaks out about `__builtin_is_constant_evaluated`.
-#if __check_builtin(builtin_is_constant_evaluated) && !(defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_STD_VER < 14)
-#define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
-#endif
-
-#if __check_builtin(builtin_addressof)
-#define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
-#endif
-
-// Disabled due to libstdc++ conflict
-#if 0 // __check_builtin(decay)
-#define _LIBCUDACXX_DECAY(...) __decay(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_array)
-#define _LIBCUDACXX_IS_ARRAY(...) __is_array(__VA_ARGS__)
-#endif
-
-// TODO: Clang incorrectly reports that __is_array is true for T[0].
-//       Re-enable the branch once https://llvm.org/PR54705 is fixed.
-#ifdef __clang__
-#define _LIBCUDACXX_USE_IS_ARRAY_FALLBACK
-#endif
-
-#if __check_builtin(is_lvalue_reference)
-#define _LIBCUDACXX_IS_LVALUE_REFERENCE(...) __is_lvalue_reference(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_object)
-#define _LIBCUDACXX_IS_OBJECT(...) __is_object(__VA_ARGS__)
-#endif
-
-// libstdc++ defines this as a function, breaking functionality
-#if 0 // __check_builtin(is_pointer)
-#define _LIBCUDACXX_IS_POINTER(...) __is_pointer(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_rvalue_reference)
-#define _LIBCUDACXX_IS_RVALUE_REFERENCE(...) __is_rvalue_reference(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_reference)
-#define _LIBCUDACXX_IS_REFERENCE(...) __is_reference(__VA_ARGS__)
-#endif
-
-// Disabled due to libstdc++ conflict
-#if 0 // __check_builtin(is_referenceable)
-#define _LIBCUDACXX_IS_REFERENCEABLE(...) __is_referenceable(__VA_ARGS__)
-#endif
-
-// libstdc++ defines this as a function, breaking functionality
-#if 0 // __check_builtin(is_scalar)
-#define _LIBCUDACXX_IS_SCALAR(...) __is_scalar(__VA_ARGS__)
-#endif
-
-// libstdc++ defines this as a function, breaking functionality
-#if 0 // __check_builtin(is_signed)
-#define _LIBCUDACXX_IS_SIGNED(...) __is_signed(__VA_ARGS__)
-#endif
-
-#if __check_builtin(is_unsigned)
-#define _LIBCUDACXX_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
-#endif
-
-// libstdc++ defines this as a function, breaking functionality
-#if 0 // __check_builtin(is_void)
-#define _LIBCUDACXX_IS_VOID(...) __is_void(__VA_ARGS__)
-#endif
-
-// Disabled due to libstdc++ conflict
-#if 0 // __check_builtin(make_signed)
-#define _LIBCUDACXX_MAKE_SIGNED(...) __make_signed(__VA_ARGS__)
-#endif
-
-// Disabled due to libstdc++ conflict
-#if 0 // __check_builtin(make_unsigned)
-#define _LIBCUDACXX_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
-#endif
-
-#if __check_builtin(array_rank)
-#define _LIBCUDACXX_ARRAY_RANK(...) __array_rank(__VA_ARGS__)
-#endif
-
-// Disabled due to libstdc++ conflict
-#if 0 // __check_builtin(remove_all_extents)
-#define _LIBCUDACXX_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)
-#endif
-
-// Disabled due to libstdc++ conflict
-#if 0 // __check_builtin(remove_const)
-#define _LIBCUDACXX_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
-#endif
-
-// Disabled due to libstdc++ conflict
-#if 0 // __check_builtin(remove_cv)
-#define _LIBCUDACXX_REMOVE_CV(...) __remove_cv(__VA_ARGS__)
-#endif
-
-// Disabled due to libstdc++ conflict
-#if 0 // __check_builtin(remove_cvref)
-#define _LIBCUDACXX_REMOVE_CVREF(...) __remove_cvref(__VA_ARGS__)
-#endif
-
-// Disabled due to libstdc++ conflict
-#if 0 // __check_builtin(remove_extent)
-#define _LIBCUDACXX_REMOVE_EXTENT(...) __remove_extent(__VA_ARGS__)
-#endif
-
-// Disabled due to libstdc++ conflict
-#if 0 // __check_builtin(remove_pointer)
-#define _LIBCUDACXX_REMOVE_POINTER(...) __remove_pointer(__VA_ARGS__)
-#endif
-
-// Disabled due to libstdc++ conflict
-#if 0 // __check_builtin(remove_reference_t)
-#define _LIBCUDACXX_REMOVE_REFERENCE_T(...) __remove_reference_t(__VA_ARGS__)
-#endif
-
-// Disabled due to libstdc++ conflict
-#if 0 // __check_builtin(remove_volatile)
-#define _LIBCUDACXX_REMOVE_VOLATILE(...) __remove_volatile(__VA_ARGS__)
-#endif
-
-#define _LIBCUDACXX_ALWAYS_INLINE __attribute__ ((__always_inline__))
-
-// Literal operators ""d and ""y are supported starting with LLVM Clang 8 and AppleClang 10.0.1
-#if (defined(_LIBCUDACXX_CLANG_VER) && _LIBCUDACXX_CLANG_VER < 800) ||         \
-    (defined(__apple_build_version__) && __apple_build_version__ < 10010000)
-#define _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
-#endif
-
-#if __has_feature(cxx_reference_qualified_functions)
-#define _LIBCUDACXX_HAS_REFERENCE_QUALIFIED_FUNCTIONS
 #endif
 
 #define _LIBCUDACXX_DISABLE_EXTENSION_WARNING __extension__
 
 #elif defined(_LIBCUDACXX_COMPILER_GCC)
 
-#define _ALIGNAS(x) __attribute__((__aligned__(x)))
-#define _ALIGNAS_TYPE(x) __attribute__((__aligned__(_LIBCUDACXX_ALIGNOF(x))))
-
-#define _LIBCUDACXX_NORETURN __attribute__((noreturn))
-
-#if _GNUC_VER >= 403
-#define _LIBCUDACXX_IS_UNION(...) __is_union(__VA_ARGS__)
-#define _LIBCUDACXX_IS_CLASS(...) __is_class(__VA_ARGS__)
-#define _LIBCUDACXX_IS_POD(...) __is_pod(__VA_ARGS__)
-#define _LIBCUDACXX_IS_ENUM(...) __is_enum(__VA_ARGS__)
-#define _LIBCUDACXX_IS_EMPTY(...) __is_empty(__VA_ARGS__)
-#define _LIBCUDACXX_IS_POLYMORPHIC(...) __is_polymorphic(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR(...) __has_virtual_destructor(__VA_ARGS__)
-#define _LIBCUDACXX_IS_BASE_OF(...) __is_base_of(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR(...) __has_trivial_constructor(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR(...) __has_nothrow_constructor(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_NOTHROW_ASSIGN(...) __has_nothrow_assign(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
-#endif
-
-#if _GNUC_VER >= 405
-#define _LIBCUDACXX_IS_TRIVIAL(...) __is_trivial(__VA_ARGS__)
-#endif
-
-#if _GNUC_VER >= 406
-#define _LIBCUDACXX_IS_LITERAL(...) __is_literal_type(__VA_ARGS__)
-#endif
-
-#if _GNUC_VER >= 407
-#define _LIBCUDACXX_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
-#define _LIBCUDACXX_IS_FINAL(...) __is_final(__VA_ARGS__)
-#define _LIBCUDACXX_IS_STANDARD_LAYOUT(...) __is_standard_layout(__VA_ARGS__)
-#endif
-
-#if _GNUC_VER >= 409
-#define _LIBCUDACXX_HAS_REFERENCE_QUALIFIED_FUNCTIONS
-#endif
-
-#if _GNUC_VER >= 501
-#define _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
-#define _LIBCUDACXX_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
-#define _LIBCUDACXX_IS_TRIVIALLY_COPYABLE(...) __is_trivially_copyable(__VA_ARGS__)
-#endif
-
 // FIXME: GCC 8.0 supports this trait, but it has a bug.
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91592
 // https://godbolt.org/z/IljfIw
-//#if _GNUC_VER >= 800
-//#define _LIBCUDACXX_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
-//#endif
+#define _LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK
 
-#if _GNUC_VER >= 1000
-// __is_same_as is useless: GCC complains when you try to use it in a SFINAE condition
-// which is the primary place where libc++ tries to use it. Disable.
-// #define _LIBCUDACXX_IS_SAME(...) __is_same_as(__VA_ARGS__)
-#endif
-
-#if !__EXCEPTIONS && !defined(_LIBCUDACXX_NO_EXCEPTIONS)
-#define _LIBCUDACXX_NO_EXCEPTIONS
-#endif
 
 // Determine if GCC supports relaxed constexpr
 #if !defined(__cpp_constexpr) || __cpp_constexpr < 201304L
@@ -888,62 +898,8 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
 #endif
 
-#ifndef __GXX_EXPERIMENTAL_CXX0X__
-
-#define _LIBCUDACXX_HAS_NO_DECLTYPE
-#define _LIBCUDACXX_HAS_NO_NULLPTR
-#define _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-#define _LIBCUDACXX_HAS_NO_VARIADICS
-#define _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-#define _LIBCUDACXX_HAS_NO_STRONG_ENUMS
-#define _LIBCUDACXX_HAS_NO_NOEXCEPT
-
-#else  // __GXX_EXPERIMENTAL_CXX0X__
-
-#if _GNUC_VER < 403
-#define _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-#endif
-
-#if _GNUC_VER < 404
-#define _LIBCUDACXX_HAS_NO_DECLTYPE
-#define _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-#define _LIBCUDACXX_HAS_NO_VARIADICS
-#define _LIBCUDACXX_HAS_NO_GENERALIZED_INITIALIZERS
-#endif  // _GNUC_VER < 404
-
-#if _GNUC_VER < 406
-#define _LIBCUDACXX_HAS_NO_NOEXCEPT
-#define _LIBCUDACXX_HAS_NO_NULLPTR
-#endif
-
-#endif  // __GXX_EXPERIMENTAL_CXX0X__
-
-#if !defined(_LIBCUDACXX_HAS_NO_ASAN) && !defined(__SANITIZE_ADDRESS__)
-#define _LIBCUDACXX_HAS_NO_ASAN
-#endif
-
 #if _GNUC_VER < 600
 #define _LIBCUDACXX_GCC_MATH_IN_STD
-#endif
-
-#if _GNUC_VER >= 700
-#define _LIBCUDACXX_LAUNDER(...) __builtin_launder(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS(...) __has_unique_object_representations(__VA_ARGS__)
-#define _LIBCUDACXX_IS_AGGREGATE(...) __is_aggregate(__VA_ARGS__)
-#define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
-#endif
-
-#if !defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-#define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
-#endif
-
-#if _GNUC_VER >= 800
-#define _LIBCUDACXX_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
-#endif
-
-// NVCC in C++11 mode freaks out about `__builtin_is_constant_evaluated`.
-#if _GNUC_VER >= 900 && !(defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_STD_VER < 14)
-#define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif
 
 // NVCC cannot properly handle some deductions occuring within NOEXCEPT
@@ -954,12 +910,6 @@ typedef __char32_t char32_t;
 #endif
 #endif
 
-#if _GNUC_VER >= 1100
-#define _LIBCUDACXX_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
-#endif
-
-#define _LIBCUDACXX_ALWAYS_INLINE __attribute__ ((__always_inline__))
-
 #define _LIBCUDACXX_DISABLE_EXTENSION_WARNING __extension__
 
 #elif defined(_LIBCUDACXX_COMPILER_MSVC)
@@ -967,8 +917,6 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_TOSTRING2(x) #x
 #define _LIBCUDACXX_TOSTRING(x) _LIBCUDACXX_TOSTRING2(x)
 #define _LIBCUDACXX_WARNING(x) __pragma(message(__FILE__ "(" _LIBCUDACXX_TOSTRING(__LINE__) ") : warning note: " x))
-
-#define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
 
 // https://github.com/microsoft/STL/blob/master/stl/inc/yvals_core.h#L353
 // warning C4100: 'quack': unreferenced formal parameter
@@ -1008,7 +956,6 @@ typedef __char32_t char32_t;
 
 #if _MSC_VER < 1920
 #define _LIBCUDACXX_HAS_NO_NOEXCEPT_SFINAE
-#define _LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO // This is conservative but correct.
 #define _LIBCUDACXX_HAS_NO_LOGICAL_METAFUNCTION_ALIASES
 #endif
 
@@ -1017,51 +964,6 @@ typedef __char32_t char32_t;
     #define _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
 #endif
 
-#if _MSC_VER > 1924
-#  define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
-#endif
-
-#if _MSC_VER > 1926
-#  define _LIBCUDACXX_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
-#endif
-
-#define _LIBCUDACXX_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
-#define _LIBCUDACXX_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
-#define _LIBCUDACXX_IS_DESTRUCTIBLE(...) __is_destructible(__VA_ARGS__)
-#define _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR(...) __has_trivial_constructor(__VA_ARGS__)
-#define _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(...) __is_nothrow_constructible(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR(...) __has_nothrow_constructor(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_NOTHROW_ASSIGN(...) __has_nothrow_assign(__VA_ARGS__)
-#define _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(...) __is_nothrow_assignable(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
-#define _LIBCUDACXX_IS_NOTHROW_DESTRUCTIBLE(...) __is_nothrow_destructible(__VA_ARGS__)
-#define _LIBCUDACXX_IS_TRIVIALLY_DESTRUCTIBLE(...) __is_trivially_destructible(__VA_ARGS__)
-#define _LIBCUDACXX_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
-#define _LIBCUDACXX_IS_TRIVIALLY_COPYABLE(...) __is_trivially_copyable(__VA_ARGS__)
-#define _LIBCUDACXX_IS_TRIVIAL(...) __is_trivial(__VA_ARGS__)
-#define _LIBCUDACXX_IS_LITERAL(...) __is_literal_type(__VA_ARGS__)
-#define _LIBCUDACXX_IS_UNION(...) __is_union(__VA_ARGS__)
-#define _LIBCUDACXX_IS_CLASS(...) __is_class(__VA_ARGS__)
-#if _MSC_VER > 1914 // MSVC doesn't include __is_aggregate until 19.15
-#define _LIBCUDACXX_IS_AGGREGATE(...) __is_aggregate(__VA_ARGS__)
-#endif // _MSC_VER > 1914
-#define _LIBCUDACXX_IS_POD(...) __is_pod(__VA_ARGS__)
-#define _LIBCUDACXX_IS_STANDARD_LAYOUT(...) __is_standard_layout(__VA_ARGS__)
-#define _LIBCUDACXX_IS_ENUM(...) __is_enum(__VA_ARGS__)
-#define _LIBCUDACXX_IS_EMPTY(...) __is_empty(__VA_ARGS__)
-#define _LIBCUDACXX_IS_POLYMORPHIC(...) __is_polymorphic(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR(...) __has_virtual_destructor(__VA_ARGS__)
-#define _LIBCUDACXX_IS_BASE_OF(...) __is_base_of(__VA_ARGS__)
-#define _LIBCUDACXX_IS_FINAL(...) __is_final(__VA_ARGS__)
-#define _LIBCUDACXX_IS_CONVERTIBLE_TO(...) __is_convertible_to(__VA_ARGS__)
-#define _LIBCUDACXX_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
-#define __alignof__ __alignof
-#define _LIBCUDACXX_NORETURN __declspec(noreturn)
-#define _ALIGNAS(x) __declspec(align(x))
-#define _ALIGNAS_TYPE(x) alignas(x)
-
 #if _LIBCUDACXX_STD_VER < 14
 #define _LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR
 #define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
@@ -1069,34 +971,24 @@ typedef __char32_t char32_t;
 
 #define _LIBCUDACXX_WEAK
 
-#define _LIBCUDACXX_HAS_NO_ASAN
-
-#define _LIBCUDACXX_ALWAYS_INLINE __forceinline
-
 #define _LIBCUDACXX_HAS_NO_VECTOR_EXTENSION
 
-#define _LIBCUDACXX_HAS_REFERENCE_QUALIFIED_FUNCTIONS
 #define _LIBCUDACXX_DISABLE_EXTENSION_WARNING
+
+#ifdef __cuda_std__
+# undef __cpp_lib_transparent_operators
+#endif // __cuda_std__
 
 #elif defined(_LIBCUDACXX_COMPILER_IBM)
 
-#define _ALIGNAS(x) __attribute__((__aligned__(x)))
-#define _ALIGNAS_TYPE(x) __attribute__((__aligned__(_LIBCUDACXX_ALIGNOF(x))))
 #define _ATTRIBUTE(x) __attribute__((x))
-#define _LIBCUDACXX_NORETURN __attribute__((noreturn))
 
 #define _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-#define _LIBCUDACXX_IS_BASE_OF(...) __is_base_of(__VA_ARGS__)
-#define _LIBCUDACXX_IS_FINAL(...) __is_final(__VA_ARGS__)
 #define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
 
 #if defined(_AIX)
 #define __MULTILOCALE_API
 #endif
-
-#define _LIBCUDACXX_HAS_NO_ASAN
-
-#define _LIBCUDACXX_ALWAYS_INLINE __attribute__ ((__always_inline__))
 
 #define _LIBCUDACXX_HAS_NO_VECTOR_EXTENSION
 
@@ -1110,57 +1002,7 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
 #endif
 
-#define _ALIGNAS_TYPE(x) alignas(x)
-#define _ALIGNAS(x) alignas(x)
-
-#define _LIBCUDACXX_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
-#define _LIBCUDACXX_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
-#define _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR(...) __has_trivial_constructor(__VA_ARGS__)
-#define _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(...) __is_nothrow_constructible(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR(...) __has_nothrow_constructor(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_NOTHROW_ASSIGN(...) __has_nothrow_assign(__VA_ARGS__)
-#define _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(...) __is_nothrow_assignable(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
-#define _LIBCUDACXX_IS_NOTHROW_DESTRUCTIBLE(...) __is_nothrow_destructible(__VA_ARGS__)
-#define _LIBCUDACXX_IS_TRIVIALLY_DESTRUCTIBLE(...) __is_trivially_destructible(__VA_ARGS__)
-#define _LIBCUDACXX_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
-#define _LIBCUDACXX_IS_TRIVIALLY_COPYABLE(...) __is_trivially_copyable(__VA_ARGS__)
-#define _LIBCUDACXX_IS_TRIVIAL(...) __is_trivial(__VA_ARGS__)
-#define _LIBCUDACXX_IS_LITERAL(...) __is_literal_type(__VA_ARGS__)
-#define _LIBCUDACXX_IS_UNION(...) __is_union(__VA_ARGS__)
-#define _LIBCUDACXX_IS_CLASS(...) __is_class(__VA_ARGS__)
-#define _LIBCUDACXX_IS_AGGREGATE(...) __is_aggregate(__VA_ARGS__)
-#define _LIBCUDACXX_IS_POD(...) __is_pod(__VA_ARGS__)
-#define _LIBCUDACXX_IS_STANDARD_LAYOUT(...) __is_standard_layout(__VA_ARGS__)
-#define _LIBCUDACXX_IS_ENUM(...) __is_enum(__VA_ARGS__)
-#define _LIBCUDACXX_IS_EMPTY(...) __is_empty(__VA_ARGS__)
-#define _LIBCUDACXX_IS_POLYMORPHIC(...) __is_polymorphic(__VA_ARGS__)
-#define _LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR(...) __has_virtual_destructor(__VA_ARGS__)
-#define _LIBCUDACXX_IS_BASE_OF(...) __is_base_of(__VA_ARGS__)
-#define _LIBCUDACXX_IS_FINAL(...) __is_final(__VA_ARGS__)
-#define _LIBCUDACXX_IS_CONVERTIBLE_TO(...) __is_convertible_to(__VA_ARGS__)
 #define _LIBCUDACXX_DISABLE_EXTENSION_WARNING
-
-#define _LIBCUDACXX_HAS_REFERENCE_QUALIFIED_FUNCTIONS
-
-#define _LIBCUDACXX_HAS_NO_ASAN
-
-#define _LIBCUDACXX_ALWAYS_INLINE __attribute__ ((__always_inline__))
-#define _LIBCUDACXX_NORETURN __attribute__ ((noreturn))
-
-#if __has_builtin(__builtin_is_constant_evaluated) && _LIBCUDACXX_STD_VER > 11
-#define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
-#endif // __has_builtin(__builtin_is_constant_evaluated) && _LIBCUDACXX_STD_VER > 11
-
-#ifdef _LIBCUDACXX_COMPILER_NVHPC
-#define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
-#endif
-
-#if __has_builtin(__has_unique_object_representations)
-#define _LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS(...) __has_unique_object_representations(__VA_ARGS__)
-#endif
 
 #endif // _LIBCUDACXX_COMPILER_[CLANG|GCC|MSVC|IBM|NVRTC]
 
@@ -1171,7 +1013,155 @@ typedef __char32_t char32_t;
 #ifndef _LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
 #define _LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
 #endif
-#define _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
+#endif
+
+#ifndef _LIBCUDACXX_FREESTANDING
+#if defined(__cuda_std__)     \
+ || !defined(__STDC_HOSTED__)
+#  define _LIBCUDACXX_FREESTANDING
+#endif
+#endif // !_LIBCUDACXX_FREESTANDING
+
+#ifndef _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
+#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+ || (defined(_LIBCUDACXX_COMPILER_NVHPC) && !defined(__cuda_std__))
+#  define _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
+#endif
+#endif // _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
+
+#ifndef _LIBCUDACXX_HAS_CUDA_ATOMIC_EXT
+#if defined(__cuda_std__)
+#  define _LIBCUDACXX_HAS_CUDA_ATOMIC_EXT
+#endif
+#endif // _LIBCUDACXX_HAS_CUDA_ATOMIC_EXT
+
+#ifndef _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
+#if defined(__cuda_std__)
+#  define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
+#endif
+#endif // _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
+
+#ifndef _LIBCUDACXX_HAS_NO_ASAN
+#if defined(_LIBCUDACXX_COMPILER_GCC)
+#  if !defined(__SANITIZE_ADDRESS__)
+#    define _LIBCUDACXX_HAS_NO_ASAN
+#  endif // !__SANITIZE_ADDRESS__
+#elif defined(_LIBCUDACXX_COMPILER_CLANG)
+#  if !__has_feature(address_sanitizer)
+#    define _LIBCUDACXX_HAS_NO_ASAN
+#  endif // !__has_feature(address_sanitizer)
+#else
+#  define _LIBCUDACXX_HAS_NO_ASAN
+#endif // _LIBCUDACXX_COMPILER[MSVC|IBM|NVHPC|NVRTC]
+#endif // _LIBCUDACXX_HAS_NO_ASAN
+
+#ifndef _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
+#if defined(__cuda_std__) \
+ || (defined(_LIBCUDACXX_COMPILER_CLANG) && _LIBCUDACXX_CLANG_VER < 800)
+#  define _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
+#endif // __cuda_std__
+#endif // _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
+
+#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if defined(_LIBCUDACXX_COMPILER_MSVC)                                          \
+ || (defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(__CUDACC_RTC_INT128__))    \
+ || (defined(_LIBCUDACXX_COMPILER_NVCC)  && (_LIBCUDACXX_CUDACC_VER < 1105000)) \
+ || !defined(__SIZEOF_INT128__)
+#  define _LIBCUDACXX_HAS_NO_INT128
+#endif
+#endif // !_LIBCUDACXX_HAS_NO_INT128
+
+#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#if defined(__CUDACC__)
+#  define _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif
+#endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#if defined(_LIBCUDACXX_COMPILER_MSVC)                                         \
+ || (defined(_LIBCUDACXX_COMPILER_NVCC) && (_LIBCUDACXX_CUDACC_VER < 1100000)) \
+ || (__has_cpp_attribute(no_unique_address) < 201803L)
+#  define _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  define _LIBCUDACXX_NO_UNIQUE_ADDRESS
+#else
+#  define _LIBCUDACXX_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#endif
+#endif // _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+
+#ifndef _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
+#if defined(__cuda_std__)
+#  define _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
+#endif
+#endif // _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
+
+#ifndef _LIBCUDACXX_HAS_NO_PLATFORM_WAIT
+#if defined(__cuda_std__)
+#  define _LIBCUDACXX_HAS_NO_PLATFORM_WAIT
+#endif
+#endif // _LIBCUDACXX_HAS_NO_PLATFORM_WAIT
+
+#ifndef _LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO
+#if (defined(_LIBCUDACXX_COMPILER_MSVC) && _MSC_VER < 1920) \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)                     \
+ || defined(_LIBCUDACXX_COMPILER_IBM)
+#define _LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO
+#endif
+#endif // _LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO
+
+#ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
+#if defined(__cuda_std__)
+#  define _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
+#endif
+#endif // _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
+
+#ifndef _LIBCUDACXX_HAS_NO_TREE_BARRIER
+#if defined(__cuda_std__)
+#  define _LIBCUDACXX_HAS_NO_TREE_BARRIER
+#endif
+#endif // _LIBCUDACXX_HAS_NO_TREE_BARRIER
+
+#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
+#if defined(__cuda_std__)
+#  define _LIBCUDACXX_HAS_NO_WCHAR_H
+#endif
+#endif // _LIBCUDACXX_HAS_NO_WCHAR_H
+
+#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#if defined(__cuda_std__)                                                     \
+ || (defined(_LIBCUDACXX_COMPILER_CLANG) && !(__has_feature(cxx_exceptions))) \
+ || (defined(_LIBCUDACXX_COMPILER_GCC) && !__EXCEPTIONS)
+#  define _LIBCUDACXX_NO_EXCEPTIONS
+#endif
+#endif // !_LIBCUDACXX_NO_EXCEPTIONS
+
+// Try to find out if RTTI is disabled.
+// g++ and cl.exe have RTTI on by default and define a macro when it is.
+#ifndef _LIBCUDACXX_NO_RTTI
+#if defined(__cuda_std__)                                               \
+ || (defined(_LIBCUDACXX_COMPILER_CLANG) && !(__has_feature(cxx_rtti))) \
+ || (defined(_LIBCUDACXX_COMPILER_GCC)   && !defined(__GXX_RTTI))       \
+ || (defined(_LIBCUDACXX_COMPILER_MSVC)  && !defined(_CPPRTTI))
+#  define _LIBCUDACXX_NO_RTTI
+#endif
+#endif // !_LIBCUDACXX_NO_RTTI
+
+#ifndef _LIBCUDACXX_NODEBUG_TYPE
+#if defined(__cuda_std__)
+#  define _LIBCUDACXX_NODEBUG_TYPE
+#elif __has_attribute(__nodebug__)                                         \
+ && (defined(_LIBCUDACXX_COMPILER_CLANG) && _LIBCUDACXX_CLANG_VER >= 1210)
+#  define _LIBCUDACXX_NODEBUG_TYPE __attribute__((nodebug))
+#else
+#  define _LIBCUDACXX_NODEBUG_TYPE
+#endif
+#endif // !_LIBCUDACXX_NODEBUG_TYPE
+
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#  define _LIBCUDACXX_NORETURN __declspec(noreturn)
+#elif __has_feature(cxx_attributes)
+#  define _LIBCUDACXX_NORETURN [[noreturn]]
+#else
+#  define _LIBCUDACXX_NORETURN __attribute__ ((noreturn))
 #endif
 
 #if defined(_LIBCUDACXX_OBJECT_FORMAT_COFF)
@@ -1354,31 +1344,59 @@ typedef __char32_t char32_t;
 #endif
 
 // Just so we can migrate to the new macros gradually.
-#define _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI
 
-#define _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
+#ifdef __cuda_std__
+#  define _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER __host__ __device__
+#  define _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
+#else
+#  define _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
+#  define _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI
+#endif // __cuda_std__
+
+#define _LIBCUDACXX_CONCAT1(_LIBCUDACXX_X,_LIBCUDACXX_Y) _LIBCUDACXX_X##_LIBCUDACXX_Y
+#define _LIBCUDACXX_CONCAT(_LIBCUDACXX_X,_LIBCUDACXX_Y) _LIBCUDACXX_CONCAT1(_LIBCUDACXX_X,_LIBCUDACXX_Y)
+
+#ifndef _LIBCUDACXX_ABI_NAMESPACE
+#ifdef __cuda_std__
+# define _LIBCUDACXX_ABI_NAMESPACE _LIBCUDACXX_CONCAT(__,_LIBCUDACXX_CUDA_ABI_VERSION)
+#else
+# define _LIBCUDACXX_ABI_NAMESPACE _LIBCUDACXX_CONCAT(__,_LIBCUDACXX_ABI_VERSION)
+#endif // __cuda_std__
+#endif // _LIBCUDACXX_ABI_NAMESPACE
+
+#ifdef __cuda_std__
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION namespace cuda { namespace std {
+#  define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION } }
+#  define _CUDA_VSTD cuda::std::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_VRANGES cuda::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
+#else
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION namespace std {
+#  define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION }
+#  define _CUDA_VSTD std::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_VRANGES std::ranges::_LIBCUDACXX_ABI_NAMESPACE
+#endif
+
+#ifdef __cuda_std__
+#define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA namespace cuda { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#define _LIBCUDACXX_END_NAMESPACE_CUDA  } }
+#define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE namespace cuda { namespace device { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE  } } }
+#endif
 
 // Inline namespaces are available in Clang/GCC/MSVC regardless of C++ dialect.
-#define _LIBCUDACXX_BEGIN_NAMESPACE_STD namespace std { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#define _LIBCUDACXX_END_NAMESPACE_STD  } }
-#define _CUDA_VSTD std::_LIBCUDACXX_ABI_NAMESPACE
+#define _LIBCUDACXX_BEGIN_NAMESPACE_STD _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#define _LIBCUDACXX_END_NAMESPACE_STD   } _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
-#if !defined(__cuda_std__)
+#ifndef __cuda_std__
 _LIBCUDACXX_BEGIN_NAMESPACE_STD _LIBCUDACXX_END_NAMESPACE_STD
 #endif
 
-#define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION namespace std {
-#define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION }
-
-#define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES \
-    namespace std { namespace ranges { inline namespace _LIBCUDACXX_CUDA_ABI_NAMESPACE {
-#define _LIBCUDACXX_END_NAMESPACE_RANGES } } }
+#define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION namespace ranges { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#define _LIBCUDACXX_END_NAMESPACE_RANGES   } } _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 #if !defined(__cuda_std__)
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES _LIBCUDACXX_END_NAMESPACE_RANGES
 #endif
-
-#define _CUDA_VRANGES std::ranges::_LIBCUDACXX_CUDA_ABI_NAMESPACE
 
 #if _LIBCUDACXX_STD_VER > 17
 #define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI inline namespace __cxx20 {
@@ -1422,10 +1440,6 @@ typedef unsigned short char16_t;
 typedef unsigned int   char32_t;
 #endif  // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
-#ifndef __SIZEOF_INT128__
-#define _LIBCUDACXX_HAS_NO_INT128
-#endif
-
 #ifdef _LIBCUDACXX_CXX03_LANG
 # define static_assert(...) _Static_assert(__VA_ARGS__)
 # define decltype(...) __decltype(__VA_ARGS__)
@@ -1449,14 +1463,17 @@ typedef unsigned int   char32_t;
 #  define _LIBCUDACXX_EQUAL_DELETE = delete
 #endif
 
-#ifdef __GNUC__
+#if defined(_LIBCUDACXX_COMPILER_GCC)   \
+ || defined(_LIBCUDACXX_COMPILER_CLANG)
 #  define _LIBCUDACXX_NOALIAS __attribute__((__malloc__))
 #else
 #  define _LIBCUDACXX_NOALIAS
 #endif
 
-#if __has_feature(cxx_explicit_conversions) || defined(__IBMCPP__) || \
-    (!defined(_LIBCUDACXX_CXX03_LANG) && defined(__GNUC__)) // All supported GCC versions
+#if __has_feature(cxx_explicit_conversions) \
+ || defined(_LIBCUDACXX_COMPILER_IBM)       \
+ || defined(_LIBCUDACXX_COMPILER_GCC)       \
+ || defined(_LIBCUDACXX_COMPILER_CLANG)
 #  define _LIBCUDACXX_EXPLICIT explicit
 #else
 #  define _LIBCUDACXX_EXPLICIT
@@ -1527,7 +1544,7 @@ typedef unsigned int   char32_t;
 
 // If we are getting operator new from the MSVC CRT, then allocation overloads
 // for align_val_t were added in 19.12, aka VS 2017 version 15.3.
-#if defined(_LIBCUDACXX_MSVCRT) && defined(_MSC_VER) && _MSC_VER < 1912
+#if defined(_LIBCUDACXX_MSVCRT) && defined(_LIBCUDACXX_COMPILER_MSVC) && _MSC_VER < 1912
 #  define _LIBCUDACXX_HAS_NO_LIBRARY_ALIGNED_ALLOCATION
 #elif defined(_LIBCUDACXX_ABI_VCRUNTIME) && !defined(__cpp_aligned_new)
    // We're deferring to Microsoft's STL to provide aligned new et al. We don't
@@ -1709,29 +1726,44 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
   const void *, const void *, const void *, const void *);
 #endif
 
-// Try to find out if RTTI is disabled.
-// g++ and cl.exe have RTTI on by default and define a macro when it is.
-// g++ only defines the macro in 4.3.2 and onwards.
-#if !defined(_LIBCUDACXX_NO_RTTI)
-#  if defined(__GNUC__) && \
-      ((__GNUC__ >= 5) || \
-       (__GNUC__ == 4 && (__GNUC_MINOR__ >= 3 || __GNUC_PATCHLEVEL__ >= 2))) && \
-      !defined(__GXX_RTTI)
-#    define _LIBCUDACXX_NO_RTTI
-#  elif defined(_LIBCUDACXX_COMPILER_MSVC) && !defined(_CPPRTTI)
-#    define _LIBCUDACXX_NO_RTTI
-#  endif
-#endif
-
 #ifndef _LIBCUDACXX_WEAK
 #define _LIBCUDACXX_WEAK __attribute__((__weak__))
 #endif
 
+// Redefine some macros for internal use
+#if defined(__cuda_std__)
+#  undef _LIBCUDACXX_FUNC_VIS
+#  define _LIBCUDACXX_FUNC_VIS _LIBCUDACXX_INLINE_VISIBILITY
+#  undef _LIBCUDACXX_TYPE_VIS
+#  define _LIBCUDACXX_TYPE_VIS
+#endif // __cuda_std__
+
 // Thread API
-#if !defined(_LIBCUDACXX_HAS_NO_THREADS) && \
-    !defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD) && \
-    !defined(_LIBCUDACXX_HAS_THREAD_API_WIN32) && \
-    !defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
+#ifndef _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
+#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+ || defined(__EMSCRIPTEN__)
+#  define _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
+#endif
+#endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
+
+#ifndef _LIBCUDACXX_HAS_THREAD_API_CUDA
+#if defined(__cuda_std__)                               \
+ && (defined(__CUDA_ARCH__) || defined(__EMSCRIPTEN__))
+#  define _LIBCUDACXX_HAS_THREAD_API_CUDA
+#endif // __cuda_std__
+#endif // _LIBCUDACXX_HAS_THREAD_API_CUDA
+
+#ifndef _LIBCUDACXX_HAS_THREAD_API_WIN32
+#if defined(_LIBCUDACXX_COMPILER_MSVC)        \
+ && !defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
+#  define _LIBCUDACXX_HAS_THREAD_API_WIN32
+#endif
+#endif // _LIBCUDACXX_HAS_THREAD_API_WIN32
+
+#if !defined(_LIBCUDACXX_HAS_NO_THREADS)          \
+ && !defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)  \
+ && !defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)    \
+ && !defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
 #  if defined(__FreeBSD__) || \
       defined(__Fuchsia__) || \
       defined(__wasi__) || \
@@ -1862,6 +1894,10 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
      || defined(_LIBCUDACXX_HAS_NO_THREADS)
 #  define _LIBCUDACXX_HAS_NO_ATOMIC_HEADER
 #else
+#  ifdef __cuda_std__
+#    undef _LIBCUDACXX_ATOMIC_FLAG_TYPE
+#    define _LIBCUDACXX_ATOMIC_FLAG_TYPE int
+#  endif
 #  ifndef _LIBCUDACXX_ATOMIC_FLAG_TYPE
 #    define _LIBCUDACXX_ATOMIC_FLAG_TYPE bool
 #  endif
@@ -1875,7 +1911,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #endif
 
 #if defined(_LIBCUDACXX_ENABLE_THREAD_SAFETY_ANNOTATIONS)
-#  if defined(__clang__) && __has_attribute(acquire_capability)
+#  if defined(_LIBCUDACXX_COMPILER_CLANG) && __has_attribute(acquire_capability)
 // Work around the attribute handling in clang.  When both __declspec and
 // __attribute__ are present, the processing goes awry preventing the definition
 // of the types.
@@ -1910,7 +1946,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 // Use a function like macro to imply that it must be followed by a semicolon
 #if __cplusplus > 201402L && __has_cpp_attribute(fallthrough)
 #  define _LIBCUDACXX_FALLTHROUGH() [[fallthrough]]
-#elif defined(__CUDACC_RTC__)
+#elif defined(_LIBCUDACXX_COMPILER_NVRTC)
 #  define _LIBCUDACXX_FALLTHROUGH() ((void)0)
 #elif __has_cpp_attribute(clang::fallthrough)
 #  define _LIBCUDACXX_FALLTHROUGH() [[clang::fallthrough]]
@@ -1927,15 +1963,6 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #else
 #define _LIBCUDACXX_NODEBUG
 #endif
-
-#ifndef _LIBCUDACXX_NODEBUG_TYPE
-#if __has_attribute(__nodebug__) && \
-    (defined(_LIBCUDACXX_CLANG_VER) && _LIBCUDACXX_CLANG_VER >= 1210)
-#define _LIBCUDACXX_NODEBUG_TYPE __attribute__((nodebug))
-#else
-#define _LIBCUDACXX_NODEBUG_TYPE
-#endif
-#endif // !defined(_LIBCUDACXX_NODEBUG_TYPE)
 
 #  if __has_attribute(__preferred_name__)
 #    define _LIBCUDACXX_PREFERRED_NAME(x) __attribute__((__preferred_name__(x)))
@@ -1996,10 +2023,6 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_DO_NOT_ASSUME_STREAMS_EXPLICIT_INSTANTIATION_IN_DYLIB
 #endif
 
-#if defined(_LIBCUDACXX_COMPILER_IBM)
-#define _LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO
-#endif
-
 #if defined(_LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO)
 #  define _LIBCUDACXX_PUSH_MACROS
 #  define _LIBCUDACXX_POP_MACROS
@@ -2026,7 +2049,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  endif
 #endif // defined(_LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO)
 
-#ifndef _LIBCUDACXX_NO_AUTO_LINK
+#if !defined(_LIBCUDACXX_NO_AUTO_LINK) && !defined(__cuda_std__)
 #  if defined(_LIBCUDACXX_ABI_MICROSOFT) && !defined(_LIBCUDACXX_BUILDING_LIBRARY)
 #    if defined(_DLL)
 #      pragma comment(lib, "c++.lib")
@@ -2034,7 +2057,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #      pragma comment(lib, "libc++.lib")
 #    endif
 #  endif // defined(_LIBCUDACXX_ABI_MICROSOFT) && !defined(_LIBCUDACXX_BUILDING_LIBRARY)
-#endif // _LIBCUDACXX_NO_AUTO_LINK
+#endif // !defined(_LIBCUDACXX_NO_AUTO_LINK)
 
 #define _LIBCUDACXX_UNUSED_VAR(x) ((void)(x))
 
@@ -2059,8 +2082,12 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  endif
 
 #ifndef _LIBCUDACXX_SYS_CLOCK_DURATION
+#if defined(__cuda_std__)
+#  define _LIBCUDACXX_SYS_CLOCK_DURATION nanoseconds
+#else
 #  define _LIBCUDACXX_SYS_CLOCK_DURATION microseconds
 #endif
+#endif // _LIBCUDACXX_SYS_CLOCK_DURATION
 
 // There are a handful of public standard library types that are intended to
 // support CTAD but don't need any explicit deduction guides to do so. This

@@ -219,7 +219,7 @@ class layout_foo::mapping {
     }
 
 private:
-   __MDSPAN_NO_UNIQUE_ADDRESS extents_type __extents{};
+   _LIBCUDACXX_NO_UNIQUE_ADDRESS extents_type __extents{};
 
 };
 

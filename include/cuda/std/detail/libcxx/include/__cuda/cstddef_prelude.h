@@ -15,12 +15,12 @@
 #error "<__cuda/cstddef_prelude> should only be included in from <cuda/std/cstddef>"
 #endif // __cuda_std__
 
-#ifndef __CUDACC_RTC__
+#ifndef _LIBCUDACXX_COMPILER_NVRTC
 #include <cstddef>
 #include <stddef.h>
 #else
 #define offsetof(type, member) (cuda::std::size_t)((char*)&(((type *)0)->member) - (char*)0)
-#endif //__CUDACC_RTC__
+#endif // _LIBCUDACXX_COMPILER_NVRTC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

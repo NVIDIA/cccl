@@ -56,9 +56,9 @@ Macros:
 #include "support/win32/limits_msvc_win32.h"
 #endif // _LIBCUDACXX_MSVCRT
 
-#if defined(__IBMCPP__)
+#if defined(_LIBCUDACXX_COMPILER_IBM)
 #include "support/ibm/limits.h"
-#endif // __IBMCPP__
+#endif // _LIBCUDACXX_COMPILER_IBM
 
 // ICC defines __CHAR_BIT__ by default
 // accept that, but assert it is what we expect

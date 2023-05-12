@@ -115,8 +115,6 @@ struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const volatil
     typedef _Rp (_FnType) (_Param..., ...);
 };
 
-#if defined(_LIBCUDACXX_HAS_REFERENCE_QUALIFIED_FUNCTIONS)
-
 template <class _Rp, class _Class, class ..._Param>
 struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) &, true, false>
 {
@@ -244,8 +242,6 @@ struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const volatil
     typedef _Rp _ReturnType;
     typedef _Rp (_FnType) (_Param..., ...);
 };
-
-#endif // defined(_LIBCUDACXX_HAS_REFERENCE_QUALIFIED_FUNCTIONS)
 
 template <class _Rp, class _Class>
 struct __member_pointer_traits_imp<_Rp _Class::*, false, true>

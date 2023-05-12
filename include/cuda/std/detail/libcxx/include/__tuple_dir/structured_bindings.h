@@ -12,10 +12,10 @@
 
 #ifdef __cuda_std__
 
-#if defined(__clang__)
+#if defined(_LIBCUDACXX_COMPILER_CLANG)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmismatched-tags"
-#endif
+#endif // _LIBCUDACXX_COMPILER_CLANG
 
 #if !defined(__CUDACC_RTC__)
 // Fetch utility to get primary template for ::std::tuple_size necessary for the specialization of
@@ -166,9 +166,9 @@ namespace std {
 }
 #endif // _LIBCUDACXX_STD_VER > 14
 
-#if defined(__clang__)
+#if defined(_LIBCUDACXX_COMPILER_CLANG)
 #pragma clang diagnostic pop
-# endif
+# endif // _LIBCUDACXX_COMPILER_CLANG
 
 #endif // __cuda_std__
 

@@ -185,13 +185,13 @@ make_exception_ptr(_Ep __e) _NOEXCEPT
 
 class _LIBCUDACXX_TYPE_VIS exception_ptr
 {
-#if defined(__clang__)
+#if defined(_LIBCUDACXX_COMPILER_CLANG)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-private-field"
 #endif
     void* __ptr1_;
     void* __ptr2_;
-#if defined(__clang__)
+#if defined(_LIBCUDACXX_COMPILER_CLANG)
 #pragma clang diagnostic pop
 #endif
 public:

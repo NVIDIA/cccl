@@ -65,7 +65,7 @@
 #define _LIBCUDACXX_THREAD_ABI_VISIBILITY inline _LIBCUDACXX_INLINE_VISIBILITY
 #endif
 
-#if defined(__FreeBSD__) && defined(__clang__) && __has_attribute(no_thread_safety_analysis)
+#if defined(__FreeBSD__) && defined(_LIBCUDACXX_COMPILER_CLANG) && __has_attribute(no_thread_safety_analysis)
 #define _LIBCUDACXX_NO_THREAD_SAFETY_ANALYSIS __attribute__((no_thread_safety_analysis))
 #else
 #define _LIBCUDACXX_NO_THREAD_SAFETY_ANALYSIS
@@ -668,10 +668,6 @@ bool __libcpp_thread_poll_with_backoff(_Fn && __f, chrono::nanoseconds __max)
         __libcpp_thread_yield();
     }
 }
-
-#if _LIBCUDACXX_STD_VER < 11
-# define _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
 

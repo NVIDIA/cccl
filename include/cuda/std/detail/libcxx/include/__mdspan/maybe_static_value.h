@@ -50,7 +50,7 @@
 
 #include "../__mdspan/dynamic_extent.h"
 #include "../__mdspan/macros.h"
-#if !defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #include "../__mdspan/no_unique_address.h"
 #endif
 
@@ -116,13 +116,13 @@ struct __maybe_static_value {
 template <class _dynamic_t, class _static_t, _static_t __is_dynamic_sentinal, size_t __array_entry_index>
 struct __maybe_static_value<_dynamic_t, _static_t, __is_dynamic_sentinal, __is_dynamic_sentinal,
                             __array_entry_index>
-#if !defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : __no_unique_address_emulation<_Tp>
 #endif
 {
   static constexpr _static_t __static_value = __is_dynamic_sentinal;
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
-  __MDSPAN_NO_UNIQUE_ADDRESS _dynamic_t __v = {};
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+  _LIBCUDACXX_NO_UNIQUE_ADDRESS _dynamic_t __v = {};
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr _dynamic_t __value() const noexcept {
     return __v;
   }

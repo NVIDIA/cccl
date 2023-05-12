@@ -77,7 +77,7 @@ namespace __detail_ap {
 
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61414
 // Specifically search for 8.4 and 9.3 and above to guarantee uint64_t enum.
-#if defined(__GNUC__) && ( \
+#if defined(_LIBCUDACXX_COMPILER_GCC) && ( \
     ((_GNUC_VER < 804)) || \
     ((_GNUC_VER < 903))    \
   )

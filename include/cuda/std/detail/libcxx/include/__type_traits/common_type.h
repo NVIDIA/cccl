@@ -61,7 +61,7 @@ template <class, class = void>
 struct __common_type_impl {};
 
 // Clang provides variadic templates in C++03 as an extension.
-#if !defined(_LIBCUDACXX_CXX03_LANG) || defined(__clang__)
+#if !defined(_LIBCUDACXX_CXX03_LANG) || defined(_LIBCUDACXX_COMPILER_CLANG)
 # define _LIBCUDACXX_OPTIONAL_PACK(...) , __VA_ARGS__
 template <class... _Tp>
 struct __common_types;

@@ -15,7 +15,7 @@
 #error "<__cuda/atomic_prelude> should only be included in from <cuda/std/atomic>"
 #endif // __cuda_std__
 
-#ifndef __CUDACC_RTC__
+#ifndef _LIBCUDACXX_COMPILER_NVRTC
     #include "../cassert" // TRANSITION: Fix transitive includes
     #include <atomic>
     static_assert(ATOMIC_BOOL_LOCK_FREE == 2, "");
@@ -41,16 +41,16 @@
     #undef ATOMIC_POINTER_LOCK_FREE
     #undef ATOMIC_FLAG_INIT
     #undef ATOMIC_VAR_INIT
-#endif //__CUDACC_RTC__
+#endif // _LIBCUDACXX_COMPILER_NVRTC
 
 // pre-define lock free query for heterogeneous compatibility
 #ifndef _LIBCUDACXX_ATOMIC_IS_LOCK_FREE
 #define _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(__x) (__x <= 8)
 #endif
 
-#ifndef __CUDACC_RTC__
+#ifndef _LIBCUDACXX_COMPILER_NVRTC
 #include <thread>
 #include <errno.h>
-#endif // __CUDACC_RTC__
+#endif // _LIBCUDACXX_COMPILER_NVRTC
 
 #endif // _LIBCUDACXX___CUDA_ATOMIC_PRELUDE_H

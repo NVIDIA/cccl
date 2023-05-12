@@ -217,7 +217,7 @@
   _Concept::_Requires<__VA_ARGS__>
 #define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_typename(...)               \
   static_cast<_Concept::_Tag<__VA_ARGS__> *>(nullptr)
-#if defined(__GNUC__) && !defined(__clang__)
+#if defined(_LIBCUDACXX_COMPILER_GCC)
 // GCC can't mangle noexcept expressions, so just check that the
 // expression is well-formed.
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70790
@@ -276,7 +276,7 @@ _LIBCUDACXX_INLINE_VISIBILITY inline constexpr bool _Is_true() {
   return true;
 }
 
-#if defined(__clang__) || defined(_MSC_VER)
+#if defined(_LIBCUDACXX_COMPILER_CLANG) || defined(_LIBCUDACXX_COMPILER_MSVC)
 template <bool _Bp>
 _LIBCUDACXX_INLINE_VISIBILITY _Concept::_Enable_if_t<_Bp> _Requires() {}
 #else

@@ -15,11 +15,11 @@
 #error "<__cuda/climits_prelude> should only be included in from <cuda/std/climits>"
 #endif // __cuda_std__
 
-#ifndef __CUDACC_RTC__
+#ifndef _LIBCUDACXX_COMPILER_NVRTC
     #include <climits>
     #include <limits.h>
     #include <cstdint>
-#else
+#else // ^^^ !_LIBCUDACXX_COMPILER_NVRTC ^^^ / vvv _LIBCUDACXX_COMPILER_NVRTC vvv
     #define CHAR_BIT 8
 
     #define SCHAR_MIN (-128)
@@ -90,6 +90,6 @@
     #define __builtin_huge_val() __cowchild_cast<double>(0x7ff0000000000000)
     #define __builtin_nan(__dummy) __cowchild_cast<double>(0x7ff8000000000000)
     #define __builtin_nans(__dummy) __cowchild_cast<double>(0x7ff4000000000000)
-#endif //__CUDACC_RTC__
+#endif // _LIBCUDACXX_COMPILER_NVRTC
 
 #endif // _LIBCUDACXX___CUDA_CLIMITS_PRELUDE_H

@@ -51,7 +51,7 @@
 #include "../__mdspan/compressed_pair.h"
 #include "../__mdspan/extents.h"
 #include "../__mdspan/macros.h"
-#if !defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #include "../__mdspan/no_unique_address.h"
 #endif
 #include "../__mdspan/static_array.h"
@@ -109,7 +109,7 @@ namespace __detail {
 struct layout_stride {
   template <class _Extents>
   class mapping
-#if !defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : private __detail::__no_unique_address_emulation<
         __detail::__compressed_pair<
           _Extents,
@@ -136,15 +136,15 @@ struct layout_stride {
     using __strides_storage_t = _CUDA_VSTD::array<index_type, extents_type::rank()>;//_CUDA_VSTD::dextents<index_type, extents_type::rank()>;
     using __member_pair_t = __detail::__compressed_pair<extents_type, __strides_storage_t>;
 
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
-    __MDSPAN_NO_UNIQUE_ADDRESS __member_pair_t __members;
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+    _LIBCUDACXX_NO_UNIQUE_ADDRESS __member_pair_t __members;
 #else
     using __base_t = __detail::__no_unique_address_emulation<__member_pair_t>;
 #endif
 
     __MDSPAN_FORCE_INLINE_FUNCTION constexpr __strides_storage_t const&
     __strides_storage() const noexcept {
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       return __members.__second();
 #else
       return this->__base_t::__ref().__second();
@@ -152,7 +152,7 @@ struct layout_stride {
     }
     __MDSPAN_FORCE_INLINE_FUNCTION constexpr __strides_storage_t&
     __strides_storage() noexcept {
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       return __members.__second();
 #else
       return this->__base_t::__ref().__second();
@@ -250,7 +250,7 @@ struct layout_stride {
 
     //----------------------------------------------------------------------------
 
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     __MDSPAN_INLINE_FUNCTION constexpr explicit
     mapping(__member_pair_t&& __m) : __members(_CUDA_VSTD::move(__m)) {}
 #else
@@ -268,14 +268,14 @@ struct layout_stride {
     ) noexcept {
       // call the private constructor we created for this purpose
       return mapping(
-#if !defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         __base_t{
 #endif
           __member_pair_t(
             extents_type::__make_extents_impl(_CUDA_VSTD::move(__exts)),
             __strides_storage_t{__impl::fill_strides(_CUDA_VSTD::move(__strs))}
           )
-#if !defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
 #endif
       );
@@ -305,13 +305,13 @@ struct layout_stride {
       extents_type const& __e,
       _CUDA_VSTD::array<_IntegralTypes, extents_type::rank()> const& __s
     ) noexcept
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __members{
 #else
       : __base_t(__base_t{__member_pair_t(
 #endif
           __e, __strides_storage_t(__impl::fill_strides(__s))
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
 #else
         )})
@@ -342,13 +342,13 @@ struct layout_stride {
       extents_type const& __e,
       _CUDA_VSTD::span<_IntegralTypes, extents_type::rank()> const& __s
     ) noexcept
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __members{
 #else
       : __base_t(__base_t{__member_pair_t(
 #endif
           __e, __strides_storage_t(__impl::fill_strides(__s))
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
 #else
         )})
@@ -391,13 +391,13 @@ struct layout_stride {
     ) // needs two () due to comma
     __MDSPAN_INLINE_FUNCTION constexpr
     mapping(_StridedLayoutMapping const& __other) noexcept // NOLINT(google-explicit-constructor)
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __members{
 #else
       : __base_t(__base_t{__member_pair_t(
 #endif
           __other.extents(), __strides_storage_t(__impl::fill_strides(__other))
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
 #else
         )})
@@ -417,7 +417,7 @@ struct layout_stride {
     mapping& operator=(mapping const&) noexcept = default;
 
     __MDSPAN_INLINE_FUNCTION constexpr const extents_type& extents() const noexcept {
-#if defined(__MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       return __members.__first();
 #else
       return this->__base_t::__ref().__first();

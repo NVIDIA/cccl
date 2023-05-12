@@ -3098,9 +3098,10 @@ uninitialized_move_n(_InputIt __first, _Size __n, _ForwardIt __first_res) {
 // NOTE: Relaxed and acq/rel atomics (for increment and decrement respectively)
 // should be sufficient for thread safety.
 // See https://bugs.llvm.org/show_bug.cgi?id=22803
-#if defined(__clang__) && __has_builtin(__atomic_add_fetch)          \
-                       && defined(__ATOMIC_RELAXED)                  \
-                       && defined(__ATOMIC_ACQ_REL)
+#if defined(_LIBCUDACXX_COMPILER_CLANG) \
+ && __has_builtin(__atomic_add_fetch)   \
+ && defined(__ATOMIC_RELAXED)           \
+ && defined(__ATOMIC_ACQ_REL)
 #   define _LIBCUDACXX_HAS_BUILTIN_ATOMIC_SUPPORT
 #elif defined(_LIBCUDACXX_COMPILER_GCC)
 #   define _LIBCUDACXX_HAS_BUILTIN_ATOMIC_SUPPORT
