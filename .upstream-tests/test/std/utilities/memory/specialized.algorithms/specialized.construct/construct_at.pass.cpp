@@ -46,6 +46,33 @@ union union_t {
     double second;
 };
 
+struct NotAssignable {
+  NotAssignable() = default;
+  NotAssignable(const NotAssignable&) = default;
+  NotAssignable(NotAssignable&&) = default;
+
+  NotAssignable& operator=(const NotAssignable&) = delete;
+  NotAssignable& operator=(NotAssignable&&) = delete;
+};
+
+constexpr bool move_assignment_called = false;
+struct Always_false {
+    __host__ __device__ constexpr Always_false(const bool val) noexcept { assert(val);}
+};
+
+struct WithSpecialMoveAssignment {
+  WithSpecialMoveAssignment() = default;
+  WithSpecialMoveAssignment(const WithSpecialMoveAssignment&) = default;
+  WithSpecialMoveAssignment(WithSpecialMoveAssignment&&) = default;
+  WithSpecialMoveAssignment& operator=(const WithSpecialMoveAssignment&) = default;
+  __host__ __device__ constexpr WithSpecialMoveAssignment& operator=(WithSpecialMoveAssignment&&) noexcept {
+    Always_false invalid{move_assignment_called};
+    unused(invalid);
+    return *this;
+  };
+};
+static_assert(cuda::std::is_trivially_constructible_v<WithSpecialMoveAssignment>);
+
 __host__ __device__ constexpr bool test()
 {
     {
@@ -77,6 +104,20 @@ __host__ __device__ constexpr bool test()
         double* res = cuda::std::construct_at(&with_int.second, 123.89);
         assert(res == &with_int.second);
         assert(*res == 123.89);
+    }
+
+    // ensure that we can construct trivially constructible types with a deleted move assignment
+    {
+        NotAssignable not_assignable{};
+        NotAssignable* res = cuda::std::construct_at(&not_assignable);
+        assert(res == &not_assignable);
+    }
+
+    // ensure that we can construct trivially constructible types with a nefarious move assignment
+    {
+        WithSpecialMoveAssignment with_special_move_assignment{};
+        WithSpecialMoveAssignment* res = cuda::std::construct_at(&with_special_move_assignment);
+        assert(res == &with_special_move_assignment);
     }
 
 #if 0 // we do not support std::allocator
