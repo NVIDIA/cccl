@@ -270,6 +270,9 @@ template <> struct _Select<true> { template <class _Tp> using type = _Tp; };
 template <bool _Bp, class _Tp = void>
 using _Enable_if_t = typename _Select<_Bp>::template type<_Tp>;
 
+template <class _Tp, bool _Bp>
+using _Requires_t = typename _Select<_Bp>::template type<_Tp>;
+
 template <typename...> struct _Tag;
 template <class>
 _LIBCUDACXX_INLINE_VISIBILITY inline constexpr bool _Is_true() {

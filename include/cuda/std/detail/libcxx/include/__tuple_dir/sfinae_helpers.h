@@ -148,7 +148,7 @@ struct _LIBCUDACXX_TYPE_VIS __check_tuple_constructor_fail {
     using __enable_assign = false_type;
 };
 #endif // !defined(_LIBCUDACXX_CXX03_LANG)
-#if _LIBCUDACXX_STD_VER > 14
+#if _LIBCUDACXX_STD_VER > 11
 
 template <bool _CanCopy, bool _CanMove>
 struct __sfinae_ctor_base {};
@@ -203,7 +203,7 @@ struct __sfinae_assign_base<false, true> {
   __sfinae_assign_base& operator=(__sfinae_assign_base const&) = delete;
   __sfinae_assign_base& operator=(__sfinae_assign_base&&) = default;
 };
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _LIBCUDACXX_STD_VER > 11
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

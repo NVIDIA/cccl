@@ -23,7 +23,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _LIBCUDACXX_STD_VER > 11
 
 struct _LIBCUDACXX_TYPE_VIS in_place_t {
     explicit in_place_t() = default;
@@ -56,7 +56,7 @@ template <size_t _Idx> struct __is_inplace_index_imp<in_place_index_t<_Idx>> : t
 template <class _Tp>
 using __is_inplace_index = __is_inplace_index_imp<__remove_cvref_t<_Tp>>;
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _LIBCUDACXX_STD_VER > 11
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

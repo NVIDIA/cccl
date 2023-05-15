@@ -1,0 +1,147 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: c++03, c++11
+
+// template<class... Args>
+//   constexpr explicit expected(unexpect_t, Args&&... args);
+//
+// Constraints: is_constructible_v<E, Args...> is true.
+//
+// Effects: Direct-non-list-initializes unex with cuda::std::forward<Args>(args)....
+//
+// Postconditions: has_value() is false.
+//
+// Throws: Any exception thrown by the initialization of unex.
+
+#include <cuda/std/cassert>
+#include <cuda/std/expected>
+#include <cuda/std/tuple>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+
+#include "MoveOnly.h"
+#include "test_macros.h"
+
+// Test Constraints:
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpect_t>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpect_t, int>, "");
+
+// !is_constructible_v<T, Args...>
+struct foo {};
+static_assert(!cuda::std::is_constructible_v<cuda::std::expected<void, foo>, cuda::std::unexpect_t, int>, "");
+
+// test explicit
+template <class T>
+__host__ __device__ void conversion_test(T);
+
+template <class T, class... Args>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  ImplicitlyConstructible_,
+  requires(Args&&... args)(
+    (conversion_test<T>({cuda::std::forward<Args>(args)...}))
+  ));
+
+template <class T, class... Args>
+constexpr bool ImplicitlyConstructible = _LIBCUDACXX_FRAGMENT(ImplicitlyConstructible_, T, Args...);
+static_assert(ImplicitlyConstructible<int, int>, "");
+
+static_assert(!ImplicitlyConstructible<cuda::std::expected<void, int>, cuda::std::unexpect_t>, "");
+static_assert(!ImplicitlyConstructible<cuda::std::expected<void, int>, cuda::std::unexpect_t, int>, "");
+
+struct CopyOnly {
+  int i;
+  __host__ __device__ constexpr CopyOnly(int ii) : i(ii) {}
+  CopyOnly(const CopyOnly&) = default;
+  __host__ __device__ CopyOnly(CopyOnly&&)      = delete;
+  __host__ __device__ friend constexpr bool operator==(const CopyOnly& mi, int ii) { return mi.i == ii; }
+#if TEST_STD_VER < 20
+  __host__ __device__ friend constexpr bool operator!=(const CopyOnly& mi, int ii) { return mi.i != ii; }
+#endif // TEST_STD_VER < 20
+};
+
+template <class T>
+__host__ __device__ constexpr void testInt() {
+  cuda::std::expected<void, T> e(cuda::std::unexpect, 5);
+  assert(!e.has_value());
+  assert(e.error() == 5);
+}
+
+template <class T>
+__host__ __device__ constexpr void testLValue() {
+  T t(5);
+  cuda::std::expected<void, T> e(cuda::std::unexpect, t);
+  assert(!e.has_value());
+  assert(e.error() == 5);
+}
+
+template <class T>
+__host__ __device__ constexpr void testRValue() {
+  cuda::std::expected<void, T> e(cuda::std::unexpect, T(5));
+  assert(!e.has_value());
+  assert(e.error() == 5);
+}
+
+__host__ __device__ constexpr bool test() {
+  testInt<int>();
+  testInt<CopyOnly>();
+  testInt<MoveOnly>();
+  testLValue<int>();
+  testLValue<CopyOnly>();
+  testRValue<int>();
+  testRValue<MoveOnly>();
+
+  // no arg
+  {
+    cuda::std::expected<void, int> e(cuda::std::unexpect);
+    assert(!e.has_value());
+    assert(e.error() == 0);
+  }
+
+  // one arg
+  {
+    cuda::std::expected<void, int> e(cuda::std::unexpect, 5);
+    assert(!e.has_value());
+    assert(e.error() == 5);
+  }
+
+  // multi args
+  {
+    cuda::std::expected<void, cuda::std::tuple<int, short, MoveOnly>> e(cuda::std::unexpect, 1, short{2}, MoveOnly(3));
+    assert(!e.has_value());
+    assert((e.error() == cuda::std::tuple<int, short, MoveOnly>(1, short{2}, MoveOnly(3))));
+  }
+
+  return true;
+}
+
+__host__ __device__ void testException() {
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  struct Except {};
+
+  struct Throwing {
+    __host__ __device__ Throwing(int) { throw Except{}; };
+  };
+
+  try {
+    cuda::std::expected<void, Throwing> u(cuda::std::unexpect, 5);
+    assert(false);
+  } catch (Except) {
+  }
+#endif // TEST_HAS_NO_EXCEPTIONS
+}
+
+int main(int, char**) {
+  test();
+#if TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+  static_assert(test(), "");
+#endif // TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+  testException();
+  return 0;
+}

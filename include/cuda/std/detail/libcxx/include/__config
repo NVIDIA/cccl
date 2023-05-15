@@ -1082,13 +1082,31 @@ typedef __char32_t char32_t;
 #endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 #ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#if defined(_LIBCUDACXX_COMPILER_MSVC)                                         \
- || (defined(_LIBCUDACXX_COMPILER_NVCC) && (_LIBCUDACXX_CUDACC_VER < 1100000)) \
+#if __has_cpp_attribute(msvc::no_unique_address)
+// MSVC implements [[no_unique_address]] as a silent no-op currently.
+// (If/when MSVC breaks its C++ ABI, it will be changed to work as intended.)
+// However, MSVC implements [[msvc::no_unique_address]] which does what
+// [[no_unique_address]] is supposed to do, in general.
+
+// Clang-cl does not yet (14.0) implement either [[no_unique_address]] or
+// [[msvc::no_unique_address]] though. If/when it does implement
+// [[msvc::no_unique_address]], this should be preferred though.
+#  define _LIBCUDACXX_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+#elif (defined(_LIBCUDACXX_COMPILER_NVCC) && (_LIBCUDACXX_CUDACC_VER < 1100000)) \
  || (__has_cpp_attribute(no_unique_address) < 201803L)
 #  define _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  define _LIBCUDACXX_NO_UNIQUE_ADDRESS
-#else
+#elif __has_cpp_attribute(no_unique_address)
 #  define _LIBCUDACXX_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#else
+#  define _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  define _LIBCUDACXX_NO_UNIQUE_ADDRESS
+// Note that this can be replaced by #error as soon as clang-cl
+// implements msvc::no_unique_address, since there should be no C++20
+// compiler that doesn't support one of the two attributes at that point.
+// We generally don't want to use this macro outside of C++20-only code,
+// because using it conditionally in one language version only would make
+// the ABI inconsistent.
 #endif
 #endif // _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 

@@ -40,6 +40,11 @@ set(files
   __cuda/latch.h
   __cuda/semaphore.h
   __debug
+  __expected/bad_expected_access.h
+  __expected/expected.h
+  __expected/unexpected.h
+  __expected/unexpect.h
+  __expected/unexpected.h
   __functional/binary_function.h
   __functional/binary_negate.h
   __functional/bind_back.h
@@ -270,6 +275,7 @@ set(files
   __utility/cmp.h
   __utility/convert_to_integral.h
   __utility/declval.h
+  __utility/exception_guard.h
   __utility/exchange.h
   __utility/forward_like.h
   __utility/forward.h
@@ -328,6 +334,7 @@ set(files
   errno.h
   exception
   execution
+  expected
   experimental/__config
   experimental/__memory
   experimental/algorithm

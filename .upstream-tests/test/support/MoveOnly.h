@@ -23,18 +23,18 @@ class MoveOnly
 
     int data_;
 public:
-    __host__ __device__ MoveOnly(int data = 1) : data_(data) {}
-    __host__ __device__ MoveOnly(MoveOnly&& x)
+    __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly(int data = 1) : data_(data) {}
+    __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly(MoveOnly&& x)
         : data_(x.data_) {x.data_ = 0;}
-    __host__ __device__ MoveOnly& operator=(MoveOnly&& x)
+    __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly& operator=(MoveOnly&& x)
         {data_ = x.data_; x.data_ = 0; return *this;}
 
-    __host__ __device__ int get() const {return data_;}
+    __host__ __device__ TEST_CONSTEXPR_CXX14 int get() const {return data_;}
 
-    __host__ __device__ bool operator==(const MoveOnly& x) const {return data_ == x.data_;}
-    __host__ __device__ bool operator< (const MoveOnly& x) const {return data_ <  x.data_;}
-    __host__ __device__ MoveOnly operator+(const MoveOnly& x) const { return MoveOnly{data_ + x.data_}; }
-    __host__ __device__ MoveOnly operator*(const MoveOnly& x) const { return MoveOnly{data_ * x.data_}; }
+    __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator==(const MoveOnly& x) const {return data_ == x.data_;}
+    __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator< (const MoveOnly& x) const {return data_ <  x.data_;}
+    __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly operator+(const MoveOnly& x) const { return MoveOnly{data_ + x.data_}; }
+    __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly operator*(const MoveOnly& x) const { return MoveOnly{data_ * x.data_}; }
 };
 
 /*

@@ -38,6 +38,12 @@ concept invocable = requires(_Fn&& __fn, _Args&&... __args) {
 template<class _Fn, class... _Args>
 concept regular_invocable = invocable<_Fn, _Args...>;
 
+template <class _Fun, class... _Args>
+concept __invoke_constructible = requires(_Fun&& __fun, _Args&&... __args) {
+    static_cast<remove_cvref_t<invoke_result_t<_Fun, _Args...>>>(
+        _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...));
+};
+
 #elif _LIBCUDACXX_STD_VER > 11
 
 template<class _Fn, class... _Args>
@@ -51,6 +57,16 @@ _LIBCUDACXX_CONCEPT invocable = _LIBCUDACXX_FRAGMENT(_Invocable_, _Fn, _Args...)
 
 template<class _Fn, class... _Args>
 _LIBCUDACXX_CONCEPT regular_invocable = invocable<_Fn, _Args...>;
+
+template <class _Fun, class... _Args>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __invoke_constructible_,
+  requires(_Fun&& __fun, _Args&&... __args)(
+    (static_cast<__remove_cvref_t<invoke_result_t<_Fun, _Args...>>>(
+        _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...)))
+  ));
+template <class _Fun, class... _Args>
+_LIBCUDACXX_CONCEPT __invoke_constructible = _LIBCUDACXX_FRAGMENT(__invoke_constructible_, _Fun, _Args...);
 
 #endif // _LIBCUDACXX_STD_VER > 11
 
