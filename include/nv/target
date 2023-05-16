@@ -24,12 +24,6 @@
 #  define _NV_COMPILER_CLANG_CUDA
 #endif
 
-#if defined(__CUDACC_RTC__)
-#  define _NV_FUNCTION_ANNOTATION __device__
-#else
-#  define _NV_FUNCTION_ANNOTATION
-#endif
-
 #if defined(_NV_COMPILER_NVCXX)
 #  define _NV_BITSET_ATTRIBUTE [[nv::__target_bitset]]
 #else
@@ -42,7 +36,8 @@
 #  define _NV_TARGET_CPP11
 #endif
 
-#if defined(_NV_TARGET_CPP11)
+// Hide `if target` support from NVCC/NVRTC
+#if defined(_NV_TARGET_CPP11) && !defined(_NV_COMPILER_NVCC)
 
 namespace nv {
   namespace target {
@@ -81,7 +76,7 @@ namespace nv {
       // Store a set of targets as a set of bits
       struct _NV_BITSET_ATTRIBUTE target_description {
         base_int_t targets;
-        _NV_FUNCTION_ANNOTATION
+
         constexpr target_description(base_int_t a) : targets(a) { }
       };
 
@@ -94,11 +89,11 @@ namespace nv {
         sm_80 = 80, sm_86 = 86, sm_87 = 87,
         sm_89 = 89, sm_90 = 90,
       };
-      _NV_FUNCTION_ANNOTATION
+
       constexpr base_int_t toint(sm_selector a) {
         return static_cast<base_int_t>(a);
       }
-      _NV_FUNCTION_ANNOTATION
+
       constexpr base_int_t bitexact(sm_selector a) {
         return toint(a) == 35 ? sm_35_bit :
                toint(a) == 37 ? sm_37_bit :
@@ -117,7 +112,7 @@ namespace nv {
                toint(a) == 89 ? sm_89_bit :
                toint(a) == 90 ? sm_90_bit : 0;
       }
-      _NV_FUNCTION_ANNOTATION
+
       constexpr base_int_t bitrounddown(sm_selector a) {
         return toint(a) >= 90 ? sm_90_bit :
                toint(a) >= 89 ? sm_89_bit :
@@ -139,31 +134,26 @@ namespace nv {
 
       // Public API for NVIDIA GPUs
 
-      _NV_FUNCTION_ANNOTATION
       constexpr target_description is_exactly(sm_selector a) {
         return target_description(bitexact(a));
       }
 
-      _NV_FUNCTION_ANNOTATION
       constexpr target_description provides(sm_selector a) {
         return target_description(~(bitrounddown(a) - 1) & all_devices);
       }
 
       // Boolean operations on target sets
 
-      _NV_FUNCTION_ANNOTATION
       constexpr target_description operator&&(target_description a,
                                               target_description b) {
         return target_description(a.targets & b.targets);
       }
 
-      _NV_FUNCTION_ANNOTATION
       constexpr target_description operator||(target_description a,
                                               target_description b) {
         return target_description(a.targets | b.targets);
       }
 
-      _NV_FUNCTION_ANNOTATION
       constexpr target_description operator!(target_description a) {
         return target_description(~a.targets & (all_devices | all_hosts));
       }
@@ -205,7 +195,7 @@ namespace nv {
   }
 }
 
-#endif // C++11
+#endif // C++11 && !defined(_NV_COMPILER_NVCC)
 
 #include "detail/__target_macros"
 
