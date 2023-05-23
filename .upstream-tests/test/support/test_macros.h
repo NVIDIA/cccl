@@ -411,6 +411,7 @@ inline void DoNotOptimize(Tp const& value) {
 #  define TEST_ACCESSIBLE
 #endif
 
+#define TEST_EXEC_CHECK_DISABLE _LIBCUDACXX_DISABLE_EXEC_CHECK
 
 #define STATIC_MEMBER_VAR(name, type) \
   __host__ __device__ static type& name() { \

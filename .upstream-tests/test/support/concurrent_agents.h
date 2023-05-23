@@ -21,12 +21,6 @@
 
 #include "test_macros.h"
 
-#if defined(__CUDACC__) && !defined(_LIBCUDACXX_COMPILER_NVHPC) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
-#define TEST_EXEC_CHECK_DISABLE #pragma nv_exec_check_disable
-#else
-#define TEST_EXEC_CHECK_DISABLE
-#endif
-
 TEST_EXEC_CHECK_DISABLE
 template<class Fun>
 __host__ __device__
