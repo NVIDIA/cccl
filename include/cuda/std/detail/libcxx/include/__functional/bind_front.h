@@ -50,7 +50,7 @@ struct __bind_front_t : __perfect_forward<__bind_front_op, _Fn, _BoundArgs...> {
 
     template<class... _Args>
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
-    __bind_front_t(_Args&&... __args) noexcept(noexcept(__base(cuda::std::declval<_Args>()...)))
+    __bind_front_t(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
         : __base(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
 #else

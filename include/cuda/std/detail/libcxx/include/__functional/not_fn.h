@@ -49,7 +49,7 @@ struct __not_fn_t : __perfect_forward<__not_fn_op, _Fn> {
     _LIBCUDACXX_TEMPLATE(class _OrigFn)
         (requires _LIBCUDACXX_TRAIT(is_same, _Fn, __decay_t<_OrigFn>))
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
-    __not_fn_t(_OrigFn&& __fn) noexcept(noexcept(__base(cuda::std::declval<_OrigFn>())))
+    __not_fn_t(_OrigFn&& __fn) noexcept(noexcept(__base(_CUDA_VSTD::declval<_OrigFn>())))
         : __base(_CUDA_VSTD::forward<_OrigFn>(__fn))
     {}
 #else
