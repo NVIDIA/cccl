@@ -24,20 +24,21 @@
 #  define _NV_COMPILER_CLANG_CUDA
 #endif
 
-#if defined(_NV_COMPILER_NVCXX)
-#  define _NV_BITSET_ATTRIBUTE [[nv::__target_bitset]]
-#else
-#  define _NV_BITSET_ATTRIBUTE
-#endif
-
 #if (!defined(__ibmxl__)) && \
     ((defined(__cplusplus) && __cplusplus >= 201103L) || \
      (defined(_MSC_VER) && _MSVC_LANG >= 201103L))
 #  define _NV_TARGET_CPP11
 #endif
 
-// Hide `if target` support from NVCC/NVRTC
-#if defined(_NV_TARGET_CPP11) && !defined(_NV_COMPILER_NVCC)
+
+// Hide `if target` support from NVRTC
+#if defined(_NV_TARGET_CPP11) && !defined(__CUDACC_RTC__)
+
+#if defined(_NV_COMPILER_NVCXX)
+#  define _NV_BITSET_ATTRIBUTE [[nv::__target_bitset]]
+#else
+#  define _NV_BITSET_ATTRIBUTE
+#endif
 
 namespace nv {
   namespace target {
@@ -195,7 +196,7 @@ namespace nv {
   }
 }
 
-#endif // C++11 && !defined(_NV_COMPILER_NVCC)
+#endif // C++11  && !defined(__CUDACC_RTC__)
 
 #include "detail/__target_macros"
 
