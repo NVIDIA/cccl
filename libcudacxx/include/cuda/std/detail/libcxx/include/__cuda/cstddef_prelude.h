@@ -19,7 +19,7 @@
 #include <cstddef>
 #include <stddef.h>
 #else
-#define offsetof(type, member) (cuda::std::size_t)((char*)&(((type *)0)->member) - (char*)0)
+#define offsetof(type, member) (_CUDA_VSTD::size_t)((char*)&(((type *)0)->member) - (char*)0)
 #endif // _LIBCUDACXX_COMPILER_NVRTC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
