@@ -140,7 +140,7 @@ int main() {
                 out << " : \"memory\"); }\n";
             }
             for(auto& cv: cv_qualifier) {
-                out << "template<class _Type, typename _CUDA_VSTD::enable_if<sizeof(_Type)==" << sz/8 << ", int>::type = 0>\n";
+                out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz/8 << ", int> = 0>\n";
                 out << "_LIBCUDACXX_DEVICE void __atomic_load_cuda(const " << cv << "_Type *__ptr, _Type *__ret, int __memorder, " << scopenametag(s.first) << ") {\n";
                 out << "    uint" << sz << "_t __tmp = 0;\n";
                 out << "    NV_DISPATCH_TARGET(\n";
@@ -176,7 +176,7 @@ int main() {
                 out << " : \"memory\"); }\n";
             }
             for(auto& cv: cv_qualifier) {
-                out << "template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==" << sz/8 << ", int>::type = 0>\n";
+                out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz/8 << ", int> = 0>\n";
                 out << "_LIBCUDACXX_DEVICE void __atomic_store_cuda(" << cv << "_Type *__ptr, _Type *__val, int __memorder, " << scopenametag(s.first) << ") {\n";
                 out << "    uint" << sz << "_t __tmp = 0;\n";
                 out << "    memcpy(&__tmp, __val, " << sz/8 << ");\n";
@@ -237,7 +237,7 @@ int main() {
                         }
                         for(auto& cv: cv_qualifier) {
                             if(rmw.first == "compare_exchange") {
-                                out << "template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==" << sz/8 << ", int>::type = 0>\n";
+                                out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz/8 << ", int> = 0>\n";
                                 out << "_LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(" << cv << "_Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, " << scopenametag(s.first) << ") {\n";
                                 out << "    uint" << sz << "_t __tmp = 0, __old = 0, __old_tmp;\n";
                                 out << "    memcpy(&__tmp, __desired, " << sz/8 << ");\n";
@@ -273,26 +273,26 @@ int main() {
                                 out << "}\n";
                             }
                             else {
-                                out << "template<class _Type, typename cuda::std::enable_if<sizeof(_Type)==" << sz/8;
+                                out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz/8;
                                 if(rmw.first == "exchange") {
-                                    out << ", int>::type = 0>\n";
+                                    out << ", int> = 0>\n";
                                     out << "_LIBCUDACXX_DEVICE void __atomic_exchange_cuda(" << cv << "_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, " << scopenametag(s.first) << ") {\n";
                                     out << "    uint" << sz << "_t __tmp = 0;\n";
                                     out << "    memcpy(&__tmp, __val, " << sz/8 << ");\n";
                                 }
                                 else {
                                     if(type.first == "f")
-                                        out << " && cuda::std::is_floating_point<_Type>::value, int>::type = 0>\n";
+                                        out << " && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>\n";
                                     else if (rmw.first == "fetch_max" || rmw.first == "fetch_min") {
                                         if(type.first == "u")
-                                            out << " && cuda::std::is_integral<_Type>::value && cuda::std::is_unsigned<_Type>::value, int>::type = 0>\n";
+                                            out << " && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>\n";
                                         else if(type.first == "s")
-                                            out << " && cuda::std::is_integral<_Type>::value && cuda::std::is_signed<_Type>::value, int>::type = 0>\n";
+                                            out << " && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>\n";
                                     }
                                     else if (type.first == "u")
-                                        out << " && cuda::std::is_integral<_Type>::value, int>::type = 0>\n";
+                                        out << " && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>\n";
                                     else
-                                        out << ", int>::type = 0>\n";
+                                        out << ", int> = 0>\n";
                                     out << "_LIBCUDACXX_DEVICE _Type __atomic_" << rmw.first << "_cuda(" << cv << "_Type *__ptr, _Type __val, int __memorder, " << scopenametag(s.first) << ") {\n";
                                     out << "    _Type __ret;\n";
                                     if(type.first == "f" && sz == 32)
