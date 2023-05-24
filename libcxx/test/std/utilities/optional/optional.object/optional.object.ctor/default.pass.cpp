@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11, c++14
 // <optional>
 
 // constexpr optional() noexcept;
@@ -70,7 +70,7 @@ int main(int, char**)
     test_constexpr<optional<NonConstexprTypes::NoCtors>>();
     test<optional<NonLiteralTypes::NoCtors>>();
     // EXTENSIONS
-#if defined(_LIBCUDACXX_VERSION) && 0 // FIXME these extensions are currently disabled.
+#if defined(_LIBCPP_VERSION) && 0 // FIXME these extensions are currently disabled.
     test_constexpr<optional<int&>>();
     test_constexpr<optional<const int&>>();
     test_constexpr<optional<int&>>();

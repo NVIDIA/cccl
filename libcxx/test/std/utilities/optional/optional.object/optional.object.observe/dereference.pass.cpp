@@ -6,14 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11, c++14
 // <optional>
 
 // constexpr T& optional<T>::operator*() &;
-
-#ifdef _LIBCUDACXX_DEBUG
-#define _LIBCUDACXX_ASSERT(x, m) ((x) ? (void)0 : std::exit(0))
-#endif
 
 #include <optional>
 #include <type_traits>
@@ -48,6 +44,7 @@ int main(int, char**)
     {
         optional<X> opt; ((void)opt);
         ASSERT_SAME_TYPE(decltype(*opt), X&);
+        LIBCPP_STATIC_ASSERT(noexcept(*opt));
         // ASSERT_NOT_NOEXCEPT(*opt);
         // FIXME: This assertion fails with GCC because it can see that
         // (A) operator*() is constexpr, and
@@ -62,13 +59,6 @@ int main(int, char**)
         assert((*opt).test() == 4);
     }
     static_assert(test() == 7, "");
-#ifdef _LIBCUDACXX_DEBUG
-    {
-        optional<X> opt;
-        assert((*opt).test() == 3);
-        assert(false);
-    }
-#endif  // _LIBCUDACXX_DEBUG
 
-  return 0;
+    return 0;
 }

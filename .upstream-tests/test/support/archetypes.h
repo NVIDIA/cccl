@@ -84,7 +84,7 @@ struct TestBase {
       ++assigned(); ++value_assigned();
       return *this;
     }
-#ifndef TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK
+#if !defined(TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK) && !defined(TEST_COMPILER_NVRTC)
 protected:
 #endif // !TEST_WORKAROUND_C1XX_BROKEN_ZA_CTOR_CHECK
     __host__ __device__ ~TestBase() {
@@ -224,7 +224,7 @@ namespace NonConstexprTypes {
 // Non-literal implicit test types
 namespace NonLiteralTypes {
 #define DEFINE_ASSIGN_CONSTEXPR
-#define DEFINE_DTOR(Name) ~Name() {}
+#define DEFINE_DTOR(Name) __host__ __device__ ~Name() {}
 #include "archetypes.ipp"
 }
 
@@ -239,7 +239,9 @@ namespace NonThrowingTypes {
 // Non-Trivially Copyable Implicit Test Types
 namespace NonTrivialTypes {
 #define DEFINE_CTOR {}
+#define DEFINE_CTOR_ANNOTATIONS __host__ __device__
 #define DEFINE_ASSIGN { return *this; }
+#define DEFINE_ASSIGN_ANNOTATIONS __host__ __device__
 #include "archetypes.ipp"
 }
 

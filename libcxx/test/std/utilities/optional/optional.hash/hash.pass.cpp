@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11, c++14
 // <optional>
 
 // template <class T> struct hash<optional<T>>;
@@ -27,7 +27,7 @@ namespace std {
 
 template <>
 struct hash<B> {
-  size_t operator()(B const&) TEST_NOEXCEPT_FALSE { return 0; }
+  std::size_t operator()(B const&) noexcept(false) { return 0; }
 };
 
 }

@@ -6,9 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11, c++14
 
-// XFAIL: dylib-has-no-bad_optional_access && !libcpp-no-exceptions
+// XFAIL: availability-bad_optional_access-missing && !no-exceptions
 
 // <optional>
 
@@ -82,7 +82,7 @@ void test_ref(InitArgs&&... args)
 
 void test_reference_extension()
 {
-#if defined(_LIBCUDACXX_VERSION) && 0 // FIXME these extensions are currently disabled.
+#if defined(_LIBCPP_VERSION) && 0 // FIXME these extensions are currently disabled.
     using T = TestTypes::TestType;
     T::reset();
     {

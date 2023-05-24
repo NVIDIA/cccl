@@ -85,6 +85,7 @@
 // This is not mutually exclusive with other compilers, as NVCC uses a host
 // compiler.
 # define TEST_COMPILER_NVCC
+# define TEST_COMPILER_EDG
 #endif
 
 #if defined(__apple_build_version__)
@@ -325,14 +326,7 @@ struct is_same<T, T> { enum {value = 1}; };
 #ifndef TEST_HAS_NO_EXCEPTIONS
 #define TEST_THROW(...) throw __VA_ARGS__
 #else
-#if defined(__GNUC__)
-#define TEST_THROW(...) __builtin_abort()
-#elif defined(__CUDACC_RTC__)
 #define TEST_THROW(...) assert(#__VA_ARGS__)
-#else
-#include <stdlib.h>
-#define TEST_THROW(...) ::abort()
-#endif
 #endif
 
 #ifndef TEST_HAS_NO_INT128_T
@@ -356,13 +350,15 @@ struct is_same<T, T> { enum {value = 1}; };
 
 #if defined(__GNUC__) || defined(__clang__) || defined(__CUDACC_RTC__)
 template <class Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+__host__ __device__
+inline
 void DoNotOptimize(Tp const& value) {
     asm volatile("" : : "r,m"(value) : "memory");
 }
 
 template <class Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+__host__ __device__
+inline
 void DoNotOptimize(Tp& value) {
 #if defined(__clang__)
   asm volatile("" : "+r,m"(value) : : "memory");

@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11, c++14
 // <optional>
 
 // constexpr optional(const optional<T>& rhs);
@@ -77,7 +77,7 @@ void test_ref(InitArgs&&... args)
 
 void test_reference_extension()
 {
-#if defined(_LIBCUDACXX_VERSION) && 0 // FIXME these extensions are currently disabled.
+#if defined(_LIBCPP_VERSION) && 0 // FIXME these extensions are currently disabled.
     using T = TestTypes::TestType;
     T::reset();
     {

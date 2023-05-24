@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11, c++14
 // <optional>
 
 // A program that necessitates the instantiation of template optional for
@@ -21,7 +21,7 @@ int main(int, char**)
     using std::in_place;
 
     optional<in_place_t> opt; // expected-note {{requested here}}
-    // expected-error-re@optional:* {{{{"?}}instantiation of optional with in_place_t is ill-formed{{"?}}}}
+    // expected-error@optional:* {{instantiation of optional with in_place_t is ill-formed}}
 
   return 0;
 }
