@@ -36,7 +36,6 @@ jobs:
     with:
       matrix: ${{ needs.compute-matrix.outputs.MATRIX }}
 
-
   libcudacxx:
     needs: compute-matrix
     uses: ./.github/workflows/base.yml
