@@ -35,7 +35,7 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Configure credentials and environment variables for sccache
-      uses: ./.github/workflows/configure_cccl_sccache.yml
+      uses: ./.github/actions/configure_cccl_sccache
     - name: Run build script
       run: |
         chmod +x ${{ inputs.build_script }}
@@ -65,7 +65,7 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Configure credentials and environment variables for sccache
-      uses: ./.github/workflows/configure_cccl_sccache.yml
+      uses: ./.github/actions/configure_cccl_sccache
     - name: Run test script
       run: |
         chmod +x ${{ inputs.test_script }}
