@@ -52,6 +52,7 @@ jobs:
         ./${{ inputs.build_script }}
         sccache -s
   test:
+    needs: build
     if: github.repository == 'NVIDIA/cccl'
     name: Test (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, C++-${{matrix.std}}, CPU ${{matrix.cpu}})
     strategy:
