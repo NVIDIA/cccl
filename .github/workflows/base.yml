@@ -38,7 +38,7 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Run build script
-        env:
+      env:
           SCCACHE_BUCKET: rapids-sccache-east
           SCCACHE_REGION: us-east-2
           SCCACHE_IDLE_TIMEOUT: 32768
