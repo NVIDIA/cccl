@@ -6,6 +6,9 @@ on:
       matrix:
         type: string
         required: true
+      build_script:
+        type: string
+        required: true
 
 jobs:
   build:
@@ -23,5 +26,25 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: test
-        run: echo "hello"
+    - name: Get AWS credentials for sccache bucket
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+        aws-region: us-east-2 
+        role-duration-seconds: 43200 # 12 hours
+    - name: Checkout repo
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Run build script
+        env:
+          SCCACHE_BUCKET: rapids-sccache-east
+          SCCACHE_REGION: us-east-2
+          SCCACHE_IDLE_TIMEOUT: 32768
+          SCCACHE_S3_USE_SSL: true
+          SCCACHE_S3_NO_CREDENTIALS: false
+      run: |
+        chmod +x ${{ inputs.build_script }}
+        ./${{ inputs.build_script }}
+        sccache -s
