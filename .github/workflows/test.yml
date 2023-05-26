@@ -35,18 +35,21 @@ jobs:
     uses: ./.github/workflows/base.yml
     with:
       matrix: ${{ needs.compute-matrix.outputs.MATRIX }}
+      build_script: ./ci/build_thrust.sh
 
   libcudacxx:
     needs: compute-matrix
     uses: ./.github/workflows/base.yml
     with:
       matrix: ${{ needs.compute-matrix.outputs.MATRIX }}
+      build_script: ./ci/build_libcudacxx.sh
 
   cub:
     needs: compute-matrix
     uses: ./.github/workflows/base.yml
     with:
       matrix: ${{ needs.compute-matrix.outputs.MATRIX }}
+      build_script: ./ci/build_cub.sh
 
     #steps:
 #   #   - name: Verify compiler version
