@@ -29,13 +29,13 @@ jobs:
       id-token: write
       contents: read
     steps:
-    - name: Configure credentials and environment variables for sccache
-      uses: ./.github/workflows/configure_cccl_sccache.yml
     - name: Checkout repo
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         persist-credentials: false
+    - name: Configure credentials and environment variables for sccache
+      uses: ./.github/workflows/configure_cccl_sccache.yml
     - name: Run build script
       run: |
         chmod +x ${{ inputs.build_script }}
@@ -59,13 +59,13 @@ jobs:
       id-token: write
       contents: read
     steps:
-    - name: Configure credentials and environment variables for sccache
-      uses: ./.github/workflows/configure_cccl_sccache.yml
     - name: Checkout repo
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         persist-credentials: false
+    - name: Configure credentials and environment variables for sccache
+      uses: ./.github/workflows/configure_cccl_sccache.yml
     - name: Run test script
       run: |
         chmod +x ${{ inputs.test_script }}
