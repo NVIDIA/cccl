@@ -19,7 +19,8 @@ jobs:
   compute-matrix:
     runs-on: ubuntu-latest
     outputs:
-      MATRIX: ${{ steps.compute-matrix.outputs.MATRIX }}
+      BUILD_MATRIX: ${{ steps.compute-matrix.outputs.BUILD_MATRIX }}
+      TEST_MATRIX:  ${{ steps.compute-matrix.outputs.TEST_MATRIX }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -27,14 +28,18 @@ jobs:
         id: compute-matrix
         run: |
           cat ./ci/matrix.yaml
-          MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.include, .std] | [ combinations | .[0] + {std: .[1]} ] | {include: .}')
-          echo "MATRIX=$MATRIX" | tee -a "$GITHUB_OUTPUT"
+          BUILD_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.include, .std] | [ combinations | .[0] + {std: .[1]} ] | {include: .}')
+          echo "BUILD_MATRIX=$BUILD_MATRIX" | tee -a "$GITHUB_OUTPUT"
+          GPUS=$(yq -o=json ./ci/matrix.yaml | jq '.gpus')
+          TEST_MATRIX=$(echo $BUILD_MATRIX | jq -c --argjson gpus "$GPUS" '[.include, $gpus] | [ combinations | .[0] + {gpu: .[1]} ] | {include: . }')
+          echo "TEST_MATRIX=$TEST_MATRIX" | tee -a "$GITHUB_OUTPUT"
 
   thrust:
     needs: compute-matrix
     uses: ./.github/workflows/base.yml
     with:
-      matrix: ${{ needs.compute-matrix.outputs.MATRIX }}
+      build_matrix: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
+      test_matrix: ${{ needs.compute-matrix.outputs.TEST_MATRIX }}
       build_script: "./ci/build_thrust.sh"
       test_script: "./ci/test_thrust.sh"
 
@@ -42,7 +47,8 @@ jobs:
     needs: compute-matrix
     uses: ./.github/workflows/base.yml
     with:
-      matrix: ${{ needs.compute-matrix.outputs.MATRIX }}
+      build_matrix: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
+      test_matrix: ${{ needs.compute-matrix.outputs.TEST_MATRIX }}
       build_script: "./ci/build_libcudacxx.sh"
       test_script: "./ci/test_libcudacxx.sh"
 
@@ -50,7 +56,8 @@ jobs:
     needs: compute-matrix
     uses: ./.github/workflows/base.yml
     with:
-      matrix: ${{ needs.compute-matrix.outputs.MATRIX }}
+      build_matrix: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
+      test_matrix: ${{ needs.compute-matrix.outputs.TEST_MATRIX }}
       build_script: "./ci/build_cub.sh"
       test_script: "./ci/test_cub.sh"
 

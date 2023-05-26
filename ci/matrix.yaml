@@ -6,6 +6,10 @@ std:
   - 17
   - 20
 
+gpus:
+  - 'a100'
+  - 'v100'
+
 include:
 - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}}
 - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}}

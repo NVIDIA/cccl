@@ -3,7 +3,10 @@ name: Base CCCL workflow
 on:
   workflow_call:
     inputs:
-      matrix: # The matrix to use for this job
+      build_matrix: # The matrix to use for this job
+        type: string
+        required: true
+      test_matrix: # The matrix to use for this job
         type: string
         required: true
       build_script: # The script to run for the build step
@@ -20,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 8
-      matrix: ${{ fromJSON(inputs.matrix) }}
+      matrix: ${{ fromJSON(inputs.build_matrix) }}
     runs-on: linux-${{ matrix.cpu }}-cpu16
     container: # Fetch the container image to use for the job
       options: -u root
@@ -48,8 +51,8 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 8
-      matrix: ${{ fromJSON(inputs.matrix) }}
-    runs-on: linux-${{matrix.cpu}}-gpu-v100-latest-1
+      matrix: ${{ fromJSON(inputs.test_matrix) }}
+    runs-on: linux-${{matrix.cpu}}-gpu-${{matrix.gpu}}-latest-1
     container: # Fetch the container image to use for the job
       options: -u root
       image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
