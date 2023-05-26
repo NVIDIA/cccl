@@ -1,5 +1,6 @@
 name: Set up AWS credentials and environment variables for sccache
 description: "Set up AWS credentials and environment variables for sccache"
+shell: bash
 runs:
   using: "composite"
   steps:
