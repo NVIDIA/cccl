@@ -33,23 +33,14 @@ jobs:
   thrust:
     needs: compute-matrix
     uses: ./.github/workflows/base.yml
-    steps:
-      - name: test
-        run: echo "hello"
 
   libcudacxx:
     needs: compute-matrix
     uses: ./.github/workflows/base.yml
-    steps:
-      - name: test
-        run: echo "hello"
 
   cub:
     needs: compute-matrix
     uses: ./.github/workflows/base.yml
-    steps:
-      - name: test
-        run: echo "hello"
 
     #steps:
 #   #   - name: Verify compiler version
