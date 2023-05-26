@@ -16,7 +16,7 @@ on:
 jobs:
   build:
     if: github.repository == 'NVIDIA/cccl'
-    name: Build (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, C++-${{matrix.std}}, CPU ${{matrix.cpu}})
+    name: Build/(CUDA ${{matrix.cuda}}/${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++${{matrix.std}}/${{matrix.cpu}})
     strategy:
       fail-fast: false
       max-parallel: 8
@@ -54,7 +54,7 @@ jobs:
   test:
     needs: build
     if: github.repository == 'NVIDIA/cccl'
-    name: Test (CUDA ${{matrix.cuda}}, ${{ matrix.compiler.name }}-${{ matrix.compiler.version }}, C++-${{matrix.std}}, CPU ${{matrix.cpu}})
+    name: Test/CUDA ${{matrix.cuda}}/${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++${{matrix.std}}/${{matrix.cpu}})
     strategy:
       fail-fast: false
       max-parallel: 8
