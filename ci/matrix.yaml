@@ -1,9 +1,23 @@
 #gcc
 
+
+# The GPUs to test on
+# Note: This assumes that the appropriate gpu_build_archs are set to include building for the GPUs listed here
 gpus:
   - 'a100'
   - 'v100'
 
+# Each environment below will generate a unique build/test job
+# cuda: The CUDA Toolkit version
+# ubuntu: The Ubuntu version
+# cpu: The CPU architecture
+# compiler: The compiler to use
+#   name: The compiler name
+#   version: The compiler version
+#   exe: The unverionsed compiler binary name
+# gpu_build_archs: The GPU architectures to build for
+# std: The C++ standards to build for
+#    This field is unique as it will generate an independent build/test job for each value
 include:
 - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17]}
 - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17]}
