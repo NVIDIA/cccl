@@ -1,5 +1,5 @@
-name: CI (GPU)
-
+# This is the main workflow that runs on every PR and push to main
+name: pr
 
 defaults:
   run:
@@ -11,6 +11,7 @@ on:
       - main
       - "pull-request/[0-9]+"
 
+# Only runs one instance of this workflow at a time for a given PR and cancels any in-progress runs when a new one starts.
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
   cancel-in-progress: true
@@ -36,7 +37,7 @@ jobs:
 
   thrust:
     needs: compute-matrix
-    uses: ./.github/workflows/base.yml
+    uses: ./.github/workflows/build_and_test.yml
     with:
       build_matrix: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
       test_matrix: ${{ needs.compute-matrix.outputs.TEST_MATRIX }}
@@ -45,7 +46,7 @@ jobs:
 
   libcudacxx:
     needs: compute-matrix
-    uses: ./.github/workflows/base.yml
+    uses: ./.github/workflows/build_and_test.yml
     with:
       build_matrix: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
       test_matrix: ${{ needs.compute-matrix.outputs.TEST_MATRIX }}
@@ -54,7 +55,7 @@ jobs:
 
   cub:
     needs: compute-matrix
-    uses: ./.github/workflows/base.yml
+    uses: ./.github/workflows/build_and_test.yml
     with:
       build_matrix: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
       test_matrix: ${{ needs.compute-matrix.outputs.TEST_MATRIX }}
