@@ -31,7 +31,7 @@ jobs:
         id: compute-matrix
         run: |
           cat ./ci/matrix.yaml
-          BUILD_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.include[] | . as $o | {std: .std[]} + del($o.std)] | {include: . }' )
+          BUILD_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.include[] | . as $o | {std: .std[]} + del($o.std)]' )
           echo "BUILD_MATRIX=$BUILD_MATRIX" | tee -a "$GITHUB_OUTPUT"
           PER_CUDA_MATRIX=$(./ci/get_groups.sh $BUILD_MATRIX cuda)
           echo "PER_CUDA_MATRIX=$PER_CUDA_MATRIX" | tee -a "$GITHUB_OUTPUT"

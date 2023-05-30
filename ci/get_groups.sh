@@ -13,6 +13,6 @@ fi
 input_json="$1"
 field="$2"
 
-output=$(echo $input_json | jq -L . -c --arg field "$field" 'include "group_by_field"; .include | group_by_field($field)')
+output=$(echo $input_json | jq -L . -c --arg field "$field" 'include "group_by_field"; group_by_field($field)')
 echo $output 
 
