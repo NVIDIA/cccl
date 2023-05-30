@@ -8,12 +8,27 @@ on:
       compiler_name: {type: string, required: true}
 
 jobs:
+
+  compute_per_compiler_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      MATRIX:  ${{ steps.compute_per_compiler_matrix.outputs.MATRIX }}
+    steps:
+      - name: Compute Matrix
+        id: compute_per_compiler_matrix
+        run: |
+          BUILD_MATRIX=$(echo ${{ inputs.full_matrix }} | jq -c '[.[] | select(.compiler.name == "${{ inputs.compiler_name }}" and .cuda == "${{ inputs.cuda_version }}")]')
+          echo "BUILD_MATRIX=$BUILD_MATRIX" | tee -a "$GITHUB_OUTPUT"
+
   per_compiler:
     name: ${{ inputs.compiler_name }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix: 
+        include: ${{ fromJSON(needs.compute_per_compiler_matrix.outputs.MATRIX) }}
     steps:
       - name: test
         run: |
-          echo "CUDA: ${{inputs.cuda_version}} Compiler: ${{ inputs.compiler_name }}"
+          echo "CUDA: ${{matrix.cuda_version}} Compiler: ${{ matrix.compiler.name }} ${{ matrix.compiler.version }}"
 
 
