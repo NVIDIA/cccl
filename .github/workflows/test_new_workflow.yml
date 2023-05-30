@@ -49,6 +49,6 @@ jobs:
       - name: test
         run: |
           echo "cuda_version: ${{ matrix.cuda_version }}"
-          echo "PER_CUDA_MATRIX: ${{ fromJSON(needs.compute-matrix.outputs.PER_CUDA_MATRIX)[matrix.cuda_version] }}"
+          echo "PER_CUDA_MATRIX: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_MATRIX)[matrix.cuda_version]) }}"
     #with:
     #  per_cuda_matrix: ${{ fromJSON(needs.compute-matrix.outputs.PER_CUDA_MATRIX)[matrix.cuda_version] }}
