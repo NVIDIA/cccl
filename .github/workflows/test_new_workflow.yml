@@ -39,7 +39,19 @@ jobs:
           echo "COMPILERS=$COMPILERS" | tee -a "$GITHUB_OUTPUT"
           
   thrust:
-    name: Thrust CUDA ${{ matrix.cuda_version }}
+    name: CUDA ${{ matrix.cuda_version }}
+    needs: compute-matrix
+    uses: ./.github/workflows/per_cuda.yml
+    strategy:
+      matrix: 
+        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
+    with:
+      cuda_version: ${{ matrix.cuda_version }}
+      full_matrix: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
+      compilers: ${{ needs.compute-matrix.outputs.COMPILERS }}
+
+  cub:
+    name: CUDA ${{ matrix.cuda_version }}
     needs: compute-matrix
     uses: ./.github/workflows/per_cuda.yml
     strategy:

@@ -9,6 +9,7 @@ on:
 
 jobs:
   per_compiler:
+    name: ${{ inputs.compiler_name }}
     runs-on: ubuntu-latest
     steps:
       - name: test
