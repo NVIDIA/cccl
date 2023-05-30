@@ -31,5 +31,6 @@ jobs:
     uses: ./.github/workflows/per_compiler.yml
     with:
       per_compiler_matrix: ${{ toJSON(fromJSON(needs.compute_per_compiler_matrix.PER_COMPILER_MATRIX)[matrix.compiler]) }}
+      compiler_name: ${{ matrix.compiler }}
 
 
