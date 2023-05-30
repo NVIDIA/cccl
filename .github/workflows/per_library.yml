@@ -68,7 +68,7 @@ jobs:
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
   
   libcudacxx:
-    name: CUB - CUDA ${{ matrix.cuda_version }} - ${{ matrix.compiler }}
+    name: libcudacxx - CUDA ${{ matrix.cuda_version }} - ${{ matrix.compiler }}
     needs: compute-matrix
     uses: ./.github/workflows/per_cuda.yml
     strategy:
