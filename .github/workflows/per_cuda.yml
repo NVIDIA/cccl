@@ -17,8 +17,9 @@ jobs:
         uses: actions/checkout@v3
       - name: Compute matrix
         run: |
-          echo "${{ inputs.per_cuda_matrix }}"
-          PER_COMPILER_MATRIX=$(./ci/get_groups.sh ${{inputs.per_cuda_matrix}} compiler.name)
+          export PER_CUDA_MATRIX="${{ fromJSON(inputs.per_cuda_matrix) }}"
+          echo $PER_CUDA_MATRIX
+          PER_COMPILER_MATRIX=$(./ci/get_groups.sh $PER_CUDA_MATRIX compiler.name)
           echo "PER_COMPILER_MATRIX=$PER_COMPILER_MATRIX" | tee -a "$GITHUB_OUTPUT"
           COMPILERS=$(echo $PER_COMPILER_MATRIX | jq -c 'keys')
           echo "COMPILERS=$COMPILERS" | tee -a "$GITHUB_OUTPUT"
