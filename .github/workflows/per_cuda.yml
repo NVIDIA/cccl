@@ -8,7 +8,9 @@ on:
 
 jobs:
   per_cuda:
-    run: |
-      echo "per_cuda_matrix: ${{ inputs.per_cuda_matrix }}"
+    steps:
+      - name: test
+        run: |
+          echo "per_cuda_matrix: ${{ inputs.per_cuda_matrix }}"
 
 
