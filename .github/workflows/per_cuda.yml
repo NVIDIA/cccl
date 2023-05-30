@@ -8,6 +8,7 @@ on:
 
 jobs:
   per_cuda:
+    name: CUDA ${{ matrix.cuda_version }}
     runs-on: ubuntu-latest
     strategy:
       matrix: 
