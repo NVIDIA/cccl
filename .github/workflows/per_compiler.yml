@@ -18,7 +18,7 @@ jobs:
       - name: Compute Matrix
         id: compute_per_compiler_matrix
         run: |
-          FULL_MATRIX= '${{ inputs.full_matrix }}'
+          FULL_MATRIX="${{ inputs.full_matrix }}"
           echo $FULL_MATRIX
           
         #MATRIX=$(echo $FULL_MATRIX | jq -c '[.[] | select(.compiler.name == "${{ inputs.compiler_name }}" and .cuda == "${{ inputs.cuda_version }}")]')
