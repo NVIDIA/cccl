@@ -44,6 +44,7 @@ jobs:
     strategy:
       matrix: 
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
+    runs-on: ubuntu-latest
     steps:
       - name: test
         run: |
