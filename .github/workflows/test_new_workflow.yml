@@ -33,7 +33,7 @@ jobs:
           cat ./ci/matrix.yaml
           BUILD_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.include[] | . as $o | {std: .std[]} + del($o.std)] | {include: . }' )
           echo "BUILD_MATRIX=$BUILD_MATRIX" | tee -a "$GITHUB_OUTPUT"
-          PER_CUDA_MATRIX=./ci/get_groups.sh $BUILD_MATRIX cuda $GITHUB_OUTPUT
+          PER_CUDA_MATRIX=$(./ci/get_groups.sh $BUILD_MATRIX cuda "$GITHUB_OUTPUT")
           CUDA_VERSIONS=$(echo $PER_CUDA_MATRIX | jq 'keys')
           echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
           
