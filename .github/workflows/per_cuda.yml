@@ -1,0 +1,16 @@
+name: Per CUDA version
+
+on:
+  workflow_call:
+    inputs:
+      per_cuda_matrix: {type: string, required: true}
+
+test-repo-per-cuda-ver:
+  uses: ./.github/workflows/test-repo-per-compiler.yml
+  strategy:
+    matrix: ${{ fromJSON(inputs.cuda_vers) }}
+  with:
+    repo: ${{ inputs.repo }}
+    cxx_vers: ${{ inputs.cxx_vers }}
+    cuda_ver: ${{ matrix.cuda_ver }}
+    compilers: ${{ inputs.compilers }}

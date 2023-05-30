@@ -1,0 +1,46 @@
+
+# This is the main workflow that runs on every PR and push to main
+name: pr_split
+
+defaults:
+  run:
+    shell: bash
+
+on:
+  push:
+    branches:
+      - main
+      - "pull-request/[0-9]+"
+
+# Only runs one instance of this workflow at a time for a given PR and cancels any in-progress runs when a new one starts.
+concurrency:
+  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  compute-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      BUILD_MATRIX:  ${{ steps.compute-matrix.outputs.BUILD_MATRIX }}
+      PER_CUDA_MATRIX: ${{ steps.compute-matrix.outputs.PER_CUDA_MATRIX }}
+      CUDA_VERSIONS: ${{ steps.compute-matrix.outputs.CUDA_VERSIONS }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Compute matrix
+        id: compute-matrix
+        run: |
+          cat ./ci/matrix.yaml
+          BUILD_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.include[] | . as $o | {std: .std[]} + del($o.std)] | {include: . }' )
+          echo "BUILD_MATRIX=$BUILD_MATRIX" | tee -a "$GITHUB_OUTPUT"
+          PER_CUDA_MATRIX=./ci/get_groups.sh $BUILD_MATRIX cuda $GITHUB_OUTPUT
+          CUDA_VERSIONS=$(echo $PER_CUDA_MATRIX | jq 'keys')
+          echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
+          
+  thrust:
+    needs: compute-matrix
+    uses: ./.github/workflows/per_cuda.yml
+    strategy:
+      matrix: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }}  }}
+    with:
+      per_cuda_matrix: ${{ needs.compute-matrix.outputs.PER_CUDA_MATRIX }}
