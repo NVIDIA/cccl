@@ -19,8 +19,10 @@ jobs:
         id: compute_per_compiler_matrix
         run: |
           FULL_MATRIX= '${{ inputs.full_matrix }}'
-          MATRIX=$(echo $FULL_MATRIX | jq -c '[.[] | select(.compiler.name == "${{ inputs.compiler_name }}" and .cuda == "${{ inputs.cuda_version }}")]')
-          echo "MATRIX=$MATRIX" | tee -a "$GITHUB_OUTPUT"
+          echo $FULL_MATRIX
+          
+        #MATRIX=$(echo $FULL_MATRIX | jq -c '[.[] | select(.compiler.name == "${{ inputs.compiler_name }}" and .cuda == "${{ inputs.cuda_version }}")]')
+        #echo "MATRIX=$MATRIX" | tee -a "$GITHUB_OUTPUT"
 
   per_compiler:
     name: ${{ inputs.compiler_name }}
