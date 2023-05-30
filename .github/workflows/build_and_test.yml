@@ -3,13 +3,13 @@ name: Base CCCL workflow
 on:
   workflow_call:
     inputs:
-      build_matrix: # The matrix to use for this job
+      build_matrix: 
         type: string
         required: true
-      test_matrix: # The matrix to use for this job
+      test_matrix: 
         type: string
         required: true
-      build_script: # The script to run for the build step
+      build_script:
         type: string
         required: true
       test_script: 
