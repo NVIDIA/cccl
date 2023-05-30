@@ -23,6 +23,7 @@ jobs:
           echo "PER_COMPILER_MATRIX=$PER_COMPILER_MATRIX" | tee -a "$GITHUB_OUTPUT"
 
   per_compiler:
+    needs: compute_per_compiler_matrix
     name: ${{ inputs.compiler_name }}
     runs-on: ubuntu-latest
     strategy:
