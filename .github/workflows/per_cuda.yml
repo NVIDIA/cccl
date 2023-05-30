@@ -8,6 +8,7 @@ on:
 
 jobs:
   per_cuda:
+    runs-on: ubuntu-latest
     steps:
       - name: test
         run: |
