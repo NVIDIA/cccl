@@ -18,8 +18,8 @@ jobs:
       - name: Compute Matrix
         id: compute_per_compiler_matrix
         run: |
-          FULL_MATRIX="${{ toJSON(inputs.full_matrix) }}"
-          TEST=echo "$FULL_MATRIX" | jq -c .
+          FULL_MATRIX=${{ toJSON(inputs.full_matrix) }}
+          TEST=$(echo $FULL_MATRIX | jq -c .)
           echo "$TEST"
 
         #PER_COMPILER_MATRIX=$(echo $FULL_MATRIX | jq -c '[.[] | select(.compiler.name == "${{ inputs.compiler_name }}" and .cuda == "${{ inputs.cuda_version }}")]')
