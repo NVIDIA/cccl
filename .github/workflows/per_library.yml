@@ -51,5 +51,6 @@ jobs:
         compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
     with:
       cuda_version: ${{ matrix.cuda_version }}
-      compiler: ${{ needs.compute-matrix.outputs.COMPILERS }}
+      compiler: ${{ matrix.compiler }}
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
+
