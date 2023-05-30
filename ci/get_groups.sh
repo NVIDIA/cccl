@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Ensure that the script is being executed from its directory
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
+
 # Check if input JSON, field, and file arguments are provided
 if [ "$#" -ne 3 ]; then
   echo "Usage: ./get_groups.sh <input_json> <field> <output_file>"
