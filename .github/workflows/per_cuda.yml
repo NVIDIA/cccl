@@ -3,36 +3,21 @@ name: Per CUDA version
 on:
   workflow_call:
     inputs:
-      per_cuda_matrix: {type: string, required: true}
       cuda_version: {type: string, required: true}
+      full_matrix: {type: string, required: true}
+      compilers: {type: string, required: true}
 
 jobs:
-  compute_per_compiler_matrix:
-    runs-on: ubuntu-latest
-    outputs:
-      PER_COMPILER_MATRIX: ${{ steps.compute_per_compiler_matrix.outputs.PER_COMPILER_MATRIX }}
-      COMPILERS: ${{ steps.compute_per_compiler_matrix.outputs.COMPILERS }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      - name: Compute matrix
-        run: |
-          export PER_CUDA_MATRIX="${{ inputs.per_cuda_matrix }}"
-          echo $PER_CUDA_MATRIX
-          PER_COMPILER_MATRIX=$(./ci/get_groups.sh $PER_CUDA_MATRIX compiler.name)
-          echo "PER_COMPILER_MATRIX=$PER_COMPILER_MATRIX" | tee -a "$GITHUB_OUTPUT"
-          COMPILERS=$(echo $PER_COMPILER_MATRIX | jq -c 'keys')
-          echo "COMPILERS=$COMPILERS" | tee -a "$GITHUB_OUTPUT"
-
   per_cuda:
     name: ${{ matrix.compiler }}
     needs: compute_per_compiler_matrix
     strategy:
       matrix: 
-        compiler: ${{ fromJSON(needs.compute_per_compiler_matrix.COMPILERS) }}
+        compiler: ${{ fromJSON(inputs.compilers) }}
     uses: ./.github/workflows/per_compiler.yml
     with:
-      per_compiler_matrix: ${{ toJSON(fromJSON(needs.compute_per_compiler_matrix.PER_COMPILER_MATRIX)[matrix.compiler]) }}
+      full_matrix: ${{ inputs.full_matrix }}
       compiler_name: ${{ matrix.compiler }}
+      cuda_version: ${{ inputs.cuda_version }}
 
 

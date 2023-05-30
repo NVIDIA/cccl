@@ -22,8 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       BUILD_MATRIX:  ${{ steps.compute-matrix.outputs.BUILD_MATRIX }}
-      PER_CUDA_MATRIX: ${{ steps.compute-matrix.outputs.PER_CUDA_MATRIX }}
       CUDA_VERSIONS: ${{ steps.compute-matrix.outputs.CUDA_VERSIONS }}
+      COMPILERS: ${{ steps.compute-matrix.outputs.COMPILERS }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -33,17 +33,19 @@ jobs:
           cat ./ci/matrix.yaml
           BUILD_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.include[] | . as $o | {std: .std[]} + del($o.std)]' )
           echo "BUILD_MATRIX=$BUILD_MATRIX" | tee -a "$GITHUB_OUTPUT"
-          PER_CUDA_MATRIX=$(./ci/get_groups.sh $BUILD_MATRIX cuda)
-          echo "PER_CUDA_MATRIX=$PER_CUDA_MATRIX" | tee -a "$GITHUB_OUTPUT"
-          CUDA_VERSIONS=$(echo $PER_CUDA_MATRIX | jq -c 'keys')
+          CUDA_VERSIONS=$(echo $BUILD_MATRIX | jq -c '[.[] | .cuda] | unique')
           echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
+          COMPILERS=$(echo $BUILD_MATRIX | jq -c '[.[] | .compiler.name] | unique')
+          echo "COMPILERS=$COMPILERS" | tee -a "$GITHUB_OUTPUT"
           
   thrust:
+    name: Thrust CUDA ${{ matrix.cuda_version }}
     needs: compute-matrix
     uses: ./.github/workflows/per_cuda.yml
     strategy:
       matrix: 
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
     with:
-      per_cuda_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_MATRIX)[matrix.cuda_version]) }}
       cuda_version: ${{ matrix.cuda_version }}
+      full_matrix: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
+      compilers: ${{ needs.compute-matrix.outputs.COMPILERS }}

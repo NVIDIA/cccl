@@ -3,7 +3,8 @@ name: Per compiler
 on:
   workflow_call:
     inputs:
-      per_compiler_matrix: {type: string, required: true}
+      cuda_version: {type: string, required: true}
+      full_matrix: {type: string, required: true}
       compiler_name: {type: string, required: true}
 
 jobs:
@@ -12,7 +13,6 @@ jobs:
     steps:
       - name: test
         run: |
-          echo "${{ inputs.compiler_name }}"
-          echo "${{ fromJSON(inputs.per_compiler_matrix) }}" 
+          echo "CUDA: ${{inputs.cuda_version}} Compiler: ${{ inputs.compiler_name }}"
 
 
