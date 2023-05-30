@@ -26,7 +26,6 @@ jobs:
   per_cuda:
     name: ${{ matrix.compiler }}
     needs: compute_per_compiler_matrix
-    name: CUDA ${{ inputs.cuda_version }}
     strategy:
       matrix: 
         compiler: ${{ fromJSON(needs.compute_per_compiler_matrix.COMPILERS) }}
