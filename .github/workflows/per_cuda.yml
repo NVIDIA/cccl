@@ -9,7 +9,7 @@ on:
 
 jobs:
   per_cuda:
-    name: ${{ matrix.compiler }}${{ matrix.compiler.version }}
+    name: ${{ matrix.compiler.name }}${{ matrix.compiler.version }}
     strategy:
       matrix: 
         include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
