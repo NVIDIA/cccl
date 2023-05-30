@@ -8,8 +8,19 @@ on:
       compiler: {type: string, required: true}
 
 jobs:
-  per_cuda:
-    name: ${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++ ${{matrix.std}}/${{matrix.cpu}}
+  build:
+    name: Build ${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++ ${{matrix.std}}/${{matrix.cpu}}
+    strategy:
+      matrix: 
+        include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: test
+        run: |
+          echo "CUDA: ${{ matrix.cuda_version }} Compiler: ${{ matrix.compiler }} ${{ matrix.compiler_version }}"
+  test:
+    needs: build
+    name: Test ${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++ ${{matrix.std}}/${{matrix.cpu}}
     strategy:
       matrix: 
         include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
