@@ -42,7 +42,7 @@ jobs:
           echo "PER_CUDA_COMPILER_MATRIX=$PER_CUDA_COMPILER_MATRIX" | tee -a "$GITHUB_OUTPUT"
           
   thrust:
-    name: Thrust CUDA ${{ matrix.cuda_version }}
+    name: Thrust - CUDA ${{ matrix.cuda_version }} - ${{ matrix.compiler }}
     needs: compute-matrix
     uses: ./.github/workflows/per_cuda.yml
     strategy:
