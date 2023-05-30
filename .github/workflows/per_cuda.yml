@@ -4,19 +4,19 @@ on:
   workflow_call:
     inputs:
       cuda_version: {type: string, required: true}
-      full_matrix: {type: string, required: true}
-      compilers: {type: string, required: true}
+      per_cuda_compiler_matrix: {type: string, required: true}
+      compiler: {type: string, required: true}
 
 jobs:
   per_cuda:
     name: ${{ matrix.compiler }}
     strategy:
       matrix: 
-        compiler: ${{ fromJSON(inputs.compilers) }}
-    uses: ./.github/workflows/per_compiler.yml
-    with:
-      full_matrix: ${{ inputs.full_matrix }}
-      compiler_name: ${{ matrix.compiler }}
-      cuda_version: ${{ inputs.cuda_version }}
+        include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: test
+        run: |
+          echo "CUDA: ${{ matrix.cuda_version }} Compiler: ${{ matrix.compiler }} ${{ matrix.compiler_version }}"
 
 
