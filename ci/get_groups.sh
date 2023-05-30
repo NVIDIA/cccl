@@ -11,6 +11,6 @@ input_json="$1"
 field="$2"
 output_file="$3"
 
-output=$(echo $input_json | jq -c --arg field "$field" 'include "group_by_field"; .include | group_by_field($field)')
+output=$(echo $input_json | jq -L . -c --arg field "$field" 'include "group_by_field"; .include | group_by_field($field)')
 echo $output | tee -a "$output_file"
 
