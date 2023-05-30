@@ -10,7 +10,6 @@ on:
 jobs:
   per_cuda:
     name: ${{ matrix.compiler }}
-    needs: compute_per_compiler_matrix
     strategy:
       matrix: 
         compiler: ${{ fromJSON(inputs.compilers) }}
