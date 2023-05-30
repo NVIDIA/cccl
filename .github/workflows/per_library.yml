@@ -1,6 +1,6 @@
 
 # This is the main workflow that runs on every PR and push to main
-name: pr_split
+name: Per library
 
 defaults:
   run:
