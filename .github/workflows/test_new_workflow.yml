@@ -35,7 +35,7 @@ jobs:
           echo "BUILD_MATRIX=$BUILD_MATRIX" | tee -a "$GITHUB_OUTPUT"
           PER_CUDA_MATRIX=$(./ci/get_groups.sh $BUILD_MATRIX cuda)
           echo "PER_CUDA_MATRIX=$PER_CUDA_MATRIX" | tee -a "$GITHUB_OUTPUT"
-          CUDA_VERSIONS=$(echo $PER_CUDA_MATRIX | jq 'keys')
+          CUDA_VERSIONS=$(echo $PER_CUDA_MATRIX | jq -c 'keys')
           echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
           
   thrust:
