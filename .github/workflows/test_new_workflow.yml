@@ -42,6 +42,7 @@ jobs:
     needs: compute-matrix
     uses: ./.github/workflows/per_cuda.yml
     strategy:
-      matrix: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
+      matrix: 
+        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
     with:
       per_cuda_matrix: ${{ needs.compute-matrix.outputs.PER_CUDA_MATRIX }}
