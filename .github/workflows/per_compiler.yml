@@ -24,7 +24,6 @@ jobs:
 
   per_compiler:
     needs: compute_per_compiler_matrix
-    name: ${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++${{matrix.std}}/${{matrix.cpu}}
     runs-on: ubuntu-latest
     strategy:
       matrix: 
