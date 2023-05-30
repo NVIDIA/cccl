@@ -10,6 +10,7 @@ on:
 jobs:
 
   compute_per_compiler_matrix:
+    name: Compute ${{inputs.compiler_name}} matrix  
     runs-on: ubuntu-latest
     outputs:
       MATRIX:  ${{ steps.compute_per_compiler_matrix.outputs.MATRIX }}
@@ -17,8 +18,8 @@ jobs:
       - name: Compute Matrix
         id: compute_per_compiler_matrix
         run: |
-          BUILD_MATRIX=$(echo ${{ inputs.full_matrix }} | jq -c '[.[] | select(.compiler.name == "${{ inputs.compiler_name }}" and .cuda == "${{ inputs.cuda_version }}")]')
-          echo "BUILD_MATRIX=$BUILD_MATRIX" | tee -a "$GITHUB_OUTPUT"
+          MATRIX=$(echo ${{ inputs.full_matrix }} | jq -c '[.[] | select(.compiler.name == "${{ inputs.compiler_name }}" and .cuda == "${{ inputs.cuda_version }}")]')
+          echo "MATRIX=$MATRIX" | tee -a "$GITHUB_OUTPUT"
 
   per_compiler:
     name: ${{ inputs.compiler_name }}
