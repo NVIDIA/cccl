@@ -18,7 +18,7 @@ jobs:
       - name: Compute Matrix
         id: compute_per_compiler_matrix
         run: |
-          FULL_MATRIX="${{ inputs.full_matrix }}"
+          FULL_MATRIX="${{ toJSON(inputs.full_matrix) }}"
           TEST=echo "$FULL_MATRIX" | jq -c .
           echo "$TEST"
 
