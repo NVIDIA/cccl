@@ -21,6 +21,7 @@ jobs:
           FULL_MATRIX="${{ inputs.full_matrix }}"
           TEST=echo "$FULL_MATRIX" | jq -c .
           echo "$TEST"
+
         #PER_COMPILER_MATRIX=$(echo $FULL_MATRIX | jq -c '[.[] | select(.compiler.name == "${{ inputs.compiler_name }}" and .cuda == "${{ inputs.cuda_version }}")]')
         #echo "PER_COMPILER_MATRIX=$PER_COMPILER_MATRIX" | tee -a "$GITHUB_OUTPUT"
 
