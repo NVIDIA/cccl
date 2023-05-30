@@ -18,7 +18,7 @@ jobs:
       - name: Compute Matrix
         id: compute_per_compiler_matrix
         run: |
-          FULL_MATRIX="${{ inputs.full_matrix }}"
+          FULL_MATRIX='${{ toJSON(inputs.full_matrix) }}'
           PER_COMPILER_MATRIX=$(echo $FULL_MATRIX | jq -c '[.[] | select(.compiler.name == "${{ inputs.compiler_name }}" and .cuda == "${{ inputs.cuda_version }}")]')
           echo "PER_COMPILER_MATRIX=$PER_COMPILER_MATRIX" | tee -a "$GITHUB_OUTPUT"
 
