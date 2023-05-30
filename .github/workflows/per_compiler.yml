@@ -1,0 +1,18 @@
+name: Per compiler
+
+on:
+  workflow_call:
+    inputs:
+      per_compiler_matrix: {type: string, required: true}
+      compiler_name: {type: string, required: true}
+
+jobs:
+  per_compiler:
+    runs-on: ubuntu-latest
+    steps:
+      - name: test
+        run: |
+          echo "${{ inputs.compiler_name }}"
+          echo "${{ fromJSON(inputs.per_compiler_matrix) }}" 
+
+

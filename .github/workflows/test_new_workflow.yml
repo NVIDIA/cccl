@@ -46,3 +46,4 @@ jobs:
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
     with:
       per_cuda_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_MATRIX)[matrix.cuda_version]) }}
+      cuda_version: ${{ matrix.cuda_version }}
