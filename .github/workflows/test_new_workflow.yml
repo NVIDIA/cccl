@@ -40,15 +40,15 @@ jobs:
           
   thrust:
     needs: compute-matrix
-    #uses: ./.github/workflows/per_cuda.yml
+    uses: ./.github/workflows/per_cuda.yml
     strategy:
       matrix: 
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
-    runs-on: ubuntu-latest
-    steps:
-      - name: test
-        run: |
-          echo "cuda_version: ${{ matrix.cuda_version }}"
-          echo "PER_CUDA_MATRIX: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_MATRIX)[matrix.cuda_version]) }}"
-    #with:
-    #  per_cuda_matrix: ${{ fromJSON(needs.compute-matrix.outputs.PER_CUDA_MATRIX)[matrix.cuda_version] }}
+    with:
+      per_cuda_matrix: ${{ fromJSON(needs.compute-matrix.outputs.PER_CUDA_MATRIX)[matrix.cuda_version] }}
+    #runs-on: ubuntu-latest
+    #steps:
+    #  - name: test
+    #    run: |
+    #      echo "cuda_version: ${{ matrix.cuda_version }}"
+    #      echo "PER_CUDA_MATRIX: ${{ fromJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_MATRIX)[matrix.cuda_version]) }}"

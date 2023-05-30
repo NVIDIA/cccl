@@ -9,9 +9,6 @@ on:
 jobs:
   per_cuda:
     runs-on: ubuntu-latest
-    strategy:
-      matrix: 
-        include: ${{ fromJSON(inputs.per_cuda_matrix) }}
     steps:
       - name: test
         run: |
