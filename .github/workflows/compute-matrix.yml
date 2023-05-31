@@ -35,7 +35,7 @@ env:
 
 jobs:
   compute-matrix:
-    name: Compute $BUILD_TYPE matrix
+    name: Compute ${{env.BUILD_TYPE}} matrix
     runs-on: ubuntu-latest
     outputs:
       FULL_MATRIX:  ${{ steps.compute-matrix.outputs.FULL_MATRIX }}
