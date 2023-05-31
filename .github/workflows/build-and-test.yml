@@ -23,7 +23,9 @@ jobs:
     steps:
       - name: test
         run: | 
-          echo "test"
+          SLEEP_TIME=$RANDOM % 15
+          echo "Sleeping for $SLEEP_TIME seconds"
+          sleep $SLEEP_TIME
   test:
     needs: build
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
