@@ -21,7 +21,7 @@ jobs:
     name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
     runs-on: ubuntu-latest
     steps:
-      - name: test
+      - name: Run build script
         run: | 
           echo "test"
           if [[ -n "${{ inputs.build_script }}" ]]; then
@@ -34,7 +34,7 @@ jobs:
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
     runs-on: ubuntu-latest
     steps:
-      - name: test
+      - name: Run test script
         run: | 
           echo "test"
           if [[ -n "${{ inputs.test_script }}" ]]; then
