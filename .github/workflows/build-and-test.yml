@@ -20,7 +20,21 @@ jobs:
   build:
     name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
     runs-on: ubuntu-latest
+    #runs-on: linux-${{inputs.cpu}}-cpu16
+    #container: # Fetch the container image to use for the job
+    #  options: -u root
+    #  image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
+    permissions:
+      id-token: write
+      contents: read
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Configure credentials and environment variables for sccache
+        uses: ./.github/actions/configure_cccl_sccache
       - name: Run build script
         run: | 
           echo "test"
@@ -31,10 +45,24 @@ jobs:
           fi
   test:
     needs: build
+    if: ${{ needs.build.result == 'success' }}
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
     runs-on: ubuntu-latest
-    if: ${{ needs.build.result == 'success' }}
+    #runs-on: linux-${{inputs.cpu}}-gpu-v100-latest-1
+    #container: # Fetch the container image to use for the job
+    #  options: -u root
+    #  image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
+    permissions:
+      id-token: write
+      contents: read
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Configure credentials and environment variables for sccache
+        uses: ./.github/actions/configure_cccl_sccache
       - name: Run test script
         run: | 
           echo "test"
