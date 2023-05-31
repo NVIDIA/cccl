@@ -17,16 +17,12 @@ concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
   cancel-in-progress: true
 
-env:
-  BUILD_TYPE: "pull-request"
-  MATRIX_FILE: "./ci/matrix.yaml"
-
 jobs:
   compute-matrix:
     uses: ./.github/workflows/compute-matrix.yml
     with:
-      matrix_file: ${{ env.MATRIX_FILE }}
-      build_type: ${{ env.BUILD_TYPE }}
+      matrix_file: "./ci/matrix.yaml"
+      build_type: "pull-request"
 
   thrust:
     name: Thrust-CUDA${{ matrix.cuda_version }}-${{ matrix.compiler }}
