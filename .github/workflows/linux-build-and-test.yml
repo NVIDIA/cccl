@@ -25,7 +25,7 @@ jobs:
       PER_CUDA_COMPILER_MATRIX: ${{ steps.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX }}
     env:
       BUILD_TYPE: ${{ inputs.build_type}}
-      MATRIX_FILE: ${{ inputs.matrix_file }}}
+      MATRIX_FILE: ${{ inputs.matrix_file }}
     steps:
       - name: Validate build type
         run: |
@@ -41,8 +41,8 @@ jobs:
       - name: Compute matrix
         id: compute-matrix
         run: |
-          echo "MATRIX_FILE=$MATRIX_FILE"
-          cat $MATRIX_FILE
+          echo "Input matrix file:"
+          cat "$MATRIX_FILE"
           FULL_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c --arg build_type "$BUILD_TYPE" '.[$build_type][] | . as $o | {std: .std[]} + del($o.std)]' )
           echo "FULL_MATRIX=$FULL_MATRIX" | tee -a "$GITHUB_OUTPUT"
           CUDA_VERSIONS=$(echo $FULL_MATRIX | jq -c '[.[] | .cuda] | unique')
