@@ -7,11 +7,14 @@ on:
 
 jobs:
   build_and_test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: test
-        run: |
-          echo "test"
+    uses: ./.github/workflows/build-and-test.yml
+    with:
+      cuda_version: "11.0"
+      compiler: "gcc"
+      compiler_version: "7"
+      std: 11
+      cpu: amd64
+      gpu_build_archs: "50,60,70,80"
 
     #strategy:
     #  fail-fast: false
