@@ -26,10 +26,6 @@
     #define _LIBCUDACXX_CUDACC_VER                                                  \
         _LIBCUDACXX_CUDACC_VER_MAJOR * 100000 + _LIBCUDACXX_CUDACC_VER_MINOR * 1000 + \
         _LIBCUDACXX_CUDACC_VER_BUILD
-#else
-    #ifndef __forceinline__
-        #define __forceinline__
-    #endif
 #endif
 
 #define _LIBCUDACXX_CUDA_API_VERSION 2001001

@@ -1369,10 +1369,12 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_HOST __host__
 #define _LIBCUDACXX_DEVICE __device__
 #define _LIBCUDACXX_HOST_DEVICE __host__ __device__
+#define _LIBCUDACXX_FORCE_INLINE __forceinline__
 #else // ^^^ __CUDACC__ ^^^ / vvv !__CUDACC__
 #define _LIBCUDACXX_HOST
 #define _LIBCUDACXX_DEVICE
 #define _LIBCUDACXX_HOST_DEVICE
+#define _LIBCUDACXX_FORCE_INLINE
 #endif // !__CUDACC__
 
 // Just so we can migrate to the new macros gradually.
