@@ -19,7 +19,6 @@ concurrency:
 
 jobs:
   linux-build-test:
-    name: Linux
     uses: ./.github/workflows/linux-build-and-test.yml
     with:
       matrix_file: ./ci/matrix.yaml
