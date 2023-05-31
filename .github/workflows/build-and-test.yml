@@ -1,0 +1,28 @@
+name: Base CCCL workflow
+
+on:
+  workflow_call:
+    inputs:
+      cuda_version: {type: string, required: true}
+      compiler: {type: string, required: true}
+      compiler_version: {type: string, required: true}
+      std: {type: string, required: true}
+      gpu_build_archs: {type: string, required: true}
+      cpu: {type: string, required: true}
+      build_script: {type: string, required: false}
+      test_script: {type: string, required: false }
+
+jobs:
+  build:
+    if: github.repository == 'NVIDIA/cccl'
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      run: "echo test"
+  test:
+    needs: build
+    if: github.repository == 'NVIDIA/cccl'
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      run: "echo test"

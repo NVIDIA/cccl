@@ -8,26 +8,41 @@ on:
       compiler: {type: string, required: true}
 
 jobs:
-  build:
-    name: Build ${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++ ${{matrix.std}}/${{matrix.cpu}}
+  build_and_test:
     strategy:
+      fail-fast: false
       matrix: 
         include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: test
-        run: |
-          echo "CUDA: ${{ matrix.cuda_version }} Compiler: ${{ matrix.compiler }} ${{ matrix.compiler_version }}"
-  test:
-    needs: build
-    name: Test ${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++ ${{matrix.std}}/${{matrix.cpu}}
-    strategy:
-      matrix: 
-        include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: test
-        run: |
-          echo "CUDA: ${{ matrix.cuda_version }} Compiler: ${{ matrix.compiler }} ${{ matrix.compiler_version }}"
+    uses: ./.github/workflows/build-and-test.yml
+    with:
+      cuda_version: ${{ matrix.cuda_version }}
+      compiler: ${{ matrix.compiler }}
+      compiler_version: ${{ matrix.compiler_version }}
+      std: ${{ matrix.std }}
+      cpu: ${{ matrix.cpu }}
+      gpu_build_archs: ${{ matrix.gpu_build_archs }}
+
+
+  #build:
+  #  name: Build ${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++ ${{matrix.std}}/${{matrix.cpu}}
+  #  strategy:
+  #    matrix: 
+  #      include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #    - name: test
+  #      run: |
+  #        echo "CUDA: ${{ matrix.cuda_version }} Compiler: ${{ matrix.compiler }} ${{ matrix.compiler_version }}"
+  #test:
+  #  needs: build
+  #  name: Test ${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++ ${{matrix.std}}/${{matrix.cpu}}
+  #  strategy:
+  #    matrix: 
+  #      include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #    - name: test
+  #      run: |
+  #        echo "CUDA: ${{ matrix.cuda_version }} Compiler: ${{ matrix.compiler }} ${{ matrix.compiler_version }}"
 
 
