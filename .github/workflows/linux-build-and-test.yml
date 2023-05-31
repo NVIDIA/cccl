@@ -43,7 +43,7 @@ jobs:
         run: |
           echo "Input matrix file:"
           cat "$MATRIX_FILE"
-          FULL_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c --arg build_type "$BUILD_TYPE" '.[$build_type][] | . as $o | {std: .std[]} + del($o.std)]' )
+          FULL_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c --arg build_type "$BUILD_TYPE" '[ .[$build_type][] | . as $o | {std: .std[]} + del($o.std)]')
           echo "FULL_MATRIX=$FULL_MATRIX" | tee -a "$GITHUB_OUTPUT"
           CUDA_VERSIONS=$(echo $FULL_MATRIX | jq -c '[.[] | .cuda] | unique')
           echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
