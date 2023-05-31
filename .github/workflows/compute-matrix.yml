@@ -1,0 +1,66 @@
+
+name: Compute the matrix for a given build type from the specified matrix file
+
+on:
+  workflow_call:
+    inputs:
+      matrix_file: 
+        type: string
+        required: true
+      build_type:
+        description: "The desired build type. Currently, only 'pull-request' and 'nightly' are supported."
+        type: string
+        required: true
+    outputs:
+      FULL_MATRIX: 
+        description: "The full matrix of build configurations for the given build type."
+        value: ${{ jobs.compute-matrix.outputs.FULL_MATRIX }}
+      CUDA_VERSIONS:
+        description: "The unique CUDA versions in the full matrix."
+        value: ${{ jobs.compute-matrix.outputs.CUDA_VERSIONS }}
+      COMPILERS:
+        description: "The unique compilers in the full matrix."
+        value: ${{ jobs.compute-matrix.outputs.COMPILERS }}
+      PER_CUDA_COMPILER_MATRIX:
+        description: "The matrix of build configurations for each CUDA version and compiler."
+        value: ${{ jobs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX }}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BUILD_TYPE: ${{ inputs.build_type}}
+  MATRIX_FILE: ${{ inputs.matrix_file }}
+
+jobs:
+  compute-matrix:
+    name: Compute $BUILD_TYPE matrix
+    runs-on: ubuntu-latest
+    outputs:
+      FULL_MATRIX:  ${{ steps.compute-matrix.outputs.FULL_MATRIX }}
+      CUDA_VERSIONS: ${{ steps.compute-matrix.outputs.CUDA_VERSIONS }}
+      COMPILERS: ${{ steps.compute-matrix.outputs.COMPILERS }}
+      PER_CUDA_COMPILER_MATRIX: ${{ steps.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX }}
+    steps:
+      - name: Validate build type
+        run: |
+          if [[ "$BUILD_TYPE" != "pull-request" && "$BUILD_TYPE" != "nightly" ]]; then
+            echo "Invalid build type: $BUILD_TYPE. Must be 'nightly' or 'pull-request'"
+            exit 1
+          fi
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Compute matrix
+        id: compute-matrix
+        run: |
+          echo "Input matrix file:"
+          cat "$MATRIX_FILE"
+          FULL_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c --arg build_type "$BUILD_TYPE" '[ .[$build_type][] | . as $o | {std: .std[]} + del($o.std)]')
+          echo "FULL_MATRIX=$FULL_MATRIX" | tee -a "$GITHUB_OUTPUT"
+          CUDA_VERSIONS=$(echo $FULL_MATRIX | jq -c '[.[] | .cuda] | unique')
+          echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
+          COMPILERS=$(echo $FULL_MATRIX | jq -c '[.[] | .compiler.name] | unique')
+          echo "COMPILERS=$COMPILERS" | tee -a "$GITHUB_OUTPUT"
+          PER_CUDA_COMPILER_MATRIX=$(echo $FULL_MATRIX | jq -c ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')
+          echo "PER_CUDA_COMPILER_MATRIX=$PER_CUDA_COMPILER_MATRIX" | tee -a "$GITHUB_OUTPUT"
