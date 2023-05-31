@@ -1,4 +1,4 @@
-name: Base CCCL workflow
+name: build and test
 
 on:
   workflow_call:
@@ -14,8 +14,7 @@ on:
 
 jobs:
   build:
-    if: github.repository == 'NVIDIA/cccl'
-    name: Build
+    name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++ ${{inputs.std}}/${{inputs.cpu}}
     runs-on: ubuntu-latest
     steps:
       - name: test
@@ -23,8 +22,7 @@ jobs:
           "echo test"
   test:
     needs: build
-    if: github.repository == 'NVIDIA/cccl'
-    name: Test
+    name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++ ${{inputs.std}}/${{inputs.cpu}
     runs-on: ubuntu-latest
     steps:
       - name: test

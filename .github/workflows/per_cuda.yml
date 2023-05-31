@@ -3,9 +3,7 @@ name: Per CUDA version
 on:
   workflow_call:
     inputs:
-      cuda_version: {type: string, required: true}
       per_cuda_compiler_matrix: {type: string, required: true}
-      compiler: {type: string, required: true}
 
 jobs:
   build_and_test:

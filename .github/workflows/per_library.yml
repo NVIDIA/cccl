@@ -50,8 +50,6 @@ jobs:
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
         compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
     with:
-      cuda_version: ${{ matrix.cuda_version }}
-      compiler: ${{ matrix.compiler }}
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
 
   cub:
@@ -63,8 +61,6 @@ jobs:
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
         compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
     with:
-      cuda_version: ${{ matrix.cuda_version }}
-      compiler: ${{ matrix.compiler }}
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
   
   libcudacxx:
@@ -76,7 +72,5 @@ jobs:
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
         compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
     with:
-      cuda_version: ${{ matrix.cuda_version }}
-      compiler: ${{ matrix.compiler }}
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
 
