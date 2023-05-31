@@ -46,7 +46,7 @@ jobs:
   test:
     needs: build
     if: ${{ needs.build.result == 'success' }}
-    name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
+    name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
     runs-on: ubuntu-latest
     #runs-on: linux-${{inputs.cpu}}-gpu-v100-latest-1
     #container: # Fetch the container image to use for the job
