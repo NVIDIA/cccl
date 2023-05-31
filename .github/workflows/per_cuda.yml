@@ -9,18 +9,15 @@ jobs:
   build_and_test:
     uses: ./.github/workflows/build-and-test.yml
     strategy:
-      fail-fast: false
       matrix: 
         include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
     with:
-      cuda_version: ${{ matrix.cuda }}
-      compiler: ${{ matrix.compiler.name }}
-      compiler_version: ${{ matrix.compiler.version }}
-      std: ${{ matrix.std }}
-      cpu: ${{ matrix.cpu }}
-      gpu_build_archs: ${{ matrix.gpu_build_archs }}
-
-
+      cuda_version: "11.0"
+      compiler: "gcc"
+      compiler_version: "7"
+      std: "11"
+      cpu: "amd64"
+      gpu_build_archs: "70;75;80"
 
   #build:
   #  name: Build ${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++ ${{matrix.std}}/${{matrix.cpu}}
