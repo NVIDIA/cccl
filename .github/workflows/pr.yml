@@ -25,7 +25,7 @@ jobs:
       build_type: "pull-request"
 
   thrust:
-    name: Thrust-CUDA${{ matrix.cuda_version }}-${{ matrix.compiler }}
+    name: Thrust CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
@@ -39,7 +39,7 @@ jobs:
       test_script: "./ci/test_thrust.sh"
 
   cub:
-    name: CUB-CUDA${{ matrix.cuda_version }}-${{ matrix.compiler }}
+    name: CUB CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
@@ -53,7 +53,7 @@ jobs:
       test_script: "./ci/test_cub.sh"
   
   libcudacxx:
-    name: libcudacxx-CUDA${{ matrix.cuda_version }}-${{ matrix.compiler }}
+    name: libcudacxx CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
