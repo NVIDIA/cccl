@@ -7,7 +7,7 @@ namespace Foo {
   template<class T>
   struct foo_ptr {
     T* data;
-    __MDSPAN_HOST_DEVICE
+    _LIBCUDACXX_HOST_DEVICE
     constexpr foo_ptr(T* ptr):data(ptr) {}
   };
 
@@ -75,7 +75,7 @@ class layout_foo::mapping {
     __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping() noexcept = default;
     __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping(mapping const&) noexcept = default;
 
-    __MDSPAN_HOST_DEVICE
+    _LIBCUDACXX_HOST_DEVICE
     constexpr mapping(extents_type const& __exts) noexcept
       :__extents(__exts)
     { }

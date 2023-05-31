@@ -1365,13 +1365,21 @@ typedef __char32_t char32_t;
 #  define _LIBCUDACXX_HIDE_FROM_ABI_AFTER_V1 _LIBCUDACXX_HIDE_FROM_ABI
 #endif
 
+#ifdef __CUDACC__
+#define _LIBCUDACXX_HOST __host__
+#define _LIBCUDACXX_DEVICE __device__
+#define _LIBCUDACXX_HOST_DEVICE __host__ __device__
+#else // ^^^ __CUDACC__ ^^^ / vvv !__CUDACC__
+#define _LIBCUDACXX_HOST
+#define _LIBCUDACXX_DEVICE
+#define _LIBCUDACXX_HOST_DEVICE
+#endif // !__CUDACC__
+
 // Just so we can migrate to the new macros gradually.
 
 #ifdef __cuda_std__
-#  define _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER __host__ __device__
-#  define _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
+#  define _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_HOST_DEVICE
 #else
-#  define _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
 #  define _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI
 #endif // __cuda_std__
 
@@ -2132,7 +2140,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #endif
 
 #if defined(__CUDA_ARCH__)
-#  define _LIBCUDACXX_CPO_ACCESSIBILITY __device__ _LIBCUDACXX_CONSTEXPR_GLOBAL
+#  define _LIBCUDACXX_CPO_ACCESSIBILITY _LIBCUDACXX_DEVICE _LIBCUDACXX_CONSTEXPR_GLOBAL
 #else
 #  define _LIBCUDACXX_CPO_ACCESSIBILITY _LIBCUDACXX_INLINE_VAR constexpr
 #endif

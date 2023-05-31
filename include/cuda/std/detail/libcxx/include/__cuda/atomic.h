@@ -51,23 +51,23 @@ struct atomic
     typedef std::__atomic_base<_Tp, _Sco> __base;
 
     constexpr atomic() noexcept = default;
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     constexpr atomic(_Tp __d) noexcept : __base(__d) {}
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp operator=(_Tp __d) volatile noexcept
         {__base::store(__d); return __d;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp operator=(_Tp __d) noexcept
         {__base::store(__d); return __d;}
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp fetch_max(const _Tp & __op, memory_order __m = memory_order_seq_cst) volatile noexcept
     {
         return std::__detail::__cxx_atomic_fetch_max(&this->__a_, __op, __m);
     }
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp fetch_min(const _Tp & __op, memory_order __m = memory_order_seq_cst) volatile noexcept
     {
         return std::__detail::__cxx_atomic_fetch_min(&this->__a_, __op, __m);
@@ -83,54 +83,54 @@ struct atomic<_Tp*, _Sco>
     typedef std::__atomic_base<_Tp*, _Sco> __base;
 
     constexpr atomic() noexcept = default;
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     constexpr atomic(_Tp* __d) noexcept : __base(__d) {}
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator=(_Tp* __d) volatile noexcept
         {__base::store(__d); return __d;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator=(_Tp* __d) noexcept
         {__base::store(__d); return __d;}
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
                                                                         volatile noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
                                                                         volatile noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator++(int) volatile noexcept            {return fetch_add(1);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator++(int) noexcept                     {return fetch_add(1);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator--(int) volatile noexcept            {return fetch_sub(1);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator--(int) noexcept                     {return fetch_sub(1);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator++() volatile noexcept               {return fetch_add(1) + 1;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator++() noexcept                        {return fetch_add(1) + 1;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator--() volatile noexcept               {return fetch_sub(1) - 1;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator--() noexcept                        {return fetch_sub(1) - 1;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator+=(ptrdiff_t __op) volatile noexcept {return fetch_add(__op) + __op;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator+=(ptrdiff_t __op) noexcept          {return fetch_add(__op) + __op;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator-=(ptrdiff_t __op) volatile noexcept {return fetch_sub(__op) - __op;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator-=(ptrdiff_t __op) noexcept          {return fetch_sub(__op) - __op;}
 };
 
@@ -142,23 +142,23 @@ struct atomic_ref
 {
     typedef std::__atomic_base_ref<_Tp, _Sco> __base;
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     constexpr atomic_ref(_Tp& __d) noexcept : __base(__d) {}
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp operator=(_Tp __d) const volatile noexcept
         {__base::store(__d); return __d;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp operator=(_Tp __d) const noexcept
         {__base::store(__d); return __d;}
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp fetch_max(const _Tp & __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
     {
         return std::__detail::__cxx_atomic_fetch_max(&this->__a_, __op, __m);
     }
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp fetch_min(const _Tp & __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
     {
         return std::__detail::__cxx_atomic_fetch_min(&this->__a_, __op, __m);
@@ -173,60 +173,60 @@ struct atomic_ref<_Tp*, _Sco>
 {
     typedef std::__atomic_base_ref<_Tp*, _Sco> __base;
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     constexpr atomic_ref(_Tp*& __d) noexcept : __base(__d) {}
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator=(_Tp* __d) const volatile noexcept
         {__base::store(__d); return __d;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator=(_Tp* __d) const noexcept
         {__base::store(__d); return __d;}
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* fetch_add(ptrdiff_t __op,
                    memory_order __m = memory_order_seq_cst) const volatile noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* fetch_add(ptrdiff_t __op,
                    memory_order __m = memory_order_seq_cst) const noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* fetch_sub(ptrdiff_t __op,
                    memory_order __m = memory_order_seq_cst) const volatile noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* fetch_sub(ptrdiff_t __op,
                    memory_order __m = memory_order_seq_cst) const noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator++(int) const volatile noexcept            {return fetch_add(1);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator++(int) const noexcept                     {return fetch_add(1);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator--(int) const volatile noexcept            {return fetch_sub(1);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator--(int) const noexcept                     {return fetch_sub(1);}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator++() const volatile noexcept               {return fetch_add(1) + 1;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator++() const noexcept                        {return fetch_add(1) + 1;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator--() const volatile noexcept               {return fetch_sub(1) - 1;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator--() const noexcept                        {return fetch_sub(1) - 1;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator+=(ptrdiff_t __op) const volatile noexcept {return fetch_add(__op) + __op;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator+=(ptrdiff_t __op) const noexcept          {return fetch_add(__op) + __op;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator-=(ptrdiff_t __op) const volatile noexcept {return fetch_sub(__op) - __op;}
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     _Tp* operator-=(ptrdiff_t __op) const noexcept          {return fetch_sub(__op) - __op;}
 };
 
-inline __host__ __device__ void atomic_thread_fence(memory_order __m, thread_scope _Scope = thread_scope::thread_scope_system) {
+inline _LIBCUDACXX_HOST_DEVICE void atomic_thread_fence(memory_order __m, thread_scope _Scope = thread_scope::thread_scope_system) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
             switch(_Scope) {
@@ -251,7 +251,7 @@ inline __host__ __device__ void atomic_thread_fence(memory_order __m, thread_sco
     )
 }
 
-inline __host__ __device__ void atomic_signal_fence(memory_order __m) {
+inline _LIBCUDACXX_HOST_DEVICE void atomic_signal_fence(memory_order __m) {
     std::atomic_signal_fence(__m);
 }
 

@@ -316,7 +316,7 @@ public:
         return *this;
     }
 
-    __host__ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     operator ::std::complex<_Tp>() const { return { __re_, __im_ }; }
 #endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
 
@@ -416,7 +416,7 @@ public:
         return *this;
     }
 
-    __host__ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     operator ::std::complex<float>() const { return { __re_, __im_ }; }
 #endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
 
@@ -511,7 +511,7 @@ public:
         return *this;
     }
 
-    __host__ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     operator ::std::complex<double>() const { return { __re_, __im_ }; }
 #endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
 
@@ -617,7 +617,7 @@ public:
         return *this;
     }
 
-    __host__ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     operator ::std::complex<long double>() const { return { __re_, __im_ }; }
 #endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
 

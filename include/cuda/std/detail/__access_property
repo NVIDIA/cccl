@@ -55,22 +55,22 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 namespace __detail_ap {
 
-  __host__ __device__
+  _LIBCUDACXX_HOST_DEVICE
   constexpr uint32_t __ap_floor_log2(uint32_t __x) {
     return (__x == 1 | __x == 0) ? 0 : 1 + __ap_floor_log2(__x >> 1);
   }
 
-  __host__ __device__
+  _LIBCUDACXX_HOST_DEVICE
   constexpr uint32_t __ap_ceil_log2(uint32_t __x) {
     return (__x == 1 | __x == 0) ? 0 : __ap_floor_log2(__x - 1) + 1;
   }
 
-  __host__ __device__
+  _LIBCUDACXX_HOST_DEVICE
   constexpr uint32_t __ap_min(uint32_t __a, uint32_t __b) noexcept {
     return (__a < __b) ? __a : __b;
   }
 
-  __host__ __device__
+  _LIBCUDACXX_HOST_DEVICE
   constexpr uint32_t __ap_max(uint32_t __a, uint32_t __b) noexcept {
     return (__a > __b) ? __a : __b;
   }
@@ -143,7 +143,7 @@ namespace __detail_ap {
       uint64_t __l2_sector_promote_256B : 1;
       uint64_t __ap_reserved3 : 1;
 
-      __host__ __device__
+      _LIBCUDACXX_HOST_DEVICE
       constexpr std::uint64_t __get_descriptor_cexpr() const noexcept {
         return
           std::uint64_t(__ap_reserved)            << 0  |
@@ -160,10 +160,10 @@ namespace __detail_ap {
       }
 
       inline
-      __host__ __device__
+      _LIBCUDACXX_HOST_DEVICE
       std::uint64_t __get_descriptor_non_cexpr() const noexcept { return *reinterpret_cast<const std::uint64_t*>(this); }
 
-      __host__ __device__
+      _LIBCUDACXX_HOST_DEVICE
       constexpr std::uint64_t __get_descriptor() const noexcept {
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
         return cuda::std::is_constant_evaluated() ?
@@ -192,19 +192,19 @@ namespace __detail_ap {
       __l2_descriptor_mode_t __l2_descriptor_mode;
       bool __l1_inv_dont_allocate, __l2_sector_promote_256B;
 
-      __host__ __device__ static constexpr std::uint32_t __calc_offset(std::size_t __total_bytes) {
+      _LIBCUDACXX_HOST_DEVICE static constexpr std::uint32_t __calc_offset(std::size_t __total_bytes) {
           return __ap_max(std::uint32_t{12}, static_cast<std::uint32_t>(__ap_ceil_log2(static_cast<uint32_t>(__total_bytes))) - std::uint32_t{7});
       }
 
-      __host__ __device__ static constexpr std::uint32_t __calc_block_start(std::uintptr_t __ptr, std::size_t __total_bytes) {
+      _LIBCUDACXX_HOST_DEVICE static constexpr std::uint32_t __calc_block_start(std::uintptr_t __ptr, std::size_t __total_bytes) {
           return static_cast<uint32_t>(__ptr >> __calc_offset(static_cast<uint32_t>(__total_bytes)));
       }
 
-      __host__ __device__ static constexpr std::uint32_t __calc_end_hit(std::uintptr_t __ptr, std::size_t __hit_bytes, std::size_t __total_bytes) {
+      _LIBCUDACXX_HOST_DEVICE static constexpr std::uint32_t __calc_end_hit(std::uintptr_t __ptr, std::size_t __hit_bytes, std::size_t __total_bytes) {
           return static_cast<uint32_t>((__ptr + __hit_bytes + (std::uintptr_t{1} << (__calc_offset(static_cast<uint32_t>(__total_bytes)))) - 1) >> __calc_offset(static_cast<uint32_t>(__total_bytes)));
       }
 
-      __host__ __device__ constexpr __block_descriptor_builder(std::uintptr_t __ptr, std::size_t __hit_bytes, std::size_t __total_bytes, __on::__l2_cop_on_t __hit_prop, __off::__l2_cop_off_t __miss_prop)
+      _LIBCUDACXX_HOST_DEVICE constexpr __block_descriptor_builder(std::uintptr_t __ptr, std::size_t __hit_bytes, std::size_t __total_bytes, __on::__l2_cop_on_t __hit_prop, __off::__l2_cop_off_t __miss_prop)
         : __offset(__calc_offset(__total_bytes))
         , __block_size(static_cast<__block_size_t>(__calc_offset(__total_bytes) - std::uint32_t{12}))
         , __block_start(__calc_block_start(__ptr, __total_bytes))
@@ -217,7 +217,7 @@ namespace __detail_ap {
         , __l2_sector_promote_256B(false)
         {}
 
-      __host__ __device__
+      _LIBCUDACXX_HOST_DEVICE
       constexpr __block_desc_t __get_block() const noexcept {
         return __block_desc_t { 0, __ap_min(std::uint32_t{0x7f}, __block_count), (__block_start & std::uint32_t{0x7f}), 0, __block_size, __l2_cop_off, __l2_cop_on, _DESC_BLOCK_TYPE, false, false, 0 };
       }
@@ -234,7 +234,7 @@ namespace __detail_ap {
       uint64_t __l2_sector_promote_256B : 1;
       uint64_t __ap_reserved2 : 1;
 
-      __host__ __device__
+      _LIBCUDACXX_HOST_DEVICE
       constexpr __interleave_descriptor_t(
                     __on::__l2_cop_on_t __hit_prop,
                     std::uint32_t __hit_ratio,
@@ -248,7 +248,7 @@ namespace __detail_ap {
                           __ap_reserved(0x0),
                           __ap_reserved2(0x0) {}
 
-      __host__ __device__
+      _LIBCUDACXX_HOST_DEVICE
       constexpr std::uint64_t __get_descriptor_cexpr() const {
         return
           std::uint64_t(__ap_reserved)            << 0  |
@@ -262,11 +262,11 @@ namespace __detail_ap {
       }
 
       inline
-      __host__ __device__
+      _LIBCUDACXX_HOST_DEVICE
       std::uint64_t __get_descriptor_non_cexpr() const noexcept { return *reinterpret_cast<const std::uint64_t*>(this); }
 
 
-      __host__ __device__
+      _LIBCUDACXX_HOST_DEVICE
       constexpr std::uint64_t __get_descriptor() const noexcept {
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
         return cuda::std::is_constant_evaluated() ?
@@ -280,29 +280,29 @@ namespace __detail_ap {
     static_assert(sizeof(__interleave_descriptor_t) == 8, "__interleave_descriptor_t should be 8 bytes");
     static_assert(sizeof(__interleave_descriptor_t) == sizeof(std::uint64_t), "");
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     static constexpr std::uint64_t __interleave_normal() noexcept {
       return 0x10F0000000000000;
     }
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     static constexpr std::uint64_t __interleave_streaming() noexcept {
       return 0x12F0000000000000;
     }
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     static constexpr std::uint64_t __interleave_persisting() noexcept {
       return 0x14F0000000000000;
     }
 
-    __host__ __device__
+    _LIBCUDACXX_HOST_DEVICE
     static constexpr std::uint64_t __interleave_normal_demote() noexcept {
       return 0x16F0000000000000;
     }
 
   } // namespace __sm_80
 
-  __host__ __device__
+  _LIBCUDACXX_HOST_DEVICE
   constexpr std::uint64_t __interleave(cudaAccessProperty __hit_prop, float __hit_ratio, cudaAccessProperty __miss_prop = cudaAccessPropertyNormal) {
       return __sm_80::__interleave_descriptor_t(
           ((__hit_prop == cudaAccessPropertyNormal) ? __sm_80::__on::__l2_cop_on_t::_L2_EVICT_NORMAL_DEMOTE : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop)),
@@ -311,7 +311,7 @@ namespace __detail_ap {
           ).__get_descriptor();
   }
 
-  __host__ __device__
+  _LIBCUDACXX_HOST_DEVICE
   constexpr std::uint64_t __block(void* __ptr, std::size_t __hit_bytes, std::size_t __total_bytes, cudaAccessProperty __hit_prop, cudaAccessProperty __miss_prop = cudaAccessPropertyNormal) {
       return (__total_bytes <= (size_t{0xFFFFFFFF}) & __total_bytes != 0 & __hit_bytes <= __total_bytes) ? __sm_80::__block_descriptor_builder(
           reinterpret_cast<std::uintptr_t>(__ptr),

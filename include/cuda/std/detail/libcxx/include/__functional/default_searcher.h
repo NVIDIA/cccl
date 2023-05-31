@@ -28,7 +28,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 pair<_ForwardIterator1, _ForwardIterator1>
 __search(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
          _ForwardIterator2 __first2, _ForwardIterator2 __last2, _BinaryPredicate __pred,
@@ -66,7 +66,7 @@ __search(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 }
 
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-_LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 pair<_RandomAccessIterator1, _RandomAccessIterator1>
 __search(_RandomAccessIterator1 __first1, _RandomAccessIterator1 __last1,
          _RandomAccessIterator2 __first2, _RandomAccessIterator2 __last2, _BinaryPredicate __pred,

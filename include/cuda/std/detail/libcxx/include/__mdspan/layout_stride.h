@@ -160,7 +160,7 @@ struct layout_stride {
     }
 
     template<class _SizeType, size_t ... _Ep, size_t ... _Idx>
-    __MDSPAN_HOST_DEVICE
+    _LIBCUDACXX_HOST_DEVICE
     constexpr index_type __get_size(_CUDA_VSTD::extents<_SizeType, _Ep...>,_CUDA_VSTD::integer_sequence<size_t, _Idx...>) const {
       return __MDSPAN_FOLD_TIMES_RIGHT( static_cast<index_type>(extents().extent(_Idx)), 1 );
     }

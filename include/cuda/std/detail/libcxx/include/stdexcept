@@ -67,14 +67,14 @@ class _LIBCUDACXX_HIDDEN __libcpp_refstring
 {
     const char* __imp_;
 
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER bool __uses_refcount() const;
+    _LIBCUDACXX_HOST_DEVICE bool __uses_refcount() const;
 public:
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER explicit __libcpp_refstring(const char* __msg);
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER __libcpp_refstring(const __libcpp_refstring& __s) _NOEXCEPT;
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER __libcpp_refstring& operator=(const __libcpp_refstring& __s) _NOEXCEPT;
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER ~__libcpp_refstring();
+    _LIBCUDACXX_HOST_DEVICE explicit __libcpp_refstring(const char* __msg);
+    _LIBCUDACXX_HOST_DEVICE __libcpp_refstring(const __libcpp_refstring& __s) _NOEXCEPT;
+    _LIBCUDACXX_HOST_DEVICE __libcpp_refstring& operator=(const __libcpp_refstring& __s) _NOEXCEPT;
+    _LIBCUDACXX_HOST_DEVICE ~__libcpp_refstring();
 
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER const char* c_str() const _NOEXCEPT {return __imp_;}
+    _LIBCUDACXX_HOST_DEVICE const char* c_str() const _NOEXCEPT {return __imp_;}
 };
 #endif // !_LIBCUDACXX_ABI_VCRUNTIME
 

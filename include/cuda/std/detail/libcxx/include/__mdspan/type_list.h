@@ -74,17 +74,17 @@ struct __type_at_entry { };
 template <class _Result>
 struct __type_at_assign_op_ignore_rest {
   template <class _Tp>
-  __MDSPAN_HOST_DEVICE
+  _LIBCUDACXX_HOST_DEVICE
   __type_at_assign_op_ignore_rest<_Result> operator=(_Tp&&);
   using type = _Result;
 };
 
 struct __type_at_assign_op_impl {
   template <size_t _Ip, size_t _Idx, class _Tp>
-  __MDSPAN_HOST_DEVICE
+  _LIBCUDACXX_HOST_DEVICE
   __type_at_assign_op_impl operator=(__type_at_entry<_Ip, _Idx, _Tp>&&);
   template <size_t _Ip, class _Tp>
-  __MDSPAN_HOST_DEVICE
+  _LIBCUDACXX_HOST_DEVICE
   __type_at_assign_op_ignore_rest<_Tp> operator=(__type_at_entry<_Ip, _Ip, _Tp>&&);
 };
 

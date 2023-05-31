@@ -93,7 +93,7 @@ struct __count_dynamic_extents<> {
 };
 
 template <size_t... _Extents, size_t... _OtherExtents>
-__MDSPAN_HOST_DEVICE
+_LIBCUDACXX_HOST_DEVICE
 static constexpr false_type __check_compatible_extents(
   false_type, _CUDA_VSTD::integer_sequence<size_t, _Extents...>, _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>
 ) noexcept { return { }; }
@@ -115,7 +115,7 @@ static integral_constant<
     ) /* && ... */
   )
 >
-__MDSPAN_HOST_DEVICE
+_LIBCUDACXX_HOST_DEVICE
 __check_compatible_extents(
   true_type, _CUDA_VSTD::integer_sequence<size_t, _Extents...>, _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>
 ) noexcept { return { }; }

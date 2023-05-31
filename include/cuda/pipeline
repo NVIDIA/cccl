@@ -101,7 +101,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
     };
 
     struct __pipeline_asm_helper {
-        __device__
+        _LIBCUDACXX_DEVICE
         static inline uint32_t __lane_id()
         {
             NV_IF_ELSE_TARGET(
@@ -359,10 +359,10 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
     template<uint8_t _Prior>
-    __device__
+    _LIBCUDACXX_DEVICE
     void __pipeline_consumer_wait(pipeline<thread_scope_thread> & __pipeline);
 
-    __device__
+    _LIBCUDACXX_DEVICE
     inline void __pipeline_consumer_wait(pipeline<thread_scope_thread> & __pipeline, uint8_t __prior);
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
@@ -459,7 +459,7 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
     template<uint8_t _Prior>
-    __device__
+    _LIBCUDACXX_DEVICE
     void __pipeline_consumer_wait(pipeline<thread_scope_thread> & __pipeline)
     {
         (void)__pipeline;
@@ -472,7 +472,7 @@ NV_IF_TARGET(NV_PROVIDES_SM_80,
 )
     }
 
-    __device__
+    _LIBCUDACXX_DEVICE
     inline void __pipeline_consumer_wait(pipeline<thread_scope_thread> & __pipeline, uint8_t __prior)
     {
         switch (__prior) {

@@ -59,7 +59,7 @@ public:
 
     template <class _Ch, class _Tr>
     friend
-    _LIBCUDACXX_HIDDEN _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER
+    _LIBCUDACXX_HIDDEN _LIBCUDACXX_HOST_DEVICE
     ostreambuf_iterator<_Ch, _Tr>
     __pad_and_output(ostreambuf_iterator<_Ch, _Tr> __s,
                      const _Ch* __ob, const _Ch* __op, const _Ch* __oe,

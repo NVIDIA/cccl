@@ -63,12 +63,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 namespace __detail {
 
 template <class>
-__MDSPAN_HOST_DEVICE constexpr auto __make_dynamic_extent() {
+_LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent() {
   return dynamic_extent;
 }
 
 template <size_t>
-__MDSPAN_HOST_DEVICE constexpr auto __make_dynamic_extent_integral() {
+_LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent_integral() {
   return dynamic_extent;
 }
 

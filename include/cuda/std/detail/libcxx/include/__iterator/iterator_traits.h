@@ -40,9 +40,9 @@ struct __has_iterator_typedefs
 private:
     struct __two {char __lx; char __lxx;};
     template <class _Up>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_INLINE_VISIBILITY static __two __test(...);
+    _LIBCUDACXX_INLINE_VISIBILITY static __two __test(...);
     template <class _Up>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_INLINE_VISIBILITY static char __test(
+    _LIBCUDACXX_INLINE_VISIBILITY static char __test(
         __void_t<typename _Up::iterator_category>* = 0,
     	__void_t<typename _Up::difference_type>* = 0,
     	__void_t<typename _Up::value_type>* = 0,
@@ -59,9 +59,9 @@ struct __has_iterator_category
 private:
     struct __two {char __lx; char __lxx;};
     template <class _Up>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_INLINE_VISIBILITY static __two __test(...);
+    _LIBCUDACXX_INLINE_VISIBILITY static __two __test(...);
     template <class _Up>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_INLINE_VISIBILITY static char __test(typename _Up::iterator_category* = 0);
+    _LIBCUDACXX_INLINE_VISIBILITY static char __test(typename _Up::iterator_category* = 0);
 public:
     static const bool value = sizeof(__test<_Tp>(0)) == 1;
 };

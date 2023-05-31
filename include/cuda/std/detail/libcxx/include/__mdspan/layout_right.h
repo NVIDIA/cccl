@@ -87,25 +87,25 @@ class layout_right::mapping {
     struct __rank_count {};
 
     template <size_t _r, size_t _Rank, class _Ip, class... _Indices>
-    __MDSPAN_HOST_DEVICE
+    _LIBCUDACXX_HOST_DEVICE
     constexpr index_type __compute_offset(
       index_type __offset, __rank_count<_r,_Rank>, const _Ip& __i, _Indices... __idx) const {
       return __compute_offset(__offset * __extents.template __extent<_r>() + __i,__rank_count<_r+1,_Rank>(),  __idx...);
     }
 
     template<class _Ip, class ... _Indices>
-    __MDSPAN_HOST_DEVICE
+    _LIBCUDACXX_HOST_DEVICE
     constexpr index_type __compute_offset(
       __rank_count<0,extents_type::rank()>, const _Ip& __i, _Indices... __idx) const {
       return __compute_offset(__i,__rank_count<1,extents_type::rank()>(),__idx...);
     }
 
-    __MDSPAN_HOST_DEVICE
+    _LIBCUDACXX_HOST_DEVICE
     constexpr index_type __compute_offset(size_t __offset, __rank_count<extents_type::rank(), extents_type::rank()>) const {
       return static_cast<index_type>(__offset);
     }
 
-    __MDSPAN_HOST_DEVICE
+    _LIBCUDACXX_HOST_DEVICE
     constexpr index_type __compute_offset(__rank_count<0,0>) const { return 0; }
 
   public:
@@ -115,7 +115,7 @@ class layout_right::mapping {
     __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping() noexcept = default;
     __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping(mapping const&) noexcept = default;
 
-    __MDSPAN_HOST_DEVICE
+    _LIBCUDACXX_HOST_DEVICE
     constexpr mapping(extents_type const& __exts) noexcept
       :__extents(__exts)
     { }
@@ -206,7 +206,7 @@ class layout_right::mapping {
         )
       )
     )
-    __MDSPAN_HOST_DEVICE
+    _LIBCUDACXX_HOST_DEVICE
     constexpr index_type operator()(_Indices... __idxs) const noexcept {
       return __compute_offset(__rank_count<0, extents_type::rank()>(), static_cast<index_type>(__idxs)...);
     }
@@ -248,12 +248,12 @@ class layout_right::mapping {
 
     // Not really public, but currently needed to implement fully constexpr useable submdspan:
     template<size_t _Np, class _SizeType, size_t ... _Ep, size_t ... _Idx>
-    __MDSPAN_HOST_DEVICE
+    _LIBCUDACXX_HOST_DEVICE
     constexpr index_type __get_stride(_CUDA_VSTD::extents<_SizeType, _Ep...>,_CUDA_VSTD::integer_sequence<size_t, _Idx...>) const {
       return __MDSPAN_FOLD_TIMES_RIGHT((_Idx>_Np? __extents.template __extent<_Idx>():1),1);
     }
     template<size_t _Np>
-    __MDSPAN_HOST_DEVICE
+    _LIBCUDACXX_HOST_DEVICE
     constexpr index_type __stride() const noexcept {
       return __get_stride<_Np>(__extents, _CUDA_VSTD::make_index_sequence<extents_type::rank()>());
     }

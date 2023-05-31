@@ -89,7 +89,7 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
-__device__
+_LIBCUDACXX_DEVICE
 inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> & b);
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
@@ -101,7 +101,7 @@ class barrier<thread_scope_block, _CUDA_VSTD::__empty_completion> : public __blo
     using __barrier_base = _CUDA_VSTD::__barrier_base<_CUDA_VSTD::__empty_completion, (int)thread_scope_block>;
     __barrier_base __barrier;
 
-    __device__
+    _LIBCUDACXX_DEVICE
     friend inline _CUDA_VSTD::uint64_t * device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(barrier<thread_scope_block> & b);
 
 template<typename _Barrier>
@@ -556,7 +556,7 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
-__device__
+_LIBCUDACXX_DEVICE
 inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> & b) {
     return reinterpret_cast<_CUDA_VSTD::uint64_t *>(&b.__barrier);
 }
@@ -605,7 +605,7 @@ inline void __strided_memcpy(char * __destination, char const * __source, _CUDA_
 
 template<_CUDA_VSTD::size_t _Alignment, bool _Large = (_Alignment > 16)>
 struct __memcpy_async_impl {
-    __device__ static inline async_contract_fulfillment __copy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride) {
+    _LIBCUDACXX_DEVICE static inline async_contract_fulfillment __copy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride) {
         __strided_memcpy<_Alignment>(__destination, __source, __total_size, __rank, __stride);
         return async_contract_fulfillment::none;
     }
@@ -613,7 +613,7 @@ struct __memcpy_async_impl {
 
 template<>
 struct __memcpy_async_impl<4, false> {
-    __device__ static inline async_contract_fulfillment __copy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride) {
+    _LIBCUDACXX_DEVICE static inline async_contract_fulfillment __copy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride) {
         // Guard from host visibility when compiling in host only contexts
         NV_IF_TARGET(
             NV_IS_DEVICE, (
@@ -631,7 +631,7 @@ struct __memcpy_async_impl<4, false> {
 
 template<>
 struct __memcpy_async_impl<8, false> {
-    __device__ static inline async_contract_fulfillment __copy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride) {
+    _LIBCUDACXX_DEVICE static inline async_contract_fulfillment __copy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride) {
         // Guard from host visibility when compiling in host only contexts
         NV_IF_TARGET(
             NV_IS_DEVICE, (
@@ -649,7 +649,7 @@ struct __memcpy_async_impl<8, false> {
 
 template<>
 struct __memcpy_async_impl<16, false> {
-    __device__ static inline async_contract_fulfillment __copy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride) {
+    _LIBCUDACXX_DEVICE static inline async_contract_fulfillment __copy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride) {
         // Guard from host visibility when compiling in host only contexts
         NV_IF_TARGET(
             NV_IS_DEVICE, (

@@ -246,61 +246,61 @@ private:
     template <class _Tp, size_t> friend class span;
 
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     bool
     operator==(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     bool
     operator<(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     bool
     operator!=(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     bool
     operator>(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     bool
     operator>=(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     bool
     operator<=(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 
 #ifndef _LIBCUDACXX_CXX03_LANG
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     auto
     operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) _NOEXCEPT
     -> decltype(__x.base() - __y.base());
 #else
     template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     typename __wrap_iter<_Iter1>::difference_type
     operator-(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) _NOEXCEPT;
 #endif
 
     template <class _Iter1>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     __wrap_iter<_Iter1>
     operator+(typename __wrap_iter<_Iter1>::difference_type, __wrap_iter<_Iter1>) _NOEXCEPT;
 
-    template <class _Ip, class _Op> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER friend _Op copy(_Ip, _Ip, _Op);
-    template <class _B1, class _B2> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER friend _B2 copy_backward(_B1, _B1, _B2);
-    template <class _Ip, class _Op> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER friend _Op move(_Ip, _Ip, _Op);
-    template <class _B1, class _B2> _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER friend _B2 move_backward(_B1, _B1, _B2);
+    template <class _Ip, class _Op> _LIBCUDACXX_HOST_DEVICE friend _Op copy(_Ip, _Ip, _Op);
+    template <class _B1, class _B2> _LIBCUDACXX_HOST_DEVICE friend _B2 copy_backward(_B1, _B1, _B2);
+    template <class _Ip, class _Op> _LIBCUDACXX_HOST_DEVICE friend _Op move(_Ip, _Ip, _Op);
+    template <class _B1, class _B2> _LIBCUDACXX_HOST_DEVICE friend _B2 move_backward(_B1, _B1, _B2);
 
 #if _LIBCUDACXX_DEBUG_LEVEL < 2
     template <class _Tp>
-    _LIBCUDACXX_EXECUTION_SPACE_SPECIFIER _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
+    _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     __enable_if_t
     <
         is_trivially_copy_assignable<_Tp>::value,

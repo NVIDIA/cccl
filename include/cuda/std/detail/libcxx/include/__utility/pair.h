@@ -231,7 +231,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     template<class _U1, class _U2, __enable_if_t<
             _CheckArgs::template __is_pair_constructible<_U1&, _U2&>::value
     >* = nullptr>
-    __host__ _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HOST _LIBCUDACXX_INLINE_VISIBILITY constexpr
     explicit(!_CheckArgs::template __is_implicit<_U1&, _U2&>()) pair(::std::pair<_U1, _U2>& __p)
         noexcept((is_nothrow_constructible<first_type, _U1&>::value &&
                   is_nothrow_constructible<second_type, _U2&>::value))
@@ -252,7 +252,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     template<class _U1, class _U2, __enable_if_t<
             _CheckArgs::template __enable_explicit<_U1 const&, _U2 const&>::value
     >* = nullptr>
-    __host__ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     explicit pair(::std::pair<_U1, _U2> const& __p)
         _NOEXCEPT_((is_nothrow_constructible<first_type, _U1 const&>::value &&
                     is_nothrow_constructible<second_type, _U2 const&>::value))
@@ -272,7 +272,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     template<class _U1, class _U2, __enable_if_t<
             _CheckArgs::template __enable_implicit<_U1 const&, _U2 const&>::value
     >* = nullptr>
-    __host__ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     pair(::std::pair<_U1, _U2> const& __p)
         _NOEXCEPT_((is_nothrow_constructible<first_type, _U1 const&>::value &&
                     is_nothrow_constructible<second_type, _U2 const&>::value))
@@ -292,7 +292,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     template<class _U1, class _U2, __enable_if_t<
             _CheckArgs::template __enable_explicit<_U1, _U2>::value
     >* = nullptr>
-    __host__ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     explicit pair(::std::pair<_U1, _U2>&&__p)
         _NOEXCEPT_((is_nothrow_constructible<first_type, _U1&&>::value &&
                     is_nothrow_constructible<second_type, _U2&&>::value))
@@ -312,7 +312,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     template<class _U1, class _U2, __enable_if_t<
             _CheckArgs::template __enable_implicit<_U1, _U2>::value
     >* = nullptr>
-    __host__ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     pair(::std::pair<_U1, _U2>&& __p)
         _NOEXCEPT_((is_nothrow_constructible<first_type, _U1&&>::value &&
                     is_nothrow_constructible<second_type, _U2&&>::value))
@@ -334,7 +334,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     template<class _U1, class _U2, __enable_if_t<
             _CheckArgs::template __is_pair_constructible<const _U1&&, const _U2&&>::value
     >* = nullptr>
-    _LIBCUDACXX_HIDE_FROM_ABI __host__ constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_HOST constexpr
     explicit(!_CheckArgs::template __is_implicit<const _U1&&, const _U2&&>::value)
     pair(const ::std::pair<_U1, _U2>&& __p)
         noexcept(is_nothrow_constructible<first_type, const _U1&&>::value &&
@@ -385,7 +385,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
     template<class _UT1 = _T1, __enable_if_t<is_copy_assignable<_UT1>::value &&
                                              is_copy_assignable<_T2>::value, int> = 0>
-    __host__ _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     pair& operator=(::std::pair<_T1, _T2> const& __p)
         _NOEXCEPT_(is_nothrow_copy_assignable<first_type>::value &&
                    is_nothrow_copy_assignable<second_type>::value)
@@ -412,7 +412,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
     template<class _UT1 = _T1, __enable_if_t<is_move_assignable<_UT1>::value &&
                                              is_move_assignable<_T2>::value, int> = 0>
-    __host__ _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     pair& operator=(::std::pair<_T1, _T2>&& __p)
         _NOEXCEPT_(is_nothrow_move_assignable<first_type>::value &&
                    is_nothrow_move_assignable<second_type>::value)
@@ -436,7 +436,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     }
 
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
-    _LIBCUDACXX_HIDE_FROM_ABI __host__ constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_HOST constexpr
     const pair& operator=(::std::pair<_T1, _T2> const& __p) const
       noexcept(is_nothrow_copy_assignable_v<const first_type> &&
                is_nothrow_copy_assignable_v<const second_type>)
@@ -460,7 +460,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     }
 
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
-    _LIBCUDACXX_HIDE_FROM_ABI __host__ constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_HOST constexpr
     const pair& operator=(::std::pair<_T1, _T2>&& __p) const
       noexcept(is_nothrow_assignable_v<const first_type&, first_type> &&
                is_nothrow_assignable_v<const second_type&, second_type>)
@@ -484,7 +484,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
 
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
     template<class _U1, class _U2>
-    _LIBCUDACXX_HIDE_FROM_ABI __host__ constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_HOST constexpr
     const pair& operator=(const ::std::pair<_U1, _U2>& __p) const
       requires(is_assignable_v<const first_type&, const _U1&> &&
                is_assignable_v<const second_type&, const _U2&>) {
@@ -506,7 +506,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
 
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
     template<class _U1, class _U2>
-    _LIBCUDACXX_HIDE_FROM_ABI __host__ constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_HOST constexpr
     const pair& operator=(::std::pair<_U1, _U2>&& __p) const
       requires(is_assignable_v<const first_type&, _U1> &&
                is_assignable_v<const second_type&, _U2>) {
@@ -549,7 +549,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
 #endif // _LIBCUDACXX_STD_VER > 20
 
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
-    __host__ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     operator ::std::pair<_T1, _T2>() const { return { first, second }; }
 #endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
 
