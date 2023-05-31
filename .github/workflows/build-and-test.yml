@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: test
         run: | 
-          SLEEP_TIME=$RANDOM % 15
+          SLEEP_TIME=$((RANDOM % 15))
           echo "Sleeping for $SLEEP_TIME seconds"
           sleep $SLEEP_TIME
   test:
