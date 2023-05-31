@@ -14,7 +14,7 @@ on:
 
 jobs:
   build:
-    name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++ ${{inputs.std}}/${{inputs.cpu}}
+    name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
     runs-on: ubuntu-latest
     steps:
       - name: test
@@ -22,7 +22,7 @@ jobs:
           "echo test"
   test:
     needs: build
-    name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++ ${{inputs.std}}/${{inputs.cpu}}
+    name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
     runs-on: ubuntu-latest
     steps:
       - name: test
