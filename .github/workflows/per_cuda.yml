@@ -13,7 +13,7 @@ jobs:
         include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
     with:
       cuda_version: ${{ matrix.cuda }}
-      compiler: "gcc"
+      compiler: ${{ matrix.compiler.name }}
       compiler_version: "7"
       std: "11"
       cpu: "amd64"
