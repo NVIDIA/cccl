@@ -44,7 +44,7 @@ jobs:
   thrust:
     name: Thrust - CUDA ${{ matrix.cuda_version }} - ${{ matrix.compiler }}
     needs: compute-matrix
-    uses: ./.github/workflows/per_cuda.yml
+    uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       matrix: 
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
@@ -55,7 +55,7 @@ jobs:
   cub:
     name: CUB - CUDA ${{ matrix.cuda_version }} - ${{ matrix.compiler }}
     needs: compute-matrix
-    uses: ./.github/workflows/per_cuda.yml
+    uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       matrix: 
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
@@ -66,7 +66,7 @@ jobs:
   libcudacxx:
     name: libcudacxx - CUDA ${{ matrix.cuda_version }} - ${{ matrix.compiler }}
     needs: compute-matrix
-    uses: ./.github/workflows/per_cuda.yml
+    uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       matrix: 
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 

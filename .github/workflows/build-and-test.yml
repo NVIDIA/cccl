@@ -24,6 +24,11 @@ jobs:
       - name: test
         run: | 
           echo "test"
+          if [[ -n "${{ inputs.build_script }}" ]]; then
+            ./${{ inputs.build_script }}
+          else
+            echo "No build script provided, skipping."
+          fi
   test:
     needs: build
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
@@ -32,3 +37,8 @@ jobs:
       - name: test
         run: | 
           echo "test"
+          if [[ -n "${{ inputs.test_script }}" ]]; then
+            ./${{ inputs.test_script }}
+          else
+            echo "No test script provided, skipping."
+          fi

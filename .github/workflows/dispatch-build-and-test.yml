@@ -4,6 +4,8 @@ on:
   workflow_call:
     inputs:
       per_cuda_compiler_matrix: {type: string, required: true}
+      build_script: {type: string, required: false}
+      test_script: {type: string, required: false}
 
 jobs:
   # Using a matrix to dispatch to the build-and-test reusable workflow for each build configuration
@@ -22,4 +24,6 @@ jobs:
       std: ${{ matrix.std }}
       gpu_build_archs: "70" #TODO: Fix this
       cpu: ${{ matrix.cpu }}
+      build_script: ${{ inputs.build_script }}
+      test_script: ${{ inputs.test_script }}
 
