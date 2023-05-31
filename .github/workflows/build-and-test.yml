@@ -33,6 +33,7 @@ jobs:
     needs: build
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
     runs-on: ubuntu-latest
+    if: ${{ needs.build.result == 'success' }}
     steps:
       - name: Run test script
         run: | 
