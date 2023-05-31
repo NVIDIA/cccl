@@ -25,9 +25,9 @@ jobs:
   compute-matrix:
     uses: ./.github/workflows/compute-matrix.yml
     with:
-      matrix_file: $BUILD_TYPE
-      build_type: $MATRIX_FILE
-  
+      matrix_file: $MATRIX_FILE
+      build_type: $BUILD_TYPE
+
   thrust:
     name: Thrust-CUDA${{ matrix.cuda_version }}-${{ matrix.compiler }}
     needs: compute-matrix
