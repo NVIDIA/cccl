@@ -24,9 +24,9 @@ jobs:
       - name: test
         run: | 
           if [[ "${{ inputs.cuda }}" == "11.0" ]]; then
-            SLEEP_TIME=600
+            SLEEP_TIME=1000 
+            sleep $SLEEP_TIME
           fi
-          sleep $SLEEP_TIME
   test:
     needs: build
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
