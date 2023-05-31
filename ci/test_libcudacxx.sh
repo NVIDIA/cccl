@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "build libcudacxx"
+echo "test libcudacxx"
 
 # Require a compiler to be specified
 #if [ $# -ne 1 ]; then

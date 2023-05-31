@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "build thrust"
+echo "test thrust"
 
 # Require a compiler to be specified
 #if [ $# -ne 1 ]; then

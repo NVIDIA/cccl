@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "build cub"
+echo "test cub"
 
 # Require a compiler to be specified
 #if [ $# -ne 1 ]; then
