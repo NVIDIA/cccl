@@ -23,10 +23,7 @@ jobs:
     steps:
       - name: test
         run: | 
-          if [[ "${{ inputs.std }}" == "14" ]]; then
-            SLEEP_TIME=1000 
-            sleep $SLEEP_TIME
-          fi
+          echo "test"
   test:
     needs: build
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
