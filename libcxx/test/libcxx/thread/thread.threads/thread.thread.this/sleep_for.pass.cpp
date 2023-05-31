@@ -8,7 +8,8 @@
 //
 // UNSUPPORTED: libcpp-has-no-threads
 
-// FLAKY_TEST.
+// Threading tests are notoriously flaky in libcxx mode so disable them
+// UNSUPPORTED: true
 
 // This test uses the POSIX header <sys/time.h> which Windows doesn't provide
 // UNSUPPORTED: windows

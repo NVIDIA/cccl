@@ -14,6 +14,8 @@
 
 #include <optional>
 
+#include "test_macros.h"
+
 int main(int, char**)
 {
     using std::optional;
@@ -23,8 +25,14 @@ int main(int, char**)
     optional<nullopt_t> opt; // expected-note 1 {{requested here}}
     optional<const nullopt_t> opt1; // expected-note 1 {{requested here}}
     optional<nullopt_t &> opt2; // expected-note 1 {{requested here}}
+#ifdef TEST_COMPILER_CLANG
+    // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with a non-object type is undefined behavior}}
+#endif // TEST_COMPILER_CLANG
     optional<nullopt_t &&> opt3; // expected-note 1 {{requested here}}
     // expected-error@optional:* 4 {{instantiation of optional with nullopt_t is ill-formed}}
+#ifdef TEST_COMPILER_CLANG
+    // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with a non-object type is undefined behavior}}
+#endif // TEST_COMPILER_CLANG
 
   return 0;
 }

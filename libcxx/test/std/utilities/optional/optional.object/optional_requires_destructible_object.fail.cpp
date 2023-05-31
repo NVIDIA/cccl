@@ -13,6 +13,8 @@
 
 #include <optional>
 
+#include "test_macros.h"
+
 using std::optional;
 
 struct X
@@ -27,7 +29,13 @@ int main(int, char**)
     {
         // expected-error-re@optional:* 2 {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with a reference type is ill-formed}}
         optional<int&> opt1;
+#ifdef TEST_COMPILER_CLANG
+        // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with a non-object type is undefined behavior}}
+#endif // TEST_COMPILER_CLANG
         optional<int&&> opt2;
+#ifdef TEST_COMPILER_CLANG
+        // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with a non-object type is undefined behavior}}
+#endif // TEST_COMPILER_CLANG
     }
     {
         // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with a non-destructible type is ill-formed}}

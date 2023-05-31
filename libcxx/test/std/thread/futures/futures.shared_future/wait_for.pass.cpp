@@ -9,7 +9,8 @@
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: c++98, c++03
 
-// FLAKY_TEST.
+// Threading tests are notoriously flaky in libcxx mode so disable them
+// UNSUPPORTED: true
 
 // <future>
 

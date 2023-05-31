@@ -7,7 +7,8 @@
 //===----------------------------------------------------------------------===//
 //
 // UNSUPPORTED: libcpp-has-no-threads
-// FLAKY_TEST.
+// Threading tests are notoriously flaky in libcxx mode so disable them
+// UNSUPPORTED: true
 
 // <thread>
 

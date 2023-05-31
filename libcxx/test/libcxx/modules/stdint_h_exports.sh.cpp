@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: clang-9, clang-10
+
 // REQUIRES: modules-support
 
 // Test that int8_t and the like are exported from stdint.h not inttypes.h

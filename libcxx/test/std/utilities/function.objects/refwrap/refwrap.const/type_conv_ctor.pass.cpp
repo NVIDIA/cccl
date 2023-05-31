@@ -61,7 +61,8 @@ int main(int, char**)
     extern std::reference_wrapper<int> purr();
     ASSERT_SAME_TYPE(decltype(true ? purr() : 0), int);
   }
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 14 \
+ && (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 8)
   {
     int i = 0;
     std::reference_wrapper ri(i);

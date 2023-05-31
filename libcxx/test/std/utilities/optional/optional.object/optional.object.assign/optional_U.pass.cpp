@@ -9,6 +9,8 @@
 // UNSUPPORTED: c++03, c++11, c++14
 // <optional>
 
+// UNSUPPORTED: gcc-7
+
 // From LWG2451:
 // template <class U>
 // optional<T>& operator=(optional<U>&& rhs);

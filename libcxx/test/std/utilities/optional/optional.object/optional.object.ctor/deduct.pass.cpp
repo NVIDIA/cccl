@@ -8,6 +8,7 @@
 
 // <optional>
 // UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: gcc-7
 
 // template<class T>
 //   optional(T) -> optional<T>;

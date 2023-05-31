@@ -1050,17 +1050,12 @@ tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>;
 
 template <class ..._Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename enable_if
-<
-    __all<__is_swappable<_Tp>::value...>::value,
-    void
->::type
-swap(tuple<_Tp...>& __t, tuple<_Tp...>& __u)
-                 _NOEXCEPT_(__all<__is_nothrow_swappable<_Tp>::value...>::value)
-    {__t.swap(__u);}
+__enable_if_t<_And<__is_swappable<_Tp>...>::value, void>
+swap(tuple<_Tp...>& __t, tuple<_Tp...>& __u) _NOEXCEPT_(__all<__is_nothrow_swappable<_Tp>::value...>::value) {
+    __t.swap(__u);
+}
 
 // get
-
 template <size_t _Ip, class ..._Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 typename tuple_element<_Ip, tuple<_Tp...> >::type&

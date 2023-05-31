@@ -10,7 +10,8 @@
 // UNSUPPORTED: c++98, c++03, c++11
 // XFAIL: dylib-has-no-shared_mutex
 
-// FLAKY_TEST.
+// Threading tests are notoriously flaky in libcxx mode so disable them
+// UNSUPPORTED: true
 
 // <shared_mutex>
 

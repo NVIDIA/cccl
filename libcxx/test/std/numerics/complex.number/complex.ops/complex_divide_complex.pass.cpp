@@ -157,7 +157,9 @@ int main(int, char**)
     static_assert(test<float>());
     static_assert(test<double>());
     static_assert(test<long double>());
+#if !defined(TEST_COMPILER_CLANG) // clang complains about constexpr evaluation limit
     static_assert(test_edges());
+#endif // !TEST_COMPILER_CLANG
 #endif
 
     return 0;
