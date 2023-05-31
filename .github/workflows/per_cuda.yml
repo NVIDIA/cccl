@@ -16,7 +16,7 @@ jobs:
       compiler: ${{ matrix.compiler.name }}
       compiler_version: ${{ matrix.compiler.version }}
       std: ${{ matrix.std }}
-      gpu_build_archs: ${{ matrix.gpu_build_archs }}
+      gpu_build_archs: "70"
       cpu: ${{ matrix.cpu }}
   #build:
   #  name: Build ${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++ ${{matrix.std}}/${{matrix.cpu}}
