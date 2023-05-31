@@ -46,6 +46,7 @@ jobs:
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
+      fail-fast: false
       matrix: 
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
         compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
@@ -59,6 +60,7 @@ jobs:
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
+      fail-fast: false
       matrix: 
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
         compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
@@ -72,6 +74,7 @@ jobs:
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
+      fail-fast: false
       matrix: 
         cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
         compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}

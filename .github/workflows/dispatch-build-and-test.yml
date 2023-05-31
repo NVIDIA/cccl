@@ -15,6 +15,7 @@ jobs:
     name: Build and test ${{matrix.compiler.name}}${{ matrix.compiler.version }}/C++${{matrix.std}}/${{matrix.cpu}}
     uses: ./.github/workflows/build-and-test.yml
     strategy:
+      fail-fast: false
       matrix: 
         include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
     with:
