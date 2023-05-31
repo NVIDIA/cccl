@@ -37,7 +37,6 @@ jobs:
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run build script
         run: | 
-          echo "test"
           if [[ -n "${{ inputs.build_script }}" ]]; then
             ./${{ inputs.build_script }}
           else
@@ -65,7 +64,6 @@ jobs:
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run test script
         run: | 
-          echo "test"
           if [[ -n "${{ inputs.test_script }}" ]]; then
             ./${{ inputs.test_script }}
           else
