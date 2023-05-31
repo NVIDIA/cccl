@@ -18,7 +18,7 @@ on:
 
 jobs:
   build:
-    name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
+    name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
     runs-on: ubuntu-latest
     #runs-on: linux-${{inputs.cpu}}-cpu16
     #container: # Fetch the container image to use for the job
