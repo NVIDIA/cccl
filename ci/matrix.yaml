@@ -19,7 +19,9 @@ gpus:
 # gpu_build_archs: The GPU architectures to build for
 # std: The C++ standards to build for
 #    This field is unique as it will generate an independent build/test job for each value
-include:
+
+# Configurations that will run for every PR
+pull-request:
 - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17]}
 - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17]}
 - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17]}
@@ -29,8 +31,6 @@ include:
 - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '10', exe: 'g++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17, 20]}
 - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '11', exe: 'g++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17, 20]}
 - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '12', exe: 'g++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17, 20]}
-
- #clang
 - {cuda: '11.0', ubuntu: '18.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17]}
 - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17]}
 - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '10', exe: 'clang++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17]}

@@ -29,7 +29,7 @@ jobs:
         id: compute-matrix
         run: |
           cat ./ci/matrix.yaml
-          BUILD_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.include[] | . as $o | {std: .std[]} + del($o.std)] | {include: . }' )
+          BUILD_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.pull_request[] | . as $o | {std: .std[]} + del($o.std)] | {include: . }' )
           echo "BUILD_MATRIX=$BUILD_MATRIX" | tee -a "$GITHUB_OUTPUT"
           GPUS=$(yq -o=json ./ci/matrix.yaml | jq '.gpus')
           TEST_MATRIX=$(echo $BUILD_MATRIX | jq -c --argjson gpus "$GPUS" '[.include, $gpus] | [ combinations | .[0] + {gpu: .[1]} ] | {include: . }')
