@@ -18,71 +18,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  compute-matrix:
-    runs-on: ubuntu-latest
-    outputs:
-      FULL_MATRIX:  ${{ steps.compute-matrix.outputs.FULL_MATRIX }}
-      CUDA_VERSIONS: ${{ steps.compute-matrix.outputs.CUDA_VERSIONS }}
-      COMPILERS: ${{ steps.compute-matrix.outputs.COMPILERS }}
-      PER_CUDA_COMPILER_MATRIX: ${{ steps.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      # PER_CUDA_COMPILER_MATRIX is a JSON object where the keys are the CUDA version and compiler name concatenated and 
-      # the values are the build configurations for that CUDA version and compiler. For example, the values associated with "11.0-gcc" 
-      # are the build configurations for CUDA 11.0 with gcc and clang.
-      - name: Compute matrix
-        id: compute-matrix
-        run: |
-          cat ./ci/matrix.yaml
-          FULL_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.include[] | . as $o | {std: .std[]} + del($o.std)]' )
-          echo "FULL_MATRIX=$FULL_MATRIX" | tee -a "$GITHUB_OUTPUT"
-          CUDA_VERSIONS=$(echo $FULL_MATRIX | jq -c '[.[] | .cuda] | unique')
-          echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
-          COMPILERS=$(echo $FULL_MATRIX | jq -c '[.[] | .compiler.name] | unique')
-          echo "COMPILERS=$COMPILERS" | tee -a "$GITHUB_OUTPUT"
-          PER_CUDA_COMPILER_MATRIX=$(echo $FULL_MATRIX | jq -c ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')
-          echo "PER_CUDA_COMPILER_MATRIX=$PER_CUDA_COMPILER_MATRIX" | tee -a "$GITHUB_OUTPUT"
-          
-  thrust:
-    name: Thrust - CUDA ${{ matrix.cuda_version }} - ${{ matrix.compiler }}
-    needs: compute-matrix
-    uses: ./.github/workflows/dispatch-build-and-test.yml
-    strategy:
-      fail-fast: false
-      matrix: 
-        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
-        compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
+  linux-build-test:
+    name: Linux
+    uses: ./.github/workflows/linux-build-and-test.yml
     with:
-      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
-      build_script: "./ci/build_thrust.sh"
-      test_script: "./ci/test_thrust.sh"
-
-  cub:
-    name: CUB - CUDA ${{ matrix.cuda_version }} - ${{ matrix.compiler }}
-    needs: compute-matrix
-    uses: ./.github/workflows/dispatch-build-and-test.yml
-    strategy:
-      fail-fast: false
-      matrix: 
-        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
-        compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
-    with:
-      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
-      build_script: "./ci/build_cub.sh"
-      test_script: "./ci/test_cub.sh"
-  
-  libcudacxx:
-    name: libcudacxx - CUDA ${{ matrix.cuda_version }} - ${{ matrix.compiler }}
-    needs: compute-matrix
-    uses: ./.github/workflows/dispatch-build-and-test.yml
-    strategy:
-      fail-fast: false
-      matrix: 
-        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
-        compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
-    with:
-      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
-      build_script: "./ci/build_libcudacxx.sh"
-      test_script: "./ci/test_libcudacxx.sh"
+      matrix_file: ./ci/matrix.yaml
+      build_type: "pull-request"
 
