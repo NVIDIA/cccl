@@ -8,7 +8,6 @@ on:
       compiler_name: {type: string, required: true}
 
 jobs:
-
   compute_per_compiler_matrix:
     name: Compute ${{inputs.compiler_name}} matrix  
     runs-on: ubuntu-latest

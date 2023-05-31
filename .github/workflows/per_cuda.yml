@@ -1,4 +1,4 @@
-name: Per CUDA version
+name: Dispatch build and test
 
 on:
   workflow_call:
@@ -10,6 +10,7 @@ jobs:
   # ensures that the build/test steps can overlap across different configurations. For example,
   # the build step for CUDA 12.1 + gcc 9.3 can run at the same time as the test step for CUDA 11.0 + clang 11.
   build_and_test:
+    name: Build and test ${{matrix.compiler.name}}${{ matrix.compiler.version }}/C++${{matrix.std}}/${{matrix.cpu}}
     uses: ./.github/workflows/build-and-test.yml
     strategy:
       matrix: 
@@ -21,26 +22,4 @@ jobs:
       std: ${{ matrix.std }}
       gpu_build_archs: "70" #TODO: Fix this
       cpu: ${{ matrix.cpu }}
-  #build:
-  #  name: Build ${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++ ${{matrix.std}}/${{matrix.cpu}}
-  #  strategy:
-  #    matrix: 
-  #      include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
-  #  runs-on: ubuntu-latest
-  #  steps:
-  #    - name: test
-  #      run: |
-  #        echo "CUDA: ${{ matrix.cuda_version }} Compiler: ${{ matrix.compiler }} ${{ matrix.compiler_version }}"
-  #test:
-  #  needs: build
-  #  name: Test ${{ matrix.compiler.name }}${{ matrix.compiler.version }}/C++ ${{matrix.std}}/${{matrix.cpu}}
-  #  strategy:
-  #    matrix: 
-  #      include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
-  #  runs-on: ubuntu-latest
-  #  steps:
-  #    - name: test
-  #      run: |
-  #        echo "CUDA: ${{ matrix.cuda_version }} Compiler: ${{ matrix.compiler }} ${{ matrix.compiler_version }}"
-
 

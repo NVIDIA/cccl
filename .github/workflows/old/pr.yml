@@ -1,0 +1,124 @@
+# This is the main workflow that runs on every PR and push to main
+name: pr
+
+defaults:
+  run:
+    shell: bash
+
+on:
+  push:
+    branches:
+      - main
+#      - "pull-request/[0-9]+"
+
+# Only runs one instance of this workflow at a time for a given PR and cancels any in-progress runs when a new one starts.
+concurrency:
+  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  compute-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      BUILD_MATRIX: ${{ steps.compute-matrix.outputs.BUILD_MATRIX }}
+      TEST_MATRIX:  ${{ steps.compute-matrix.outputs.TEST_MATRIX }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Compute matrix
+        id: compute-matrix
+        run: |
+          cat ./ci/matrix.yaml
+          BUILD_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c '[.include[] | . as $o | {std: .std[]} + del($o.std)] | {include: . }' )
+          echo "BUILD_MATRIX=$BUILD_MATRIX" | tee -a "$GITHUB_OUTPUT"
+          GPUS=$(yq -o=json ./ci/matrix.yaml | jq '.gpus')
+          TEST_MATRIX=$(echo $BUILD_MATRIX | jq -c --argjson gpus "$GPUS" '[.include, $gpus] | [ combinations | .[0] + {gpu: .[1]} ] | {include: . }')
+          echo "TEST_MATRIX=$TEST_MATRIX" | tee -a "$GITHUB_OUTPUT"
+
+  thrust:
+    needs: compute-matrix
+    uses: ./.github/workflows/build_and_test.yml
+    with:
+      build_matrix: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
+      test_matrix: ${{ needs.compute-matrix.outputs.TEST_MATRIX }}
+      build_script: "./ci/build_thrust.sh"
+      test_script: "./ci/test_thrust.sh"
+
+  libcudacxx:
+    needs: compute-matrix
+    uses: ./.github/workflows/build_and_test.yml
+    with:
+      build_matrix: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
+      test_matrix: ${{ needs.compute-matrix.outputs.TEST_MATRIX }}
+      build_script: "./ci/build_libcudacxx.sh"
+      test_script: "./ci/test_libcudacxx.sh"
+
+  cub:
+    needs: compute-matrix
+    uses: ./.github/workflows/build_and_test.yml
+    with:
+      build_matrix: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
+      test_matrix: ${{ needs.compute-matrix.outputs.TEST_MATRIX }}
+      build_script: "./ci/build_cub.sh"
+      test_script: "./ci/test_cub.sh"
+
+    #steps:
+#   #   - name: Verify compiler version
+#   #     run: |
+#   #       version=$("${{matrix.compiler.exe}}" --version | head -n1 | cut -d' ' -f3 | cut -d. -f1)
+#   #       if [[ "${version}" != "${{ matrix.compiler.version }}" ]]; then
+#   #         echo "Compiler version does not match: found ${version}, expected ${{ matrix.compiler.version }}"
+#   #         exit 1
+#   #       fi
+#   #       echo "Sucessfully found ${{matrix.compiler.name}} ${version}"
+    #  - name: Get AWS credentials for sccache bucket
+    #    uses: aws-actions/configure-aws-credentials@v2
+    #    with:
+    #      role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+    #      aws-region: us-east-2 
+    #      role-duration-seconds: 43200 # 12 hours
+    #  - uses: actions/checkout@v3
+    #    with:
+    #      fetch-depth: 0
+    #      persist-credentials: false
+    #  - name: Build Thrust tests
+    #    env:
+    #      SCCACHE_BUCKET: rapids-sccache-east
+    #      SCCACHE_REGION: us-east-2
+    #      SCCACHE_IDLE_TIMEOUT: 32768
+    #      SCCACHE_S3_USE_SSL: true
+    #      SCCACHE_S3_NO_CREDENTIALS: false
+    #    run: |
+    #      time bash ./ci/build_thrust.sh 
+    #      sccache -s
+    #  - name: tar Thrust build artifacts
+    #    run: |
+    #      tar czf thrust-build-artifacts.tar.gz ./thrust
+    #      echo "tarball size: $(du -h thrust-build-artifacts.tar.gz | cut -f1)"
+    #  - name: Upload Thrust build artifacts
+    #    uses: actions/upload-artifact@v3
+    #    with:
+    #      name: thrust-build-artifacts
+    #      path: thrust-build-artifacts.tar.gz
+  #test:
+  #  name: Run tests
+  #  needs: build
+  #  runs-on: linux-amd64-gpu-v100-latest-1
+  #  container:
+  #    options: -u root
+  #    image: rapidsai/devcontainers:23.06-cpp-gcc12-cuda12.1-ubuntu22.04
+  #    env:
+  #      NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
+  #  steps:
+  #    - name: Download Thrust build artifacts
+  #      uses: actions/download-artifact@v3
+  #      with:
+  #        name: thrust-build-artifacts
+  #    - name: Untar Thrust build artifacts
+  #      run: tar xzf thrust-build-artifacts.tar.gz
+  #    - name: Run Thrust tests
+  #      run: | 
+  #        pwd 
+  #        ls
+  #        chmod -R +x thrust/build/bin/*
+  #        ctest --test-dir thrust/build --output-on-failure
