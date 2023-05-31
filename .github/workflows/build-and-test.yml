@@ -18,11 +18,15 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      run: "echo test"
+      - name: test
+        run: | 
+          "echo test"
   test:
     needs: build
     if: github.repository == 'NVIDIA/cccl'
     name: Test
     runs-on: ubuntu-latest
     steps:
-      run: "echo test"
+      - name: test
+        run: | 
+          "echo test"
