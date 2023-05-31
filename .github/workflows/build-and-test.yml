@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: test
         run: | 
-          if [[ "${{ inputs.cuda_version }}" == "11.0" ]]; then
+          if [[ "${{ inputs.std }}" == "14" ]]; then
             SLEEP_TIME=1000 
             sleep $SLEEP_TIME
           fi
