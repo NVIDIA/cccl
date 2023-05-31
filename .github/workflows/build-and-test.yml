@@ -1,5 +1,9 @@
 name: build and test
 
+defaults:
+  run:
+    shell: bash
+
 on:
   workflow_call:
     inputs:
@@ -19,7 +23,7 @@ jobs:
     steps:
       - name: test
         run: | 
-          "echo test"
+          echo "test"
   test:
     needs: build
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}/${{inputs.cpu}}
@@ -27,4 +31,4 @@ jobs:
     steps:
       - name: test
         run: | 
-          "echo test"
+          echo "test"
