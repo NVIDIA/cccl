@@ -12,13 +12,8 @@
 #define __cuda_std__
 
 #ifdef __CUDACC__
-    #if defined(__clang__)
+    #if defined(__clang__) || defined(__FLT16_MANT_DIG__)
         #include <cuda_fp16.h>
-        #define __fp16 __half
-    #endif
-    #if defined(__FLT16_MANT_DIG__)
-        #include <cuda_fp16.h>
-        #define _Float16 __half
     #endif
     #define _LIBCUDACXX_CUDACC_VER_MAJOR __CUDACC_VER_MAJOR__
     #define _LIBCUDACXX_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
