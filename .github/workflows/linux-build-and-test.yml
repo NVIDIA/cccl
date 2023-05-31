@@ -24,8 +24,8 @@ jobs:
       COMPILERS: ${{ steps.compute-matrix.outputs.COMPILERS }}
       PER_CUDA_COMPILER_MATRIX: ${{ steps.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX }}
     env:
-      BUILD_TYPE: ${{ github.event.inputs.build_type}}
-      MATRIX_FILE: ${{ github.event.inputs.matrix_file }}}
+      BUILD_TYPE: ${{ inputs.build_type}}
+      MATRIX_FILE: ${{ inputs.matrix_file }}}
     steps:
       - name: Validate build type
         run: |
