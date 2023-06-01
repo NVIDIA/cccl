@@ -1,4 +1,5 @@
 {
+  "image": "rapidsai/devcontainers:23.06-cpp-llvm11-cuda12.1-ubuntu20.04",
   "hostRequirements": {
     "gpu": true
   },
@@ -16,6 +17,5 @@
   "mounts": [
     "source=${localWorkspaceFolder}/.cache/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/.cache/.config,target=/home/coder/.config,type=bind,consistency=consistent"
-  ],
-  "image": "rapidsai/devcontainers:23.06-cpp-llvm11-cuda12.1-ubuntu20.04"
+  ]
 }

@@ -1,6 +1,17 @@
 #!/bin/bash
 
-base_devcontainer_file="devcontainer_template.json"
+# This script parses the CI matrix.yaml file and generates a devcontainer.json file for each unique combination of 
+# CUDA version, compiler name/version, and Ubuntu version. The devcontainer.json files are written to the
+# .devcontainer directory to a subdirectory named after the CUDA version and compiler name/version.
+# GitHub docs on using multiple devcontainer.json files:
+# https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/adding-a-dev-container-configuration/introduction-to-dev-containers#devcontainerjson
+
+# Ensure the script is being executed in its containing directory
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
+
+# The root devcontainer.json file is used as a template for all other devcontainer.json files
+# by replacing the `image:` field with the appropriate image name
+base_devcontainer_file="./devcontainer.json"
 
 # Define image root
 IMAGE_ROOT="rapidsai/devcontainers:23.06-cpp-"
