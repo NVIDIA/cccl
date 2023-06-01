@@ -84,6 +84,7 @@ set(files
   __iterator/advance.h
   __iterator/back_insert_iterator.h
   __iterator/data.h
+  __iterator/default_sentinel.h
   __iterator/distance.h
   __iterator/empty.h
   __iterator/erase_if_container.h
