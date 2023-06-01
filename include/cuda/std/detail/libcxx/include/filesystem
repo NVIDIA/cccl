@@ -708,7 +708,7 @@ template <>
 struct _PathCVT<char> {
 
   template <class _Iter>
-  static typename enable_if<__is_cpp17_exactly_input_iterator<_Iter>::value>::type
+  static typename enable_if<__is_exactly_cpp17_input_iterator<_Iter>::value>::type
   __append_range(string& __dest, _Iter __b, _Iter __e) {
     for (; __b != __e; ++__b)
       __dest.push_back(*__b);

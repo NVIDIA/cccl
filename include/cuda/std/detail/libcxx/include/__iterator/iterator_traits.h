@@ -130,7 +130,7 @@ template <class _Tp>
 struct __is_cpp17_random_access_iterator : public __has_iterator_category_convertible_to<_Tp, random_access_iterator_tag> {};
 
 template <class _Tp>
-struct __is_cpp17_exactly_input_iterator
+struct __is_exactly_cpp17_input_iterator
     : public integral_constant<bool,
          __has_iterator_category_convertible_to<_Tp, input_iterator_tag>::value &&
         !__has_iterator_category_convertible_to<_Tp, forward_iterator_tag>::value> {};

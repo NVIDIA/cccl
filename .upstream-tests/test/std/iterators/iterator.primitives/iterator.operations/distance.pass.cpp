@@ -45,7 +45,7 @@ int main(int, char**)
 {
     {
     const char* s = "1234567890";
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+10), 10);
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+10), 10);
     test(forward_iterator<const char*>(s), forward_iterator<const char*>(s+10), 10);
     test(bidirectional_iterator<const char*>(s), bidirectional_iterator<const char*>(s+10), 10);
     test(random_access_iterator<const char*>(s), random_access_iterator<const char*>(s+10), 10);
@@ -54,7 +54,7 @@ int main(int, char**)
 #if TEST_STD_VER > 14
     {
     constexpr const char* s = "1234567890";
-    static_assert( constexpr_test(input_iterator<const char*>(s), input_iterator<const char*>(s+10), 10), "");
+    static_assert( constexpr_test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+10), 10), "");
     static_assert( constexpr_test(forward_iterator<const char*>(s), forward_iterator<const char*>(s+10), 10), "");
     static_assert( constexpr_test(bidirectional_iterator<const char*>(s), bidirectional_iterator<const char*>(s+10), 10), "");
     static_assert( constexpr_test(random_access_iterator<const char*>(s), random_access_iterator<const char*>(s+10), 10), "");

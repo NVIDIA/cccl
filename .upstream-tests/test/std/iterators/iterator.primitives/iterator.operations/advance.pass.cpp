@@ -50,7 +50,7 @@ int main(int, char**)
 {
     {
     const char* s = "1234567890";
-    test(input_iterator<const char*>(s), 10, input_iterator<const char*>(s+10));
+    test(cpp17_input_iterator<const char*>(s), 10, cpp17_input_iterator<const char*>(s+10));
     test(forward_iterator<const char*>(s), 10, forward_iterator<const char*>(s+10));
     test(bidirectional_iterator<const char*>(s+5), 5, bidirectional_iterator<const char*>(s+10));
     test(bidirectional_iterator<const char*>(s+5), -5, bidirectional_iterator<const char*>(s));
@@ -62,7 +62,7 @@ int main(int, char**)
 #if TEST_STD_VER > 14
     {
     constexpr const char* s = "1234567890";
-    static_assert( constepxr_test(input_iterator<const char*>(s), 10, input_iterator<const char*>(s+10)), "" );
+    static_assert( constepxr_test(cpp17_input_iterator<const char*>(s), 10, cpp17_input_iterator<const char*>(s+10)), "" );
     static_assert( constepxr_test(forward_iterator<const char*>(s), 10, forward_iterator<const char*>(s+10)), "" );
     static_assert( constepxr_test(bidirectional_iterator<const char*>(s+5), 5, bidirectional_iterator<const char*>(s+10)), "" );
     static_assert( constepxr_test(bidirectional_iterator<const char*>(s+5), -5, bidirectional_iterator<const char*>(s)), "" );
