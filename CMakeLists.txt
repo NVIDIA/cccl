@@ -6,8 +6,6 @@ cmake_minimum_required(VERSION 3.15)
 # another project via add_subdirectory()
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
   set(CCCL_TOPLEVEL_PROJECT ON)
-else()
-  set(CCCL_TOPLEVEL_PROJECT OFF)
 endif()
 
 # TODO find_package for add_subdir usecases, use components for subprojects.
