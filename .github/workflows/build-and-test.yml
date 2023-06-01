@@ -31,6 +31,8 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
+          path: repo
+          submodules: 'recursive'
           fetch-depth: 0
           persist-credentials: false
       - name: Configure credentials and environment variables for sccache
@@ -38,7 +40,7 @@ jobs:
       - name: Run build script
         run: | 
           if [[ -n "${{ inputs.build_script }}" ]]; then
-            ./${{ inputs.build_script }}
+            time ./${{ inputs.build_script }}
           else
             echo "No build script provided, skipping."
           fi
@@ -65,7 +67,7 @@ jobs:
       - name: Run test script
         run: | 
           if [[ -n "${{ inputs.test_script }}" ]]; then
-            ./${{ inputs.test_script }}
+            time ./${{ inputs.test_script }}
           else
             echo "No test script provided, skipping."
           fi
