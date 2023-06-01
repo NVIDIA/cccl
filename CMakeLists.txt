@@ -8,8 +8,6 @@ if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
   set(CCCL_TOPLEVEL_PROJECT ON)
 endif()
 
-# TODO find_package for add_subdir usecases, use components for subprojects.
-
 project(CCCL NONE)
 
 # Optionally include installation rules for non-top-level builds:
@@ -18,8 +16,7 @@ if (CCCL_ENABLE_INSTALL_RULES)
   include(cmake/CCCLInstallRules.cmake)
 endif()
 
-# Support adding Thrust to a parent project via add_subdirectory.
-# See examples/cmake/add_subdir/CMakeLists.txt for details.
+# Support adding CCCL to a parent project via add_subdirectory.
 if (NOT CCCL_TOPLEVEL_PROJECT)
   include(cmake/CCCLAddSubdir.cmake)
   return()
