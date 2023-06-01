@@ -18,6 +18,19 @@
 
 #include "test_macros.h"
 
+// ensure that we allow `__device__` functions too
+struct with_device_op
+{
+    __device__ friend constexpr with_device_op operator%(const with_device_op&, const with_device_op&) { return {}; }
+    __device__ constexpr operator bool() const { return true; }
+};
+
+__global__
+void test_global_kernel() {
+    const cuda::std::modulus<with_device_op> f;
+    assert(f({}, {}));
+}
+
 int main(int, char**)
 {
     typedef cuda::std::modulus<int> F;

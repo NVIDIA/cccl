@@ -34,6 +34,7 @@ public:
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     explicit unary_negate(const _Predicate& __pred)
         : __pred_(__pred) {}
+    _LIBCUDACXX_DISABLE_EXEC_CHECK
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const typename _Predicate::argument_type& __x) const
         {return !__pred_(__x);}

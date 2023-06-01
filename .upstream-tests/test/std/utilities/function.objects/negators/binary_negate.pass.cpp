@@ -18,6 +18,21 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
 
+// ensure that we allow `__device__` functions too
+struct with_device_op
+{
+    using first_argument_type  = int;
+    using second_argument_type = int;
+    using result_type          = bool;
+    __device__ constexpr bool operator()(const int& lhs, const int& rhs) const {return lhs && rhs;}
+};
+
+__global__
+void test_global_kernel() {
+    const cuda::std::binary_negate<with_device_op> f{with_device_op{}};
+    assert(!f(36, 36));
+}
+
 int main(int, char**)
 {
     typedef cuda::std::binary_negate<cuda::std::logical_and<int> > F;
@@ -32,5 +47,5 @@ int main(int, char**)
     assert( f(0, 36));
     assert( f(0, 0));
 
-  return 0;
+    return 0;
 }

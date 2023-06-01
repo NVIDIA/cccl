@@ -2153,6 +2153,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
 #endif
 
+#if !defined(_LIBCUDACXX_DISABLE_EXEC_CHECK)
 #if defined(__CUDACC__)                       \
  && !defined(_LIBCUDACXX_COMPILER_NVRTC)      \
  && !defined(_LIBCUDACXX_COMPILER_NVHPC_CUDA) \
@@ -2165,6 +2166,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #else // ^^^ !NVRTC && !NVHPC-cuda && !clang-cuda ^^^ / vvv NVRTC || NVHPC-cuda || clang-cuda vvv
 #  define _LIBCUDACXX_DISABLE_EXEC_CHECK
 #endif // NVRTC || NVHPC-cuda || clang-cuda
+#endif // !_LIBCUDACXX_DISABLE_EXEC_CHECK
 
 #endif // __cplusplus
 
