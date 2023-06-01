@@ -4,8 +4,6 @@
 # Imports the Thrust, CUB, and libcudacxx components of the NVIDIA
 # CUDA/C++ Core Libraries.
 
-unset(cccl_version) # TODO
-
 set(cccl_cmake_dir "${CMAKE_CURRENT_LIST_DIR}")
 
 if (${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
@@ -21,7 +19,7 @@ foreach(component ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
   endif()
 
   if(component STREQUAL "libcudacxx")
-    find_package(libcudacxx ${cccl_version} CONFIG
+    find_package(libcudacxx ${CCCL_VERSION} EXACT CONFIG
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
@@ -30,7 +28,7 @@ foreach(component ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
         "${cccl_cmake_dir}/.."                             # Install layout
       )
   elseif(component STREQUAL "CUB")
-    find_package(CUB ${cccl_version} CONFIG
+    find_package(CUB ${CCCL_VERSION} EXACT CONFIG
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
@@ -39,7 +37,7 @@ foreach(component ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
         "${cccl_cmake_dir}/.."                      # Install layout
     )
   elseif(component STREQUAL "Thrust")
-    find_package(Thrust ${cccl_version} CONFIG
+    find_package(Thrust ${CCCL_VERSION} EXACT CONFIG
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
