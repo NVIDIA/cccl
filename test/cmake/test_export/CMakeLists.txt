@@ -105,18 +105,16 @@ foreach (component IN LISTS COMPONENTS)
   add_test(NAME ${test_target} COMMAND ${test_target})
 
   if (component STREQUAL "libcudacxx")
-    find_package(libcudacxx) # Make sure version vars are in scope
     # TODO Should this be a genex? Will these stay correct as versions change?
     math(EXPR component_cmake_version
-      "(${libcudacxx_VERSION_MAJOR} * 1000000) +
-        ${libcudacxx_VERSION_MINOR} * 1000 +
-        ${libcudacxx_VERSION_PATCH}")
+      "(${LIBCUDACXX_VERSION_MAJOR} * 1000000) +
+        ${LIBCUDACXX_VERSION_MINOR} * 1000 +
+        ${LIBCUDACXX_VERSION_PATCH}")
     target_compile_definitions(${test_target} PRIVATE
       "VERSION_HEADER=cuda/std/version"
       "VERSION_MACRO=_LIBCUDACXX_CUDA_API_VERSION"
       "EXPECTED_VERSION=${component_cmake_version}")
   elseif (component STREQUAL "CUB")
-    find_package(CUB) # Make sure version vars are in scope
     # TODO Should this be a genex? Will these stay correct as versions change?
     math(EXPR component_cmake_version
       "(${CUB_VERSION_MAJOR} * 100000) +
@@ -127,7 +125,6 @@ foreach (component IN LISTS COMPONENTS)
       "VERSION_MACRO=CUB_VERSION"
       "EXPECTED_VERSION=${component_cmake_version}")
   elseif (component STREQUAL "Thrust")
-    find_package(Thrust) # Make sure version vars are in scope
     # TODO Should this be a genex? Will these stay correct as versions change?
     math(EXPR component_cmake_version
       "(${THRUST_VERSION_MAJOR} * 100000) +

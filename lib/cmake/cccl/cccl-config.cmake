@@ -12,13 +12,22 @@ else()
   set(cccl_quiet_flag "")
 endif()
 
-foreach(component ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
+if (DEFINED ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS AND
+    ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
+  set(components ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
+else()
+  set(components Thrust CUB libcudacxx)
+endif()
+
+foreach(component IN LISTS components)
+  string(TOLOWER "${component}" component_lower)
+
   unset(req)
   if (${CMAKE_FIND_PACKAGE_NAME}_FIND_REQUIRED_${component})
     set(cccl_comp_required_flag "REQUIRED")
   endif()
 
-  if(component STREQUAL "libcudacxx")
+  if(component_lower STREQUAL "libcudacxx")
     find_package(libcudacxx ${CCCL_VERSION} EXACT CONFIG
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
@@ -26,8 +35,8 @@ foreach(component ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
       HINTS
         "${cccl_cmake_dir}/../../../libcudacxx/lib/cmake/" # Source layout (GitHub)
         "${cccl_cmake_dir}/.."                             # Install layout
-      )
-  elseif(component STREQUAL "CUB")
+    )
+  elseif(component_lower STREQUAL "cub")
     find_package(CUB ${CCCL_VERSION} EXACT CONFIG
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
@@ -36,7 +45,7 @@ foreach(component ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
         "${cccl_cmake_dir}/../../../cub/cub/cmake/" # Source layout (GitHub)
         "${cccl_cmake_dir}/.."                      # Install layout
     )
-  elseif(component STREQUAL "Thrust")
+  elseif(component_lower STREQUAL "thrust")
     find_package(Thrust ${CCCL_VERSION} EXACT CONFIG
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
