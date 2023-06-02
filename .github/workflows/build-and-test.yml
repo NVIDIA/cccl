@@ -9,10 +9,12 @@ on:
     inputs:
       cuda_version: {type: string, required: true}
       compiler: {type: string, required: true}
+      compiler_exe: {type: string, required: true}
       compiler_version: {type: string, required: true}
       std: {type: string, required: true}
       gpu_build_archs: {type: string, required: true}
       cpu: {type: string, required: true}
+      ubuntu: {type: string, required: true}
       build_script: {type: string, required: false}
       test_script: {type: string, required: false }
 
@@ -20,11 +22,10 @@ jobs:
   build:
     if: inputs.build_script != ''
     name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
-    runs-on: ubuntu-latest
-    #runs-on: linux-${{inputs.cpu}}-cpu16
-    #container: # Fetch the container image to use for the job
-    #  options: -u root
-    #  image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
+    runs-on: linux-${{inputs.cpu}}-cpu16
+    container: 
+      options: -u root
+      image: rapidsai/devcontainers:23.06-cpp-${{inputs.compiler}}${{inputs.compiler_version}}-cuda${{inputs.cuda_version}}-ubuntu${{ inputs.ubuntu }}
     permissions:
       id-token: write
       contents: read
@@ -39,7 +40,9 @@ jobs:
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run build script
         run: | 
-            time ./${{ inputs.build_script }}
+            sccache -s
+            time ./${{ inputs.build_script }} ${{inputs.compiler_exe}} ${{inputs.std}} ${{inputs.gpu_build_archs}}}
+            sccache -s
   test:
     needs: build
     if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' }}

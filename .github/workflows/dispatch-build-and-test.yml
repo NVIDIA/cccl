@@ -21,10 +21,12 @@ jobs:
     with:
       cuda_version: ${{ matrix.cuda }}
       compiler: ${{ matrix.compiler.name }}
+      compiler_exe: ${{ matrix.compiler.exe }}
       compiler_version: ${{ matrix.compiler.version }}
       std: ${{ matrix.std }}
       gpu_build_archs: "70" #TODO: Fix this
       cpu: ${{ matrix.cpu }}
+      ubunutu: ${{ matrix.ubuntu }}
       build_script: ${{ inputs.build_script }}
       test_script: ${{ inputs.test_script }}
 
