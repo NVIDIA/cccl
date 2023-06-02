@@ -1,4 +1,3 @@
-# TODO How should we encode this as a source of truth?
 set(CCCL_VERSION_MAJOR 2)
 set(CCCL_VERSION_MINOR 2)
 set(CCCL_VERSION_PATCH 0)
