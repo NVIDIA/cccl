@@ -47,7 +47,7 @@ jobs:
       - name: Run build script
         run: | 
             sccache -s
-            time ./${{ inputs.build_script }} ${{inputs.compiler_exe}} ${{inputs.std}} ${{inputs.gpu_build_archs}}
+            time ./${{ inputs.build_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
             sccache -s
   test:
     needs: build

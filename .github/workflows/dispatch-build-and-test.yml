@@ -24,7 +24,7 @@ jobs:
       compiler_exe: ${{ matrix.compiler.exe }}
       compiler_version: ${{ matrix.compiler.version }}
       std: ${{ matrix.std }}
-      gpu_build_archs: "70" #TODO: Fix this
+      gpu_build_archs: ${{ matrix.gpu_build_archs }} 
       cpu: ${{ matrix.cpu }}
       ubuntu: ${{ matrix.ubuntu }}
       build_script: ${{ inputs.build_script }}
