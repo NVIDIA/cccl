@@ -8,19 +8,6 @@ endmacro()
 
 set(LIBCUDACXX_HIGHEST_COMPUTE_ARCH 90)
 
-# Initialize the libcu++ target arches from the CMake property. If both are set,
-# favor the libcu++ variable.
-if (DEFINED CMAKE_CUDA_ARCHITECTURES)
-  if (NOT DEFINED LIBCUDACXX_COMPUTE_ARCHS)
-    list(JOIN CMAKE_CUDA_ARCHITECTURES " " LIBCUDACXX_COMPUTE_ARCHS)
-  else()
-    message(WARNING
-      "Both LIBCUDACXX_COMPUTE_ARCHS (${LIBCUDACXX_COMPUTE_ARCHS}) "
-      "and CMAKE_CUDA_ARCHITECTURES (${CMAKE_CUDA_ARCHITECTURES}) are defined. "
-      "Only the value of LIBCUDACXX_COMPUTE_ARCHS will be used in libcu++.")
-  endif()
-endif()
-
 foreach (COMPUTE_ARCH ${LIBCUDACXX_COMPUTE_ARCHS})
   set(_compute_message "${_compute_message} sm_${COMPUTE_ARCH}")
   set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${LIBCUDACXX_COMPUTE_ARCHS_STRING} ${COMPUTE_ARCH}")
