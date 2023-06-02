@@ -3,8 +3,6 @@
 # Ensure the script is being executed in its containing directory
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
-echo "Begin Thrust build"
-pwd
 
 # Check if the correct number of arguments has been provided
 if [ "$#" -ne 3 ]; then
@@ -16,13 +14,22 @@ if [ "$#" -ne 3 ]; then
 fi
 
 # Assign command line arguments to variables
-HOST_COMPILER=$1
+HOST_COMPILER=$(which $1)
 CXX_STANDARD=$2
 
 # Replace spaces, commas and semicolons with semicolons for CMake list
 GPU_ARCHS=$(echo $3 | tr ' ,' ';')
 
 PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
+
+echo "========================================"
+echo "Begin Thrust build"
+echo "pwd=$(pwd)"
+echo "HOST_COMPILER=$HOST_COMPILER"
+echo "CXX_STANDARD=$CXX_STANDARD"
+echo "GPU_ARCHS=$GPU_ARCHS"
+echo "PARALLEL_LEVEL=$PARALLEL_LEVEL"
+echo "========================================"
 
 cmake -S .. -B ../build \
       -DCCCL_ENABLE_THRUST=ON \
