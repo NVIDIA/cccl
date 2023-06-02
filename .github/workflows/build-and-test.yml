@@ -48,10 +48,7 @@ jobs:
             time ./${{ inputs.build_script }}
   test:
     needs: build
-    if: |
-      ( success() || failure() ) &&
-      ( needs.build.result == 'success' || needs.build.result == 'skipped' ) &&
-      inputs.test_script != ''
+    if:  ( success() || failure() ) && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != ''
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
     runs-on: ubuntu-latest
     #runs-on: linux-${{inputs.cpu}}-gpu-v100-latest-1
