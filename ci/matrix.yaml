@@ -39,4 +39,3 @@ pull-request:
 - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '13', exe: 'clang++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17, 20]}
 - {cuda: '12.1', ubuntu: '20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '14', exe: 'clang++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17, 20]}
 - {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '15', exe: 'clang++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17, 20]}
-- {cuda: '12.1', ubuntu: '22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '16', exe: 'clang++'}, gpu_build_archs: ['70', '80'], std: [11, 14, 17, 20]}
