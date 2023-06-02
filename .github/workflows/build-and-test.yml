@@ -39,9 +39,9 @@ jobs:
         run: |
           pwd
           ls
-          ls cccl
+          ls repo
       - name: Configure credentials and environment variables for sccache
-        uses: ./.github/actions/configure_cccl_sccache
+        uses: ./repo/.github/actions/configure_cccl_sccache
       - name: Run build script
         run: | 
           if [[ -n "${{ inputs.build_script }}" ]]; then
