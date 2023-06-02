@@ -50,7 +50,7 @@ jobs:
     needs: build
     if: |
       '!cancelled()' &&
-      ( needs.build.result == 'success' || needs.build.result == 'skipped') &&
+      ( needs.build.result == 'success' || needs.build.result == 'skipped' ) &&
       inputs.test_script != ''
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
     runs-on: ubuntu-latest
