@@ -26,7 +26,7 @@ jobs:
       std: ${{ matrix.std }}
       gpu_build_archs: "70" #TODO: Fix this
       cpu: ${{ matrix.cpu }}
-      ubunutu: ${{ matrix.ubuntu }}
+      ubuntu: ${{ matrix.ubuntu }}
       build_script: ${{ inputs.build_script }}
       test_script: ${{ inputs.test_script }}
 
