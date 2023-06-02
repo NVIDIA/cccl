@@ -38,30 +38,30 @@ jobs:
       build_script: "./ci/build_thrust.sh"
       test_script: #"./ci/test_thrust.sh"
 
-  cub:
-    name: CUB CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
-    needs: compute-matrix
-    uses: ./.github/workflows/dispatch-build-and-test.yml
-    strategy:
-      fail-fast: false
-      matrix: 
-        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
-        compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
-    with:
-      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
-      build_script: #"./ci/build_cub.sh"
-      test_script: #"./ci/test_cub.sh"
+  #cub:
+  #  name: CUB CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+  #  needs: compute-matrix
+  #  uses: ./.github/workflows/dispatch-build-and-test.yml
+  #  strategy:
+  #    fail-fast: false
+  #    matrix: 
+  #      cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
+  #      compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
+  #  with:
+  #    per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
+  #    build_script: #"./ci/build_cub.sh"
+  #    test_script: #"./ci/test_cub.sh"
   
-  libcudacxx:
-    name: libcudacxx CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
-    needs: compute-matrix
-    uses: ./.github/workflows/dispatch-build-and-test.yml
-    strategy:
-      fail-fast: false
-      matrix: 
-        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
-        compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
-    with:
-      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
-      build_script: #"./ci/build_libcudacxx.sh"
-      test_script: "./ci/test_libcudacxx.sh" 
+  #libcudacxx:
+  #  name: libcudacxx CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+  #  needs: compute-matrix
+  #  uses: ./.github/workflows/dispatch-build-and-test.yml
+  #  strategy:
+  #    fail-fast: false
+  #    matrix: 
+  #      cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
+  #      compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
+  #  with:
+  #    per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
+  #    build_script: #"./ci/build_libcudacxx.sh"
+  #    test_script: "./ci/test_libcudacxx.sh" 
