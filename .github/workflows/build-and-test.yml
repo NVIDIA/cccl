@@ -35,6 +35,11 @@ jobs:
           submodules: 'recursive'
           fetch-depth: 0
           persist-credentials: false
+      - name: pwd
+        run: |
+          pwd
+          ls
+          ls cccl
       - name: Configure credentials and environment variables for sccache
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run build script
