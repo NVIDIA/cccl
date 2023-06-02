@@ -49,7 +49,7 @@ jobs:
   test:
     needs: build
     if: |
-      '!cancelled()' &&
+      always() &&
       ( needs.build.result == 'success' || needs.build.result == 'skipped') &&
       inputs.test_script != ''
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
