@@ -18,6 +18,7 @@ on:
 
 jobs:
   build:
+    if: inputs.build_script != ''
     name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
     runs-on: ubuntu-latest
     #runs-on: linux-${{inputs.cpu}}-cpu16
@@ -31,20 +32,17 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
+          submodules: 'recursive'
           fetch-depth: 0
           persist-credentials: false
       - name: Configure credentials and environment variables for sccache
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run build script
         run: | 
-          if [[ -n "${{ inputs.build_script }}" ]]; then
-            ./${{ inputs.build_script }}
-          else
-            echo "No build script provided, skipping."
-          fi
+            time ./${{ inputs.build_script }}
   test:
     needs: build
-    if: ${{ needs.build.result == 'success' }}
+    if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' }}
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
     runs-on: ubuntu-latest
     #runs-on: linux-${{inputs.cpu}}-gpu-v100-latest-1
@@ -64,8 +62,4 @@ jobs:
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run test script
         run: | 
-          if [[ -n "${{ inputs.test_script }}" ]]; then
-            ./${{ inputs.test_script }}
-          else
-            echo "No test script provided, skipping."
-          fi
+            time ./${{ inputs.test_script }}
