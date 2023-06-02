@@ -53,6 +53,6 @@ cmake -S .. -B ../build \
       #-DCMAKE_CUDA_HOST_COMPILER=${HOST_COMPILER} \
 
 # Build the tests
-cmake --build ../build --parallel ${PARALLEL_LEVEL} 
+cmake --build ../build --parallel ${PARALLEL_LEVEL} -- -v
 
 echo "Thrust build complete"
