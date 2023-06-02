@@ -45,6 +45,7 @@ cmake -S .. -B ../build \
       -DTHRUST_MULTICONFIG_ENABLE_DIALECT_CPP17=$(if [[ $CXX_STANDARD -ne 17 ]]; then echo "OFF"; else echo "ON"; fi) \
       -DTHRUST_MULTICONFIG_ENABLE_DIALECT_CPP20=$(if [[ $CXX_STANDARD -ne 20 ]]; then echo "OFF"; else echo "ON"; fi) \
       -DTHRUST_MULTICONFIG_WORKLOAD=SMALL \
+      -DTHRUST_IGNORE_DEPRECATED_CPP_DIALECT \
       -G Ninja
       # TODO: Add this back after Thrust removes the check against it.
       #-DCMAKE_CUDA_HOST_COMPILER=${HOST_COMPILER} \
