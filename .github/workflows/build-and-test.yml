@@ -32,17 +32,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
-          path: repo
           submodules: 'recursive'
           fetch-depth: 0
           persist-credentials: false
-      - name: pwd
-        run: |
-          pwd
-          ls
-          ls repo
       - name: Configure credentials and environment variables for sccache
-        uses: ./repo/.github/actions/configure_cccl_sccache
+        uses: ./.github/actions/configure_cccl_sccache
       - name: Run build script
         run: | 
             time ./${{ inputs.build_script }}
