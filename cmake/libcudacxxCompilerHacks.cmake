@@ -63,26 +63,6 @@ if (LIBCUDACXX_ENABLE_STATIC_LIBRARY)
   endif ()
 endif ()
 
-# We don't set CMAKE_CUDA_HOST_COMPILER for NVC++; if we do, CMake tries to
-# pass `-ccbin ${CMAKE_CUDA_HOST_COMPILER}` to NVC++, which it doesn't
-# understand.
-if ((NOT "NVCXX" STREQUAL "${CMAKE_CUDA_COMPILER_ID}"))
-  if (NOT ("${CMAKE_CUDA_HOST_COMPILER}" STREQUAL "" OR
-    "${CMAKE_CUDA_HOST_COMPILER}" STREQUAL "${CMAKE_CXX_COMPILER}"))
-    set(tmp "${CMAKE_CUDA_HOST_COMPILER}")
-    unset(CMAKE_CUDA_HOST_COMPILER CACHE)
-    message(FATAL_ERROR
-      "For convenience, Thrust's test harness uses CMAKE_CXX_COMPILER for the "
-      "CUDA host compiler. Refusing to overwrite specified "
-      "CMAKE_CUDA_HOST_COMPILER -- please reconfigure without setting this "
-      "variable. Currently:\n"
-      "CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}\n"
-      "CMAKE_CUDA_HOST_COMPILER=${tmp}"
-    )
-  endif ()
-  set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
-endif ()
-
 # Temporary hacks to make NVC++ work; this requires you to define
 # `CMAKE_CUDA_COMPILER_ID=NVCXX and `CMAKE_CUDA_COMPILER_FORCED=ON`.
 if ("NVCXX" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")

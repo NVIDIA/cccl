@@ -4,8 +4,6 @@ cmake_minimum_required(VERSION 3.15)
 
 # Determine whether libcudacxx is the top-level project or included into
 # another project via add_subdirectory().
-enable_language(CXX) # For CMAKE_CXX_COMPILER_ID
-
 if (CCCL_TOPLEVEL_PROJECT OR
     "${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
   set(LIBCUDACXX_TOPLEVEL_PROJECT ON)
@@ -18,7 +16,7 @@ endif()
 set(PACKAGE_NAME libcudacxx)
 set(PACKAGE_VERSION 11.0)
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
-project(libcudacxx NONE)
+project(libcudacxx LANGUAGES CXX)
 
 option(libcudacxx_ENABLE_INSTALL_RULES "Enable installation of libcu++" ${LIBCUDACXX_TOPLEVEL_PROJECT})
 if (libcudacxx_ENABLE_INSTALL_RULES)
@@ -34,8 +32,6 @@ endif()
 # system.
 option(libcudacxx_ENABLE_CMAKE_TESTS "Enable ctest-based testing." OFF)
 if (libcudacxx_ENABLE_CMAKE_TESTS)
-  # Might be able to lower this, but would need to do some testing:
-  cmake_minimum_required(VERSION 3.20.1)
   include(CTest)
   enable_testing() # Must be called in root CMakeLists.txt
   add_subdirectory(cmake/test/)
@@ -62,12 +58,6 @@ option(LIBCUDACXX_ENABLE_LIBUNWIND_TESTS "Enable upstream libunwind tests." OFF)
 if (LIBCUDACXX_TOPLEVEL_PROJECT)
   include(cmake/libcudacxxCompilerHacks.cmake)
 endif()
-
-# This must appear after our Compiler Hacks or else CMake will delete the cache
-# and reconfigure from scratch.
-# This must also appear before the installation rules, as it is required by the
-# GNUInstallDirs CMake module.
-enable_language(CXX)
 
 if (LIBCUDACXX_ENABLE_CUDA)
   enable_language(CUDA)
