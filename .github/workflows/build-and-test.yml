@@ -30,6 +30,8 @@ jobs:
       id-token: write
       contents: read
     steps:
+      - name: Echo git version
+        run: git --version
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
