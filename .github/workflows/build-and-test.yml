@@ -30,11 +30,11 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Echo Hello on Windows
-        if: inputs.os == 'windows'
-        shell: powershell
-        run: echo "Hello"
-      - name: Hellon on linux
+    - name: Echo Hello on Windows
+      if: inputs.os == 'windows'
+      shell: powershell
+      run: echo "Hello"
+    - name: Hellon on linux
       if: inputs.os == 'linux'
       shell: bash
       run: echo "Hello"
