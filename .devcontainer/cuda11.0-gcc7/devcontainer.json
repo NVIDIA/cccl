@@ -17,5 +17,6 @@
   "mounts": [
     "source=${localWorkspaceFolder}/.cache/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/.cache/.config,target=/home/coder/.config,type=bind,consistency=consistent"
-  ]
+  ],
+  "name": "cuda11.0-gcc7"
 }
