@@ -10,7 +10,7 @@ gpus:
 # Each environment below will generate a unique build/test job
 # See the "compute-matrix" job in the workflow for how this is parsed and used
 # cuda: The CUDA Toolkit version
-# ubuntu: The Ubuntu version
+# os: The operating system used
 # cpu: The CPU architecture
 # compiler: The compiler to use
 #   name: The compiler name
