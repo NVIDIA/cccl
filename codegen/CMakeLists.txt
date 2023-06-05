@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
-project(cuda-atomics-codegen CXX)
+project(cuda-atomics-codegen LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 add_executable(codegen

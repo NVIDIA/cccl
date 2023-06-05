@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20.1)
-project(libcudacxxTestExport CXX)
+project(libcudacxxTestExport LANGUAGES CXX)
 
 message(STATUS "libcudacxx_DIR=${libcudacxx_DIR}")
 find_package(libcudacxx REQUIRED)
