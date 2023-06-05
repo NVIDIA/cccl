@@ -8,7 +8,7 @@ if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
   set(CCCL_TOPLEVEL_PROJECT ON)
 endif()
 
-project(CCCL NONE)
+project(CCCL LANGUAGES NONE)
 
 # Optionally include installation rules for non-top-level builds:
 option(CCCL_ENABLE_INSTALL_RULES "Enable installation of CCCL." ${CCCL_TOPLEVEL_PROJECT})

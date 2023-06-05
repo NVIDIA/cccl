@@ -14,7 +14,7 @@
 
 
 cmake_minimum_required(VERSION 3.21)
-project(CCCLTestExport CXX)
+project(CCCLTestExport LANGUAGES CXX)
 
 include(CTest)
 enable_testing()
