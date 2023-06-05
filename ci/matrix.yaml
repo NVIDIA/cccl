@@ -16,7 +16,7 @@ gpus:
 #   name: The compiler name
 #   version: The compiler version
 #   exe: The unverionsed compiler binary name
-# gpu_build_archs: The GPU architectures to build for
+# gpu_build_archs: The GPU architectures to build for using the syntax of CMAKE_CUDA_ARCHITECTURES (semi-colon separated list)
 # std: The C++ standards to build for
 #    This field is unique as it will generate an independent build/test job for each value
 
