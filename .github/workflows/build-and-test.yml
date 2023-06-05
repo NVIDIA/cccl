@@ -22,14 +22,10 @@ jobs:
   build:
     if: inputs.build_script != ''
     name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
-    runs-on: ${{ env.RUNS_ON }}
-    env:
-      RUNS_ON: ${{ (inputs.os == 'windows' && 'windows-latest') || ('linux-' + inputs.cpu + '-cpu16') }}
-      CONTAINER_OPTIONS: ${{ (inputs.os == 'linux' && '-u root') || '' }}
-      CONTAINER_IMAGE: ${{ (inputs.os == 'linux' && 'rapidsai/devcontainers:23.06-cpp-' + inputs.compiler + inputs.compiler_version + '-cuda' + inputs.cuda_version + '-' + inputs.os) || '' }}
+    runs-on: ${{ (inputs.os == 'windows' && 'windows-latest') || format('linux-{0}-cpu16', inputs.cpu) }}
     container: 
-      options: ${{ env.CONTAINER_OPTIONS }}
-      image: ${{ env.CONTAINER_IMAGE }}
+      options: ${{ (inputs.os == 'linux' && '-u root') || '' }}
+      image: ${{ (inputs.os == 'linux' && format('rapidsai/devcontainers:23.06-cpp-{0}{1}-cuda{2}-{3}', inputs.compiler, inputs.compiler_version, inputs.cuda_version, inputs.os)) || '' }}
     permissions:
       id-token: write
       contents: read
