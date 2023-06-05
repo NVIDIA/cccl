@@ -22,53 +22,63 @@ jobs:
   build:
     if: inputs.build_script != ''
     name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
-    runs-on: linux-${{inputs.cpu}}-cpu16
+    runs-on: ${{ (inputs.os == 'windows' && 'windows-latest') || ('linux-' + inputs.cpu + '-cpu16') }}
     container: 
-      options: -u root
-      image: rapidsai/devcontainers:23.06-cpp-${{inputs.compiler}}${{inputs.compiler_version}}-cuda${{inputs.cuda_version}}-${{inputs.os}}
+      options: ${{ (inputs.os == 'linux' && '-u root') || '' }}
+      image: ${{ (inputs.os == 'linux' && 'rapidsai/devcontainers:23.06-cpp-' + inputs.compiler + inputs.compiler_version + '-cuda' + inputs.cuda_version + '-' + inputs.os) || '' }}
     permissions:
       id-token: write
       contents: read
     steps:
-      - name: Echo git version
-        run: git --version
-      - name: Update git
-        run: | 
-          sudo add-apt-repository -y ppa:git-core/ppa
-          sudo apt-get update
-          sudo apt-get install -y git
-          git --version
-      - name: Checkout repo
-        uses: actions/checkout@v3
-        with:
-          submodules: 'recursive'
-      - name: Configure credentials and environment variables for sccache
-        uses: ./.github/actions/configure_cccl_sccache
-      - name: Run build script
-        run: | 
-            sccache -s
-            time ./${{ inputs.build_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
-            sccache -s
-  test:
-    needs: build
-    if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' }}
-    name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
-    runs-on: ubuntu-latest
-    #runs-on: linux-${{inputs.cpu}}-gpu-v100-latest-1
-    #container: # Fetch the container image to use for the job
-    #  options: -u root
-    #  image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Configure credentials and environment variables for sccache
-        uses: ./.github/actions/configure_cccl_sccache
-      - name: Run test script
-        run: | 
-            time ./${{ inputs.test_script }}
+      - name: Echo Hello on Windows
+        if: inputs.os == 'windows'
+        shell: powershell
+        run: echo "Hello"
+      - name: Hellon on linux
+      if: inputs.os == 'linux'
+      shell: bash
+      run: echo "Hello"
+
+#      - name: Echo git version
+#        run: git --version
+#      - name: Update git
+#        run: | 
+#          sudo add-apt-repository -y ppa:git-core/ppa
+#          sudo apt-get update
+#          sudo apt-get install -y git
+#          git --version
+#      - name: Checkout repo
+#        uses: actions/checkout@v3
+#        with:
+#          submodules: 'recursive'
+#      - name: Configure credentials and environment variables for sccache
+#        uses: ./.github/actions/configure_cccl_sccache
+#      - name: Run build script
+#        run: | 
+#            sccache -s
+#            time ./${{ inputs.build_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
+#            sccache -s
+#  test:
+#    needs: build
+#    if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' }}
+#    name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
+#    runs-on: ubuntu-latest
+#    #runs-on: linux-${{inputs.cpu}}-gpu-v100-latest-1
+#    #container: # Fetch the container image to use for the job
+#    #  options: -u root
+#    #  image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-ubuntu${{ matrix.ubuntu }}
+#    permissions:
+#      id-token: write
+#      contents: read
+#    steps:
+#      - name: Checkout repo
+#        uses: actions/checkout@v3
+#        with:
+#          fetch-depth: 0
+#          persist-credentials: false
+#      - name: Configure credentials and environment variables for sccache
+#        uses: ./.github/actions/configure_cccl_sccache
+#      - name: Run test script
+#        run: | 
+#            time ./${{ inputs.test_script }}
+#
