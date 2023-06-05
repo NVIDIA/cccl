@@ -14,7 +14,7 @@ on:
       std: {type: string, required: true}
       gpu_build_archs: {type: string, required: true}
       cpu: {type: string, required: true}
-      ubuntu: {type: string, required: true}
+      os: {type: string, required: true}
       build_script: {type: string, required: false}
       test_script: {type: string, required: false }
 
@@ -25,7 +25,7 @@ jobs:
     runs-on: linux-${{inputs.cpu}}-cpu16
     container: 
       options: -u root
-      image: rapidsai/devcontainers:23.06-cpp-${{inputs.compiler}}${{inputs.compiler_version}}-cuda${{inputs.cuda_version}}-ubuntu${{ inputs.ubuntu }}
+      image: rapidsai/devcontainers:23.06-cpp-${{inputs.compiler}}${{inputs.compiler_version}}-cuda${{inputs.cuda_version}}-${{inputs.os}}
     permissions:
       id-token: write
       contents: read

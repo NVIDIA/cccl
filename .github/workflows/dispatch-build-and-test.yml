@@ -26,7 +26,7 @@ jobs:
       std: ${{ matrix.std }}
       gpu_build_archs: ${{ matrix.gpu_build_archs }}
       cpu: ${{ matrix.cpu }}
-      ubuntu: ${{ matrix.ubuntu }}
+      os: ${{ matrix.os }}
       build_script: ${{ inputs.build_script }}
       test_script: ${{ inputs.test_script }}
 
