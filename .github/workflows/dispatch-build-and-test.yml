@@ -14,8 +14,7 @@ jobs:
   # the build step for CUDA 12.1 + gcc 9.3 can run at the same time as the test step for CUDA 11.0 + clang 11.
   build_and_test:
     name: ${{matrix.cpu}}
-    uses: ${{inputs.workflow}}
-    #uses: ./.github/workflows/build-and-test.yml
+    uses: ./.github/workflows/build-and-test.yml
     strategy:
       fail-fast: false
       matrix: 
