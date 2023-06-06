@@ -23,8 +23,10 @@ jobs:
     if: inputs.build_script != ''
     name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
     runs-on: ${{ (inputs.os == 'windows' && 'windows-latest') || format('linux-{0}-cpu16', inputs.cpu) }}
+    env:
+      CONTAINER_IMAGE: ${{ (inputs.os == 'linux' && format('rapidsai/devcontainers:23.06-cpp-{0}{1}-cuda{2}-{3}', inputs.compiler, inputs.compiler_version, inputs.cuda_version, inputs.os)) || null }}
     container: 
-      image: ${{ (inputs.os == 'linux' && format('rapidsai/devcontainers:23.06-cpp-{0}{1}-cuda{2}-{3}', inputs.compiler, inputs.compiler_version, inputs.cuda_version, inputs.os)) || null }}
+      image: ${{ env.CONTAINER_IMAGE }}
     permissions:
       id-token: write
       contents: read
