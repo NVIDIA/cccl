@@ -6,7 +6,6 @@ on:
       per_cuda_compiler_matrix: {type: string, required: true}
       build_script: {type: string, required: false}
       test_script: {type: string, required: false}
-      workflow: {type: string, required: true}
 
 jobs:
   # Using a matrix to dispatch to the build-and-test reusable workflow for each build configuration
