@@ -17,3 +17,11 @@ This warning can be suppressed silenced with `#pragma`s, but only globally, not
 User-defined floating-point literals must be specified in terms of
   `long double`, so they lead to warns that are unable to be suppressed.
 
+## Customizations
+
+Our implementation by default recovers infinite values during multiplication and division. This adds a significant runtime overhead, so we allow disabling that canonicalization if it is not desired.
+
+Definition of `LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS` disables canonicalization for both multiplication *and* division.
+
+Definition of `LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION` or `LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION` disables canonicalization for multiplication or division individually.
+

@@ -275,6 +275,15 @@ template<class T> complex<T> tanh (const complex<T>&);
 #  define _LIBCUDACXX_COMPLEX_ALIGNAS(V)
 # endif
 
+#ifdef LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS
+#  ifndef LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_MULTIPLICATION
+#    define LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_MULTIPLICATION
+#  endif // LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_MULTIPLICATION
+#  ifndef LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION
+#    define LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION
+#  endif // LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION
+#endif // LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template<class _Tp> class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(_Tp)) complex;
@@ -968,6 +977,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
     _Tp __denom = __c * __c + __d * __d;
     _Tp __x = _CUDA_VSTD::__constexpr_scalbn((__a * __c + __b * __d) / __denom, -__ilogbw);
     _Tp __y = _CUDA_VSTD::__constexpr_scalbn((__b * __c - __a * __d) / __denom, -__ilogbw);
+#ifndef LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION
     if (_CUDA_VSTD::__constexpr_isnan(__x) && _CUDA_VSTD::__constexpr_isnan(__y))
     {
         if ((__denom == _Tp(0)) && (!_CUDA_VSTD::__constexpr_isnan(__a) || !_CUDA_VSTD::__constexpr_isnan(__b)))
@@ -988,6 +998,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
             __y = _Tp(0) * (__b * __c - __a * __d);
         }
     }
+#endif // LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION
     return complex<_Tp>(__x, __y);
 }
 
