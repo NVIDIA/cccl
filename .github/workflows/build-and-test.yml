@@ -34,7 +34,7 @@ jobs:
         run: git --version
       - name: Update git version
         run: |
-          sudo apt-get install python-software-properties software-properties-common
+          sudo apt-get install software-properties-common
           sudo add-apt-repository ppa:git-core/ppa -y
           sudo apt-get update
           sudo apt-get install git -y
@@ -64,7 +64,7 @@ jobs:
     steps:
       - name: Update git version
         run: |
-          sudo apt-get install python-software-properties software-properties-common
+          sudo apt-get install software-properties-common
           sudo add-apt-repository ppa:git-core/ppa -y
           sudo apt-get update
           sudo apt-get install git -y
