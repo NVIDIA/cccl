@@ -32,6 +32,13 @@ jobs:
     steps:
       - name: Echo git version
         run: git --version
+      - name: Update git version
+        run: |
+          sudo apt-get install python-software-properties software-properties-common
+          sudo add-apt-repository ppa:git-core/ppa -y
+          sudo apt-get update
+          sudo apt-get install git -y
+          git --version
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
@@ -55,6 +62,13 @@ jobs:
       id-token: write
       contents: read
     steps:
+      - name: Update git version
+        run: |
+          sudo apt-get install python-software-properties software-properties-common
+          sudo add-apt-repository ppa:git-core/ppa -y
+          sudo apt-get update
+          sudo apt-get install git -y
+          git --version
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
