@@ -44,7 +44,7 @@ set(LLVM_PATH "${libcudacxx_SOURCE_DIR}" CACHE STRING "" FORCE)
 # Configuration options.
 option(LIBCUDACXX_ENABLE_CUDA "Enable the CUDA language support." ON)
 set(_libcudacxx_enable_static_library OFF)
-if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVCXX")
+if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVHPC")
   set(_libcudacxx_enable_static_library ON)
 endif ()
 option(LIBCUDACXX_ENABLE_STATIC_LIBRARY "Enable building the full C++ stdlib static library build."
