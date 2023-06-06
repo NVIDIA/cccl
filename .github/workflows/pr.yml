@@ -24,7 +24,7 @@ jobs:
       matrix_file: "./ci/matrix.yaml"
       matrix_type: "pull-request"
 
-  thrust-linux:
+  thrust:
     name: Thrust CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
