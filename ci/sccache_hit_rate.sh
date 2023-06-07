@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -xeuo pipefail
+set -euo pipefail
 
 # Ensure two arguments are provided
 if [ $# -ne 2 ]; then
