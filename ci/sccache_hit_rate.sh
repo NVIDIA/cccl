@@ -8,6 +8,16 @@ if [ $# -ne 2 ]; then
   exit 1
 fi
 
+# Print the contents of the before file
+echo "=== Contents of $1 ==="
+cat $1
+echo "=== End of $1 ==="
+
+# Print the contents of the after file
+echo "=== Contents of $2 ==="
+cat $2
+echo "=== End of $2 ==="
+
 # Extract compile requests and cache hits from the before and after files
 requests_before=$(awk '/^Compile requests[[:space:]]+[[:digit:]]+/ {print $3}' $1)
 hits_before=$(awk '/^Cache hits[[:space:]]+[[:digit:]]+/ {print $3}' $1)
