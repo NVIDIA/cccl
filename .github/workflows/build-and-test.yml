@@ -48,9 +48,12 @@ jobs:
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run build script
         run: | 
-            sccache -s
+            sccache -s > sccache_before.txt
             time ./${{ inputs.build_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
-            sccache -s
+            sccache -s > sccache_after.txt
+      - name: Calculate sccache hit rate
+        run: |
+          ./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt
   test:
     needs: build
     if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' }}
@@ -81,6 +84,9 @@ jobs:
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run test script
         run: | 
-            sccache -s
+            sccache -s > sccache_before.txt
             time ./${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
-            sccache -s
+            sccache -s > sccache_after.txt
+      - name: Calculate sccache hit rate
+        run: |
+          ./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt
