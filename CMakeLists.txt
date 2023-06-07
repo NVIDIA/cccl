@@ -8,7 +8,7 @@ if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
   set(CCCL_TOPLEVEL_PROJECT ON)
 endif()
 
-project(CCCL NONE)
+project(CCCL LANGUAGES NONE)
 
 # Optionally include installation rules for non-top-level builds:
 option(CCCL_ENABLE_INSTALL_RULES "Enable installation of CCCL." ${CCCL_TOPLEVEL_PROJECT})
@@ -34,16 +34,20 @@ include(CTest)
 enable_testing()
 
 if (CCCL_ENABLE_LIBCUDACXX)
-  add_subdirectory(libcudacxx)
+  set(LIBCUDACXX_TOPLEVEL_PROJECT ON)
 endif()
 
 if (CCCL_ENABLE_CUB)
-  add_subdirectory(cub)
+  set(CUB_TOPLEVEL_PROJECT ON)
 endif()
 
 if (CCCL_ENABLE_THRUST)
-  add_subdirectory(thrust)
+  set(THRUST_TOPLEVEL_PROJECT ON)
 endif()
+
+add_subdirectory(libcudacxx)
+add_subdirectory(cub)
+add_subdirectory(thrust)
 
 if (CCCL_ENABLE_TESTING)
   add_subdirectory(test)
