@@ -53,8 +53,8 @@ jobs:
             sccache -s > sccache_after.txt
       - name: Calculate sccache hit rate
         run: |
-          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt)
-          echo "The sccache hit rate was $hit_rate" >> $GITHUB_STEP_SUMMARY
+          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
+          echo "sccache hit rate: $hit_rate" >> $GITHUB_STEP_SUMMARY
   test:
     needs: build
     if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' }}
@@ -90,5 +90,5 @@ jobs:
             sccache -s > sccache_after.txt
       - name: Calculate sccache hit rate
         run: |
-          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt)
-          echo "The sccache hit rate was $hit_rate" >> $GITHUB_STEP_SUMMARY
+          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
+          echo "sccache hit rate: $hit_rate" >> $GITHUB_STEP_SUMMARY

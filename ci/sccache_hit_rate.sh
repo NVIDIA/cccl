@@ -34,4 +34,6 @@ if [ $requests_diff -eq 0 ]; then
 else
     hit_rate=$(awk -v hits=$hits_diff -v requests=$requests_diff 'BEGIN {printf "%.2f", hits/requests * 100}')
     echo "sccache hit rate: $hit_rate%"
+    # Write just the hit rate out to stderr to make it easier to get this value later
+    echo "$hit_rate" >&2
 fi
