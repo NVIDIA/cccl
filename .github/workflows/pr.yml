@@ -64,3 +64,15 @@ jobs:
     with:
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       test_script: "./ci/test_libcudacxx.sh" 
+
+  # This job is the final job that runs after all other jobs and is used for branch protection status checks.
+  # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
+  ci:
+    runs-on: ubuntu-latest
+    name: CI
+    needs:
+      - libcudacxx
+      - cub
+      - thrust
+    steps:
+      - run: echo "CI success"
