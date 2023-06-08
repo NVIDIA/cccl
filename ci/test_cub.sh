@@ -7,6 +7,6 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
 ./build_cub.sh "$@"
 
-ctest --test-dir ../build --output-on-failure
+ctest --test-dir ../build --output-on-failure --timeout 15
 
 echo "CUB test complete"
