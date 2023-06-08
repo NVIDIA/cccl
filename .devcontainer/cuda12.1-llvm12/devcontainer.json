@@ -1,0 +1,22 @@
+{
+  "image": "rapidsai/devcontainers:23.06-cpp-llvm12-cuda12.1-ubuntu20.04",
+  "hostRequirements": {
+    "gpu": true
+  },
+  "initializeCommand": [
+    "/bin/bash",
+    "-c",
+    "mkdir -p .cache/.{aws,config}"
+  ],
+  "containerEnv": {
+    "SCCACHE_REGION": "us-east-2",
+    "SCCACHE_BUCKET": "rapids-sccache-devs",
+    "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
+    "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history"
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder}/.cache/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/.cache/.config,target=/home/coder/.config,type=bind,consistency=consistent"
+  ],
+  "name": "cuda12.1-llvm12"
+}
