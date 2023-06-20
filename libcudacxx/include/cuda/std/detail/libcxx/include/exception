@@ -82,6 +82,7 @@ template <class E> void rethrow_if_nested(const E& e);
 
 #include "__exception/exception_ptr.h"
 #include "__exception/exception.h"
+#include "__exception/nested_exception.h"
 #include "__exception/operations.h"
 #include "__exception/terminate.h"
 
@@ -99,101 +100,6 @@ template <class E> void rethrow_if_nested(const E& e);
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION // purposefully not using versioning namespace
-
-// nested_exception
-
-class _LIBCUDACXX_EXCEPTION_ABI nested_exception
-{
-    exception_ptr __ptr_;
-public:
-    nested_exception() _NOEXCEPT;
-//     nested_exception(const nested_exception&) noexcept = default;
-//     nested_exception& operator=(const nested_exception&) noexcept = default;
-    virtual ~nested_exception() _NOEXCEPT;
-
-    // access functions
-    _LIBCUDACXX_NORETURN void rethrow_nested() const;
-    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr nested_ptr() const _NOEXCEPT {return __ptr_;}
-};
-
-template <class _Tp>
-struct __nested
-    : public _Tp,
-      public nested_exception
-{
-    _LIBCUDACXX_INLINE_VISIBILITY explicit __nested(const _Tp& __t) : _Tp(__t) {}
-};
-
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-template <class _Tp, class _Up, bool>
-struct __throw_with_nested;
-
-template <class _Tp, class _Up>
-struct __throw_with_nested<_Tp, _Up, true> {
-    _LIBCUDACXX_NORETURN static inline _LIBCUDACXX_INLINE_VISIBILITY void
-    __do_throw(_Tp&& __t)
-    {
-        throw __nested<_Up>(_CUDA_VSTD::forward<_Tp>(__t));
-    }
-};
-
-template <class _Tp, class _Up>
-struct __throw_with_nested<_Tp, _Up, false> {
-    _LIBCUDACXX_NORETURN static inline _LIBCUDACXX_INLINE_VISIBILITY void
-#ifndef _LIBCUDACXX_CXX03_LANG
-    __do_throw(_Tp&& __t)
-#else
-    __do_throw (_Tp& __t)
-#endif  // _LIBCUDACXX_CXX03_LANG
-    {
-        throw _CUDA_VSTD::forward<_Tp>(__t);
-    }
-};
-#endif
-
-template <class _Tp>
-_LIBCUDACXX_NORETURN
-void
-throw_with_nested(_Tp&& __t)
-{
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-    typedef __decay_t<_Tp> _Up;
-    static_assert( is_copy_constructible<_Up>::value, "type thrown must be CopyConstructible");
-    __throw_with_nested<_Tp, _Up,
-        is_class<_Up>::value &&
-        !is_base_of<nested_exception, _Up>::value &&
-        !__libcpp_is_final<_Up>::value>::
-            __do_throw(_CUDA_VSTD::forward<_Tp>(__t));
-#else
-    ((void)__t);
-    // FIXME: Make this abort
-#endif
-}
-
-template <class _From, class _To>
-struct __can_dynamic_cast : public _LIBCUDACXX_BOOL_CONSTANT(
-              is_polymorphic<_From>::value &&
-                 (!is_base_of<_To, _From>::value ||
-                   is_convertible<const _From*, const _To*>::value)) {};
-
-template <class _Ep>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-rethrow_if_nested(const _Ep& __e,
-                  typename enable_if< __can_dynamic_cast<_Ep, nested_exception>::value>::type* = 0)
-{
-    const nested_exception* __nep = dynamic_cast<const nested_exception*>(_CUDA_VSTD::addressof(__e));
-    if (__nep)
-        __nep->rethrow_nested();
-}
-
-template <class _Ep>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-rethrow_if_nested(const _Ep&,
-                  typename enable_if<!__can_dynamic_cast<_Ep, nested_exception>::value>::type* = 0)
-{
-}
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
