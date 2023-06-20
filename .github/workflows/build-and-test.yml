@@ -28,7 +28,6 @@ jobs:
       image: rapidsai/devcontainers:23.06-cpp-${{inputs.compiler}}${{inputs.compiler_version}}-cuda${{inputs.cuda_version}}-${{inputs.os}}
     permissions:
       id-token: write
-      contents: read
     steps:
       - name: Echo git version
         run: git --version
@@ -67,7 +66,6 @@ jobs:
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
     permissions:
       id-token: write
-      contents: read
     steps:
     # TODO: We can remove this when we aren't using submodules anymore
       - name: Update git version
