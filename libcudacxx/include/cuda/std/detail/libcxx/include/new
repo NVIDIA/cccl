@@ -88,19 +88,18 @@ void  operator delete[](void* ptr, void*) noexcept;
 
 #ifndef __cuda_std__
 #include <__config>
-#include <exception>
-#ifdef _LIBCUDACXX_NO_EXCEPTIONS
-#include <cstdlib>
-#endif
-#if defined(_LIBCUDACXX_ABI_VCRUNTIME)
-#include <new.h>
-#endif
 #endif // __cuda_std__
 
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "cstddef"
+#include "cstdlib"
+#include "exception"
 #include "type_traits"
 #include "version"
+
+#if defined(_LIBCUDACXX_ABI_VCRUNTIME)
+#include <new.h>
+#endif // _LIBCUDACXX_ABI_VCRUNTIME
 
 #ifndef __cuda_std__
 #include <__pragma_push>

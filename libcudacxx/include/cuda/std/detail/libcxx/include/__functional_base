@@ -13,7 +13,6 @@
 #ifndef __cuda_std__
 #include <__config>
 #include <typeinfo>
-#include <exception>
 #include <new>
 #endif // __cuda_std__
 
@@ -27,6 +26,8 @@
 #include "__type_traits/is_convertible.h"
 #include "__type_traits/remove_cvref.h"
 #include "__utility/forward.h"
+
+#include "exception"
 
 #ifndef __cuda_std__
 #include <__pragma_push>

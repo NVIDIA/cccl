@@ -15,7 +15,6 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <exception>
 #include <memory>
 #include <new>
 #include <typeinfo>
@@ -42,6 +41,7 @@
 #include "../__utility/move.h"
 #include "../__utility/piecewise_construct.h"
 #include "../__utility/swap.h"
+#include "../exception"
 #include "../tuple"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
