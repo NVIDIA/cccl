@@ -1445,11 +1445,13 @@ typedef __char32_t char32_t;
 #  define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION namespace cuda { namespace std {
 #  define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION } }
 #  define _CUDA_VSTD cuda::std::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_VSTD_NOVERSION cuda::std
 #  define _CUDA_VRANGES cuda::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
 #else
 #  define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION namespace std {
 #  define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION }
 #  define _CUDA_VSTD std::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_VSTD_NOVERSION std
 #  define _CUDA_VRANGES std::ranges::_LIBCUDACXX_ABI_NAMESPACE
 #endif
 
