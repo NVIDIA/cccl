@@ -4,6 +4,8 @@ Welcome to the CI pipeline for CCCL! In this document, we will provide you with 
 
 ### Workflow Structure
 
+Our CI workflow can be best summarized by this diagram:
+
 ```mermaid
 graph TD
   A[Event] --> D(Compute Matrix)
@@ -18,7 +20,7 @@ graph TD
   E -- For each configuration... --> O
 ```
 
-Our CI pipeline consists of multiple workflows, each serving a specific purpose. Let's go through each of them:
+This pipeline consists of multiple workflows, each serving a specific purpose. Let's go through each of them:
 
 #### [pr.yml](.github/workflows/pr.yml)
 
