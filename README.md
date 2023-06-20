@@ -5,23 +5,17 @@ Welcome to the CI pipeline for CCCL! In this document, we will provide you with 
 ### Workflow Structure
 
 ```mermaid
-graph LR
-  A[On Push to PR] --> D(Compute Matrix)
-  D --> E{Dispatch Build and Test}
-  E --> F(Build Job)
-  E --> G(Test Job)
-  F --> H{Build Script Provided?}
-  G --> I{Test Script Provided?}
-  H -- Yes --> J[Build Completed]
-  I -- Yes --> K[Test Completed]
-  J --> L{All Builds Completed?}
-  K --> L
-  L --> M{All Tests Completed?}
-  M --> N{All Jobs Succeeded?}
-  N --> O{CI Success}
-  O --> P[Workflow Completed]
-  H -- No --> L
-  I -- No --> M
+graph TD
+  A[Event] --> D(Compute Matrix)
+  D --> E{Dispatch Build and Test \n for each configuration}
+  E --> F1(Build Job)
+  F1 --> H1{Run Build Script}
+  H1 --> J1[Build Completed]
+  J1 --> G1(Test Job)
+  G1 --> I1{Run Test Script}
+  I1 --> L1[Test Completed]
+  L1 --> O{CI Success}
+  E -- For each configuration... --> O
 ```
 
 Our CI pipeline consists of multiple workflows, each serving a specific purpose. Let's go through each of them:
