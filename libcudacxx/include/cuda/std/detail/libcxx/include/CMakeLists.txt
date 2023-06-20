@@ -46,6 +46,7 @@ set(files
   __expected/unexpect.h
   __expected/unexpected.h
   __exception/exception.h
+  __exception/operations.h
   __functional/binary_function.h
   __functional/binary_negate.h
   __functional/bind_back.h

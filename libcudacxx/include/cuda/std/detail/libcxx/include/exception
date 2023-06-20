@@ -81,6 +81,7 @@ template <class E> void rethrow_if_nested(const E& e);
 #endif //__cuda_std__
 
 #include "__exception/exception.h"
+#include "__exception/operations.h"
 
 #include "cstddef"
 #include "cstdlib"
@@ -97,27 +98,7 @@ template <class E> void rethrow_if_nested(const E& e);
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION // purposefully not using versioning namespace
 
-#if _LIBCUDACXX_STD_VER <= 14 \
-    || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNEXPECTED_FUNCTIONS) \
-    || defined(_LIBCUDACXX_BUILDING_LIBRARY)
-typedef void (*unexpected_handler)();
-_LIBCUDACXX_FUNC_VIS unexpected_handler set_unexpected(unexpected_handler) _NOEXCEPT;
-_LIBCUDACXX_FUNC_VIS unexpected_handler get_unexpected() _NOEXCEPT;
-_LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void unexpected();
-#endif
-
-typedef void (*terminate_handler)();
-_LIBCUDACXX_FUNC_VIS terminate_handler set_terminate(terminate_handler) _NOEXCEPT;
-_LIBCUDACXX_FUNC_VIS terminate_handler get_terminate() _NOEXCEPT;
 _LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void terminate() _NOEXCEPT;
-
-_LIBCUDACXX_FUNC_VIS bool uncaught_exception() _NOEXCEPT;
-_LIBCUDACXX_FUNC_VIS _LIBCUDACXX_AVAILABILITY_UNCAUGHT_EXCEPTIONS int uncaught_exceptions() _NOEXCEPT;
-
-class _LIBCUDACXX_TYPE_VIS exception_ptr;
-
-_LIBCUDACXX_FUNC_VIS exception_ptr current_exception() _NOEXCEPT;
-_LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void rethrow_exception(exception_ptr);
 
 #ifndef _LIBCUDACXX_ABI_MICROSOFT
 
