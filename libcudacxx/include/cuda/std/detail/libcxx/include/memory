@@ -708,6 +708,8 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #pragma GCC system_header
 #endif
 
+#ifndef __cuda_std__
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ValueType>
@@ -5148,6 +5150,8 @@ struct __builtin_new_allocator {
 
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#endif // __cuda_std__
 
 #ifndef __cuda_std__
 #include <__pragma_pop>
