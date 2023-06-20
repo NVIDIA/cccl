@@ -82,6 +82,7 @@ template <class E> void rethrow_if_nested(const E& e);
 
 #include "__exception/exception.h"
 #include "__exception/operations.h"
+#include "__exception/terminate.h"
 
 #include "cstddef"
 #include "cstdlib"
@@ -97,8 +98,6 @@ template <class E> void rethrow_if_nested(const E& e);
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION // purposefully not using versioning namespace
-
-_LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void terminate() _NOEXCEPT;
 
 #ifndef _LIBCUDACXX_ABI_MICROSOFT
 
