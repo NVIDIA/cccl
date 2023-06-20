@@ -45,6 +45,7 @@ set(files
   __expected/unexpected.h
   __expected/unexpect.h
   __expected/unexpected.h
+  __exception/exception_ptr.h
   __exception/exception.h
   __exception/operations.h
   __exception/terminate.h

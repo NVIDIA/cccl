@@ -80,6 +80,7 @@ template <class E> void rethrow_if_nested(const E& e);
 #include <__config>
 #endif //__cuda_std__
 
+#include "__exception/exception_ptr.h"
 #include "__exception/exception.h"
 #include "__exception/operations.h"
 #include "__exception/terminate.h"
@@ -99,101 +100,6 @@ template <class E> void rethrow_if_nested(const E& e);
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION // purposefully not using versioning namespace
 
-#ifndef _LIBCUDACXX_ABI_MICROSOFT
-
-class _LIBCUDACXX_TYPE_VIS exception_ptr
-{
-    void* __ptr_;
-public:
-    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr() _NOEXCEPT : __ptr_() {}
-    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr(nullptr_t) _NOEXCEPT : __ptr_() {}
-
-    exception_ptr(const exception_ptr&) _NOEXCEPT;
-    exception_ptr& operator=(const exception_ptr&) _NOEXCEPT;
-    ~exception_ptr() _NOEXCEPT;
-
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_EXPLICIT operator bool() const _NOEXCEPT
-    {return __ptr_ != nullptr;}
-
-    friend _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator==(const exception_ptr& __x, const exception_ptr& __y) _NOEXCEPT
-        {return __x.__ptr_ == __y.__ptr_;}
-
-    friend _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator!=(const exception_ptr& __x, const exception_ptr& __y) _NOEXCEPT
-        {return !(__x == __y);}
-
-    friend _LIBCUDACXX_FUNC_VIS exception_ptr current_exception() _NOEXCEPT;
-    friend _LIBCUDACXX_FUNC_VIS void rethrow_exception(exception_ptr);
-};
-
-template<class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY exception_ptr
-make_exception_ptr(_Ep __e) _NOEXCEPT
-{
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-    try
-    {
-        throw __e;
-    }
-    catch (...)
-    {
-        return current_exception();
-    }
-#else
-    ((void)__e);
-    _CUDA_VSTD::abort();
-#endif
-}
-
-#else // _LIBCUDACXX_ABI_MICROSOFT
-
-class _LIBCUDACXX_TYPE_VIS exception_ptr
-{
-#if defined(_LIBCUDACXX_COMPILER_CLANG)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-private-field"
-#endif
-    void* __ptr1_;
-    void* __ptr2_;
-#if defined(_LIBCUDACXX_COMPILER_CLANG)
-#pragma clang diagnostic pop
-#endif
-public:
-    exception_ptr() _NOEXCEPT;
-    exception_ptr(nullptr_t) _NOEXCEPT;
-    exception_ptr(const exception_ptr& __other) _NOEXCEPT;
-    exception_ptr& operator=(const exception_ptr& __other) _NOEXCEPT;
-    exception_ptr& operator=(nullptr_t) _NOEXCEPT;
-    ~exception_ptr() _NOEXCEPT;
-    _LIBCUDACXX_EXPLICIT operator bool() const _NOEXCEPT;
-};
-
-_LIBCUDACXX_FUNC_VIS
-bool operator==(const exception_ptr& __x, const exception_ptr& __y) _NOEXCEPT;
-
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool operator!=(const exception_ptr& __x, const exception_ptr& __y) _NOEXCEPT
-    {return !(__x == __y);}
-
-_LIBCUDACXX_FUNC_VIS void swap(exception_ptr&, exception_ptr&) _NOEXCEPT;
-
-_LIBCUDACXX_FUNC_VIS exception_ptr __copy_exception_ptr(void *__except, const void* __ptr);
-_LIBCUDACXX_FUNC_VIS exception_ptr current_exception() _NOEXCEPT;
-_LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void rethrow_exception(exception_ptr p);
-
-// This is a built-in template function which automagically extracts the required
-// information.
-template <class _E> void *__GetExceptionInfo(_E);
-
-template<class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY exception_ptr
-make_exception_ptr(_Ep __e) _NOEXCEPT
-{
-  return __copy_exception_ptr(_CUDA_VSTD::addressof(__e), __GetExceptionInfo(__e));
-}
-
-#endif // _LIBCUDACXX_ABI_MICROSOFT
 // nested_exception
 
 class _LIBCUDACXX_EXCEPTION_ABI nested_exception
