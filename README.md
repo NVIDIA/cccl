@@ -43,7 +43,7 @@ The matrix configuration defines the various combinations of build configuration
 
 The `compute-matrix.yml` workflow reads this matrix configuration and computes the necessary combinations based on the matrix type (e.g., "pull-request"). The computed matrix is used by other workflows to determine the configurations to build and test.
 
-#### [dispatch-build-and-test.yml](#dispatch-build-and-test-yml)
+#### [dispatch-build-and-test.yml](.github/workflows/dispatch-build-and-test.yml)
 
 This workflow is called by the `thrust`, `cub`, and `libcudacxx` jobs from the [`pr.yml`](#pr.yml) workflow. It dispatches the [`build-and-test.yml`](#build-and-test.yml) workflow for each specific build configuration in parallel. It includes the following job:
 
