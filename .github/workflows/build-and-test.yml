@@ -54,6 +54,9 @@ jobs:
             eval $cmd || exit_code=$?
             if [ ! -z "$exit_code" ]; then
                 echo "::error::Command '$cmd' failed with exit code $exit_code"
+                echo "To checkout the corresponding code and reproduce this build locally, run the following commands:" 
+                echo "git clone --branch $(echo $GITHUB_REF | cut -d'/' -f3) --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+                echo "docker run --rm -it --gpus all --pull=always --network=host --volume \$PWD:/repo --workdir /repo ${{ inputs.build_image }} $cmd"
                 exit $exit_code
             fi
             sccache -s > sccache_after.txt
@@ -61,11 +64,6 @@ jobs:
         run: |
           hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
           echo "sccache hit rate: $hit_rate" >> $GITHUB_STEP_SUMMARY
-      - name: Provide instructions to reproduce this build
-        if: ${{ failure() }}
-        run: |
-          echo "::notice::To reproduce this build locally, run the following commands:" 
-          echo "git clone --branch $(echo $GITHUB_REF | cut -d'/' -f3) --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
   test:
     needs: build
     if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' }}
