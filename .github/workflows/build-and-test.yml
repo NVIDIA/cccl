@@ -50,12 +50,11 @@ jobs:
       - name: Run build script
         run: | 
             sccache -s > sccache_before.txt
-            cmd="./${{ inputs.build_script }} \"${{inputs.compiler_exe}}\" \"${{inputs.std}}\" \"${{inputs.gpu_build_archs}}\""
+            cmd="${{ inputs.build_script }} \"${{inputs.compiler_exe}}\" \"${{inputs.std}}\" \"${{inputs.gpu_build_archs}}\""
             eval $cmd || exit_code=$?
             if [ ! -z "$exit_code" ]; then
-                echo "::error::Command '$cmd' failed with exit code $exit_code"
-                echo "To checkout the corresponding code and reproduce this build locally, run the following commands:" 
-                echo "git clone --branch $(echo $GITHUB_REF | cut -d'/' -f3) --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+                echo "::error::Build failed! To checkout the corresponding code and reproduce this build locally, run the following commands:" 
+                echo "git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
                 echo "docker run --rm -it --gpus all --pull=always --network=host --volume \$PWD:/repo --workdir /repo ${{ inputs.build_image }} $cmd"
                 exit $exit_code
             fi
