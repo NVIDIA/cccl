@@ -10,7 +10,9 @@ We use GitHub Actions for this purpose. It is flexible, powerful, and well-integ
 
 This document will walk you through our CI workflow and guide you on how to interact with and troubleshoot it when needed.
 
-## TL;DR - Workflow Overview
+## Workflow Overview
+
+### TL;DR
 
 ```mermaid
 graph LR
@@ -31,11 +33,35 @@ This repository relies on a GitHub Actions-based Continuous Integration (CI) wor
 - **Failures:** If a job fails, you'll be notified through GitHub's interface. You can then check the logs for details.
 - **Recovery:** To handle job failures, pull the relevant container image and rerun the script locally to reproduce the issue.
 
-## The Matrix
+### The Matrix
 
 The matrix defined in the [`matrix.yml`](ci/matrix.yaml) is the single source of truth for the environments we test our code against.
 It dictates the build configurations, such as CUDA version, operating system, CPU architecture, compiler, GPU architectures, and C++ standards. 
 It allows us to test our code against different combinations of these variables to ensure our code's compatibility and stability. 
+
+### Build and Test Jobs
+Our CI workflow primarily revolves around two major types of jobs: build jobs and test jobs. 
+
+#### Build
+Build jobs compile our unit tests and examples in various environments, mimicking the conditions in which our users might compile the code. 
+These jobs simply invoke a build script (e.g., `build_thrust.sh`) which contains all the necessary steps to compile the code.
+
+The advantage of this approach is two-fold. 
+First, it allows us to keep our CI configuration files clean and focused on the orchestration of jobs rather than the specifics of building the code. 
+Second, it greatly simplifies the process of reproducing build issues outside of CI. 
+Developers can run the build script locally, in their environment, and the build will behave in the same way it does in CI.
+
+#### Test
+After the build jobs have successfully compiled the test binaries, the test jobs run these binaries to execute our tests. 
+On first glance, you may notice that the test jobs are rebuilding all of the test binaries. 
+However, we are relying on sccache to cache the build artifacts from the build jobs and reuse them in the test jobs.
+
+Similar to the build jobs, test jobs use a script (e.g., `test_thrust.sh`) to define the steps required to execute the tests.
+If a test fails in CI, developers can simply run the script in their local environment to reproduce the issue and debug it.
+
+In summary, the heart of our build and test jobs is the corresponding build or test script. 
+This design philosophy helps maintain a clear separation between CI orchestration and the specifics of building and testing. 
+Moreover, it paves the way for straightforward issue reproduction, thereby aiding developers in their debugging process.
 
 ## Lifecycle of a Pull Request
 
