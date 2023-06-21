@@ -59,6 +59,15 @@ However, we are relying on sccache to cache the build artifacts from the build j
 Similar to the build jobs, test jobs use a script (e.g., `test_thrust.sh`) to define the steps required to execute the tests.
 If a test fails in CI, developers can simply run the script in their local environment to reproduce the issue and debug it.
 
+The syntax of the build and test scripts is the same:
+```bash
+./ci/build_thrust.sh <host compiler> <c++ standard> <gpu architectures>
+./ci/test_thrust.sh <host compiler> <c++ standard> <gpu architectures>
+
+#examples
+./ci/build_thrust.sh g++ c++17 70;80;86
+```
+
 In summary, the heart of our build and test jobs is the corresponding build or test script. 
 This design philosophy helps maintain a clear separation between CI orchestration and the specifics of building and testing. 
 Moreover, it paves the way for straightforward issue reproduction, thereby aiding developers in their debugging process.
