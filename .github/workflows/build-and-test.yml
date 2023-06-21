@@ -59,7 +59,7 @@ jobs:
       - name: Provide instructions to reproduce this build
         if: ${{ failure() }}
         run: |
-          echo "::notice To reproduce this build locally, run the following commands:" 
+          echo "::notice::To reproduce this build locally, run the following commands:" 
           echo "git clone --branch $(echo $GITHUB_REF | cut -d'/' -f3) --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA" >> $GITHUB_STEP_SUMMARY
   test:
     needs: build
