@@ -54,6 +54,7 @@ jobs:
             eval $cmd || exit_code=$?
             if [ ! -z "$exit_code" ]; then
                 echo "::error::Command '$cmd' failed with exit code $exit_code"
+                exit $exit_code
             fi
             sccache -s > sccache_after.txt
       - name: Calculate sccache hit rate
