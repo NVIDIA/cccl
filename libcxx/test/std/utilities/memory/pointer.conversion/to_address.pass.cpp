@@ -10,6 +10,7 @@
 // <memory>
 
 // UNSUPPORTED: c++03, c++11
+// UNSUPPORTED: gcc-6
 
 // template <class T> constexpr T* to_address(T* p) noexcept;
 // template <class Ptr> constexpr auto to_address(const Ptr& p) noexcept;

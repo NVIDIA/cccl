@@ -12,7 +12,7 @@
 
 // These compilers have not implemented Core 2094 which makes volatile
 // qualified types trivially copyable.
-// XFAIL: gcc-7, gcc-8, gcc-9
+// XFAIL: gcc-6, gcc-7, gcc-8, gcc-9
 
 // If we're just building the test and not executing it, it should pass.
 // UNSUPPORTED: no_execute

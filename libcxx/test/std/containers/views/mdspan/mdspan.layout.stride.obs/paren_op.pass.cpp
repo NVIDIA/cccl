@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 //UNSUPPORTED: c++11
+// UNSUPPORTED: gcc-6
 
 #include <mdspan>
 #include <cassert>

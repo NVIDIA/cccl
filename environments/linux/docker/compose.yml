@@ -277,6 +277,19 @@ services:
 
 
 ### Ubuntu 18.04 images:
+  gcc-6:
+    extends:
+      service: ubuntu18.04
+    image: "libcudacxx/gcc-6"
+    container_name: gcc-6
+    profiles: ["gcc-6", "all", "base"]
+    build:
+      context: ../../../
+      dockerfile: environments/linux/docker/ubuntu.base.Dockerfile
+      target: libcudacxx-configured
+      args:
+        HOST_CXX: "g++-6"
+
   gcc-7:
     extends:
       service: ubuntu18.04

@@ -619,7 +619,7 @@ class Configuration(object):
                     possible_stds.remove('c++17')
                 # FIXME: How many C++14 tests actually fail under GCC 5 and 6?
                 # Should we XFAIL them individually instead?
-                if maj_v <= 6:
+                if maj_v < 6:
                     possible_stds.remove('c++14')
             for s in possible_stds:
                 cxx = self.cxx

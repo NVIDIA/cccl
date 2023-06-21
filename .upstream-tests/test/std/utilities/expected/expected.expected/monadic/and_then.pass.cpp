@@ -327,7 +327,7 @@ constexpr void test_sfinae() {
 struct NoCopy {
   NoCopy() = default;
   __host__ __device__
-  constexpr NoCopy(const NoCopy&);
+  constexpr NoCopy(const NoCopy&) = delete;
   __host__ __device__
   constexpr cuda::std::expected<int, TestError> operator()(const NoCopy&&) { return 1; }
 };

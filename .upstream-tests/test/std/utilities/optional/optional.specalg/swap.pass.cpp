@@ -8,6 +8,8 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
+// UNSUPPORTED: gcc-6
+
 // <cuda/std/optional>
 
 // template <class T> void swap(optional<T>& x, optional<T>& y)

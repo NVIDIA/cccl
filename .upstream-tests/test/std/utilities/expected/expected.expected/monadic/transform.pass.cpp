@@ -243,7 +243,7 @@ constexpr void test_sfinae() {
 struct NoCopy {
   NoCopy() = default;
   __host__ __device__
-  constexpr NoCopy(const NoCopy&);
+  constexpr NoCopy(const NoCopy&) = delete;
   __host__ __device__
   constexpr int operator()(const NoCopy&&) { return 1; }
 };

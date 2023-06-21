@@ -18,11 +18,12 @@
 //   operator=(const Cont::value_type& value);
 
 #include <cuda/std/iterator>
+
+#include <cuda/std/cassert>
 #if defined(_LIBCUDACXX_HAS_LIST)
 #include <cuda/std/list>
-#endif
-#include <cuda/std/cassert>
 #include "nasty_containers.h"
+#endif // _LIBCUDACXX_HAS_LIST
 
 #include "test_macros.h"
 

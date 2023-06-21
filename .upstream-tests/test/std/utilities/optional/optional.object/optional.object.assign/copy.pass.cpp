@@ -58,15 +58,19 @@ int main(int, char**)
 {
     {
         using O = optional<int>;
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
         static_assert(assign_empty(O{42}), "");
         static_assert(assign_value(O{42}), "");
+#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
         assert(assign_empty(O{42}));
         assert(assign_value(O{42}));
     }
     {
         using O = optional<TrivialTestTypes::TestType>;
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
         static_assert(assign_empty(O{42}), "");
         static_assert(assign_value(O{42}), "");
+#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
         assert(assign_empty(O{42}));
         assert(assign_value(O{42}));
     }

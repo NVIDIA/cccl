@@ -2126,8 +2126,9 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 // macro is used to mark them as such, which suppresses the
 // '-Wctad-maybe-unsupported' compiler warning when CTAD is used in user code
 // with these classes.
-#if _LIBCUDACXX_STD_VER >= 17
-#    define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName)                                                                \
+#if (!defined(_LIBCUDACXX_COMPILER_GCC) || __GNUC__ > 6) \
+ && _LIBCUDACXX_STD_VER >= 17
+#  define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName)                                                                \
       template <class ..._Tag>                                                                                         \
       _ClassName(typename _Tag::__allow_ctad...) -> _ClassName<_Tag...>
 #else

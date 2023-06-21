@@ -8,6 +8,7 @@
 
 // UNSUPPORTED: c++98, c++03, c++11, c++14
 // UNSUPPORTED: nvrtc
+// UNSUPPORTED: gcc-6
 // UNSUPPORTED: windows
 // We run out of heap space with windows
 

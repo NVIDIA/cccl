@@ -58,6 +58,8 @@ int main(int, char**)
         constexpr optional<X> opt(X{});
 #if defined(_LIBCUDACXX_ADDRESSOF)
         static_assert(opt->test() == 3, "");
+#else
+        unused(opt);
 #endif
     }
     {
@@ -68,6 +70,8 @@ int main(int, char**)
         constexpr optional<Z> opt(Z{});
 #if defined(_LIBCUDACXX_ADDRESSOF)
         static_assert(opt->test() == 1, "");
+#else
+        unused(opt);
 #endif
     }
 

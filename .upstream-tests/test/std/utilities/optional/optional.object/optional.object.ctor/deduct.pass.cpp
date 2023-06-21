@@ -15,7 +15,7 @@
 // is provided explicitly instead of being deduced, it compiles the test fine.
 // Given that the deduction guide is trivial, this appears to be a compiler bug,
 // so just don't run this test on GCC 7.
-// UNSUPPORTED: gcc-7
+// UNSUPPORTED: gcc-6, gcc-7
 
 // template<class T>
 //   optional(T) -> optional<T>;

@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 // test operator new [] nothrow by replacing only operator new
-// XFAIL: clang-7, gcc-7
+// XFAIL: clang-7, gcc-6, gcc-7
 
 // UNSUPPORTED: sanitizer-new-delete
 // XFAIL: libcpp-no-vcruntime

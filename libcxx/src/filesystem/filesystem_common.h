@@ -197,8 +197,8 @@ private:
 using chrono::duration;
 using chrono::duration_cast;
 
-using TimeSpec = struct ::timespec;
-using StatT = struct ::stat;
+using TimeSpec = struct timespec;
+using StatT = struct stat;
 
 template <class FileTimeT, class TimeT,
           bool IsFloat = is_floating_point<typename FileTimeT::rep>::value>
