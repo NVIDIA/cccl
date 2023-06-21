@@ -42,8 +42,8 @@ It allows us to test our code against different combinations of these variables 
 From creation to merging, a pull request in this project follows these steps:
 
 1. Create a PR: Once you make a change, open a PR. 
-  - If you have write permission to the repository, CI workflow will automatically start.
-  - If you don't have write permission, the workflow will start once a maintainer comments on the PR with `/ok to test`. This comment is required for all subsequent workflow runs.
+    - If you have write permission to the repository, CI workflow will automatically start.
+    - If you don't have write permission, the workflow will start once a maintainer comments on the PR with `/ok to test`. This comment is required for all subsequent workflow runs.
 2. Wait for results: GitHub Actions executes the defined CI workflow, running jobs based on the matrix configuration.
 3. Interpret results: Check the status of the workflow. If it passes, all tests have passed on all defined configurations, and your changes likely didn't break anything. 
 4. Handle failures: If any job fails, the logs will provide information on what went wrong. 
