@@ -36,11 +36,19 @@ jobs:
         with:
           fetch-depth: 0
           path: cccl
+      # In order for sccache to be shared between CI and lcaal devcontainers, code needs to be in the same absolute path
+      # This ensures the code is in the same path as it is within the devcontainer
+      - name: Move files to coder user home directory
+        run: |
+          mv cccl /home/coder/cccl
+          chown -R coder:coder /home/coder/
       - name: Configure credentials and environment variables for sccache
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run build script
+        shell: su coder {0}
         run: | 
             sccache -s > sccache_before.txt
+            cd ~
             cmd="${{ inputs.build_script }} \"${{inputs.compiler_exe}}\" \"${{inputs.std}}\" \"${{inputs.gpu_build_archs}}\""
             eval $cmd || exit_code=$?
             if [ ! -z "$exit_code" ]; then
@@ -76,10 +84,17 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          path: cccl
+      - name: Move files to coder user home directory
+        run: |
+          mv cccl /home/coder/cccl
+          chown -R coder:coder /home/coder/
       - name: Configure credentials and environment variables for sccache
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run test script
+        shell: su coder {0}
         run: | 
+            cd ~
             sccache -s > sccache_before.txt
             time ./${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
             sccache -s > sccache_after.txt
