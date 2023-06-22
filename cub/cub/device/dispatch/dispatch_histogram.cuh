@@ -996,8 +996,8 @@ public:
       // Use the pass-thru transform op for converting privatized bins to output bins
       typedef PassThruTransform OutputDecodeOpT;
 
-      PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS];
-      OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS];
+      PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
+      OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
       int max_levels = num_output_levels[0];
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
@@ -1191,8 +1191,8 @@ public:
       typedef SearchTransform<LevelT *> OutputDecodeOpT;
 
       int num_privatized_levels[NUM_ACTIVE_CHANNELS];
-      PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS];
-      OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS];
+      PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
+      OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
       int max_levels = num_output_levels[0]; // Maximum number of levels in any channel
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
@@ -1351,8 +1351,8 @@ public:
       // Use the pass-thru transform op for converting privatized bins to output bins
       typedef PassThruTransform OutputDecodeOpT;
 
-      PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS];
-      OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS];
+      PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
+      OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
       int max_levels = num_output_levels[0];
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
@@ -1564,8 +1564,8 @@ public:
       typedef ScaleTransform OutputDecodeOpT;
 
       int num_privatized_levels[NUM_ACTIVE_CHANNELS];
-      PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS];
-      OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS];
+      PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
+      OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
       int max_levels = num_output_levels[0];
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
