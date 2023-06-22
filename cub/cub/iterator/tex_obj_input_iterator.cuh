@@ -266,13 +266,13 @@ public:
     }
 
     /// Equal to
-    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs)
+    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs) const
     {
         return ((ptr == rhs.ptr) && (tex_offset == rhs.tex_offset) && (tex_obj == rhs.tex_obj));
     }
 
     /// Not equal to
-    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs)
+    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs) const
     {
         return ((ptr != rhs.ptr) || (tex_offset != rhs.tex_offset) || (tex_obj != rhs.tex_obj));
     }
