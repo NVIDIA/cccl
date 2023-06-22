@@ -50,10 +50,7 @@
 #  endif
 #endif
 
-#ifdef CUB_CONFIG_MAIN
-#define CATCH_CONFIG_RUNNER
-#endif
-#include <catch2/catch.hpp>
+#include "catch2_main.cuh"
 
 #ifndef VAR_IDX
 #define VAR_IDX 0
@@ -157,50 +154,4 @@ namespace detail
            random(std::numeric_limits<unsigned long long int>::min(),          \
                   std::numeric_limits<unsigned long long int>::max())))        \
   }
-
-#ifdef CUB_CONFIG_MAIN
-#include <cuda_runtime.h>
-
-static int device_guard(int device_id)
-{
-  int device_count {};
-  if (cudaGetDeviceCount(&device_count) != cudaSuccess)
-  {
-    std::cerr << "Can't query devices number." << std::endl;
-    std::exit(-1);
-  }
-
-  if (device_id >= device_count || device_id < 0)
-  {
-    std::cerr << "Invalid device ID: " << device_id << std::endl;
-    std::exit(-1);
-  }
-
-  return device_id;
-}
-
-
-int main(int argc, char *argv[])
-{
-  Catch::Session session;
-
-  int device_id {};
-
-  // Build a new parser on top of Catch's
-  using namespace Catch::clara;
-  auto cli = session.cli()
-           | Opt(device_id, "device")["-d"]["--device"]("device id to use");
-  session.cli(cli);
-
-  int returnCode = session.applyCommandLine(argc, argv);
-  if(returnCode != 0)
-  {
-    return returnCode;
-  }
-
-  cudaSetDevice(device_guard(device_id));
-
-  return session.run(argc, argv);
-}
-#endif
 
