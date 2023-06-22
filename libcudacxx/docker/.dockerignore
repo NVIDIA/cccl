@@ -1,0 +1,10 @@
+*
+!bin
+!cuda/common
+!cuda/import
+!cuda/tools
+!opencl/import/cl_rel/CL/*.h*
+!libcudacxx
+libcudacxx/.git
+libcudacxx/libcxx/.git
+libcudacxx/.upstream-tests/.git
