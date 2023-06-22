@@ -40,10 +40,10 @@ jobs:
       # This ensures the code is in the same path as it is within the devcontainer
       - name: Move files to coder user home directory
         run: |
-          mv cccl /home/coder/cccl
+          cp -R cccl /home/coder/cccl
           chown -R coder:coder /home/coder/
       - name: Configure credentials and environment variables for sccache
-        uses: ./home/coder/cccl/.github/actions/configure_cccl_sccache
+        uses: ./.github/actions/configure_cccl_sccache
       - name: Run build script
         shell: su coder {0}
         run: | 
@@ -87,10 +87,10 @@ jobs:
           path: cccl
       - name: Move files to coder user home directory
         run: |
-          mv cccl /home/coder/cccl
+          cp -R cccl /home/coder/cccl
           chown -R coder:coder /home/coder/
       - name: Configure credentials and environment variables for sccache
-        uses: ./home/coder/cccl/.github/actions/configure_cccl_sccache
+        uses: ./.github/actions/configure_cccl_sccache
       - name: Run test script
         shell: su coder {0}
         run: | 
