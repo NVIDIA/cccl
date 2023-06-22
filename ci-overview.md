@@ -92,6 +92,20 @@ If a CI job fails, here's what you can do to troubleshoot:
 2. Reproduce the issue locally: Pull the relevant container image and rerun the script that failed. This will allow you to dig into the issue in depth.
 3. Fix the issue: Once you've identified the problem, you can make appropriate changes to your code and rerun the CI jobs.
 
+### How to Reproduce a CI Failure Locally
+
+When a build or test job fails, it will provide instructions on how to reproduce the failure locally using the exact same code and environment used in CI.
+
+For example, here is a screenshot of the log of a failed build job:
+
+![Build Job Failure](docs/images/repro_instructions.png)
+
+This provides instructions for both a command-line and a VSCode-based approach to reproduce the failure locally.
+
+When interating on a fix, the vscode devcontainer approach is recommended as it provides a convenient, interactive environment to debug the issue.
+
+## More Information
+
 You can refer to [GitHub Actions documentation](https://docs.github.com/en/actions) for a deeper understanding of the process and the [GitHub Actions workflows syntax](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions) to comprehend the workflow files' structure and syntax.
 
 You're not in this alone - the community is here to help. If you're stuck, don't hesitate to raise an issue or ask for assistance. Open source thrives on collaboration and learning. Happy coding!
