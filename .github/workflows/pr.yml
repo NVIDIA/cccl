@@ -63,7 +63,7 @@ jobs:
         compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
     with:
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
-      build_sript: "./ci/build_libcudacxx.sh"
+      build_script: "./ci/build_libcudacxx.sh"
       test_script: #"./ci/test_libcudacxx.sh" 
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
