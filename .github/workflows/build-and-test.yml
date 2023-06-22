@@ -31,20 +31,11 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - name: Echo git version
-        run: git --version
-      #TODO: We can remove this when we aren't using submodules anymore
-      - name: Update git version
-        run: |
-          sudo apt-get install software-properties-common
-          sudo add-apt-repository ppa:git-core/ppa -y
-          sudo apt-get update
-          sudo apt-get install git -y
-          git --version
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
-          submodules: 'recursive'
+          fetch-depth: 0
+          path: cccl
       - name: Configure credentials and environment variables for sccache
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run build script
@@ -81,18 +72,10 @@ jobs:
     permissions:
       id-token: write
     steps:
-    # TODO: We can remove this when we aren't using submodules anymore
-      - name: Update git version
-        run: |
-          sudo apt-get install software-properties-common
-          sudo add-apt-repository ppa:git-core/ppa -y
-          sudo apt-get update
-          sudo apt-get install git -y
-          git --version
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
-          submodules: 'recursive'
+          fetch-depth: 0
       - name: Configure credentials and environment variables for sccache
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run test script
