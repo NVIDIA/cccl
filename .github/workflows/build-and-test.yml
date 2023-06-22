@@ -59,7 +59,7 @@ jobs:
                 echo "Alternatively, for a more convenient, interactive environment to reproduce the issue, you can launch a devcontainer in vscode:"
                 echo "git clone --branch $GITHUB_REF_NAME --single-branch --recurse-submodules https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
                 echo ".devcontainer/launch.sh ${{inputs.cuda_version}} ${{inputs.compiler}}${{inputs.compiler_version}}"
-                echo "Then, open a terminal inside vscode (ctrl+shift+`) and run:"
+                echo "Then, open a terminal inside vscode (ctrl+shift+\`) and run:"
                 echo "$cmd"
                 exit $exit_code
             fi
