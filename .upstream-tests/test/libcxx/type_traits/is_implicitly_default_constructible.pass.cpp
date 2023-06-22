@@ -81,10 +81,10 @@ static_assert(!cuda::std::__is_implicitly_default_constructible<NonDefaultConstr
 static_assert(!cuda::std::__is_implicitly_default_constructible<NonDefaultConstructible3>::value, "");
 static_assert(!cuda::std::__is_implicitly_default_constructible<ProtectedDefaultConstructible>::value, "");
 static_assert(!cuda::std::__is_implicitly_default_constructible<PrivateDefaultConstructible>::value, "");
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6 // GCC 6 complains about implicit conversion
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 7 // GCC 6 + 7 complain about implicit conversion
 static_assert(!cuda::std::__is_implicitly_default_constructible<ProtectedDefaultConstructibleWithBase>::value, "");
 static_assert(!cuda::std::__is_implicitly_default_constructible<PrivateDefaultConstructibleWithBase>::value, "");
-#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
+#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 7
 
 int main(int, char**) {
     return 0;
