@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:23.06-cpp-gcc9-cuda12.1-ubuntu20.04",
+  "image": "rapidsai/devcontainers:23.06-cpp-gcc8-cuda11.1-ubuntu18.04",
   "hostRequirements": {
     "gpu": true
   },
@@ -22,5 +22,5 @@
     "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind,consistency=consistent"
   ],
-  "name": "cuda12.1-gcc9"
+  "name": "cuda11.1-gcc8"
 }
