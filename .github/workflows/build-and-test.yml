@@ -1,0 +1,106 @@
+name: build and test
+
+defaults:
+  run:
+    shell: bash -eo pipefail {0}
+
+on:
+  workflow_call:
+    inputs:
+      cuda_version: {type: string, required: true}
+      compiler: {type: string, required: true}
+      compiler_exe: {type: string, required: true}
+      compiler_version: {type: string, required: true}
+      std: {type: string, required: true}
+      gpu_build_archs: {type: string, required: true}
+      cpu: {type: string, required: true}
+      os: {type: string, required: true}
+      build_script: {type: string, required: false}
+      test_script: {type: string, required: false }
+      build_image: {type: string, required: false}
+      test_image: {type: string, required: false}
+
+jobs:
+  build:
+    if: inputs.build_script != '' && inputs.build_image != ''
+    name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
+    runs-on: ${{ (inputs.os == 'windows' && 'windows-latest') || format('linux-{0}-cpu16', inputs.cpu) }}
+    container: 
+      options: -u root
+      image: ${{ inputs.build_image }}
+    permissions:
+      id-token: write
+    steps:
+      - name: Echo git version
+        run: git --version
+      #TODO: We can remove this when we aren't using submodules anymore
+      - name: Update git version
+        run: |
+          sudo apt-get install software-properties-common
+          sudo add-apt-repository ppa:git-core/ppa -y
+          sudo apt-get update
+          sudo apt-get install git -y
+          git --version
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Configure credentials and environment variables for sccache
+        uses: ./.github/actions/configure_cccl_sccache
+      - name: Run build script
+        run: | 
+            sccache -s > sccache_before.txt
+            cmd="${{ inputs.build_script }} \"${{inputs.compiler_exe}}\" \"${{inputs.std}}\" \"${{inputs.gpu_build_archs}}\""
+            eval $cmd || exit_code=$?
+            if [ ! -z "$exit_code" ]; then
+                echo "::error::Build failed! To checkout the corresponding code and reproduce this build locally, run the following commands:" 
+                echo "git clone --branch $GITHUB_REF_NAME --single-branch --recurse-submodules https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+                echo "docker run --rm -it --gpus all --pull=always --volume \$PWD:/repo --workdir /repo ${{ inputs.build_image }} $cmd"
+                echo "Alternatively, for a more convenient, interactive environment to reproduce the issue, you can launch a devcontainer in vscode:"
+                echo "git clone --branch $GITHUB_REF_NAME --single-branch --recurse-submodules https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+                echo ".devcontainer/launch.sh ${{inputs.cuda_version}} ${{inputs.compiler}}${{inputs.compiler_version}}"
+                echo "Then, open a terminal inside vscode (ctrl+shift+\`) and run:"
+                echo "$cmd"
+                exit $exit_code
+            fi
+            sccache -s > sccache_after.txt
+      - name: Calculate sccache hit rate
+        run: |
+          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
+          echo "sccache hit rate: $hit_rate" >> $GITHUB_STEP_SUMMARY
+  test:
+    needs: build
+    if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' }}
+    name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
+    runs-on: linux-${{inputs.cpu}}-gpu-v100-latest-1
+    container: 
+      options: -u root
+      image: ${{ inputs.test_image }}
+      env:
+        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
+    permissions:
+      id-token: write
+    steps:
+    # TODO: We can remove this when we aren't using submodules anymore
+      - name: Update git version
+        run: |
+          sudo apt-get install software-properties-common
+          sudo add-apt-repository ppa:git-core/ppa -y
+          sudo apt-get update
+          sudo apt-get install git -y
+          git --version
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Configure credentials and environment variables for sccache
+        uses: ./.github/actions/configure_cccl_sccache
+      - name: Run test script
+        run: | 
+            sccache -s > sccache_before.txt
+            time ./${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
+            sccache -s > sccache_after.txt
+      - name: Calculate sccache hit rate
+        run: |
+          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
+          echo "sccache hit rate: $hit_rate" >> $GITHUB_STEP_SUMMARY
