@@ -85,12 +85,12 @@ jobs:
         with:
           fetch-depth: 0
           path: cccl
+      - name: Configure credentials and environment variables for sccache
+        uses: cccl/.github/actions/configure_cccl_sccache
       - name: Move files to coder user home directory
         run: |
           mv cccl /home/coder/cccl
           chown -R coder:coder /home/coder/
-      - name: Configure credentials and environment variables for sccache
-        uses: ./.github/actions/configure_cccl_sccache
       - name: Run test script
         shell: su coder {0}
         run: | 
