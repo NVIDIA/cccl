@@ -734,6 +734,10 @@ class Configuration(object):
         # template depth with older Clang versions.
         self.cxx.addFlagIfSupported('-ftemplate-depth=270')
 
+        # If running without execution we need to mark tests that only fail at runtime as unsupported
+        if self.lit_config.noExecute:
+            self.config.available_features.add('no_execute')
+
     def configure_compile_flags_header_includes(self):
         support_path = os.path.join(self.libcudacxx_src_root, 'test', 'support')
         self.configure_config_site_header()
