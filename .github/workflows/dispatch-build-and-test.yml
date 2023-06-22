@@ -1,0 +1,34 @@
+name: Dispatch build and test
+
+on:
+  workflow_call:
+    inputs:
+      per_cuda_compiler_matrix: {type: string, required: true}
+      build_script: {type: string, required: false}
+      test_script: {type: string, required: false}
+
+jobs:
+  # Using a matrix to dispatch to the build-and-test reusable workflow for each build configuration
+  # ensures that the build/test steps can overlap across different configurations. For example,
+  # the build step for CUDA 12.1 + gcc 9.3 can run at the same time as the test step for CUDA 11.0 + clang 11.
+  build_and_test:
+    name: ${{matrix.cpu}}
+    uses: ./.github/workflows/build-and-test.yml
+    strategy:
+      fail-fast: false
+      matrix: 
+        include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
+    with:
+      cuda_version: ${{ matrix.cuda }}
+      compiler: ${{ matrix.compiler.name }}
+      compiler_exe: ${{ matrix.compiler.exe }}
+      compiler_version: ${{ matrix.compiler.version }}
+      std: ${{ matrix.std }}
+      gpu_build_archs: ${{ matrix.gpu_build_archs }}
+      cpu: ${{ matrix.cpu }}
+      os: ${{ matrix.os }}
+      build_script: ${{ inputs.build_script }}
+      build_image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
+      test_script: ${{ inputs.test_script }}
+      test_image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
+
