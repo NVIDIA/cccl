@@ -43,8 +43,6 @@ jobs:
           git --version
       - name: Checkout repo
         uses: actions/checkout@v3
-        with:
-          submodules: 'recursive'
       - name: Configure credentials and environment variables for sccache
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run build script
@@ -91,8 +89,6 @@ jobs:
           git --version
       - name: Checkout repo
         uses: actions/checkout@v3
-        with:
-          submodules: 'recursive'
       - name: Configure credentials and environment variables for sccache
         uses: ./.github/actions/configure_cccl_sccache
       - name: Run test script
