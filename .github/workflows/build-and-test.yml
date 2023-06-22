@@ -36,14 +36,14 @@ jobs:
         with:
           fetch-depth: 0
           path: cccl
+      - name: Configure credentials and environment variables for sccache
+        uses: ./cccl/.github/actions/configure_cccl_sccache
       # In order for sccache to be shared between CI and lcaal devcontainers, code needs to be in the same absolute path
       # This ensures the code is in the same path as it is within the devcontainer
       - name: Move files to coder user home directory
         run: |
           mv cccl /home/coder/cccl
           chown -R coder:coder /home/coder/
-      - name: Configure credentials and environment variables for sccache
-        uses: ./cccl/.github/actions/configure_cccl_sccache
       - name: Run build script
         shell: su coder {0}
         run: | 
