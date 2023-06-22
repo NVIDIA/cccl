@@ -9,9 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: !nvcc
 // UNSUPPORTED: nvrtc
-// XFAIL: nvcc
 
 #include "utils.h"
 
@@ -24,6 +22,7 @@ int main(int argc, char ** argv)
     cuda::annotated_ptr<int, cuda::access_property::shared> shared_ptr;
 
     array_anno_ptr = shared_ptr;  //  fail to compile, as expected
+
 
     return 0;
 }

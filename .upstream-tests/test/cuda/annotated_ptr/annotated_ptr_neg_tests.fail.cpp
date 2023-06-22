@@ -9,22 +9,18 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: !nvcc
 // UNSUPPORTED: nvrtc
-// XFAIL: nvcc
 
 #include "utils.h"
 
-int main(int argc, char ** argv)
-{
+__device__ __host__
+static void fails_from_host() {
+    int a;
+    __nv_associate_access_property(&a, uint64_t{0});
+}
 
-    cuda::access_property ap(cuda::access_property::persisting{});
-    int* array0 = new int[9];
-    cuda::annotated_ptr<int, cuda::access_property> array_anno_ptr{array0, ap};
-    cuda::annotated_ptr<int, cuda::access_property::shared> shared_ptr;
-
-    array_anno_ptr = shared_ptr;  //  fail to compile, as expected
-
-
+int main(int argc, char ** argv) {
+    //calling from host needs to fail and kill the app
+    fails_from_host();
     return 0;
 }

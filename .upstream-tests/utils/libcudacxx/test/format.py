@@ -110,6 +110,9 @@ class LibcxxTestFormat(object):
         if isinstance(script, lit.Test.Result):
             return script
         if lit_config.noExecute:
+            # if we expect the test to fail at runtime, XFAIL is the proper return value if we never run the test
+            if test.xfails:
+                return lit.Test.Result(lit.Test.XFAIL)
             return lit.Test.Result(lit.Test.PASS)
 
         # Check that we don't have run lines on tests that don't support them.
