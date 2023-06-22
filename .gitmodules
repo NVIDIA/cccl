@@ -1,9 +1,0 @@
-[submodule "libcudacxx"]
-	path = libcudacxx
-	url = ../libcudacxx.git
-[submodule "cub"]
-	path = cub
-	url = ../cub
-[submodule "thrust"]
-	path = thrust
-	url = ../thrust
