@@ -66,7 +66,7 @@ jobs:
         shell: su coder {0}
         run: |
           hit_rate=$(./cccl/ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
-          echo "sccache hit rate: $hit_rate" >> $GITHUB_STEP_SUMMARY
+          echo "sccache hit rate: $hit_rate" 
   test:
     needs: build
     if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' }}
@@ -101,4 +101,4 @@ jobs:
         shell: su coder {0}
         run: |
           hit_rate=$(./cccl/ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
-          echo "sccache hit rate: $hit_rate" >> $GITHUB_STEP_SUMMARY
+          echo "sccache hit rate: $hit_rate" 
