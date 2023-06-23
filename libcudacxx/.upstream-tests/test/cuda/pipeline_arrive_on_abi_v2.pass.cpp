@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 // TODO: Remove pointless comparison suppression when compiler fixes short-circuiting
-TEST_NV_DIAG_SUPPRESS(186)
+TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 TEST_NV_DIAG_SUPPRESS(declared_but_not_referenced)

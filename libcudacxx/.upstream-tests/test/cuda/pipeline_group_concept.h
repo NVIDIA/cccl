@@ -15,7 +15,7 @@
 #include <cuda/pipeline>
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(186)
+TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 
 template <typename T_size, typename T_thread_rank>
 struct single_thread_test_group {

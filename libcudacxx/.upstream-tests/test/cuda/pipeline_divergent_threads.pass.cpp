@@ -11,6 +11,7 @@
 // UNSUPPORTED: pre-sm-70
 // UNSUPPORTED: nvrtc
 
+#include <cuda/std/type_traits>
 #include <cooperative_groups/memcpy_async.h>
 #include <cuda/pipeline>
 #include <cuda_pipeline.h>
@@ -21,6 +22,7 @@
 #include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
+TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 
 constexpr int nthreads = 256;
 constexpr size_t stages_count = 2; // Pipeline with two stages
