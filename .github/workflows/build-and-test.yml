@@ -66,7 +66,10 @@ jobs:
         shell: su coder {0}
         run: |
           cd ~/cccl
-          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt )
+          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt >2 info.log)
+          echo "::group::Details"
+          cat info.log
+          echo "::endgroup"
           echo "::notice::sccache hit rate: $hit_rate" | tee -a "$GITHUB_STEP_SUMMARY"
   test:
     needs: build
