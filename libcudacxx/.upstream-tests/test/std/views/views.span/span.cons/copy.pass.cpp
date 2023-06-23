@@ -42,7 +42,7 @@ void testCV ()
     assert((doCopy(cuda::std::span<T,2>(&arr[0], 2))));
 }
 
-__device__ constexpr int carr[] = {1,2,3};
+STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr[] = {1,2,3};
 
 int main(int, char**)
 {

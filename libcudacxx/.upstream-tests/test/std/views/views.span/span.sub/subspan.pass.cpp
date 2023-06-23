@@ -100,7 +100,7 @@ void testRuntimeSpan(Span sp)
     assert(s1.size() == s2.size());
 }
 
-__device__ constexpr int carr1[] = {1,2,3,4};
+STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr1[] = {1,2,3,4};
 __device__           int  arr1[] = {5,6,7};
 
 int main(int, char**)

@@ -59,9 +59,9 @@ struct A{};
 __host__ __device__ bool operator==(A, A) {return true;}
 
 #if TEST_STD_VER > 14
-__device__ constexpr int iArr1[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9};
+constexpr              int iArr1[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9};
 #endif
-__device__           int iArr2[] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+STATIC_TEST_GLOBAL_VAR int iArr2[] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 int main(int, char**)
 {

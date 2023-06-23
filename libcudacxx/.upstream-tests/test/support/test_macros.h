@@ -428,6 +428,8 @@ constexpr bool unused(T &&) {return true;}
 # define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(diag_suppress WARNING))
 #endif
 
+#define TEST_CONSTEXPR_GLOBAL _LIBCUDACXX_CONSTEXPR_GLOBAL
+
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
