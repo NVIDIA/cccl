@@ -70,7 +70,7 @@ jobs:
           echo "::group::Details"
           cat info.log
           echo "::endgroup"
-          echo "::notice::sccache hit rate: $hit_rate" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "::notice::sccache hit rate: $hit_rate" 
   test:
     needs: build
     if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' }}
