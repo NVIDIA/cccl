@@ -69,7 +69,7 @@ jobs:
           hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt 2> info.log)
           echo "::group::Details"
           cat info.log
-          echo "::endgroup"
+          echo "::endgroup::"
           echo "::notice::sccache hit rate: $hit_rate" 
   test:
     needs: build
