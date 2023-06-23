@@ -176,9 +176,9 @@ public:
     : __base(__other.__has_val_)
   {
     if (__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), __other.__union_.__val_);
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, __other.__union_.__val_);
     } else {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
     }
   }
 
@@ -193,9 +193,9 @@ public:
     : __base(__other.__has_val_)
   {
     if (__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), __other.__union_.__val_);
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, __other.__union_.__val_);
     } else {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
     }
   }
 
@@ -211,9 +211,9 @@ public:
     : __base(__other.__has_val_)
   {
     if (__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), _CUDA_VSTD::move(__other.__union_.__val_));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, _CUDA_VSTD::move(__other.__union_.__val_));
     } else {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
     }
   }
 
@@ -228,9 +228,9 @@ public:
     : __base(__other.__has_val_)
   {
     if (__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), _CUDA_VSTD::move(__other.__union_.__val_));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, _CUDA_VSTD::move(__other.__union_.__val_));
     } else {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
     }
   }
 
@@ -409,7 +409,7 @@ public:
       _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__unex_));
       this->__has_val_ = true;
     }
-    return *_CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), _CUDA_VSTD::forward<_Args>(__args)...);
+    return *_LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, _CUDA_VSTD::forward<_Args>(__args)...);
   }
 
   _LIBCUDACXX_TEMPLATE(class _Up, class... _Args)
@@ -422,7 +422,7 @@ public:
       _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__unex_));
       this->__has_val_ = true;
     }
-    return *_CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), __il, _CUDA_VSTD::forward<_Args>(__args)...);
+    return *_LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, __il, _CUDA_VSTD::forward<_Args>(__args)...);
   }
 
 
@@ -1107,7 +1107,7 @@ public:
     : __base(__other.__has_val_)
   {
     if (!__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
     }
   }
 
@@ -1121,7 +1121,7 @@ public:
     : __base(__other.__has_val_)
   {
     if (!__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
     }
   }
 
@@ -1135,7 +1135,7 @@ public:
     : __base(__other.__has_val_)
   {
     if (!__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
     }
   }
 
@@ -1149,7 +1149,7 @@ public:
     : __base(__other.__has_val_)
   {
     if (!__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
     }
   }
 
@@ -1233,7 +1233,7 @@ public:
              _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
   {
     if (this->__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __un.error());
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __un.error());
       this->__has_val_ = false;
     } else {
       this->__union_.__unex_ = __un.error();
@@ -1251,7 +1251,7 @@ public:
              _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _OtherErr))
   {
     if (this->__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__un.error()));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__un.error()));
       this->__has_val_ = false;
     } else {
       this->__union_.__unex_ = _CUDA_VSTD::move(__un.error());

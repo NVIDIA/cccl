@@ -2189,6 +2189,17 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
 #endif
 
+// Older nvcc do not handle the constraint of `construct_at` in earlier std modes
+// So to preserve our performance optimization we default to the unconstrained
+// `__construct_at` and only in C++20 use `construct_at`
+#if _LIBCUDACXX_STD_VER > 17
+#  define _LIBCUDACXX_CONSTRUCT_AT(_LOCATION, ...) \
+  _CUDA_VSTD::construct_at(_CUDA_VSTD::addressof(_LOCATION), __VA_ARGS__)
+#else
+#  define _LIBCUDACXX_CONSTRUCT_AT(_LOCATION, ...) \
+  _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(_LOCATION), __VA_ARGS__)
+#endif
+
 #if !defined(_LIBCUDACXX_DISABLE_EXEC_CHECK)
 #if defined(__CUDACC__)                       \
  && !defined(_LIBCUDACXX_COMPILER_NVRTC)      \

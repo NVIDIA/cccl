@@ -99,7 +99,7 @@ construct_at(_Tp* __location, _Args&&... __args) {
 #endif // _LIBCUDACXX_STD_VER > 17
 
 _LIBCUDACXX_DISABLE_EXEC_CHECK
-template <class _Tp, class... _Args, class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
+template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 __enable_if_t<!_LIBCUDACXX_TRAIT(is_trivially_constructible, _Tp, _Args...) || !_LIBCUDACXX_TRAIT(is_trivially_move_assignable, _Tp), _Tp*>
 __construct_at(_Tp* __location, _Args&&... __args) {
@@ -114,7 +114,7 @@ __construct_at(_Tp* __location, _Args&&... __args) {
 }
 
 _LIBCUDACXX_DISABLE_EXEC_CHECK
-template <class _Tp, class... _Args, class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
+template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 __enable_if_t<_LIBCUDACXX_TRAIT(is_trivially_constructible, _Tp, _Args...) && _LIBCUDACXX_TRAIT(is_trivially_move_assignable, _Tp), _Tp*>
 __construct_at(_Tp* __location, _Args&&... __args) {
