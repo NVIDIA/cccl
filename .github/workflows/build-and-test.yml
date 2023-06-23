@@ -2,7 +2,7 @@ name: build and test
 
 defaults:
   run:
-    shell: bash -eo pipefail {0}
+    shell: bash -exo pipefail {0}
 
 on:
   workflow_call:
@@ -46,8 +46,8 @@ jobs:
       - name: Run build script
         shell: su coder {0}
         run: | 
-            sccache -s > sccache_before.txt
             cd ~/cccl
+            sccache -s > sccache_before.txt
             cmd="${{ inputs.build_script }} \"${{inputs.compiler_exe}}\" \"${{inputs.std}}\" \"${{inputs.gpu_build_archs}}\""
             eval $cmd || exit_code=$?
             if [ ! -z "$exit_code" ]; then
@@ -63,6 +63,7 @@ jobs:
             fi
             sccache -s > sccache_after.txt
       - name: Calculate sccache hit rate
+        shell: su coder {0}
         run: |
           hit_rate=$(./cccl/ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
           echo "sccache hit rate: $hit_rate" >> $GITHUB_STEP_SUMMARY
@@ -97,6 +98,7 @@ jobs:
             time ./${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
             sccache -s > sccache_after.txt
       - name: Calculate sccache hit rate
+        shell: su coder {0}
         run: |
           hit_rate=$(./cccl/ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
           echo "sccache hit rate: $hit_rate" >> $GITHUB_STEP_SUMMARY
