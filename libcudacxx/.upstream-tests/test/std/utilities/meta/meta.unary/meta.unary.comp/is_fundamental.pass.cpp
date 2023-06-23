@@ -14,7 +14,7 @@
 #include <cuda/std/cstddef>         // for cuda::std::nullptr_t
 #include "test_macros.h"
 
-#pragma nv_diag_suppress cuda_demote_unsupported_floating_point
+TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 template <class T>
 __host__ __device__

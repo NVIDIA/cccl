@@ -12,16 +12,17 @@
 
 #define _LIBCUDACXX_CUDA_ABI_VERSION 2
 
-// TODO: Remove pointless comparison suppression when compiler fixes short-circuiting
-#pragma nv_diag_suppress 186
-
-#pragma nv_diag_suppress static_var_with_dynamic_init
-#pragma nv_diag_suppress declared_but_not_referenced
-
 #include <cuda_pipeline.h>
 #include <cuda/barrier>
 
 #include "cuda_space_selector.h"
+#include "test_macros.h"
+
+// TODO: Remove pointless comparison suppression when compiler fixes short-circuiting
+TEST_NV_DIAG_SUPPRESS(186)
+
+TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
+TEST_NV_DIAG_SUPPRESS(declared_but_not_referenced)
 
 using nvcuda::experimental::pipeline;
 

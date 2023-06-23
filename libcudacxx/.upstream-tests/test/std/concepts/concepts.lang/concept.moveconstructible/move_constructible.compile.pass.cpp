@@ -11,7 +11,6 @@
 
 // template<class T>
 // concept move_constructible;
-#pragma nv_diag_suppress 3013 // a volatile function parameter is deprecated
 
 #if defined(__clang__)
 #pragma clang diagnostic ignored "-Wc++17-extensions"
@@ -21,6 +20,7 @@
 #include <cuda/std/type_traits>
 
 #include "type_classification/moveconstructible.h"
+#include "test_macros.h"
 
 using cuda::std::move_constructible;
 

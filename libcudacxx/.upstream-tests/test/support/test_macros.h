@@ -419,6 +419,15 @@ template <class T>
 __host__ __device__
 constexpr bool unused(T &&) {return true;}
 
+// Define a helper macro to properly suppress warnings
+#define _TEST_TOSTRING2(x) #x
+#define _TEST_TOSTRING(x) _TEST_TOSTRING2(x)
+#if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+# define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
+#else
+# define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(diag_suppress WARNING))
+#endif
+
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif

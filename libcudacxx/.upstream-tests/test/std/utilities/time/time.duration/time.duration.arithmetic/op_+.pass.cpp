@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-#pragma nv_diag_suppress set_but_not_used
+TEST_NV_DIAG_SUPPRESS(set_but_not_used)
 
 int main(int, char**)
 {

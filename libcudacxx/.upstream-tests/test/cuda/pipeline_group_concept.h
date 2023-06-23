@@ -11,9 +11,11 @@
 // UNSUPPORTED: pre-sm-70
 
 // TODO: Remove pointless comparison suppression when compiler fixes short-circuiting
-#pragma nv_diag_suppress 186
 
 #include <cuda/pipeline>
+#include "test_macros.h"
+
+TEST_NV_DIAG_SUPPRESS(186)
 
 template <typename T_size, typename T_thread_rank>
 struct single_thread_test_group {

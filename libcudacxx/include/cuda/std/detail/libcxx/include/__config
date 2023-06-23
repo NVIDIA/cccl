@@ -823,6 +823,29 @@ extern "C++" {
 #define _LIBCUDACXX_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
 #endif // __check_builtin(underlying_type)
 
+#define _LIBCUDACXX_TOSTRING2(_STR) #_STR
+#define _LIBCUDACXX_TOSTRING(_STR) _LIBCUDACXX_TOSTRING2(_STR)
+#if defined(_LIBCUDACXX_COMPILER_NVCC) \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+# define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING)     \
+  _Pragma(_LIBCUDACXX_TOSTRING(nv_diagnostic push)) \
+  _Pragma(_LIBCUDACXX_TOSTRING(nv_diag_suppress _WARNING))
+# define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(nv_diagnostic pop))
+#elif defined(_LIBCUDACXX_COMPILER_NVHPC)
+# define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING)  \
+  _Pragma(_LIBCUDACXX_TOSTRING(diagnostic push)) \
+  _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
+# define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(diagnostic pop))
+#else // _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3
+# define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
+# define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)  _Pragma(_LIBCUDACXX_TOSTRING(diag_default _WARNING))
+#endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
+#else // ^^^ _LIBCUDACXX_COMPILER_NVCC || _LIBCUDACXX_COMPILER_NVRTC ^^^ / vvv other compiler vvv
+# define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING)
+# define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)
+#endif // other compilers
+
 #if defined(_LIBCUDACXX_COMPILER_CLANG)
 
 // _LIBCUDACXX_ALTERNATE_STRING_LAYOUT is an old name for
@@ -930,8 +953,6 @@ typedef __char32_t char32_t;
 
 #elif defined(_LIBCUDACXX_COMPILER_MSVC)
 
-#define _LIBCUDACXX_TOSTRING2(x) #x
-#define _LIBCUDACXX_TOSTRING(x) _LIBCUDACXX_TOSTRING2(x)
 #define _LIBCUDACXX_WARNING(x) __pragma(message(__FILE__ "(" _LIBCUDACXX_TOSTRING(__LINE__) ") : warning note: " x))
 
 // https://github.com/microsoft/STL/blob/master/stl/inc/yvals_core.h#L353
@@ -1708,8 +1729,6 @@ typedef unsigned int   char32_t;
 #endif
 
 #  ifdef _LIBCUDACXX_COMPILER_CLANG
-#    define _LIBCUDACXX_TOSTRING2(x) #x
-#    define _LIBCUDACXX_TOSTRING(x) _LIBCUDACXX_TOSTRING2(x)
 #    define _LIBCUDACXX_DIAGNOSTIC_PUSH _Pragma("clang diagnostic push")
 #    define _LIBCUDACXX_DIAGNOSTIC_POP _Pragma("clang diagnostic pop")
 #    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str) _Pragma(_LIBCUDACXX_TOSTRING(clang diagnostic ignored str))

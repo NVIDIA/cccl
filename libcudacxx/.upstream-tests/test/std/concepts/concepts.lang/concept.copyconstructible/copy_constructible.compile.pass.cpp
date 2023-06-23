@@ -11,7 +11,6 @@
 
 // template<class T>
 // concept copy_constructible;
-#pragma nv_diag_suppress 3013 // a volatile function parameter is deprecated
 
 #if defined(__clang__)
 #pragma clang diagnostic ignored "-Wc++17-extensions"
