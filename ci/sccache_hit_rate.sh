@@ -21,10 +21,10 @@ echo "=== End of $2 ===" >&2
 # Extract compile requests and cache hits from the before and after files
 awk '/^[[:space:]]*Compile requests[[:space:]]+[[:digit:]]+/' $1 >&2
 awk '/^[[:space:]]*Compile requests[[:space:]]+[[:digit:]]+/' $2 >&2
-requests_before=$(awk '/^[[:space:]]*Compile requests[[:space:]]+[[:digit:]]+/ {print $3}' $1)
-hits_before=$(awk '/^[[:space:]]*Cache hits[[:space:]]+[[:digit:]]+/ {print $3}' $1)
-requests_after=$(awk '/^[[:space:]]*Compile requests[[:space:]]+[[:digit:]]+/ {print $3}' $2)
-hits_after=$(awk '/^[[:space:]]*Cache hits[[:space:]]+[[:digit:]]+/ {print $3}' $2)
+requests_before=$(awk '/^[[:space:]]*Compile requests[[:space:]]+[[:digit:]]+/ {print $3}' "$1")
+hits_before=$(awk '/^[[:space:]]*Cache hits[[:space:]]+[[:digit:]]+/ {print $3}' "$1")
+requests_after=$(awk '/^[[:space:]]*Compile requests[[:space:]]+[[:digit:]]+/ {print $3}' "$2")
+hits_after=$(awk '/^[[:space:]]*Cache hits[[:space:]]+[[:digit:]]+/ {print $3}' "$2")
 
 echo $requests_before >&2
 echo $hits_before >&2
