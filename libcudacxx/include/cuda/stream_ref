@@ -108,7 +108,11 @@ public:
    * \param rhs The second `stream_view` to compare
    * \return true if equal, false if unequal
    */
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE friend bool constexpr operator==(stream_ref __lhs, stream_ref __rhs) noexcept
+
+#if !defined(_LIBCUDACXX_COMPILER_NVCC) || _LIBCUDACXX_CUDACC_VER > 1103000
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE
+#endif // !defined(_LIBCUDACXX_COMPILER_NVCC) || _LIBCUDACXX_CUDACC_VER > 1103000
+  friend constexpr bool operator==(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream == __rhs.__stream;
   }
@@ -123,7 +127,10 @@ public:
    * \param rhs The second `stream_view` to compare
    * \return true if unequal, false if equal
    */
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE friend bool constexpr operator!=(stream_ref __lhs, stream_ref __rhs) noexcept
+#if !defined(_LIBCUDACXX_COMPILER_NVCC) || _LIBCUDACXX_CUDACC_VER > 1103000
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE
+#endif // !defined(_LIBCUDACXX_COMPILER_NVCC) || _LIBCUDACXX_CUDACC_VER > 1103000
+  friend constexpr bool operator!=(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream != __rhs.__stream;
   }
