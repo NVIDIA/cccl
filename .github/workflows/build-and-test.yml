@@ -71,8 +71,8 @@ jobs:
           cat sccache_before.txt
           cat sccache_after.txt
           set -x
-          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt)
-          echo "sccache hit rate: $hit_rate" 
+          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt )
+          echo "::notice::sccache hit rate: $hit_rate" 
   test:
     needs: build
     if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' }}
