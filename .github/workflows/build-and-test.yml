@@ -67,7 +67,7 @@ jobs:
         run: |
           cd ~/cccl
           hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt )
-          echo "::notice::sccache hit rate: $hit_rate" 
+          echo "::notice::sccache hit rate: $hit_rate" | tee -a "$GITHUB_STEP_SUMMARY"
   test:
     needs: build
     if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' }}
