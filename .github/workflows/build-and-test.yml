@@ -67,6 +67,7 @@ jobs:
         run: |
           cd ~/cccl
           pwd
+          ls 
           set -x
           hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
           echo "sccache hit rate: $hit_rate" 
