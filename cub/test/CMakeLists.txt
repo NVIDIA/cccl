@@ -177,12 +177,13 @@ function(cub_add_test target_name_var test_name test_src cub_target)
       # Per config catch2 runner
       set(config_c2run_target ${config_prefix}.catch2_test)
       if (NOT TARGET ${config_c2run_target})
-        add_executable(${config_c2run_target} catch2_runner.cu)
+        add_executable(${config_c2run_target} catch2_runner.cpp)
         target_link_libraries(${config_c2run_target} PRIVATE
           ${cub_target}
           ${config_c2h_target}
           Metal
           Catch2::Catch2
+          CUDA::cudart
         )
         cub_clone_target_properties(${config_c2run_target} ${cub_target})
         cub_configure_cuda_target(${config_c2run_target} RDC ${use_rdc_for_catch2_utils})
