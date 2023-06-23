@@ -428,14 +428,16 @@ public:
 
 public:
   // [expected.object.swap], swap
+  template<class _Tp2>
+  static constexpr bool __can_swap = _LIBCUDACXX_TRAIT(is_swappable, _Tp2)
+                                  && _LIBCUDACXX_TRAIT(is_swappable, _Err)
+                                  && _LIBCUDACXX_TRAIT(is_move_constructible, _Tp2)
+                                  && _LIBCUDACXX_TRAIT(is_move_constructible, _Err)
+                                  && (_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2)
+                                   || _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err));
+
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-    (requires _LIBCUDACXX_TRAIT(is_swappable, _Tp2) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_swappable, _Err) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_move_constructible, _Tp2) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_move_constructible, _Err) _LIBCUDACXX_AND
-             (_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2) ||
-              _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err))
-    )
+    (requires __can_swap<_Tp2>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
   void swap(expected<_Tp2, _Err>& __rhs)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2) &&
@@ -460,18 +462,15 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-    (requires _LIBCUDACXX_TRAIT(is_swappable, _Tp2) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_swappable, _Err) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_move_constructible, _Tp2) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_move_constructible, _Err) _LIBCUDACXX_AND
-             (_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2) ||
-              _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err))
-    )
+  template<class _Tp2 = _Tp>
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-  void swap(expected& __x, expected& __y) noexcept(noexcept(__x.swap(__y)))
+  auto swap(expected& __x, expected& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2) &&
+                                                   _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Tp2) &&
+                                                   _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err) &&
+                                                   _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err))
+    _LIBCUDACXX_TRAILING_REQUIRES(void)(requires __can_swap<_Tp2>)
   {
-    __x.swap(__y);
+    return __x.swap(__y); // some compiler warn about non void function without return
   }
 
   // [expected.object.obs], observers
@@ -1270,14 +1269,15 @@ public:
   }
 
   // [expected.void.swap], swap
+  template<class _Err2>
+  static constexpr bool __can_swap = _LIBCUDACXX_TRAIT(is_swappable, _Err2)
+                                  && _LIBCUDACXX_TRAIT(is_move_constructible, _Err2);
+
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
-    (requires _LIBCUDACXX_TRAIT(is_swappable, _Err2) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_move_constructible, _Err2)
-    )
+    (requires __can_swap<_Err2>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-  void swap(expected<void, _Err2>& __rhs)
-    noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2) &&
-             _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
+  void swap(expected<void, _Err2>& __rhs) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2) &&
+                                                   _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
   {
     if (this->__has_val_) {
       if (!__rhs.__has_val_) {
@@ -1293,14 +1293,13 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
-    (requires _LIBCUDACXX_TRAIT(is_swappable, _Err2) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_move_constructible, _Err2)
-    )
+  template<class _Err2 = _Err>
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-  void swap(expected& __x, expected& __y) noexcept(noexcept(__x.swap(__y)))
+  auto swap(expected& __x, expected& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2) &&
+                                                   _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
+    _LIBCUDACXX_TRAILING_REQUIRES(void)(requires __can_swap<_Err2>)
   {
-    __x.swap(__y);
+    return __x.swap(__y); // some compiler warn about non void function without return
   }
 
   // [expected.void.obs], observers
