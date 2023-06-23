@@ -2064,6 +2064,8 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #elif defined(_MSC_VER)
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
+#elif defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1108000
+#define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #endif
 
 // FIXME: Correct this macro when either (A) a feature test macro for the

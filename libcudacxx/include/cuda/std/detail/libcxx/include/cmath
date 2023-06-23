@@ -742,7 +742,7 @@ _A1 __constexpr_fmax(_A1 __x, _A1 __y) _NOEXCEPT
 #else
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX float __constexpr_fmax(float __x, float __y) noexcept {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
   if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
     if (__constexpr_isnan(__x))
       return __y;
@@ -756,7 +756,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX float __constexpr_fmax(float __x, floa
 
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX double __constexpr_fmax(double __x, double __y) noexcept {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
   if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
     if (__constexpr_isnan(__x))
       return __y;
@@ -770,7 +770,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX double __constexpr_fmax(double __x, do
 
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX long double __constexpr_fmax(long double __x, long double __y) noexcept {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
   if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
     if (__constexpr_isnan(__x))
       return __y;
@@ -802,7 +802,7 @@ _A1 __constexpr_logb(_A1 __x)
 template <class _Tp>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX _Tp __constexpr_logb(_Tp __x) {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
   if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
     if (__x == _Tp(0)) {
       // raise FE_DIVBYZERO
@@ -858,7 +858,7 @@ long double __constexpr_scalbn<long double>(long double __x, int __i) {
 template <class _Tp>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX _Tp __constexpr_scalbn(_Tp __x, int __exp) {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
     if (__x == _Tp(0))
       return __x;
