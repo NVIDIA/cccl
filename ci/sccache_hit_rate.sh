@@ -30,7 +30,7 @@ hits_diff=$((hits_after - hits_before))
 
 # Calculate and print the hit rate
 if [ $requests_diff -eq 0 ]; then
-    echo "No new compile requests, hit rate is not applicable" >&2
+    echo "No new compile requests, hit rate is not applicable" 
 else
     hit_rate=$(awk -v hits=$hits_diff -v requests=$requests_diff 'BEGIN {printf "%.2f", hits/requests * 100}')
     echo "sccache hit rate: $hit_rate%" >&2
