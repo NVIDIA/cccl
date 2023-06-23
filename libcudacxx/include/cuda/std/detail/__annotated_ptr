@@ -60,20 +60,20 @@ namespace __detail_ap {
   void* __associate_address_space(void* __ptr, _Property __prop) {
     if (std::is_same<_Property, access_property::shared>::value == true) {
       bool __b = __isShared(__ptr);
-#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
-      _LIBCUDACXX_DEBUG_ASSERT(__b == true);
-#endif
+      _LIBCUDACXX_ASSERT(__b, "");
+#if !defined(_LIBCUDACXX_COMPILER_NVCC) || _LIBCUDACXX_CUDACC_VER >= 1102000
       __builtin_assume(__b);
+#endif // nvcc > 11.1
     } else if (std::is_same<_Property, access_property::global>::value == true ||
                std::is_same<_Property, access_property::normal>::value == true ||
                std::is_same<_Property, access_property::persisting>::value == true ||
                std::is_same<_Property, access_property::streaming>::value == true ||
                std::is_same<_Property, access_property>::value) {
       bool __b = __isGlobal(__ptr);
-#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
-      _LIBCUDACXX_DEBUG_ASSERT(__b == true);
-#endif
+      _LIBCUDACXX_ASSERT(__b, "");
+#if !defined(_LIBCUDACXX_COMPILER_NVCC) || _LIBCUDACXX_CUDACC_VER >= 1102000
       __builtin_assume(__b);
+#endif // nvcc > 11.1
     }
 
     return __ptr;
