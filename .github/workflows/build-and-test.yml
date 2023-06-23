@@ -65,7 +65,8 @@ jobs:
       - name: Calculate sccache hit rate
         shell: su coder {0}
         run: |
-          hit_rate=$(./cccl/ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
+          cd ~/cccl
+          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
           echo "sccache hit rate: $hit_rate" 
   test:
     needs: build
@@ -100,5 +101,6 @@ jobs:
       - name: Calculate sccache hit rate
         shell: su coder {0}
         run: |
-          hit_rate=$(./cccl/ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
+          cd ~/cccl
+          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
           echo "sccache hit rate: $hit_rate" 
