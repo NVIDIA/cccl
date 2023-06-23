@@ -2,7 +2,7 @@ name: build and test
 
 defaults:
   run:
-    shell: bash -eo pipefail {0}
+    shell: bash -exo pipefail {0}
 
 on:
   workflow_call:
@@ -31,24 +31,22 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - name: Echo git version
-        run: git --version
-      #TODO: We can remove this when we aren't using submodules anymore
-      - name: Update git version
-        run: |
-          sudo apt-get install software-properties-common
-          sudo add-apt-repository ppa:git-core/ppa -y
-          sudo apt-get update
-          sudo apt-get install git -y
-          git --version
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
-          submodules: 'recursive'
+          path: cccl
+      # In order for sccache to be shared between CI and lcaal devcontainers, code needs to be in the same absolute path
+      # This ensures the code is in the same path as it is within the devcontainer
+      - name: Move files to coder user home directory
+        run: |
+          cp -R cccl /home/coder/cccl
+          chown -R coder:coder /home/coder/
       - name: Configure credentials and environment variables for sccache
-        uses: ./.github/actions/configure_cccl_sccache
+        uses: ./cccl/.github/actions/configure_cccl_sccache
       - name: Run build script
+        shell: su coder {0}
         run: | 
+            cd ~/cccl
             sccache -s > sccache_before.txt
             cmd="${{ inputs.build_script }} \"${{inputs.compiler_exe}}\" \"${{inputs.std}}\" \"${{inputs.gpu_build_archs}}\""
             eval $cmd || exit_code=$?
@@ -65,9 +63,14 @@ jobs:
             fi
             sccache -s > sccache_after.txt
       - name: Calculate sccache hit rate
+        shell: su coder {0}
         run: |
-          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
-          echo "sccache hit rate: $hit_rate" >> $GITHUB_STEP_SUMMARY
+          cd ~/cccl
+          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt 2> info.log)
+          echo "::group::Details"
+          cat info.log
+          echo "::endgroup::"
+          echo "::notice::sccache hit rate: $hit_rate" 
   test:
     needs: build
     if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' }}
@@ -81,26 +84,26 @@ jobs:
     permissions:
       id-token: write
     steps:
-    # TODO: We can remove this when we aren't using submodules anymore
-      - name: Update git version
-        run: |
-          sudo apt-get install software-properties-common
-          sudo add-apt-repository ppa:git-core/ppa -y
-          sudo apt-get update
-          sudo apt-get install git -y
-          git --version
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
-          submodules: 'recursive'
+          path: cccl
+      - name: Move files to coder user home directory
+        run: |
+          cp -R cccl /home/coder/cccl
+          chown -R coder:coder /home/coder/
       - name: Configure credentials and environment variables for sccache
-        uses: ./.github/actions/configure_cccl_sccache
+        uses: ./cccl/.github/actions/configure_cccl_sccache
       - name: Run test script
+        shell: su coder {0}
         run: | 
+            cd ~/cccl
             sccache -s > sccache_before.txt
             time ./${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
             sccache -s > sccache_after.txt
       - name: Calculate sccache hit rate
+        shell: su coder {0}
         run: |
+          cd ~/cccl
           hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
-          echo "sccache hit rate: $hit_rate" >> $GITHUB_STEP_SUMMARY
+          echo "sccache hit rate: $hit_rate" 

@@ -40,6 +40,6 @@ struct test_counting_iterator
 // Use built-in types only, counting_iterator doesn't seem to be compatible with
 // the custom_numeric.
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_counting_iterator,
-                                          BuiltinNumericTypes);
+                                          UnsignedIntegralTypes);
 
 #endif // C++14

@@ -64,9 +64,9 @@ class less_comparable_t
   char workaround_msvc;
 
 public:
-  __host__ __device__ bool operator<(const CustomType& other) const
+  friend __host__ __device__ bool operator<(const CustomType& lhs, const CustomType& rhs) 
   {
-    return static_cast<const CustomType&>(*this).key < other.key;
+    return lhs.key < rhs.key;
   }
 };
 
@@ -78,9 +78,9 @@ class greater_comparable_t
   char workaround_msvc;
 
 public:
-  __host__ __device__ bool operator>(const CustomType& other) const
+  friend __host__ __device__ bool operator>(const CustomType& lhs, const CustomType& rhs) 
   {
-    return static_cast<const CustomType&>(*this).key > other.key;
+    return lhs.key > rhs.key;
   }
 };
 
@@ -92,10 +92,9 @@ class lexicographical_less_comparable_t
   char workaround_msvc;
 
 public:
-  __host__ __device__ bool operator<(const CustomType &other) const
+  friend __host__ __device__ bool operator<(const CustomType &lhs, const CustomType &rhs)
   {
-    const CustomType &self = static_cast<const CustomType &>(*this);
-    return self.key == other.key ? self.val < other.val : self.key < other.key;
+    return lhs.key == rhs.key ? lhs.val < rhs.val : lhs.key < rhs.key;
   }
 };
 
@@ -107,10 +106,9 @@ class lexicographical_greater_comparable_t
   char workaround_msvc;
 
 public:
-  __host__ __device__ bool operator>(const CustomType &other) const
+  friend __host__ __device__ bool operator>(const CustomType &lhs, const CustomType &rhs) 
   {
-    const CustomType &self = static_cast<const CustomType &>(*this);
-    return self.key == other.key ? self.val > other.val : self.key > other.key;
+    return lhs.key == rhs.key ? lhs.val > rhs.val : lhs.key > rhs.key;
   }
 };
 
@@ -122,12 +120,10 @@ class equal_comparable_t
   char workaround_msvc;
 
 public:
-  __host__ __device__ bool operator==(const CustomType& other) const
+  friend __host__ __device__ bool operator==(const CustomType& lhs, const CustomType& rhs) 
   {
-    const CustomType& self = static_cast<const CustomType&>(*this);
-    
-    return self.key == other.key &&
-           self.val == other.val;
+    return lhs.key == rhs.key &&
+           lhs.val == rhs.val;
   }
 };
 
@@ -139,14 +135,12 @@ class subtractable_t
   char workaround_msvc;
 
 public:
-  __host__ __device__ CustomType operator-(const CustomType& other) const
+  friend __host__ __device__ CustomType operator-(const CustomType& lhs, const CustomType& rhs) 
   {
     CustomType result{};
 
-    const CustomType& self = static_cast<const CustomType&>(*this);
-
-    result.key = self.key - other.key;
-    result.val = self.val - other.val;
+    result.key = lhs.key - rhs.key;
+    result.val = lhs.val - rhs.val;
     
     return result;
   }
@@ -160,14 +154,12 @@ class accumulateable_t
   char workaround_msvc;
 
 public:
-  __host__ __device__ CustomType operator+(const CustomType& other) const
+  friend __host__ __device__ CustomType operator+(const CustomType& lhs, const CustomType& rhs) 
   {
     CustomType result{};
 
-    const CustomType& self = static_cast<const CustomType&>(*this);
-
-    result.key = self.key + other.key;
-    result.val = self.val + other.val;
+    result.key = lhs.key + rhs.key;
+    result.val = lhs.val + rhs.val;
     
     return result;
   }

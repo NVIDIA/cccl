@@ -65,28 +65,31 @@ CUB_NAMESPACE_BEGIN
     and only one of them is used, the sorting works correctly. For double, the
     same applies, but with 64-bit patterns.
 */
-template <typename KeyT>
+template <typename KeyT, Category TypeCategory = Traits<KeyT>::CATEGORY>
 struct BaseDigitExtractor
 {
-    typedef Traits<KeyT> TraitsT;
-    typedef typename TraitsT::UnsignedBits UnsignedBits;
+  using TraitsT = Traits<KeyT>;
+  using UnsignedBits = typename TraitsT::UnsignedBits;
 
-    enum
-    {
-        FLOAT_KEY = TraitsT::CATEGORY == FLOATING_POINT,
-    };
+  static __host__ __device__ __forceinline__ UnsignedBits ProcessFloatMinusZero(UnsignedBits key)
+  {
+    return key;
+  }
+};
 
-    static __host__ __device__ __forceinline__ UnsignedBits ProcessFloatMinusZero(UnsignedBits key)
-    {
-        CUB_IF_CONSTEXPR(!FLOAT_KEY) {
-            return key;
-        } else {
-            UnsignedBits TWIDDLED_MINUS_ZERO_BITS =
-                TraitsT::TwiddleIn(UnsignedBits(1) << UnsignedBits(8 * sizeof(UnsignedBits) - 1));
-            UnsignedBits TWIDDLED_ZERO_BITS = TraitsT::TwiddleIn(0);
-            return key == TWIDDLED_MINUS_ZERO_BITS ? TWIDDLED_ZERO_BITS : key;
-        }
-    }
+template <typename KeyT>
+struct BaseDigitExtractor<KeyT, FLOATING_POINT>
+{
+  using TraitsT = Traits<KeyT>;
+  using UnsignedBits = typename TraitsT::UnsignedBits;
+
+  static __host__ __device__ __forceinline__ UnsignedBits ProcessFloatMinusZero(UnsignedBits key)
+  {
+    UnsignedBits TWIDDLED_MINUS_ZERO_BITS =
+        TraitsT::TwiddleIn(UnsignedBits(1) << UnsignedBits(8 * sizeof(UnsignedBits) - 1));
+    UnsignedBits TWIDDLED_ZERO_BITS = TraitsT::TwiddleIn(0);
+    return key == TWIDDLED_MINUS_ZERO_BITS ? TWIDDLED_ZERO_BITS : key;
+  }
 };
 
 /** \brief A wrapper type to extract digits. Uses the BFE intrinsic to extract a

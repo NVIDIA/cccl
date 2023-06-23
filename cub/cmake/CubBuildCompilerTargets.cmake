@@ -53,6 +53,7 @@ function(cub_build_compiler_targets)
 
     # Disable GNU extensions (flag is clang only)
     append_option_if_available("-Wgnu" cxx_compile_options)
+    append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341
     # Calling a variadic macro with zero args is a GNU extension until C++20,
     # but the THRUST_PP_ARITY macro is used with zero args. Need to see if this
     # is a real problem worth fixing.
