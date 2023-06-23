@@ -71,7 +71,7 @@ jobs:
           cat sccache_before.txt
           cat sccache_after.txt
           set -x
-          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
+          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt)
           echo "sccache hit rate: $hit_rate" 
   test:
     needs: build
