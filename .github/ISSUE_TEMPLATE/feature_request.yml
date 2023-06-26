@@ -4,12 +4,12 @@ title: '[FEA]: '
 labels: ['Feature']
 body:
   - type: checkboxes
-      id: check-duplicates
-      attributes:
-        label: Is this a duplicate?
-        description: Check for duplicate issues.
-        options:
-          - label: I confirmed there appear to be no [duplicate issues](https://github.com/NVIDIA/cccl/issues) for this request and that I agree to the [Code of Conduct](CODE_OF_CONDUCT.md)
+    id: check-duplicates
+    attributes:
+      label: Is this a duplicate?
+      description: Check for duplicate issues.
+      options:
+        - label: I confirmed there appear to be no [duplicate issues](https://github.com/NVIDIA/cccl/issues) for this request and that I agree to the [Code of Conduct](CODE_OF_CONDUCT.md)
 
   - type: dropdown
     id: component
