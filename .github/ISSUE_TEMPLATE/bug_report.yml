@@ -61,8 +61,9 @@ body:
         2. Use structured bindings to destructure the elements of the tuple.
         3. Compilation fails with the error message:
         ```
-<source>(5): error: cannot bind to non-public member "cuda::std::__4::tuple<_Tp...>::__base_ [with _Tp=<int, int>]"
-    auto [a,b] = t;
+        <source>(5): error: cannot bind to non-public member "cuda::std::__4::tuple<_Tp...>::__base_ [with _Tp=<int, int>]"
+        auto [a,b] = t;
+        ```
     validations:
       required: true
 
