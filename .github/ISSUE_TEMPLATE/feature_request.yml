@@ -1,0 +1,65 @@
+name: Feature Request
+description: Suggest an idea to improve CCCL
+title: '[FEA]: '
+labels: ['Feature']
+body:
+  - type: checkboxes
+      id: check-duplicates
+      attributes:
+        label: Is this a duplicate?
+        description: Check for duplicate issues.
+        options:
+          - label: I confirmed there appear to be no [duplicate issues](https://github.com/NVIDIA/cccl/issues) for this request and that I agree to the [Code of Conduct](CODE_OF_CONDUCT.md)
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which CCCL component does this apply to?
+      multiple: false
+      options:
+        - Thrust
+        - CUB
+        - libcu++
+        - Not sure
+    validations:
+      required: true
+      
+  - type: textarea
+    id: description
+    attributes:
+      label: Is your feature request related to a problem? Please describe.
+      description: A clear and concise description of what the problem is, e.g., "I would like to be able to..."
+      placeholder: I would like to be able to use the equivalent of `std::variant` in both host and device code. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Describe the solution you'd like
+      description: A clear and concise description of what you want to happen.
+      placeholder: |
+        Provide the header `<cuda/std/variant>` that implements a heterogeneous `cuda::std::variant` type. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe alternatives you've considered
+      description:
+        If applicable, please add a clear and concise description of any alternative solutions or features you've
+        considered.
+      placeholder: The alternatives to a `variant` are unappealing. They usually involve using a raw `union` which is not type safe and has none of the convenient machinery like `std::visit`. 
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context about the request here.
+      placeholder: This would be a helpful vocabulary type that could replace a lot of custom and error prone code. 
+    validations:
+      required: false
