@@ -484,9 +484,7 @@ struct CachingDeviceAllocator
                     if (debug) _CubLog("\tDevice %d freed %lld bytes.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks (%lld bytes) outstanding.\n",
                         device, (long long) block_itr->bytes, (long long) cached_blocks.size(), (long long) cached_bytes[device].free, (long long) live_blocks.size(), (long long) cached_bytes[device].live);
 
-                    cached_blocks.erase(block_itr);
-
-                    block_itr++;
+                    block_itr = cached_blocks.erase(block_itr);
                 }
 
                 // Unlock
