@@ -26,11 +26,17 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+template <class... _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS common_type;
+
+template <class ..._Tp>
+using __common_type_t = typename common_type<_Tp...>::type;
+
 // Let COND_RES(X, Y) be:
 template <class _Tp, class _Up>
 using __cond_type = decltype(false ? declval<_Tp>() : declval<_Up>());
 
+#if _LIBCUDACXX_STD_VER > 17
 template <class _Tp, class _Up, class = void>
 struct __common_type3 {};
 
@@ -50,50 +56,27 @@ struct __common_type2_imp {};
 
 // sub-bullet 3 - "if decay_t<decltype(false ? declval<D1>() : declval<D2>())> ..."
 template <class _Tp, class _Up>
-struct __common_type2_imp<_Tp, _Up, __void_t<decltype(true ? declval<_Tp>() : declval<_Up>())> >
+struct __common_type2_imp<_Tp, _Up, __void_t<__cond_type<_Tp, _Up>>>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE __decay_t<decltype(
-                         true ? declval<_Tp>() : declval<_Up>()
-                         )> type;
+  typedef _LIBCUDACXX_NODEBUG_TYPE __decay_t<__cond_type<_Tp, _Up>> type;
 };
 
 template <class, class = void>
 struct __common_type_impl {};
 
-// Clang provides variadic templates in C++03 as an extension.
-#if !defined(_LIBCUDACXX_CXX03_LANG) || defined(_LIBCUDACXX_COMPILER_CLANG)
-# define _LIBCUDACXX_OPTIONAL_PACK(...) , __VA_ARGS__
 template <class... _Tp>
 struct __common_types;
-template <class... _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS common_type;
-#else
-# define _LIBCUDACXX_OPTIONAL_PACK(...)
-struct __no_arg;
-template <class _Tp, class _Up, class = __no_arg>
-struct __common_types;
-template <class _Tp = __no_arg, class _Up = __no_arg, class _Vp = __no_arg,
-          class _Unused = __no_arg>
-struct common_type {
-  static_assert(sizeof(_Unused) == 0,
-                "common_type accepts at most 3 arguments in C++03");
-};
-#endif // _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Up>
 struct __common_type_impl<
-    __common_types<_Tp, _Up>, __void_t<typename common_type<_Tp, _Up>::type> >
+    __common_types<_Tp, _Up>, __void_t<__common_type_t<_Tp, _Up>> >
 {
-  typedef typename common_type<_Tp, _Up>::type type;
+  typedef __common_type_t<_Tp, _Up> type;
 };
 
-template <class _Tp, class _Up, class _Vp _LIBCUDACXX_OPTIONAL_PACK(class... _Rest)>
-struct __common_type_impl<
-    __common_types<_Tp, _Up, _Vp _LIBCUDACXX_OPTIONAL_PACK(_Rest...)>,
-    __void_t<typename common_type<_Tp, _Up>::type> >
-    : __common_type_impl<__common_types<typename common_type<_Tp, _Up>::type,
-                                        _Vp _LIBCUDACXX_OPTIONAL_PACK(_Rest...)> > {
-};
+template <class _Tp, class _Up, class _Vp, class... _Rest>
+struct __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>, __void_t<__common_type_t<_Tp, _Up>> >
+    : __common_type_impl<__common_types<__common_type_t<_Tp, _Up>, _Vp, _Rest...>> {};
 
 // bullet 1 - sizeof...(Tp) == 0
 
@@ -109,24 +92,21 @@ struct _LIBCUDACXX_TEMPLATE_VIS common_type<_Tp>
 // bullet 3 - sizeof...(Tp) == 2
 
 // sub-bullet 1 - "If is_same_v<T1, D1> is false or ..."
+template <class _Tp, class _Up, class _D1 = __decay_t<_Tp>, class _D2 = __decay_t<_Up>>
+struct __common_type2 : common_type<_D1, _D2> {};
+
+template <class _Tp, class _Up>
+struct __common_type2<_Tp, _Up, _Tp, _Up> : __common_type2_imp<_Tp, _Up> {};
+
 template <class _Tp, class _Up>
 struct _LIBCUDACXX_TEMPLATE_VIS common_type<_Tp, _Up>
-    : conditional<
-        _IsSame<_Tp, __decay_t<_Tp>>::value && _IsSame<_Up, __decay_t<_Up>>::value,
-        __common_type2_imp<_Tp, _Up>,
-        common_type<__decay_t<_Tp>, __decay_t<_Up>>
-    >::type
-{};
+    : __common_type2<_Tp, _Up> {};
 
 // bullet 4 - sizeof...(Tp) > 2
 
-template <class _Tp, class _Up, class _Vp _LIBCUDACXX_OPTIONAL_PACK(class... _Rest)>
-struct _LIBCUDACXX_TEMPLATE_VIS
-    common_type<_Tp, _Up, _Vp _LIBCUDACXX_OPTIONAL_PACK(_Rest...)>
-    : __common_type_impl<
-          __common_types<_Tp, _Up, _Vp _LIBCUDACXX_OPTIONAL_PACK(_Rest...)> > {};
-
-#undef _LIBCUDACXX_OPTIONAL_PACK
+template <class _Tp, class _Up, class _Vp, class... _Rest>
+struct _LIBCUDACXX_TEMPLATE_VIS common_type<_Tp, _Up, _Vp, _Rest...>
+    : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...> > {};
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class ..._Tp> using common_type_t = typename common_type<_Tp...>::type;
