@@ -9,7 +9,6 @@ import itertools
 import functools
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import mannwhitneyu
 from scipy.stats.mstats import hdquantiles
@@ -262,6 +261,133 @@ def case_coverage(algname, ct_point_name, case_df):
 
 def coverage(args):
     iterate_case_dfs(args, case_coverage)
+
+
+def parallel_coordinates_plot(df, title):
+    # Parallel coordinates plot adaptation of https://stackoverflow.com/a/69411450
+    import matplotlib.cm as cm
+    from matplotlib.path import Path
+    import matplotlib.patches as patches
+
+    # Variables (the first variable must be categoric):
+    my_vars = df.columns.tolist()
+    df_plot = df[my_vars]
+    df_plot = df_plot.dropna()
+    df_plot = df_plot.reset_index(drop=True)
+
+    # Convert to numeric matrix:
+    ym = []
+    dics_vars = []
+    for v, var in enumerate(my_vars):
+        if df_plot[var].dtype.kind not in ["i", "u", "f"]:
+            dic_var = dict([(val, c)
+                           for c, val in enumerate(df_plot[var].unique())])
+            dics_vars += [dic_var]
+            ym += [[dic_var[i] for i in df_plot[var].tolist()]]
+        else:
+            ym += [df_plot[var].tolist()]
+    ym = np.array(ym).T
+
+    # Padding:
+    ymins = ym.min(axis=0)
+    ymaxs = ym.max(axis=0)
+    dys = ymaxs - ymins
+    ymins -= dys*0.05
+    ymaxs += dys*0.05
+
+    dys = ymaxs - ymins
+
+    # Adjust to the main axis:
+    zs = np.zeros_like(ym)
+    zs[:, 0] = ym[:, 0]
+    zs[:, 1:] = (ym[:, 1:] - ymins[1:])/dys[1:]*dys[0] + ymins[0]
+
+    # Plot:
+    fig, host_ax = plt.subplots(figsize=(20, 10), tight_layout=True)
+
+    # Make the axes:
+    axes = [host_ax] + [host_ax.twinx() for i in range(ym.shape[1] - 1)]
+    dic_count = 0
+    for i, ax in enumerate(axes):
+        ax.set_ylim(
+            bottom=ymins[i],
+            top=ymaxs[i]
+        )
+        ax.spines.top.set_visible(False)
+        ax.spines.bottom.set_visible(False)
+        ax.ticklabel_format(style='plain')
+        if ax != host_ax:
+            ax.spines.left.set_visible(False)
+            ax.yaxis.set_ticks_position("right")
+            ax.spines.right.set_position(("axes", i/(ym.shape[1] - 1)))
+        if df_plot.iloc[:, i].dtype.kind not in ["i", "u", "f"]:
+            dic_var_i = dics_vars[dic_count]
+            ax.set_yticks(range(len(dic_var_i)))
+            if i == 0:
+                ax.set_yticklabels([])
+            else:
+                ax.set_yticklabels([key_val for key_val in dics_vars[dic_count].keys()])
+            dic_count += 1
+    host_ax.set_xlim(left=0, right=ym.shape[1] - 1)
+    host_ax.set_xticks(range(ym.shape[1]))
+    host_ax.set_xticklabels(my_vars, fontsize=14)
+    host_ax.tick_params(axis="x", which="major", pad=7)
+
+    # Color map:
+    colormap = cm.get_cmap('turbo')
+
+    # Normalize speedups:
+    df["speedup_normalized"] = (
+        df["speedup"] - df["speedup"].min()) / (df["speedup"].max() - df["speedup"].min())
+
+    # Make the curves:
+    host_ax.spines.right.set_visible(False)
+    host_ax.xaxis.tick_top()
+    for j in range(ym.shape[0]):
+        verts = list(zip([x for x in np.linspace(0, len(ym) - 1, len(ym)*3 - 2,
+                                                 endpoint=True)],
+                     np.repeat(zs[j, :], 3)[1: -1]))
+        codes = [Path.MOVETO] + [Path.CURVE4 for _ in range(len(verts) - 1)]
+        path = Path(verts, codes)
+        color_first_cat_var = colormap(df.loc[j, "speedup_normalized"])
+        patch = patches.PathPatch(
+            path, facecolor="none", lw=2, alpha=0.05, edgecolor=color_first_cat_var)
+        host_ax.add_patch(patch)
+
+    host_ax.set_title(title)
+    plt.show()
+
+
+
+def case_coverage_plot(algname, ct_point_name, case_df):
+    data_list = []
+
+    for _, row_description in case_df.iterrows():
+        variant = row_description['variant']
+        speedup = row_description['speedup']
+
+        if variant.startswith('base'):
+            continue
+
+        varname, _ = variant.split(' ')
+        params = varname.split('.')
+        data_dict = {'variant': variant}
+
+        for param in params:
+            print(variant)
+            name, val = param.split('_')
+            data_dict[name] = int(val)
+
+        data_dict['speedup'] = speedup
+        # data_dict['variant'] = variant
+        data_list.append(data_dict)
+    
+    df = pd.DataFrame(data_list)
+    parallel_coordinates_plot(df, "{} ({})".format(algname, ct_point_name))
+
+
+def coverage_plot(args):
+    iterate_case_dfs(args, case_coverage_plot)
 
 
 def qrde_hd(samples):
@@ -544,6 +670,8 @@ def parse_arguments():
     parser.add_argument(
         '--coverage', action=argparse.BooleanOptionalAction, help="Show variant space coverage.")
     parser.add_argument(
+        '--coverage-plot', action=argparse.BooleanOptionalAction, help="Plot variant space coverage.")
+    parser.add_argument(
         '--top', default=7, type=int, action='store', nargs='?', help="Show top N variants with highest score.")
     parser.add_argument(
         'files', type=file_exists, nargs='+', help='At least one file is required.')
@@ -565,6 +693,10 @@ def main():
 
     if args.coverage:
         coverage(args)
+        return
+
+    if args.coverage_plot:
+        coverage_plot(args)
         return
     
     if args.variants_pdf:
