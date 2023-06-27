@@ -53,6 +53,7 @@ int main(int, char**)
         // Regardless this function should still be noexcept(false) because
         // it has a narrow contract.
     }
+#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
     {
         constexpr optional<X> opt(X{});
         static_assert((*cuda::std::move(opt)).test() == 5, "");
@@ -61,6 +62,7 @@ int main(int, char**)
         constexpr optional<Y> opt(Y{});
         assert((*cuda::std::move(opt)).test() == 2);
     }
+#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
 
     return 0;
 }

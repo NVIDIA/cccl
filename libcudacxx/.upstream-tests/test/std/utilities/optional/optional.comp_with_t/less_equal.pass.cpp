@@ -39,9 +39,9 @@ constexpr bool test() {
     typedef optional<T> O;
 
     constexpr T val(2);
-    constexpr O o1;      // disengaged
-    constexpr O o2{1};   // engaged
-    constexpr O o3{val}; // engaged
+    O o1;      // disengaged
+    O o2{1};   // engaged
+    O o3{val}; // engaged
 
     assert((o1 <= T(1)));
     assert((o2 <= T(1))); // equal
@@ -59,13 +59,13 @@ constexpr bool test() {
   }
   {
     using O = optional<int>;
-    constexpr O o1(42);
+    O o1(42);
     assert(o1 <= 42l);
     assert(!(101l <= o1));
   }
   {
     using O = optional<const int>;
-    constexpr O o1(42);
+    O o1(42);
     assert(o1 <= 42);
     assert(!(101 <= o1));
   }
@@ -76,7 +76,9 @@ constexpr bool test() {
 int main(int, char**) {
   test();
 #if TEST_STD_VER >= 17
+#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
   static_assert(test());
+#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
 #endif
 
   return 0;

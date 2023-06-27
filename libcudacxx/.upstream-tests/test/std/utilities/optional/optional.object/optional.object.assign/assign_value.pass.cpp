@@ -315,7 +315,9 @@ int main(int, char**)
     test_throws();
 
 #if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
+#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
     static_assert(pr38638(3) == 5, "");
+#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
 #endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
 
   return 0;

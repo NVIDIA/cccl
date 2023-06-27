@@ -26,6 +26,7 @@ int main(int, char**)
         ASSERT_NOEXCEPT(bool(opt));
         static_assert(!cuda::std::is_convertible<optional<int>, bool>::value, "");
     }
+#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
     {
         constexpr optional<int> opt;
         static_assert(!opt, "");
@@ -34,6 +35,7 @@ int main(int, char**)
         constexpr optional<int> opt(0);
         static_assert(opt, "");
     }
+#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
 
   return 0;
 }

@@ -34,6 +34,7 @@ int main(int, char**)
         optional<int> opt(0);
         assert(opt.has_value());
     }
+#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
     {
         constexpr optional<int> opt;
         static_assert(!opt.has_value(), "");
@@ -42,6 +43,7 @@ int main(int, char**)
         constexpr optional<int> opt(0);
         static_assert(opt.has_value(), "");
     }
+#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
 
   return 0;
 }

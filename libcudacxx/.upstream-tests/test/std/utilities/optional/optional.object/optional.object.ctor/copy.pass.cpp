@@ -123,8 +123,10 @@ int main(int, char**)
 {
     test<int>();
     test<int>(3);
+#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
     static_assert(constexpr_test<int>(), "" );
     static_assert(constexpr_test<int>(3), "" );
+#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
 
     {
         const optional<const int> o(42);
@@ -170,11 +172,13 @@ int main(int, char**)
     {
         test_reference_extension();
     }
+#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
     {
         constexpr cuda::std::optional<int> o1{4};
         constexpr cuda::std::optional<int> o2 = o1;
         static_assert( *o2 == 4, "" );
     }
+#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
 
   return 0;
 }
