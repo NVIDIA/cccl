@@ -50,12 +50,12 @@ int main(int, char**)
         ASSERT_NOT_NOEXCEPT(cuda::std::move(opt).value());
         ASSERT_SAME_TYPE(decltype(cuda::std::move(opt).value()), X const&&);
     }
-#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         constexpr optional<X> opt(in_place);
         static_assert(cuda::std::move(opt).value().test() == 5, "");
     }
-#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         const optional<X> opt(in_place);
         assert(cuda::std::move(opt).value().test() == 5);

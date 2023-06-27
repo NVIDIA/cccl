@@ -147,7 +147,7 @@ void test_const_array( const T (&array)[Sz] ) {
 
 STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int global_array [] { 1, 2, 3 };
 #if TEST_STD_VER > 14
-#if !defined(TEST_COMPILER_NVCC) || _LIBCUDACXX_CUDACC_VER >= 1103000
+#if !defined(TEST_COMPILER_NVCC_BELOW_11_3)
 STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int global_const_array[] = {0,1,2,3,4};
 #endif // nvcc > 11.2
 #endif // TEST_STD_VER > 14
@@ -216,7 +216,7 @@ int main(int, char**) {
         static_assert ( *cuda::std::crbegin(local_const_array) == 4, "" );
     }
 
-#if !defined(TEST_COMPILER_NVCC) || _LIBCUDACXX_CUDACC_VER >= 1103000
+#if !defined(TEST_COMPILER_NVCC_BELOW_11_3)
     {
 
         static_assert ( *cuda::std::begin(global_const_array)   == 0, "" );

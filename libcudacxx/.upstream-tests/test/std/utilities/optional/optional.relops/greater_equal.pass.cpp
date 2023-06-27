@@ -93,9 +93,9 @@ constexpr bool test() {
 int main(int, char**) {
   test();
 #if TEST_STD_VER >= 17
-#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test());
-#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #endif
 
   return 0;

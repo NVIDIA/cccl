@@ -45,7 +45,7 @@ struct X
 
 int main(int, char**)
 {
-#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         constexpr optional<X> opt(2);
         constexpr Y y(3);
@@ -64,7 +64,7 @@ int main(int, char**)
         constexpr optional<X> opt;
         static_assert(opt.value_or(Y(3)) == 4, "");
     }
-#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         const optional<X> opt(2);
         const Y y(3);

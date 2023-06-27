@@ -61,9 +61,9 @@ namespace __detail_ap {
     if (std::is_same<_Property, access_property::shared>::value == true) {
       bool __b = __isShared(__ptr);
       _LIBCUDACXX_ASSERT(__b, "");
-#if !defined(_LIBCUDACXX_COMPILER_NVCC) || _LIBCUDACXX_CUDACC_VER >= 1102000
+#if !defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_2)
       __builtin_assume(__b);
-#endif // nvcc > 11.1
+#endif // !defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_2)
     } else if (std::is_same<_Property, access_property::global>::value == true ||
                std::is_same<_Property, access_property::normal>::value == true ||
                std::is_same<_Property, access_property::persisting>::value == true ||
@@ -71,9 +71,9 @@ namespace __detail_ap {
                std::is_same<_Property, access_property>::value) {
       bool __b = __isGlobal(__ptr);
       _LIBCUDACXX_ASSERT(__b, "");
-#if !defined(_LIBCUDACXX_COMPILER_NVCC) || _LIBCUDACXX_CUDACC_VER >= 1102000
+#if !defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_2)
       __builtin_assume(__b);
-#endif // nvcc > 11.1
+#endif // !defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_2)
     }
 
     return __ptr;

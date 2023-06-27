@@ -128,7 +128,7 @@ TEST_CONSTEXPR_CXX17 bool test_nontrivial() {
 int main(int, char**) {
   test();
   test_nontrivial();
-#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   // GCC <9 incorrectly trips on the assertions in this, so disable it there
 #if TEST_STD_VER > 14 && (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
   static_assert(test(), "");
@@ -138,6 +138,6 @@ int main(int, char**) {
   static_assert(test_nontrivial());
 #endif // defined(_LIBCUDACXX_ADDRESSOF)
 #endif // TEST_STD_VER > 17
-#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   return 0;
 }

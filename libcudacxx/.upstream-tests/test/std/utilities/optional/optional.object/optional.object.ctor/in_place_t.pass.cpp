@@ -71,7 +71,7 @@ public:
 
 int main(int, char**)
 {
-#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         constexpr optional<int> opt(in_place, 5);
         static_assert(static_cast<bool>(opt) == true, "");
@@ -86,7 +86,7 @@ int main(int, char**)
         };
 
     }
-#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         optional<const int> opt(in_place, 5);
         assert(*opt == 5);
@@ -106,7 +106,7 @@ int main(int, char**)
         assert(static_cast<bool>(opt) == true);
         assert(*opt == X(5, 4));
     }
-#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         constexpr optional<Y> opt(in_place);
         static_assert(static_cast<bool>(opt) == true, "");
@@ -149,7 +149,7 @@ int main(int, char**)
         };
 
     }
-#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #ifndef TEST_HAS_NO_EXCEPTIONS
     {
         try

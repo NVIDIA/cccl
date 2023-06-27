@@ -59,10 +59,10 @@ int main(int, char**)
     {
         using O = optional<int>;
 #if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
-#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
         static_assert(assign_empty(O{42}), "");
         static_assert(assign_value(O{42}), "");
-#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
         assert(assign_empty(O{42}));
         assert(assign_value(O{42}));
@@ -70,10 +70,10 @@ int main(int, char**)
     {
         using O = optional<TrivialTestTypes::TestType>;
 #if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
-#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
         static_assert(assign_empty(O{42}), "");
         static_assert(assign_value(O{42}), "");
-#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
         assert(assign_empty(O{42}));
         assert(assign_value(O{42}));
