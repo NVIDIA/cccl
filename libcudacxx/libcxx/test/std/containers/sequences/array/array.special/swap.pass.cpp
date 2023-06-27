@@ -12,17 +12,15 @@
 
 #include <array>
 #include <cassert>
+#include <utility>
 
 #include "test_macros.h"
-// std::array is explicitly allowed to be initialized with A a = { init-list };.
-// Disable the missing braces warning for this reason.
-#include "disable_missing_braces_warning.h"
 
 struct NonSwappable {
-  NonSwappable() {}
+    TEST_CONSTEXPR NonSwappable() { }
 private:
-  NonSwappable(NonSwappable const&);
-  NonSwappable& operator=(NonSwappable const&);
+    NonSwappable(NonSwappable const&);
+    NonSwappable& operator=(NonSwappable const&);
 };
 
 template <class Tp>
@@ -33,9 +31,9 @@ template <class Tp>
 std::false_type can_swap_imp(...);
 
 template <class Tp>
-struct can_swap : std::is_same<decltype(can_swap_imp<Tp>(0)), void> {};
+struct can_swap : std::is_same<decltype(can_swap_imp<Tp>(0)), void> { };
 
-int main(int, char**)
+TEST_CONSTEXPR_CXX20 bool tests()
 {
     {
         typedef double T;
@@ -82,5 +80,14 @@ int main(int, char**)
     }
 #endif
 
-  return 0;
+    return true;
+}
+
+int main(int, char**)
+{
+    tests();
+#if TEST_STD_VER >= 20
+    static_assert(tests(), "");
+#endif
+    return 0;
 }

@@ -1,8 +1,9 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -10,35 +11,36 @@
 
 // template <size_t I, class T, size_t N> T&& get(array<T, N>&& a);
 
-// UNSUPPORTED: c++98, c++03
+// UNSUPPORTED: c++03
 
 #include <cuda/std/array>
-#if defined(_LIBCUDACXX_HAS_MEMORY)
-#include <cuda/std/memory>
 #include <cuda/std/utility>
 #include <cuda/std/cassert>
 
-// cuda::std::array is explicitly allowed to be initialized with A a = { init-list };.
-// Disable the missing braces warning for this reason.
 #include "test_macros.h"
-#include "disable_missing_braces_warning.h"
+
+struct MoveOnly {
+    double val_ = 0.0;
+
+    MoveOnly() = default;
+    MoveOnly(MoveOnly&&) = default;
+    MoveOnly& operator=(MoveOnly&&) = default;
+
+    MoveOnly(const MoveOnly&) = delete;
+    MoveOnly& operator=(const MoveOnly&) = delete;
+
+    __host__ __device__ constexpr MoveOnly(const double val) noexcept : val_(val) {}
+};
 
 int main(int, char**)
 {
-
     {
-        typedef cuda::std::unique_ptr<double> T;
-        typedef cuda::std::array<T, 1> C;
-        C c = {cuda::std::unique_ptr<double>(new double(3.5))};
-        T t = cuda::std::get<0>(cuda::std::move(c));
-        assert(*t == 3.5);
+        typedef cuda::std::array<MoveOnly, 1> C;
+        C c = {3.5};
+        static_assert(cuda::std::is_same<MoveOnly&&, decltype(cuda::std::get<0>(cuda::std::move(c)))>::value, "");
+        MoveOnly t = cuda::std::get<0>(cuda::std::move(c));
+        assert(t.val_ == 3.5);
     }
 
-  return 0;
+    return 0;
 }
-#else
-int main(int, char**)
-{
-  return 0;
-}
-#endif

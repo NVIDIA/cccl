@@ -1,8 +1,9 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,12 +14,9 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 
-// cuda::std::array is explicitly allowed to be initialized with A a = { init-list };.
-// Disable the missing braces warning for this reason.
 #include "test_macros.h"
-#include "disable_missing_braces_warning.h"
 
-int main(int, char**)
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 {
     {
         typedef double T;
@@ -30,6 +28,7 @@ int main(int, char**)
         assert(c[1] == 5.5);
         assert(c[2] == 5.5);
     }
+
     {
         typedef double T;
         typedef cuda::std::array<T, 0> C;
@@ -37,6 +36,14 @@ int main(int, char**)
         c.fill(5.5);
         assert(c.size() == 0);
     }
+    return true;
+}
 
-  return 0;
+int main(int, char**)
+{
+    tests();
+#if TEST_STD_VER >= 14
+    static_assert(tests(), "");
+#endif
+    return 0;
 }

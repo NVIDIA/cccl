@@ -9,7 +9,8 @@
 // This test fails on Windows because the underlying libc headers on Windows
 // are not modular
 // XFAIL: LIBCXX-WINDOWS-FIXME
-// XFAIL: clang-9, clang-10
+// XFAIL: clang-9 && (!c++11 && !c++14)
+// XFAIL: clang-10 && (!c++11 && !c++14)
 
 // REQUIRES: modules-support
 

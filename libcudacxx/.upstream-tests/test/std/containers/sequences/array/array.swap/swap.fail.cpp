@@ -1,23 +1,20 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/array>
-
 // UNSUPPORTED: nvrtc
+
+// <cuda/std/array>
 
 // void swap(array& a);
 
 #include <cuda/std/array>
 #include <cuda/std/cassert>
-
-// cuda::std::array is explicitly allowed to be initialized with A a = { init-list };.
-// Disable the missing braces warning for this reason.
-#include "disable_missing_braces_warning.h"
 
 int main(int, char**) {
   {
@@ -25,7 +22,7 @@ int main(int, char**) {
     typedef cuda::std::array<const T, 0> C;
     C c = {};
     C c2 = {};
-    // expected-error-re@array:* {{{{(static_assert|static assertion)}} failed {{.*}}{{"?}}cannot swap zero-sized array of type 'const T'{{"?}}}}
+    // expected-error-re@array:* {{{{(static_assert|static assertion)}} failed{{.*}}cannot swap zero-sized array of type 'const T'}}
     c.swap(c2); // expected-note {{requested here}}
   }
 

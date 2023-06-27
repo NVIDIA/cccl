@@ -1,8 +1,9 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,83 +16,124 @@
 #include <cuda/std/cassert>
 #include "test_macros.h"
 
-// cuda::std::array is explicitly allowed to be initialized with A a = { init-list };.
-// Disable the missing braces warning for this reason.
-#include "disable_missing_braces_warning.h"
-
 // In C++03 the copy assignment operator is not deleted when the implicitly
 // generated operator would be ill-formed; like in the case of a struct with a
 // const member.
 #if TEST_STD_VER < 11
-#define TEST_NOT_COPY_ASSIGNABLE(T) ((void)0)
+#   define TEST_NOT_COPY_ASSIGNABLE(T) ((void)0)
 #else
-#define TEST_NOT_COPY_ASSIGNABLE(T) static_assert(!cuda::std::is_copy_assignable<T>::value, "")
+#   define TEST_NOT_COPY_ASSIGNABLE(T) static_assert(!cuda::std::is_copy_assignable<T>::value, "")
 #endif
 
 struct NoDefault {
-  __host__ __device__ NoDefault(int) {}
+    __host__ __device__ TEST_CONSTEXPR NoDefault(int) { }
 };
 
-int main(int, char**) {
-  {
-    typedef double T;
-    typedef cuda::std::array<T, 3> C;
-    C c = {1.1, 2.2, 3.3};
-    C c2 = c;
-    c2 = c;
-    unused(c2);
-    static_assert(cuda::std::is_copy_constructible<C>::value, "");
-    static_assert(cuda::std::is_copy_assignable<C>::value, "");
-  }
-  {
-    typedef double T;
-    typedef cuda::std::array<const T, 3> C;
-    C c = {1.1, 2.2, 3.3};
-    C c2 = c;
-    unused(c2);
-    static_assert(cuda::std::is_copy_constructible<C>::value, "");
-    TEST_NOT_COPY_ASSIGNABLE(C);
-  }
-  {
-    typedef double T;
-    typedef cuda::std::array<T, 0> C;
-    C c = {};
-    C c2 = c;
-    c2 = c;
-    unused(c2);
-    static_assert(cuda::std::is_copy_constructible<C>::value, "");
-    static_assert(cuda::std::is_copy_assignable<C>::value, "");
-  }
-  {
-    // const arrays of size 0 should disable the implicit copy assignment operator.
-    typedef double T;
-    typedef cuda::std::array<const T, 0> C;
-    C c = {{}};
-    C c2 = c;
-    unused(c2);
-    static_assert(cuda::std::is_copy_constructible<C>::value, "");
-    TEST_NOT_COPY_ASSIGNABLE(C);
-  }
-  {
-    typedef NoDefault T;
-    typedef cuda::std::array<T, 0> C;
-    C c = {};
-    C c2 = c;
-    c2 = c;
-    unused(c2);
-    static_assert(cuda::std::is_copy_constructible<C>::value, "");
-    static_assert(cuda::std::is_copy_assignable<C>::value, "");
-  }
-  {
-    typedef NoDefault T;
-    typedef cuda::std::array<const T, 0> C;
-    C c = {{}};
-    C c2 = c;
-    unused(c2);
-    static_assert(cuda::std::is_copy_constructible<C>::value, "");
-    TEST_NOT_COPY_ASSIGNABLE(C);
-  }
+struct NonTrivialCopy {
+    __host__ __device__ TEST_CONSTEXPR NonTrivialCopy() { }
+    __host__ __device__ TEST_CONSTEXPR NonTrivialCopy(NonTrivialCopy const&) { }
+    __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialCopy& operator=(NonTrivialCopy const&) { return *this; }
+};
 
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+{
+    {
+        typedef cuda::std::array<double, 3> Array;
+        Array array = {1.1, 2.2, 3.3};
+        Array copy = array;
+        copy = array;
+        static_assert(cuda::std::is_copy_constructible<Array>::value, "");
+        static_assert(cuda::std::is_copy_assignable<Array>::value, "");
+        unused(copy);
+    }
+    {
+        typedef cuda::std::array<double const, 3> Array;
+        Array array = {1.1, 2.2, 3.3};
+        Array copy = array; unused(copy);
+        static_assert(cuda::std::is_copy_constructible<Array>::value, "");
+        TEST_NOT_COPY_ASSIGNABLE(Array);
+        unused(copy);
+    }
+    {
+        typedef cuda::std::array<double, 0> Array;
+        Array array = {};
+        Array copy = array;
+        copy = array;
+        static_assert(cuda::std::is_copy_constructible<Array>::value, "");
+        static_assert(cuda::std::is_copy_assignable<Array>::value, "");
+        unused(copy);
+    }
+    {
+        // const arrays of size 0 should disable the implicit copy assignment operator.
+        typedef cuda::std::array<double const, 0> Array;
+        Array array = {};
+        Array copy = array;
+        static_assert(cuda::std::is_copy_constructible<Array>::value, "");
+        TEST_NOT_COPY_ASSIGNABLE(Array);
+        unused(copy);
+    }
+    {
+        typedef cuda::std::array<NoDefault, 0> Array;
+        Array array = {};
+        Array copy = array;
+        copy = array;
+        static_assert(cuda::std::is_copy_constructible<Array>::value, "");
+        static_assert(cuda::std::is_copy_assignable<Array>::value, "");
+        unused(copy);
+    }
+    {
+        typedef cuda::std::array<NoDefault const, 0> Array;
+        Array array = {};
+        Array copy = array;
+        static_assert(cuda::std::is_copy_constructible<Array>::value, "");
+        TEST_NOT_COPY_ASSIGNABLE(Array);
+        unused(copy);
+    }
 
-  return 0;
+    // Make sure we can implicitly copy a cuda::std::array of a non-trivially copyable type
+    {
+        typedef cuda::std::array<NonTrivialCopy, 0> Array;
+        Array array = {};
+        Array copy = array;
+        copy = array;
+        static_assert(cuda::std::is_copy_constructible<Array>::value, "");
+        unused(copy);
+    }
+// NVCC believes `copy = array` accesses uninitialized memory
+#if defined(TEST_COMPILER_NVCC) \
+ || defined(TEST_COMPILER_NVRTC)
+    if (!cuda::std::__libcpp_is_constant_evaluated())
+#endif // TEST_COMPILER_NVCC
+    {
+        typedef cuda::std::array<NonTrivialCopy, 1> Array;
+        Array array = {};
+        Array copy = array;
+        copy = array;
+        static_assert(cuda::std::is_copy_constructible<Array>::value, "");
+        unused(copy);
+    }
+// NVCC believes `copy = array` accesses uninitialized memory
+#if defined(TEST_COMPILER_NVCC) \
+ || defined(TEST_COMPILER_NVRTC)
+    if (!cuda::std::__libcpp_is_constant_evaluated())
+#endif // TEST_COMPILER_NVCC
+    {
+        typedef cuda::std::array<NonTrivialCopy, 2> Array;
+        Array array = {};
+        Array copy = array;
+        copy = array;
+        static_assert(cuda::std::is_copy_constructible<Array>::value, "");
+        unused(copy);
+    }
+
+    return true;
+}
+
+int main(int, char**)
+{
+    tests();
+#if TEST_STD_VER >= 14 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+    static_assert(tests(), "");
+#endif
+    return 0;
 }
