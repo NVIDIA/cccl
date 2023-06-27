@@ -213,6 +213,8 @@ constexpr bool test() {
 
 int main(int, char**) {
   test();
+#if !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
   static_assert(test(), "");
+#endif // !(defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000 && defined(TEST_COMPILER_CLANG))
   return 0;
 }
