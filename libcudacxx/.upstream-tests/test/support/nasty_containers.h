@@ -44,7 +44,7 @@ public:
     ~nasty_vector() {}
 
     template <class InputIterator>
-        void assign(InputIterator first, InputIterator last) { v_.assign(first, last); }
+     void assign(InputIterator first, InputIterator last) { v_.assign(first, last); }
     void assign(size_type n, const value_type& u) { v_.assign(n, u); }
 #if TEST_STD_VER >= 11
     void assign(std::initializer_list<value_type> il)  { v_.assign(il); }
@@ -89,12 +89,13 @@ public:
 #if TEST_STD_VER >= 11
     void push_back(value_type&& x)          { v_.push_back(std::forward<value_type&&>(x)); }
     template <class... Args>
-        void emplace_back(Args&&... args)   { v_.emplace_back(std::forward<Args>(args)...); }
+    void emplace_back(Args&&... args)   { v_.emplace_back(std::forward<Args>(args)...); }
 #endif
     void pop_back()                         { v_.pop_back(); }
 
 #if TEST_STD_VER >= 11
-    template <class... Args> iterator emplace(const_iterator pos, Args&&... args)
+    template <class... Args>
+    iterator emplace(const_iterator pos, Args&&... args)
     { return v_.emplace(pos, std::forward<Args>(args)...); }
 #endif
 
@@ -104,7 +105,7 @@ public:
 #endif
     iterator insert(const_iterator pos, size_type n, const value_type& x) { return v_.insert(pos, n, x); }
     template <class InputIterator>
-        iterator insert(const_iterator pos, InputIterator first, InputIterator last)
+    iterator insert(const_iterator pos, InputIterator first, InputIterator last)
     { return v_.insert(pos, first, last); }
 
 #if TEST_STD_VER >= 11
@@ -160,7 +161,7 @@ public:
     explicit nasty_list(size_type n)  : l_(n) {}
     nasty_list(size_type n, const value_type& value)  : l_(n,value) {}
     template <class Iter>
-        nasty_list(Iter first, Iter last)  : l_(first, last) {}
+    nasty_list(Iter first, Iter last)  : l_(first, last) {}
 #if TEST_STD_VER >= 11
     nasty_list(std::initializer_list<value_type> il) : l_(il) {}
 #endif
@@ -171,12 +172,11 @@ public:
     nasty_list& operator=(std::initializer_list<value_type> il) { l_ = il; return *this; }
 #endif
     template <class Iter>
-        void assign(Iter first, Iter last) { l_.assign(first, last); }
+    void assign(Iter first, Iter last) { l_.assign(first, last); }
     void assign(size_type n, const value_type& t) { l_.assign(n, t); }
 #if TEST_STD_VER >= 11
     void assign(std::initializer_list<value_type> il) { l_.assign(il); }
 #endif
-
 
     iterator               begin() TEST_NOEXCEPT         { return l_.begin(); }
     const_iterator         begin()   const TEST_NOEXCEPT { return l_.begin(); }
@@ -208,15 +208,16 @@ public:
     void push_back(value_type&& x)          { l_.push_back(std::forward<value_type&&>(x)); }
     void push_front(value_type&& x)         { l_.push_back(std::forward<value_type&&>(x)); }
     template <class... Args>
-        void emplace_back(Args&&... args)   { l_.emplace_back(std::forward<Args>(args)...); }
+    void emplace_back(Args&&... args)   { l_.emplace_back(std::forward<Args>(args)...); }
     template <class... Args>
-        void emplace_front(Args&&... args)  { l_.emplace_front(std::forward<Args>(args)...); }
+    void emplace_front(Args&&... args)  { l_.emplace_front(std::forward<Args>(args)...); }
 #endif
     void pop_front()                        { l_.pop_front(); }
     void pop_back()                         { l_.pop_back(); }
 
 #if TEST_STD_VER >= 11
-    template <class... Args> iterator emplace(const_iterator pos, Args&&... args)
+    template <class... Args>
+    iterator emplace(const_iterator pos, Args&&... args)
     { return l_.emplace(pos, std::forward<Args>(args)...); }
 #endif
 
@@ -226,7 +227,7 @@ public:
 #endif
     iterator insert(const_iterator pos, size_type n, const value_type& x) { return l_.insert(pos, n, x); }
     template <class InputIterator>
-        iterator insert(const_iterator pos, InputIterator first, InputIterator last)
+    iterator insert(const_iterator pos, InputIterator first, InputIterator last)
     { return l_.insert(pos, first, last); }
 
 #if TEST_STD_VER >= 11

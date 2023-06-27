@@ -10,21 +10,17 @@
 
 // template <size_t I, class T, size_t N> T&& get(array<T, N>&& a);
 
-// UNSUPPORTED: c++98, c++03
+// UNSUPPORTED: c++03
 
 #include <array>
 #include <memory>
 #include <utility>
 #include <cassert>
 
-// std::array is explicitly allowed to be initialized with A a = { init-list };.
-// Disable the missing braces warning for this reason.
 #include "test_macros.h"
-#include "disable_missing_braces_warning.h"
 
 int main(int, char**)
 {
-
     {
         typedef std::unique_ptr<double> T;
         typedef std::array<T, 1> C;
@@ -33,5 +29,5 @@ int main(int, char**)
         assert(*t == 3.5);
     }
 
-  return 0;
+    return 0;
 }

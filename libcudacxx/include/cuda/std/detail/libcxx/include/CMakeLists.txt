@@ -1,5 +1,10 @@
 set(files
   __assert
+  __algorithm/comp_ref_type.h
+  __algorithm/comp.h
+  __algorithm/equal.h
+  __algorithm/fill_n.h
+  __algorithm/lexicographical_compare.h
   __algorithm/swap_ranges.h
   __availability
   __bit_reference
