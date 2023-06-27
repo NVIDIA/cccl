@@ -1125,7 +1125,7 @@ typedef __char32_t char32_t;
 // [[msvc::no_unique_address]] though. If/when it does implement
 // [[msvc::no_unique_address]], this should be preferred though.
 #  define _LIBCUDACXX_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
-#elif (defined(_LIBCUDACXX_COMPILER_NVCC) && (_LIBCUDACXX_CUDACC_VER < 1100000)) \
+#elif (defined(_LIBCUDACXX_COMPILER_NVCC) && (_LIBCUDACXX_CUDACC_VER < 1103000)) \
  || (__has_cpp_attribute(no_unique_address) < 201803L)
 #  define _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  define _LIBCUDACXX_NO_UNIQUE_ADDRESS
