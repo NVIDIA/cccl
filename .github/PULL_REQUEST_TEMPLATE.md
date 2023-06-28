@@ -1,6 +1,10 @@
 ## Description
+
+<!-- Every PR should have a corresponding issue that describes and motivates the work done in the PR -->
+closes: <!-- Link issue here -->
+
 <!-- Provide a standalone description of changes in this PR. -->
-<!-- Reference any issues closed by this PR with "closes #1234". -->
+
 <!-- Note: The pull request title will be included in the CHANGELOG. -->
 
 ## Checklist
