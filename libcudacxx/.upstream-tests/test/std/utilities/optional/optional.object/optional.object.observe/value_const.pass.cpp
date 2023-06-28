@@ -50,10 +50,12 @@ int main(int, char**)
         ASSERT_NOT_NOEXCEPT(opt.value());
         ASSERT_SAME_TYPE(decltype(opt.value()), X const&);
     }
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         constexpr optional<X> opt(in_place);
         static_assert(opt.value().test() == 3, "");
     }
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         const optional<X> opt(in_place);
         assert(opt.value().test() == 3);

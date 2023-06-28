@@ -37,6 +37,18 @@
 #  define _LIBCUDACXX_COMPILER_CLANG_CUDA
 #endif
 
+// Some convenience macros to filter nvcc versions
+#if defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1102000
+#define _LIBCUDACXX_COMPILER_NVCC_BELOW_11_2
+#endif // defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1102000
+#if defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000
+#define _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3
+#endif // defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000
+
+#if defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1108000
+#define _LIBCUDACXX_COMPILER_NVCC_BELOW_11_8
+#endif // defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1108000
+
 #if defined(_MSC_VER) && !defined(__clang__)
 #  define _LIBCUDACXX_HAS_PRAGMA_MSVC_WARNING
 #  if !defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)
@@ -629,7 +641,7 @@ extern "C++" {
 #define _LIBCUDACXX_IS_LVALUE_REFERENCE(...) __is_lvalue_reference(__VA_ARGS__)
 #endif // __check_builtin(is_lvalue_reference)
 
-#if defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000
+#if defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK
 #endif // nvcc < 11.3
 
@@ -655,7 +667,7 @@ extern "C++" {
 #define _LIBCUDACXX_IS_OBJECT(...) __is_object(__VA_ARGS__)
 #endif // __check_builtin(is_object)
 
-#if defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000
+#if defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_OBJECT_FALLBACK
 #endif // nvcc < 11.3
 
@@ -757,7 +769,7 @@ extern "C++" {
 #define _LIBCUDACXX_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
 #endif // __check_builtin(is_unsigned)
 
-#if defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000
+#if defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK
 #endif // nvcc < 11.3
 
@@ -822,6 +834,29 @@ extern "C++" {
  || defined(_LIBCUDACXX_COMPILER_NVRTC)
 #define _LIBCUDACXX_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
 #endif // __check_builtin(underlying_type)
+
+#define _LIBCUDACXX_TOSTRING2(_STR) #_STR
+#define _LIBCUDACXX_TOSTRING(_STR) _LIBCUDACXX_TOSTRING2(_STR)
+#if defined(_LIBCUDACXX_COMPILER_NVCC) \
+ || defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+# define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING)     \
+  _Pragma(_LIBCUDACXX_TOSTRING(nv_diagnostic push)) \
+  _Pragma(_LIBCUDACXX_TOSTRING(nv_diag_suppress _WARNING))
+# define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(nv_diagnostic pop))
+#elif defined(_LIBCUDACXX_COMPILER_NVHPC)
+# define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING)  \
+  _Pragma(_LIBCUDACXX_TOSTRING(diagnostic push)) \
+  _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
+# define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(diagnostic pop))
+#else // _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3
+# define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
+# define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)  _Pragma(_LIBCUDACXX_TOSTRING(diag_default _WARNING))
+#endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
+#else // ^^^ _LIBCUDACXX_COMPILER_NVCC || _LIBCUDACXX_COMPILER_NVRTC ^^^ / vvv other compiler vvv
+# define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING)
+# define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)
+#endif // other compilers
 
 #if defined(_LIBCUDACXX_COMPILER_CLANG)
 
@@ -930,8 +965,6 @@ typedef __char32_t char32_t;
 
 #elif defined(_LIBCUDACXX_COMPILER_MSVC)
 
-#define _LIBCUDACXX_TOSTRING2(x) #x
-#define _LIBCUDACXX_TOSTRING(x) _LIBCUDACXX_TOSTRING2(x)
 #define _LIBCUDACXX_WARNING(x) __pragma(message(__FILE__ "(" _LIBCUDACXX_TOSTRING(__LINE__) ") : warning note: " x))
 
 // https://github.com/microsoft/STL/blob/master/stl/inc/yvals_core.h#L353
@@ -1104,7 +1137,7 @@ typedef __char32_t char32_t;
 // [[msvc::no_unique_address]] though. If/when it does implement
 // [[msvc::no_unique_address]], this should be preferred though.
 #  define _LIBCUDACXX_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
-#elif (defined(_LIBCUDACXX_COMPILER_NVCC) && (_LIBCUDACXX_CUDACC_VER < 1100000)) \
+#elif defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3) \
  || (__has_cpp_attribute(no_unique_address) < 201803L)
 #  define _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  define _LIBCUDACXX_NO_UNIQUE_ADDRESS
@@ -1627,7 +1660,7 @@ typedef unsigned int   char32_t;
 // by defining _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS.
 // NVCC 11.1 and 11.2 are broken with the deprecated attribute, so disable it
 #if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS) \
- && (!defined(_LIBCUDACXX_COMPILER_NVCC) || _LIBCUDACXX_CUDACC_VER > 1102000)
+ && !defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3)
 #  if __has_attribute(deprecated)
 #    define _LIBCUDACXX_DEPRECATED __attribute__ ((deprecated))
 #  elif _LIBCUDACXX_STD_VER > 11
@@ -1708,8 +1741,6 @@ typedef unsigned int   char32_t;
 #endif
 
 #  ifdef _LIBCUDACXX_COMPILER_CLANG
-#    define _LIBCUDACXX_TOSTRING2(x) #x
-#    define _LIBCUDACXX_TOSTRING(x) _LIBCUDACXX_TOSTRING2(x)
 #    define _LIBCUDACXX_DIAGNOSTIC_PUSH _Pragma("clang diagnostic push")
 #    define _LIBCUDACXX_DIAGNOSTIC_POP _Pragma("clang diagnostic pop")
 #    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str) _Pragma(_LIBCUDACXX_TOSTRING(clang diagnostic ignored str))
@@ -2045,6 +2076,8 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #elif defined(_MSC_VER)
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
+#elif defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_8)
+#define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #endif
 
 // FIXME: Correct this macro when either (A) a feature test macro for the
@@ -2166,6 +2199,17 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
 #else
 #  define _LIBCUDACXX_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
+#endif
+
+// Older nvcc do not handle the constraint of `construct_at` in earlier std modes
+// So to preserve our performance optimization we default to the unconstrained
+// `__construct_at` and only in C++20 use `construct_at`
+#if _LIBCUDACXX_STD_VER > 17
+#  define _LIBCUDACXX_CONSTRUCT_AT(_LOCATION, ...) \
+  _CUDA_VSTD::construct_at(_CUDA_VSTD::addressof(_LOCATION), __VA_ARGS__)
+#else
+#  define _LIBCUDACXX_CONSTRUCT_AT(_LOCATION, ...) \
+  _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(_LOCATION), __VA_ARGS__)
 #endif
 
 #if !defined(_LIBCUDACXX_DISABLE_EXEC_CHECK)

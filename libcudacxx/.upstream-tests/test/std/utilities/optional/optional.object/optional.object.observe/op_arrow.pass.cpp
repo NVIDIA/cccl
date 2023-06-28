@@ -60,7 +60,9 @@ int main(int, char**)
     }
     {
 #if defined(_LIBCUDACXX_ADDRESSOF)
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
         static_assert(test() == 3, "");
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #endif
     }
 

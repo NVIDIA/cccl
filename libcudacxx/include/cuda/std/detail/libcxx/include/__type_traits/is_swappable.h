@@ -37,31 +37,27 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp> struct __is_swappable;
 template <class _Tp> struct __is_nothrow_swappable;
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Tp>
-using __swap_result_t = __enable_if_t<is_move_constructible<_Tp>::value && is_move_assignable<_Tp>::value>;
-#else
-template <class>
-using __swap_result_t = void;
-#endif
+using __swap_result_t = __enable_if_t<_LIBCUDACXX_TRAIT(is_move_constructible, _Tp)
+                                   && _LIBCUDACXX_TRAIT(is_move_assignable, _Tp)>;
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __swap_result_t<_Tp>
-swap(_Tp& __x, _Tp& __y) _NOEXCEPT_(is_nothrow_move_constructible<_Tp>::value &&
-                                    is_nothrow_move_assignable<_Tp>::value);
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+__swap_result_t<_Tp>
+swap(_Tp& __x, _Tp& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp)
+                               && _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Tp));
 
 template<class _Tp, size_t _Np>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __enable_if_t<__is_swappable<_Tp>::value>
-swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) _NOEXCEPT_(__is_nothrow_swappable<_Tp>::value);
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+__enable_if_t<__is_swappable<_Tp>::value>
+swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value);
 
 namespace __detail
 {
 // ALL generic swap overloads MUST already have a declaration available at this point.
 
 template <class _Tp, class _Up = _Tp,
-          bool _NotVoid = !is_void<_Tp>::value && !is_void<_Up>::value>
+          bool _NotVoid = !_LIBCUDACXX_TRAIT(is_void, _Tp) && !_LIBCUDACXX_TRAIT(is_void, _Up)>
 struct __swappable_with
 {
     template <class _LHS, class _RHS>
@@ -84,12 +80,8 @@ struct __swappable_with<_Tp, _Up,  false> : false_type {};
 template <class _Tp, class _Up = _Tp, bool _Swappable = __swappable_with<_Tp, _Up>::value>
 struct __nothrow_swappable_with {
   static const bool value =
-#ifndef _LIBCUDACXX_HAS_NO_NOEXCEPT
       noexcept(swap(_CUDA_VSTD::declval<_Tp>(), _CUDA_VSTD::declval<_Up>()))
   &&  noexcept(swap(_CUDA_VSTD::declval<_Up>(), _CUDA_VSTD::declval<_Tp>()));
-#else
-      false;
-#endif
 };
 
 template <class _Tp, class _Up>

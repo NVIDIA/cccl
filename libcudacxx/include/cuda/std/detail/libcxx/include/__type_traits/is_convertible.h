@@ -69,7 +69,10 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, const vola
 
 namespace __is_convertible_imp
 {
+
+_LIBCUDACXX_NV_DIAG_SUPPRESS(3013) // a volatile function parameter is deprecated
 template <class _Tp> _LIBCUDACXX_INLINE_VISIBILITY void  __test_convert(_Tp);
+_LIBCUDACXX_NV_DIAG_DEFAULT(3013) // a volatile function parameter is deprecated
 
 template <class _From, class _To, class = void>
 struct __is_convertible_test : public false_type {};

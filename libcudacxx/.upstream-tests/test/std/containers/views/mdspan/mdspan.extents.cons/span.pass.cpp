@@ -56,6 +56,7 @@ int main(int, char**)
 
     static_assert( is_span_cons_avail_v< cuda::std::dextents<int,2>, my_int, 2 > == true , "" );
 
+#if !defined(TEST_COMPILER_NVCC_BELOW_11_3)
     // Constraint: rank consistency
     static_assert( is_span_cons_avail_v< cuda::std::dextents<int,1>, int   , 2 > == false, "" );
 
@@ -66,6 +67,7 @@ int main(int, char**)
 #ifndef TEST_COMPILER_NVHPC
     static_assert( is_span_cons_avail_v< cuda::std::dextents<int,1>, my_int_non_nothrow_constructible, 1 > == false, "" );
 #endif // TEST_COMPILER_NVHPC
+#endif // !defined(TEST_COMPILER_NVCC_BELOW_11_3)
 
     return 0;
 }

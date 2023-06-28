@@ -11,7 +11,6 @@
 
 // template<class T>
 // concept semiregular = see below;
-#pragma nv_diag_suppress 3013 // a volatile function parameter is deprecated
 
 #if defined(__clang__)
 #pragma clang diagnostic ignored "-Wc++17-extensions"
@@ -21,6 +20,7 @@
 #include <cuda/std/type_traits>
 
 #include "type_classification/semiregular.h"
+#include "test_macros.h"
 
 using cuda::std::semiregular;
 

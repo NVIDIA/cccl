@@ -110,11 +110,13 @@ int main(int, char**)
             assert(static_cast<bool>(opt) == true);
             assert((*opt == Y{3, 1}));
         }
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
         {
             constexpr optional<Y> opt(in_place, {3, 1});
             static_assert(static_cast<bool>(opt) == true, "");
             static_assert(*opt == Y{3, 1}, "");
         }
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
         struct test_constexpr_ctor
             : public optional<Y>

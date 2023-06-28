@@ -11,7 +11,6 @@
 
 // template<class T>
 // concept regular = see below;
-#pragma nv_diag_suppress 3013 // a volatile function parameter is deprecated
 
 #if defined(__clang__)
 #pragma clang diagnostic ignored "-Wc++17-extensions"
@@ -22,6 +21,7 @@
 
 #include "type_classification/moveconstructible.h"
 #include "type_classification/semiregular.h"
+#include "test_macros.h"
 
 using cuda::std::regular;
 

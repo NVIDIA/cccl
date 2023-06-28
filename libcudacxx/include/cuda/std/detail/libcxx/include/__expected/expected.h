@@ -176,9 +176,9 @@ public:
     : __base(__other.__has_val_)
   {
     if (__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), __other.__union_.__val_);
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, __other.__union_.__val_);
     } else {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
     }
   }
 
@@ -193,9 +193,9 @@ public:
     : __base(__other.__has_val_)
   {
     if (__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), __other.__union_.__val_);
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, __other.__union_.__val_);
     } else {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
     }
   }
 
@@ -211,9 +211,9 @@ public:
     : __base(__other.__has_val_)
   {
     if (__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), _CUDA_VSTD::move(__other.__union_.__val_));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, _CUDA_VSTD::move(__other.__union_.__val_));
     } else {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
     }
   }
 
@@ -228,9 +228,9 @@ public:
     : __base(__other.__has_val_)
   {
     if (__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), _CUDA_VSTD::move(__other.__union_.__val_));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, _CUDA_VSTD::move(__other.__union_.__val_));
     } else {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
     }
   }
 
@@ -409,7 +409,7 @@ public:
       _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__unex_));
       this->__has_val_ = true;
     }
-    return *_CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), _CUDA_VSTD::forward<_Args>(__args)...);
+    return *_LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, _CUDA_VSTD::forward<_Args>(__args)...);
   }
 
   _LIBCUDACXX_TEMPLATE(class _Up, class... _Args)
@@ -422,20 +422,22 @@ public:
       _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__unex_));
       this->__has_val_ = true;
     }
-    return *_CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), __il, _CUDA_VSTD::forward<_Args>(__args)...);
+    return *_LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, __il, _CUDA_VSTD::forward<_Args>(__args)...);
   }
 
 
 public:
   // [expected.object.swap], swap
+  template<class _Tp2>
+  static constexpr bool __can_swap = _LIBCUDACXX_TRAIT(is_swappable, _Tp2)
+                                  && _LIBCUDACXX_TRAIT(is_swappable, _Err)
+                                  && _LIBCUDACXX_TRAIT(is_move_constructible, _Tp2)
+                                  && _LIBCUDACXX_TRAIT(is_move_constructible, _Err)
+                                  && (_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2)
+                                   || _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err));
+
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-    (requires _LIBCUDACXX_TRAIT(is_swappable, _Tp2) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_swappable, _Err) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_move_constructible, _Tp2) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_move_constructible, _Err) _LIBCUDACXX_AND
-             (_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2) ||
-              _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err))
-    )
+    (requires __can_swap<_Tp2>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
   void swap(expected<_Tp2, _Err>& __rhs)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2) &&
@@ -460,18 +462,15 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-    (requires _LIBCUDACXX_TRAIT(is_swappable, _Tp2) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_swappable, _Err) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_move_constructible, _Tp2) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_move_constructible, _Err) _LIBCUDACXX_AND
-             (_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2) ||
-              _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err))
-    )
+  template<class _Tp2 = _Tp>
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-  void swap(expected& __x, expected& __y) noexcept(noexcept(__x.swap(__y)))
+  auto swap(expected& __x, expected& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2) &&
+                                                   _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Tp2) &&
+                                                   _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err) &&
+                                                   _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err))
+    _LIBCUDACXX_TRAILING_REQUIRES(void)(requires __can_swap<_Tp2>)
   {
-    __x.swap(__y);
+    return __x.swap(__y); // some compiler warn about non void function without return
   }
 
   // [expected.object.obs], observers
@@ -1108,7 +1107,7 @@ public:
     : __base(__other.__has_val_)
   {
     if (!__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
     }
   }
 
@@ -1122,7 +1121,7 @@ public:
     : __base(__other.__has_val_)
   {
     if (!__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
     }
   }
 
@@ -1136,7 +1135,7 @@ public:
     : __base(__other.__has_val_)
   {
     if (!__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
     }
   }
 
@@ -1150,7 +1149,7 @@ public:
     : __base(__other.__has_val_)
   {
     if (!__other.__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
     }
   }
 
@@ -1234,7 +1233,7 @@ public:
              _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
   {
     if (this->__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __un.error());
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __un.error());
       this->__has_val_ = false;
     } else {
       this->__union_.__unex_ = __un.error();
@@ -1252,7 +1251,7 @@ public:
              _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _OtherErr))
   {
     if (this->__has_val_) {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__un.error()));
+      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__un.error()));
       this->__has_val_ = false;
     } else {
       this->__union_.__unex_ = _CUDA_VSTD::move(__un.error());
@@ -1270,14 +1269,15 @@ public:
   }
 
   // [expected.void.swap], swap
+  template<class _Err2>
+  static constexpr bool __can_swap = _LIBCUDACXX_TRAIT(is_swappable, _Err2)
+                                  && _LIBCUDACXX_TRAIT(is_move_constructible, _Err2);
+
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
-    (requires _LIBCUDACXX_TRAIT(is_swappable, _Err2) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_move_constructible, _Err2)
-    )
+    (requires __can_swap<_Err2>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-  void swap(expected<void, _Err2>& __rhs)
-    noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2) &&
-             _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
+  void swap(expected<void, _Err2>& __rhs) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2) &&
+                                                   _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
   {
     if (this->__has_val_) {
       if (!__rhs.__has_val_) {
@@ -1293,14 +1293,13 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
-    (requires _LIBCUDACXX_TRAIT(is_swappable, _Err2) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_move_constructible, _Err2)
-    )
+  template<class _Err2 = _Err>
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-  void swap(expected& __x, expected& __y) noexcept(noexcept(__x.swap(__y)))
+  auto swap(expected& __x, expected& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2) &&
+                                                   _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
+    _LIBCUDACXX_TRAILING_REQUIRES(void)(requires __can_swap<_Err2>)
   {
-    __x.swap(__y);
+    return __x.swap(__y); // some compiler warn about non void function without return
   }
 
   // [expected.void.obs], observers

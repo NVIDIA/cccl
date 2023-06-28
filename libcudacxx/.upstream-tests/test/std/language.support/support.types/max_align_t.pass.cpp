@@ -11,13 +11,13 @@
 
 // max_align_t is a trivial standard-layout type whose alignment requirement
 //   is at least as great as that of every scalar type
-
-#ifndef __CUDACC_RTC__
-#include <stdio.h>
-#endif // __CUDACC_RTC__
 #include "test_macros.h"
 
-#pragma nv_diag_suppress cuda_demote_unsupported_floating_point
+#ifndef TEST_COMPILER_NVRTC
+#include <stdio.h>
+#endif // TEST_COMPILER_NVRTC
+
+TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 int main(int, char**)
 {

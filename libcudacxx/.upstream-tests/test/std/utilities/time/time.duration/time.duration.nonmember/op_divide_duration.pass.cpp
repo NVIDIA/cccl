@@ -19,6 +19,9 @@
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
+
+TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
+
 #include "truncate_fp.h"
 
 int main(int, char**)

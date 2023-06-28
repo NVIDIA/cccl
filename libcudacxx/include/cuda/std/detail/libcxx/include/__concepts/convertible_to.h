@@ -38,8 +38,8 @@ concept convertible_to =
 #elif _LIBCUDACXX_STD_VER > 11
 
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
-#pragma nv_diag_suppress 1211 // nonstandard cast to array type ignored
-#endif
+_LIBCUDACXX_NV_DIAG_SUPPRESS(1211) // nonstandard cast to array type ignored
+#endif // _LIBCUDACXX_COMPILER_MSVC
 
 // We cannot put this conversion check with the other constraint, as types with deleted operator will break here
 template<class _From, class _To>
@@ -64,8 +64,8 @@ template<class _From, class _To>
 _LIBCUDACXX_CONCEPT convertible_to = _LIBCUDACXX_FRAGMENT(__convertible_to_, _From, _To);
 
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
-#pragma nv_diag_default 1211 // nonstandard cast to array type ignored
-#endif
+_LIBCUDACXX_NV_DIAG_DEFAULT(1211) // nonstandard cast to array type ignored
+#endif // _LIBCUDACXX_COMPILER_MSVC
 
 #endif // _LIBCUDACXX_STD_VER > 11
 

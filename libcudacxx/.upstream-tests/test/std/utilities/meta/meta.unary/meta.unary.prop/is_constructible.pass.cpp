@@ -24,7 +24,7 @@
 #define LIBCPP11_STATIC_ASSERT(...) ((void)0)
 #endif
 
-#pragma nv_diag_suppress declared_but_not_referenced
+TEST_NV_DIAG_SUPPRESS(declared_but_not_referenced)
 
 struct A
 {

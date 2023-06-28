@@ -17,5 +17,5 @@ cmake -S .. -B ../build \
     -DTHRUST_ENABLE_INSTALL_RULES=ON \
     -G Ninja
 
-LIBCUDACXX_SITE_CONFIG="../build/libcudacxx/test/lit.site.cfg" lit -v --no-progress-bar --no-execute -Dcompute_archs=${GPU_ARCHS} -Dstd="c++${CXX_STANDARD}" ../libcudacxx/.upstream-tests/test
+LIBCUDACXX_SITE_CONFIG="../build/libcudacxx/test/lit.site.cfg" lit -v --no-progress-bar -Dexecutor="NoopExecutor()" -Dcompute_archs=${GPU_ARCHS} -Dstd="c++${CXX_STANDARD}" ../libcudacxx/.upstream-tests/test
 

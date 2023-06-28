@@ -11,12 +11,18 @@
 // UNSUPPORTED: pre-sm-70
 // UNSUPPORTED: nvrtc
 
+#include <cuda/std/type_traits>
 #include <cooperative_groups/memcpy_async.h>
 #include <cuda/pipeline>
 #include <cuda_pipeline.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "test_macros.h"
+
+TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
+TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 
 constexpr int nthreads = 256;
 constexpr size_t stages_count = 2; // Pipeline with two stages
@@ -40,7 +46,6 @@ __global__ void with_staging(int* global_out, int const* global_in, size_t size,
     size_t shared_offset[stages_count] = { 0, block.size() }; // Offsets to each batch
 
     // Allocate shared storage for a two-stage cuda::pipeline:
-    #pragma nv_diag_suppress static_var_with_dynamic_init
     __shared__ cuda::pipeline_shared_state<cuda::thread_scope::thread_scope_block, stages_count> shared_state;
     auto pipeline = cuda::make_pipeline(block, &shared_state);
 

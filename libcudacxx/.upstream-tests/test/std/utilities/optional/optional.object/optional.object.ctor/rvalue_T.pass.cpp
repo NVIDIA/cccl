@@ -39,6 +39,7 @@ public:
 
 int main(int, char**)
 {
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         typedef int T;
         constexpr optional<T> opt(T(5));
@@ -65,6 +66,7 @@ int main(int, char**)
             constexpr test_constexpr_ctor(T&&) {}
         };
     }
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         const int x = 42;
         optional<const int> o(cuda::std::move(x));
@@ -100,6 +102,7 @@ int main(int, char**)
         assert(static_cast<bool>(opt) == true);
         assert(opt.value().value == 3);
     }
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         typedef ConstexprTestTypes::TestType T;
         constexpr optional<T> opt = {T(3)};
@@ -141,6 +144,7 @@ int main(int, char**)
         };
 
     }
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #ifndef TEST_HAS_NO_EXCEPTIONS
     {
         try

@@ -419,6 +419,22 @@ template <class T>
 __host__ __device__
 constexpr bool unused(T &&) {return true;}
 
+// Define a helper macro to properly suppress warnings
+#define _TEST_TOSTRING2(x) #x
+#define _TEST_TOSTRING(x) _TEST_TOSTRING2(x)
+#if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+# define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
+#else
+# define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(diag_suppress WARNING))
+#endif
+
+#define TEST_CONSTEXPR_GLOBAL _LIBCUDACXX_CONSTEXPR_GLOBAL
+
+// Some convenience macros for checking nvcc versions
+#if defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000
+#define TEST_COMPILER_NVCC_BELOW_11_3
+#endif // defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000
+
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
