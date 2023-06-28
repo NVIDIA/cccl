@@ -12,15 +12,17 @@ body:
         - label: I confirmed there appear to be no [duplicate issues](https://github.com/NVIDIA/cccl/issues) for this request and that I agree to the [Code of Conduct](CODE_OF_CONDUCT.md)
 
   - type: dropdown
-    id: component
+    id: area
     attributes:
-      label: Component
-      description: Which CCCL component does this apply to?
+      label: Area
+      description: What area does this request apply to?
       multiple: false
       options:
         - Thrust
         - CUB
         - libcu++
+        - General CCCL
+        - Infrastructure
         - Not sure
     validations:
       required: true
