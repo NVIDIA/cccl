@@ -82,6 +82,8 @@ struct offset_to_size_t
 // %RANGE% TUNE_LARGE_THREADS ltpb 128:1024:32
 // %RANGE% TUNE_LARGE_BUFFER_BYTES_PER_THREAD lbbpt 4:128:4
 // %RANGE% TUNE_PREFER_POW2_BITS ppb 0:1:1
+// %RANGE% TUNE_WARP_LEVEL_THRESHOLD wlt 32:512:32
+// %RANGE% TUNE_BLOCK_LEVEL_THRESHOLD blt 1024:16384:512
 
 #if !TUNE_BASE
 struct policy_hub_t
@@ -93,7 +95,9 @@ struct policy_hub_t
                                           TUNE_BUFFERS_PER_THREAD,
                                           TUNE_TLEV_BYTES_PER_THREAD,
                                           TUNE_PREFER_POW2_BITS,
-                                          TUNE_LARGE_THREADS * TUNE_LARGE_BUFFER_BYTES_PER_THREAD>;
+                                          TUNE_LARGE_THREADS * TUNE_LARGE_BUFFER_BYTES_PER_THREAD,
+                                          TUNE_WARP_LEVEL_THRESHOLD,
+                                          TUNE_BLOCK_LEVEL_THRESHOLD>;
 
     using AgentLargeBufferPolicyT =
       cub::detail::AgentBatchMemcpyLargeBuffersPolicy<TUNE_LARGE_THREADS,

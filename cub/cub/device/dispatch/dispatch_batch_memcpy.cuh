@@ -278,6 +278,9 @@ struct DeviceBatchMemcpyPolicy
   static constexpr uint32_t LARGE_BUFFER_BLOCK_THREADS    = 256U;
   static constexpr uint32_t LARGE_BUFFER_BYTES_PER_THREAD = 32U;
 
+  static constexpr uint32_t WARP_LEVEL_THRESHOLD  = 128;
+  static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = 8 * 1024;
+
   /// SM35
   struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
   {
@@ -287,7 +290,9 @@ struct DeviceBatchMemcpyPolicy
                              BUFFERS_PER_THREAD,
                              TLEV_BYTES_PER_THREAD,
                              PREFER_POW2_BITS,
-                             LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD>;
+                             LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
+                             WARP_LEVEL_THRESHOLD,
+                             BLOCK_LEVEL_THRESHOLD>;
 
     using AgentLargeBufferPolicyT =
       AgentBatchMemcpyLargeBuffersPolicy<LARGE_BUFFER_BLOCK_THREADS, LARGE_BUFFER_BYTES_PER_THREAD>;
@@ -302,7 +307,9 @@ struct DeviceBatchMemcpyPolicy
                              BUFFERS_PER_THREAD,
                              TLEV_BYTES_PER_THREAD,
                              PREFER_POW2_BITS,
-                             LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD>;
+                             LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
+                             WARP_LEVEL_THRESHOLD,
+                             BLOCK_LEVEL_THRESHOLD>;
 
     using AgentLargeBufferPolicyT =
       AgentBatchMemcpyLargeBuffersPolicy<LARGE_BUFFER_BLOCK_THREADS, LARGE_BUFFER_BYTES_PER_THREAD>;

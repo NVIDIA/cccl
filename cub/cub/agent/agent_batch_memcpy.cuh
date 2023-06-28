@@ -480,7 +480,9 @@ template <uint32_t _BLOCK_THREADS,
           uint32_t _BUFFERS_PER_THREAD,
           uint32_t _TLEV_BYTES_PER_THREAD,
           bool _PREFER_POW2_BITS,
-          uint32_t _BLOCK_LEVEL_TILE_SIZE>
+          uint32_t _BLOCK_LEVEL_TILE_SIZE,
+          uint32_t _WARP_LEVEL_THRESHOLD,
+          uint32_t _BLOCK_LEVEL_THRESHOLD>
 struct AgentBatchMemcpyPolicy
 {
   /// Threads per thread block
@@ -496,6 +498,9 @@ struct AgentBatchMemcpyPolicy
   static constexpr uint32_t PREFER_POW2_BITS = _PREFER_POW2_BITS;
   /// BLEV tile size granularity
   static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = _BLOCK_LEVEL_TILE_SIZE;
+
+  static constexpr uint32_t WARP_LEVEL_THRESHOLD  = _WARP_LEVEL_THRESHOLD;
+  static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = _BLOCK_LEVEL_THRESHOLD;
 };
 
 template <typename AgentMemcpySmallBuffersPolicyT,
@@ -531,8 +536,11 @@ private:
   static constexpr uint32_t TLEV_BUFFERS_PER_THREAD = BUFFERS_PER_THREAD;
   static constexpr uint32_t BLEV_BUFFERS_PER_THREAD = BUFFERS_PER_THREAD;
 
-  static constexpr uint32_t WARP_LEVEL_THRESHOLD  = 128;
-  static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = 8 * 1024;
+  static constexpr uint32_t WARP_LEVEL_THRESHOLD =
+    AgentMemcpySmallBuffersPolicyT::WARP_LEVEL_THRESHOLD;
+
+  static constexpr uint32_t BLOCK_LEVEL_THRESHOLD =
+    AgentMemcpySmallBuffersPolicyT::BLOCK_LEVEL_THRESHOLD;
 
   static constexpr uint32_t BUFFER_STABLE_PARTITION = false;
 
