@@ -165,7 +165,7 @@ struct DeviceMemcpy
                                        BufferSizeIteratorT,
                                        BufferOffsetT,
                                        BlockOffsetT,
-                                       detail::DeviceBatchMemcpyPolicy,
+                                       detail::DeviceBatchMemcpyPolicy<BufferOffsetT, BlockOffsetT>,
                                        true>::Dispatch(d_temp_storage,
                                                        temp_storage_bytes,
                                                        input_buffer_it,

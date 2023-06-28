@@ -27,6 +27,21 @@
 
 #include <cub/device/device_copy.cuh>
 
+// %RANGE% TUNE_THREADS tpb 128:1024:32
+// %RANGE% TUNE_BUFFERS_PER_THREAD bpt 1:18:1
+// %RANGE% TUNE_TLEV_BYTES_PER_THREAD tlevbpt 2:16:2
+// %RANGE% TUNE_LARGE_THREADS ltpb 128:1024:32
+// %RANGE% TUNE_LARGE_BUFFER_BYTES_PER_THREAD lbbpt 4:128:4
+// %RANGE% TUNE_PREFER_POW2_BITS ppb 0:1:1
+// %RANGE% TUNE_WARP_LEVEL_THRESHOLD wlt 32:512:32
+// %RANGE% TUNE_BLOCK_LEVEL_THRESHOLD blt 1024:16384:512
+// %RANGE% TUNE_BLOCK_MAGIC_NS blns 0:2048:4
+// %RANGE% TUNE_BLOCK_DELAY_CONSTRUCTOR_ID bldcid 0:7:1
+// %RANGE% TUNE_BLOCK_L2_WRITE_LATENCY_NS bll2w 0:1200:5
+// %RANGE% TUNE_BUFF_MAGIC_NS buns 0:2048:4
+// %RANGE% TUNE_BUFF_DELAY_CONSTRUCTOR_ID budcid 0:7:1
+// %RANGE% TUNE_BUFF_L2_WRITE_LATENCY_NS bul2w 0:1200:5
+
 #include <thrust/random.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
@@ -76,16 +91,26 @@ struct offset_to_size_t
   __device__ OffsetT operator()(OffsetT i) const { return d_offsets[i + 1] - d_offsets[i]; }
 };
 
-// %RANGE% TUNE_THREADS tpb 128:1024:32
-// %RANGE% TUNE_BUFFERS_PER_THREAD bpt 1:18:1
-// %RANGE% TUNE_TLEV_BYTES_PER_THREAD tlevbpt 2:16:2
-// %RANGE% TUNE_LARGE_THREADS ltpb 128:1024:32
-// %RANGE% TUNE_LARGE_BUFFER_BYTES_PER_THREAD lbbpt 4:128:4
-// %RANGE% TUNE_PREFER_POW2_BITS ppb 0:1:1
-// %RANGE% TUNE_WARP_LEVEL_THRESHOLD wlt 32:512:32
-// %RANGE% TUNE_BLOCK_LEVEL_THRESHOLD blt 1024:16384:512
-
 #if !TUNE_BASE
+template <unsigned int MagicNs, unsigned int L2W, unsigned int DCID>
+using delay_constructor_t = nvbench::tl::get<
+  DCID,
+  nvbench::type_list<cub::detail::no_delay_constructor_t<L2W>,
+                     cub::detail::fixed_delay_constructor_t<MagicNs, L2W>,
+                     cub::detail::exponential_backoff_constructor_t<MagicNs, L2W>,
+                     cub::detail::exponential_backoff_jitter_constructor_t<MagicNs, L2W>,
+                     cub::detail::exponential_backoff_jitter_window_constructor_t<MagicNs, L2W>,
+                     cub::detail::exponential_backon_jitter_window_constructor_t<MagicNs, L2W>,
+                     cub::detail::exponential_backon_jitter_constructor_t<MagicNs, L2W>,
+                     cub::detail::exponential_backon_constructor_t<MagicNs, L2W>>>;
+
+using buff_delay_constructor_t  = delay_constructor_t<TUNE_BUFF_MAGIC_NS,
+                                                     TUNE_BUFF_L2_WRITE_LATENCY_NS,
+                                                     TUNE_BUFF_DELAY_CONSTRUCTOR_ID>;
+using block_delay_constructor_t = delay_constructor_t<TUNE_BLOCK_MAGIC_NS,
+                                                      TUNE_BLOCK_L2_WRITE_LATENCY_NS,
+                                                      TUNE_BLOCK_DELAY_CONSTRUCTOR_ID>;
+
 struct policy_hub_t
 {
   struct policy_t : cub::ChainedPolicy<350, policy_t, policy_t>
@@ -97,7 +122,9 @@ struct policy_hub_t
                                           TUNE_PREFER_POW2_BITS,
                                           TUNE_LARGE_THREADS * TUNE_LARGE_BUFFER_BYTES_PER_THREAD,
                                           TUNE_WARP_LEVEL_THRESHOLD,
-                                          TUNE_BLOCK_LEVEL_THRESHOLD>;
+                                          TUNE_BLOCK_LEVEL_THRESHOLD,
+                                          buff_delay_constructor_t,
+                                          block_delay_constructor_t>;
 
     using AgentLargeBufferPolicyT =
       cub::detail::AgentBatchMemcpyLargeBuffersPolicy<TUNE_LARGE_THREADS,
@@ -131,7 +158,7 @@ void copy(nvbench::state &state, nvbench::type_list<T, OffsetT>)
 #if !TUNE_BASE
   using policy_t = policy_hub_t;
 #else
-  using policy_t = cub::detail::DeviceBatchMemcpyPolicy;
+  using policy_t = cub::detail::DeviceBatchMemcpyPolicy<buffer_offset_t, block_offset_t>;
 #endif
 
   using dispatch_t = cub::detail::DispatchBatchMemcpy<input_buffer_it_t,
