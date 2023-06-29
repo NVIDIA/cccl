@@ -36,8 +36,8 @@
 #endif
 
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
-#pragma nv_diag_suppress 461 // nonstandard cast to array type ignored
-#endif
+_LIBCUDACXX_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
+#endif // _LIBCUDACXX_COMPILER_MSVC
 
 #if _LIBCUDACXX_STD_VER > 11
 
@@ -93,9 +93,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
 #if _LIBCUDACXX_STD_VER > 17 && !defined(_LIBCUDACXX_COMPILER_NVHPC) // nvbug4051640
   struct __fn;
 
-#if defined(_LIBCUDACXX_COMPILER_NVCC)
-#  pragma nv_diag_suppress 2642
-#endif // _LIBCUDACXX_COMPILER_NVCC
+_LIBCUDACXX_NV_DIAG_SUPPRESS(2642)
   template<class _Tp, class _Up, size_t _Size>
   concept __swappable_arrays =
     !__unqualified_swappable_with<_Tp(&)[_Size], _Up(&)[_Size]> &&
@@ -103,9 +101,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
     requires(_Tp(& __t)[_Size], _Up(& __u)[_Size], const __fn& __swap) {
       __swap(__t[0], __u[0]);
     };
-#if defined(_LIBCUDACXX_COMPILER_NVCC)
-#  pragma nv_diag_default 2642
-#endif // _LIBCUDACXX_COMPILER_NVCC
+_LIBCUDACXX_NV_DIAG_DEFAULT(2642)
+
 #else
   template<class _Tp, class _Up, size_t _Size, class = void>
   _LIBCUDACXX_INLINE_VAR constexpr bool __swappable_arrays = false;
@@ -218,7 +215,8 @@ _LIBCUDACXX_END_NAMESPACE_STD
 #endif // _LIBCUDACXX_STD_VER > 11
 
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
-#pragma nv_diag_default 461 // nonstandard cast to array type ignored
-#endif
+_LIBCUDACXX_NV_DIAG_DEFAULT(461) // nonstandard cast to array type ignored
+#endif // _LIBCUDACXX_COMPILER_MSVC
+
 
 #endif // _LIBCUDACXX___CONCEPTS_SWAPPABLE_H

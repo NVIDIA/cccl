@@ -13,10 +13,12 @@
 
 // static constexpr bool is_always_lock_free;
 
-#include <cuda/std/atomic>
 #include <cuda/std/cassert>
+#include <cuda/std/atomic>
 
 #include "test_macros.h"
+
+TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 // NVRTC doesn't include host atomic making this feature test invalid
 // TODO: Should we define __cpp_lib_atomic_is_always_lock_free for NVRTC?
@@ -97,7 +99,7 @@ void run()
     CHECK_ALWAYS_LOCK_FREE(void*);
     CHECK_ALWAYS_LOCK_FREE(float);
     CHECK_ALWAYS_LOCK_FREE(double);
-    CHECK_ALWAYS_LOCK_FREE(long double);
+    //CHECK_ALWAYS_LOCK_FREE(long double); // long double is not supported
 #if __has_attribute(vector_size) && defined(_LIBCUDACXX_VERSION) && !defined(__CUDACC__)
     // NOTE: NVCC doesn't support the vector_size attribute in device code.
     CHECK_ALWAYS_LOCK_FREE(int __attribute__((vector_size(1 * sizeof(int)))));

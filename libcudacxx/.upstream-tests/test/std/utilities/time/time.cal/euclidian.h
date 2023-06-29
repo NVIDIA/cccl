@@ -6,10 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#pragma nv_diag_suppress 186
-
 #include <type_traits>
 
+#include "test_macros.h"
+
+TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 
 //  Assumption: minValue < maxValue
 //  Assumption: minValue <= rhs <= maxValue

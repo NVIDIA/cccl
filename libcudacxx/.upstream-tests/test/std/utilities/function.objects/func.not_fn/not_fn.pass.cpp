@@ -8,6 +8,7 @@
 
 // UNSUPPORTED: c++98, c++03, c++11, c++14
 // UNSUPPORTED: gcc-6
+// UNSUPPORTED: nvcc-11.1
 
 // TODO: there's multiple failures that appear to be all about overload resolution and SFINAE,
 // and they will require further debugging to pinpoint the root cause of (almost certainly a
@@ -23,7 +24,7 @@
 #include "test_macros.h"
 // #include "type_id.h"
 
-#pragma nv_diag_suppress set_but_not_used
+TEST_NV_DIAG_SUPPRESS(set_but_not_used)
 
 ///////////////////////////////////////////////////////////////////////////////
 //                       CALLABLE TEST TYPES

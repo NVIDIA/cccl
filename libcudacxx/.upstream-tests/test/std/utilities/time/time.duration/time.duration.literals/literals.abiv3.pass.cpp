@@ -9,9 +9,6 @@
 // UNSUPPORTED: c++98, c++03, c++11
 // <cuda/std/chrono>
 
-#pragma nv_diag_suppress declared_but_not_referenced
-#pragma nv_diag_suppress set_but_not_used
-
 #define _LIBCUDACXX_CUDA_ABI_VERSION 3
 
 #include <cuda/std/chrono>
@@ -19,6 +16,10 @@
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
+
+TEST_NV_DIAG_SUPPRESS(declared_but_not_referenced)
+TEST_NV_DIAG_SUPPRESS(set_but_not_used)
+TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 int main(int, char**)
 {

@@ -18,12 +18,12 @@
 #define _LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS
 #define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
-#pragma nv_diag_suppress 3013 // a volatile function parameter is deprecated
-
 #include <cuda/std/type_traits>
 // #include <cuda/std/memory>
 // #include <cuda/std/utility>
 #include "test_macros.h"
+
+TEST_NV_DIAG_SUPPRESS(3013) // a volatile function parameter is deprecated
 
 struct wat
 {

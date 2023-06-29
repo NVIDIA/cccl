@@ -1407,8 +1407,8 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
     operator()(tuple<_Types...> __t, _Tuple0&& __t0)
     {
         (void)__t;
-        return forward_as_tuple(_CUDA_VSTD::forward<_Types>(_CUDA_VSTD::get<_I0>(__t))...,
-                                      _CUDA_VSTD::get<_J0>(_CUDA_VSTD::forward<_Tuple0>(__t0))...);
+        return _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Types>(_CUDA_VSTD::get<_I0>(__t))...,
+                                            _CUDA_VSTD::get<_J0>(_CUDA_VSTD::forward<_Tuple0>(__t0))...);
     }
 
     template <class _Tuple0, class _Tuple1, class ..._Tuples>
@@ -1423,7 +1423,7 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
            tuple<_Types..., typename __apply_cv<_Tuple0, typename tuple_element<_J0, _T0>::type>::type&&...>,
            typename __make_tuple_indices<sizeof ...(_Types) + tuple_size<_T0>::value>::type,
            typename __make_tuple_indices<tuple_size<_T1>::value>::type>()
-                           (forward_as_tuple(
+                           (_CUDA_VSTD::forward_as_tuple(
                               _CUDA_VSTD::forward<_Types>(_CUDA_VSTD::get<_I0>(__t))...,
                               _CUDA_VSTD::get<_J0>(_CUDA_VSTD::forward<_Tuple0>(__t0))...
                             ),

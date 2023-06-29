@@ -146,7 +146,9 @@ __host__ __device__ void testException() {
 int main(int, char**) {
   test();
 #if defined(_LIBCUDACXX_ADDRESSOF)
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test(), "");
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #endif // defined(_LIBCUDACXX_ADDRESSOF)
   testException();
   return 0;

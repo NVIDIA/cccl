@@ -54,6 +54,7 @@ int main(int, char**)
         // Regardless this function should still be noexcept(false) because
         // it has a narrow contract.
     }
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         constexpr optional<X> opt(X{});
 #if defined(_LIBCUDACXX_ADDRESSOF)
@@ -74,6 +75,7 @@ int main(int, char**)
         unused(opt);
 #endif
     }
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
     return 0;
 }

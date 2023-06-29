@@ -85,7 +85,7 @@ void test_const_array(const T (&array)[Sz])
     assert ( cuda::std::ssize(array) == Sz );
 }
 
-STATIC_TEST_GLOBAL_VAR constexpr int arrA [] { 1, 2, 3 };
+STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int arrA [] { 1, 2, 3 };
 
 int main(int, char**)
 {

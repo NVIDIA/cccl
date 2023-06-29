@@ -10,12 +10,13 @@
 
 // UNSUPPORTED: pre-sm-80
 
-#pragma nv_diag_suppress static_var_with_dynamic_init
-#pragma nv_diag_suppress set_but_not_used
-
 #include <cuda/barrier>
 
 #include "cuda_space_selector.h"
+#include "test_macros.h"
+
+TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
+TEST_NV_DIAG_SUPPRESS(set_but_not_used)
 
 __device__
 void test()

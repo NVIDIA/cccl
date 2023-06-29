@@ -33,9 +33,9 @@ constexpr bool doAssign(T lhs, T rhs)
 
 struct A{};
 
-__device__ constexpr int carr1[] = {1,2,3,4};
-__device__ constexpr int carr2[] = {3,4,5};
-__device__ constexpr int carr3[] = {7,8};
+STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr1[] = {1,2,3,4};
+STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr2[] = {3,4,5};
+STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr3[] = {7,8};
 __device__           int   arr[] = {5,6,7,9};
 
 int main(int, char**)

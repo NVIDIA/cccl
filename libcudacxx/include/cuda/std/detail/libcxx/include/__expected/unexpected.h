@@ -138,15 +138,15 @@ public:
   template <class _UErr>
   friend _LIBCUDACXX_INLINE_VISIBILITY constexpr
   _LIBCUDACXX_NODISCARD_EXT bool operator==(const unexpected& __lhs, const unexpected<_UErr>& __rhs) noexcept(
-    noexcept(static_cast<bool>(__lhs.__unex_ == __rhs.error()))) {
-    return __lhs.__unex_ == __rhs.error();
+    noexcept(static_cast<bool>(__lhs.error() == __rhs.error()))) {
+    return __lhs.error() == __rhs.error();
   }
 #if _LIBCUDACXX_STD_VER < 20
   template <class _UErr>
   _LIBCUDACXX_INLINE_VISIBILITY
   _LIBCUDACXX_NODISCARD_EXT friend constexpr bool operator!=(const unexpected& __lhs, const unexpected<_UErr>& __rhs) noexcept(
-    noexcept(static_cast<bool>(__lhs.__unex_ != __rhs.error()))) {
-    return __lhs.__unex_ != __rhs.error();
+    noexcept(static_cast<bool>(__lhs.error() != __rhs.error()))) {
+    return __lhs.error() != __rhs.error();
   }
 #endif
 

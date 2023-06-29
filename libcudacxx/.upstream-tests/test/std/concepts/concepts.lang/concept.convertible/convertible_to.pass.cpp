@@ -11,7 +11,6 @@
 
 // template<class From, class To>
 // concept convertible_to;
-#pragma nv_diag_suppress 3013 // a volatile function parameter is deprecated
 
 #if defined(__clang__)
 #pragma clang diagnostic ignored "-Wc++17-extensions"

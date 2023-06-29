@@ -65,7 +65,9 @@ int main(int, char**)
         optional<X> opt(X{});
         assert((*cuda::std::move(opt)).test() == 6);
     }
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     static_assert(test() == 7, "");
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
     return 0;
 }

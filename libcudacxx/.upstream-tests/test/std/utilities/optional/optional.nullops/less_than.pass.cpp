@@ -28,8 +28,8 @@ constexpr bool test() {
     typedef int T;
     typedef optional<T> O;
 
-    constexpr O o1;     // disengaged
-    constexpr O o2{1};  // engaged
+    O o1;     // disengaged
+    O o2{1};  // engaged
 
     assert(!(nullopt < o1));
     assert( (nullopt < o2));
@@ -46,7 +46,9 @@ constexpr bool test() {
 int main(int, char**) {
   test();
 #if TEST_STD_VER >= 17
+#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test());
+#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #endif
 
   return 0;

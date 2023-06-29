@@ -12,6 +12,7 @@
 // UNSUPPORTED: libcpp-no-deduction-guides
 // Clang 5 will generate bad implicit deduction guides
 //	Specifically, for the copy constructor.
+// UNSUPPORTED: clang-9 && nvcc-11.1
 
 
 // template <class T, class... U>
