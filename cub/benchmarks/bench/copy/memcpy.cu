@@ -49,8 +49,6 @@
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 
-#include "thrust/device_vector.h"
-#include "thrust/scan.h"
 #include <nvbench_helper.cuh>
 
 template <class T, class OffsetT>
