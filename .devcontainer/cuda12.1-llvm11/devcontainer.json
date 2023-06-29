@@ -13,8 +13,7 @@
     "SCCACHE_REGION": "us-east-2",
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
-    "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda12.1-llvm11"
+    "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history"
   },
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
