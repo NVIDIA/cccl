@@ -47,7 +47,6 @@ jobs:
         shell: su coder {0}
         run: | 
             cd ~/cccl
-            sccache -s > sccache_before.txt
             cmd="${{ inputs.build_script }} \"${{inputs.compiler_exe}}\" \"${{inputs.std}}\" \"${{inputs.gpu_build_archs}}\""
             eval $cmd || exit_code=$?
             if [ ! -z "$exit_code" ]; then
@@ -61,16 +60,6 @@ jobs:
                 echo "$cmd"
                 exit $exit_code
             fi
-            sccache -s > sccache_after.txt
-      - name: Calculate sccache hit rate
-        shell: su coder {0}
-        run: |
-          cd ~/cccl
-          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt 2> info.log)
-          echo "::group::Details"
-          cat info.log
-          echo "::endgroup::"
-          echo "::notice::sccache hit rate: $hit_rate" 
   test:
     needs: build
     if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' }}
@@ -98,12 +87,4 @@ jobs:
         shell: su coder {0}
         run: | 
             cd ~/cccl
-            sccache -s > sccache_before.txt
             time ./${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
-            sccache -s > sccache_after.txt
-      - name: Calculate sccache hit rate
-        shell: su coder {0}
-        run: |
-          cd ~/cccl
-          hit_rate=$(./ci/sccache_hit_rate.sh sccache_before.txt sccache_after.txt  2>&1 >/dev/null)
-          echo "sccache hit rate: $hit_rate" 
