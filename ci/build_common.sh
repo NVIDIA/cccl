@@ -23,7 +23,7 @@ readonly GPU_ARCHS=$(echo $3 | tr ' ,' ';')
 
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
 
-BUILD_DIR=${BUILD_DIR:-/tmp/build/cccl}
+BUILD_DIR=${BUILD_DIR:-../build/${DEVCONTAINER_NAME:-}}
 
 COMMON_CMAKE_OPTIONS="
     -DCMAKE_BUILD_TYPE=Release \
