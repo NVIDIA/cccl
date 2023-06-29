@@ -134,6 +134,38 @@ struct policy_hub_t
 #endif
 
 template <class T, class OffsetT>
+void gen_it(T* d_buffer,
+            thrust::device_vector<T*>& output,
+            thrust::device_vector<OffsetT> offsets,
+            bool randomize,
+            thrust::default_random_engine &rne)
+{
+  OffsetT *d_offsets = thrust::raw_pointer_cast(offsets.data());
+
+  if (randomize)
+  {
+    const auto buffers = output.size();
+    thrust::device_vector<OffsetT> map(buffers);
+    thrust::sequence(map.begin(), map.end());
+    thrust::shuffle(map.begin(), map.end(), rne);
+    thrust::device_vector<OffsetT> sizes(buffers);
+    thrust::tabulate(sizes.begin(), sizes.end(), offset_to_size_t<T, OffsetT>{d_offsets});
+    thrust::scatter(sizes.begin(), sizes.end(), map.begin(), offsets.begin());
+    thrust::exclusive_scan(offsets.begin(), offsets.end(), offsets.begin());
+    OffsetT *d_map = thrust::raw_pointer_cast(map.data());
+    thrust::tabulate(output.begin(),
+                     output.end(),
+                     reordered_offset_to_ptr_t<T, OffsetT>{d_buffer, d_map, d_offsets});
+  }
+  else
+  {
+    thrust::tabulate(output.begin(),
+                     output.end(),
+                     offset_to_ptr_t<T, OffsetT>{d_buffer, d_offsets});
+  }
+}
+
+template <class T, class OffsetT>
 void copy(nvbench::state &state, nvbench::type_list<T, OffsetT>)
 {
   using offset_t           = OffsetT;
@@ -179,39 +211,16 @@ void copy(nvbench::state &state, nvbench::type_list<T, OffsetT>)
 
   const auto buffers = offsets.size() - 1;
 
+  thrust::device_vector<it_t> input_buffers(buffers);
+  thrust::device_vector<it_t> output_buffers(buffers);
   thrust::device_vector<offset_t> buffer_sizes(buffers);
   thrust::tabulate(buffer_sizes.begin(),
                    buffer_sizes.end(),
                    offset_to_bytes_t<T, offset_t>{d_offsets});
 
-  thrust::device_vector<it_t> input_buffers(buffers);
-  thrust::tabulate(input_buffers.begin(),
-                   input_buffers.end(),
-                   offset_to_ptr_t<T, offset_t>{d_input_buffer, d_offsets});
-
-  thrust::device_vector<it_t> output_buffers(buffers);
-
-  if (state.get_int64("RandomizeOutput"))
-  {
-    thrust::default_random_engine rne;
-    thrust::device_vector<offset_t> map(buffers);
-    thrust::sequence(map.begin(), map.end());
-    thrust::shuffle(map.begin(), map.end(), rne);
-    thrust::device_vector<offset_t> sizes(buffers);
-    thrust::tabulate(sizes.begin(), sizes.end(), offset_to_size_t<T, offset_t>{d_offsets});
-    thrust::scatter(sizes.begin(), sizes.end(), map.begin(), offsets.begin());
-    thrust::exclusive_scan(offsets.begin(), offsets.end(), offsets.begin());
-    offset_t *d_map = thrust::raw_pointer_cast(map.data());
-    thrust::tabulate(output_buffers.begin(),
-                     output_buffers.end(),
-                     reordered_offset_to_ptr_t<T, offset_t>{d_output_buffer, d_map, d_offsets});
-  }
-  else
-  {
-    thrust::tabulate(output_buffers.begin(),
-                     output_buffers.end(),
-                     offset_to_ptr_t<T, offset_t>{d_output_buffer, d_offsets});
-  }
+  thrust::default_random_engine rne;
+  gen_it(d_input_buffer, input_buffers, offsets, state.get_int64("RandomizeInput"), rne);
+  gen_it(d_output_buffer, output_buffers, offsets, state.get_int64("RandomizeOutput"), rne);
 
   // Clear the offsets vector to free memory
   offsets.clear();
@@ -267,4 +276,5 @@ NVBENCH_BENCH_TYPES(copy, NVBENCH_TYPE_AXES(types, u_offset_types))
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(25, 29, 2))
   .add_int64_axis("MinBufferSizeRatio", {1, 99})
   .add_int64_axis("MaxBufferSize", {8, 64, 256, 1024, 64 * 1024})
+  .add_int64_axis("RandomizeInput", {0, 1})
   .add_int64_axis("RandomizeOutput", {0, 1});
