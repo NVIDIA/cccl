@@ -1091,7 +1091,7 @@ class Configuration(object):
         self.cxx.useWarnings(enable_warnings)
         if 'nvcc' in self.config.available_features:
             self.cxx.warning_flags += [ '-Xcudafe', '--display_error_number' ]
-            self.cxx.warning_flags += [ '-Werror', 'all-warnings' ]
+            self.cxx.warning_flags += [ '-Werror=all-warnings' ]
             if 'msvc' in self.config.available_features:
                 self.cxx.warning_flags += [ '-Xcompiler', '/W4', '-Xcompiler', '/WX' ]
                 # warning C4100: 'quack': unreferenced formal parameter
