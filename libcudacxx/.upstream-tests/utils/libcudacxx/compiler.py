@@ -153,7 +153,7 @@ class CXXCompiler(object):
         if self.use_ccache \
                 and not mode == self.CM_Link \
                 and not mode == self.CM_PreProcess:
-            cmd += ['ccache']
+            cmd += ['sccache']
         cmd += [self.path] + ([self.first_arg] if self.first_arg != '' else [])
         if out is not None:
             cmd += ['-o', out]
