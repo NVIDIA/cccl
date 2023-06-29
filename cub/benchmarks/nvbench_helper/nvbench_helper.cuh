@@ -118,7 +118,7 @@ inline double entropy_to_probability(bit_entropy entropy)
   }
 }
 
-[[nodiscard]] bit_entropy str_to_entropy(std::string str) 
+[[nodiscard]] inline bit_entropy str_to_entropy(std::string str) 
 {
   if (str == "1.000") 
   {
@@ -287,7 +287,7 @@ struct less_t
 };
 
 template <>
-__device__ bool less_t::operator()(const complex &lhs, const complex &rhs) {
+__device__ inline bool less_t::operator()(const complex &lhs, const complex &rhs) {
   double magnitude_0 = cuda::std::abs(lhs);
   double magnitude_1 = cuda::std::abs(rhs);
 
