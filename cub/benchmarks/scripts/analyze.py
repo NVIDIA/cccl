@@ -390,6 +390,39 @@ def coverage_plot(args):
     iterate_case_dfs(args, case_coverage_plot)
 
 
+def case_pair_plot(algname, ct_point_name, case_df):
+    import seaborn as sns
+    data_list = []
+
+    for _, row_description in case_df.iterrows():
+        variant = row_description['variant']
+        speedup = row_description['speedup']
+
+        if variant.startswith('base'):
+            continue
+
+        varname, _ = variant.split(' ')
+        params = varname.split('.')
+        data_dict = {}
+
+        for param in params:
+            print(variant)
+            name, val = param.split('_')
+            data_dict[name] = int(val)
+
+        data_dict['speedup'] = speedup
+        data_list.append(data_dict)
+    
+    df = pd.DataFrame(data_list)
+    sns.pairplot(df, hue='speedup')
+    plt.title("{} ({})".format(algname, ct_point_name))
+    plt.show()
+
+
+def pair_plot(args):
+    iterate_case_dfs(args, case_pair_plot)
+
+
 def qrde_hd(samples):
     """
     Computes quantile-respectful density estimation based on the Harrell-Davis 
@@ -672,6 +705,8 @@ def parse_arguments():
     parser.add_argument(
         '--coverage-plot', action=argparse.BooleanOptionalAction, help="Plot variant space coverage.")
     parser.add_argument(
+        '--pair-plot', action=argparse.BooleanOptionalAction, help="Pair plot.")
+    parser.add_argument(
         '--top', default=7, type=int, action='store', nargs='?', help="Show top N variants with highest score.")
     parser.add_argument(
         'files', type=file_exists, nargs='+', help='At least one file is required.')
@@ -697,6 +732,10 @@ def main():
 
     if args.coverage_plot:
         coverage_plot(args)
+        return
+
+    if args.pair_plot:
+        pair_plot(args)
         return
     
     if args.variants_pdf:
