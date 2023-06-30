@@ -40,6 +40,7 @@ concept convertible_to =
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
 _LIBCUDACXX_NV_DIAG_SUPPRESS(1211) // nonstandard cast to array type ignored
 #endif // _LIBCUDACXX_COMPILER_MSVC
+_LIBCUDACXX_NV_DIAG_SUPPRESS(171) // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
 
 // We cannot put this conversion check with the other constraint, as types with deleted operator will break here
 template<class _From, class _To>
@@ -66,6 +67,7 @@ _LIBCUDACXX_CONCEPT convertible_to = _LIBCUDACXX_FRAGMENT(__convertible_to_, _Fr
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
 _LIBCUDACXX_NV_DIAG_DEFAULT(1211) // nonstandard cast to array type ignored
 #endif // _LIBCUDACXX_COMPILER_MSVC
+_LIBCUDACXX_NV_DIAG_DEFAULT(171) // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
 
 #endif // _LIBCUDACXX_STD_VER > 11
 

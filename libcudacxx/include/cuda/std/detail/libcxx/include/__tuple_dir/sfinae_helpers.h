@@ -17,7 +17,7 @@
 #include "../__fwd/tuple.h"
 #include "../__tuple_dir/make_tuple_types.h"
 #include "../__tuple_dir/tuple_element.h"
-#include "../__tuple_dir/tuple_like.h"
+#include "../__tuple_dir/tuple_like_ext.h"
 #include "../__tuple_dir/tuple_size.h"
 #include "../__tuple_dir/tuple_types.h"
 #include "../__type_traits/enable_if.h"
@@ -71,8 +71,8 @@ struct __tuple_sfinae_base {
 
 // __tuple_convertible
 
-template <class _Tp, class _Up, bool = __tuple_like<__libcpp_remove_reference_t<_Tp>>::value,
-                                bool = __tuple_like<_Up>::value>
+template <class _Tp, class _Up, bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
+                                bool = __tuple_like_ext<_Up>::value>
 struct __tuple_convertible
     : public false_type {};
 
@@ -86,8 +86,8 @@ struct __tuple_convertible<_Tp, _Up, true, true>
 
 // __tuple_constructible
 
-template <class _Tp, class _Up, bool = __tuple_like<__libcpp_remove_reference_t<_Tp>>::value,
-                                bool = __tuple_like<_Up>::value>
+template <class _Tp, class _Up, bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
+                                bool = __tuple_like_ext<_Up>::value>
 struct __tuple_constructible
     : public false_type {};
 
@@ -101,8 +101,8 @@ struct __tuple_constructible<_Tp, _Up, true, true>
 
 // __tuple_assignable
 
-template <class _Tp, class _Up, bool = __tuple_like<__libcpp_remove_reference_t<_Tp>>::value,
-                                bool = __tuple_like<_Up>::value>
+template <class _Tp, class _Up, bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
+                                bool = __tuple_like_ext<_Up>::value>
 struct __tuple_assignable
     : public false_type {};
 
@@ -131,7 +131,7 @@ struct __tuple_like_with_size_imp<true, _SizeTrait, _Expected>
 template <class _Tuple, size_t _ExpectedSize,
           class _RawTuple = __remove_cvref_t<_Tuple>>
 using __tuple_like_with_size _LIBCUDACXX_NODEBUG_TYPE = __tuple_like_with_size_imp<
-                                   __tuple_like<_RawTuple>::value,
+                                   __tuple_like_ext<_RawTuple>::value,
                                    tuple_size<_RawTuple>, _ExpectedSize
                               >;
 

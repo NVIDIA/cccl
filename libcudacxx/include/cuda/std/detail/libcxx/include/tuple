@@ -1334,7 +1334,7 @@ struct __tuple_cat_return_1<tuple<_Types...>, true, _Tuple0, _Tuple1, _Tuples...
                      tuple<_Types...>,
                      typename __make_tuple_types<__remove_cvref_t<_Tuple0>>::type
                  >::type,
-                 __tuple_like<typename remove_reference<_Tuple1>::type>::value,
+                 __tuple_like_ext<typename remove_reference<_Tuple1>::type>::value,
                  _Tuple1, _Tuples...>
 {
 };
@@ -1344,7 +1344,7 @@ template <class ..._Tuples> struct __tuple_cat_return;
 template <class _Tuple0, class ..._Tuples>
 struct __tuple_cat_return<_Tuple0, _Tuples...>
     : public __tuple_cat_return_1<tuple<>,
-         __tuple_like<typename remove_reference<_Tuple0>::type>::value, _Tuple0,
+         __tuple_like_ext<typename remove_reference<_Tuple0>::type>::value, _Tuple0,
                                                                      _Tuples...>
 {
 };

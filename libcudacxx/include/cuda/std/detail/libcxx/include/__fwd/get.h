@@ -14,8 +14,10 @@
 #include <__config>
 #endif // __cuda_std__
 
+#include "../__concepts/copyable.h"
 #include "../__fwd/array.h"
 #include "../__fwd/pair.h"
+#include "../__fwd/subrange.h"
 #include "../__fwd/tuple.h"
 #include "../__tuple_dir/tuple_element.h"
 #include "../cstddef"
@@ -95,5 +97,39 @@ get(const array<_Tp, _Size>&&) _NOEXCEPT;
 #endif // _LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#if _LIBCUDACXX_STD_VER > 14
+
+_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+
+#if _LIBCUDACXX_STD_VER > 20
+  template<size_t _Index, class _Iter, class _Sent, subrange_kind _Kind>
+    requires ((_Index == 0) && copyable<_Iter>) || (_Index == 1)
+#else
+  template<size_t _Index, class _Iter, class _Sent, subrange_kind _Kind,
+           enable_if_t<((_Index == 0) && copyable<_Iter>) || (_Index == 1), int> = 0>
+#endif
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange);
+
+#if _LIBCUDACXX_STD_VER > 20
+  template<size_t _Index, class _Iter, class _Sent, subrange_kind _Kind>
+    requires _Index < 2
+#else
+  template<size_t _Index, class _Iter, class _Sent, subrange_kind _Kind,
+           enable_if_t<_Index < 2, int> = 0>
+#endif
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange);
+
+_LIBCUDACXX_END_NAMESPACE_RANGES
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+using _CUDA_VRANGES::get;
+
+_LIBCUDACXX_END_NAMESPACE_STD
+
+#endif // _LIBCUDACXX_STD_VER > 14
 
 #endif // _LIBCUDACXX___FWD_GET_H
