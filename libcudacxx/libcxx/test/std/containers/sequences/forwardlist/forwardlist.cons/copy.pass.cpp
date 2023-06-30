@@ -28,7 +28,7 @@ int main(int, char**)
         C c0(std::begin(t), std::end(t), A(10));
         C c = c0;
         int n = 0;
-        for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, ++n)
+        for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, (void)++n)
             assert(*i == n);
         assert(n == std::end(t) - std::begin(t));
         assert(c == c0);
@@ -43,7 +43,7 @@ int main(int, char**)
         C c0(std::begin(t), std::end(t), A(10));
         C c = c0;
         int n = 0;
-        for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, ++n)
+        for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, (void)++n)
             assert(*i == n);
         assert(n == std::end(t) - std::begin(t));
         assert(c == c0);
@@ -57,7 +57,7 @@ int main(int, char**)
         C c0(std::begin(t), std::end(t), A());
         C c = c0;
         int n = 0;
-        for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, ++n)
+        for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, (void)++n)
             assert(*i == n);
         assert(n == std::end(t) - std::begin(t));
         assert(c == c0);

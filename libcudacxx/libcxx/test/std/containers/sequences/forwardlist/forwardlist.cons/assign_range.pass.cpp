@@ -30,7 +30,7 @@ int main(int, char**)
         typedef cpp17_input_iterator<const T*> I;
         c.assign(I(std::begin(t0)), I(std::end(t0)));
         int n = 0;
-        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, ++n)
+        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, (void)++n)
             assert(*i == n);
         assert(n == 10);
     }
@@ -43,7 +43,7 @@ int main(int, char**)
         typedef cpp17_input_iterator<const T*> I;
         c.assign(I(std::begin(t0)), I(std::end(t0)));
         int n = 0;
-        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, ++n)
+        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, (void)++n)
             assert(*i == 10+n);
         assert(n == 4);
     }
@@ -57,7 +57,7 @@ int main(int, char**)
         typedef cpp17_input_iterator<const T*> I;
         c.assign(I(std::begin(t0)), I(std::end(t0)));
         int n = 0;
-        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, ++n)
+        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, (void)++n)
             assert(*i == n);
         assert(n == 10);
     }
