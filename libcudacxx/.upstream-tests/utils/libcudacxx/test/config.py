@@ -1116,6 +1116,7 @@ class Configuration(object):
                 addIfHostSupports('-Wno-literal-suffix') # GCC warning about reserved UDLs
                 addIfHostSupports('-Wno-user-defined-literals') # Clang warning about reserved UDLs
                 addIfHostSupports('-Wno-unused-parameter')
+                addIfHostSupports('-Wno-unused-local-typedefs') # GCC warning local typdefs
                 addIfHostSupports('-Wno-deprecated-declarations')
                 addIfHostSupports('-Wno-noexcept-type')
                 addIfHostSupports('-Wno-unused-function')

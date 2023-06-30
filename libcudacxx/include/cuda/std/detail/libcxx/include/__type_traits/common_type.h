@@ -110,6 +110,12 @@ struct _LIBCUDACXX_TEMPLATE_VIS common_type<_Tp, _Up, _Vp, _Rest...>
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class ..._Tp> using common_type_t = typename common_type<_Tp...>::type;
+
+template<class, class, class = void>
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_common_type = false;
+
+template<class _Tp, class _Up>
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_common_type<_Tp, _Up, void_t<common_type_t<_Tp, _Up>>> = true;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

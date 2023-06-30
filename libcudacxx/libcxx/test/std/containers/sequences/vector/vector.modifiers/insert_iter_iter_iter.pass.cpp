@@ -28,8 +28,8 @@ int main(int, char**)
         V v(100);
         int a[] = {1, 2, 3, 4, 5};
         const int N = sizeof(a)/sizeof(a[0]);
-        V::iterator i = v.insert(v.cbegin() + 10, input_iterator<const int*>(a),
-                                 input_iterator<const int*>(a+N));
+        V::iterator i = v.insert(v.cbegin() + 10, cpp17_input_iterator<const int*>(a),
+                                 cpp17_input_iterator<const int*>(a+N));
         assert(v.size() == 100 + N);
         assert(is_contiguous_container_asan_correct(v));
         assert(i == v.begin() + 10);
@@ -102,8 +102,8 @@ int main(int, char**)
         V v(100);
         int a[] = {1, 2, 3, 4, 5};
         const int N = sizeof(a)/sizeof(a[0]);
-        V::iterator i = v.insert(v.cbegin() + 10, input_iterator<const int*>(a),
-                                 input_iterator<const int*>(a+N));
+        V::iterator i = v.insert(v.cbegin() + 10, cpp17_input_iterator<const int*>(a),
+                                 cpp17_input_iterator<const int*>(a+N));
         assert(v.size() == 100 + N);
         assert(is_contiguous_container_asan_correct(v));
         assert(i == v.begin() + 10);
@@ -139,8 +139,8 @@ int main(int, char**)
         V v(100);
         int a[] = {1, 2, 3, 4, 5};
         const int N = sizeof(a)/sizeof(a[0]);
-        V::iterator i = v.insert(v.cbegin() + 10, input_iterator<const int*>(a),
-                                 input_iterator<const int*>(a+N));
+        V::iterator i = v.insert(v.cbegin() + 10, cpp17_input_iterator<const int*>(a),
+                                 cpp17_input_iterator<const int*>(a+N));
         assert(v.size() == 100 + N);
         assert(is_contiguous_container_asan_correct(v));
         assert(i == v.begin() + 10);

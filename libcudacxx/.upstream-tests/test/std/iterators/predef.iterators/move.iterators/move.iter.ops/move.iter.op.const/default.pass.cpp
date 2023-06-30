@@ -22,26 +22,23 @@
 
 template <class It>
 __host__ __device__
-void
-test()
-{
+void test() {
     cuda::std::move_iterator<It> r;
     unused(r);
 }
 
-int main(int, char**)
-{
-    test<cpp17_input_iterator<char*> >();
-    test<forward_iterator<char*> >();
-    test<bidirectional_iterator<char*> >();
-    test<random_access_iterator<char*> >();
-    test<char*>();
+int main(int, char**) {
+  // we don't have a test iterator that is both input and default-constructible, so not testing that case
+  test<forward_iterator<char*> >();
+  test<bidirectional_iterator<char*> >();
+  test<random_access_iterator<char*> >();
+  test<char*>();
 
 #if TEST_STD_VER > 14
-    {
+  {
     constexpr cuda::std::move_iterator<const char *> it;
-    (void)it;
-    }
+    unused(it);
+  }
 #endif
 
   return 0;

@@ -116,8 +116,8 @@ int main(int, char**)
     static_assert(( std::__libcpp_is_trivial_iterator<std::reverse_iterator<std::__wrap_iter<char *> > > ::value), "");
 
 //  iterators in the libc++ test suite
-    static_assert((!std::__libcpp_is_trivial_iterator<output_iterator       <char *> >::value), "");
-    static_assert((!std::__libcpp_is_trivial_iterator<input_iterator        <char *> >::value), "");
+    static_assert((!std::__libcpp_is_trivial_iterator<cpp17_output_iterator       <char *> >::value), "");
+    static_assert((!std::__libcpp_is_trivial_iterator<cpp17_input_iterator        <char *> >::value), "");
     static_assert((!std::__libcpp_is_trivial_iterator<forward_iterator      <char *> >::value), "");
     static_assert((!std::__libcpp_is_trivial_iterator<bidirectional_iterator<char *> >::value), "");
     static_assert((!std::__libcpp_is_trivial_iterator<random_access_iterator<char *> >::value), "");
@@ -132,11 +132,11 @@ int main(int, char**)
     static_assert(( std::__is_cpp17_random_access_iterator<char *>::value), "" );
     static_assert((!std::__is_exactly_cpp17_input_iterator<char *>::value), "" );
 
-    static_assert(( std::__is_cpp17_input_iterator        <input_iterator<char *> >::value), "" );
-    static_assert((!std::__is_cpp17_forward_iterator      <input_iterator<char *> >::value), "" );
-    static_assert((!std::__is_cpp17_bidirectional_iterator<input_iterator<char *> >::value), "" );
-    static_assert((!std::__is_cpp17_random_access_iterator<input_iterator<char *> >::value), "" );
-    static_assert(( std::__is_exactly_cpp17_input_iterator<input_iterator<char *> >::value), "" );
+    static_assert(( std::__is_cpp17_input_iterator        <cpp17_input_iterator<char *> >::value), "" );
+    static_assert((!std::__is_cpp17_forward_iterator      <cpp17_input_iterator<char *> >::value), "" );
+    static_assert((!std::__is_cpp17_bidirectional_iterator<cpp17_input_iterator<char *> >::value), "" );
+    static_assert((!std::__is_cpp17_random_access_iterator<cpp17_input_iterator<char *> >::value), "" );
+    static_assert(( std::__is_exactly_cpp17_input_iterator<cpp17_input_iterator<char *> >::value), "" );
 
     static_assert(( std::__is_cpp17_input_iterator        <forward_iterator<char *> >::value), "" );
     static_assert(( std::__is_cpp17_forward_iterator      <forward_iterator<char *> >::value), "" );

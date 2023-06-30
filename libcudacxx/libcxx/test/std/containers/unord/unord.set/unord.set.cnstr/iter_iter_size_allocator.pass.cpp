@@ -48,7 +48,7 @@ void test(const Allocator& alloc)
         1,
         2
     };
-    C c(input_iterator<int*>(a), input_iterator<int*>(a + sizeof(a)/sizeof(a[0])),
+    C c(cpp17_input_iterator<int*>(a), cpp17_input_iterator<int*>(a + sizeof(a)/sizeof(a[0])),
         7,
         alloc
         );

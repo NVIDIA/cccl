@@ -154,6 +154,14 @@ struct common_reference;
 template <class... _Types>
 using common_reference_t = typename common_reference<_Types...>::type;
 
+#if _LIBCUDACXX_STD_VER > 11
+template<class, class, class = void>
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_common_reference = false;
+
+template<class _Tp, class _Up>
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_common_reference<_Tp, _Up, void_t<common_reference_t<_Tp, _Up>>> = true;
+#endif  // _LIBCUDACXX_STD_VER > 11
+
 // bullet 1 - sizeof...(T) == 0
 template<>
 struct common_reference<> {};
