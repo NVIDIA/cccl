@@ -47,8 +47,8 @@ int main(int, char**)
     static_assert(( std::__libcpp_string_gets_noexcept_iterator<std::reverse_iterator<std::__wrap_iter<char *> > > ::value), "");
 
 //  iterators in the libc++ test suite
-    static_assert(( std::__libcpp_string_gets_noexcept_iterator<output_iterator       <char *> >::value), "");
-    static_assert(( std::__libcpp_string_gets_noexcept_iterator<input_iterator        <char *> >::value), "");
+    static_assert(( std::__libcpp_string_gets_noexcept_iterator<cpp17_output_iterator       <char *> >::value), "");
+    static_assert(( std::__libcpp_string_gets_noexcept_iterator<cpp17_input_iterator        <char *> >::value), "");
     static_assert(( std::__libcpp_string_gets_noexcept_iterator<forward_iterator      <char *> >::value), "");
     static_assert(( std::__libcpp_string_gets_noexcept_iterator<bidirectional_iterator<char *> >::value), "");
     static_assert(( std::__libcpp_string_gets_noexcept_iterator<random_access_iterator<char *> >::value), "");
