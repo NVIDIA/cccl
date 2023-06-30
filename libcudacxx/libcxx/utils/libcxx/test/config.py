@@ -417,7 +417,7 @@ class Configuration(object):
             self.config.available_features.add('no_execute')
 
     def configure_ccache(self):
-        use_ccache_default = os.environ.get('LIBCXX_USE_CCACHE') is not None
+        use_ccache_default = os.environ.get('CMAKE_CXX_COMPILER_LAUNCHER') is not None
         use_ccache = self.get_lit_bool('use_ccache', use_ccache_default)
         if use_ccache:
             self.cxx.use_ccache = True
