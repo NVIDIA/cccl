@@ -725,9 +725,11 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "type_traits"
 #include "version"
 
-#ifndef __cuda_std__
-#include <__pragma_push>
-#endif //__cuda_std__
+// Mandated by the Standard.
+#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#include "compare"
+#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#include "concepts"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -753,8 +755,4 @@ struct __libcpp_is_trivial_iterator<__wrap_iter<_Iter> >
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#ifndef __cuda_std__
-#include <__pragma_pop>
-#endif //__cuda_std__
-
-#endif  // _LIBCUDACXX_ITERATOR
+#endif // _LIBCUDACXX_ITERATOR
