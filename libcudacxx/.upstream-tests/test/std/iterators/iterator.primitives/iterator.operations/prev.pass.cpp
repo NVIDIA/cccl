@@ -15,77 +15,51 @@
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
 
+
 #include "test_macros.h"
 #include "test_iterators.h"
 
 template <class It>
-__host__ __device__
-void
-test(It i, typename cuda::std::iterator_traits<It>::difference_type n, It x)
+__host__ __device__ TEST_CONSTEXPR_CXX14 void
+check_prev_n(It it, typename cuda::std::iterator_traits<It>::difference_type n, It result)
 {
-    assert(cuda::std::prev(i, n) == x);
+    static_assert(cuda::std::is_same<decltype(cuda::std::prev(it, n)), It>::value, "");
+    assert(cuda::std::prev(it, n) == result);
 
-    It (*prev)(It, typename cuda::std::iterator_traits<It>::difference_type) = cuda::std::prev;
-    assert(prev(i, n) == x);
+    It (*prev_ptr)(It, typename cuda::std::iterator_traits<It>::difference_type) = cuda::std::prev;
+    assert(prev_ptr(it, n) == result);
 }
 
 template <class It>
-__host__ __device__
-void
-test(It i, It x)
+__host__ __device__ TEST_CONSTEXPR_CXX14 void
+check_prev_1(It it, It result)
 {
-    assert(cuda::std::prev(i) == x);
+    static_assert(cuda::std::is_same<decltype(cuda::std::prev(it)), It>::value, "");
+    assert(cuda::std::prev(it) == result);
 }
 
-#if TEST_STD_VER > 14
-template <class It>
-__host__ __device__
-constexpr bool
-constexpr_test(It i, typename cuda::std::iterator_traits<It>::difference_type n, It x)
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 {
-    return cuda::std::prev(i, n) == x;
-}
+    const char* s = "1234567890";
+    check_prev_n(forward_iterator      <const char*>(s),    -10, forward_iterator      <const char*>(s+10));
+    check_prev_n(bidirectional_iterator<const char*>(s+10),  10, bidirectional_iterator<const char*>(s));
+    check_prev_n(bidirectional_iterator<const char*>(s),    -10, bidirectional_iterator<const char*>(s+10));
+    check_prev_n(random_access_iterator<const char*>(s+10),  10, random_access_iterator<const char*>(s));
+    check_prev_n(random_access_iterator<const char*>(s),    -10, random_access_iterator<const char*>(s+10));
+    check_prev_n(s+10, 10, s);
 
-template <class It>
-__host__ __device__
-constexpr bool
-constexpr_test(It i, It x)
-{
-    return cuda::std::prev(i) == x;
+    check_prev_1(bidirectional_iterator<const char*>(s+1), bidirectional_iterator<const char*>(s));
+    check_prev_1(random_access_iterator<const char*>(s+1), random_access_iterator<const char*>(s));
+    check_prev_1(s+1, s);
+
+    return true;
 }
-#endif
 
 int main(int, char**)
 {
-    {
-    const char* s = "1234567890";
-    test(forward_iterator      <const char*>(s),    -10, forward_iterator      <const char*>(s+10));
-    test(bidirectional_iterator<const char*>(s+10),  10, bidirectional_iterator<const char*>(s));
-    test(bidirectional_iterator<const char*>(s),    -10, bidirectional_iterator<const char*>(s+10));
-    test(random_access_iterator<const char*>(s+10),  10, random_access_iterator<const char*>(s));
-    test(random_access_iterator<const char*>(s),    -10, random_access_iterator<const char*>(s+10));
-    test(s+10, 10, s);
-
-    test(bidirectional_iterator<const char*>(s+1), bidirectional_iterator<const char*>(s));
-    test(random_access_iterator<const char*>(s+1), random_access_iterator<const char*>(s));
-    test(s+1, s);
-    }
+    tests();
 #if TEST_STD_VER > 14
-    {
-    constexpr const char* s = "1234567890";
-    static_assert( constexpr_test(forward_iterator      <const char*>(s),    -10, forward_iterator      <const char*>(s+10)), "" );
-    static_assert( constexpr_test(bidirectional_iterator<const char*>(s+10),  10, bidirectional_iterator<const char*>(s)), "" );
-    static_assert( constexpr_test(forward_iterator      <const char*>(s),    -10, forward_iterator      <const char*>(s+10)), "" );
-    static_assert( constexpr_test(random_access_iterator<const char*>(s+10),  10, random_access_iterator<const char*>(s)), "" );
-    static_assert( constexpr_test(forward_iterator      <const char*>(s),    -10, forward_iterator      <const char*>(s+10)), "" );
-    static_assert( constexpr_test(s+10, 10, s), "" );
-
-    static_assert( constexpr_test(bidirectional_iterator<const char*>(s+1), bidirectional_iterator<const char*>(s)), "" );
-    static_assert( constexpr_test(random_access_iterator<const char*>(s+1), random_access_iterator<const char*>(s)), "" );
-    static_assert( constexpr_test(s+1, s), "" );
-    }
+    static_assert(tests(), "");
 #endif
-
-
-  return 0;
+    return 0;
 }
