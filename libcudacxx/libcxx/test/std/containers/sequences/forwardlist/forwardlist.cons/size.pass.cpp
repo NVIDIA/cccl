@@ -47,7 +47,7 @@ int main(int, char**)
         C c(N);
         unsigned n = 0;
 
-        for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, ++n) {
+        for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, (void)++n) {
 #if TEST_STD_VER >= 11
             assert(*i == T());
 #else
@@ -63,7 +63,7 @@ int main(int, char**)
         unsigned N = 10;
         C c(N);
         unsigned n = 0;
-        for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, ++n)
+        for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, (void)++n)
             assert(*i == T());
         assert(n == N);
         check_allocator<T, min_allocator<T>> ( 0 );

@@ -1407,7 +1407,7 @@ list<_Tp, _Alloc>::assign(_InpIter __f, _InpIter __l,
 {
     iterator __i = begin();
     iterator __e = end();
-    for (; __f != __l && __i != __e; ++__f, ++__i)
+    for (; __f != __l && __i != __e; ++__f, (void)++__i)
         *__i = *__f;
     if (__i == __e)
         insert(__e, __f, __l);
