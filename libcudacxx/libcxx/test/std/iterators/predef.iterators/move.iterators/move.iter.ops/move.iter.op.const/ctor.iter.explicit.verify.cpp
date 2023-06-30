@@ -6,8 +6,17 @@
 //
 //===----------------------------------------------------------------------===//
 
-int main(int, char**)
-{
+// <iterator>
 
-  return 0;
+// move_iterator
+
+// explicit move_iterator(Iter );
+
+// test explicitness
+
+#include <iterator>
+
+void f() {
+    char const* it = "";
+    std::move_iterator<char const*> r = it; // expected-error{{no viable conversion from 'const char *' to 'std::move_iterator<const char *>'}}
 }

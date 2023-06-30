@@ -9,36 +9,16 @@
 
 // <cuda/std/iterator>
 
-// UNSUPPORTED: nvrtc
-
 // move_iterator
 
-// template <class U>
-//   requires HasAssign<Iter, const U&>
-//   move_iterator&
-//   operator=(const move_iterator<U>& u);
+// explicit move_iterator(Iter );
 
-// test requires
+// test explicitness
 
-#include <cuda/std/iterator>
+#include <cuda/std/>
 
-template <class It, class U>
-__host__ __device__
-void
-test(U u)
-{
-    const cuda::std::move_iterator<U> r2(u);
-    cuda::std::move_iterator<It> r1;
-    r1 = r2;
-}
-
-struct base {};
-struct derived {};
-
-int main(int, char**)
-{
-    derived d;
-    test<base*>(&d);
-
-  return 0;
+int main(int, char**) {
+    char const* it = "";
+    cuda::std::move_iterator<char const*> r = it; // expected-error{{no viable conversion from 'const char *' to 'std::move_iterator<const char *>'}}
+    return 0;
 }

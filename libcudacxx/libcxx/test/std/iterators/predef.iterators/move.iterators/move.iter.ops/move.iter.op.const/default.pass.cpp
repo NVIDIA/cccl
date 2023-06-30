@@ -28,7 +28,7 @@ struct NoDefaultCtr : forward_iterator<int*> {
 };
 
 LIBCPP_STATIC_ASSERT( std::is_default_constructible_v<std::move_iterator<forward_iterator<int*>>>);
-//LIBCPP_STATIC_ASSERT(!std::is_default_constructible_v<std::move_iterator<NoDefaultCtr>>);
+LIBCPP_STATIC_ASSERT(!std::is_default_constructible_v<std::move_iterator<NoDefaultCtr>>);
 #endif
 
 template <class It>

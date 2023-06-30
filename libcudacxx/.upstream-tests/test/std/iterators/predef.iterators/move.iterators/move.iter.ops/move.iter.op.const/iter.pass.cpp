@@ -22,30 +22,69 @@
 #include "test_iterators.h"
 
 template <class It>
-__host__ __device__
-void
-test(It i)
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
-    cuda::std::move_iterator<It> r(i);
-    assert(r.base() == i);
+  static_assert( cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value, "");
+  static_assert( cuda::std::is_constructible<cuda::std::move_iterator<It>, It&&>::value, "");
+  static_assert(!cuda::std::is_convertible<const It&, cuda::std::move_iterator<It> >::value, "");
+  static_assert(!cuda::std::is_convertible<It&&, cuda::std::move_iterator<It> >::value, "");
+
+  char s[] = "123";
+  {
+    It it = It(s);
+    cuda::std::move_iterator<It> r(it);
+    assert(base(r.base()) == s);
+  }
+  {
+    It it = It(s);
+    cuda::std::move_iterator<It> r(cuda::std::move(it));
+    assert(base(r.base()) == s);
+  }
+  return true;
+}
+
+template <class It>
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_moveonly()
+{
+  static_assert(!cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value, "");
+  static_assert( cuda::std::is_constructible<cuda::std::move_iterator<It>, It&&>::value, "");
+  static_assert(!cuda::std::is_convertible<const It&, cuda::std::move_iterator<It> >::value, "");
+  static_assert(!cuda::std::is_convertible<It&&, cuda::std::move_iterator<It> >::value, "");
+
+  char s[] = "123";
+  {
+    It it = It(s);
+    cuda::std::move_iterator<It> r(cuda::std::move(it));
+    assert(base(r.base()) == s);
+  }
+  return true;
 }
 
 int main(int, char**)
 {
-    char s[] = "123";
-    test(cpp17_input_iterator<char*>(s));
-    test(forward_iterator<char*>(s));
-    test(bidirectional_iterator<char*>(s));
-    test(random_access_iterator<char*>(s));
-    test(s);
+  test<cpp17_input_iterator<char*> >();
+  test<forward_iterator<char*> >();
+  test<bidirectional_iterator<char*> >();
+  test<random_access_iterator<char*> >();
+  test<char*>();
+  test<const char*>();
+
+#if TEST_STD_VER > 11
+  static_assert(test<cpp17_input_iterator<char*>>(), "");
+  static_assert(test<forward_iterator<char*>>(), "");
+  static_assert(test<bidirectional_iterator<char*>>(), "");
+  static_assert(test<random_access_iterator<char*>>(), "");
+  static_assert(test<char*>(), "");
+  static_assert(test<const char*>(), "");
+#endif // TEST_STD_VER > 11
 
 #if TEST_STD_VER > 14
-    {
-    constexpr const char *p = "123456789";
-    constexpr cuda::std::move_iterator<const char *> it(p);
-    static_assert(it.base() == p);
-    }
-#endif
+  test<contiguous_iterator<char*>>();
+  test_moveonly<cpp20_input_iterator<char*>>();
+  static_assert(test<contiguous_iterator<char*>>(), "");
+  static_assert(test_moveonly<cpp20_input_iterator<char*>>(), "");
+#endif // TEST_STD_VER > 14
+
 
   return 0;
 }

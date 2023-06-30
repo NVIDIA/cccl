@@ -6,8 +6,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-int main(int, char**)
-{
+// UNSUPPORTED: c++03, c++11, c++14, c++17
 
-  return 0;
+// move_iterator
+
+#include <iterator>
+
+void f() {
+  (void)std::move_iterator<int*>().operator->(); // expected-warning {{'operator->' is deprecated}}
 }

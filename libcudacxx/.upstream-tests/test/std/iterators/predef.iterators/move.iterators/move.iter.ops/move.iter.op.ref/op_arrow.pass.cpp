@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_FLAGS: -D_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 // <cuda/std/iterator>
 
 // move_iterator
@@ -15,35 +17,30 @@
 //
 //  constexpr in C++17
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-template <class It>
-__host__ __device__
-void
-test(It i)
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
-    cuda::std::move_iterator<It> r(i);
-    assert(r.operator->() == i);
+    char a[] = "123456789";
+    cuda::std::move_iterator<char *> it1 = cuda::std::make_move_iterator(a);
+    cuda::std::move_iterator<char *> it2 = cuda::std::make_move_iterator(a + 1);
+    assert(it1.operator->() == a);
+    assert(it2.operator->() == a + 1);
+
+    return true;
 }
 
 int main(int, char**)
 {
-    char s[] = "123";
-    test(s);
-
-#if TEST_STD_VER > 14
-    {
-    constexpr const char *p = "123456789";
-    typedef cuda::std::move_iterator<const char *> MI;
-    constexpr MI it1 = cuda::std::make_move_iterator(p);
-    constexpr MI it2 = cuda::std::make_move_iterator(p+1);
-    static_assert(it1.operator->() == p, "");
-    static_assert(it2.operator->() == p + 1, "");
-    }
+    test();
+#if TEST_STD_VER > 11
+    static_assert(test(), "");
 #endif
 
-  return 0;
+    return 0;
 }

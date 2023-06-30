@@ -30,7 +30,7 @@ static_assert(cuda::std::semiregular<NonAssignable>);
 static_assert(cuda::std::is_assignable_v<NonAssignable, int>);
 static_assert(!cuda::std::assignable_from<NonAssignable, int>);
 
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
   // Assigning from an lvalue.
   {

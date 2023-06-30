@@ -39,7 +39,7 @@ int main(int, char**)
     test(random_access_iterator<const char*>(s+5), 5, random_access_iterator<const char*>(s+10));
     test(s+5, 5, s+10);
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 11
     {
     constexpr const char *p = "123456789";
     typedef cuda::std::move_iterator<const char *> MI;

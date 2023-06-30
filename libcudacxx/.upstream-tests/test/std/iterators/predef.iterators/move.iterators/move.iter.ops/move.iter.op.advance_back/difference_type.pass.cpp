@@ -12,7 +12,7 @@
 // move_iterator
 
 // requires RandomAccessIterator<Iter>
-//   move_iterator operator-(difference_type n) const;
+//   move_iterator& operator-=(difference_type n);
 //
 //  constexpr in C++17
 
@@ -27,9 +27,10 @@ __host__ __device__
 void
 test(It i, typename cuda::std::iterator_traits<It>::difference_type n, It x)
 {
-    const cuda::std::move_iterator<It> r(i);
-    cuda::std::move_iterator<It> rr = r - n;
-    assert(rr.base() == x);
+    cuda::std::move_iterator<It> r(i);
+    cuda::std::move_iterator<It>& rr = r -= n;
+    assert(r.base() == x);
+    assert(&rr == &r);
 }
 
 int main(int, char**)
@@ -38,16 +39,12 @@ int main(int, char**)
     test(random_access_iterator<const char*>(s+5), 5, random_access_iterator<const char*>(s));
     test(s+5, 5, s);
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 11
     {
     constexpr const char *p = "123456789";
-    typedef cuda::std::move_iterator<const char *> MI;
-    constexpr MI it1 = cuda::std::make_move_iterator(p);
-    constexpr MI it2 = cuda::std::make_move_iterator(p + 5);
-    constexpr MI it3 = it2 - 5;
-    static_assert(it1 != it2, "");
-    static_assert(it1 == it3, "");
-    static_assert(it2 != it3, "");
+    constexpr auto it1 = cuda::std::make_move_iterator(p);
+    constexpr auto it2 = cuda::std::make_move_iterator(p+5) -= 5;
+    static_assert(it1 == it2, "");
     }
 #endif
 
