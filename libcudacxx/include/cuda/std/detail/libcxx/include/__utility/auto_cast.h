@@ -21,6 +21,10 @@
 #pragma GCC system_header
 #endif
 
+#if _LIBCUDACXX_STD_VER < 20 && defined(_LIBCUDACXX_COMPILER_MSVC)
+#define _LIBCUDACXX_AUTO_CAST(expr) (_CUDA_VSTD::decay_t<decltype((expr))>)(expr)
+#else
 #define _LIBCUDACXX_AUTO_CAST(expr) static_cast<_CUDA_VSTD::decay_t<decltype((expr))>>(expr)
+#endif
 
 #endif // _LIBCUDACXX___UTILITY_AUTO_CAST_H

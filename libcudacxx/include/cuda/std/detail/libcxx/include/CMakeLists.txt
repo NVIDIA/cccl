@@ -148,6 +148,7 @@ set(files
   __mutex_base
   __node_handle
   __nullptr
+  __ranges/access.h
   __ranges/enable_borrowed_range.h
   __ranges/enable_view.h
   __split_buffer
