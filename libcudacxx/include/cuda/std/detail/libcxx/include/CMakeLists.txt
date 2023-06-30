@@ -93,6 +93,7 @@ set(files
   __iterator/incrementable_traits.h
   __iterator/istream_iterator.h
   __iterator/istreambuf_iterator.h
+  __iterator/iter_move.h
   __iterator/iterator.h
   __iterator/iterator_traits.h
   __iterator/move_iterator.h
