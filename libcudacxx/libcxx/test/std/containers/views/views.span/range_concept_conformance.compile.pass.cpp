@@ -17,7 +17,6 @@
 
 using range = std::span<int>;
 
-#ifdef _LIBCUDACXX_HAS_RANGES
 static_assert(std::same_as<std::ranges::iterator_t<range>, range::iterator>);
 static_assert(std::ranges::common_range<range>);
 static_assert(std::ranges::random_access_range<range>);
@@ -35,7 +34,6 @@ static_assert(!std::ranges::view<range const> && !std::ranges::enable_view<range
 static_assert(std::ranges::sized_range<range const>);
 static_assert(std::ranges::borrowed_range<range const>);
 static_assert(std::ranges::viewable_range<range const>);
-#endif // _LIBCUDACXX_HAS_RANGES
 
 int main(int, char**)
 {

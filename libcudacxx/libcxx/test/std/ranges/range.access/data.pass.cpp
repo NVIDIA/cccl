@@ -82,10 +82,8 @@ constexpr bool testReturnTypes() {
       char *end() const;
       int *data();
     };
-#if _LIBCUDACXX_HAS_RANGES
     static_assert(!std::ranges::contiguous_range<NC>);
     static_assert( std::ranges::contiguous_range<const NC>);
-#endif // _LIBCUDACXX_HAS_RANGES
     ASSERT_SAME_TYPE(decltype(std::ranges::data(std::declval<NC&>())), int*);
     static_assert(!std::is_invocable_v<RangeDataT, NC&&>);
     ASSERT_SAME_TYPE(decltype(std::ranges::data(std::declval<const NC&>())), char*);
