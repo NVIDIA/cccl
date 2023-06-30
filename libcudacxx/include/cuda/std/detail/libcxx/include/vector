@@ -1751,7 +1751,7 @@ vector<_Tp, _Allocator>::__move_range(pointer __from_s, pointer __from_e, pointe
     {
       pointer __i = __from_s + __n;
       _ConstructTransaction __tx(*this, __from_e - __i);
-      for (; __i < __from_e; ++__i, ++__tx.__pos_) {
+      for (; __i < __from_e; ++__i, (void)++__tx.__pos_) {
           __alloc_traits::construct(this->__alloc(),
                                     _CUDA_VSTD::__to_raw_pointer(__tx.__pos_),
                                     _CUDA_VSTD::move(*__i));
