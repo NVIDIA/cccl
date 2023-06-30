@@ -30,9 +30,9 @@ void
 test(U u)
 {
     const cuda::std::move_iterator<U> r2(u);
-    cuda::std::move_iterator<It> r1;
-    cuda::std::move_iterator<It>& rr = r1 = r2;
-    assert(r1.base() == u);
+    cuda::std::move_iterator<It> r1(It(nullptr));
+    cuda::std::move_iterator<It>& rr = (r1 = r2);
+    assert(base(r1.base()) == base(u));
     assert(&rr == &r1);
 }
 

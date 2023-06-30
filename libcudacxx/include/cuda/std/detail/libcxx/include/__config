@@ -2227,6 +2227,8 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #endif // NVRTC || NVHPC-cuda || clang-cuda
 #endif // !_LIBCUDACXX_DISABLE_EXEC_CHECK
 
+#define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
+
 #endif // __cplusplus
 
 #endif // _LIBCUDACXX_CONFIG

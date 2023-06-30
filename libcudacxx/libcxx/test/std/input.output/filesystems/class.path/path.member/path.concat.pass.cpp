@@ -84,7 +84,7 @@ void doConcatSourceAllocTest(ConcatOperatorTestcase const& TC)
   using Ptr = CharT const*;
   using Str = std::basic_string<CharT>;
   using StrView = std::basic_string_view<CharT>;
-  using InputIter = input_iterator<Ptr>;
+  using InputIter = cpp17_input_iterator<Ptr>;
 
   const Ptr L = TC.lhs;
   const Ptr R = TC.rhs;
@@ -165,7 +165,7 @@ void doConcatSourceTest(ConcatOperatorTestcase const& TC)
   using Ptr = CharT const*;
   using Str = std::basic_string<CharT>;
   using StrView = std::basic_string_view<CharT>;
-  using InputIter = input_iterator<Ptr>;
+  using InputIter = cpp17_input_iterator<Ptr>;
   const Ptr L = TC.lhs;
   const Ptr R = TC.rhs;
   const Ptr E = TC.expect;
@@ -295,7 +295,7 @@ void test_sfinae() {
     static_assert(has_concat<It>(), "");
   }
   {
-    using It = input_iterator<const char*>;
+    using It = cpp17_input_iterator<const char*>;
     static_assert(has_concat<It>(), "");
   }
   {
@@ -306,11 +306,11 @@ void test_sfinae() {
       using reference = const char&;
       using difference_type = std::ptrdiff_t;
     };
-    using It = input_iterator<const char*, Traits>;
+    using It = cpp17_input_iterator<const char*, Traits>;
     static_assert(has_concat<It>(), "");
   }
   {
-    using It = output_iterator<const char*>;
+    using It = cpp17_output_iterator<const char*>;
     static_assert(!has_concat<It>(), "");
   }
   {
