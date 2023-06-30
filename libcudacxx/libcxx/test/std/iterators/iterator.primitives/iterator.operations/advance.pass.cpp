@@ -10,65 +10,85 @@
 
 //   All of these became constexpr in C++17
 //
-// template <InputIterator Iter>
-//   constexpr void advance(Iter& i, Iter::difference_type n);
+// template <InputIterator Iter, class Distance>
+//   constexpr void advance(Iter& i, Distance n);
 //
-// template <BidirectionalIterator Iter>
-//   constexpr void advance(Iter& i, Iter::difference_type n);
+// template <BidirectionalIterator Iter, class Distance>
+//   constexpr void advance(Iter& i, Distance n);
 //
-// template <RandomAccessIterator Iter>
-//   constexpr void advance(Iter& i, Iter::difference_type n);
+// template <RandomAccessIterator Iter, class Distance>
+//   constexpr void advance(Iter& i, Distance n);
+
+
+// TODO: test_iterators.h includes <ranges>, and <ranges> includes <chrono> and <atomic>.
+// Lots of implementation headers under <__chrono/> and <atomic> has signed to unsigned conversion,
+// which will trigger the -Wsign-conversion warning.
+// Once those headers are fixed, enable the -Wsign-conversion for this test by removing
+// <TODO:Remove brackets> below
+
+// Make sure we catch forced conversions to the difference_type if they happen.
+// ADDITIONAL_COMPILE_FLAGS<TODO:Remove brackets>: -Wsign-conversion
 
 #include <iterator>
 #include <cassert>
+#include <cstddef>
+#include <type_traits>
 
 #include "test_macros.h"
 #include "test_iterators.h"
 
-template <class It>
-void
-test(It i, typename std::iterator_traits<It>::difference_type n, It x)
+template <class Distance, class It>
+TEST_CONSTEXPR_CXX17
+void check_advance(It it, Distance n, It result)
 {
-    std::advance(i, n);
-    assert(i == x);
+    static_assert(std::is_same<decltype(std::advance(it, n)), void>::value, "");
+    std::advance(it, n);
+    assert(it == result);
 }
 
-#if TEST_STD_VER > 14
-template <class It>
-constexpr bool
-constepxr_test(It i, typename std::iterator_traits<It>::difference_type n, It x)
+TEST_CONSTEXPR_CXX17 bool tests()
 {
-    std::advance(i, n);
-    return i == x;
+    const char* s = "1234567890";
+
+    // Check with iterator_traits::difference_type
+    {
+        typedef std::iterator_traits<const char*>::difference_type Distance;
+        check_advance<Distance>(cpp17_input_iterator<const char*>(s), 10, cpp17_input_iterator<const char*>(s+10));
+        check_advance<Distance>(forward_iterator<const char*>(s), 10, forward_iterator<const char*>(s+10));
+        check_advance<Distance>(bidirectional_iterator<const char*>(s+5), 5, bidirectional_iterator<const char*>(s+10));
+        check_advance<Distance>(bidirectional_iterator<const char*>(s+5), -5, bidirectional_iterator<const char*>(s));
+        check_advance<Distance>(random_access_iterator<const char*>(s+5), 5, random_access_iterator<const char*>(s+10));
+        check_advance<Distance>(random_access_iterator<const char*>(s+5), -5, random_access_iterator<const char*>(s));
+        check_advance<Distance>(s+5, 5, s+10);
+        check_advance<Distance>(s+5, -5, s);
+    }
+
+    // Also check with other distance types
+    {
+        typedef int Distance;
+        check_advance<Distance>(cpp17_input_iterator<const char*>(s), 10, cpp17_input_iterator<const char*>(s+10));
+        check_advance<Distance>(forward_iterator<const char*>(s), 10, forward_iterator<const char*>(s+10));
+        check_advance<Distance>(bidirectional_iterator<const char*>(s), 10, bidirectional_iterator<const char*>(s+10));
+        check_advance<Distance>(random_access_iterator<const char*>(s), 10, random_access_iterator<const char*>(s+10));
+    }
+
+    // Check with unsigned distance types to catch signedness-change issues
+    {
+        typedef std::size_t Distance;
+        check_advance<Distance>(cpp17_input_iterator<const char*>(s), 10u, cpp17_input_iterator<const char*>(s+10));
+        check_advance<Distance>(forward_iterator<const char*>(s), 10u, forward_iterator<const char*>(s+10));
+        check_advance<Distance>(bidirectional_iterator<const char*>(s), 10u, bidirectional_iterator<const char*>(s+10));
+        check_advance<Distance>(random_access_iterator<const char*>(s), 10u, random_access_iterator<const char*>(s+10));
+    }
+
+    return true;
 }
-#endif
 
 int main(int, char**)
 {
-    {
-    const char* s = "1234567890";
-    test(cpp17_input_iterator<const char*>(s), 10, cpp17_input_iterator<const char*>(s+10));
-    test(forward_iterator<const char*>(s), 10, forward_iterator<const char*>(s+10));
-    test(bidirectional_iterator<const char*>(s+5), 5, bidirectional_iterator<const char*>(s+10));
-    test(bidirectional_iterator<const char*>(s+5), -5, bidirectional_iterator<const char*>(s));
-    test(random_access_iterator<const char*>(s+5), 5, random_access_iterator<const char*>(s+10));
-    test(random_access_iterator<const char*>(s+5), -5, random_access_iterator<const char*>(s));
-    test(s+5, 5, s+10);
-    test(s+5, -5, s);
-    }
-#if TEST_STD_VER > 14
-    {
-    constexpr const char* s = "1234567890";
-    static_assert( constepxr_test(cpp17_input_iterator<const char*>(s), 10, cpp17_input_iterator<const char*>(s+10)), "" );
-    static_assert( constepxr_test(forward_iterator<const char*>(s), 10, forward_iterator<const char*>(s+10)), "" );
-    static_assert( constepxr_test(bidirectional_iterator<const char*>(s+5), 5, bidirectional_iterator<const char*>(s+10)), "" );
-    static_assert( constepxr_test(bidirectional_iterator<const char*>(s+5), -5, bidirectional_iterator<const char*>(s)), "" );
-    static_assert( constepxr_test(random_access_iterator<const char*>(s+5), 5, random_access_iterator<const char*>(s+10)), "" );
-    static_assert( constepxr_test(random_access_iterator<const char*>(s+5), -5, random_access_iterator<const char*>(s)), "" );
-    static_assert( constepxr_test(s+5, 5, s+10), "" );
-    static_assert( constepxr_test(s+5, -5, s), "" );
-    }
+    tests();
+#if TEST_STD_VER >= 17
+    static_assert(tests(), "");
 #endif
-
-  return 0;
+    return 0;
 }
