@@ -153,7 +153,7 @@ class CXXCompiler(object):
         if self.use_ccache \
                 and not mode == self.CM_Link \
                 and not mode == self.CM_PreProcess:
-            cmd += ['sccache']
+            cmd += [os.environ.get('CMAKE_CUDA_COMPILER_LAUNCHER')]
         cmd += [self.path] + ([self.first_arg] if self.first_arg != '' else [])
         if out is not None:
             cmd += ['-o', out]
