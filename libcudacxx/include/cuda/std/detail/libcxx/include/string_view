@@ -182,6 +182,8 @@ namespace std {
 #include <__debug>
 
 #include "__fwd/string_view.h"
+#include "__ranges/enable_borrowed_range.h"
+#include "__ranges/enable_view.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -606,7 +608,34 @@ private:
     const   value_type* __data;
     size_type           __size;
 };
+_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(basic_string_view);
 
+_LIBCUDACXX_END_NAMESPACE_STD
+_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+
+#if _LIBCUDACXX_STD_VER >= 20
+template <class _CharT, class _Traits>
+inline constexpr bool enable_view<basic_string_view<_CharT, _Traits>> = true;
+
+template <class _CharT, class _Traits>
+inline constexpr bool enable_borrowed_range<basic_string_view<_CharT, _Traits> > = true;
+#endif // _LIBCUDACXX_STD_VER >= 20
+
+_LIBCUDACXX_END_NAMESPACE_RANGES
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+// [string.view.deduct]
+
+#if _LIBCUDACXX_STD_VER >= 20
+template <contiguous_iterator _It, sized_sentinel_for<_It> _End>
+  basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
+#endif // _LIBCUDACXX_STD_VER >= 20
+
+
+#if _LIBCUDACXX_STD_VER >= 23
+template <ranges::contiguous_range _Range>
+  basic_string_view(_Range) -> basic_string_view<ranges::range_value_t<_Range>>;
+#endif
 
 // [string.view.comparison]
 // operator ==
