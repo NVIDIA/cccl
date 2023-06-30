@@ -11,8 +11,8 @@
 
 // reverse_iterator
 
-// template <RandomAccessIterator Iterator>
-// reverse_iterator<Iter> operator+(Iter::difference_type n, const reverse_iterator<Iter>& x); // constexpr in C++17
+// requires RandomAccessIterator<Iter>
+// unspecified operator[](difference_type n) const; // constexpr since C++17
 
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
@@ -21,16 +21,21 @@
 #include "test_iterators.h"
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(It i, typename cuda::std::iterator_traits<It>::difference_type n, It x) {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test(It i,
+                               typename cuda::std::iterator_traits<It>::difference_type n,
+                               typename cuda::std::iterator_traits<It>::value_type x) {
+    typedef typename cuda::std::iterator_traits<It>::value_type value_type;
     const cuda::std::reverse_iterator<It> r(i);
-    cuda::std::reverse_iterator<It> rr = n + r;
-    assert(rr.base() == x);
+    value_type rr = r[n];
+    assert(rr == x);
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
     const char* s = "1234567890";
-    test(random_access_iterator<const char*>(s+5), 5, random_access_iterator<const char*>(s));
-    test(s+5, 5, s);
+    test(random_access_iterator<const char*>(s+5), 4, '1');
+    test(random_access_iterator<const char*>(s+5), 0, '5');
+    test(s+5, 4, '1');
+    test(s+5, 0, '5');
     return true;
 }
 
