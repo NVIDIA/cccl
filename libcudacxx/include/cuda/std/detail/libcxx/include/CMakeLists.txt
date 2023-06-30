@@ -66,6 +66,7 @@ set(files
   __functional/perfect_forward.h
   __functional/pointer_to_binary_function.h
   __functional/pointer_to_unary_function.h
+  __functional/ranges_operations.h
   __functional/reference_wrapper.h
   __functional/unary_function.h
   __functional/unary_negate.h
