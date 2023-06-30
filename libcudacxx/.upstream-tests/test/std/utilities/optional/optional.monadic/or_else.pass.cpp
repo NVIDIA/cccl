@@ -13,10 +13,10 @@
 // template<class F> constexpr optional or_else(F&&) &&;
 // template<class F> constexpr optional or_else(F&&) const&;
 
-#include "MoveOnly.h"
-
 #include <cuda/std/cassert>
 #include <cuda/std/optional>
+
+#include "MoveOnly.h"
 
 struct NonMovable {
   NonMovable() = default;

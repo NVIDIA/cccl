@@ -934,6 +934,13 @@ class Iterator {
     return prev;
   }
 
+  __host__ __device__ TEST_CONSTEXPR_CXX20 friend void iter_swap(Iterator a, Iterator b) {
+    cuda::std::swap(a.ptr_, b.ptr_);
+    if (a.iter_swaps_) {
+      ++(*a.iter_swaps_);
+    }
+  }
+
   __host__ __device__ constexpr friend value_type&& iter_move(Iterator iter) {
     if (iter.iter_moves_) {
       ++(*iter.iter_moves_);
@@ -1153,6 +1160,13 @@ struct ProxyIterator : ProxyIteratorBase<Base> {
   // it will likely result in a copy rather than a move
   __host__ __device__ friend constexpr Proxy<cuda::std::iter_rvalue_reference_t<Base>> iter_move(const ProxyIterator& p) noexcept {
     return {cuda::std::ranges::iter_move(p.base_)};
+  }
+
+  // Specialization of iter_swap
+  // Note cuda::std::swap(*x, *y) would fail to compile as operator* returns prvalues
+  // and cuda::std::swap takes non-const lvalue references
+  __host__ __device__ friend constexpr void iter_swap(const ProxyIterator& x, const ProxyIterator& y) noexcept {
+    cuda::std::ranges::iter_swap(x.base_, y.base_);
   }
 
   // to satisfy input_iterator
