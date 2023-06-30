@@ -10,7 +10,7 @@
 
 // template<class InputIterator>
 //   basic_string(InputIterator begin, InputIterator end,
-//   const Allocator& a = Allocator());
+//   const Allocator& a = Allocator()); // constexpr since C++20
 
 
 #include <string>
@@ -20,11 +20,11 @@
 
 #include "test_macros.h"
 #include "test_allocator.h"
-#include "../input_iterator.h"
+#include "test_iterators.h"
 #include "min_allocator.h"
 
 template <class It>
-void
+TEST_CONSTEXPR_CXX20 void
 test(It first, It last)
 {
     typedef typename std::iterator_traits<It>::value_type charT;
@@ -34,8 +34,11 @@ test(It first, It last)
     LIBCPP_ASSERT(s2.__invariants());
     assert(s2.size() == static_cast<std::size_t>(std::distance(first, last)));
     unsigned i = 0;
-    for (It it = first; it != last; ++it, ++i)
+    for (It it = first; it != last;) {
         assert(s2[i] == *it);
+        ++it;
+        ++i;
+    }
     assert(s2.get_allocator() == A());
     assert(s2.capacity() >= s2.size());
 }
@@ -50,15 +53,17 @@ test(It first, It last, const A& a)
     LIBCPP_ASSERT(s2.__invariants());
     assert(s2.size() == static_cast<std::size_t>(std::distance(first, last)));
     unsigned i = 0;
-    for (It it = first; it != last; ++it, ++i)
+    for (It it = first; it != last;) {
         assert(s2[i] == *it);
+        ++it;
+        ++i;
+    }
     assert(s2.get_allocator() == a);
     assert(s2.capacity() >= s2.size());
 }
 
-int main(int, char**)
-{
-    {
+bool test() {
+  {
     typedef test_allocator<char> A;
     const char* s = "12345678901234567890123456789012345678901234567890";
 
@@ -74,20 +79,20 @@ int main(int, char**)
     test(s, s+50);
     test(s, s+50, A(2));
 
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s));
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s), A(2));
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s));
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s), A(2));
 
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+1));
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+1), A(2));
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+1));
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+1), A(2));
 
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+10));
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+10), A(2));
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+10));
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+10), A(2));
 
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+50));
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+50), A(2));
-    }
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+50));
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+50), A(2));
+  }
 #if TEST_STD_VER >= 11
-    {
+  {
     typedef min_allocator<char> A;
     const char* s = "12345678901234567890123456789012345678901234567890";
 
@@ -103,20 +108,20 @@ int main(int, char**)
     test(s, s+50);
     test(s, s+50, A());
 
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s));
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s), A());
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s));
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s), A());
 
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+1));
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+1), A());
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+1));
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+1), A());
 
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+10));
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+10), A());
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+10));
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+10), A());
 
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+50));
-    test(input_iterator<const char*>(s), input_iterator<const char*>(s+50), A());
-    }
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+50));
+    test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+50), A());
+  }
 #endif
-    {
+  {
       static_assert((!std::is_constructible<std::string, std::string,
                                             std::string>::value),
                     "");
@@ -124,7 +129,14 @@ int main(int, char**)
           (!std::is_constructible<std::string, std::string, std::string,
                                   std::allocator<char> >::value),
           "");
-    }
+  }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
 
   return 0;
 }

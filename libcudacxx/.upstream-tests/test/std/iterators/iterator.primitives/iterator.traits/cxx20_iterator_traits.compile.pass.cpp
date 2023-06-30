@@ -495,7 +495,6 @@ static_assert(cuda::std::same_as<InputTestIteratorTraits::reference, int&>);
 static_assert(cuda::std::same_as<InputTestIteratorTraits::pointer, int*>);
 static_assert(!has_iterator_concept_v<InputTestIteratorTraits>);
 
-#if 0
 using OutputTestIteratorTraits = cuda::std::iterator_traits<cpp17_output_iterator<int*>>;
 static_assert(cuda::std::same_as<OutputTestIteratorTraits::iterator_category, cuda::std::output_iterator_tag>);
 static_assert(cuda::std::same_as<OutputTestIteratorTraits::value_type, void>);
@@ -503,7 +502,6 @@ static_assert(cuda::std::same_as<OutputTestIteratorTraits::difference_type, cuda
 static_assert(cuda::std::same_as<OutputTestIteratorTraits::reference, int&>);
 static_assert(cuda::std::same_as<OutputTestIteratorTraits::pointer, int*>);
 static_assert(!has_iterator_concept_v<OutputTestIteratorTraits>);
-#endif
 
 using ForwardTestIteratorTraits = cuda::std::iterator_traits<forward_iterator<int*>>;
 static_assert(cuda::std::same_as<ForwardTestIteratorTraits::iterator_category, cuda::std::forward_iterator_tag>);
@@ -529,7 +527,6 @@ static_assert(cuda::std::same_as<RandomAccessTestIteratorTraits::reference, int&
 static_assert(cuda::std::same_as<RandomAccessTestIteratorTraits::pointer, int*>);
 static_assert(!has_iterator_concept_v<RandomAccessTestIteratorTraits>);
 
-#ifdef _LIBCUDACXX_HAS_RANGES
 using ContiguousTestIteratorTraits = cuda::std::iterator_traits<contiguous_iterator<int*>>;
 static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::iterator_category, cuda::std::contiguous_iterator_tag>);
 static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::value_type, int>);
@@ -537,7 +534,6 @@ static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::difference_type, 
 static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::reference, int&>);
 static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::pointer, int*>);
 static_assert(!has_iterator_concept_v<ContiguousTestIteratorTraits>);
-#endif
 
 using Cpp17BasicIteratorTraits = cuda::std::iterator_traits<iterator_traits_cpp17_iterator>;
 static_assert(cuda::std::same_as<Cpp17BasicIteratorTraits::iterator_category, cuda::std::output_iterator_tag>);
