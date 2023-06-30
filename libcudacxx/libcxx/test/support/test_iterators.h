@@ -952,6 +952,13 @@ class Iterator {
     return prev;
   }
 
+  constexpr friend void iter_swap(Iterator a, Iterator b) {
+    std::swap(a.ptr_, b.ptr_);
+    if (a.iter_swaps_) {
+      ++(*a.iter_swaps_);
+    }
+  }
+
   constexpr friend value_type&& iter_move(Iterator iter) {
     if (iter.iter_moves_) {
       ++(*iter.iter_moves_);

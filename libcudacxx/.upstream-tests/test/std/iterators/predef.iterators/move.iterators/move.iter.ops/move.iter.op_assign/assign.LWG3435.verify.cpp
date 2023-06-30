@@ -9,35 +9,19 @@
 
 // <cuda/std/iterator>
 
-// UNSUPPORTED: nvrtc
-
 // move_iterator
 
 // template <class U>
-//   requires HasConstructor<Iter, const U&>
-//   move_iterator(const move_iterator<U> &u);
-
-// test requires
+//  requires !same_as<U, Iter> && convertible_to<const U&, Iter> && assignable_from<Iter&, const U&>
+// move_iterator& operator=(const move_iterator<U>& u);
 
 #include <cuda/std/iterator>
 
-template <class It, class U>
-__host__ __device__
-void
-test(U u)
-{
-    cuda::std::move_iterator<U> r2(u);
-    cuda::std::move_iterator<It> r1 = r2;
-}
+struct Base { };
+struct Derived : Base { };
 
-struct base {};
-struct derived {};
-
-int main(int, char**)
-{
-    derived d;
-
-    test<base*>(&d);
-
-  return 0;
+void test() {
+    cuda::std::move_iterator<Base*> base;
+    cuda::std::move_iterator<Derived*> derived;
+    derived = base; // expected-error {{no viable overloaded '='}}
 }
