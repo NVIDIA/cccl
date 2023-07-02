@@ -33,6 +33,7 @@
 
 #include <cub/agent/agent_unique_by_key.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
+#include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_macro.cuh>
 #include <cub/util_math.cuh>
@@ -93,56 +94,6 @@ __global__ void DeviceUniqueByKeySweepKernel(
 
 
 /******************************************************************************
- * Policy
- ******************************************************************************/
-
-template <typename KeyInputIteratorT>
-struct DeviceUniqueByKeyPolicy
-{
-    using KeyT = typename std::iterator_traits<KeyInputIteratorT>::value_type;
-
-    // SM350
-    struct Policy350 : ChainedPolicy<350, Policy350, Policy350> 
-    {
-        const static int INPUT_SIZE = sizeof(KeyT);
-        enum
-        {
-            NOMINAL_4B_ITEMS_PER_THREAD = 9,
-            ITEMS_PER_THREAD = Nominal4BItemsToItems<KeyT>(NOMINAL_4B_ITEMS_PER_THREAD),
-        };
-
-        using UniqueByKeyPolicyT = AgentUniqueByKeyPolicy<128,
-                                                          ITEMS_PER_THREAD,
-                                                          cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                                                          cub::LOAD_LDG,
-                                                          cub::BLOCK_SCAN_WARP_SCANS,
-                                                          detail::default_delay_constructor_t<int>>;
-    };
-
-    // SM520
-    struct Policy520 : ChainedPolicy<520, Policy520, Policy350>
-    {
-        const static int INPUT_SIZE = sizeof(KeyT);
-        enum
-        {
-            NOMINAL_4B_ITEMS_PER_THREAD = 11,
-            ITEMS_PER_THREAD = Nominal4BItemsToItems<KeyT>(NOMINAL_4B_ITEMS_PER_THREAD),
-        };
-
-        using UniqueByKeyPolicyT = AgentUniqueByKeyPolicy<64,
-                                                          ITEMS_PER_THREAD,
-                                                          cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                                                          cub::LOAD_LDG,
-                                                          cub::BLOCK_SCAN_WARP_SCANS,
-                                                          detail::default_delay_constructor_t<int>>;
-    };
-
-    /// MaxPolicy
-    using MaxPolicy = Policy520;
-};
-
-
-/******************************************************************************
  * Dispatch
  ******************************************************************************/
 
@@ -157,8 +108,8 @@ template <
     typename NumSelectedIteratorT,              ///< Output iterator type for recording the number of items selected
     typename EqualityOpT,                       ///< Equality operator type
     typename OffsetT,                           ///< Signed integer type for global offsets
-    typename SelectedPolicy = DeviceUniqueByKeyPolicy<KeyInputIteratorT>>
-struct DispatchUniqueByKey: SelectedPolicy
+    typename SelectedPolicy = DeviceUniqueByKeyPolicy<KeyInputIteratorT, ValueInputIteratorT>>
+struct DispatchUniqueByKey : SelectedPolicy
 {
     /******************************************************************************
      * Types and constants
