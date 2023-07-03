@@ -350,6 +350,7 @@ namespace std {
 #include "__ranges/transform_view.h"
 #include "__ranges/view_interface.h"
 #include "__ranges/views.h"
+#include "__ranges/zip_view.h"
 
 // standard-mandated includes
 #include "version"
