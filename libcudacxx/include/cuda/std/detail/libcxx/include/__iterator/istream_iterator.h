@@ -15,6 +15,8 @@
 #include <__config>
 #endif // __cuda_std__
 
+#include "../__iterator/default_sentinel.h"
+#include "../__iterator/iterator_traits.h"
 #include "../__iterator/iterator.h"
 #include "../__memory/addressof.h"
 #include "../cstddef"
@@ -36,6 +38,11 @@ class _LIBCUDACXX_TEMPLATE_VIS istream_iterator
 {
 _LIBCUDACXX_SUPPRESS_DEPRECATED_POP
 public:
+    typedef input_iterator_tag iterator_category;
+    typedef _Tp value_type;
+    typedef _Distance difference_type;
+    typedef const _Tp* pointer;
+    typedef const _Tp& reference;
     typedef _CharT char_type;
     typedef _Traits traits_type;
     typedef basic_istream<_CharT,_Traits> istream_type;
@@ -43,11 +50,14 @@ private:
     istream_type* __in_stream_;
     _Tp __value_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR istream_iterator() : __in_stream_(0), __value_() {}
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR istream_iterator() : __in_stream_(nullptr), __value_() {}
+#if _LIBCUDACXX_STD_VER > 14
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr istream_iterator(default_sentinel_t) : istream_iterator() {}
+#endif // _LIBCUDACXX_STD_VER > 14
     _LIBCUDACXX_INLINE_VISIBILITY istream_iterator(istream_type& __s) : __in_stream_(_CUDA_VSTD::addressof(__s))
         {
             if (!(*__in_stream_ >> __value_))
-                __in_stream_ = 0;
+                __in_stream_ = nullptr;
         }
 
     _LIBCUDACXX_INLINE_VISIBILITY const _Tp& operator*() const {return __value_;}
@@ -55,7 +65,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY istream_iterator& operator++()
         {
             if (!(*__in_stream_ >> __value_))
-                __in_stream_ = 0;
+                __in_stream_ = nullptr;
             return *this;
         }
     _LIBCUDACXX_INLINE_VISIBILITY istream_iterator  operator++(int)
@@ -67,11 +77,22 @@ public:
     operator==(const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __x,
                const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __y);
 
-    template <class _Up, class _CharU, class _TraitsU, class _DistanceU>
-    friend _LIBCUDACXX_INLINE_VISIBILITY
-    bool
-    operator==(const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __x,
-               const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __y);
+#if _LIBCUDACXX_STD_VER > 14
+    friend _LIBCUDACXX_INLINE_VISIBILITY bool operator==(const istream_iterator& __i, default_sentinel_t) {
+      return __i.__in_stream_ == nullptr;
+    }
+#if _LIBCUDACXX_STD_VER < 20
+    friend _LIBCUDACXX_INLINE_VISIBILITY bool operator==(default_sentinel_t, const istream_iterator& __i) {
+      return __i.__in_stream_ == nullptr;
+    }
+    friend _LIBCUDACXX_INLINE_VISIBILITY bool operator!=(const istream_iterator& __i, default_sentinel_t) {
+      return __i.__in_stream_ != nullptr;
+    }
+    friend _LIBCUDACXX_INLINE_VISIBILITY bool operator!=(default_sentinel_t, const istream_iterator& __i) {
+      return __i.__in_stream_ != nullptr;
+    }
+#endif // _LIBCUDACXX_STD_VER < 20
+#endif // _LIBCUDACXX_STD_VER > 14
 };
 
 template <class _Tp, class _CharT, class _Traits, class _Distance>
