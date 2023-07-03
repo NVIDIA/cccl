@@ -18,9 +18,7 @@
 static_assert(std::ranges::borrowed_range<std::ranges::empty_view<int>>);
 static_assert(std::ranges::borrowed_range<std::ranges::empty_view<int*>>);
 static_assert(std::ranges::borrowed_range<std::ranges::empty_view<BorrowedView>>);
-#if _LIBCUDACXX_HAS_RANGES
 static_assert(std::ranges::borrowed_range<std::ranges::empty_view<NonBorrowedView>>);
-#endif
 
 int main(int, char**) {
   return 0;

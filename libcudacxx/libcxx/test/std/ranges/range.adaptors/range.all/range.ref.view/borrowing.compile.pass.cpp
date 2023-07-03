@@ -17,9 +17,7 @@
 
 static_assert(std::ranges::borrowed_range<std::ranges::ref_view<BorrowedRange>>);
 static_assert(std::ranges::borrowed_range<std::ranges::ref_view<BorrowedView>>);
-#if _LIBCUDACXX_HAS_RANGES
 static_assert(std::ranges::borrowed_range<std::ranges::ref_view<NonBorrowedView>>);
-#endif // _LIBCUDACXX_HAS_RANGES
 
 int main(int, char**)
 {

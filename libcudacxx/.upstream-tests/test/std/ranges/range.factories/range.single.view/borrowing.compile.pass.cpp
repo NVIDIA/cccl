@@ -9,15 +9,16 @@
 
 // UNSUPPORTED: c++03, c++11, c++14
 
-// template<class T>
-//   inline constexpr bool enable_borrowed_range<owning_view<T>> = enable_borrowed_range<T>;
+// single_view does not specialize enable_borrowed_range
 
 #include <cuda/std/ranges>
 
 #include "test_range.h"
 
-static_assert( cuda::std::ranges::borrowed_range<cuda::std::ranges::owning_view<BorrowedView>>);
-static_assert(!cuda::std::ranges::borrowed_range<cuda::std::ranges::owning_view<NonBorrowedView>>);
+static_assert(!cuda::std::ranges::borrowed_range<cuda::std::ranges::single_view<int>>);
+static_assert(!cuda::std::ranges::borrowed_range<cuda::std::ranges::single_view<int*>>);
+static_assert(!cuda::std::ranges::borrowed_range<cuda::std::ranges::single_view<BorrowedView>>);
+static_assert(!cuda::std::ranges::borrowed_range<cuda::std::ranges::single_view<NonBorrowedView>>);
 
 int main(int, char**) {
   return 0;

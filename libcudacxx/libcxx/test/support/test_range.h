@@ -76,10 +76,8 @@ using BorrowedView = std::ranges::empty_view<int>;
 static_assert(std::ranges::view<BorrowedView>);
 static_assert(std::ranges::borrowed_range<BorrowedView>);
 
-#if _LIBCUDACXX_HAS_RANGES
 using NonBorrowedView = std::ranges::single_view<int>;
 static_assert(std::ranges::view<NonBorrowedView>);
 static_assert(!std::ranges::borrowed_range<NonBorrowedView>);
-#endif // _LIBCUDACXX_HAS_RANGES
 
 #endif // LIBCXX_TEST_SUPPORT_TEST_RANGE_H

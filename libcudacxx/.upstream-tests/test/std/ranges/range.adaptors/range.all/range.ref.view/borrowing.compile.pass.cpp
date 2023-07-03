@@ -18,9 +18,7 @@
 
 static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::ref_view<BorrowedRange>>);
 static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::ref_view<BorrowedView>>);
-#if _LIBCUDACXX_HAS_RANGES
 static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::ref_view<NonBorrowedView>>);
-#endif
 
 int main(int, char**)
 {

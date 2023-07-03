@@ -8,15 +8,16 @@
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
 
-// template<class T>
-//   inline constexpr bool enable_borrowed_range<owning_view<T>> = enable_borrowed_range<T>;
+// single_view does not specialize enable_borrowed_range
 
 #include <ranges>
 
 #include "test_range.h"
 
-static_assert( std::ranges::borrowed_range<std::ranges::owning_view<BorrowedView>>);
-static_assert(!std::ranges::borrowed_range<std::ranges::owning_view<NonBorrowedView>>);
+static_assert(!std::ranges::borrowed_range<std::ranges::single_view<int>>);
+static_assert(!std::ranges::borrowed_range<std::ranges::single_view<int*>>);
+static_assert(!std::ranges::borrowed_range<std::ranges::single_view<BorrowedView>>);
+static_assert(!std::ranges::borrowed_range<std::ranges::single_view<NonBorrowedView>>);
 
 int main(int, char**)
 {

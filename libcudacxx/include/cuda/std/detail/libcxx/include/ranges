@@ -330,6 +330,7 @@ namespace std {
 #include "__ranges/rbegin.h"
 #include "__ranges/ref_view.h"
 #include "__ranges/rend.h"
+#include "__ranges/single_view.h"
 #include "__ranges/size.h"
 #include "__ranges/subrange.h"
 #include "__ranges/view_interface.h"
