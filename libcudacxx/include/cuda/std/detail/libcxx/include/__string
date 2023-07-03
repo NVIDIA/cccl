@@ -403,7 +403,7 @@ char_traits<wchar_t>::find(const char_type* __s, size_t __n, const char_type& __
 }
 
 
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
 
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char8_t>
@@ -497,7 +497,7 @@ char_traits<char8_t>::find(const char_type* __s, size_t __n, const char_type& __
     return 0;
 }
 
-#endif // #_LIBCUDACXX_NO_HAS_CHAR8_T
+#endif // #_LIBCUDACXX_HAS_NO_CHAR8_T
 
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 

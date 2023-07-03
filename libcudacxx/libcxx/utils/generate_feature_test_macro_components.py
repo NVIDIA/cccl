@@ -469,7 +469,7 @@ feature_test_macros = sorted([ add_version_header(x) for x in [
    "headers": ["atomic", "filesystem", "istream", "limits", "locale", "ostream",
                "string", "string_view"],
    "depends": "defined(__cpp_char8_t)",
-   "internal_depends": "!defined(_LIBCUDACXX_NO_HAS_CHAR8_T)",
+   "internal_depends": "!defined(_LIBCUDACXX_HAS_NO_CHAR8_T)",
    },
   {"name": "__cpp_lib_erase_if",
    "values": {

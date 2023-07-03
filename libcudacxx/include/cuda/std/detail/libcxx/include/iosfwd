@@ -184,7 +184,7 @@ typedef basic_fstream<wchar_t>       wfstream;
 template <class _State>             class _LIBCUDACXX_TEMPLATE_VIS fpos;
 typedef fpos<mbstate_t>    streampos;
 typedef fpos<mbstate_t>    wstreampos;
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
 typedef fpos<mbstate_t>    u8streampos;
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS

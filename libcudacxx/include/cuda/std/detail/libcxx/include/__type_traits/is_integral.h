@@ -43,7 +43,7 @@ template <>          struct __libcpp_is_integral<char>               : public tr
 template <>          struct __libcpp_is_integral<signed char>        : public true_type {};
 template <>          struct __libcpp_is_integral<unsigned char>      : public true_type {};
 template <>          struct __libcpp_is_integral<wchar_t>            : public true_type {};
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
 template <>          struct __libcpp_is_integral<char8_t>            : public true_type {};
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS

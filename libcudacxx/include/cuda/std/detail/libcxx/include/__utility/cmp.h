@@ -40,7 +40,7 @@ struct _IsSameAsAny : _Or<_IsSame<_Tp, _Up>...> {};
 template<class _Tp>
 concept __is_safe_integral_cmp = is_integral_v<_Tp> &&
                       !_IsSameAsAny<_Tp, bool, char, char16_t, char32_t
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
                                     , char8_t
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS

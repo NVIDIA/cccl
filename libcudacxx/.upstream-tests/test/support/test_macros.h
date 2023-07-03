@@ -345,7 +345,7 @@ struct is_same<T, T> { enum {value = 1}; };
 #  define TEST_HAS_NO_LOCALIZATION
 #endif
 
-#if defined(_LIBCUDACXX_NO_HAS_CHAR8_T)
+#if defined(_LIBCUDACXX_HAS_NO_CHAR8_T)
 #  define TEST_HAS_NO_CHAR8_T
 #endif
 

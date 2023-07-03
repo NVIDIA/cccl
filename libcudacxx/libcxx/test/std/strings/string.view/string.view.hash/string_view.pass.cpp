@@ -61,7 +61,7 @@ test()
 int main(int, char**)
 {
     test<std::string_view>();
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
     test<std::u8string_view>();
 #endif
     test<std::u16string_view>();
