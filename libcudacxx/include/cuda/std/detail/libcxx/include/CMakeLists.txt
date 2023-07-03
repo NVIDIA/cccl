@@ -171,6 +171,7 @@ set(files
   __ranges/owning_view.h
   __ranges/range_adaptor.h
   __ranges/ref_view.h
+  __ranges/reverse_view.h
   __ranges/rbegin.h
   __ranges/rend.h
   __ranges/single_view.h
