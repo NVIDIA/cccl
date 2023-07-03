@@ -72,7 +72,6 @@ static_assert(!cuda::std::ranges::enable_view<const EnableViewTrue&&>);
 ASSERT_SAME_TYPE(decltype(cuda::std::ranges::enable_view<Empty>), const bool);
 ASSERT_SAME_TYPE(decltype(cuda::std::ranges::enable_view<PublicViewBase>), const bool);
 
-#ifdef _LIBCUDACXX_HAS_RANGES
 struct V1 : cuda::std::ranges::view_interface<V1> {};
 static_assert(cuda::std::ranges::enable_view<V1>);
 static_assert(!cuda::std::ranges::enable_view<V1&>);
@@ -103,7 +102,6 @@ static_assert(!cuda::std::ranges::enable_view<const V3&&>);
 
 struct PrivateInherit : private cuda::std::ranges::view_interface<PrivateInherit> {};
 static_assert(!cuda::std::ranges::enable_view<PrivateInherit>);
-#endif // _LIBCUDACXX_HAS_RANGES
 
 #if TEST_STD_VER > 17
 // ADL-proof
