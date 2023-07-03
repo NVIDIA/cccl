@@ -144,6 +144,7 @@ template<class R>
 #include "__iterator/wrap_iter.h"
 #include "__memory/pointer_traits.h"
 #include "__ranges/enable_borrowed_range.h"
+#include "__ranges/enable_view.h"
 #include "__type_traits/enable_if.h"
 #include "__type_traits/integral_constant.h"
 #include "__type_traits/is_array.h"
@@ -572,6 +573,9 @@ _LIBCUDACXX_END_NAMESPACE_STD
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 template<class _Tp, size_t _Extent>
 _LIBCUDACXX_INLINE_VAR constexpr bool enable_borrowed_range<span<_Tp, _Extent>> = true;
+
+template <class _Tp, size_t _Extent>
+_LIBCUDACXX_INLINE_VAR constexpr bool enable_view<span<_Tp, _Extent>> = true;
 _LIBCUDACXX_END_NAMESPACE_RANGES
 #endif // _LIBCUDACXX_STD_VER > 14
 
