@@ -5,6 +5,10 @@ set(files
   __algorithm/equal.h
   __algorithm/fill_n.h
   __algorithm/lexicographical_compare.h
+  __algorithm/min_element.h
+  __algorithm/min.h
+  __algorithm/ranges_min_element.h
+  __algorithm/ranges_min.h
   __algorithm/swap_ranges.h
   __availability
   __bit_reference

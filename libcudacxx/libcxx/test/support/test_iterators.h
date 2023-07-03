@@ -17,6 +17,7 @@
 #include <cstddef>
 
 #include "test_macros.h"
+#include "type_algorithms.h"
 
 // This iterator meets C++20's Cpp17OutputIterator requirements, as described
 // in Table 90 ([output.iterators]).
@@ -1343,5 +1344,31 @@ ProxyRange(R&&) -> ProxyRange<std::views::all_t<R&&>>;
 #endif // !defined(_LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES)
 
 #endif // TEST_STD_VER > 14
+
+namespace types {
+template <class Ptr>
+using random_access_iterator_list =
+    type_list<Ptr,
+#if TEST_STD_VER >= 20
+              contiguous_iterator<Ptr>,
+#endif
+              random_access_iterator<Ptr> >;
+
+template <class Ptr>
+using bidirectional_iterator_list =
+    concatenate_t<random_access_iterator_list<Ptr>, type_list<bidirectional_iterator<Ptr> > >;
+
+template <class Ptr>
+using forward_iterator_list = concatenate_t<bidirectional_iterator_list<Ptr>, type_list<forward_iterator<Ptr> > >;
+
+template <class Ptr>
+using cpp17_input_iterator_list = concatenate_t<forward_iterator_list<Ptr>, type_list<cpp17_input_iterator<Ptr> > >;
+
+#if TEST_STD_VER >= 20
+template <class Ptr>
+using cpp20_input_iterator_list =
+    concatenate_t<forward_iterator_list<Ptr>, type_list<cpp20_input_iterator<Ptr>, cpp17_input_iterator<Ptr>>>;
+#endif
+} // namespace types
 
 #endif // SUPPORT_TEST_ITERATORS_H

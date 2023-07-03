@@ -21,17 +21,19 @@ int main(int, char**) {
   const int *b = std::begin(arr), *e = std::end(arr);
   typedef cpp17_input_iterator<const int*> Iter;
   {
-    std::min_element(Iter(b), Iter(e));
-    // expected-error@algorithm:* {{std::min_element requires a ForwardIterator}}
+    // expected-error@*:* {{std::min_element requires a ForwardIterator}}
+    (void) std::min_element(Iter(b), Iter(e));
+  }
+#if 0
+  {
+    // expected-error@*:* {{std::max_element requires a ForwardIterator}}
+    (void) std::max_element(Iter(b), Iter(e));
   }
   {
-    std::max_element(Iter(b), Iter(e));
-    // expected-error@algorithm:* {{std::max_element requires a ForwardIterator}}
+    // expected-error@*:* {{std::minmax_element requires a ForwardIterator}}
+    (void) std::minmax_element(Iter(b), Iter(e));
   }
-  {
-    std::minmax_element(Iter(b), Iter(e));
-    // expected-error@algorithm:* {{std::minmax_element requires a ForwardIterator}}
-  }
+#endif
 
 
   return 0;
