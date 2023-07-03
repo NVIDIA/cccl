@@ -26,11 +26,7 @@
 
 template<class T, size_t extent, size_t otherExtent>
 std::span<T, extent> createImplicitSpan(std::span<T, otherExtent> s) {
-#if !defined(__clang__)
     return {s}; // expected-error {{chosen constructor is explicit in copy-initialization}}
-#else
-    return {s};
-#endif
 }
 
 void checkCV ()
