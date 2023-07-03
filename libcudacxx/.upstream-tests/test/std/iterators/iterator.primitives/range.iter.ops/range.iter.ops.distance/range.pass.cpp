@@ -45,7 +45,6 @@ __host__ __device__ constexpr bool test() {
     ASSERT_SAME_TYPE(decltype(cuda::std::ranges::distance(a)), cuda::std::ptrdiff_t);
     ASSERT_SAME_TYPE(decltype(cuda::std::ranges::distance(a)), cuda::std::ranges::range_difference_t<R>);
   }
-#ifdef _LIBCUDACXX_HAS_RANGES
   {
     // Unsized range, non-copyable iterator type, rvalue-ref-qualified begin()
     using It = cpp20_input_iterator<int*>;
@@ -72,7 +71,6 @@ __host__ __device__ constexpr bool test() {
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::ranges::distance), const R&>);
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::ranges::distance), const R&&>);
   }
-#endif
   {
     // Sized range (sized sentinel type), non-copyable iterator type
     test_ordinary<cpp20_input_iterator<int*>, sized_sentinel<cpp20_input_iterator<int*>>>();
