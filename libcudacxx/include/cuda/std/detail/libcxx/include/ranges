@@ -325,6 +325,7 @@ namespace std {
 #include "__ranges/counted.h"
 #include "__ranges/dangling.h"
 #include "__ranges/data.h"
+#include "__ranges/drop_view.h"
 #include "__ranges/empty.h"
 #include "__ranges/empty_view.h"
 #include "__ranges/enable_borrowed_range.h"

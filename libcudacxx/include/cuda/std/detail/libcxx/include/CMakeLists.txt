@@ -161,11 +161,13 @@ set(files
   __ranges/counted.h
   __ranges/dangling.h
   __ranges/data.h
+  __ranges/drop_view.h
   __ranges/empty.h
   __ranges/empty_view.h
   __ranges/enable_borrowed_range.h
   __ranges/enable_view.h
   __ranges/iota_view.h
+  __ranges/non_propagating_cache.h
   __ranges/owning_view.h
   __ranges/range_adaptor.h
   __ranges/ref_view.h
