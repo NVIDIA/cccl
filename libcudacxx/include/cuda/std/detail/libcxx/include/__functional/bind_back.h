@@ -15,6 +15,7 @@
 #include <__config>
 #endif // __cuda_std__
 
+#include "../__concepts/__concept_macros.h"
 #include "../__functional/invoke.h"
 #include "../__functional/perfect_forward.h"
 #include "../__fwd/get.h"
@@ -23,6 +24,8 @@
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/is_constructible.h"
 #include "../__type_traits/is_move_constructible.h"
+#include "../__type_traits/is_same.h"
+#include "../__utility/declval.h"
 #include "../__utility/forward.h"
 #include "../__utility/integer_sequence.h"
 
@@ -51,7 +54,22 @@ struct __bind_back_op<_NBound, index_sequence<_Ip...>> {
 
 template <class _Fn, class _BoundArgs>
 struct __bind_back_t : __perfect_forward<__bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs> {
-    using __perfect_forward<__bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs>::__perfect_forward;
+    using __base = __perfect_forward<__bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs>;
+// nvbug3961621
+#if defined(_LIBCUDACXX_COMPILER_NVRTC)  \
+ || (defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3) && defined(_LIBCUDACXX_COMPILER_CLANG))
+    constexpr __bind_back_t() noexcept = default;
+
+    _LIBCUDACXX_TEMPLATE(class _OrigFn, class _Args)
+      (requires _LIBCUDACXX_TRAIT(is_same, _Fn, __decay_t<_OrigFn>))
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    __bind_back_t(_OrigFn&& __fn, _Args&& __args)
+      noexcept(noexcept(__base(cuda::std::declval<_OrigFn>(), cuda::std::declval<_Args>())))
+      : __base(_CUDA_VSTD::forward<_OrigFn>(__fn), _CUDA_VSTD::forward<_Args>(__args))
+    {}
+#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+    using __base::__base;
+#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
 };
 
 template <class _Fn, class ..._Args, class = enable_if_t<

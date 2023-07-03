@@ -170,6 +170,7 @@ set(files
   __ranges/single_view.h
   __ranges/size.h
   __ranges/subrange.h
+  __ranges/transform_view.h
   __ranges/view_interface.h
   __ranges/views.h
   __split_buffer

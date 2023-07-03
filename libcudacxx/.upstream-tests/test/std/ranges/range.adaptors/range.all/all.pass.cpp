@@ -197,14 +197,14 @@ __host__ __device__ constexpr bool test() {
       assert(&result.base() == &range);
     }
 
-#ifdef _LIBCUDACXX_HAS_RANGES
     // Test `adaptor | views::all`
     {
       Range range(0);
       auto f = [](int i) { return i; };
       auto const partial = cuda::std::views::transform(f) | cuda::std::views::all;
       using Result = cuda::std::ranges::transform_view<cuda::std::ranges::ref_view<Range>, decltype(f)>;
-      cuda::std::same_as<Result> auto result = partial(range);
+      decltype(auto) result = partial(range);
+      static_assert(cuda::std::same_as<decltype(result), Result>);
       assert(&result.base().base() == &range);
     }
 
@@ -214,10 +214,10 @@ __host__ __device__ constexpr bool test() {
       auto f = [](int i) { return i; };
       auto const partial = cuda::std::views::all | cuda::std::views::transform(f);
       using Result = cuda::std::ranges::transform_view<cuda::std::ranges::ref_view<Range>, decltype(f)>;
-      cuda::std::same_as<Result> auto result = partial(range);
+      decltype(auto) result = partial(range);
+      static_assert(cuda::std::same_as<decltype(result), Result>);
       assert(&result.base().base() == &range);
     }
-  #endif
 
     {
       struct NotAView { };

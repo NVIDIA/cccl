@@ -23,6 +23,7 @@
 #include "../__type_traits/is_constructible.h"
 #include "../__type_traits/is_move_constructible.h"
 #include "../__type_traits/is_nothrow_constructible.h"
+#include "../__utility/declval.h"
 #include "../__utility/forward.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)

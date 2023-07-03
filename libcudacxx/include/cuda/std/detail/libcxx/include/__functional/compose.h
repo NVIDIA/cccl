@@ -15,9 +15,12 @@
 #include <__config>
 #endif // __cuda_std__
 
+#include "../__concepts/__concept_macros.h"
 #include "../__functional/invoke.h"
 #include "../__functional/perfect_forward.h"
 #include "../__type_traits/decay.h"
+#include "../__type_traits/is_same.h"
+#include "../__utility/declval.h"
 #include "../__utility/forward.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
@@ -39,7 +42,22 @@ struct __compose_op {
 
 template <class _Fn1, class _Fn2>
 struct __compose_t : __perfect_forward<__compose_op, _Fn1, _Fn2> {
-    using __perfect_forward<__compose_op, _Fn1, _Fn2>::__perfect_forward;
+    using __base = __perfect_forward<__compose_op, _Fn1, _Fn2>;
+#if defined(_LIBCUDACXX_COMPILER_NVRTC)
+    constexpr __compose_t() noexcept = default;
+
+    _LIBCUDACXX_TEMPLATE(class _OrigFn1, class _OrigFn2)
+      (requires _LIBCUDACXX_TRAIT(is_same, _Fn1, __decay_t<_OrigFn1>) _LIBCUDACXX_AND
+                _LIBCUDACXX_TRAIT(is_same, _Fn2, __decay_t<_OrigFn2>)
+      )
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    __compose_t(_OrigFn1&& __fn1, _OrigFn2&& __fn2)
+      noexcept(noexcept(__base(cuda::std::declval<_OrigFn1>(), cuda::std::declval<_OrigFn2>())))
+      : __base(_CUDA_VSTD::forward<_OrigFn1>(__fn1), _CUDA_VSTD::forward<_OrigFn2>(__fn2))
+    {}
+#else
+    using __base::__base;
+#endif
 };
 
 template <class _Fn1, class _Fn2>
