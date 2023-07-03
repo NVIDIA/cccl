@@ -17,6 +17,7 @@
 #include "../__concepts/__concept_macros.h"
 #include "../__concepts/convertible_to.h"
 #include "../__concepts/destructible.h"
+#include "../__type_traits/add_lvalue_reference.h"
 #include "../__type_traits/is_constructible.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
