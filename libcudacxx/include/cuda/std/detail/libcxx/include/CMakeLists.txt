@@ -169,6 +169,7 @@ set(files
   __ranges/defaultable_box.h
   __ranges/drop_view.h
   __ranges/drop_while_view.h
+  __ranges/elements.h
   __ranges/empty.h
   __ranges/empty_view.h
   __ranges/enable_borrowed_range.h
