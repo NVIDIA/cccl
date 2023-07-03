@@ -18,11 +18,9 @@
 #include "../__iterator/concepts.h"
 #include "../__iterator/incrementable_traits.h"
 #include "../__iterator/iterator_traits.h"
-#ifdef _LIBCUDACXX_HAS_RANGES
 #include "../__ranges/access.h"
 #include "../__ranges/concepts.h"
 #include "../__ranges/size.h"
-#endif // _LIBCUDACXX_HAS_RANGES
 #include "../__type_traits/decay.h"
 #include "../__type_traits/remove_cvref.h"
 
@@ -60,7 +58,6 @@ distance(_InputIter __first, _InputIter __last)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
-#ifdef _LIBCUDACXX_HAS_RANGES
 #if _LIBCUDACXX_STD_VER > 14
 
 // [range.iter.op.distance]
@@ -112,6 +109,5 @@ inline namespace __cpo {
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
 #endif // _LIBCUDACXX_STD_VER > 14
-#endif // _LIBCUDACXX_HAS_RANGES
 
 #endif // _LIBCUDACXX___ITERATOR_DISTANCE_H

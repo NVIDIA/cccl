@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14
-// XFAIL: c++17, c++20
 
 // template<class I, sentinel_for<I> S>
 //   requires (!sized_sentinel_for<S, I>)
