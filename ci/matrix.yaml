@@ -22,6 +22,7 @@ gpus:
 
 # Configurations that will run for every PR
 pull-request:
+- {cuda: '11.1', os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '6', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14]}
 - {cuda: '11.1', os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17]}
 - {cuda: '11.1', os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17]}
 - {cuda: '11.1', os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17]}
