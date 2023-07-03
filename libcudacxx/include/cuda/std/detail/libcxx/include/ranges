@@ -326,6 +326,7 @@ namespace std {
 #include "__ranges/enable_borrowed_range.h"
 #include "__ranges/enable_view.h"
 #include "__ranges/rbegin.h"
+#include "__ranges/ref_view.h"
 #include "__ranges/rend.h"
 #include "__ranges/size.h"
 #include "__ranges/subrange.h"
