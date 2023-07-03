@@ -76,11 +76,14 @@ template <class E> void rethrow_if_nested(const E& e);
 
 */
 
+#ifndef __cuda_std__
 #include <__config>
-#include <cstddef>
-#include <cstdlib>
-#include <type_traits>
-#include <version>
+#endif //__cuda_std__
+
+#include "cstddef"
+#include "cstdlib"
+#include "type_traits"
+#include "version"
 
 #if defined(_LIBCUDACXX_ABI_VCRUNTIME)
 #include <vcruntime_exception.h>
@@ -90,16 +93,15 @@ template <class E> void rethrow_if_nested(const E& e);
 #pragma GCC system_header
 #endif
 
-namespace std  // purposefully not using versioning namespace
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION  // purposefully not using versioning namespace
 
 #if !defined(_LIBCUDACXX_ABI_VCRUNTIME)
 class _LIBCUDACXX_EXCEPTION_ABI exception
 {
 public:
     _LIBCUDACXX_INLINE_VISIBILITY exception() _NOEXCEPT {}
-    virtual ~exception() _NOEXCEPT;
-    virtual const char* what() const _NOEXCEPT;
+    _LIBCUDACXX_HOST_DEVICE virtual ~exception() _NOEXCEPT;
+    _LIBCUDACXX_HOST_DEVICE virtual const char* what() const _NOEXCEPT;
 };
 
 class _LIBCUDACXX_EXCEPTION_ABI bad_exception
@@ -107,8 +109,8 @@ class _LIBCUDACXX_EXCEPTION_ABI bad_exception
 {
 public:
     _LIBCUDACXX_INLINE_VISIBILITY bad_exception() _NOEXCEPT {}
-    virtual ~bad_exception() _NOEXCEPT;
-    virtual const char* what() const _NOEXCEPT;
+    _LIBCUDACXX_HOST_DEVICE virtual ~bad_exception() _NOEXCEPT;
+    _LIBCUDACXX_HOST_DEVICE virtual const char* what() const _NOEXCEPT;
 };
 #endif // !_LIBCUDACXX_ABI_VCRUNTIME
 
@@ -324,6 +326,6 @@ rethrow_if_nested(const _Ep&,
 {
 }
 
-}  // std
+_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 #endif  // _LIBCUDACXX_EXCEPTION

@@ -50,6 +50,7 @@ public:
 #endif //__cuda_std__
 
 #include "__assert" // all public C++ headers provide the assertion handler
+#include "cstdlib"
 #include "iosfwd"
 
 #ifndef __cuda_std__
