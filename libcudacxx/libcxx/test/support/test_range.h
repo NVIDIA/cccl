@@ -72,11 +72,11 @@ template<> inline constexpr bool std::ranges::enable_borrowed_range<BorrowedRang
 static_assert(!std::ranges::view<BorrowedRange>);
 static_assert(std::ranges::borrowed_range<BorrowedRange>);
 
-#if _LIBCUDACXX_HAS_RANGES
 using BorrowedView = std::ranges::empty_view<int>;
 static_assert(std::ranges::view<BorrowedView>);
 static_assert(std::ranges::borrowed_range<BorrowedView>);
 
+#if _LIBCUDACXX_HAS_RANGES
 using NonBorrowedView = std::ranges::single_view<int>;
 static_assert(std::ranges::view<NonBorrowedView>);
 static_assert(!std::ranges::borrowed_range<NonBorrowedView>);
