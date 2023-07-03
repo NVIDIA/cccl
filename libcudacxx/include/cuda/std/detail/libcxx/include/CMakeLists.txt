@@ -150,6 +150,7 @@ set(files
   __node_handle
   __nullptr
   __ranges/access.h
+  __ranges/all.h
   __ranges/concepts.h
   __ranges/dangling.h
   __ranges/data.h
