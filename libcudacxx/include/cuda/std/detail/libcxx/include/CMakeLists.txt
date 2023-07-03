@@ -160,6 +160,7 @@ set(files
   __nullptr
   __ranges/access.h
   __ranges/all.h
+  __ranges/common_view.h
   __ranges/concepts.h
   __ranges/copyable_box.h
   __ranges/counted.h
