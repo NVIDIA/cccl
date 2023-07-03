@@ -161,6 +161,7 @@ set(files
   __ranges/size.h
   __ranges/subrange.h
   __ranges/view_interface.h
+  __ranges/views.h
   __split_buffer
   __sso_allocator
   __std_stream

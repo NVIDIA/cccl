@@ -329,6 +329,7 @@ namespace std {
 #include "__ranges/size.h"
 #include "__ranges/subrange.h"
 #include "__ranges/view_interface.h"
+#include "__ranges/views.h"
 
 // standard-mandated includes
 #include "version"
