@@ -154,6 +154,7 @@ set(files
   __ranges/enable_view.h
   __ranges/rbegin.h
   __ranges/rend.h
+  __ranges/size.h
   __split_buffer
   __sso_allocator
   __std_stream
