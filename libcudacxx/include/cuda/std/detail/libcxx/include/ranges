@@ -335,6 +335,7 @@ namespace std {
 #include "__ranges/enable_view.h"
 #include "__ranges/filter_view.h"
 #include "__ranges/iota_view.h"
+#include "__ranges/join_view.h"
 #include "__ranges/owning_view.h"
 #include "__ranges/rbegin.h"
 #include "__ranges/ref_view.h"

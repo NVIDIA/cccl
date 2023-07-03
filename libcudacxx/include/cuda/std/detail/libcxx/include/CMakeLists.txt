@@ -163,6 +163,7 @@ set(files
   __ranges/counted.h
   __ranges/dangling.h
   __ranges/data.h
+  __ranges/defaultable_box.h
   __ranges/drop_view.h
   __ranges/drop_while_view.h
   __ranges/empty.h
@@ -171,6 +172,7 @@ set(files
   __ranges/enable_view.h
   __ranges/filter_view.h
   __ranges/iota_view.h
+  __ranges/join_view.h
   __ranges/non_propagating_cache.h
   __ranges/owning_view.h
   __ranges/range_adaptor.h
