@@ -317,6 +317,8 @@ namespace std {
 #endif // _LIBCUDACXX_COMPILER_MSVC
 
 #include "__algorithm/min.h"
+#include "__algorithm/ranges_find_if_not.h"
+#include "__algorithm/ranges_find_if.h"
 #include "__algorithm/ranges_min.h"
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__ranges/access.h"
