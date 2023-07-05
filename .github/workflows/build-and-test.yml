@@ -16,7 +16,7 @@ on:
       cpu: {type: string, required: true}
       os: {type: string, required: true}
       build_script: {type: string, required: false}
-      test_script: {type: string, required: false }
+      test_script: {type: string, required: false}
       build_image: {type: string, required: false}
       test_image: {type: string, required: false}
 
@@ -24,7 +24,7 @@ jobs:
   build:
     if: inputs.build_script != '' && inputs.build_image != ''
     name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
-    runs-on: ${{ (inputs.os == 'windows' && 'windows-latest') || format('linux-{0}-cpu16', inputs.cpu) }}
+    runs-on: linux-${{inputs.cpu}}-cpu16
     container: 
       options: -u root
       image: ${{ inputs.build_image }}
