@@ -50,7 +50,7 @@ jobs:
     with:
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       build_script: "./ci/build_cub.sh"
-      test_script: #"./ci/test_cub.sh"
+      test_script: "./ci/test_cub.sh"
   
   libcudacxx:
     name: libcudacxx CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
@@ -64,7 +64,7 @@ jobs:
     with:
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       build_script: "./ci/build_libcudacxx.sh"
-      test_script: #"./ci/test_libcudacxx.sh" 
+      test_script: "./ci/test_libcudacxx.sh" 
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
