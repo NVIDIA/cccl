@@ -73,7 +73,7 @@ struct policy_hub_t
 #endif // TUNE_BASE
 
 template <typename KeyT, typename ValueT, typename OffsetT>
-void merge_sort_keys(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT>)
+void pairs(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
   using key_t            = KeyT;
   using value_t          = ValueT;
@@ -161,8 +161,8 @@ using value_types = nvbench::type_list<TUNE_ValueT>;
 using value_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, int128_t>;
 #endif // TUNE_ValueT
 
-NVBENCH_BENCH_TYPES(merge_sort_keys, NVBENCH_TYPE_AXES(key_types, value_types, offset_types))
-  .set_name("cub::DeviceMergeSort::SortPairs")
+NVBENCH_BENCH_TYPES(pairs, NVBENCH_TYPE_AXES(key_types, value_types, offset_types))
+  .set_name("base")
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.201"});

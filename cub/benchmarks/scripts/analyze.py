@@ -24,7 +24,7 @@ sensitivity = 0.5
 
 
 def get_bench_columns():
-    return ['variant', 'elapsed', 'center', 'samples']
+    return ['variant', 'elapsed', 'center', 'samples', 'bw']
 
 
 def get_extended_bench_columns():
@@ -36,7 +36,7 @@ def compute_speedup(df):
     workload_columns = [col for col in df.columns if col not in bench_columns]
     base_df = df[df['variant'] == 'base'].drop(columns=['variant']).rename(
         columns={'center': 'base_center', 'samples': 'base_samples'})
-    base_df.drop(columns=['elapsed'], inplace=True)
+    base_df.drop(columns=['elapsed', 'bw'], inplace=True)
 
     merged_df = df.merge(
         base_df, on=[col for col in df.columns if col in workload_columns])
@@ -126,12 +126,12 @@ def extract_complete_variants(df):
     return df.groupby('variant').filter(functools.partial(filter_variants, df))
 
 
-def compute_workload_score(rt_axes_values, rt_axes_ids, weight_matrix, row):
+def compute_workload_score(rt_axes_values, rt_axes_ids, weights, row):
     rt_workload = []
     for rt_axis in rt_axes_values:
         rt_workload.append("{}={}".format(rt_axis, row[rt_axis]))
     
-    weight = cub.bench.get_workload_weight(rt_workload, rt_axes_values, rt_axes_ids, weight_matrix)
+    weight = cub.bench.get_workload_weight(rt_workload, rt_axes_values, rt_axes_ids, weights)
     return row['speedup'] * weight
 
 
@@ -141,21 +141,29 @@ def compute_variant_score(rt_axes_values, rt_axes_ids, weight_matrix, group):
     return score_sum
 
 
-def extract_scores(df):
-    rt_axes_values = extract_rt_axes_values(df)
+def extract_scores(dfs):
+    rt_axes_values = {}
+    for subbench in dfs:
+        rt_axes_values[subbench] = extract_rt_axes_values(dfs[subbench])
+
     rt_axes_ids = cub.bench.compute_axes_ids(rt_axes_values)
-    weight_matrix = cub.bench.compute_weight_matrix(rt_axes_values, rt_axes_ids)
+    weights = cub.bench.compute_weight_matrices(rt_axes_values, rt_axes_ids)
 
-    score_closure = functools.partial(compute_variant_score, rt_axes_values, rt_axes_ids, weight_matrix)
-    grouped = df.groupby('variant')
-    scores = grouped.apply(score_closure).reset_index()
-    scores.columns = ['variant', 'score']
-
-    stat = grouped.agg(mins = ('speedup', 'min'),
-                       means = ('speedup', 'mean'), 
-                       maxs = ('speedup', 'max'))
-    
-    result = pd.merge(scores, stat, on='variant')
+    score_dfs = []
+    for subbench in dfs:
+        score_closure = functools.partial(
+            compute_variant_score, rt_axes_values[subbench], rt_axes_ids[subbench], weights[subbench])
+        grouped = dfs[subbench].groupby('variant')
+        scores = grouped.apply(score_closure).reset_index()
+        scores.columns = ['variant', 'score']
+        stat = grouped.agg(mins=('speedup', 'min'),
+                           means=('speedup', 'mean'),
+                           maxs=('speedup', 'max'))
+        scores = pd.merge(scores, stat, on='variant')
+        score_dfs.append(scores)
+    score_df = pd.concat(score_dfs)
+    result = score_df.groupby('variant').agg(
+        {'score': 'sum', 'mins': 'min', 'means': 'mean', 'maxs': 'max'}).reset_index()
     return result.sort_values(by=['score'], ascending=False)
 
 
@@ -204,59 +212,67 @@ def iterate_case_dfs(args, callable):
     for algname in algnames:
         if not pattern.match(algname):
             continue
-
-        case_dfs = {}
-        for file in storages:
-            storage = storages[file]
-            df = storage.alg_to_df(algname)
-            with pd.option_context('mode.use_inf_as_na', True):
-                df = df.dropna(subset=['center'], how='all')
-
-            for _, row in df[['ctk', 'cub']].drop_duplicates().iterrows():
-                ctk_version = row['ctk']
-                cub_version = row['cub']
-                ctk_cub_df = df[(df['ctk'] == ctk_version) &
-                                (df['cub'] == cub_version)]
-
-                for gpu in ctk_cub_df['gpu'].unique():
-                    target_df = ctk_cub_df[ctk_cub_df['gpu'] == gpu]
-                    target_df = target_df.drop(columns=['ctk', 'cub', 'gpu'])
-                    target_df = compute_speedup(target_df)
-
-                    for ct_point in ct_space(target_df):
-                        point_str = ", ".join(["{}={}".format(k, ct_point[k]) for k in ct_point])
-                        case_df = extract_complete_variants(extract_case(target_df, ct_point))
-                        case_df['variant'] = case_df['variant'].astype(str) + " ({})".format(file)
-                        if point_str not in case_dfs:
-                            case_dfs[point_str] = case_df
-                        else:
-                            case_dfs[point_str] = pd.concat([case_dfs[point_str], case_df])
         
+        case_dfs = {}
+        for subbench in storage.subbenches(algname):
+            for file in storages:
+                storage = storages[file]
+                df = storage.alg_to_df(algname, subbench)
+
+                with pd.option_context('mode.use_inf_as_na', True):
+                    df = df.dropna(subset=['center'], how='all')
+
+                for _, row in df[['ctk', 'cub']].drop_duplicates().iterrows():
+                    ctk_version = row['ctk']
+                    cub_version = row['cub']
+                    ctk_cub_df = df[(df['ctk'] == ctk_version) &
+                                    (df['cub'] == cub_version)]
+
+                    for gpu in ctk_cub_df['gpu'].unique():
+                        target_df = ctk_cub_df[ctk_cub_df['gpu'] == gpu]
+                        target_df = target_df.drop(columns=['ctk', 'cub', 'gpu'])
+                        target_df = compute_speedup(target_df)
+
+                        for ct_point in ct_space(target_df):
+                            point_str = ", ".join(["{}={}".format(k, ct_point[k]) for k in ct_point])
+                            case_df = extract_complete_variants(extract_case(target_df, ct_point))
+                            case_df['variant'] = case_df['variant'].astype(str) + " ({})".format(file)
+                            if point_str not in case_dfs:
+                                case_dfs[point_str] = {}
+                            if subbench not in case_dfs[point_str]:
+                                case_dfs[point_str][subbench] = case_df
+                            else:
+                                case_dfs[point_str][subbench] = pd.concat([case_dfs[point_str], case_df])
+            
         for point_str in case_dfs:
             callable(algname, point_str, case_dfs[point_str])
 
 
-def case_top(alpha, N, algname, ct_point_name, case_df):
+def case_top(alpha, N, algname, ct_point_name, case_dfs):
     print("{}[{}]:".format(algname, ct_point_name))
 
     if alpha < 1.0:
         case_df = remove_matching_distributions(alpha, case_df)
 
-    case_df = extract_complete_variants(case_df)
-    print(extract_scores(case_df).head(N))
+    for subbench in case_dfs:
+        case_dfs[subbench] = extract_complete_variants(case_dfs[subbench])
+    print(extract_scores(case_dfs).head(N))
 
 
 def top(args):
     iterate_case_dfs(args, functools.partial(case_top, args.alpha, args.top))
 
 
-def case_coverage(algname, ct_point_name, case_df):
+def case_coverage(algname, ct_point_name, case_dfs):
     num_variants = cub.bench.Config().variant_space_size(algname)
-    num_covered_variants = len(case_df['variant'].unique())
-    coverage = (num_covered_variants / num_variants) * 100
+    min_coverage = 100.0
+    for subbench in case_dfs:
+        num_covered_variants = len(case_dfs[subbench]['variant'].unique())
+        coverage = (num_covered_variants / num_variants) * 100
+        min_coverage = min(min_coverage, coverage)
     case_str = "{}[{}]".format(algname, ct_point_name)
     print("{} coverage: {} / {} ({:.4f}%)".format(
-          case_str, num_covered_variants, num_variants, coverage))
+          case_str, num_covered_variants, num_variants, min_coverage))
 
 
 def coverage(args):
@@ -359,28 +375,29 @@ def parallel_coordinates_plot(df, title):
 
 
 
-def case_coverage_plot(algname, ct_point_name, case_df):
+def case_coverage_plot(algname, ct_point_name, case_dfs):
     data_list = []
 
-    for _, row_description in case_df.iterrows():
-        variant = row_description['variant']
-        speedup = row_description['speedup']
+    for subbench in case_dfs:
+        for _, row_description in case_dfs[subbench].iterrows():
+            variant = row_description['variant']
+            speedup = row_description['speedup']
 
-        if variant.startswith('base'):
-            continue
+            if variant.startswith('base'):
+                continue
 
-        varname, _ = variant.split(' ')
-        params = varname.split('.')
-        data_dict = {'variant': variant}
+            varname, _ = variant.split(' ')
+            params = varname.split('.')
+            data_dict = {'variant': variant}
 
-        for param in params:
-            print(variant)
-            name, val = param.split('_')
-            data_dict[name] = int(val)
+            for param in params:
+                print(variant)
+                name, val = param.split('_')
+                data_dict[name] = int(val)
 
-        data_dict['speedup'] = speedup
-        # data_dict['variant'] = variant
-        data_list.append(data_dict)
+            data_dict['speedup'] = speedup
+            # data_dict['variant'] = variant
+            data_list.append(data_dict)
     
     df = pd.DataFrame(data_list)
     parallel_coordinates_plot(df, "{} ({})".format(algname, ct_point_name))
@@ -390,28 +407,29 @@ def coverage_plot(args):
     iterate_case_dfs(args, case_coverage_plot)
 
 
-def case_pair_plot(algname, ct_point_name, case_df):
+def case_pair_plot(algname, ct_point_name, case_dfs):
     import seaborn as sns
     data_list = []
 
-    for _, row_description in case_df.iterrows():
-        variant = row_description['variant']
-        speedup = row_description['speedup']
+    for subbench in case_dfs:
+        for _, row_description in case_dfs[subbench].iterrows():
+            variant = row_description['variant']
+            speedup = row_description['speedup']
 
-        if variant.startswith('base'):
-            continue
+            if variant.startswith('base'):
+                continue
 
-        varname, _ = variant.split(' ')
-        params = varname.split('.')
-        data_dict = {}
+            varname, _ = variant.split(' ')
+            params = varname.split('.')
+            data_dict = {}
 
-        for param in params:
-            print(variant)
-            name, val = param.split('_')
-            data_dict[name] = int(val)
+            for param in params:
+                print(variant)
+                name, val = param.split('_')
+                data_dict[name] = int(val)
 
-        data_dict['speedup'] = speedup
-        data_list.append(data_dict)
+            data_dict['speedup'] = speedup
+            data_list.append(data_dict)
     
     df = pd.DataFrame(data_list)
     sns.pairplot(df, hue='speedup')
@@ -587,99 +605,101 @@ def ratio(data, ax):
             variant_ratio(data, variant, ax)
 
 
-def case_variants(pattern, mode, algname, ct_point_name, case_df):
-    title = "{}[{}]:".format(algname, ct_point_name)
-    df = case_df[case_df['variant'].str.contains(pattern, regex=True)].reset_index(drop=True)
-    rt_axes = get_rt_axes(df)
-    rt_axes_values = extract_rt_axes_values(df)
+def case_variants(pattern, mode, algname, ct_point_name, case_dfs):
+    for subbench in case_dfs:
+        case_df = case_dfs[subbench]
+        title = "{}[{}]:".format(algname + '/' + subbench, ct_point_name)
+        df = case_df[case_df['variant'].str.contains(pattern, regex=True)].reset_index(drop=True)
+        rt_axes = get_rt_axes(df)
+        rt_axes_values = extract_rt_axes_values(df)
 
-    vertical_axis_name = rt_axes[0]
-    if 'Elements{io}[pow2]' in rt_axes:
-        vertical_axis_name = 'Elements{io}[pow2]'
-    horizontal_axes = rt_axes
-    horizontal_axes.remove(vertical_axis_name)
-    vertical_axis_values = rt_axes_values[vertical_axis_name] 
+        vertical_axis_name = rt_axes[0]
+        if 'Elements{io}[pow2]' in rt_axes:
+            vertical_axis_name = 'Elements{io}[pow2]'
+        horizontal_axes = rt_axes
+        horizontal_axes.remove(vertical_axis_name)
+        vertical_axis_values = rt_axes_values[vertical_axis_name] 
 
-    vertical_axis_ids = {}
-    for idx, val in enumerate(vertical_axis_values):
-        vertical_axis_ids[val] = idx
+        vertical_axis_ids = {}
+        for idx, val in enumerate(vertical_axis_values):
+            vertical_axis_ids[val] = idx
 
-    def extract_horizontal_space(df):
-        values = []
-        for rt_axis in horizontal_axes:
-            values.append(["{}={}".format(rt_axis, v) for v in df[rt_axis].unique()])
-        return list(itertools.product(*values))
+        def extract_horizontal_space(df):
+            values = []
+            for rt_axis in horizontal_axes:
+                values.append(["{}={}".format(rt_axis, v) for v in df[rt_axis].unique()])
+            return list(itertools.product(*values))
 
-    if len(horizontal_axes) > 0:
-        idx = 0
-        horizontal_axis_ids = {}
-        for point in extract_horizontal_space(df):
-            horizontal_axis_ids[" / ".join(point)] = idx
-            idx = idx + 1
+        if len(horizontal_axes) > 0:
+            idx = 0
+            horizontal_axis_ids = {}
+            for point in extract_horizontal_space(df):
+                horizontal_axis_ids[" / ".join(point)] = idx
+                idx = idx + 1
 
-    num_rows = len(vertical_axis_ids)
-    num_cols = max(1, len(extract_horizontal_space(df)))
+        num_rows = len(vertical_axis_ids)
+        num_cols = max(1, len(extract_horizontal_space(df)))
 
-    if num_rows == 0:
-        return
+        if num_rows == 0:
+            return
 
-    fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, gridspec_kw = {'wspace': 0, 'hspace': 0})
+        fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, gridspec_kw = {'wspace': 0, 'hspace': 0})
 
 
-    for _, vertical_row_description in df[[vertical_axis_name]].drop_duplicates().iterrows():
-        vertical_val = vertical_row_description[vertical_axis_name]
-        vertical_id = vertical_axis_ids[vertical_val]
-        vertical_name = "{}={}".format(vertical_axis_name, vertical_val)
+        for _, vertical_row_description in df[[vertical_axis_name]].drop_duplicates().iterrows():
+            vertical_val = vertical_row_description[vertical_axis_name]
+            vertical_id = vertical_axis_ids[vertical_val]
+            vertical_name = "{}={}".format(vertical_axis_name, vertical_val)
 
-        vertical_df = df[df[vertical_axis_name] == vertical_val]
+            vertical_df = df[df[vertical_axis_name] == vertical_val]
 
-        for _, horizontal_row_description in vertical_df[horizontal_axes].drop_duplicates().iterrows():
-            horizontal_df = vertical_df
+            for _, horizontal_row_description in vertical_df[horizontal_axes].drop_duplicates().iterrows():
+                horizontal_df = vertical_df
 
-            for axis in horizontal_axes:
-                horizontal_df = horizontal_df[horizontal_df[axis] == horizontal_row_description[axis]]
+                for axis in horizontal_axes:
+                    horizontal_df = horizontal_df[horizontal_df[axis] == horizontal_row_description[axis]]
 
-            horizontal_id = 0
+                horizontal_id = 0
 
-            if len(horizontal_axes) > 0:
-                horizontal_point = []
-                for rt_axis in horizontal_axes:
-                    horizontal_point.append("{}={}".format(rt_axis, horizontal_row_description[rt_axis]))
-                horizontal_name = " / ".join(horizontal_point)
-                horizontal_id = horizontal_axis_ids[horizontal_name]
-                ax=axes[vertical_id, horizontal_id]
-            else:
-                ax=axes[vertical_id]
-                ax.set_ylabel(vertical_name)
-
-            data = {}
-            for _, variant in horizontal_df[['variant']].drop_duplicates().iterrows():
-                variant_name = variant['variant']
-                if 'base' not in data:
-                    data['base'] = horizontal_df[horizontal_df['variant'] == variant_name].iloc[0]['base_samples']
-                data[variant_name] = horizontal_df[horizontal_df['variant'] == variant_name].iloc[0]['samples']
-
-            if mode == 'pdf':
-                # sns.histplot(data=data, ax=ax, kde=True)
-                displot(data, ax)
-            else:
-                ratio(data, ax)
-
-            if len(horizontal_axes) > 0:
-                ax=axes[vertical_id, horizontal_id]
-                if vertical_id == (num_rows - 1):
-                    ax.set_xlabel(horizontal_name)
-                if horizontal_id == 0:
-                    ax.set_ylabel(vertical_name)
+                if len(horizontal_axes) > 0:
+                    horizontal_point = []
+                    for rt_axis in horizontal_axes:
+                        horizontal_point.append("{}={}".format(rt_axis, horizontal_row_description[rt_axis]))
+                    horizontal_name = " / ".join(horizontal_point)
+                    horizontal_id = horizontal_axis_ids[horizontal_name]
+                    ax=axes[vertical_id, horizontal_id]
                 else:
-                    ax.set_ylabel('')
+                    ax=axes[vertical_id]
+                    ax.set_ylabel(vertical_name)
 
-    for ax in axes.flat:
-        ax.set_xticklabels([])
+                data = {}
+                for _, variant in horizontal_df[['variant']].drop_duplicates().iterrows():
+                    variant_name = variant['variant']
+                    if 'base' not in data:
+                        data['base'] = horizontal_df[horizontal_df['variant'] == variant_name].iloc[0]['base_samples']
+                    data[variant_name] = horizontal_df[horizontal_df['variant'] == variant_name].iloc[0]['samples']
 
-    fig.suptitle(title)
-    plt.tight_layout()
-    plt.show()
+                if mode == 'pdf':
+                    # sns.histplot(data=data, ax=ax, kde=True)
+                    displot(data, ax)
+                else:
+                    ratio(data, ax)
+
+                if len(horizontal_axes) > 0:
+                    ax=axes[vertical_id, horizontal_id]
+                    if vertical_id == (num_rows - 1):
+                        ax.set_xlabel(horizontal_name)
+                    if horizontal_id == 0:
+                        ax.set_ylabel(vertical_name)
+                    else:
+                        ax.set_ylabel('')
+
+        for ax in axes.flat:
+            ax.set_xticklabels([])
+
+        fig.suptitle(title)
+        plt.tight_layout()
+        plt.show()
 
 
 

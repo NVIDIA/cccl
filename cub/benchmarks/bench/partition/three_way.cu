@@ -149,7 +149,6 @@ void partition(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto *temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.set_blocking_kernel_timeout(-1);
   state.exec([&](nvbench::launch &launch) {
     dispatch_t::Dispatch(temp_storage,
                          temp_size,
@@ -166,7 +165,7 @@ void partition(nvbench::state &state, nvbench::type_list<T, OffsetT>)
 }
 
 NVBENCH_BENCH_TYPES(partition, NVBENCH_TYPE_AXES(fundamental_types, offset_types))
-  .set_name("cub::DevicePartition::If")
+  .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});

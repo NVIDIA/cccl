@@ -149,11 +149,11 @@ struct device_seg_sort_policy_hub
 };
 #endif // !TUNE_BASE
 
-#include <fstream>
-#include <thrust/host_vector.h>
-
 template <class T, typename OffsetT>
-void seg_sort(nvbench::state &state, nvbench::type_list<T, OffsetT>)
+void seg_sort(nvbench::state &state,
+              nvbench::type_list<T, OffsetT> ts,
+              const thrust::device_vector<OffsetT> &offsets,
+              bit_entropy entropy)
 {
   constexpr bool is_descending   = false;
   constexpr bool is_overwrite_ok = false;
@@ -184,38 +184,19 @@ void seg_sort(nvbench::state &state, nvbench::type_list<T, OffsetT>)
                                end_offset_it_t>;
 #endif
 
-  const auto elements         = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  const auto max_segment_size = static_cast<std::size_t>(state.get_int64("MaxSegmentSize"));
-
-  const auto max_segment_size_log = static_cast<offset_t>(std::log2(max_segment_size));
-  const auto min_segment_size = 1 << (max_segment_size_log - 1);
+  const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto segments = offsets.size() - 1;
 
   thrust::device_vector<key_t> buffer_1(elements);
   thrust::device_vector<key_t> buffer_2(elements);
 
-  gen(seed_t{}, buffer_1);
+  gen(seed_t{}, buffer_1, entropy);
 
   key_t *d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
   key_t *d_buffer_2 = thrust::raw_pointer_cast(buffer_2.data());
 
   cub::DoubleBuffer<key_t> d_keys(d_buffer_1, d_buffer_2);
   cub::DoubleBuffer<value_t> d_values;
-
-  thrust::device_vector<offset_t> offsets =
-    gen_uniform_offsets<offset_t>(seed_t{}, elements, min_segment_size, max_segment_size);
-  const std::size_t segments = offsets.size() - 1;
-
-  thrust::host_vector<offset_t> h_offsets = offsets;
-
-  for (std::size_t i = 0; i < segments; i++)
-  {
-    if (h_offsets[i + 1] < h_offsets[i])
-    {
-      std::cerr << "Invalid segment size: " << h_offsets[i] << " > " << h_offsets[i + 1]
-                << std::endl;
-      std::exit(1);
-    }
-  }
 
   begin_offset_it_t d_begin_offsets = thrust::raw_pointer_cast(offsets.data());
   end_offset_it_t d_end_offsets     = d_begin_offsets + 1;
@@ -260,8 +241,50 @@ void seg_sort(nvbench::state &state, nvbench::type_list<T, OffsetT>)
 
 using some_offset_types = nvbench::type_list<uint32_t>;
 
-NVBENCH_BENCH_TYPES(seg_sort, NVBENCH_TYPE_AXES(fundamental_types, some_offset_types))
-  .set_name("cub::DeviceSegmentedSort::SortKeys")
+template <class T, typename OffsetT>
+void power_law(nvbench::state &state, nvbench::type_list<T, OffsetT> ts)
+{
+  const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto segments       = static_cast<std::size_t>(state.get_int64("Segments{io}"));
+  const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
+
+  thrust::device_vector<OffsetT> offsets =
+    gen_power_law_offsets<OffsetT>(seed_t{}, elements, segments);
+
+  seg_sort(state, ts, offsets, entropy);
+}
+
+NVBENCH_BENCH_TYPES(power_law, NVBENCH_TYPE_AXES(fundamental_types, some_offset_types))
+  .set_name("power")
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(22, 30, 4))
+  .add_int64_power_of_two_axis("Segments{io}", nvbench::range(12, 20, 4))
+  .add_string_axis("Entropy", {"1.000", "0.544", "0.201"});
+
+
+template <class T, typename OffsetT>
+void uniform(nvbench::state &state, nvbench::type_list<T, OffsetT> ts)
+{
+  const auto elements         = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto max_segment_size = static_cast<std::size_t>(state.get_int64("MaxSegmentSize"));
+
+  const auto max_segment_size_log = static_cast<OffsetT>(std::log2(max_segment_size));
+  const auto min_segment_size = 1 << (max_segment_size_log - 1);
+
+  thrust::device_vector<OffsetT> offsets =
+    gen_uniform_offsets<OffsetT>(seed_t{}, elements, min_segment_size, max_segment_size);
+
+  seg_sort(state, ts, offsets, bit_entropy::_1_000);
+}
+
+NVBENCH_BENCH_TYPES(uniform, NVBENCH_TYPE_AXES(fundamental_types, some_offset_types))
+  .set_name("small")
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(22, 30, 4))
+  .add_int64_power_of_two_axis("MaxSegmentSize", nvbench::range(1, 8, 1));
+
+NVBENCH_BENCH_TYPES(uniform, NVBENCH_TYPE_AXES(fundamental_types, some_offset_types))
+  .set_name("large")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(22, 30, 4))
   .add_int64_power_of_two_axis("MaxSegmentSize", nvbench::range(10, 18, 2));
