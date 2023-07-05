@@ -24,7 +24,7 @@ This class additionally deviates from the standard by being backported to C++11.
 
 `cuda::atomic_ref<T>` and `cuda::std::atomic_ref<T>` may only be instantiated with a T that are either 4 or 8 bytes.
 
-No object or subobject of an object referenced by an `atomic_­ref` shall be concurrently referenced by any other `atomic_­ref` that has a different `Scope`. 
+No object or subobject of an object referenced by an `atomic_­ref` shall be concurrently referenced by any other `atomic_­ref` that has a different `Scope`.
 
 For `cuda::atomic_ref<T>` and `cuda::std::atomic_ref<T>` the type `T` must satisfy the following:
 - `4 <= sizeof(T) <= 8`.
@@ -50,7 +50,7 @@ For CUDA Compute Capability prior to 6 (Pascal), objects of type
 ## Implementation-Defined Behavior
 
 For each type `T` and [`cuda::thread_scope`] `S`, the value of
-  `cuda::atomic_ref<T, S>::is_always_lock_free()` and 
+  `cuda::atomic_ref<T, S>::is_always_lock_free()` and
   `cuda::std::atomic_ref<T>::is_always_lock_free()` is as follows:
 
 | Type `T` | [`cuda::thread_scope`] `S` | `cuda::atomic_ref<T, S>::is_always_lock_free()` |
@@ -74,7 +74,7 @@ __global__ void example_kernel(int *gmem, int *pinned_mem) {
 
   __shared__ int shared_v;
   // This atomic is suitable for threads in the same thread block.
-  cuda::atomic_ref<int, cuda::thread_scope_block> d(&shared);
+  cuda::atomic_ref<int, cuda::thread_scope_block> d(shared_v);
 }
 ```
 
