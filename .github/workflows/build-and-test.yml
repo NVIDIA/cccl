@@ -17,6 +17,7 @@ on:
       os: {type: string, required: true}
       build_script: {type: string, required: false}
       test_script: {type: string, required: false}
+      run_tests: {type: boolean, required: false, default: true}
       build_image: {type: string, required: false}
       test_image: {type: string, required: false}
 
@@ -62,7 +63,7 @@ jobs:
             fi
   test:
     needs: build
-    if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' }}
+    if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' && inputs.run_tests}}
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
     runs-on: linux-${{inputs.cpu}}-gpu-v100-latest-1
     container: 
