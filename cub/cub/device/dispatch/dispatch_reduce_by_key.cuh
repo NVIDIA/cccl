@@ -36,6 +36,7 @@
 #include <cub/agent/agent_reduce_by_key.cuh>
 #include <cub/config.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_deprecated.cuh>
@@ -171,41 +172,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
     .ConsumeRange(num_items, tile_state, start_tile);
 }
 
-namespace detail 
-{
-
-template <class AccumT, class KeyOutputT>
-struct device_reduce_by_key_policy_hub
-{
-  static constexpr int MAX_INPUT_BYTES = CUB_MAX(sizeof(KeyOutputT), sizeof(AccumT));
-  static constexpr int COMBINED_INPUT_BYTES = sizeof(KeyOutputT) + sizeof(AccumT);
-
-  /// SM35
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
-  {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 6;
-    static constexpr int ITEMS_PER_THREAD =
-      (MAX_INPUT_BYTES <= 8)
-        ? 6
-        : CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD,
-                  CUB_MAX(1,
-                          ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) /
-                            COMBINED_INPUT_BYTES));
-
-    using ReduceByKeyPolicyT =
-      AgentReduceByKeyPolicy<128,
-                             ITEMS_PER_THREAD,
-                             BLOCK_LOAD_DIRECT,
-                             LOAD_LDG,
-                             BLOCK_SCAN_WARP_SCANS,
-                             detail::default_reduce_by_key_delay_constructor_t<AccumT, int>>;
-  };
-
-  using MaxPolicy = Policy350;
-};
-
-}
-
 /******************************************************************************
  * Dispatch
  ******************************************************************************/
@@ -250,11 +216,13 @@ template <typename KeysInputIteratorT,
           typename EqualityOpT,
           typename ReductionOpT,
           typename OffsetT,
-          typename AccumT = detail::accumulator_t<ReductionOpT,
-                                                  cub::detail::value_t<ValuesInputIteratorT>,
-                                                  cub::detail::value_t<ValuesInputIteratorT>>,
+          typename AccumT = //
+          detail::accumulator_t<ReductionOpT,
+                                cub::detail::value_t<ValuesInputIteratorT>,
+                                cub::detail::value_t<ValuesInputIteratorT>>,
           typename SelectedPolicy =                //
           detail::device_reduce_by_key_policy_hub< //
+            ReductionOpT,                          //
             AccumT,                                //
             cub::detail::non_void_value_t<         //
               UniqueOutputIteratorT,               //

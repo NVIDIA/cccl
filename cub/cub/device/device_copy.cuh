@@ -158,7 +158,7 @@ struct DeviceCopy
                                        SizeIteratorT,
                                        RangeOffsetT,
                                        BlockOffsetT,
-                                       detail::DeviceBatchMemcpyPolicy,
+                                       detail::DeviceBatchMemcpyPolicy<RangeOffsetT, BlockOffsetT>,
                                        false>::Dispatch(d_temp_storage,
                                                         temp_storage_bytes,
                                                         input_it,

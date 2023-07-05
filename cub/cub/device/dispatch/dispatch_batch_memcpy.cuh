@@ -269,6 +269,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
     .ConsumeTile(blockIdx.x);
 }
 
+template <class BufferOffsetT, class BlockOffsetT>
 struct DeviceBatchMemcpyPolicy
 {
   static constexpr uint32_t BLOCK_THREADS         = 128U;
@@ -277,6 +278,12 @@ struct DeviceBatchMemcpyPolicy
 
   static constexpr uint32_t LARGE_BUFFER_BLOCK_THREADS    = 256U;
   static constexpr uint32_t LARGE_BUFFER_BYTES_PER_THREAD = 32U;
+
+  static constexpr uint32_t WARP_LEVEL_THRESHOLD  = 128;
+  static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = 8 * 1024;
+
+  using buff_delay_constructor_t = detail::default_delay_constructor_t<BufferOffsetT>;
+  using block_delay_constructor_t = detail::default_delay_constructor_t<BlockOffsetT>;
 
   /// SM35
   struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
@@ -287,7 +294,11 @@ struct DeviceBatchMemcpyPolicy
                              BUFFERS_PER_THREAD,
                              TLEV_BYTES_PER_THREAD,
                              PREFER_POW2_BITS,
-                             LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD>;
+                             LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
+                             WARP_LEVEL_THRESHOLD,
+                             BLOCK_LEVEL_THRESHOLD,
+                             buff_delay_constructor_t,
+                             block_delay_constructor_t>;
 
     using AgentLargeBufferPolicyT =
       AgentBatchMemcpyLargeBuffersPolicy<LARGE_BUFFER_BLOCK_THREADS, LARGE_BUFFER_BYTES_PER_THREAD>;
@@ -302,7 +313,11 @@ struct DeviceBatchMemcpyPolicy
                              BUFFERS_PER_THREAD,
                              TLEV_BYTES_PER_THREAD,
                              PREFER_POW2_BITS,
-                             LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD>;
+                             LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
+                             WARP_LEVEL_THRESHOLD,
+                             BLOCK_LEVEL_THRESHOLD,
+                             buff_delay_constructor_t,
+                             block_delay_constructor_t>;
 
     using AgentLargeBufferPolicyT =
       AgentBatchMemcpyLargeBuffersPolicy<LARGE_BUFFER_BLOCK_THREADS, LARGE_BUFFER_BYTES_PER_THREAD>;
@@ -327,7 +342,7 @@ template <typename InputBufferIt,
           typename BufferSizeIteratorT,
           typename BufferOffsetT,
           typename BlockOffsetT,
-          typename SelectedPolicy = DeviceBatchMemcpyPolicy,
+          typename SelectedPolicy = DeviceBatchMemcpyPolicy<BufferOffsetT, BlockOffsetT>,
           bool IsMemcpy           = true>
 struct DispatchBatchMemcpy : SelectedPolicy
 {

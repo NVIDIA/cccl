@@ -51,7 +51,8 @@ template <int _BLOCK_THREADS,
           int _ITEMS_PER_THREAD,
           BlockLoadAlgorithm _LOAD_ALGORITHM,
           CacheLoadModifier _LOAD_MODIFIER,
-          BlockScanAlgorithm _SCAN_ALGORITHM>
+          BlockScanAlgorithm _SCAN_ALGORITHM,
+          class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentThreeWayPartitionPolicy
 {
   constexpr static int BLOCK_THREADS                 = _BLOCK_THREADS;
@@ -59,6 +60,11 @@ struct AgentThreeWayPartitionPolicy
   constexpr static BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
   constexpr static CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
   constexpr static BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+
+  struct detail 
+  {
+    using delay_constructor_t = DelayConstructorT;
+  };
 };
 
 
@@ -112,8 +118,9 @@ struct AgentThreeWayPartition
     cub::BlockScan<OffsetT, BLOCK_THREADS, PolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
+  using DelayConstructorT = typename PolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
-    cub::TilePrefixCallbackOp<OffsetT, cub::Sum, ScanTileStateT>;
+    cub::TilePrefixCallbackOp<OffsetT, cub::Sum, ScanTileStateT, 0, DelayConstructorT>;
 
   // Item exchange type
   using ItemExchangeT = InputT[TILE_ITEMS];
