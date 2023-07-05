@@ -74,6 +74,8 @@ jobs:
     permissions:
       id-token: write
     steps:
+      - name: nvidia-smi
+        run: nvidia-smi
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
