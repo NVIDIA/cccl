@@ -1,12 +1,9 @@
 #!/bin/bash
 
-set -xeuo pipefail
-
-# Ensure the script is being executed in its containing directory
-cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
+source "$(dirname "$0")/build_common.sh"
 
 ./build_cub.sh "$@"
 
-ctest --test-dir ../build --output-on-failure --timeout 15
+ctest --test-dir ${BUILD_DIR} --output-on-failure 
 
 echo "CUB test complete"
