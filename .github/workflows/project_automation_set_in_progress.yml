@@ -23,7 +23,6 @@ on:
     types: [opened, edited]
       
 env:
- GH_TOKEN: ${{ secrets.PROJECT_MANAGEMENT_SECRET }}  # !!TODO: REPLACE WITH A TOKEN THAT HAS PROJECT MANAGEMENT PERMISSIONS!!
  ORG: ${{ github.event.repository.owner.login }}
  PR_NUMBER: ${{ github.event.pull_request.number }}
  REPO: ${{ github.event.repository.name }}
@@ -39,12 +38,21 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@36464acb844fc53b9b8b2401da68844f6b05ebb0
+        with:
+          app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
+          private_key: ${{ secrets.CCCL_AUTH_APP_PEM }}
+
       - name: Wait 1 Second
         id: sleep
         run: sleep 1
         
       - name: Get PR Project ID
         id: get_pr_id
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             # Query up to 10 projects for the PR
             gh api graphql -f query='
@@ -80,6 +88,8 @@ jobs:
             
       - name: Get PR Status From Project
         id: get_pr_status
+        env: 
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             # Query the PR's status from the project
             # We don't want to modify a PR that's already in any other status than TODO or null
@@ -120,6 +130,8 @@ jobs:
         id: set_in_progress_if_todo
         # only run if PR status is Todo or null
         if: ${{ env.STATUS_FIELD_VALUE }} == "Todo" || ${{ env.STATUS_FIELD_VALUE }} == null
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             gh api graphql -f query='
               mutation {
@@ -138,11 +150,14 @@ jobs:
                       }
                   }
                   }'
+        continue-on-error: true
                   
       - name: Set Linked Issues to In Progress
         id: update_linked_issues
         # only run if PR status is Todo or null
         if: ${{ env.STATUS_FIELD_VALUE }} == "Todo" || ${{ env.STATUS_FIELD_VALUE }} == null
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             gh api graphql -f query='
               query {
