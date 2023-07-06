@@ -1,0 +1,190 @@
+name: Set PR and Linked Issues to In Progress
+# Possible TODO: expand queries and add mutations to set to current release and sprint  in addition to "In Progress"
+
+on:
+  pull_request_target:
+    # Run this action when a PR is opened or edited
+    # Issues do not have a graphQL connection to linked PRs so we can't use that event
+    types: [opened, edited]
+      
+env:
+ GH_TOKEN: ${{ secrets.PROJECT_MANAGEMENT_SECRET }}  # !!TODO: REPLACE WITH A TOKEN THAT HAS PROJECT MANAGEMENT PERMISSIONS!!
+ ORG: ${{ github.event.repository.owner.login }}
+ PR_NUMBER: ${{ github.event.pull_request.number }}
+ REPO: ${{ github.event.repository.name }}
+
+ # The environment vars below are hard-coded from external queries to save time + complexity here
+ # Note: PVT means Project V2, not "Private"
+ PROJECT_ID: "PVT_kwDOABpemM4AEhOI"
+ STATUS_FIELD_ID: "PVTSSF_lADOABpemM4AEhOIzgCmnYc"
+ IN_PROGRESS_PROJECT_OPTION_ID: "47fc9ee4"
+
+jobs:
+  query_and_mutate_project_fields:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Wait 1 Second
+        id: sleep
+        run: sleep 1
+        
+      - name: Get PR Project ID
+        id: get_pr_id
+        run: |
+            # Query up to 10 projects for the PR
+            gh api graphql -f query='
+              query {
+                organization(login: "${{ env.ORG }}") {
+                  repository(name: "${{ env.REPO }}") {
+                    issueOrPullRequest(number: ${{ env.PR_NUMBER }}) {
+                      ... on PullRequest {
+                        id
+                        projectItems(first: 10) {
+                          edges {
+                            node {
+                              id
+                              project {
+                                id
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }' > project_data.json
+            
+            # Filter the json result to only the project-specific ID for the PR
+            # A PR can be in multiple projects so we need to filter by the project ID we want
+            pr_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
+                           select(.node.project.id == "${{ env.PROJECT_ID }}") |
+                           .node.id' project_data.json)
+            echo "PR_ID=$pr_id" >> $GITHUB_ENV
+        continue-on-error: true
+            
+      - name: Get PR Status From Project
+        id: get_pr_status
+        run: |
+            # Query the PR's status from the project
+            # We don't want to modify a PR that's already in any other status than TODO or null
+            gh api graphql -f query='
+              query {
+                node(id: "${{ env.PR_ID }}") {
+                  id
+                  ... on ProjectV2Item {
+                    id
+                    content {
+                      ... on PullRequest {
+                        id
+                        projectItems(first: 10) {
+                          edges {
+                            node {
+                              id
+                              fieldValueByName(name: "Status") {
+                                ... on ProjectV2ItemFieldSingleSelectValue {
+                                  id
+                                  name
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }' > project_data.json
+
+            # filter the json result to extract the status field value
+            status_field_value=$(jq -r '.data.node.content.projectItems.edges[].node.fieldValueByName.name' project_data.json)
+            echo "STATUS_FIELD_VALUE=$status_field_value" >> $GITHUB_ENV
+        continue-on-error: true
+            
+      - name: Set In Progress if Todo
+        id: set_in_progress_if_todo
+        # only run if PR status is Todo or null
+        if: ${{ env.STATUS_FIELD_VALUE }} == "Todo" || ${{ env.STATUS_FIELD_VALUE }} == null
+        run: |
+            gh api graphql -f query='
+              mutation {
+                updateProjectV2ItemFieldValue(
+                    input: {
+                      projectId: "${{ env.PROJECT_ID }}"
+                      itemId: "${{ env.PR_ID }}"
+                      fieldId: "${{ env.STATUS_FIELD_ID }}"
+                      value: {
+                          singleSelectOptionId: "${{ env.IN_PROGRESS_PROJECT_OPTION_ID }}"
+                        }
+                      }
+                  ) {
+                      projectV2Item {
+                      id
+                      }
+                  }
+                  }'
+                  
+      - name: Set Linked Issues to In Progress
+        id: update_linked_issues
+        # only run if PR status is Todo or null
+        if: ${{ env.STATUS_FIELD_VALUE }} == "Todo" || ${{ env.STATUS_FIELD_VALUE }} == null
+        run: |
+            gh api graphql -f query='
+              query {
+                organization(login: "${{ env.ORG }}") {
+                  repository(name: "${{ env.REPO }}") {
+                    issueOrPullRequest(number: ${{ env.PR_NUMBER }}) {
+                      ... on PullRequest {
+                        id
+                        closingIssuesReferences(first: 10) {
+                          edges {
+                            node {
+                              id
+                              projectItems(first: 10) {
+                                nodes {
+                                  id
+                                }
+                                edges {
+                                  node {
+                                    id
+                                    project {
+                                      id
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }' > project_data.json
+            cat project_data.json
+            issue_ids=$(jq -r '.data.organization.repository.issueOrPullRequest.closingIssuesReferences.edges[].node.projectItems.edges[] |
+                               select(.node.project.id == "${{ env.PROJECT_ID }}") |
+                               .node.id' project_data.json)
+            
+            for issue_id in $issue_ids; do
+              echo "issue ID is: $issue_id"
+              # The query below is constructed differently than the others due to bash variable syntax + github actions syntax interactions
+              QUERY="mutation {
+                updateProjectV2ItemFieldValue(
+                  input: {
+                    projectId: \"$PROJECT_ID\"
+                    itemId: \"$issue_id\"
+                    fieldId: \"$STATUS_FIELD_ID\"
+                    value: {
+                      singleSelectOptionId: \"$IN_PROGRESS_PROJECT_OPTION_ID\"
+                      }
+                    }
+                  ) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }"
+              gh api graphql --field query="$QUERY"
+            done
+        continue-on-error: true
