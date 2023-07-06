@@ -90,6 +90,7 @@ set(files
   __iterator/erase_if_container.h
   __iterator/front_insert_iterator.h
   __iterator/insert_iterator.h
+  __iterator/incrementable_traits.h
   __iterator/istream_iterator.h
   __iterator/istreambuf_iterator.h
   __iterator/iterator.h
@@ -99,6 +100,7 @@ set(files
   __iterator/ostream_iterator.h
   __iterator/ostreambuf_iterator.h
   __iterator/prev.h
+  __iterator/readable_traits.h
   __iterator/reverse_access.h
   __iterator/reverse_iterator.h
   __iterator/size.h
