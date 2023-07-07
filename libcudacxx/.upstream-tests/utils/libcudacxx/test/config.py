@@ -423,7 +423,7 @@ class Configuration(object):
     def configure_ccache(self):
         use_ccache_default = os.environ.get('CMAKE_CUDA_COMPILER_LAUNCHER') is not None
         use_ccache = self.get_lit_bool('use_ccache', use_ccache_default)
-        if use_ccache:
+        if use_ccache and not self.cxx.is_nvrtc:
             self.cxx.use_ccache = True
             self.lit_config.note('enabling ccache')
 

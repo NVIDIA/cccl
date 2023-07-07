@@ -2,6 +2,11 @@
 
 source "$(dirname "$0")/build_common.sh"
 
+if [ -n ${LIBCUDACXX_USE_NVRTC+x} ]; then
+    echo "The LIBCUDACXX_USE_NVRTC configuration is only used for libcu++. Not running any tests."
+    exit 0
+fi
+
 CMAKE_OPTIONS="
       -DCCCL_ENABLE_THRUST=ON \
       -DCCCL_ENABLE_LIBCUDACXX=OFF \
