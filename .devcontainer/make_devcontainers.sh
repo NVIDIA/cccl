@@ -36,7 +36,8 @@ for combination in $combinations; do
 
     # Use the base_devcontainer.json as a template, plug in the CUDA, compiler names, versions, and Ubuntu version,
     # and write the output to the new devcontainer.json file
-    jq --arg image "$image"  --arg name "$name" '. + {image: $image, name: $name}' $base_devcontainer_file > "$devcontainer_file"
+    #jq --arg image "$image"  --arg name "$name" '. + {image: $image, name: $name}' $base_devcontainer_file > "$devcontainer_file"
+    jq --arg image "$image" --arg name "$name" '.image = $image | .name = $name | .containerEnv.DEVCONTAINER_NAME = $name' $base_devcontainer_file > "$devcontainer_file"
 
     echo "Created $devcontainer_file"
 done
