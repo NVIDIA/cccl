@@ -23,7 +23,16 @@ readonly GPU_ARCHS=$(echo $3 | tr ' ,' ';')
 
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
 
-BUILD_DIR=${BUILD_DIR:-../build/${DEVCONTAINER_NAME:-}}
+if [ -z ${DEVCONTAINER_NAME+x} ]; then
+    BUILD_DIR=../build/local
+else
+    BUILD_DIR=../build/${DEVCONTAINER_NAME}
+fi
+
+# The most recent build will always be symlinked to cccl/build/latest
+mkdir -p $BUILD_DIR
+rm -f ../build/latest
+ln -sf $BUILD_DIR ../build/latest
 
 COMMON_CMAKE_OPTIONS="
     -DCMAKE_BUILD_TYPE=Release \
