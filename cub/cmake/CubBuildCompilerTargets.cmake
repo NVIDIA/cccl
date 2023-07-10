@@ -73,6 +73,7 @@ function(cub_build_compiler_targets)
 
   if ("Intel" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     # Disable warning that inlining is inhibited by compiler thresholds.
+    append_option_if_available("-no-ftz" cxx_compile_options)
     append_option_if_available("-diag-disable=11074" cxx_compile_options)
     append_option_if_available("-diag-disable=11076" cxx_compile_options)
   endif()
