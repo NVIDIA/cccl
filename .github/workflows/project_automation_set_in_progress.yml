@@ -115,12 +115,12 @@ jobs:
                             itemId: "${{ env.PR_ID }}"
                             fieldId: "${{ env.STATUS_FIELD_ID }}"
                         value: {
-                                singleSelectOptionId: "${{ env.IN_PROGRESS_PROJECT_OPTION_ID }}"
+                            singleSelectOptionId: "${{ env.IN_PROGRESS_PROJECT_OPTION_ID }}"
                                 }
                             }
                         ) {
                             projectV2Item {
-                            id
+                                id
                             }
                         }
                     }'
@@ -175,7 +175,7 @@ jobs:
                         projectId: \"$PROJECT_ID\"
                         itemId: \"$PR_ID\"
                         fieldId: \"$START_SPRINT_FIELD_ID\"
-                        value: {
+                    value: {
                         iterationId: \"$current_start_sprint_option_id\"
                         }
                         }
@@ -218,7 +218,7 @@ jobs:
                     projectId: \"$PROJECT_ID\"
                     itemId: \"$PR_ID\"
                     fieldId: \"$WORKING_SPRINT_FIELD_ID\"
-                    value: {
+                value: {
                     iterationId: \"$current_working_sprint_option_id\"
                     }
                     }
