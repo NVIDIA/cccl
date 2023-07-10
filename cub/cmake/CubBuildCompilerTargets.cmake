@@ -72,8 +72,9 @@ function(cub_build_compiler_targets)
   endif()
 
   if ("Intel" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-    # Disable warning that inlining is inhibited by compiler thresholds.
+    # Do not flush denormal floats to zero
     append_option_if_available("-no-ftz" cxx_compile_options)
+    # Disable warning that inlining is inhibited by compiler thresholds.
     append_option_if_available("-diag-disable=11074" cxx_compile_options)
     append_option_if_available("-diag-disable=11076" cxx_compile_options)
   endif()
@@ -86,6 +87,7 @@ function(cub_build_compiler_targets)
   endif()
 
   if ("NVHPC" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
+    # Do not flush denormal floats to zero
     list(APPEND cxx_compile_options -Mnodaz)
     # TODO: Managed memory is currently not supported on windows with WSL
     list(APPEND cxx_compile_options -gpu=nomanaged)
