@@ -30,5 +30,6 @@ jobs:
       build_script: ${{ inputs.build_script }}
       build_image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       test_script: ${{ inputs.test_script }}
+      run_tests: ${{ contains(matrix.jobs, 'test') }}
       test_image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
 

@@ -16,7 +16,8 @@ on:
       cpu: {type: string, required: true}
       os: {type: string, required: true}
       build_script: {type: string, required: false}
-      test_script: {type: string, required: false }
+      test_script: {type: string, required: false}
+      run_tests: {type: boolean, required: false, default: true}
       build_image: {type: string, required: false}
       test_image: {type: string, required: false}
 
@@ -24,7 +25,7 @@ jobs:
   build:
     if: inputs.build_script != '' && inputs.build_image != ''
     name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
-    runs-on: ${{ (inputs.os == 'windows' && 'windows-latest') || format('linux-{0}-cpu16', inputs.cpu) }}
+    runs-on: linux-${{inputs.cpu}}-cpu16
     container: 
       options: -u root
       image: ${{ inputs.build_image }}
@@ -62,7 +63,7 @@ jobs:
             fi
   test:
     needs: build
-    if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' }}
+    if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' && inputs.run_tests}}
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
     runs-on: linux-${{inputs.cpu}}-gpu-v100-latest-1
     container: 
@@ -73,6 +74,8 @@ jobs:
     permissions:
       id-token: write
     steps:
+      - name: nvidia-smi
+        run: nvidia-smi
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
