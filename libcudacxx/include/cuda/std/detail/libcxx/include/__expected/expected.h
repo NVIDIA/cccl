@@ -104,6 +104,20 @@ namespace __expected {
 
   template <class _Err>
   _LIBCUDACXX_INLINE_VAR constexpr bool __is_expected_nonvoid<expected<void, _Err>> = false;
+
+  template<class _Tp, class _Err>
+  _LIBCUDACXX_INLINE_VAR constexpr bool __can_swap =
+       _LIBCUDACXX_TRAIT(is_swappable, _Tp)
+    && _LIBCUDACXX_TRAIT(is_swappable, _Err)
+    && _LIBCUDACXX_TRAIT(is_move_constructible, _Tp)
+    && _LIBCUDACXX_TRAIT(is_move_constructible, _Err)
+    && (_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp)
+    || _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err));
+
+  template<class _Err>
+  _LIBCUDACXX_INLINE_VAR constexpr bool __can_swap<void, _Err> =
+       _LIBCUDACXX_TRAIT(is_swappable, _Err)
+    && _LIBCUDACXX_TRAIT(is_move_constructible, _Err);
 } // namespace __expected
 
 template <class _Tp, class _Err>
@@ -428,16 +442,8 @@ public:
 
 public:
   // [expected.object.swap], swap
-  template<class _Tp2>
-  static constexpr bool __can_swap = _LIBCUDACXX_TRAIT(is_swappable, _Tp2)
-                                  && _LIBCUDACXX_TRAIT(is_swappable, _Err)
-                                  && _LIBCUDACXX_TRAIT(is_move_constructible, _Tp2)
-                                  && _LIBCUDACXX_TRAIT(is_move_constructible, _Err)
-                                  && (_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2)
-                                   || _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err));
-
-  _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-    (requires __can_swap<_Tp2>)
+  _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp, class _Err2 = _Err)
+    (requires __expected::__can_swap<_Tp2, _Err2>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
   void swap(expected<_Tp2, _Err>& __rhs)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2) &&
@@ -462,13 +468,13 @@ public:
     }
   }
 
-  template<class _Tp2 = _Tp>
+  template<class _Tp2 = _Tp, class _Err2 = _Err>
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
   auto swap(expected& __x, expected& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2) &&
                                                    _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Tp2) &&
-                                                   _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err) &&
-                                                   _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err))
-    _LIBCUDACXX_TRAILING_REQUIRES(void)(requires __can_swap<_Tp2>)
+                                                   _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2) &&
+                                                   _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
+    _LIBCUDACXX_TRAILING_REQUIRES(void)(requires __expected::__can_swap<_Tp2, _Err2>)
   {
     return __x.swap(__y); // some compiler warn about non void function without return
   }
@@ -580,8 +586,8 @@ public:
   }
 
   // [expected.object.monadic]
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, _Err&))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err2, _Err2&))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto and_then(_Fun&& __fun) & {
     using _Res = __remove_cvref_t<invoke_result_t<_Fun, _Tp&>>;
@@ -598,8 +604,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Err))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Err2))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto and_then(_Fun&& __fun) const& {
     using _Res = __remove_cvref_t<invoke_result_t<_Fun, const _Tp&>>;
@@ -616,8 +622,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Err))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Err2))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto and_then(_Fun&& __fun) && {
     using _Res = __remove_cvref_t<invoke_result_t<_Fun, _Tp>>;
@@ -634,8 +640,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, const _Err))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err2, const _Err2))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto and_then(_Fun&& __fun) const&& {
     using _Res = __remove_cvref_t<invoke_result_t<_Fun, const _Tp>>;
@@ -652,8 +658,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Tp, _Tp&))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Tp2, _Tp2&))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto or_else(_Fun&& __fun) & {
     using _Res = __remove_cvref_t<invoke_result_t<_Fun, _Err&>>;
@@ -670,8 +676,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp)
+    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto or_else(_Fun&& __fun) const& {
     using _Res = __remove_cvref_t<invoke_result_t<_Fun, const _Err&>>;
@@ -688,8 +694,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp)
+    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto or_else(_Fun&& __fun) && {
     using _Res = __remove_cvref_t<invoke_result_t<_Fun, _Err>>;
@@ -706,8 +712,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Tp, const _Tp))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Tp2, const _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto or_else(_Fun&& __fun) const&& {
     using _Res = __remove_cvref_t<invoke_result_t<_Fun, const _Err>>;
@@ -724,9 +730,9 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, _Err&) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, _Tp&>>, void))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err2, _Err2&) _LIBCUDACXX_AND
+              _LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) & {
     static_assert(invocable<_Fun, _Tp&>,
@@ -741,9 +747,9 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, _Err&) _LIBCUDACXX_AND
-            (!_LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, _Tp&>>, void)))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err2, _Err2&) _LIBCUDACXX_AND
+            (!_LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) & {
     static_assert(invocable<_Fun, _Tp&>,
@@ -763,9 +769,9 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Err) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, const _Tp&>>, void))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Err2) _LIBCUDACXX_AND
+              _LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) const& {
     static_assert(invocable<_Fun, const _Tp&>,
@@ -780,9 +786,9 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Err) _LIBCUDACXX_AND
-            (!_LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, const _Tp&>>, void)))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Err2) _LIBCUDACXX_AND
+            (!_LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) const& {
     static_assert(invocable<_Fun, const _Tp&>,
@@ -802,9 +808,9 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Err) _LIBCUDACXX_AND
-             _LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, _Tp>>, void))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Err2) _LIBCUDACXX_AND
+             _LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) && {
     static_assert(invocable<_Fun, _Tp>,
@@ -818,9 +824,9 @@ public:
       return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
     }
   }
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Err) _LIBCUDACXX_AND
-            (!_LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, _Tp>>, void)))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Err2) _LIBCUDACXX_AND
+            (!_LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) && {
     static_assert(invocable<_Fun, _Tp>,
@@ -840,9 +846,9 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, const _Err) _LIBCUDACXX_AND
-              _LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, const _Tp>>, void))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err2, const _Err2) _LIBCUDACXX_AND
+              _LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) const&& {
     static_assert(invocable<_Fun, const _Tp>,
@@ -857,9 +863,9 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, const _Err) _LIBCUDACXX_AND
-            (!_LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, const _Tp>>, void)))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err2, const _Err2) _LIBCUDACXX_AND
+            (!_LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) const&& {
     static_assert(invocable<_Fun, const _Tp>,
@@ -879,8 +885,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Tp, _Tp&))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Tp2, _Tp2&))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform_error(_Fun&& __fun) & {
     static_assert(invocable<_Fun, _Err&>,
@@ -900,8 +906,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp)
+    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform_error(_Fun&& __fun) const& {
     static_assert(invocable<_Fun, const _Err&>,
@@ -921,8 +927,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp)
+    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform_error(_Fun&& __fun) && {
     static_assert(invocable<_Fun, _Err>,
@@ -942,8 +948,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Tp, const _Tp))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Tp2, const _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform_error(_Fun&& __fun) const&& {
     static_assert(invocable<_Fun, const _Err>,
@@ -1269,12 +1275,8 @@ public:
   }
 
   // [expected.void.swap], swap
-  template<class _Err2>
-  static constexpr bool __can_swap = _LIBCUDACXX_TRAIT(is_swappable, _Err2)
-                                  && _LIBCUDACXX_TRAIT(is_move_constructible, _Err2);
-
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
-    (requires __can_swap<_Err2>)
+    (requires __expected::__can_swap<void, _Err2>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
   void swap(expected<void, _Err2>& __rhs) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2) &&
                                                    _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
@@ -1297,7 +1299,7 @@ public:
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
   auto swap(expected& __x, expected& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2) &&
                                                    _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
-    _LIBCUDACXX_TRAILING_REQUIRES(void)(requires __can_swap<_Err2>)
+    _LIBCUDACXX_TRAILING_REQUIRES(void)(requires __expected::__can_swap<void, _Err2>)
   {
     return __x.swap(__y); // some compiler warn about non void function without return
   }
@@ -1353,8 +1355,8 @@ public:
   }
 
   // [expected.void.monadic]
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, _Err&))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err2, _Err2&))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto and_then(_Fun&& __fun) & {
     using _Res = __remove_cvref_t<invoke_result_t<_Fun>>;
@@ -1371,8 +1373,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Err))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Err2))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto and_then(_Fun&& __fun) const& {
     using _Res = __remove_cvref_t<invoke_result_t<_Fun>>;
@@ -1389,8 +1391,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Err))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Err2))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto and_then(_Fun&& __fun) && {
     using _Res = __remove_cvref_t<invoke_result_t<_Fun>>;
@@ -1407,8 +1409,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, const _Err))
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err2, const _Err2))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto and_then(_Fun&& __fun) const&& {
     using _Res = __remove_cvref_t<invoke_result_t<_Fun>>;
@@ -1493,8 +1495,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, _Err&) _LIBCUDACXX_AND
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err2, _Err2&) _LIBCUDACXX_AND
               _LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) & {
@@ -1508,8 +1510,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, _Err&) _LIBCUDACXX_AND
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err2, _Err2&) _LIBCUDACXX_AND
             (!_LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) & {
@@ -1530,8 +1532,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Err) _LIBCUDACXX_AND
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Err2) _LIBCUDACXX_AND
               _LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) const& {
@@ -1545,8 +1547,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Err) _LIBCUDACXX_AND
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_copy_constructible, _Err2) _LIBCUDACXX_AND
             (!_LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) const& {
@@ -1567,8 +1569,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Err) _LIBCUDACXX_AND
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Err2) _LIBCUDACXX_AND
               _LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) && {
@@ -1581,8 +1583,8 @@ public:
       return expected<void, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
     }
   }
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Err) _LIBCUDACXX_AND
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_move_constructible, _Err2) _LIBCUDACXX_AND
             (!_LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) && {
@@ -1603,8 +1605,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, const _Err) _LIBCUDACXX_AND
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err2, const _Err2) _LIBCUDACXX_AND
               _LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) const&& {
@@ -1618,8 +1620,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Fun)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, const _Err) _LIBCUDACXX_AND
+  _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
+    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err2, const _Err2) _LIBCUDACXX_AND
             (!_LIBCUDACXX_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   auto transform(_Fun&& __fun) const&& {

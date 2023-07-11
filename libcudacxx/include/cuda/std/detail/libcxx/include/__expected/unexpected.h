@@ -93,8 +93,8 @@ public:
     _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, initializer_list<_Up>&, _Args...))
     : __unex_(__il, _CUDA_VSTD::forward<_Args>(__args)...) {}
 
-  unexpected& operator=(const unexpected&) = default;
-  unexpected& operator=(unexpected&&)      = default;
+  constexpr unexpected& operator=(const unexpected&) = default;
+  constexpr unexpected& operator=(unexpected&&)      = default;
 
   // [expected.un.obs]
   _LIBCUDACXX_INLINE_VISIBILITY
