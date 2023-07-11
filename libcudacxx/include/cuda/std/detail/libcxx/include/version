@@ -228,6 +228,7 @@ __cpp_lib_void_t                                        201411L <type_traits>
 #endif
 # define __cccl_lib_concepts                             202002L
 # define __cccl_lib_exchange_function                    201304L
+# define __cccl_lib_expected                             202211L
 // # define __cccl_lib_generic_associative_lookup           201304L
 # define __cccl_lib_integer_sequence                     201304L
 # define __cccl_lib_integral_constant_callable           201304L
@@ -236,6 +237,7 @@ __cpp_lib_void_t                                        201411L <type_traits>
 # define __cccl_lib_make_reverse_iterator                201402L
 // # define __cccl_lib_make_unique                          201304L
 # define __cccl_lib_null_iterators                       201304L
+# define __cccl_lib_optional                             202110L
 // # define __cccl_lib_quoted_string_io                     201304L
 # define __cccl_lib_result_of_sfinae                     201210L
 # define __cccl_lib_robust_nonmodifying_seq_ops          201304L
@@ -293,7 +295,6 @@ __cpp_lib_void_t                                        201411L <type_traits>
 // # define __cccl_lib_node_extract                         201606L
 // # define __cccl_lib_nonmember_container_access           201411L
 # define __cccl_lib_not_fn                               201603L
-# define __cccl_lib_optional                             201606L
 // # define __cccl_lib_parallel_algorithm                   201603L
 // # define __cccl_lib_raw_memory_algorithms                201606L
 // # define __cccl_lib_sample                               201603L
@@ -417,8 +418,6 @@ __cpp_lib_void_t                                        201411L <type_traits>
 // # define __cccl_lib_invoke_r                             202106L
 # define __cccl_lib_is_scoped_enum                       202011L
 // # define __cccl_lib_move_only_function                   202110L
-# undef  __cccl_lib_optional
-# define __cccl_lib_optional                             202110L
 // # define __cccl_lib_out_ptr                              202106L
 // # define __cccl_lib_ranges_chunk                         202202L
 // # define __cccl_lib_ranges_chunk_by                      202202L
@@ -448,6 +447,7 @@ __cpp_lib_void_t                                        201411L <type_traits>
 #endif
 # define __cpp_lib_concepts                             __cccl_lib_concepts
 # define __cpp_lib_exchange_function                    __cccl_lib_exchange_function
+# define __cpp_lib_expected                             __cccl_lib_expected
 # define __cpp_lib_generic_associative_lookup           201304L
 # define __cpp_lib_integer_sequence                     __cccl_lib_integer_sequence
 # define __cpp_lib_integral_constant_callable           __cccl_lib_integral_constant_callable
@@ -637,8 +637,6 @@ __cpp_lib_void_t                                        201411L <type_traits>
 // # define __cpp_lib_invoke_r                             __cccl_lib_invoke_r
 # define __cpp_lib_is_scoped_enum                       __cccl_lib_is_scoped_enum
 // # define __cpp_lib_move_only_function                   __cccl_lib_move_only_function
-// # undef  __cpp_lib_optional
-// # define __cpp_lib_optional                             __cccl_lib_optional
 // # define __cpp_lib_out_ptr                              __cccl_lib_out_ptr
 // # define __cpp_lib_ranges_chunk                         __cccl_lib_ranges_chunk
 // # define __cpp_lib_ranges_chunk_by                      __cccl_lib_ranges_chunk_by
