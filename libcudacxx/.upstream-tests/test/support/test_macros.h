@@ -423,9 +423,17 @@ constexpr bool unused(T &&) {return true;}
 #define _TEST_TOSTRING2(x) #x
 #define _TEST_TOSTRING(x) _TEST_TOSTRING2(x)
 #if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+#if defined (TEST_COMPILER_C1XX)
+# define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
+#else // ^^^ MSVC ^^^ / vvv not MSVC vvv
 # define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
-#else
+#endif // not MSVC
+#else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
+#if defined (TEST_COMPILER_C1XX)
+# define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(diag_suppress WARNING))
+#else // ^^^ MSVC ^^^ / vvv not MSVC vvv
 # define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(diag_suppress WARNING))
+#endif // not MSVC
 #endif
 
 #define TEST_CONSTEXPR_GLOBAL _LIBCUDACXX_CONSTEXPR_GLOBAL
