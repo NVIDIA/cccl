@@ -29,34 +29,19 @@ jobs:
     with:
       runner: linux-${{inputs.cpu}}-cpu16
       image: ${{inputs.build_image}}
-      command: "${{ inputs.build_script }} \"${{inputs.compiler_exe}}\" \"${{inputs.std}}\" \"${{inputs.gpu_build_archs}}\""
+      command: |
+        ${{ inputs.build_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
+
   test:
     needs: build
     if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' && inputs.run_tests}}
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
-    runs-on: linux-${{inputs.cpu}}-gpu-v100-latest-1
-    container: 
-      options: -u root
-      image: ${{ inputs.test_image }}
+    uses: ./.github/workflows/run-as-coder.yml
+    with:
+      runner: linux-${{inputs.cpu}}-gpu-v100-latest-1
+      image: ${{inputs.test_image}}
+      command: |
+        nvidia-smi
+        ${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
       env:
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
-    permissions:
-      id-token: write
-    steps:
-      - name: nvidia-smi
-        run: nvidia-smi
-      - name: Checkout repo
-        uses: actions/checkout@v3
-        with:
-          path: cccl
-      - name: Move files to coder user home directory
-        run: |
-          cp -R cccl /home/coder/cccl
-          chown -R coder:coder /home/coder/
-      - name: Configure credentials and environment variables for sccache
-        uses: ./cccl/.github/actions/configure_cccl_sccache
-      - name: Run test script
-        shell: su coder {0}
-        run: | 
-            cd ~/cccl
-            time ./${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
