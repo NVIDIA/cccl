@@ -17,11 +17,14 @@
 //              : sizeof(ElementType) * Extent>
 //     as_bytes(span<ElementType, Extent> s) noexcept;
 
-
 #include <cuda/std/span>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
+
+#ifdef TEST_COMPILER_MSVC_2017
+#pragma warning(disable: 4307) // integral constant overflow
+#endif // TEST_COMPILER_MSVC_2017
 
 template <typename Span>
 __host__ __device__
@@ -39,7 +42,9 @@ void testRuntimeSpan(Span sp)
         assert(spBytes.extent == sizeof(typename Span::element_type) * sp.extent);
 
     assert((void *) spBytes.data() == (void *) sp.data());
+#ifndef TEST_COMPILER_MSVC_2017
     assert(spBytes.size() == sp.size_bytes());
+#endif // !TEST_COMPILER_MSVC_2017
 }
 
 struct A{};
