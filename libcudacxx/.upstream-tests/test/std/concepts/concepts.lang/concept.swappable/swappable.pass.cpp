@@ -12,9 +12,6 @@
 // template<class T>
 // concept swappable = // see below
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>

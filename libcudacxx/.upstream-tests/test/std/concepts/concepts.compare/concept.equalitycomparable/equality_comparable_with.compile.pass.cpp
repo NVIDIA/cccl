@@ -12,9 +12,6 @@
 // template<class T, class U>
 // concept equality_comparable_with = // see below
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/concepts>
 

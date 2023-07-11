@@ -13,9 +13,6 @@
 
 #include "test_macros.h"
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #if TEST_STD_VER > 17
 // This overload should never be called. It exists solely to force subsumption.

@@ -12,9 +12,6 @@
 // template<class Derived, class Base>
 // concept derived_from;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
