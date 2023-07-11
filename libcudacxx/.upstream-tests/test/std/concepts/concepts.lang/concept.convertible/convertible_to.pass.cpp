@@ -230,11 +230,15 @@ int main(int, char**) {
   CheckConvertibleTo<NoexceptFunction, NoexceptFunction&>();
   CheckConvertibleTo<NoexceptFunction, NoexceptFunction*>();
   CheckConvertibleTo<NoexceptFunction, NoexceptFunction* const>();
+#ifndef TEST_COMPILER_MSVC_2017
   CheckConvertibleTo<NoexceptFunction, Function&>();
+#endif // !TEST_COMPILER_MSVC_2017
   CheckConvertibleTo<NoexceptFunction, Function*>();
   CheckConvertibleTo<NoexceptFunction, Function* const>();
 
+#ifndef TEST_COMPILER_MSVC_2017
   static_assert(convertible_to<NoexceptFunction, Function&&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
   static_assert(convertible_to<NoexceptFunction, NoexceptFunction&&>, "");
 
   CheckNotConvertibleTo<NoexceptFunction, Array>();
@@ -245,9 +249,13 @@ int main(int, char**) {
 
   // NoexceptFunction&
   CheckNotConvertibleTo<NoexceptFunction&, void>();
+#ifndef TEST_COMPILER_MSVC_2017
   CheckNotConvertibleTo<NoexceptFunction&, Function>();
+#endif // !TEST_COMPILER_MSVC_2017
   CheckNotConvertibleTo<NoexceptFunction&, NoexceptFunction>();
+#ifndef TEST_COMPILER_MSVC_2017
   CheckConvertibleTo<NoexceptFunction&, Function&>();
+#endif // !TEST_COMPILER_MSVC_2017
   CheckConvertibleTo<NoexceptFunction&, NoexceptFunction&>();
 
   CheckConvertibleTo<NoexceptFunction&, Function*>();

@@ -381,6 +381,7 @@ struct s2 {
   __host__ __device__ friend void swap(s2 const volatile&, s2 const volatile&);
 };
 
+#ifndef TEST_COMPILER_MSVC_2017
 struct swappable_with_const_s2 {
   __host__ __device__ swappable_with_const_s2(swappable_with_const_s2 const&);
   __host__ __device__ swappable_with_const_s2(swappable_with_const_s2 const&&);
@@ -429,6 +430,7 @@ struct swappable_with_cv_s2 {
 };
 static_assert(swappable_with<swappable_with_cv_s2 const volatile&,
                                   s2 const volatile&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 
 struct swappable_with_rvalue_ref_to_s1_but_not_swappable {
   __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_s1_but_not_swappable&&,
@@ -515,6 +517,7 @@ struct s3 {
   __host__ __device__ friend void swap(s3 const volatile&&, s3 const volatile&&);
 };
 
+#ifndef TEST_COMPILER_MSVC_2017
 struct swappable_with_rvalue_ref_to_s3 {
   __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_s3&&,
                    swappable_with_rvalue_ref_to_s3&&);
@@ -544,6 +547,7 @@ struct swappable_with_rvalue_ref_to_const_s3 {
 };
 static_assert(swappable_with<swappable_with_rvalue_ref_to_const_s3 const&&,
                                   s3 const&&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 
 #if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC ignores the rvalue/lvalue distinction in the swap definitions
 struct swappable_with_rvalue_ref_to_volatile_s3 {
@@ -611,7 +615,9 @@ static_assert(swappable_with<union_swap::adl_swappable&,
                                   union_swap::adl_swappable&>, "");
 static_assert(swappable_with<union_swap::adl_swappable&&,
                                   union_swap::adl_swappable&&>, "");
+#ifndef TEST_COMPILER_MSVC_2017
 static_assert(swappable_with<union_swap::adl_swappable&, int&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 } // namespace adl
 
 namespace standard_types {
@@ -636,6 +642,7 @@ static_assert(
 static_assert(!check_swappable_with<HasANonMovable, HasANonMovable>(), "");
 } // namespace types_with_purpose
 
+#ifndef TEST_COMPILER_MSVC_2017
 namespace LWG3175 {
 // Example taken directly from [concept.swappable]
 _LIBCUDACXX_TEMPLATE(class T, class U)
@@ -680,5 +687,6 @@ constexpr bool CheckRegression() {
 
 static_assert(CheckRegression(), "");
 } // namespace LWG3175
+#endif // !TEST_COMPILER_MSVC_2017
 
 int main(int, char**) { return 0; }
