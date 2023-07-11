@@ -1,0 +1,93 @@
+name: build and test
+
+defaults:
+  run:
+    shell: bash -exo pipefail {0}
+
+on:
+  workflow_call:
+    inputs:
+      cuda_version: {type: string, required: true}
+      compiler: {type: string, required: true}
+      compiler_exe: {type: string, required: true}
+      compiler_version: {type: string, required: true}
+      std: {type: string, required: true}
+      gpu_build_archs: {type: string, required: true}
+      cpu: {type: string, required: true}
+      os: {type: string, required: true}
+      build_script: {type: string, required: false}
+      test_script: {type: string, required: false}
+      run_tests: {type: boolean, required: false, default: true}
+      build_image: {type: string, required: false}
+      test_image: {type: string, required: false}
+
+jobs:
+  build:
+    if: inputs.build_script != '' && inputs.build_image != ''
+    name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
+    runs-on: linux-${{inputs.cpu}}-cpu16
+    container: 
+      options: -u root
+      image: ${{ inputs.build_image }}
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          path: cccl
+      # In order for sccache to be shared between CI and lcaal devcontainers, code needs to be in the same absolute path
+      # This ensures the code is in the same path as it is within the devcontainer
+      - name: Move files to coder user home directory
+        run: |
+          cp -R cccl /home/coder/cccl
+          chown -R coder:coder /home/coder/
+      - name: Configure credentials and environment variables for sccache
+        uses: ./cccl/.github/actions/configure_cccl_sccache
+      - name: Run build script
+        shell: su coder {0}
+        run: | 
+            cd ~/cccl
+            cmd="${{ inputs.build_script }} \"${{inputs.compiler_exe}}\" \"${{inputs.std}}\" \"${{inputs.gpu_build_archs}}\""
+            eval $cmd || exit_code=$?
+            if [ ! -z "$exit_code" ]; then
+                echo "::error::Build failed! To checkout the corresponding code and reproduce this build locally, run the following commands:" 
+                echo "git clone --branch $GITHUB_REF_NAME --single-branch --recurse-submodules https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+                echo "docker run --rm -it --gpus all --pull=always --volume \$PWD:/repo --workdir /repo ${{ inputs.build_image }} $cmd"
+                echo "Alternatively, for a more convenient, interactive environment to reproduce the issue, you can launch a devcontainer in vscode:"
+                echo "git clone --branch $GITHUB_REF_NAME --single-branch --recurse-submodules https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+                echo ".devcontainer/launch.sh ${{inputs.cuda_version}} ${{inputs.compiler}}${{inputs.compiler_version}}"
+                echo "Then, open a terminal inside vscode (ctrl+shift+\`) and run:"
+                echo "$cmd"
+                exit $exit_code
+            fi
+  test:
+    needs: build
+    if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' && inputs.run_tests}}
+    name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
+    runs-on: linux-${{inputs.cpu}}-gpu-v100-latest-1
+    container: 
+      options: -u root
+      image: ${{ inputs.test_image }}
+      env:
+        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
+    permissions:
+      id-token: write
+    steps:
+      - name: nvidia-smi
+        run: nvidia-smi
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          path: cccl
+      - name: Move files to coder user home directory
+        run: |
+          cp -R cccl /home/coder/cccl
+          chown -R coder:coder /home/coder/
+      - name: Configure credentials and environment variables for sccache
+        uses: ./cccl/.github/actions/configure_cccl_sccache
+      - name: Run test script
+        shell: su coder {0}
+        run: | 
+            cd ~/cccl
+            time ./${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"

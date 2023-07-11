@@ -1,0 +1,57 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef __cuda_std__
+#define __cuda_std__
+
+#ifdef __CUDACC__
+    #if defined(__clang__) || defined(__FLT16_MANT_DIG__)
+        #include <cuda_fp16.h>
+    #endif
+    #define _LIBCUDACXX_CUDACC_VER_MAJOR __CUDACC_VER_MAJOR__
+    #define _LIBCUDACXX_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
+    #define _LIBCUDACXX_CUDACC_VER_BUILD __CUDACC_VER_BUILD__
+    #define _LIBCUDACXX_CUDACC_VER                                                  \
+        _LIBCUDACXX_CUDACC_VER_MAJOR * 100000 + _LIBCUDACXX_CUDACC_VER_MINOR * 1000 + \
+        _LIBCUDACXX_CUDACC_VER_BUILD
+#endif
+
+#define _LIBCUDACXX_CUDA_API_VERSION 2002000
+
+#define _LIBCUDACXX_CUDA_API_VERSION_MAJOR \
+  (_LIBCUDACXX_CUDA_API_VERSION / 1000000)
+
+#define _LIBCUDACXX_CUDA_API_VERSION_MINOR \
+  (_LIBCUDACXX_CUDA_API_VERSION / 1000 % 1000)
+
+#define _LIBCUDACXX_CUDA_API_VERSION_PATCH \
+  (_LIBCUDACXX_CUDA_API_VERSION % 1000)
+
+#ifndef _LIBCUDACXX_CUDA_ABI_VERSION_LATEST
+#  define _LIBCUDACXX_CUDA_ABI_VERSION_LATEST 4
+#endif
+
+#ifdef _LIBCUDACXX_CUDA_ABI_VERSION
+#  if _LIBCUDACXX_CUDA_ABI_VERSION != 2 && _LIBCUDACXX_CUDA_ABI_VERSION != 3 && _LIBCUDACXX_CUDA_ABI_VERSION != 4
+#    error Unsupported libcu++ ABI version requested. Please define _LIBCUDACXX_CUDA_ABI_VERSION to either 2 or 3.
+#  endif
+#else
+#  define _LIBCUDACXX_CUDA_ABI_VERSION _LIBCUDACXX_CUDA_ABI_VERSION_LATEST
+#endif
+
+#ifdef _LIBCUDACXX_PIPELINE_ASSUMED_ABI_VERSION
+#  if _LIBCUDACXX_PIPELINE_ASSUMED_ABI_VERSION != _LIBCUDACXX_CUDA_ABI_VERSION
+#    error cuda_pipeline.h has assumed a different libcu++ ABI version than provided by this library. To fix this, please include a libcu++ header before including cuda_pipeline.h, or upgrade to a version of the toolkit this version of libcu++ shipped in.
+#  endif
+#endif
+
+#include "libcxx/include/__config"
+
+#endif //__cuda_std__

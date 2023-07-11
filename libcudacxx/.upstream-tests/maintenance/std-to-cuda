@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -e
+
+root_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+stdlib_headers=$(<"${root_dir}/maintenance/stdlib-headers")
+header_replacements=$(echo "${stdlib_headers}" | sed 's#<\(.*\)>#-e s:<\1>:<cuda/std/\1>:g#')
+
+find "${root_dir}/test" -name "*.cpp" |
+while read -r file
+do
+    sed -i "${file}" ${header_replacements}
+    perl -pi -e 's/((?<!cuda::))std::/\1cuda::std::/g' "${file}"
+done
+

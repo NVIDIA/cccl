@@ -1,0 +1,73 @@
+#include <nvrtc.h>
+#include <cuda.h>
+#include <stdio.h>
+
+#include <memory>
+
+#define NVRTC_SAFE_CALL(x)                                        \
+  do {                                                            \
+    nvrtcResult result = x;                                       \
+    if (result != NVRTC_SUCCESS) {                                \
+      printf("\nNVRTC ERROR: %s failed with error %s\n",          \
+        #x, nvrtcGetErrorString(result));                         \
+      exit(1);                                                    \
+    }                                                             \
+  } while(0)
+
+#define CUDA_SAFE_CALL(x)                                         \
+  do {                                                            \
+    CUresult result = x;                                          \
+    if (result != CUDA_SUCCESS) {                                 \
+      const char *msg;                                            \
+      cuGetErrorName(result, &msg);                               \
+      printf("\nCUDA ERROR: %s failed with error %s\n", #x, msg); \
+      exit(1);                                                    \
+    }                                                             \
+  } while(0)
+
+#define CUDA_API_CALL(x) \
+  do {                                                            \
+    cudaError_t err = x;                                          \
+    if (err != cudaSuccess)                                       \
+    {                                                             \
+      printf("\nCUDA ERROR: %s: %s\n",                            \
+        cudaGetErrorName(err), cudaGetErrorString(err));          \
+      return err;                                                 \
+    }                                                             \
+  } while(0)
+
+void list_devices()
+{
+    int device_count;
+    cudaGetDeviceCount(&device_count);
+    printf("CUDA devices found: %d\n", device_count);
+
+    int selected_device;
+    cudaGetDevice(&selected_device);
+
+    for (int dev = 0; dev < device_count; ++dev)
+    {
+        cudaDeviceProp device_prop;
+        cudaGetDeviceProperties(&device_prop, dev);
+
+        printf("Device %d: \"%s\", ", dev, device_prop.name);
+        if(dev == selected_device)
+            printf("Selected, ");
+        else
+            printf("Unused, ");
+
+        printf("SM%d%d, %zu [bytes]\n",
+            device_prop.major, device_prop.minor,
+            device_prop.totalGlobalMem);
+    }
+}
+
+const char * program = R"program(
+__host__ __device__ int fake_main(int argc, char ** argv);
+#define main fake_main
+
+// extern "C" to stop the name from being mangled
+extern "C" __global__ void main_kernel() {
+    fake_main(0, NULL);
+}
+

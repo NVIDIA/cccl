@@ -1,0 +1,27 @@
+{
+  "shutdownAction": "stopContainer",
+  "image": "rapidsai/devcontainers:23.06-cpp-gcc9-cuda12.1-ubuntu20.04",
+  "hostRequirements": {
+    "gpu": true
+  },
+  "initializeCommand": [
+    "/bin/bash",
+    "-c",
+    "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config}"
+  ],
+  "containerEnv": {
+    "SCCACHE_REGION": "us-east-2",
+    "SCCACHE_BUCKET": "rapids-sccache-devs",
+    "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
+    "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
+    "DEVCONTAINER_NAME": "cuda12.1-gcc9"
+  },
+  "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
+  "mounts": [
+    "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/.config,target=/home/coder/.config,type=bind,consistency=consistent"
+  ],
+  "name": "cuda12.1-gcc9"
+}
