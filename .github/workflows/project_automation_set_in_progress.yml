@@ -50,7 +50,7 @@ jobs:
           if [ ${{ github.event_name }} == 'pull_request_review' ]; then
             if [ ${{ github.event.review.state }} != 'changes_requested' ]; then
               echo "Changes not requested, exiting"
-              exit 1
+              exit 0
             fi
           fi
 
