@@ -2,7 +2,7 @@ name: Run as coder user
 
 defaults:
   run:
-    shel:: bash -exo pipefail {0}
+    shell: bash -exo pipefail {0}
 
 
 on:
