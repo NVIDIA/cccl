@@ -97,7 +97,7 @@ int main(int, char**)
     // cuda::std::allocator not supported
     // cuda::std::allocator<int> A;
     { // rvalue reference
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
         T t1(42);
         cuda::std::tuple< T&& > t2(cuda::std::move(t1));
         assert(&cuda::std::get<0>(t2) == &t1);
@@ -119,7 +119,7 @@ int main(int, char**)
         assert(&cuda::std::get<0>(t2) == &t1);
     }
     { // const rvalue reference
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
         T t1(42);
 
         cuda::std::tuple< T const && > t2(cuda::std::move(t1));
@@ -159,7 +159,7 @@ int main(int, char**)
     // the 'tuple(UTypes...)' ctor should be chosen and 'UDT' constructed from
     // 'tuple<T>'.
     {
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
         using VT = ConstructibleFromTupleAndInt;
         cuda::std::tuple<int> t1(42);
         cuda::std::tuple<VT> t2(t1);
@@ -167,7 +167,7 @@ int main(int, char**)
 #endif
     }
     {
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
         using VT = ConvertibleFromTupleAndInt;
         cuda::std::tuple<int> t1(42);
         cuda::std::tuple<VT> t2 = {t1};

@@ -108,7 +108,7 @@ struct cv_move_assign_and_traditional_move_assign {
   operator=(cv_move_assign_and_traditional_move_assign&&) const volatile;
 };
 
-#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
 struct const_move_assign_and_default_ops {
   const_move_assign_and_default_ops(const_move_assign_and_default_ops const&) =
       default;
@@ -146,7 +146,7 @@ struct cv_move_assign_and_default_ops {
   __host__ __device__ cv_move_assign_and_default_ops&
   operator=(cv_move_assign_and_default_ops&&) const volatile;
 };
-#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
 
 struct deleted_assignment_from_const_rvalue {
   __host__ __device__ deleted_assignment_from_const_rvalue(

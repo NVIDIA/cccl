@@ -18,6 +18,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
 #include "test_iterators.h"
 
 struct Foo {
@@ -172,16 +173,17 @@ static_assert(!can_construct_at(contiguous_iterator<Foo*>(), 1, '2', 3.0));
 #endif
 // Can't construct function pointers.
 
-#ifndef _LIBCUDACXX_COMPILER_MSVC // nvbug 4075886
+#ifndef TEST_COMPILER_MSVC // nvbug 4075886
 static_assert(!can_construct_at((int(*)())nullptr));
 static_assert(!can_construct_at((int(*)())nullptr, nullptr));
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // TEST_COMPILER_MSVC
 
 int main(int, char**)
 {
     test();
-#if !(defined(_LIBCUDACXX_COMPILER_CLANG) && __clang_major__ <= 10) \
- && !(defined(_LIBCUDACXX_COMPILER_MSVC)  && _MSC_VER <= 1929)
+#if !(defined(TEST_COMPILER_CLANG) && __clang_major__ <= 10) \
+ && !defined(TEST_COMPILER_MSVC_2017) \
+ && !defined(TEST_COMPILER_MSVC_2019)
     static_assert(test());
 #endif
     return 0;

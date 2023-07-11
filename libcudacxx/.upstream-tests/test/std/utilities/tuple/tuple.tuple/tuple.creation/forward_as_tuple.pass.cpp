@@ -67,7 +67,7 @@ int main(int, char**)
     {
         test0(cuda::std::forward_as_tuple());
     }
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
     {
         test1a(cuda::std::forward_as_tuple(1));
     }

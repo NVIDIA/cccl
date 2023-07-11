@@ -64,7 +64,7 @@ __host__ __device__ void test_sfinae() {
     }
     // args constructors
     {
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
         static_assert(cuda::std::is_constructible<Tup, Elem&&>::value, "");
 #endif
         static_assert(!cuda::std::is_constructible<Tup, Elem const&>::value, "");
@@ -96,7 +96,7 @@ int main(int, char**)
         T t = cuda::std::move(t0);
         unused(t); // Prevent unused warning
     }
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
     {
         typedef cuda::std::tuple<MoveOnly> T;
         T t0(MoveOnly(0));

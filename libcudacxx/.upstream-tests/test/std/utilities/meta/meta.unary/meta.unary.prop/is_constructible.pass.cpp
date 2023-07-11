@@ -93,7 +93,7 @@ __host__ __device__
 void test_is_constructible()
 {
     static_assert( (cuda::std::is_constructible<T>::value), "");
-#ifndef TEST_COMPILER_C1XX
+#ifndef TEST_COMPILER_MSVC
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
     LIBCPP11_STATIC_ASSERT((cuda::std::__libcpp_is_constructible<T>::type::value), "");
@@ -108,7 +108,7 @@ __host__ __device__
 void test_is_constructible()
 {
     static_assert(( cuda::std::is_constructible<T, A0>::value), "");
-#ifndef TEST_COMPILER_C1XX
+#ifndef TEST_COMPILER_MSVC
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
     LIBCPP11_STATIC_ASSERT((cuda::std::__libcpp_is_constructible<T, A0>::type::value), "");
@@ -123,7 +123,7 @@ __host__ __device__
 void test_is_constructible()
 {
     static_assert(( cuda::std::is_constructible<T, A0, A1>::value), "");
-#ifndef TEST_COMPILER_C1XX
+#ifndef TEST_COMPILER_MSVC
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
     LIBCPP11_STATIC_ASSERT((cuda::std::__libcpp_is_constructible<T, A0, A1>::type::value), "");
@@ -138,7 +138,7 @@ __host__ __device__
 void test_is_constructible()
 {
     static_assert(( cuda::std::is_constructible<T, A0, A1, A2>::value), "");
-#ifndef TEST_COMPILER_C1XX
+#ifndef TEST_COMPILER_MSVC
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
     LIBCPP11_STATIC_ASSERT((cuda::std::__libcpp_is_constructible<T, A0, A1, A2>::type::value), "");
@@ -153,7 +153,7 @@ __host__ __device__
 void test_is_not_constructible()
 {
     static_assert((!cuda::std::is_constructible<T>::value), "");
-#ifndef TEST_COMPILER_C1XX
+#ifndef TEST_COMPILER_MSVC
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
     LIBCPP11_STATIC_ASSERT((!cuda::std::__libcpp_is_constructible<T>::type::value), "");
@@ -168,7 +168,7 @@ __host__ __device__
 void test_is_not_constructible()
 {
     static_assert((!cuda::std::is_constructible<T, A0>::value), "");
-#if !defined(TEST_COMPILER_C1XX) \
+#if !defined(TEST_COMPILER_MSVC) \
  && !(defined(TEST_COMPILER_CLANG) && __clang_major__ >= 16)
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
@@ -241,7 +241,7 @@ int main(int, char**)
     test_is_constructible<int const&, int>();
     test_is_constructible<int const&, int&&>();
 
-#ifndef TEST_COMPILER_C1XX
+#ifndef TEST_COMPILER_MSVC
     // This appears to be an MSVC bug, it reproduces with their standard library
     // in 19.20:
     // https://godbolt.org/z/X455LN
@@ -279,7 +279,7 @@ int main(int, char**)
 
     // test that T must also be destructible
     test_is_constructible<PrivateDtor&, PrivateDtor&>();
-#if !defined(TEST_COMPILER_C1XX) || 1920 <= _MSC_VER
+#if !defined(TEST_COMPILER_MSVC_2017)
     test_is_not_constructible<PrivateDtor, int>();
 #endif
 
@@ -342,7 +342,7 @@ int main(int, char**)
         clang_disallows_valid_static_cast_bug !=
         cuda::std::__libcpp_is_constructible<int&&, ExplicitTo<int>>::value, "");
     static_assert(cuda::std::is_constructible<int&&, ExplicitTo<int>>::value, "");
-#elif defined(TEST_COMPILER_C1XX) && defined(TEST_COMPILER_NVCC)
+#elif defined(TEST_COMPILER_MSVC) && defined(TEST_COMPILER_NVCC)
     // FIXME NVCC and MSVC disagree about the validity of these tests, and give
     //       different answers in host and device code, which is just wonderful.
 #elif defined(TEST_CLANG_VER) && defined(TEST_COMPILER_NVCC)
