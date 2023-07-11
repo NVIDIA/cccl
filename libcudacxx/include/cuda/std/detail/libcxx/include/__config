@@ -27,6 +27,16 @@
 #  define _LIBCUDACXX_COMPILER_NVRTC
 #endif
 
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#if _MSC_VER < 1917
+#define _LIBCUDACXX_COMPILER_MSVC_2017
+#elif _MSC_VER < 1930
+#define _LIBCUDACXX_COMPILER_MSVC_2019
+#else
+#define _LIBCUDACXX_COMPILER_MSVC_2022
+#endif
+#endif // defined(_LIBCUDACXX_COMPILER_MSVC)
+
 #if defined(__NVCC__)
 // This is not mutually exclusive with other compilers, as NVCC uses a host
 // compiler.
