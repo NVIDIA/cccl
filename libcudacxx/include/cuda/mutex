@@ -1,0 +1,30 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_MUTEX
+#define _CUDA_MUTEX
+
+#include "std/mutex"
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+template<thread_scope _Sco>
+using mutex = _CUDA_VSTD::__mutex_base<_Sco>;
+
+template<thread_scope _Sco>
+using timed_mutex = _CUDA_VSTD::__mutex_base<_Sco>;
+
+template<thread_scope _Sco>
+using once_flag = _CUDA_VSTD::__once_flag_base<_Sco>;
+
+using _CUDA_VSTD::call_once;
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif //_CUDA_MUTEX

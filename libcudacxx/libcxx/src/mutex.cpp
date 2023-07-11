@@ -27,6 +27,7 @@ const adopt_lock_t  adopt_lock{};
 
 // ~mutex is defined elsewhere
 
+template<>
 void
 mutex::lock()
 {
@@ -35,12 +36,14 @@ mutex::lock()
         __throw_system_error(ec, "mutex lock failed");
 }
 
+template<>
 bool
 mutex::try_lock() _NOEXCEPT
 {
     return __libcpp_mutex_trylock(&__m_);
 }
 
+template<>
 void
 mutex::unlock() _NOEXCEPT
 {
@@ -200,7 +203,8 @@ _LIBCUDACXX_SAFE_STATIC static __libcpp_mutex_t mut = _LIBCUDACXX_MUTEX_INITIALI
 _LIBCUDACXX_SAFE_STATIC static __libcpp_condvar_t cv = _LIBCUDACXX_CONDVAR_INITIALIZER;
 #endif
 
-void __call_once(volatile once_flag::_State_type& flag, void* arg,
+template<>
+void __call_once<0>(volatile typename __once_flag_base<0>::_State_type& flag, void* arg,
                  void (*func)(void*))
 {
 #if defined(_LIBCUDACXX_HAS_NO_THREADS)

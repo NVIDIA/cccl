@@ -1824,8 +1824,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
 
 #ifndef _LIBCUDACXX_HAS_THREAD_API_CUDA
-#if defined(__cuda_std__)                               \
- && (defined(__CUDA_ARCH__) || defined(__EMSCRIPTEN__))
+#ifdef __cuda_std__
 #  define _LIBCUDACXX_HAS_THREAD_API_CUDA
 #endif // __cuda_std__
 #endif // _LIBCUDACXX_HAS_THREAD_API_CUDA

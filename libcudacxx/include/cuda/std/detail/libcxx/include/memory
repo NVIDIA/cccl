@@ -663,6 +663,7 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #include "__iterator/iterator_traits.h"
 #include "__iterator/iterator.h"
 #include "__memory/addressof.h"
+#include "__memory/atomic_load.h"
 #include "__memory/construct_at.h"
 #include "__memory/pointer_traits.h"
 #include "__memory/voidify.h"
@@ -709,33 +710,6 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-template <class _ValueType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_ValueType __libcpp_relaxed_load(_ValueType const* __value) {
-#if !defined(_LIBCUDACXX_HAS_NO_THREADS) && \
-    defined(__ATOMIC_RELAXED) &&        \
-    (__has_builtin(__atomic_load_n) || defined(_LIBCUDACXX_COMPILER_GCC))
-    return __atomic_load_n(__value, __ATOMIC_RELAXED);
-#else
-    return *__value;
-#endif
-}
-
-template <class _ValueType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_ValueType __libcpp_acquire_load(_ValueType const* __value) {
-#if !defined(_LIBCUDACXX_HAS_NO_THREADS) && \
-    defined(__ATOMIC_ACQUIRE) &&        \
-    (__has_builtin(__atomic_load_n) || defined(_LIBCUDACXX_COMPILER_GCC))
-    return __atomic_load_n(__value, __ATOMIC_ACQUIRE);
-#else
-    return *__value;
-#endif
-}
-
-// addressof moved to <type_traits>
-
 template <class _Tp> class allocator;
 
 template <>

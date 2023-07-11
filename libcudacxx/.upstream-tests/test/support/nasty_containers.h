@@ -9,12 +9,17 @@
 #ifndef NASTY_CONTAINERS_H
 #define NASTY_CONTAINERS_H
 
-#include <cassert>
-#include <vector>
-#include <list>
+#include <cuda/std/cassert>
+#if defined(_LIBCUDACXX_HAS_VECTOR)
+#include <cuda/std/vector>
+#endif
+#if defined(_LIBCUDACXX_HAS_LIST)
+#include <cuda/std/list>
+#endif
 
 #include "test_macros.h"
 
+#if defined(_LIBCUDACXX_HAS_VECTOR)
 template <class T>
 class nasty_vector
 {
@@ -135,7 +140,9 @@ public:
 
 template <class T>
 bool operator==(const nasty_vector<T>& x, const nasty_vector<T>& y) { return x.v_ == y.v_; }
+#endif
 
+#if defined(_LIBCUDACXX_HAS_LIST)
 template <class T>
 class nasty_list
 {
@@ -282,6 +289,7 @@ public:
 
 template <class T>
 bool operator==(const nasty_list<T>& x, const nasty_list<T>& y) { return x.l_ == y.l_; }
+#endif
 
 // Not really a mutex, but can play one in tests
 class nasty_mutex
