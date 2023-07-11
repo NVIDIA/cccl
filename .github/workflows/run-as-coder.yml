@@ -40,7 +40,7 @@ jobs:
         shell: su coder {0}
         run: | 
             cd ~/cccl
-            eval ${{inputs.command}} || exit_code=$?
+            eval "${{inputs.command}}" || exit_code=$?
             if [ ! -z "$exit_code" ]; then
                 echo "::error::Error! To checkout the corresponding code and reproduce locally, run the following commands:" 
                 echo "git clone --branch $GITHUB_REF_NAME --single-branch --recurse-submodules https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
