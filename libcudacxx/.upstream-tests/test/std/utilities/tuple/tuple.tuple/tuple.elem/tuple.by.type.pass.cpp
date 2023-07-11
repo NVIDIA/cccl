@@ -89,7 +89,7 @@ int main(int, char**)
     static_assert(noexcept(cuda::std::get<int const&>(cuda::std::move(t))), "");
     }
 
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
     {
     int x = 42;
     int y = 43;

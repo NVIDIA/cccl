@@ -40,9 +40,9 @@ static_assert(!predicate<void (S::*)(), S&>, "");
 
 static_assert(!predicate<bool(S)>, "");
 static_assert(!predicate<bool(S)>, "");
-#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // unspecified MSVC bug
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // unspecified MSVC bug
 static_assert(!predicate<bool(S&), S>, "");
-#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
 static_assert(!predicate<bool(S&), S const&>, "");
 static_assert(predicate<bool(S&), S&>, "");
 

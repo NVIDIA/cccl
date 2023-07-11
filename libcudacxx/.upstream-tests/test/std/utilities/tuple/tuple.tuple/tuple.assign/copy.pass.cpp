@@ -72,7 +72,7 @@ int main(int, char**)
         assert(cuda::std::get<2>(t) == "some text");
     }
     */
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
     {
         // test reference assignment.
         using T = cuda::std::tuple<int&, int&&>;

@@ -29,7 +29,7 @@ int main(int, char**)
         T t1;
         t0.swap(t1);
     }
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
     {
         typedef cuda::std::tuple<MoveOnly> T;
         T t0(MoveOnly(0));
