@@ -47,8 +47,8 @@ jobs:
       - name: Check if changes requested from a reviewer
         id: check_changes_requested
         run: |
-          if [ github.event_name == 'pull_request_review' ]; then
-            if [ github.event.review.state != 'changes_requested' ]; then
+          if [ ${{ github.event_name }} == 'pull_request_review' ]; then
+            if [ ${{ github.event.review.state }} != 'changes_requested' ]; then
               echo "Changes not requested, exiting"
               exit 1
             fi
@@ -56,7 +56,7 @@ jobs:
 
       - name: Generate token
         id: generate_token
-        uses: tibdex/github-app-token@36464acb844fc53b9b8b2401da68844f6b05ebb0
+        uses: tibdex/github-app-token@latest
         with:
           app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
           private_key: ${{ secrets.CCCL_AUTH_APP_PEM }}
