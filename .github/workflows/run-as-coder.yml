@@ -11,10 +11,7 @@ on:
       image: {type: string, required: true}
       runner: {type: string, required: true}
       command: {type: string, required: true}
-      env:
-        type: object
-        required: false
-        default: {}
+      env: { type: object, required: false, default: {} }
 
 jobs:
   run-as-coder:
