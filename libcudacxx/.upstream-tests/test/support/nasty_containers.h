@@ -295,26 +295,26 @@ bool operator==(const nasty_list<T>& x, const nasty_list<T>& y) { return x.l_ ==
 class nasty_mutex
 {
 public:
-     nasty_mutex() TEST_NOEXCEPT {}
-     ~nasty_mutex() {}
+     __host__ __device__ nasty_mutex() TEST_NOEXCEPT {}
+     __host__ __device__ ~nasty_mutex() {}
 
-    nasty_mutex *operator& ()   { assert(false); return nullptr; }
+    __host__ __device__ nasty_mutex *operator& ()   { assert(false); return nullptr; }
     template <typename T>
-    void operator, (const T &) { assert(false); }
+    __host__ __device__ void operator, (const T &) { assert(false); }
 
 private:
-    nasty_mutex(const nasty_mutex&)            { assert(false); }
-    nasty_mutex& operator=(const nasty_mutex&) { assert(false); return *this; }
+    __host__ __device__ nasty_mutex(const nasty_mutex&)            { assert(false); }
+    __host__ __device__ nasty_mutex& operator=(const nasty_mutex&) { assert(false); return *this; }
 
 public:
-    void lock()               {}
-    bool try_lock() TEST_NOEXCEPT { return true; }
-    void unlock() TEST_NOEXCEPT   {}
+    __host__ __device__ void lock()               {}
+    __host__ __device__ bool try_lock() TEST_NOEXCEPT { return true; }
+    __host__ __device__ void unlock() TEST_NOEXCEPT   {}
 
     // Shared ownership
-    void lock_shared()     {}
-    bool try_lock_shared() { return true; }
-    void unlock_shared()   {}
+    __host__ __device__ void lock_shared()     {}
+    __host__ __device__ bool try_lock_shared() { return true; }
+    __host__ __device__ void unlock_shared()   {}
 };
 
 #endif
