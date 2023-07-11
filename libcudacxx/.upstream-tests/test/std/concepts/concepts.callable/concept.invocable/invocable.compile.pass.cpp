@@ -12,9 +12,6 @@
 // template<class T, class U>
 // concept invocable;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/chrono>
 #include <cuda/std/concepts>

@@ -12,9 +12,6 @@
 // template<class From, class To>
 // concept common_reference_with;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>

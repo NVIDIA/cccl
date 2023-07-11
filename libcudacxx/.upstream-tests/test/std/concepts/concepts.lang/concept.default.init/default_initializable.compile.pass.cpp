@@ -18,9 +18,6 @@
 //     requires { T{}; } &&
 //     is-default-initializable<T>;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/array>
 #include <cuda/std/concepts>
