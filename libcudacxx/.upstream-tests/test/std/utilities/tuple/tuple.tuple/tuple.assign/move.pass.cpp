@@ -57,7 +57,7 @@ int main(int, char**)
         t = cuda::std::move(t0);
         unused(t);
     }
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
     {
         typedef cuda::std::tuple<MoveOnly> T;
         T t0(MoveOnly(0));

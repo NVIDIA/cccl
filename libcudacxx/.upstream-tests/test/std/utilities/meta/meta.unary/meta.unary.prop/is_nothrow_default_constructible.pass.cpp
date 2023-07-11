@@ -78,7 +78,7 @@ int main(int, char**)
     test_has_not_nothrow_default_constructor<int&>();
 #ifndef TEST_COMPILER_NVHPC
     test_has_not_nothrow_default_constructor<A>();
-#if TEST_STD_VER >= 11 && !defined(__INTEL_COMPILER) && (!defined(TEST_COMPILER_C1XX) || 1920 <= _MSC_VER)
+#if TEST_STD_VER >= 11 && !defined(__INTEL_COMPILER) && !defined(TEST_COMPILER_MSVC_2017)
     test_has_not_nothrow_default_constructor<DThrows>(); // This is LWG2116
 #endif
 #endif // TEST_COMPILER_NVHPC

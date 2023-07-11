@@ -115,10 +115,10 @@ int main(int, char**) {
 #if TEST_STD_VER > 17
     test_arrays();
 #if !defined(__CUDACC_RTC__)
-#if (defined(_LIBCUDACXX_COMPILER_CLANG) && __clang_major__ > 10) \
- || (defined(_LIBCUDACXX_COMPILER_GCC)   && __GNUC__ > 9)         \
- || (defined(_LIBCUDACXX_COMPILER_MSVC)  && _MSC_VER > 1929)      \
- ||  defined(_LIBCUDACXX_COMPILER_NVHPC)
+#if (defined(TEST_COMPILER_CLANG) && __clang_major__ > 10) \
+ || (defined(TEST_COMPILER_GCC)   && __GNUC__ > 9)         \
+ ||  defined(TEST_COMPILER_MSVC_2022)                      \
+ ||  defined(TEST_COMPILER_NVHPC)
     static_assert(test());
     // TODO: Until cuda::std::__construct_at has support for arrays, it's impossible to test this
     //       in a constexpr context (see https://reviews.llvm.org/D114903).

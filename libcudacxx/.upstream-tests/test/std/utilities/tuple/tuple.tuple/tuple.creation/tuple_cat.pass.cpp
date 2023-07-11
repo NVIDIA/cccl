@@ -78,7 +78,7 @@ int main(int, char**)
         unused(t); // Prevent unused warning
     }
     */
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
     {
         constexpr cuda::std::tuple<int> t1(1);
         constexpr cuda::std::tuple<int> t = cuda::std::tuple_cat(t1);
@@ -92,7 +92,7 @@ int main(int, char**)
     }
 #endif
 #endif
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
     {
         cuda::std::tuple<int, MoveOnly> t =
                                 cuda::std::tuple_cat(cuda::std::tuple<int, MoveOnly>(1, 2));
@@ -109,7 +109,7 @@ int main(int, char**)
         assert(cuda::std::get<2>(t) == 0);
     }
     */
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
     {
         cuda::std::tuple<int, MoveOnly> t = cuda::std::tuple_cat(cuda::std::pair<int, MoveOnly>(2, 1));
         assert(cuda::std::get<0>(t) == 2);
@@ -164,7 +164,7 @@ int main(int, char**)
         assert(cuda::std::get<1>(t3) == 3.5);
         assert(cuda::std::get<2>(t3) == nullptr);
     }
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
     {
         cuda::std::tuple<int*, MoveOnly> t1(nullptr, 1);
         cuda::std::tuple<int, double> t2(2, 3.5);

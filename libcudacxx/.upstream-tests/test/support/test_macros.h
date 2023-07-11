@@ -72,7 +72,7 @@
 #elif defined(__GNUC__)
 # define TEST_COMPILER_GCC
 #elif defined(_MSC_VER)
-# define TEST_COMPILER_C1XX
+# define TEST_COMPILER_MSVC
 #elif defined(__IBMCPP__)
 # define TEST_COMPILER_IBM
 #elif defined(__CUDACC_RTC__)
@@ -99,7 +99,7 @@
 
 /* Make a nice name for the standard version */
 #ifndef TEST_STD_VER
-#  if defined(TEST_COMPILER_C1XX)
+#  if defined(TEST_COMPILER_MSVC)
 #    if   !defined(_MSVC_LANG)
 #      define TEST_STD_VER 3
 #    elif _MSVC_LANG <= 201103L
@@ -423,13 +423,13 @@ constexpr bool unused(T &&) {return true;}
 #define _TEST_TOSTRING2(x) #x
 #define _TEST_TOSTRING(x) _TEST_TOSTRING2(x)
 #if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
-#if defined (TEST_COMPILER_C1XX)
+#if defined (TEST_COMPILER_MSVC)
 # define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
 #else // ^^^ MSVC ^^^ / vvv not MSVC vvv
 # define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
 #endif // not MSVC
 #else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
-#if defined (TEST_COMPILER_C1XX)
+#if defined (TEST_COMPILER_MSVC)
 # define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(diag_suppress WARNING))
 #else // ^^^ MSVC ^^^ / vvv not MSVC vvv
 # define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(diag_suppress WARNING))
@@ -442,6 +442,16 @@ constexpr bool unused(T &&) {return true;}
 #if defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000
 #define TEST_COMPILER_NVCC_BELOW_11_3
 #endif // defined(TEST_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000
+
+#if defined(TEST_COMPILER_MSVC)
+#if _MSC_VER < 1920
+#define TEST_COMPILER_MSVC_2017
+#elif _MSC_VER < 1930
+#define TEST_COMPILER_MSVC_2019
+#else
+#define TEST_COMPILER_MSVC_2022
+#endif
+#endif // defined(TEST_COMPILER_MSVC)
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop

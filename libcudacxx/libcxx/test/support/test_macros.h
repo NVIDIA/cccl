@@ -78,7 +78,7 @@
 #elif defined(__GNUC__)
 # define TEST_COMPILER_GCC
 #elif defined(_MSC_VER)
-# define TEST_COMPILER_C1XX
+# define TEST_COMPILER_MSVC
 #elif defined(__IBMCPP__)
 # define TEST_COMPILER_IBM
 #elif defined(__CUDACC_RTC__)
@@ -104,7 +104,7 @@
 
 /* Make a nice name for the standard version */
 #ifndef TEST_STD_VER
-#  if defined(TEST_COMPILER_C1XX)
+#  if defined(TEST_COMPILER_MSVC)
 #    if   !defined(_MSVC_LANG)
 #      define TEST_STD_VER 3
 #    elif _MSVC_LANG <= 201103L
