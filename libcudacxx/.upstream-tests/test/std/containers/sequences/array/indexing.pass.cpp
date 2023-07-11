@@ -33,6 +33,7 @@ __host__ __device__ constexpr bool check_idx( size_t idx, double val )
 
 int main(int, char**)
 {
+#ifndef TEST_COMPILER_MSVC_2017
     {
         typedef double T;
         typedef cuda::std::array<T, 3> C;
@@ -115,6 +116,7 @@ int main(int, char**)
         static_assert (check_idx(2, 3.5), "");
     }
 #endif
+#endif // !TEST_COMPILER_MSVC_2017
 
   return 0;
 }
