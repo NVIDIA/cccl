@@ -27,6 +27,7 @@ jobs:
     name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
     uses: ./.github/workflows/run-as-coder.yml
     with:
+      name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
       runner: linux-${{inputs.cpu}}-cpu16
       image: ${{inputs.build_image}}
       command: |
@@ -38,6 +39,7 @@ jobs:
     name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
     uses: ./.github/workflows/run-as-coder.yml
     with:
+      name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
       runner: linux-${{inputs.cpu}}-gpu-v100-latest-1
       image: ${{inputs.test_image}}
       command: |

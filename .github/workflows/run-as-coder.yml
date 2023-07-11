@@ -8,6 +8,7 @@ defaults:
 on:
   workflow_call:
     inputs:
+      name: {type: string, required: true}
       image: {type: string, required: true}
       runner: {type: string, required: true}
       command: {type: string, required: true}
@@ -15,7 +16,7 @@ on:
 
 jobs:
   run-as-coder:
-    name: Run ${{inputs.command}}
+    name: ${{inputs.name}}
     runs-on: ${{inputs.runner}}
     container:
       options: -u root
