@@ -43,4 +43,3 @@ jobs:
       command: |
         nvidia-smi
         ${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
-      env: '{ "NVIDIA_VISIBLE_DEVICES": "$${{ env.NVIDIA_VISIBLE_DEVICES }}" }'
