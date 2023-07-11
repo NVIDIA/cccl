@@ -19,9 +19,6 @@
 //     { lhs = std::forward<RHS>(rhs) } -> std::same_as<LHS>;
 //   };
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>

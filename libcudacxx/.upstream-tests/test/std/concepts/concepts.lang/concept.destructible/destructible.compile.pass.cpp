@@ -12,9 +12,6 @@
 // template<class T>
 // concept destructible = is_nothrow_destructible_v<T>;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
