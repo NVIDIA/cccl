@@ -60,6 +60,7 @@ int main(int, char**)
         C::const_reference r2 = c[2];
         assert(r2 == 3.5);
     }
+#ifndef TEST_COMPILER_MSVC_2017 // MSVC 2017 has issues with empty array
     { // Test operator[] "works" on zero sized arrays
         typedef double T;
         typedef cuda::std::array<T, 0> C;
@@ -115,6 +116,7 @@ int main(int, char**)
         static_assert (check_idx(2, 3.5), "");
     }
 #endif
+#endif // !TEST_COMPILER_MSVC_2017
 
   return 0;
 }
