@@ -840,10 +840,15 @@ extern "C++" {
 #if defined(_LIBCUDACXX_COMPILER_NVCC) \
  || defined(_LIBCUDACXX_COMPILER_NVRTC)
 #if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+# define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) __pragma(_LIBCUDACXX_TOSTRING(nv_diag_suppress _WARNING))
+# define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)  __pragma(_LIBCUDACXX_TOSTRING(nv_diag_default _WARNING))
+#else // ^^^ MSVC ^^^ / vvv not MSVC
 # define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING)     \
   _Pragma(_LIBCUDACXX_TOSTRING(nv_diagnostic push)) \
   _Pragma(_LIBCUDACXX_TOSTRING(nv_diag_suppress _WARNING))
 # define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(nv_diagnostic pop))
+#endif // not MSVC
 #elif defined(_LIBCUDACXX_COMPILER_NVHPC)
 # define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING)  \
   _Pragma(_LIBCUDACXX_TOSTRING(diagnostic push)) \
