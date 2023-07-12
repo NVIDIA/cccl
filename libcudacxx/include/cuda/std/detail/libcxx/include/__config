@@ -27,9 +27,6 @@
 #  define _LIBCUDACXX_COMPILER_NVRTC
 #endif
 
-#if defined(_LIBCUDACXX_COMPILER_GCC) && _LIBCUDACXX_STD_VER > 17
-#error "This is just a test"
-#endif
 
 #if defined(__NVCC__)
 // This is not mutually exclusive with other compilers, as NVCC uses a host
@@ -114,6 +111,11 @@ extern "C++" {
 #    endif
 #  endif
 #endif  // _LIBCUDACXX_STD_VER
+
+
+#if defined(_LIBCUDACXX_COMPILER_GCC) && _LIBCUDACXX_STD_VER > 17
+#error "This is just a test"
+#endif
 
 #if _LIBCUDACXX_STD_VER < 11
 #define _LIBCUDACXX_CXX03_LANG
