@@ -8,28 +8,6 @@ from .storage import Storage
 from .cmake import CMake
 
 
-def list_axes(benchmarks, sub_space):
-    print("### Axes")
-
-    axes = {}
-
-    for algname in benchmarks:
-        bench = BaseBench(algname)
-        for axis in bench.axes_values(sub_space, True) + bench.axes_values(sub_space, False):
-            for point in axis:
-                axis, value = point.split('=')
-                if axis in axes:
-                    axes[axis].add(value)
-                else:
-                    axes[axis] = {value}
-
-    for axis in axes:
-        print("  * `{}`".format(axis))
-
-        for value in axes[axis]:
-            print("    * `{}`".format(value))
-
-
 def list_benches():
     print("### Benchmarks")
 
@@ -68,21 +46,19 @@ def parse_arguments():
     parser.add_argument('-a', '--args', action='append',
                         type=str, help="Parameter in the format `Param=Value`.")
     parser.add_argument(
-        '--list-axes', action=argparse.BooleanOptionalAction, help="Show available parameters.")
-    parser.add_argument(
         '--list-benches', action=argparse.BooleanOptionalAction, help="Show available benchmarks.")
     return parser.parse_args()
 
 
-def run_benches(benchmarks, workload_sub_space, regex, seeker):
+def run_benches(benchmarks, sub_space, regex, seeker):
     pattern = re.compile(regex)
 
     for algname in benchmarks:
         if pattern.match(algname):
             bench = BaseBench(algname)
-            ct_workload_space = bench.ct_workload_space(workload_sub_space)
-            rt_workload_space = bench.rt_workload_space(workload_sub_space)
-            seeker(algname, ct_workload_space, rt_workload_space)
+            ct_space = bench.ct_workload_space(sub_space)
+            rt_values = bench.rt_axes_values(sub_space)
+            seeker(algname, ct_space, rt_values)
 
 
 def search(seeker):
@@ -99,10 +75,6 @@ def search(seeker):
 
     if args.args:
         workload_sub_space = parse_sub_space(args.args)
-
-    if args.list_axes:
-        list_axes(config.benchmarks, workload_sub_space)
-        return
 
     if args.list_benches:
         list_benches()
@@ -127,7 +99,7 @@ class BruteForceSeeker:
         self.base_center_estimator = base_center_estimator
         self.variant_center_estimator = variant_center_estimator
 
-    def __call__(self, algname, ct_workload_space, rt_workload_space):
+    def __call__(self, algname, ct_workload_space, rt_values):
         variants = Config().variant_space(algname)
 
         for ct_workload in ct_workload_space:
@@ -135,7 +107,7 @@ class BruteForceSeeker:
                 bench = Bench(algname, variant, list(ct_workload))
                 if bench.build():
                     score = bench.score(ct_workload, 
-                                        rt_workload_space, 
+                                        rt_values,
                                         self.base_center_estimator, 
                                         self.variant_center_estimator)
 

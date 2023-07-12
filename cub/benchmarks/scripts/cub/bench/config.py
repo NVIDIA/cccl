@@ -1,6 +1,20 @@
 import os
 import sys
+import random
 import itertools
+
+
+def randomized_cartesian_product(list_of_lists):
+    length = 1
+    for l in list_of_lists:
+        length *= len(l)
+
+    visited = set()
+    while len(visited) < length:
+        variant = tuple(map(random.choice, list_of_lists))
+        if variant not in visited:
+            visited.add(variant)
+            yield variant
 
 
 class Range:
@@ -113,7 +127,7 @@ class Config:
             for value in range(param_space.low, param_space.high, param_space.step):
                 variants[-1].append(RangePoint(param_space.definition, param_space.label, value))
 
-        return (VariantPoint(points) for points in itertools.product(*variants))
+        return (VariantPoint(points) for points in randomized_cartesian_product(variants))
 
     def variant_space_size(self, algname):
         num_variants = 1

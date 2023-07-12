@@ -166,7 +166,13 @@ void gen_it(T* d_buffer,
 }
 
 template <class T, class OffsetT>
-void copy(nvbench::state &state, nvbench::type_list<T, OffsetT>)
+void copy(nvbench::state &state, 
+          nvbench::type_list<T, OffsetT>, 
+          std::size_t elements, 
+          std::size_t min_buffer_size, 
+          std::size_t max_buffer_size,
+          bool randomize_input,
+          bool randomize_output)
 {
   using offset_t           = OffsetT;
   using it_t               = T *;
@@ -175,13 +181,6 @@ void copy(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   using buffer_size_it_t   = offset_t *;
   using buffer_offset_t    = std::uint32_t;
   using block_offset_t     = std::uint32_t;
-
-  const auto elements        = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  const auto max_buffer_size = static_cast<std::size_t>(state.get_int64("MaxBufferSize"));
-  const auto min_buffer_size_ratio =
-    static_cast<std::size_t>(state.get_int64("MinBufferSizeRatio"));
-  const auto min_buffer_size =
-    static_cast<std::size_t>(static_cast<double>(max_buffer_size) / 100.0) * min_buffer_size_ratio;
 
   constexpr bool is_memcpy = true;
 
@@ -219,8 +218,8 @@ void copy(nvbench::state &state, nvbench::type_list<T, OffsetT>)
                    offset_to_bytes_t<T, offset_t>{d_offsets});
 
   thrust::default_random_engine rne;
-  gen_it(d_input_buffer, input_buffers, offsets, state.get_int64("RandomizeInput"), rne);
-  gen_it(d_output_buffer, output_buffers, offsets, state.get_int64("RandomizeOutput"), rne);
+  gen_it(d_input_buffer, input_buffers, offsets, randomize_input, rne);
+  gen_it(d_output_buffer, output_buffers, offsets, randomize_output, rne);
 
   // Clear the offsets vector to free memory
   offsets.clear();
@@ -262,6 +261,41 @@ void copy(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   });
 }
 
+template <class T, class OffsetT>
+void uniform(nvbench::state &state, nvbench::type_list<T, OffsetT> tl)
+{
+  const auto elements        = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto max_buffer_size = static_cast<std::size_t>(state.get_int64("MaxBufferSize"));
+  const auto min_buffer_size_ratio =
+    static_cast<std::size_t>(state.get_int64("MinBufferSizeRatio"));
+  const auto min_buffer_size =
+    static_cast<std::size_t>(static_cast<double>(max_buffer_size) / 100.0) * min_buffer_size_ratio;
+
+  copy(state,
+       tl,
+       elements,
+       min_buffer_size,
+       max_buffer_size,
+       state.get_int64("RandomizeInput"),
+       state.get_int64("RandomizeOutput"));
+}
+
+template <class T, class OffsetT>
+void large(nvbench::state &state, nvbench::type_list<T, OffsetT> tl)
+{
+  const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto max_buffer_size = elements;
+  const auto min_buffer_size_ratio = 99;
+  const auto min_buffer_size =
+    static_cast<std::size_t>(static_cast<double>(max_buffer_size) / 100.0) * min_buffer_size_ratio;
+  
+  // No need to randomize large buffers
+  const bool randomize_input = false; 
+  const bool randomize_output = false;
+
+  copy(state, tl, elements, min_buffer_size, max_buffer_size, randomize_input, randomize_output);
+}
+
 using types = nvbench::type_list<nvbench::uint8_t, nvbench::uint32_t>;
 
 #ifdef TUNE_OffsetT
@@ -270,11 +304,16 @@ using u_offset_types = nvbench::type_list<TUNE_OffsetT>;
 using u_offset_types = nvbench::type_list<uint32_t, uint64_t>;
 #endif
 
-NVBENCH_BENCH_TYPES(copy, NVBENCH_TYPE_AXES(types, u_offset_types))
-  .set_name("cub::DeviceMemcpy::Batched")
+NVBENCH_BENCH_TYPES(uniform, NVBENCH_TYPE_AXES(types, u_offset_types))
+  .set_name("uniform")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(25, 29, 2))
   .add_int64_axis("MinBufferSizeRatio", {1, 99})
   .add_int64_axis("MaxBufferSize", {8, 64, 256, 1024, 64 * 1024})
   .add_int64_axis("RandomizeInput", {0, 1})
   .add_int64_axis("RandomizeOutput", {0, 1});
+
+NVBENCH_BENCH_TYPES(large, NVBENCH_TYPE_AXES(types, u_offset_types))
+  .set_name("large")
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .add_int64_power_of_two_axis("Elements{io}", {28, 29});
