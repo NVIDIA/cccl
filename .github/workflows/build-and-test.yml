@@ -59,6 +59,10 @@ jobs:
                 echo ".devcontainer/launch.sh ${{inputs.cuda_version}} ${{inputs.compiler}}${{inputs.compiler_version}}"
                 echo "Then, open a terminal inside vscode (ctrl+shift+\`) and run:"
                 echo "$cmd"
+                echo "Alternatively, open this container in a GitHub codespace by following this link:"
+                echo "https://codespaces.new/NVIDIA/cccl?devcontainer_path=.devcontainer%2Fcuda${{inputs.cuda_version}}-${{inputs.compiler}}${{inputs.compiler_version}}%2Fdevcontainer.json"
+                echo "Then open a terminal and run:"
+                echo "$cmd"
                 exit $exit_code
             fi
   test:
