@@ -97,7 +97,7 @@ struct BlockReduceRakingCommutativeOnly
             typename BlockRakingLayout::TempStorage raking_grid;         ///< Padded thread block raking grid
         } default_storage;
 
-        typename FallBack::TempStorage              fallback_storage;    ///< Fall-back storage for non-commutative block scan
+        typename FallBack::TempStorage              fallback_storage;    ///< Fall-back storage for non-commutative block reduction
     };
 
 
@@ -144,7 +144,7 @@ struct BlockReduceRakingCommutativeOnly
                 T *raking_segment = BlockRakingLayout::RakingPtr(temp_storage.default_storage.raking_grid, linear_tid);
                 partial = internal::ThreadReduce<SEGMENT_LENGTH>(raking_segment, cub::Sum(), partial);
 
-                // Warpscan
+                // Warp reduction
                 partial = WarpReduce(temp_storage.default_storage.warp_storage).Sum(partial);
             }
         }
@@ -181,7 +181,7 @@ struct BlockReduceRakingCommutativeOnly
                 T *raking_segment = BlockRakingLayout::RakingPtr(temp_storage.default_storage.raking_grid, linear_tid);
                 partial = internal::ThreadReduce<SEGMENT_LENGTH>(raking_segment, reduction_op, partial);
 
-                // Warpscan
+                // Warp reduction
                 partial = WarpReduce(temp_storage.default_storage.warp_storage).Reduce(partial, reduction_op);
             }
         }
