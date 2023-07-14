@@ -79,8 +79,8 @@ struct BlockReduceWarpReductions
     /// Shared memory storage layout type
     struct _TempStorage
     {
-        typename WarpReduce::TempStorage    warp_reduce[WARPS];         ///< Buffer for warp-synchronous scan
-        T                                   warp_aggregates[WARPS];     ///< Shared totals from each warp-synchronous scan
+        typename WarpReduce::TempStorage    warp_reduce[WARPS];         ///< Buffer for warp-synchronous reduction
+        T                                   warp_aggregates[WARPS];     ///< Shared totals from each warp-synchronous reduction
         T                                   block_prefix;               ///< Shared prefix for the entire thread block
     };
 
@@ -108,7 +108,7 @@ struct BlockReduceWarpReductions
 
     template <bool FULL_TILE, typename ReductionOp, int SUCCESSOR_WARP>
     __device__ __forceinline__ T ApplyWarpAggregates(
-        ReductionOp                 reduction_op,       ///< [in] Binary scan operator
+        ReductionOp                 reduction_op,       ///< [in] Binary reduction operator
         T                           warp_aggregate,     ///< [in] <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
         int                         num_valid,          ///< [in] Number of valid elements (may be less than BLOCK_THREADS)
         Int2Type<SUCCESSOR_WARP>    /*successor_warp*/)
@@ -123,7 +123,7 @@ struct BlockReduceWarpReductions
 
     template <bool FULL_TILE, typename ReductionOp>
     __device__ __forceinline__ T ApplyWarpAggregates(
-        ReductionOp         /*reduction_op*/,   ///< [in] Binary scan operator
+        ReductionOp         /*reduction_op*/,   ///< [in] Binary reduction operator
         T                   warp_aggregate,     ///< [in] <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
         int                 /*num_valid*/,      ///< [in] Number of valid elements (may be less than BLOCK_THREADS)
         Int2Type<WARPS>     /*successor_warp*/)
@@ -137,7 +137,7 @@ struct BlockReduceWarpReductions
         bool                FULL_TILE,
         typename            ReductionOp>
     __device__ __forceinline__ T ApplyWarpAggregates(
-        ReductionOp         reduction_op,       ///< [in] Binary scan operator
+        ReductionOp         reduction_op,       ///< [in] Binary reduction operator
         T                   warp_aggregate,     ///< [in] <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
         int                 num_valid)          ///< [in] Number of valid elements (may be less than BLOCK_THREADS)
     {

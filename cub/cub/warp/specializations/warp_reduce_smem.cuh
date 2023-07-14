@@ -62,7 +62,7 @@ struct WarpReduceSmem
         /// Whether the logical warp size is a power-of-two
         IS_POW_OF_TWO = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE,
 
-        /// The number of warp scan steps
+        /// The number of warp reduction steps
         STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE,
 
         /// The number of threads in half a warp
