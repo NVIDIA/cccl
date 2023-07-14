@@ -21,5 +21,17 @@
         "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
         "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
         "source=${localWorkspaceFolder}/.config,target=/home/coder/.config,type=bind,consistency=consistent"
-    ]
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "llvm-vs-code-extensions.vscode-clangd"
+            ],
+            "settings": {
+                "clangd.arguments": [
+                    "--compile-commands-dir=${workspaceFolder}/build/latest"
+                ]
+            }
+        }
+    }
 }
