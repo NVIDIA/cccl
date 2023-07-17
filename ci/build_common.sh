@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 # Ensure the script is being executed in its containing directory
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
@@ -19,7 +21,7 @@ function usage {
 }
 
 # Check for extra options
-# NARGS
+# While there are more than 3 arguments, parse switches/options
 while [ "$#" -gt 3 ]
 do
   case "${1}" in
@@ -38,11 +40,12 @@ if [ $VERBOSE ]; then
 fi
 
 if [ "$#" -ne 3 ]; then
+    echo "Invalid number of arguments"
     usage
 fi
 
-# Begin processing failures after option parsing
-set -euo pipefail
+# Begin processing unsets after option parsing
+set -u
 
 # Assign command line arguments to variables
 readonly HOST_COMPILER=$(which $1)
