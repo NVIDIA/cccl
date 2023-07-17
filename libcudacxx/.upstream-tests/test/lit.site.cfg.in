@@ -23,7 +23,6 @@ config.test_linker_flags        = "@LIBCUDACXX_TEST_LINKER_FLAGS@"
 config.test_compiler_flags      = "@LIBCUDACXX_TEST_COMPILER_FLAGS@"
 
 config.compute_archs            = "@LIBCUDACXX_COMPUTE_ARCHS_STRING@"
-config.enable_compute_future    = @LIBCUDACXX_ENABLE_COMPUTE_FUTURE@
 config.nvcc_host_compiler       = "@CMAKE_CUDA_HOST_COMPILER@"
 
 config.executor                 = "@LIBCUDACXX_EXECUTOR@"
