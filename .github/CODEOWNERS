@@ -14,4 +14,4 @@ ci/ @nvidia/cccl-infra-codeowners
 **/cmake/ @nvidia/cccl-cmake-codeowners
 
 # general codeowners for all files
-* @cccl-codeowners
+* @nvidia/cccl-codeowners
