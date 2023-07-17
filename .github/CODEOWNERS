@@ -1,0 +1,16 @@
+# Libraries
+thrust/ @nvidia/cccl-thrust-codeowners
+cub/ @nvidia/cccl-cub-codeowners
+libcudacxx/ @nvidia/cccl-libcudacxx-codeowners
+
+# Infrastructure
+.github/ @nvidia/cccl-infra-codeowners
+ci/ @nvidia/cccl-infra-codeowners
+.devcontainer/ @nvidia/cccl-infra-codeowners
+
+# cmake
+**/CMakeLists.txt @nvidia/cccl-cmake-codeowners
+**/cmake/ @nvidia/cccl-cmake-codeowners
+
+# general codeowners for all files
+* @nvidia/cccl-codeowners
