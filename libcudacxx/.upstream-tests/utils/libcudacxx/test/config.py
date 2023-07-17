@@ -588,7 +588,7 @@ class Configuration(object):
             pre_sm_70 = False
             pre_sm_80 = False
             pre_sm_90 = False
-            compute_archs = [int(a) for a in sorted(shlex.split(compute_archs))]
+            compute_archs = [int(a) for a in sorted(re.split('\s|;|,', compute_archs))]
             for arch in compute_archs:
                 if arch < 32: pre_sm_32 = True
                 if arch < 60: pre_sm_60 = True
