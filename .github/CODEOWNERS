@@ -1,4 +1,3 @@
-
 # Libraries
 thrust/ @nvidia/cccl-thrust-codeowners
 cub/ @nvidia/cccl-cub-codeowners
