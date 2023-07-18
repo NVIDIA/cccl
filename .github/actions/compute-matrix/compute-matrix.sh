@@ -11,6 +11,8 @@ if [ $# -ne 2 ]; then
 fi
 
 # Get realpath before changing directory
+pwd
+ls -la
 MATRIX_FILE="realpath $1"
 MATRIX_QUERY="$2"
 
