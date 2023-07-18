@@ -56,4 +56,4 @@ jobs:
         run: |
           pwd
           ls -la
-          ./.github/workflows/compute_matrix.sh $MATRIX_FILE '.["'"$MATRIX_TYPE"'"]["nvcc"]'
+          ./.github/workflows/compute-matrix.sh $MATRIX_FILE '.["'"$MATRIX_TYPE"'"]["nvcc"]'
