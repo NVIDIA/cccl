@@ -86,11 +86,9 @@ template <class InputT,
 struct sm90_tuning
 {
   static constexpr int threads = 256;
-
   static constexpr int items = Nominal4BItemsToItems<InputT>(9);
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
 
   using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<OffsetT>;
   using AccumPackT = typename AccumPackHelperT::pack_t;
