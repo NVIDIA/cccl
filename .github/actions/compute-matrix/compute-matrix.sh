@@ -13,7 +13,7 @@ fi
 # Get realpath before changing directory
 pwd
 ls -la
-MATRIX_FILE="realpath $1"
+MATRIX_FILE=$(realpath "$1")
 MATRIX_QUERY="$2"
 
 # Ensure the script is being executed in its containing directory
