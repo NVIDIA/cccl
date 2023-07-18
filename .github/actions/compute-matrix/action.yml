@@ -20,6 +20,6 @@ runs:
     - name: Compute matrix
       id: compute-matrix
       run: |
-        MATRIX=$(./.github/actions/compute-matrix/compute-matrix.sh "$matrix_file" "$matrix_query")
+        MATRIX=$(./.github/actions/compute-matrix/compute-matrix.sh ${{inputs.matrix_file}}  ${{inputs.matrix_query}} )
         echo "matrix=$MATRIX" | tee -a $GITHUB_OUTPUT
       shell: bash -euxo pipefail {0}
