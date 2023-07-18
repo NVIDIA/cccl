@@ -22,6 +22,8 @@ jobs:
     name: Compute NVCC matrix
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
       - name: Get full nvcc matrix
         uses: ./.github/actions/compute-matrix
         with:
