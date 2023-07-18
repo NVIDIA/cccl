@@ -4,7 +4,7 @@ description: "Compute the matrix for a given matrix type from the specified matr
 
 inputs:
   matrix_query:
-    description: 'The jq query used to specify the desired matrix. e.g., '.["pull-request"]["nvcc]"'
+    description: 'The jq query used to specify the desired matrix. e.g., .["pull-request"]["nvcc]"'
     required: true
   matrix_file:
     description: 'The file containing the matrix'
@@ -17,8 +17,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
     - name: Compute matrix
       id: compute-matrix
       run: |
