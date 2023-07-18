@@ -20,10 +20,13 @@ concurrency:
 jobs:
   compute-nvcc-matrix:
     name: Compute NVCC matrix
-    uses: ./.github/workflows/compute-nvcc-matrix.yml
-    with:
-      matrix_file: "./ci/matrix.yaml"
-      matrix_type: "pull-request"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get full nvcc matrix
+        uses: ./.github/actions/compute-matrix
+        with:
+          matrix_file: "./ci/matrix.yaml"
+          matrix_query: "'.["pull-request"]["nvcc"]'"
 
   thrust:
     name: Thrust CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
