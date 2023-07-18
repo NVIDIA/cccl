@@ -25,8 +25,8 @@ jobs:
       - name: Get full nvcc matrix
         uses: ./.github/actions/compute-matrix
         with:
-          matrix_file: "./ci/matrix.yaml"
-          matrix_query: "'.["pull-request"]["nvcc"]'"
+          matrix_file: './ci/matrix.yaml'
+          matrix_query: '.["pull-request"]["nvcc"]'
 
   thrust:
     name: Thrust CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
