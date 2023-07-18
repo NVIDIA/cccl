@@ -56,5 +56,5 @@ jobs:
         run: |
           pwd
           ls -la
-          MATRIX_FILE=$(realpath MATRIX_FILE)
-          ./.github/workflows/compute-matrix.sh $MATRIX_FILE '.["'"$MATRIX_TYPE"'"]["nvcc"]'
+          MATRIX_FILE=$(realpath "${MATRIX_FILE}")
+          ./.github/workflows/compute-matrix.sh "$MATRIX_FILE" '.["'"$MATRIX_TYPE"'"]["nvcc"]'
