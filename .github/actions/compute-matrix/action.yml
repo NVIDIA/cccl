@@ -2,6 +2,10 @@
 name: Compute Matrix
 description: "Compute the matrix for a given matrix type from the specified matrix file"
 
+defaults:
+  run:
+    shell: bash -euxo pipefail {0}
+
 inputs:
   matrix_query:
     description: 'The jq query used to specify the desired matrix. e.g., .["pull-request"]["nvcc]"'
