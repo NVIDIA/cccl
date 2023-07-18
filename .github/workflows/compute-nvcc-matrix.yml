@@ -43,18 +43,3 @@ jobs:
       COMPILERS: ${{ steps.compute-matrix.outputs.COMPILERS }}
       PER_CUDA_COMPILER_MATRIX: ${{ steps.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX }}
     steps:
-      - name: Validate matrix type
-        run: |
-          if [[ "$MATRIX_TYPE" != "pull-request" && "$MATRIX_TYPE" != "nightly" ]]; then
-            echo "Invalid build type: $MATRIX_TYPE. Must be 'nightly' or 'pull-request'"
-            exit 1
-          fi
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      - name: Compute matrix
-        id: compute-matrix
-        run: |
-          pwd
-          ls -la
-          MATRIX_FILE=$(realpath "${MATRIX_FILE}")
-          ./.github/workflows/compute-matrix.sh "$MATRIX_FILE" '.["'"$MATRIX_TYPE"'"]["nvcc"]'
