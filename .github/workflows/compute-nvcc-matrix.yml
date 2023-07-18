@@ -54,4 +54,4 @@ jobs:
       - name: Compute matrix
         id: compute-matrix
         run: |
-          compute_matrix.sh $MATRIX_FILE '.["'"$MATRIX_TYPE"'"]["nvcc"]'
+          ./.github/workflows/compute_matrix.sh $MATRIX_FILE '.["'"$MATRIX_TYPE"'"]["nvcc"]'
