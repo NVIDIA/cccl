@@ -54,13 +54,4 @@ jobs:
       - name: Compute matrix
         id: compute-matrix
         run: |
-          echo "Input matrix file:"
-          cat "$MATRIX_FILE"
-          FULL_MATRIX=$(yq -o=json ./ci/matrix.yaml | jq -c --arg matrix_type "$MATRIX_TYPE" '[ .[$matrix_type][] | . as $o | {std: .std[]} + del($o.std)]')
-          echo "FULL_MATRIX=$FULL_MATRIX" | tee -a "$GITHUB_OUTPUT"
-          CUDA_VERSIONS=$(echo $FULL_MATRIX | jq -c '[.[] | .cuda] | unique')
-          echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
-          COMPILERS=$(echo $FULL_MATRIX | jq -c '[.[] | .compiler.name] | unique')
-          echo "COMPILERS=$COMPILERS" | tee -a "$GITHUB_OUTPUT"
-          PER_CUDA_COMPILER_MATRIX=$(echo $FULL_MATRIX | jq -c ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')
-          echo "PER_CUDA_COMPILER_MATRIX=$PER_CUDA_COMPILER_MATRIX" | tee -a "$GITHUB_OUTPUT"
+          compute_matrix.sh $MATRIX_FILE '.["'"$MATRIX_TYPE"'"]["nvcc"]'
