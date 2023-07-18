@@ -15,7 +15,6 @@ fi
 
 MATRIX_FILE="$1"
 MATRIX_QUERY="$2"
-MATRIX_QUERY='.["'"$MATRIX_QUERY"'"]["nvcc"]'
 
 # Use /dev/null as the default value for GITHUB_OUTPUT if it isn't set, i.e., not running in GitHub Actions
 GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/null}"
