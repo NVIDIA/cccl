@@ -17,9 +17,6 @@ MATRIX_QUERY="$2"
 # Ensure the script is being executed in its containing directory
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
-# Use /dev/null as the default value for GITHUB_OUTPUT if it isn't set, i.e., not running in GitHub Actions
-GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/null}"
-
 echo "Input matrix file:" >&2
 cat "$MATRIX_FILE" >&2
 echo "Query: $MATRIX_QUERY" >&2
