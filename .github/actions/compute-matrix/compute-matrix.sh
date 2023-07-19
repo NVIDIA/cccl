@@ -6,7 +6,7 @@ set -euo pipefail
 if [ $# -ne 2 ]; then
     echo "Usage: $0 MATRIX_FILE MATRIX_QUERY"
     echo "MATRIX_FILE: The path to the matrix file."
-    echo "MATRIX_QUERY: The jq query used to specify the desired matrix. e.g., '.["pull-request"]["nvcc]"'"
+    echo "MATRIX_QUERY: The jq query used to specify the desired matrix. e.g., '.pull-request.nvcc'
     exit 1
 fi
 
