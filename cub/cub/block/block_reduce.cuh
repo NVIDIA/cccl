@@ -444,7 +444,7 @@ public:
         ReductionOp         reduction_op,           ///< [in] Binary reduction functor 
         int                 num_valid)              ///< [in] Number of threads containing valid elements (may be less than BLOCK_THREADS)
     {
-        // Determine if we scan skip bounds checking
+        // Determine if we skip bounds checking
         if (num_valid >= BLOCK_THREADS)
         {
             return InternalBlockReduce(temp_storage).template Reduce<true>(input, num_valid, reduction_op);
@@ -585,7 +585,7 @@ public:
         T   input,                  ///< [in] Calling thread's input
         int num_valid)              ///< [in] Number of threads containing valid elements (may be less than BLOCK_THREADS)
     {
-        // Determine if we scan skip bounds checking
+        // Determine if we skip bounds checking
         if (num_valid >= BLOCK_THREADS)
         {
             return InternalBlockReduce(temp_storage).template Sum<true>(input, num_valid);

@@ -39,17 +39,18 @@ def ei_weights(values):
 
 
 def compute_axes_ids(rt_axes_values):
-    rt_axes_ids = {}
+    result = {}
+    for bench in rt_axes_values:
+        rt_axes_ids = {}
 
-    axis_id = 0
-    for rt_axis in rt_axes_values:
-        rt_axes_ids[rt_axis] = axis_id
-        axis_id = axis_id + 1
-    
-    return rt_axes_ids
+        axis_id = 0
+        for rt_axis in rt_axes_values[bench]:
+            rt_axes_ids[rt_axis] = axis_id
+            axis_id = axis_id + 1
+        result[bench] = rt_axes_ids
+    return result
 
-
-def compute_weight_matrix(rt_axes_values, rt_axes_ids):
+def compute_raw_weight_matrix(rt_axes_values, rt_axes_ids):
     rt_axes_weights = {}
 
     first_rt_axis = True
@@ -78,7 +79,17 @@ def compute_weight_matrix(rt_axes_values, rt_axes_ids):
 
         weights_matrix = weights_matrix * rt_axes_weights[rt_axis]
     
-    return weights_matrix / np.sum(weights_matrix)
+    return weights_matrix 
+
+def compute_weight_matrices(rt_axes_values, rt_axes_ids):
+    matrices = {}
+    aggregate = 0.0
+    for bench in rt_axes_values:
+        matrices[bench] = compute_raw_weight_matrix(rt_axes_values[bench], rt_axes_ids[bench])
+        aggregate = aggregate + np.sum(matrices[bench])
+    for bench in rt_axes_values:
+        matrices[bench] = matrices[bench] / aggregate
+    return matrices
 
 
 def get_workload_coordinates(rt_workload, rt_axes_values, rt_axes_ids):

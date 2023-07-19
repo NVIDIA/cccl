@@ -161,7 +161,7 @@ static void rle(nvbench::state &state, nvbench::type_list<T, OffsetT>)
 using some_offset_types = nvbench::type_list<nvbench::int32_t>;
 
 NVBENCH_BENCH_TYPES(rle, NVBENCH_TYPE_AXES(all_types, some_offset_types))
-  .set_name("cub::DeviceRunLengthEncode::Encode")
+  .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8});

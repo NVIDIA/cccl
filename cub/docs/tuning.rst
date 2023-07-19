@@ -35,10 +35,11 @@ Algorithms are tuned for different workloads. For instance, radix sort can be tu
 Contributing Benchmarks
 --------------------------------------------------------------------------------
 
-There are a few constraints on benchmarks. First of all, there should be exactly one benchmark per 
-file. The name of the file is represets the name of the algorithm. For instance, the 
-:code:`benchmarks/bench/radix_sort/keys.cu` file name is going to be transformed into 
-:code:`cub.bench.radix_sort.keys` that's further used in the infrastructure.
+There are a few constraints on benchmarks. First of all, all benchmarks in a single
+file should share type axes. Only alphabetical characters, numbers and underscore are allowed in the 
+benchmark name.  The name of the file is represets the name of the algorithm. 
+For instance, the :code:`benchmarks/bench/radix_sort/keys.cu` file name is going to be transformed 
+into :code:`cub.bench.radix_sort.keys` that's further used in the infrastructure.
 
 You start writing a benchmark by including :code:`nvbench_helper.cuh` file. It contains all
 necessary includes and definitions.

@@ -188,7 +188,7 @@ using value_types = all_types;
 #endif // TUNE_ValueT
 
 NVBENCH_BENCH_TYPES(reduce, NVBENCH_TYPE_AXES(key_types, value_types, some_offset_types))
-  .set_name("cub::DeviceReduce::ReduceByKey")
+  .set_name("base")
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8});

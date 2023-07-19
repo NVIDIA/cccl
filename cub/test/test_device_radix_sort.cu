@@ -70,6 +70,37 @@
 
 using namespace cub;
 
+struct device_deleter_t
+{
+  template <class T>
+  void operator()(T *ptr)
+  {
+    ::cudaFree(ptr);
+  }
+};
+
+template <class T>
+using device_vec_t = std::unique_ptr<T[], device_deleter_t>;
+
+template <class T>
+device_vec_t<T> make_device_vec(std::size_t n)
+{
+  T *ptr             = nullptr;
+  cudaError_t status = cudaMalloc(&ptr, sizeof(T) * n);
+  if (status == cudaSuccess)
+  {
+    return device_vec_t<T>(ptr);
+  }
+  else if (status == cudaErrorMemoryAllocation)
+  {
+    throw std::bad_alloc();
+  }
+  else
+  {
+    CubDebugExit(status);
+  }
+  return {};
+}
 
 //---------------------------------------------------------------------
 // Globals, constants and typedefs
@@ -78,7 +109,6 @@ using namespace cub;
 bool                    g_verbose                       = false;
 int                     g_timing_iterations             = 0;
 std::size_t             g_smallest_pre_sorted_num_items = (std::size_t(1) << 32) - 42;
-CachingDeviceAllocator  g_allocator(true);
 
 // Dispatch types
 enum Backend
@@ -778,21 +808,18 @@ void InitializeKeysSorted(
  * Initialize solution
  */
 template <bool IS_DESCENDING, bool WANT_RANKS, typename KeyT, typename NumItemsT>
-void InitializeSolution(
-    KeyT       *h_keys,
-    NumItemsT  num_items,
-    int        num_segments,
-    bool       pre_sorted,
-    NumItemsT  *h_segment_offsets,
-    int        begin_bit,
-    int        end_bit,
-    NumItemsT  *&h_reference_ranks,
-    KeyT       *&h_reference_keys)
+void InitializeSolution(KeyT *h_keys,
+                        NumItemsT num_items,
+                        int num_segments,
+                        bool pre_sorted,
+                        NumItemsT *h_segment_offsets,
+                        int begin_bit,
+                        int end_bit,
+                        std::unique_ptr<NumItemsT[]> &h_reference_ranks,
+                        std::unique_ptr<KeyT[]> &h_reference_keys)
 {
     if (num_items == 0)
     {
-        h_reference_ranks = nullptr;
-        h_reference_keys = nullptr;
         return;
     }
 
@@ -813,7 +840,7 @@ void InitializeSolution(
         AssertEquals(num_segments, 1);
 
         // Copy to the reference solution.
-        h_reference_keys = new KeyT[num_items];
+        h_reference_keys.reset(new KeyT[num_items]);
         if (IS_DESCENDING)
         {
             // Copy in reverse.
@@ -822,11 +849,11 @@ void InitializeSolution(
                 h_reference_keys[i] = h_keys[num_items - 1 - i];
             }
             // Copy back.
-            memcpy(h_keys, h_reference_keys, num_items * sizeof(KeyT));
+            memcpy(h_keys, h_reference_keys.get(), num_items * sizeof(KeyT));
         }
         else
         {
-            memcpy(h_reference_keys, h_keys, num_items * sizeof(KeyT));
+            memcpy(h_reference_keys.get(), h_keys, num_items * sizeof(KeyT));
         }
 
         // Summarize the pre-sorted array (element, 1st position, count).
@@ -860,7 +887,7 @@ void InitializeSolution(
         // cache-friendly way and in a short time.
         if (WANT_RANKS)
         {
-            h_reference_ranks = new NumItemsT[num_items];
+            h_reference_ranks.reset(new NumItemsT[num_items]);
         }
         NumItemsT max_run = 32;
         NumItemsT run = 0;
@@ -897,7 +924,7 @@ void InitializeSolution(
     {
         typedef Pair<KeyT, NumItemsT> PairT;
 
-        PairT *h_pairs = new PairT[num_items];
+        std::unique_ptr<PairT[]> h_pairs(new PairT[num_items]);
 
         int num_bits = end_bit - begin_bit;
         for (NumItemsT i = 0; i < num_items; ++i)
@@ -930,18 +957,18 @@ void InitializeSolution(
 
         for (int i = 0; i < num_segments; ++i)
         {
-            if (IS_DESCENDING) std::reverse(h_pairs + h_segment_offsets[i], h_pairs + h_segment_offsets[i + 1]);
-            std::stable_sort(               h_pairs + h_segment_offsets[i], h_pairs + h_segment_offsets[i + 1]);
-            if (IS_DESCENDING) std::reverse(h_pairs + h_segment_offsets[i], h_pairs + h_segment_offsets[i + 1]);
+            if (IS_DESCENDING) std::reverse(h_pairs.get() + h_segment_offsets[i], h_pairs.get() + h_segment_offsets[i + 1]);
+            std::stable_sort(               h_pairs.get() + h_segment_offsets[i], h_pairs.get() + h_segment_offsets[i + 1]);
+            if (IS_DESCENDING) std::reverse(h_pairs.get() + h_segment_offsets[i], h_pairs.get() + h_segment_offsets[i + 1]);
         }
 
         printf(" Done.\n"); fflush(stdout);
 
         if (WANT_RANKS)
         {
-            h_reference_ranks  = new NumItemsT[num_items];
+            h_reference_ranks.reset(new NumItemsT[num_items]);
         }
-        h_reference_keys   = new KeyT[num_items];
+        h_reference_keys.reset(new KeyT[num_items]);
 
         for (NumItemsT i = 0; i < num_items; ++i)
         {
@@ -951,8 +978,6 @@ void InitializeSolution(
             }
             h_reference_keys[i]     = h_keys[h_pairs[i].value];
         }
-
-        if (h_pairs) delete[] h_pairs;
     }
 }
 
@@ -1086,15 +1111,29 @@ void Test(
     int                     *d_selector;
     size_t                  *d_temp_storage_bytes;
     cudaError_t             *d_cdp_error;
-    CubDebugExit(g_allocator.DeviceAllocate((void**)&d_keys.d_buffers[0], sizeof(KeyT) * num_items));
-    CubDebugExit(g_allocator.DeviceAllocate((void**)&d_keys.d_buffers[1], sizeof(KeyT) * num_items));
-    CubDebugExit(g_allocator.DeviceAllocate((void**)&d_selector, sizeof(int) * 1));
-    CubDebugExit(g_allocator.DeviceAllocate((void**)&d_temp_storage_bytes, sizeof(size_t) * 1));
-    CubDebugExit(g_allocator.DeviceAllocate((void**)&d_cdp_error, sizeof(cudaError_t) * 1));
+
+    device_vec_t<KeyAliasT> d_key_buffer_0_storage = make_device_vec<KeyAliasT>(num_items);
+    device_vec_t<KeyAliasT> d_key_buffer_1_storage = make_device_vec<KeyAliasT>(num_items);
+    device_vec_t<std::size_t> d_temp_storage_bytes_storage = make_device_vec<std::size_t>(1);
+    device_vec_t<cudaError_t> d_cdp_error_storage = make_device_vec<cudaError_t>(1);
+    device_vec_t<int> d_selector_storage = make_device_vec<int>(1);
+
+    d_keys.d_buffers[0] = d_key_buffer_0_storage.get();
+    d_keys.d_buffers[1] = d_key_buffer_1_storage.get();
+    d_temp_storage_bytes = d_temp_storage_bytes_storage.get();
+    d_cdp_error = d_cdp_error_storage.get();
+    d_selector = d_selector_storage.get();
+
+    device_vec_t<ValueT> d_val_buffer_0_storage;
+    device_vec_t<ValueT> d_val_buffer_1_storage;
+
     if (!KEYS_ONLY)
     {
-        CubDebugExit(g_allocator.DeviceAllocate((void**)&d_values.d_buffers[0], sizeof(ValueT) * num_items));
-        CubDebugExit(g_allocator.DeviceAllocate((void**)&d_values.d_buffers[1], sizeof(ValueT) * num_items));
+        d_val_buffer_0_storage = make_device_vec<ValueT>(num_items);
+        d_val_buffer_1_storage = make_device_vec<ValueT>(num_items);
+
+        d_values.d_buffers[0] = d_val_buffer_0_storage.get();
+        d_values.d_buffers[1] = d_val_buffer_1_storage.get();
     }
 
     // Allocate temporary storage (and make it un-aligned)
@@ -1106,7 +1145,9 @@ void Test(
         num_items, num_segments, d_segment_begin_offsets, d_segment_end_offsets,
         begin_bit, end_bit));
 
-    CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes + 1));
+    device_vec_t<std::uint8_t> d_temporary_storage =
+      make_device_vec<std::uint8_t>(temp_storage_bytes + 1);
+    d_temp_storage = d_temporary_storage.get();
     void* mis_aligned_temp = static_cast<char*>(d_temp_storage) + 1;
 
     // Initialize/clear device arrays
@@ -1216,16 +1257,6 @@ void Test(
     }
 
     printf("\n\n");
-
-    // Cleanup
-    if (d_keys.d_buffers[0]) CubDebugExit(g_allocator.DeviceFree(d_keys.d_buffers[0]));
-    if (d_keys.d_buffers[1]) CubDebugExit(g_allocator.DeviceFree(d_keys.d_buffers[1]));
-    if (d_values.d_buffers[0]) CubDebugExit(g_allocator.DeviceFree(d_values.d_buffers[0]));
-    if (d_values.d_buffers[1]) CubDebugExit(g_allocator.DeviceFree(d_values.d_buffers[1]));
-    if (d_temp_storage) CubDebugExit(g_allocator.DeviceFree(d_temp_storage));
-    if (d_cdp_error) CubDebugExit(g_allocator.DeviceFree(d_cdp_error));
-    if (d_selector) CubDebugExit(g_allocator.DeviceFree(d_selector));
-    if (d_temp_storage_bytes) CubDebugExit(g_allocator.DeviceFree(d_temp_storage_bytes));
 
     // Correctness asserts
     AssertEquals(0, compare);
@@ -1409,25 +1440,48 @@ void TestValueTypes(
     int                  end_bit)
 {
     // Initialize the solution
-    NumItemsT *h_reference_ranks = NULL;
-    KeyT *h_reference_keys = NULL;
+    std::unique_ptr<NumItemsT[]> h_reference_ranks;
+    std::unique_ptr<KeyT[]> h_reference_keys;
+
     // If TEST_VALUE_TYPE == 0, no values are sorted, only keys.
     // Since ranks are only necessary when checking for values,
     // they are not computed in this case.
-    InitializeSolution<IS_DESCENDING, TEST_VALUE_TYPE != 0>(h_keys, num_items, num_segments, pre_sorted, h_segment_offsets, begin_bit, end_bit, h_reference_ranks, h_reference_keys);
+    InitializeSolution<IS_DESCENDING, TEST_VALUE_TYPE != 0>(h_keys,
+                                                            num_items,
+                                                            num_segments,
+                                                            pre_sorted,
+                                                            h_segment_offsets,
+                                                            begin_bit,
+                                                            end_bit,
+                                                            h_reference_ranks,
+                                                            h_reference_keys);
 
-    TestBackend<IS_DESCENDING, KeyT, SmallestValueT>          (h_keys, num_items, num_segments, d_segment_begin_offsets, d_segment_end_offsets, begin_bit, end_bit, h_reference_keys, h_reference_ranks);
+    TestBackend<IS_DESCENDING, KeyT, SmallestValueT>(h_keys,
+                                                     num_items,
+                                                     num_segments,
+                                                     d_segment_begin_offsets,
+                                                     d_segment_end_offsets,
+                                                     begin_bit,
+                                                     end_bit,
+                                                     h_reference_keys.get(),
+                                                     h_reference_ranks.get());
 
 #if TEST_VALUE_TYPE == 3
     // Test with non-trivially-constructable value
     // These are cheap to build, so lump them in with the 64b value tests.
-    TestBackend<IS_DESCENDING, KeyT, TestBar>           (h_keys, num_items, num_segments, d_segment_begin_offsets, d_segment_end_offsets, begin_bit, end_bit, h_reference_keys, h_reference_ranks);
+    TestBackend<IS_DESCENDING, KeyT, TestBar>(h_keys,
+                                              num_items,
+                                              num_segments,
+                                              d_segment_begin_offsets,
+                                              d_segment_end_offsets,
+                                              begin_bit,
+                                              end_bit,
+                                              h_reference_keys.get(),
+                                              h_reference_ranks.get());
 #endif
 
     // Cleanup
-    ResetKeys<IS_DESCENDING>(h_keys, num_items, pre_sorted, h_reference_keys);
-    if (h_reference_ranks) delete[] h_reference_ranks;
-    if (h_reference_keys) delete[] h_reference_keys;
+    ResetKeys<IS_DESCENDING>(h_keys, num_items, pre_sorted, h_reference_keys.get());
 }
 
 
@@ -1557,10 +1611,12 @@ void TestSegments(
     bool         pre_sorted)
 {
     max_segments = static_cast<int>(CUB_MIN(num_items, static_cast<NumItemsT>(max_segments)));
-    NumItemsT *h_segment_offsets = new NumItemsT[max_segments + 1];
 
-    NumItemsT *d_segment_offsets = nullptr;
-    CubDebugExit(g_allocator.DeviceAllocate((void**)&d_segment_offsets, sizeof(NumItemsT) * (max_segments + 1)));
+    std::unique_ptr<NumItemsT[]> h_segment_offsets_storage(new NumItemsT[max_segments + 1]);
+    NumItemsT *h_segment_offsets = h_segment_offsets_storage.get();
+
+    device_vec_t<NumItemsT> d_segment_offsets_storage = make_device_vec<NumItemsT>(max_segments + 1);
+    NumItemsT *d_segment_offsets = d_segment_offsets_storage.get();
 
     for (int num_segments = max_segments; num_segments > 1; num_segments = cub::DivideAndRoundUp(num_segments, 64))
     {
@@ -1586,31 +1642,35 @@ void TestSegments(
                              d_segment_offsets);
       }
     }
-
-    if (h_segment_offsets) delete[] h_segment_offsets;
-    if (d_segment_offsets) CubDebugExit(g_allocator.DeviceFree(d_segment_offsets));
 }
 
 /** 
  * Test different NumItemsT, i.e. types of num_items 
  */
 template <typename KeyT>
-void TestNumItems(KeyT         *h_keys,
-                  std::size_t  num_items,
-                  int          max_segments,
-                  bool         pre_sorted)
+void TestNumItems(KeyT *h_keys, std::size_t num_items, int max_segments, bool pre_sorted)
 {
-    if (!pre_sorted && num_items <= std::size_t(std::numeric_limits<int>::max()))
+    try
     {
+      if (!pre_sorted && num_items <= std::size_t(std::numeric_limits<int>::max()))
+      {
         TestSegments<KeyT, int>(h_keys, static_cast<int>(num_items), max_segments, pre_sorted);
+      }
+      if (pre_sorted && num_items <= std::size_t(std::numeric_limits<std::uint32_t>::max()))
+      {
+        TestSegments<KeyT, std::uint32_t>(h_keys,
+                                          static_cast<std::uint32_t>(num_items),
+                                          max_segments,
+                                          pre_sorted);
+      }
+      TestSegments<KeyT, std::size_t>(h_keys, num_items, max_segments, pre_sorted);
     }
-    if (pre_sorted && num_items <= std::size_t(std::numeric_limits<std::uint32_t>::max()))
+    catch (std::bad_alloc &)
     {
-        TestSegments<KeyT, std::uint32_t>(h_keys, static_cast<std::uint32_t>(num_items), max_segments, pre_sorted);
+      printf("\nNot enough host memory, skipping large num items test\n");
+      fflush(stdout);
     }
-    TestSegments<KeyT, std::size_t>(h_keys, num_items, max_segments, pre_sorted);
 }
-
 
 /**
  * Test different (sub)lengths and number of segments
@@ -1634,8 +1694,8 @@ void TestSizes(KeyT* h_keys,
     else
     {
         for (std::size_t num_items = max_items;
-             num_items > 1;
-             num_items = cub::DivideAndRoundUp(num_items, 64))
+            num_items > 1;
+            num_items = cub::DivideAndRoundUp(num_items, 64))
         {
             TestNumItems(h_keys, num_items, max_segments, pre_sorted);
         }
@@ -1705,15 +1765,23 @@ void TestGen(
             return;
         }
 
-        h_keys.reset(nullptr); // Explicitly free old buffer before allocating.
-        h_keys.reset(new KeyT[large_num_items]);
+        try
+        {
+            h_keys.reset(nullptr); // Explicitly free old buffer before allocating.
+            h_keys.reset(new KeyT[large_num_items]);
 
-        printf("\nTesting pre-sorted and randomly permuted %s keys\n", typeid(KeyT).name());
-        fflush(stdout);
-        InitializeKeysSorted(h_keys.get(), large_num_items);
-        fflush(stdout);
-        TestSizes(h_keys.get(), large_num_items, max_segments, true);
-        fflush(stdout);
+            printf("\nTesting pre-sorted and randomly permuted %s keys\n", typeid(KeyT).name());
+            fflush(stdout);
+            InitializeKeysSorted(h_keys.get(), large_num_items);
+            fflush(stdout);
+            TestSizes(h_keys.get(), large_num_items, max_segments, true);
+            fflush(stdout);
+        }
+        catch (std::bad_alloc &e)
+        {
+            printf("\nNot enough host memory, skipping large num items test\n");
+            fflush(stdout);
+        }
     }
 }
 
@@ -1737,30 +1805,36 @@ void Test(
 {
     const bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
-    KeyT         *h_keys             = new KeyT[num_items];
-    std::size_t  *h_reference_ranks  = NULL;
-    KeyT         *h_reference_keys   = NULL;
-    ValueT       *h_values           = NULL;
-    ValueT       *h_reference_values = NULL;
-    size_t       *h_segment_offsets  = new std::size_t[num_segments + 1];
+    std::unique_ptr<KeyT[]> h_keys(new KeyT[num_items]);
 
-    std::size_t* d_segment_offsets = nullptr;
-    CubDebugExit(g_allocator.DeviceAllocate((void**)&d_segment_offsets, sizeof(std::size_t) * (num_segments + 1)));
+    std::unique_ptr<std::size_t[]> h_reference_ranks;
+    std::unique_ptr<KeyT[]> h_reference_keys;
+
+    std::unique_ptr<ValueT[]> h_values;
+    std::unique_ptr<ValueT[]> h_reference_values;
+
+    std::unique_ptr<size_t[]> h_segment_offsets(new std::size_t[num_segments + 1]);
+
+    device_vec_t<std::size_t> d_segment_offsets_storage =
+      make_device_vec<std::size_t>(num_segments + 1);
+    std::size_t *d_segment_offsets = d_segment_offsets_storage.get();
 
     if (end_bit < 0)
+    {
         end_bit = sizeof(KeyT) * 8;
+    }
 
-    InitializeKeyBits(gen_mode, h_keys, num_items, entropy_reduction);
-    InitializeSegments(num_items, num_segments, h_segment_offsets);
-    CubDebugExit(cudaMemcpy(d_segment_offsets, h_segment_offsets, sizeof(std::size_t) * (num_segments + 1), cudaMemcpyHostToDevice));
+    InitializeKeyBits(gen_mode, h_keys.get(), num_items, entropy_reduction);
+    InitializeSegments(num_items, num_segments, h_segment_offsets.get());
+    CubDebugExit(cudaMemcpy(d_segment_offsets, h_segment_offsets.get(), sizeof(std::size_t) * (num_segments + 1), cudaMemcpyHostToDevice));
     InitializeSolution<IS_DESCENDING, !KEYS_ONLY>(
-        h_keys, num_items, num_segments, false, h_segment_offsets,
+        h_keys.get(), num_items, num_segments, false, h_segment_offsets.get(),
         begin_bit, end_bit, h_reference_ranks, h_reference_keys);
 
     if (!KEYS_ONLY)
     {
-        h_values            = new ValueT[num_items];
-        h_reference_values  = new ValueT[num_items];
+        h_values.reset(new ValueT[num_items]);
+        h_reference_values.reset(new ValueT[num_items]);
 
         for (std::size_t i = 0; i < num_items; ++i)
         {
@@ -1768,20 +1842,12 @@ void Test(
             InitValue(INTEGER_SEED, h_reference_values[i], h_reference_ranks[i]);
         }
     }
-    if (h_reference_ranks) delete[] h_reference_ranks;
 
     printf("\nTesting bits [%d,%d) of %s keys with gen-mode %d\n", begin_bit, end_bit, typeid(KeyT).name(), gen_mode); fflush(stdout);
     Test<BACKEND, IS_DESCENDING>(
-        h_keys, h_values,
+        h_keys.get(), h_values.get(),
         num_items, num_segments, d_segment_offsets, d_segment_offsets + 1,
-        begin_bit, end_bit, h_reference_keys, h_reference_values);
-
-    if (h_keys)             delete[] h_keys;
-    if (h_reference_keys)   delete[] h_reference_keys;
-    if (h_values)           delete[] h_values;
-    if (h_reference_values) delete[] h_reference_values;
-    if (h_segment_offsets)  delete[] h_segment_offsets;
-    if (d_segment_offsets) CubDebugExit(g_allocator.DeviceFree(d_segment_offsets));
+        begin_bit, end_bit, h_reference_keys.get(), h_reference_values.get());
 }
 
 #if TEST_VALUE_TYPE == 0

@@ -163,6 +163,6 @@ using value_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, int128
 #endif // TUNE_ValueT
 
 NVBENCH_BENCH_TYPES(scan, NVBENCH_TYPE_AXES(key_types, value_types, some_offset_types))
-  .set_name("cub::DeviceScan::ExclusiveSumByKey")
+  .set_name("base")
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

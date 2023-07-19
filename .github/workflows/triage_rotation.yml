@@ -1,0 +1,55 @@
+name: Assign Issues for Triage 
+
+on:
+  issues:
+    types:
+      - opened
+      
+env:
+ GH_TOKEN: ${{ github.token }}
+
+jobs:
+  assign_issues:
+    runs-on: ubuntu-latest
+    if: ${{ ! contains(fromJSON('["OWNER", "MEMBER", "CONTRIBUTOR", "COLLABORATOR"]'), github.event.issue.author_association)}}
+    steps:
+      - name: Calculate assignee
+        id: calculate_assignee
+        run: |
+          USERS=("allisonvacanti" "senior-zero" "jrhemstad" "elstehle" "wmaxey" "miscco" "griwes")
+          WEEK=$(date +%U)
+          INDEX=$(( WEEK % 7 ))
+          echo "ASSIGNEE=${USERS[$INDEX]}" >> $GITHUB_ENV
+
+      - name: Get User ID
+        run: |
+          gh api graphql -f query='
+            query{ user(login: "${{ env.ASSIGNEE }}") 
+                    { id } }' > user_info.json
+          
+           echo 'ASSIGNEE_ID='$(jq '.data.user.id' user_info.json) >> $GITHUB_ENV
+      
+      - name: Assign issue
+        run: |
+           gh api graphql -f query='
+                        mutation { 
+                         addAssigneesToAssignable(input: 
+                               {assignableId: "${{ github.event.issue.node_id }}", 
+                                assigneeIds: [ ${{ env.ASSIGNEE_ID }} ]
+                                }) 
+                                   { clientMutationId } 
+                               }'
+
+      - name: add-triage-label
+        run: |
+          issue_url=${{ github.event.issue.html_url }}
+          gh issue edit ${issue_url} --add-label "Needs Triage"
+      
+      - name: add-comment-to-issue
+        run: |
+           issue_url=${{ github.event.issue.html_url }}
+           author=${{ github.event.issue.user.login }}
+           gh issue comment ${issue_url} --body "Hi @${author}!
+             
+             Thanks for submitting this issue - the CCCL team has been notified and we'll get back to you as soon as we can!
+             In the mean time, feel free to add any relevant information to this issue."

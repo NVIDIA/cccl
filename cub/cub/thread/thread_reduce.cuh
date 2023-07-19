@@ -70,9 +70,9 @@ __device__ __forceinline__ AccumT ThreadReduce(
 /**
  * \brief Perform a sequential reduction over \p LENGTH elements of the \p input array, seeded with the specified \p prefix.  The aggregate is returned.
  *
- * \tparam LENGTH     LengthT of input array
- * \tparam T          <b>[inferred]</b> The data type to be reduced.
- * \tparam ScanOp     <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * \tparam LENGTH       LengthT of input array
+ * \tparam T            <b>[inferred]</b> The data type to be reduced.
+ * \tparam ReductionOp  <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
  */
 template <
     int         LENGTH,
@@ -92,9 +92,9 @@ __device__ __forceinline__ AccumT ThreadReduce(
 /**
  * \brief Perform a sequential reduction over \p LENGTH elements of the \p input array.  The aggregate is returned.
  *
- * \tparam LENGTH     LengthT of input array
- * \tparam T          <b>[inferred]</b> The data type to be reduced.
- * \tparam ScanOp     <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * \tparam LENGTH       LengthT of input array
+ * \tparam T            <b>[inferred]</b> The data type to be reduced.
+ * \tparam ReductionOp  <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
  */
 template <
     int         LENGTH,
@@ -112,9 +112,9 @@ __device__ __forceinline__ T ThreadReduce(
 /**
  * \brief Perform a sequential reduction over the statically-sized \p input array, seeded with the specified \p prefix.  The aggregate is returned.
  *
- * \tparam LENGTH     <b>[inferred]</b> LengthT of \p input array
- * \tparam T          <b>[inferred]</b> The data type to be reduced.
- * \tparam ScanOp     <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * \tparam LENGTH       <b>[inferred]</b> LengthT of \p input array
+ * \tparam T            <b>[inferred]</b> The data type to be reduced.
+ * \tparam ReductionOp  <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
  */
 template <
     int         LENGTH,
@@ -134,9 +134,9 @@ __device__ __forceinline__ AccumT ThreadReduce(
 /**
  * \brief Serial reduction with the specified operator
  *
- * \tparam LENGTH     <b>[inferred]</b> LengthT of \p input array
- * \tparam T          <b>[inferred]</b> The data type to be reduced.
- * \tparam ScanOp     <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * \tparam LENGTH       <b>[inferred]</b> LengthT of \p input array
+ * \tparam T            <b>[inferred]</b> The data type to be reduced.
+ * \tparam ReductionOp  <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
  */
 template <
     int         LENGTH,

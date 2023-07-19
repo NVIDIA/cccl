@@ -118,6 +118,6 @@ void reduce(nvbench::state &state, nvbench::type_list<T, OffsetT>)
 }
 
 NVBENCH_BENCH_TYPES(reduce, NVBENCH_TYPE_AXES(all_types, offset_types))
-  .set_name("cub::DeviceReduce::Reduce")
+  .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

@@ -50,7 +50,7 @@ struct policy_hub_t
 #endif // !TUNE_BASE
 
 template <class T, class OffsetT>
-void adjacent_difference(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   constexpr bool may_alias = false;
   constexpr bool read_left = true;
@@ -115,7 +115,7 @@ void adjacent_difference(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
 using types = nvbench::type_list<int32_t>;
 
-NVBENCH_BENCH_TYPES(adjacent_difference, NVBENCH_TYPE_AXES(types, offset_types))
-  .set_name("cub::DeviceAdjacentDifference::SubtractLeftCopy")
+NVBENCH_BENCH_TYPES(left, NVBENCH_TYPE_AXES(types, offset_types))
+  .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

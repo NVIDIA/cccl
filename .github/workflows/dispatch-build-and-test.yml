@@ -16,7 +16,7 @@ jobs:
     uses: ./.github/workflows/build-and-test.yml
     strategy:
       fail-fast: false
-      matrix: 
+      matrix:
         include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
     with:
       cuda_version: ${{ matrix.cuda }}
@@ -30,5 +30,6 @@ jobs:
       build_script: ${{ inputs.build_script }}
       build_image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       test_script: ${{ inputs.test_script }}
+      run_tests: ${{ contains(matrix.jobs, 'test') && !contains(github.event.head_commit.message, 'skip-tests') }}
       test_image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
 

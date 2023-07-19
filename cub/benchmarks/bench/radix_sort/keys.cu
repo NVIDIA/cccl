@@ -223,7 +223,7 @@ void radix_sort_keys(nvbench::state &state, nvbench::type_list<T, OffsetT> tl)
 }
 
 NVBENCH_BENCH_TYPES(radix_sort_keys, NVBENCH_TYPE_AXES(fundamental_types, offset_types))
-  .set_name("cub::DeviceRadixSort::SortKeys")
+  .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.811", "0.544", "0.337", "0.201"});
