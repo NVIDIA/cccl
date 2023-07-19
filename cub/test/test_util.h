@@ -36,32 +36,28 @@
     #include <sys/resource.h>
 #endif
 
-#include <cstdio>
-#include <cfloat>
-#include <cmath>
-#include <cstddef>
-
-#include <string>
-#include <vector>
-#include <sstream>
-#include <iostream>
-#include <limits>
-
-#include "mersenne.h"
-#include "half.h"
-#include "bfloat16.h"
-
+#include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 #include <cub/util_macro.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/iterator/discard_output_iterator.cuh>
+#include <cub/util_type.cuh>
 
+#include <cfloat>
+#include <cmath>
+#include <cstddef>
+#include <cstdio>
+#include <iostream>
+#include <limits>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "mersenne.h"
 #include "test_util_vec.h"
-
+#include <c2h/extended_types.cuh>
 #include <nv/target>
 
 /******************************************************************************
@@ -428,6 +424,7 @@ __noinline__ bool IsNaN<double4>(double4 val)
 }
 
 
+#ifdef TEST_HALF_T
 template<>
 __noinline__ bool IsNaN<half_t>(half_t val)
 {
@@ -437,7 +434,9 @@ __noinline__ bool IsNaN<half_t>(half_t val)
     return (((bits >= 0x7C01) && (bits <= 0x7FFF)) ||
         ((bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/));
 }
+#endif
 
+#ifdef TEST_BF_T
 template<>
 __noinline__ bool IsNaN<bfloat16_t>(bfloat16_t val)
 {
@@ -447,6 +446,7 @@ __noinline__ bool IsNaN<bfloat16_t>(bfloat16_t val)
     return (((bits >= 0x7F81) && (bits <= 0x7FFF)) ||
         ((bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/));
 }
+#endif
 
 /**
  * Generates random keys.

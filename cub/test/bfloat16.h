@@ -212,7 +212,7 @@ struct bfloat16_t
  ******************************************************************************/
 
 /// Insert formatted \p bfloat16_t into the output stream
-std::ostream& operator<<(std::ostream &out, const bfloat16_t &x)
+inline std::ostream& operator<<(std::ostream &out, const bfloat16_t &x)
 {
     out << (float)x;
     return out;
@@ -220,7 +220,7 @@ std::ostream& operator<<(std::ostream &out, const bfloat16_t &x)
 
 
 /// Insert formatted \p __nv_bfloat16 into the output stream
-std::ostream& operator<<(std::ostream &out, const __nv_bfloat16 &x)
+inline std::ostream& operator<<(std::ostream &out, const __nv_bfloat16 &x)
 {
     return out << bfloat16_t(x);
 }

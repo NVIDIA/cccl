@@ -35,6 +35,7 @@
 #include <cstdint>
 
 #include <c2h/custom_type.cuh>
+#include <c2h/extended_types.cuh>
 #include <c2h/generators.cuh>
 #include <curand.h>
 #include <fill_striped.cuh>
@@ -315,6 +316,14 @@ INSTANTIATE(std::int64_t);
 
 INSTANTIATE(float);
 INSTANTIATE(double);
+
+#ifdef TEST_HALF_T
+INSTANTIATE(half_t);
+#endif
+
+#ifdef TEST_BF_T
+INSTANTIATE(bfloat16_t);
+#endif
 
 template <typename T, int VecItem>
 struct vec_gen_helper_t;
