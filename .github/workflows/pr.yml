@@ -37,7 +37,7 @@ jobs:
       - name: Set outputs
         id: set-outputs
         run: |
-          FULL_MATRIX=${{steps.compute-nvcc-matrix.outputs.matrix}}
+          FULL_MATRIX="${{steps.compute-nvcc-matrix.outputs.matrix}}"
           CUDA_VERSIONS=$(echo $FULL_MATRIX | jq -c '[.[] | .cuda] | unique')
           echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
           HOST_COMPILERS=$(echo $FULL_MATRIX | jq -c '[.[] | .compiler.name] | unique')
