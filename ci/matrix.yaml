@@ -21,7 +21,7 @@ gpus:
 #    This field is unique as it will generate an independent build/test job for each value
 
 # Configurations that will run for every PR
-pull-request:
+pull_request:
   nvcc:
     - {cuda: '11.1', os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '6', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14], jobs: ['build']}
     - {cuda: '11.1', os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17], jobs: ['build']}
