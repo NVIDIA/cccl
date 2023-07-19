@@ -242,7 +242,7 @@ def iterate_case_dfs(args, callable):
                             if subbench not in case_dfs[point_str]:
                                 case_dfs[point_str][subbench] = case_df
                             else:
-                                case_dfs[point_str][subbench] = pd.concat([case_dfs[point_str], case_df])
+                                case_dfs[point_str][subbench] = pd.concat([case_dfs[point_str][subbench], case_df])
             
         for point_str in case_dfs:
             callable(algname, point_str, case_dfs[point_str])

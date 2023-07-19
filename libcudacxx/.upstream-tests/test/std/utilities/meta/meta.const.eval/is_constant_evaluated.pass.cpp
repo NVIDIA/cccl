@@ -17,14 +17,13 @@
 
 #include "test_macros.h"
 
-// libcudacxx does not have feature test macros... yet
-/*
-#ifndef __cpp_lib_is_constant_evaluated
+#if TEST_STD_VER > 17
+#ifndef __cccl_lib_is_constant_evaluated
 #if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated)
-# error __cpp_lib_is_constant_evaluated should be defined
+# error __cccl_lib_is_constant_evaluated should be defined
 #endif
-#endif
-*/
+#endif // __cccl_lib_is_constant_evaluated
+#endif // TEST_STD_VER > 17
 
 template <bool> struct InTemplate {};
 
