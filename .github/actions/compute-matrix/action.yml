@@ -4,7 +4,7 @@ description: "Compute the matrix for a given matrix type from the specified matr
 
 inputs:
   matrix_query:
-    description: 'The jq query used to specify the desired matrix. e.g., .["pull-request"]["nvcc]"'
+    description: 'The jq query used to specify the desired matrix. e.g., '.pull_request.nvcc'
     required: true
   matrix_file:
     description: 'The file containing the matrix'
