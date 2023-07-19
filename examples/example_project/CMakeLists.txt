@@ -9,9 +9,8 @@ include(cmake/CPM.cmake)
 # This will automatically clone CCCL from GitHub and make the exported cmake targets available
 CPMAddPackage(
     NAME CCCL
-    GITHUB_REPOSITORY nvidia/cccl
-    GIT_TAG monorepo # TODO: Replace this when monorepo is merged and release is out
-    OPTIONS "CCCL_ENABLE_LIBCUDACXX OFF" "CCCL_ENABLE_CUB OFF" "CCCL_ENABLE_THRUST OFF" "CCCL_ENABLE_TESTING OFF"
+    GITHUB_REPOSITORY allisonvacanti/cccl
+    GIT_TAG new_cccl_cmake_targets
 )
 
 # Default to building for the GPU on the current system
@@ -20,4 +19,4 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
 endif()
 
 add_executable(example example.cu)
-target_link_libraries(example PRIVATE cccl::cccl)
+target_link_libraries(example PRIVATE CCCL::CCCL)
