@@ -318,3 +318,150 @@ CUB_VEC_OVERLOAD(ulonglong, unsigned long long)
 CUB_VEC_OVERLOAD(float, float)
 CUB_VEC_OVERLOAD(double, double)
 
+/*
+ * The following section defines macros to overload cub::NumericTraits<T>::{Max,Lowest}() for vector
+ * types.
+ */
+
+/**
+ * Vector1 overloads
+ */
+#define CUB_VEC_1_TRAITS_OVERLOAD(T, BaseT)                                                        \
+  CUB_NAMESPACE_BEGIN                                                                              \
+  template <>                                                                                      \
+  struct NumericTraits<T>                                                                          \
+  {                                                                                                \
+    static const Category CATEGORY = NOT_A_NUMBER;                                                 \
+    enum                                                                                           \
+    {                                                                                              \
+      PRIMITIVE = false,                                                                           \
+      NULL_TYPE = false,                                                                           \
+    };                                                                                             \
+    static __host__ __device__ T Max()                                                             \
+    {                                                                                              \
+      T retval = {NumericTraits<BaseT>::Max()};                                                    \
+      return retval;                                                                               \
+    }                                                                                              \
+    static __host__ __device__ T Lowest()                                                          \
+    {                                                                                              \
+      T retval = {NumericTraits<BaseT>::Lowest()};                                                 \
+      return retval;                                                                               \
+    }                                                                                              \
+  };                                                                                               \
+  CUB_NAMESPACE_END
+
+/**
+ * Vector2 overloads
+ */
+#define CUB_VEC_2_TRAITS_OVERLOAD(T, BaseT)                                                        \
+  CUB_NAMESPACE_BEGIN                                                                              \
+  template <>                                                                                      \
+  struct NumericTraits<T>                                                                          \
+  {                                                                                                \
+    static const Category CATEGORY = NOT_A_NUMBER;                                                 \
+    enum                                                                                           \
+    {                                                                                              \
+      PRIMITIVE = false,                                                                           \
+      NULL_TYPE = false,                                                                           \
+    };                                                                                             \
+    static __host__ __device__ T Max()                                                             \
+    {                                                                                              \
+      T retval = {NumericTraits<BaseT>::Max(), NumericTraits<BaseT>::Max()};                       \
+      return retval;                                                                               \
+    }                                                                                              \
+    static __host__ __device__ T Lowest()                                                          \
+    {                                                                                              \
+      T retval = {NumericTraits<BaseT>::Lowest(), NumericTraits<BaseT>::Lowest()};                 \
+      return retval;                                                                               \
+    }                                                                                              \
+  };                                                                                               \
+  CUB_NAMESPACE_END
+
+/**
+ * Vector3 overloads
+ */
+#define CUB_VEC_3_TRAITS_OVERLOAD(T, BaseT)                                                        \
+  CUB_NAMESPACE_BEGIN                                                                              \
+  template <>                                                                                      \
+  struct NumericTraits<T>                                                                          \
+  {                                                                                                \
+    static const Category CATEGORY = NOT_A_NUMBER;                                                 \
+    enum                                                                                           \
+    {                                                                                              \
+      PRIMITIVE = false,                                                                           \
+      NULL_TYPE = false,                                                                           \
+    };                                                                                             \
+    static __host__ __device__ T Max()                                                             \
+    {                                                                                              \
+      T retval = {NumericTraits<BaseT>::Max(),                                                     \
+                  NumericTraits<BaseT>::Max(),                                                     \
+                  NumericTraits<BaseT>::Max()};                                                    \
+      return retval;                                                                               \
+    }                                                                                              \
+    static __host__ __device__ T Lowest()                                                          \
+    {                                                                                              \
+      T retval = {NumericTraits<BaseT>::Lowest(),                                                  \
+                  NumericTraits<BaseT>::Lowest(),                                                  \
+                  NumericTraits<BaseT>::Lowest()};                                                 \
+      return retval;                                                                               \
+    }                                                                                              \
+  };                                                                                               \
+  CUB_NAMESPACE_END
+
+/**
+ * Vector4 overloads
+ */
+#define CUB_VEC_4_TRAITS_OVERLOAD(T, BaseT)                                                        \
+  CUB_NAMESPACE_BEGIN                                                                              \
+  template <>                                                                                      \
+  struct NumericTraits<T>                                                                          \
+  {                                                                                                \
+    static const Category CATEGORY = NOT_A_NUMBER;                                                 \
+    enum                                                                                           \
+    {                                                                                              \
+      PRIMITIVE = false,                                                                           \
+      NULL_TYPE = false,                                                                           \
+    };                                                                                             \
+    static __host__ __device__ T Max()                                                             \
+    {                                                                                              \
+      T retval = {NumericTraits<BaseT>::Max(),                                                     \
+                  NumericTraits<BaseT>::Max(),                                                     \
+                  NumericTraits<BaseT>::Max(),                                                     \
+                  NumericTraits<BaseT>::Max()};                                                    \
+      return retval;                                                                               \
+    }                                                                                              \
+    static __host__ __device__ T Lowest()                                                          \
+    {                                                                                              \
+      T retval = {NumericTraits<BaseT>::Lowest(),                                                  \
+                  NumericTraits<BaseT>::Lowest(),                                                  \
+                  NumericTraits<BaseT>::Lowest(),                                                  \
+                  NumericTraits<BaseT>::Lowest()};                                                 \
+      return retval;                                                                               \
+    }                                                                                              \
+  };                                                                                               \
+  CUB_NAMESPACE_END
+
+/**
+ * All vector overloads
+ */
+#define CUB_VEC_TRAITS_OVERLOAD(COMPONENT_T, BaseT)                                                \
+  CUB_VEC_1_TRAITS_OVERLOAD(COMPONENT_T##1, BaseT)                                                 \
+  CUB_VEC_2_TRAITS_OVERLOAD(COMPONENT_T##2, BaseT)                                                 \
+  CUB_VEC_3_TRAITS_OVERLOAD(COMPONENT_T##3, BaseT)                                                 \
+  CUB_VEC_4_TRAITS_OVERLOAD(COMPONENT_T##4, BaseT)
+
+/**
+ * Define for types
+ */
+CUB_VEC_TRAITS_OVERLOAD(char, signed char)
+CUB_VEC_TRAITS_OVERLOAD(short, short)
+CUB_VEC_TRAITS_OVERLOAD(int, int)
+CUB_VEC_TRAITS_OVERLOAD(long, long)
+CUB_VEC_TRAITS_OVERLOAD(longlong, long long)
+CUB_VEC_TRAITS_OVERLOAD(uchar, unsigned char)
+CUB_VEC_TRAITS_OVERLOAD(ushort, unsigned short)
+CUB_VEC_TRAITS_OVERLOAD(uint, unsigned int)
+CUB_VEC_TRAITS_OVERLOAD(ulong, unsigned long)
+CUB_VEC_TRAITS_OVERLOAD(ulonglong, unsigned long long)
+CUB_VEC_TRAITS_OVERLOAD(float, float)
+CUB_VEC_TRAITS_OVERLOAD(double, double)

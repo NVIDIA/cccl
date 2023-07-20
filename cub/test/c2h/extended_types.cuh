@@ -38,11 +38,11 @@
 #ifdef TEST_HALF_T
 #include <cuda_fp16.h>
 
-#include "half.h"
+#include "../half.h"
 #endif
 
 #ifdef TEST_BF_T
 #include <cuda_bf16.h>
 
-#include "bfloat16.h"
+#include "../bfloat16.h"
 #endif
