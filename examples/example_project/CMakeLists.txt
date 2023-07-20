@@ -18,5 +18,5 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
   set(CMAKE_CUDA_ARCHITECTURES native)
 endif()
 
-add_executable(example example.cu)
-target_link_libraries(example PRIVATE CCCL::CCCL)
+add_executable(example_project example.cu)
+target_link_libraries(example_project PRIVATE CCCL::CCCL)
