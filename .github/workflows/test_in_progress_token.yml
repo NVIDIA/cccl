@@ -19,7 +19,7 @@ on:
   pull_request_target:
     # Run this action when a PR is opened or edited
     # Issues do not have a graphQL connection to linked PRs so we can't use that event
-    types: [opened, converted_to_draft]
+    types: [opened, converted_to_draft, edited]
   pull_request_review:
     # Run this action when a PR is reviewed
     types: [submitted]
