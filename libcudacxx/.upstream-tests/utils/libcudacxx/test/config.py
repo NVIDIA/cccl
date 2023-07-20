@@ -588,18 +588,20 @@ class Configuration(object):
             pre_sm_70 = False
             pre_sm_80 = False
             pre_sm_90 = False
-            compute_archs = [int(a) for a in sorted(shlex.split(compute_archs))]
-            for arch in compute_archs:
+            compute_archs = set(sorted(re.split('\s|;|,', compute_archs)))
+            for s in compute_archs:
+                # Split arch and mode i.e. 80-virtual -> 80, virtual
+                arch, *mode = re.split('-', s)
+                arch = int(arch)
                 if arch < 32: pre_sm_32 = True
                 if arch < 60: pre_sm_60 = True
                 if arch < 70: pre_sm_70 = True
                 if arch < 80: pre_sm_80 = True
                 if arch < 90: pre_sm_90 = True
-                arch_flag = '-gencode=arch=compute_{0},code=sm_{0}'.format(arch)
-                self.cxx.compile_flags += [arch_flag]
-            enable_compute_future = self.get_lit_conf('enable_compute_future')
-            if enable_compute_future:
-                arch_flag = '-gencode=arch=compute_{0},code=compute_{0}'.format(arch)
+                if mode.count("virtual"):
+                    arch_flag = '-gencode=arch=compute_{0},code=compute_{0}'.format(arch)
+                else:
+                    arch_flag = '-gencode=arch=compute_{0},code=sm_{0}'.format(arch)
                 self.cxx.compile_flags += [arch_flag]
         if pre_sm_32:
             self.config.available_features.add("pre-sm-32")

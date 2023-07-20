@@ -432,7 +432,7 @@ using _Filtered_vtable = typename _Filtered<_Properties...>::_Filtered_vtable::_
 template <class _Vtable>
 struct _Alloc_base
 {
-  static_assert(cuda::std::is_base_of_v<_Alloc_vtable, _Vtable>, "");
+  static_assert(_CUDA_VSTD::is_base_of_v<_Alloc_vtable, _Vtable>, "");
 
   _Alloc_base(void* __object_, const _Vtable* __static_vtabl_) noexcept
       : __object(__object_)
@@ -457,7 +457,7 @@ protected:
 template <class _Vtable>
 struct _Async_alloc_base : public _Alloc_base<_Vtable>
 {
-  static_assert(cuda::std::is_base_of_v<_Async_alloc_vtable, _Vtable>, "");
+  static_assert(_CUDA_VSTD::is_base_of_v<_Async_alloc_vtable, _Vtable>, "");
 
   _Async_alloc_base(void* __object_, const _Vtable* __static_vtabl_) noexcept
       : _Alloc_base<_Vtable>(__object_, __static_vtabl_)

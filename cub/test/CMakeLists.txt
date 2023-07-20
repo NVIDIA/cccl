@@ -137,9 +137,9 @@ function(cub_add_test target_name_var test_name test_src cub_target)
 
   if (is_catch2_test)
     set(use_rdc_for_catch2_utils OFF)
-  if (CUB_ENABLE_RDC_TESTS OR CUB_FORCE_RDC)
-    set(use_rdc_for_catch2_utils ON)
-  endif()
+    if (CUB_ENABLE_RDC_TESTS OR CUB_FORCE_RDC)
+      set(use_rdc_for_catch2_utils ON)
+    endif()
 
     # Per config helper library:
     set(config_c2h_target ${config_prefix}.test.catch2_helper)

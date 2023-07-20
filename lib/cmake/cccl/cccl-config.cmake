@@ -19,6 +19,10 @@ else()
   set(components Thrust CUB libcudacxx)
 endif()
 
+if (NOT TARGET CCCL::CCCL)
+  add_library(CCCL::CCCL INTERFACE IMPORTED GLOBAL)
+endif()
+
 foreach(component IN LISTS components)
   string(TOLOWER "${component}" component_lower)
 
@@ -36,6 +40,12 @@ foreach(component IN LISTS components)
         "${cccl_cmake_dir}/../../../libcudacxx/lib/cmake/" # Source layout (GitHub)
         "${cccl_cmake_dir}/.."                             # Install layout
     )
+    # Can't alias other alias targets, so use the uglified target name instead
+    # of libcudacxx::libcudacxx:
+    if (TARGET _libcudacxx_libcudacxx)
+      add_library(CCCL::libcudacxx ALIAS _libcudacxx_libcudacxx)
+      target_link_libraries(CCCL::CCCL INTERFACE CCCL::libcudacxx)
+    endif()
   elseif(component_lower STREQUAL "cub")
     find_package(CUB ${CCCL_VERSION} EXACT CONFIG
       ${cccl_quiet_flag}
@@ -45,6 +55,12 @@ foreach(component IN LISTS components)
         "${cccl_cmake_dir}/../../../cub/cub/cmake/" # Source layout (GitHub)
         "${cccl_cmake_dir}/.."                      # Install layout
     )
+    # Can't alias other alias targets, so use the uglified target name instead
+    # of CUB::CUB:
+    if (TARGET _CUB_CUB)
+      add_library(CCCL::CUB ALIAS _CUB_CUB)
+      target_link_libraries(CCCL::CCCL INTERFACE CCCL::CUB)
+    endif()
   elseif(component_lower STREQUAL "thrust")
     find_package(Thrust ${CCCL_VERSION} EXACT CONFIG
       ${cccl_quiet_flag}
@@ -54,6 +70,25 @@ foreach(component IN LISTS components)
         "${cccl_cmake_dir}/../../../thrust/thrust/cmake/" # Source layout (GitHub)
         "${cccl_cmake_dir}/.."                            # Install layout
     )
+
+    if (TARGET Thrust::Thrust)
+      # By default, configure a CCCL::Thrust target with host=cpp device=cuda
+      option(CCCL_ENABLE_DEFAULT_THRUST_TARGET
+        "Create a CCCL::Thrust target using CCCL_THRUST_[HOST|DEVICE]_SYSTEM."
+        ON
+      )
+      if (CCCL_ENABLE_DEFAULT_THRUST_TARGET)
+        thrust_create_target(CCCL::Thrust FROM_OPTIONS
+          HOST_OPTION CCCL_THRUST_HOST_SYSTEM
+          DEVICE_OPTION CCCL_THRUST_DEVICE_SYSTEM
+          HOST_OPTION_DOC
+            "Host system for CCCL::Thrust target."
+          DEVICE_OPTION_DOC
+            "Device system for CCCL::Thrust target."
+        )
+        target_link_libraries(CCCL::CCCL INTERFACE CCCL::Thrust)
+      endif()
+    endif()
   else()
     message(FATAL_ERROR "Invalid CCCL component requested: '${component}'")
   endif()
