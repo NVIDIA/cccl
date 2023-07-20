@@ -36,11 +36,30 @@
 
 #include <c2h/custom_type.cuh>
 #include <c2h/generators.cuh>
-#include <curand.h>
 #include <fill_striped.cuh>
+
+#if C2H_HAS_CURAND 
+#include <curand.h>
+#else
+#include <thrust/random.h>
+#endif
 
 namespace c2h
 {
+
+#if !C2H_HAS_CURAND 
+struct i_to_rnd_t
+{
+  thrust::default_random_engine m_engine{};
+
+  template <typename IndexType>
+  __host__ __device__ float operator()(IndexType n)
+  {
+    m_engine.discard(n);
+    return thrust::uniform_real_distribution<float>{0.0f, 1.0f}(m_engine);
+  }
+};
+#endif
 
 class generator_t
 {
@@ -63,14 +82,23 @@ public:
                   thrust::device_vector<T> &data);
 
   float* distribution();
+
+#if C2H_HAS_CURAND 
   curandGenerator_t &gen() { return m_gen; }
+#endif
 
   float* prepare_random_generator(
       seed_t seed,
       std::size_t num_items);
+  
+  void generate();
 
 private:
+#if C2H_HAS_CURAND 
   curandGenerator_t m_gen;
+#else
+  thrust::default_random_engine m_re;
+#endif
   thrust::device_vector<float> m_distribution;
 };
 
@@ -125,12 +153,16 @@ RANDOM_TO_VEC_ITEM_SPEC(3, w);
 
 generator_t::generator_t()
 {
+#if C2H_HAS_CURAND 
   curandCreateGenerator(&m_gen, CURAND_RNG_PSEUDO_DEFAULT);
+#endif
 }
 
 generator_t::~generator_t()
 {
+#if C2H_HAS_CURAND 
   curandDestroyGenerator(m_gen);
+#endif
 }
 
 float* generator_t::distribution()
@@ -138,15 +170,32 @@ float* generator_t::distribution()
   return thrust::raw_pointer_cast(m_distribution.data());
 }
 
+void generator_t::generate()
+{
+#if C2H_HAS_CURAND 
+  curandGenerateUniform(m_gen,
+                        this->distribution(),
+                        this->m_distribution.size());
+#else
+  thrust::tabulate(this->m_distribution.begin(),
+                   this->m_distribution.end(),
+                   i_to_rnd_t{m_re});
+  m_re.discard(this->m_distribution.size());
+#endif
+}
+
 float *generator_t::prepare_random_generator(seed_t seed,
                                              std::size_t num_items)
 {
-  curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
-
   m_distribution.resize(num_items);
-  curandGenerateUniform(m_gen,
-                        this->distribution(),
-                        num_items);
+
+#if C2H_HAS_CURAND 
+  curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
+#else
+  m_re.seed(seed.get());
+#endif
+
+  generate();
 
   return this->distribution();
 }
@@ -255,9 +304,7 @@ void gen(seed_t seed,
     cnt_end,
     random_to_custom_t<true>{d_in, d_out, element_size});
 
-  curandGenerateUniform(generator.gen(),
-                        generator.distribution(),
-                        elements);
+  generator.generate();
 
   thrust::for_each(
     thrust::device,
@@ -341,7 +388,7 @@ struct vec_gen_helper_t
     float *d_in = generator.distribution();
     T *d_out = thrust::raw_pointer_cast(data.data());
 
-    curandGenerateUniform(generator.gen(), d_in, data.size());
+    generator.generate();
 
     thrust::for_each(
       thrust::device,
