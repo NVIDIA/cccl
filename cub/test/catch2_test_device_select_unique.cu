@@ -134,7 +134,7 @@ CUB_TEST("DeviceSelect::Unique handles all equal", "[device][select_unique]", ty
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items, 1);
+  thrust::device_vector<type> in(num_items, static_cast<type>(1));
   thrust::device_vector<type> out(1);
 
   // Needs to be device accessible

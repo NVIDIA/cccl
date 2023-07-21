@@ -145,7 +145,7 @@ CUB_TEST("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_
   using val_type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type>     keys_in(num_items, 1);
+  thrust::device_vector<type>     keys_in(num_items, static_cast<type>(1));
   thrust::device_vector<val_type> vals_in(num_items);
   thrust::device_vector<type>     keys_out(1);
   thrust::device_vector<val_type> vals_out(1);
