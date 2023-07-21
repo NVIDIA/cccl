@@ -1777,7 +1777,7 @@ void TestGen(
             TestSizes(h_keys.get(), large_num_items, max_segments, true);
             fflush(stdout);
         }
-        catch (std::bad_alloc &e)
+        catch (std::bad_alloc &)
         {
             printf("\nNot enough host memory, skipping large num items test\n");
             fflush(stdout);
