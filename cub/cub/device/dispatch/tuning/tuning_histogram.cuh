@@ -79,11 +79,16 @@ constexpr sample_size classify_sample_size()
                                 : sample_size::unknown;
 }
 
+template <class SampleT>
+constexpr int v_scale()
+{
+  return (sizeof(SampleT) + sizeof(int) - 1) / sizeof(int);
+}
+
 template <class SampleT, int NumActiveChannels, int NominalItemsPerThread>
 constexpr int t_scale()
 {
-  constexpr int V_SCALE = (sizeof(SampleT) + sizeof(int) - 1) / sizeof(int);
-  return CUB_MAX((NominalItemsPerThread / NumActiveChannels / V_SCALE), 1);
+  return CUB_MAX((NominalItemsPerThread / NumActiveChannels / v_scale<SampleT>()), 1);
 }
 
 template <class SampleT,
