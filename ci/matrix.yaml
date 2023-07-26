@@ -1,6 +1,6 @@
 
 cuda_oldest: &cuda_oldest '11.1'
-cuda_newest: &cuda_newest '12.1'
+cuda_newest: &cuda_newest '12.2'
 
 # The GPUs to test on
 # Note: This assumes that the appropriate gpu_build_archs are set to include building for the GPUs listed here
@@ -9,7 +9,7 @@ gpus:
   - 'v100'
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers 
-devcontainer_version: '23.06'
+devcontainer_version: '23.08'
 
 # Each environment below will generate a unique build/test job
 # See the "compute-matrix" job in the workflow for how this is parsed and used
