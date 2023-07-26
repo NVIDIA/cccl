@@ -220,8 +220,9 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    using accum_t            = cub::detail::accumulator_t<op_t, output_t, item_t>;
-    output_t expected_result = compute_single_problem_reference(in_items, reduction_op, accum_t{});
+    using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
+    output_t expected_result =
+      static_cast<output_t>(compute_single_problem_reference(in_items, reduction_op, accum_t{}));
 
     // Run test
     thrust::device_vector<output_t> out_result(num_segments);
@@ -242,7 +243,8 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
 
     // Prepare verification data
-    output_t expected_result = compute_single_problem_reference(in_items, op_t{}, accum_t{});
+    output_t expected_result =
+      static_cast<output_t>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));
 
     // Run test
     thrust::device_vector<output_t> out_result(num_segments);
@@ -405,28 +407,26 @@ CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   init_default_constant(default_constant);
   auto in_it = thrust::make_constant_iterator(default_constant);
 
-  SECTION("reduce")
-  {
-    using op_t   = cub::Sum;
-    using init_t = output_t;
+  using op_t   = cub::Sum;
+  using init_t = output_t;
 
-    // Binary reduction operator
-    auto reduction_op = op_t{};
+  // Binary reduction operator
+  auto reduction_op = op_t{};
 
-    // Prepare verification data
-    using accum_t = cub::detail::accumulator_t<op_t, init_t, item_t>;
-    output_t expected_result =
-      compute_single_problem_reference(in_it, in_it + num_items, reduction_op, accum_t{});
+  // Prepare verification data
+  using accum_t = cub::detail::accumulator_t<op_t, init_t, item_t>;
+  output_t expected_result =
+    compute_single_problem_reference(in_it, in_it + num_items, reduction_op, accum_t{});
 
-    // Run test
-    thrust::device_vector<output_t> out_result(num_segments);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    device_reduce(in_it, d_out_it, num_items, reduction_op, init_t{});
+  // Run test
+  thrust::device_vector<output_t> out_result(num_segments);
+  auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+  device_reduce(in_it, d_out_it, num_items, reduction_op, init_t{});
 
-    // Verify result
-    REQUIRE(expected_result == out_result[0]);
-  }
+  // Verify result
+  REQUIRE(expected_result == out_result[0]);
 }
+
 CUB_TEST("Device reduce compiles with discard output iterator",
          "[reduce][device]",
          iterator_type_list)

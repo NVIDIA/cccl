@@ -39,11 +39,11 @@
 #include "test_util_vec.h"
 #include <nv/target>
 
+CUB_NAMESPACE_BEGIN
+
 #if TEST_HALF_T
 // Half support is provided by SM53+. We currently test against a few older architectures.
 // The specializations below can be removed once we drop these architectures.
-CUB_NAMESPACE_BEGIN
-
 template <>
 __host__ __device__ __forceinline__ //
   __half
@@ -95,6 +95,7 @@ __host__ __device__ __forceinline__ //
 
   return a;
 }
+#endif // TEST_HALF_T
 
 /**
  * @brief Introduces the required NumericTraits for `c2h::custom_type_t`.
@@ -127,7 +128,6 @@ struct NumericTraits<c2h::custom_type_t<Policies...>>
 };
 
 CUB_NAMESPACE_END
-#endif
 
 // Comparing results computed on CPU and GPU for extended floating point types is impossible.
 // For instance, when used with a constant iterator of two, the accumulator in sequential reference
