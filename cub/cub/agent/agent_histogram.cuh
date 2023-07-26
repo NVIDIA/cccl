@@ -70,7 +70,7 @@ template <
     bool                            _RLE_COMPRESS,                  ///< Whether to perform localized RLE to compress samples before histogramming
     BlockHistogramMemoryPreference  _MEM_PREFERENCE,                ///< Whether to prefer privatized shared-memory bins (versus privatized global-memory bins)
     bool                            _WORK_STEALING,                 ///< Whether to dequeue tiles from a global work queue
-    int                             _VEC_SIZE = 4>
+    int                             _VEC_SIZE = 4>                  ///< Vector size for samples loading (1, 2, 4)
 struct AgentHistogramPolicy
 {
     enum
@@ -82,7 +82,7 @@ struct AgentHistogramPolicy
         IS_WORK_STEALING        = _WORK_STEALING,                   ///< Whether to dequeue tiles from a global work queue
     };
 
-    static constexpr int VEC_SIZE = _VEC_SIZE;
+    static constexpr int VEC_SIZE = _VEC_SIZE;                      ///< Vector size for samples loading (1, 2, 4)
 
     static const BlockLoadAlgorithm     LOAD_ALGORITHM          = _LOAD_ALGORITHM;          ///< The BlockLoad algorithm to use
     static const CacheLoadModifier      LOAD_MODIFIER           = _LOAD_MODIFIER;           ///< Cache load modifier for reading input elements
