@@ -18,6 +18,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  
+  get-devcontainer-version:
+    name: Get the version of the devcontainer image to use
+    runs-on: ubuntu-latest
+    outputs:
+      DEVCONTAINER_VERSION: ${{ steps.set-outputs.outputs.DEVCONTAINER_VERSION }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Get devcontainer version
+        id: get-devcontainer-version
+        uses: ./.github/actions/compute-matrix
+        with:
+          matrix_file: './ci/matrix.yaml'
+          matrix_query: '.devcontainer_version'
+      - name: Set outputs
+        id: set-outputs
+        run: |
+          DEVCONTAINER_VERSION='${{steps.get-devcontainer-version.outputs.matrix}}'
+          echo "DEVCONTAINER_VERSION=$DEVCONTAINER_VERSION" | tee -a "$GITHUB_OUTPUT"
+
   compute-nvcc-matrix:
     name: Compute NVCC matrix
     runs-on: ubuntu-latest
@@ -47,7 +68,7 @@ jobs:
 
   thrust:
     name: Thrust CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
-    needs: compute-nvcc-matrix
+    needs: [compute-nvcc-matrix, get-devcontainer-version]
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
@@ -58,10 +79,11 @@ jobs:
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-nvcc-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       build_script: "./ci/build_thrust.sh"
       test_script: "./ci/test_thrust.sh"
+      devcontainer_version: ${{ needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION }}
 
   cub:
     name: CUB CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
-    needs: compute-nvcc-matrix
+    needs: [compute-nvcc-matrix, get-devcontainer-version]
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
@@ -72,10 +94,11 @@ jobs:
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-nvcc-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       build_script: "./ci/build_cub.sh"
       test_script: "./ci/test_cub.sh"
+      devcontainer_version: ${{ needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION }}
   
   libcudacxx:
     name: libcudacxx CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
-    needs: compute-nvcc-matrix
+    needs: [compute-nvcc-matrix, get-devcontainer-version]
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
@@ -86,6 +109,7 @@ jobs:
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-nvcc-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       build_script: "./ci/build_libcudacxx.sh"
       test_script: "./ci/test_libcudacxx.sh" 
+      devcontainer_version: ${{ needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION }}
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
