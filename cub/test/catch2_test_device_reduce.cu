@@ -30,7 +30,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
 
 #include <cuda/std/limits>
 
@@ -53,47 +52,7 @@ DECLARE_CDP_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
 // %PARAM% TEST_CDP cdp 0:1
-// %PARAM% TEST_TYPES types 0:1:2:3:4:5
-
-/**
- * @brief Helper function to compute the reference solution for result verification taking an
- * arbitrary host-accessible input iterator.
- */
-template <typename in_it_t, typename reduction_op_t, typename accum_t>
-accum_t compute_single_problem_reference(in_it_t h_in_begin,
-                                         in_it_t h_in_end,
-                                         reduction_op_t reduction_op,
-                                         accum_t init)
-{
-  constexpr std::size_t num_segments = 1;
-  thrust::host_vector<accum_t> h_results(num_segments);
-
-  compute_host_reference(h_in_begin,
-                         thrust::make_constant_iterator(0),
-                         thrust::make_constant_iterator(thrust::distance(h_in_begin, h_in_end)),
-                         num_segments,
-                         reduction_op,
-                         init,
-                         h_results.begin());
-
-  return *h_results.begin();
-}
-
-/**
- * @brief Helper function to compute the reference solution for result verification, taking a
- * thrust::device_vector.
- */
-template <typename item_t, typename reduction_op_t, typename accum_t>
-accum_t compute_single_problem_reference(const thrust::device_vector<item_t> &d_in,
-                                         reduction_op_t reduction_op,
-                                         accum_t init)
-{
-  constexpr std::size_t num_segments = 1;
-  thrust::host_vector<item_t> h_items(d_in);
-  thrust::host_vector<accum_t> h_results(num_segments);
-
-  return compute_single_problem_reference(h_items.cbegin(), h_items.cend(), reduction_op, init);
-}
+// %PARAM% TEST_TYPES types 0:1:2:3:4
 
 /**
  * @brief Helper function to test large problem sizes, including problems requiring 64-bit offset
@@ -110,27 +69,6 @@ void test_big_indices_helper(offset_t num_items)
 
   REQUIRE(result == num_items);
 }
-
-/**
- * @brief Helper class template to facilitate specifying input/output type pairs.
- */
-template <typename _input_t, typename _output_t = _input_t>
-struct type_pair
-{
-  using input_t  = _input_t;
-  using output_t = _output_t;
-};
-
-/**
- * @brief Helper class template to facilitate accessing types specified by type-parameterized tests.
- */
-template <typename TestType>
-struct params_t
-{
-  using type_pair_t = typename c2h::get<0, TestType>;
-  using item_t      = typename type_pair_t::input_t;
-  using output_t    = typename type_pair_t::output_t;
-};
 
 // List of types to test
 using custom_t = c2h::custom_type_t<c2h::accumulateable_t,
@@ -160,8 +98,6 @@ type_pair<custom_t>
 #elif TEST_TYPES == 4
 // --> testing for big indices
 // --> testing arg{min,max} for +/-inf
-#elif TEST_TYPES == 5 //
-using iterator_type_list = c2h::type_list<type_pair<custom_t>, type_pair<std::int64_t>>;
 #endif
 
 /**
@@ -382,83 +318,4 @@ CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
   }
 }
 
-// TEST_TYPES == 5
-#elif TEST_TYPES == 5
-CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", iterator_type_list)
-{
-  using params   = params_t<TestType>;
-  using item_t   = typename params::item_t;
-  using output_t = typename params::output_t;
-  using offset_t = int32_t;
-
-  constexpr int max_items    = 5000000;
-  constexpr int min_items    = 1;
-  constexpr int num_segments = 1;
-
-  // Generate the input sizes to test for
-  const int num_items = GENERATE_COPY(take(3, random(min_items, max_items)),
-                                      values({
-                                        min_items,
-                                        max_items,
-                                      }));
-
-  // Prepare input data
-  item_t default_constant{};
-  init_default_constant(default_constant);
-  auto in_it = thrust::make_constant_iterator(default_constant);
-
-  using op_t   = cub::Sum;
-  using init_t = output_t;
-
-  // Binary reduction operator
-  auto reduction_op = op_t{};
-
-  // Prepare verification data
-  using accum_t = cub::detail::accumulator_t<op_t, init_t, item_t>;
-  output_t expected_result =
-    compute_single_problem_reference(in_it, in_it + num_items, reduction_op, accum_t{});
-
-  // Run test
-  thrust::device_vector<output_t> out_result(num_segments);
-  auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-  device_reduce(in_it, d_out_it, num_items, reduction_op, init_t{});
-
-  // Verify result
-  REQUIRE(expected_result == out_result[0]);
-}
-
-CUB_TEST("Device reduce compiles with discard output iterator",
-         "[reduce][device]",
-         iterator_type_list)
-{
-  using params   = params_t<TestType>;
-  using item_t   = typename params::item_t;
-  using output_t = typename params::output_t;
-
-  constexpr int max_items = 5000000;
-  constexpr int min_items = 1;
-
-  // Generate the input sizes to test for
-  const int num_items = GENERATE_COPY(values({
-    min_items,
-    max_items,
-  }));
-
-  // Prepare input data
-  item_t default_constant{};
-  init_default_constant(default_constant);
-  auto in_it = thrust::make_constant_iterator(default_constant);
-
-  SECTION("reduce")
-  {
-    using op_t   = cub::Sum;
-    using init_t = output_t;
-
-    // Binary reduction operator
-    auto reduction_op = op_t{};
-
-    // Run test
-    device_reduce(in_it, thrust::make_discard_iterator(), num_items, reduction_op, init_t{});
-  }
-}
 #endif

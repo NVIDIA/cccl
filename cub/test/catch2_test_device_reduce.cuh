@@ -32,10 +32,14 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+
 #include <numeric>
 
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
+#include "catch2_test_helper.h"
 #include "test_util_vec.h"
 #include <nv/target>
 
@@ -256,3 +260,64 @@ inline void compute_host_reference(input_it_t h_in,
     h_data_out[segment] = std::accumulate(seg_begin, seg_end, init, reduction_op);
   }
 }
+
+/**
+ * @brief Helper function to compute the reference solution for result verification taking an
+ * arbitrary host-accessible input iterator.
+ */
+template <typename in_it_t, typename reduction_op_t, typename accum_t>
+inline accum_t compute_single_problem_reference(in_it_t h_in_begin,
+                                                in_it_t h_in_end,
+                                                reduction_op_t reduction_op,
+                                                accum_t init)
+{
+  constexpr std::size_t num_segments = 1;
+  thrust::host_vector<accum_t> h_results(num_segments);
+
+  compute_host_reference(h_in_begin,
+                         thrust::make_constant_iterator(0),
+                         thrust::make_constant_iterator(thrust::distance(h_in_begin, h_in_end)),
+                         num_segments,
+                         reduction_op,
+                         init,
+                         h_results.begin());
+
+  return *h_results.begin();
+}
+
+/**
+ * @brief Helper function to compute the reference solution for result verification, taking a
+ * thrust::device_vector.
+ */
+template <typename item_t, typename reduction_op_t, typename accum_t>
+inline accum_t compute_single_problem_reference(const thrust::device_vector<item_t> &d_in,
+                                                reduction_op_t reduction_op,
+                                                accum_t init)
+{
+  constexpr std::size_t num_segments = 1;
+  thrust::host_vector<item_t> h_items(d_in);
+  thrust::host_vector<accum_t> h_results(num_segments);
+
+  return compute_single_problem_reference(h_items.cbegin(), h_items.cend(), reduction_op, init);
+}
+
+/**
+ * @brief Helper class template to facilitate specifying input/output type pairs.
+ */
+template <typename _input_t, typename _output_t = _input_t>
+struct type_pair
+{
+  using input_t  = _input_t;
+  using output_t = _output_t;
+};
+
+/**
+ * @brief Helper class template to facilitate accessing types specified by type-parameterized tests.
+ */
+template <typename TestType>
+struct params_t
+{
+  using type_pair_t = typename c2h::get<0, TestType>;
+  using item_t      = typename type_pair_t::input_t;
+  using output_t    = typename type_pair_t::output_t;
+};
