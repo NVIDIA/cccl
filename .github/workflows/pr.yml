@@ -22,6 +22,7 @@ jobs:
     name: Compute NVCC matrix
     runs-on: ubuntu-latest
     outputs:
+      FULL_MATRIX: ${{ steps.set-outputs.outputs.FULL_MATRIX }}
       CUDA_VERSIONS: ${{ steps.set-outputs.outputs.CUDA_VERSIONS }}
       HOST_COMPILERS: ${{ steps.set-outputs.outputs.HOST_COMPILERS }}
       PER_CUDA_COMPILER_MATRIX: ${{ steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX }}
@@ -38,6 +39,7 @@ jobs:
         id: set-outputs
         run: |
           FULL_MATRIX='${{steps.compute-nvcc-matrix.outputs.matrix}}'
+          echo "FULL_MATRIX=$FULL_MATRIX" | tee -a "$GITHUB_OUTPUT"
           CUDA_VERSIONS=$(echo $FULL_MATRIX | jq -c '[.[] | .cuda] | unique')
           echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
           HOST_COMPILERS=$(echo $FULL_MATRIX | jq -c '[.[] | .compiler.name] | unique')
@@ -86,6 +88,25 @@ jobs:
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-nvcc-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       build_script: "./ci/build_libcudacxx.sh"
       test_script: "./ci/test_libcudacxx.sh" 
+  
+  examples:
+    name: CCCL Examples
+    needs: compute-nvcc-matrix
+    strategy:
+      fail-fast: false
+      matrix: 
+        include: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.FULL_MATRIX) }}
+    uses: ./.github/workflows/run-as-coder.yml
+    with:
+      name: CCCL Examples CUDA${{matrix.cuda}} ${{matrix.compiler.name}}${{matrix.compiler.version}}
+      runner: linux-${{matrix.cpu}}-gpu-v100-latest-1
+      image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
+      command: |
+        cd examples
+        cmake -S . -B build -DCCCL_TAG="$GITHUB_SHA" 
+        cmake --build build/
+        ctest
+
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
@@ -96,5 +117,6 @@ jobs:
       - libcudacxx
       - cub
       - thrust
+      - examples
     steps:
       - run: echo "CI success"
