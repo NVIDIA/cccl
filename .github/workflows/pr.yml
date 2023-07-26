@@ -28,15 +28,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
       - name: Get devcontainer version
-        id: get-devcontainer-version
-        uses: ./.github/actions/compute-matrix
-        with:
-          matrix_file: './ci/matrix.yaml'
-          matrix_query: '.devcontainer_version'
-      - name: Set outputs
         id: set-outputs
         run: |
-          DEVCONTAINER_VERSION='${{steps.get-devcontainer-version.outputs.matrix}}'
+          DEVCONTAINER_VERSION=$(yq -o json ci/matrix.yaml | jq -r '.devcontainer_version')
           echo "DEVCONTAINER_VERSION=$DEVCONTAINER_VERSION" | tee -a "$GITHUB_OUTPUT"
 
   compute-nvcc-matrix:
