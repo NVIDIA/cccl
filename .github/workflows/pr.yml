@@ -20,7 +20,7 @@ concurrency:
 jobs:
   
   get-devcontainer-version:
-    name: Get the version of the devcontainer image to use
+    name: Get devcontainer version
     runs-on: ubuntu-latest
     outputs:
       DEVCONTAINER_VERSION: ${{ steps.set-outputs.outputs.DEVCONTAINER_VERSION }}
