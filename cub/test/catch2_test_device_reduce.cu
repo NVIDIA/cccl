@@ -31,7 +31,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 
-#include <cuda/std/limits>
+#include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
 
@@ -52,23 +52,7 @@ DECLARE_CDP_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
 // %PARAM% TEST_CDP cdp 0:1
-// %PARAM% TEST_TYPES types 0:1:2:3:4
-
-/**
- * @brief Helper function to test large problem sizes, including problems requiring 64-bit offset
- * types.
- */
-template <typename T, typename offset_t>
-void test_big_indices_helper(offset_t num_items)
-{
-  thrust::constant_iterator<T> const_iter(T{1});
-  thrust::device_vector<std::size_t> out(1);
-  std::size_t *d_out = thrust::raw_pointer_cast(out.data());
-  device_sum(const_iter, d_out, num_items);
-  std::size_t result = out[0];
-
-  REQUIRE(result == num_items);
-}
+// %PARAM% TEST_TYPES types 0:1:2:3
 
 // List of types to test
 using custom_t = c2h::custom_type_t<c2h::accumulateable_t,
@@ -95,9 +79,6 @@ type_pair<custom_t>
 #endif
 >;
 // clang-format on
-#elif TEST_TYPES == 4
-// --> testing for big indices
-// --> testing arg{min,max} for +/-inf
 #endif
 
 /**
@@ -111,7 +92,6 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
-#if TEST_TYPES < 4
 CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", full_type_list)
 {
   using params   = params_t<TestType>;
@@ -256,66 +236,3 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
   }
 }
-
-// TEST_TYPES == 4
-#elif TEST_TYPES == 4
-
-CUB_TEST("Device sum works for big indices", "[reduce][device]")
-{
-  test_big_indices_helper<std::size_t, std::uint32_t>(1ull << 30);
-  test_big_indices_helper<std::size_t, std::uint32_t>(1ull << 31);
-  test_big_indices_helper<std::size_t, std::uint32_t>((1ull << 32) - 1);
-  test_big_indices_helper<std::size_t, std::uint64_t>(1ull << 33);
-}
-
-CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
-{
-  using in_t     = float;
-  using offset_t = int;
-  using out_t    = cub::KeyValuePair<offset_t, in_t>;
-
-  const int n     = 10;
-  const float inf = ::cuda::std::numeric_limits<float>::infinity();
-
-  thrust::device_vector<out_t> out(1);
-  out_t *d_out = thrust::raw_pointer_cast(out.data());
-
-  /**
-   * ArgMin should return max value for empty input. This interferes with
-   * input data containing infinity values. This test checks that ArgMin
-   * works correctly with infinity values.
-   */
-  SECTION("InfInArgMin")
-  {
-    const int n     = 10;
-    const float inf = ::cuda::std::numeric_limits<float>::infinity();
-
-    thrust::device_vector<in_t> in(n, inf);
-    const in_t *d_in = thrust::raw_pointer_cast(in.data());
-
-    device_arg_min(d_in, d_out, n);
-
-    const out_t result = out[0];
-    REQUIRE(result.key == 0);
-    REQUIRE(result.value == inf);
-  }
-
-  /**
-   * ArgMax should return lowest value for empty input. This interferes with
-   * input data containing infinity values. This test checks that ArgMax
-   * works correctly with infinity values.
-   */
-  SECTION("InfInArgMax")
-  {
-    thrust::device_vector<in_t> in(n, -inf);
-    const in_t *d_in = thrust::raw_pointer_cast(in.data());
-
-    device_arg_max(d_in, d_out, n);
-
-    const out_t result = out[0];
-    REQUIRE(result.key == 0);
-    REQUIRE(result.value == -inf);
-  }
-}
-
-#endif

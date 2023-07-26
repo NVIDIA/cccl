@@ -32,24 +32,50 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 
+#include <cstdint>
+
 #include "catch2_test_device_reduce.cuh"
 
 // Has to go after all cub headers. Otherwise, this test won't catch unused
 // variables in cub kernels.
 #include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
 #include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
 #include <nv/target>
 
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
+DECLARE_CDP_WRAPPER(cub::DeviceReduce::Sum, device_sum);
 
 // %PARAM% TEST_CDP cdp 0:1
 
 // List of types to test
 using custom_t           = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 using iterator_type_list = c2h::type_list<type_pair<custom_t>, type_pair<std::int64_t>>;
+
+/**
+ * @brief Helper function to test large problem sizes, including problems requiring 64-bit offset
+ * types.
+ */
+template <typename T, typename offset_t>
+void test_big_indices_helper(offset_t num_items)
+{
+  thrust::constant_iterator<T> const_iter(T{1});
+  thrust::device_vector<std::size_t> out(1);
+  std::size_t *d_out = thrust::raw_pointer_cast(out.data());
+  device_sum(const_iter, d_out, num_items);
+  std::size_t result = out[0];
+
+  REQUIRE(result == num_items);
+}
+
+CUB_TEST("Device sum works for big indices", "[reduce][device]")
+{
+  test_big_indices_helper<std::size_t, std::uint32_t>(1ull << 30);
+  test_big_indices_helper<std::size_t, std::uint32_t>(1ull << 31);
+  test_big_indices_helper<std::size_t, std::uint32_t>((1ull << 32) - 1);
+  test_big_indices_helper<std::size_t, std::uint64_t>(1ull << 33);
+}
 
 CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", iterator_type_list)
 {
