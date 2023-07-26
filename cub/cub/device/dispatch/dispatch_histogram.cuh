@@ -38,6 +38,7 @@
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/config.cuh>
 #include <cub/detail/cpp_compatibility.cuh>
+#include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
@@ -241,38 +242,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
 
 namespace detail
 {
-
-template <typename SampleT, int NUM_ACTIVE_CHANNELS>
-struct device_histogram_policy_hub
-{
-  template <int NOMINAL_ITEMS_PER_THREAD>
-  struct TScale
-  {
-    enum
-    {
-      V_SCALE = (sizeof(SampleT) + sizeof(int) - 1) / sizeof(int),
-      VALUE   = CUB_MAX((NOMINAL_ITEMS_PER_THREAD / NUM_ACTIVE_CHANNELS / V_SCALE), 1)
-    };
-  };
-
-  /// SM35
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
-  {
-    // TODO This might be worth it to separate usual histogram and the multi one
-    using AgentHistogramPolicyT =
-      AgentHistogramPolicy<128, TScale<8>::VALUE, BLOCK_LOAD_DIRECT, LOAD_LDG, true, BLEND, true>;
-  };
-
-  /// SM50
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy350>
-  {
-    // TODO This might be worth it to separate usual histogram and the multi one
-    using AgentHistogramPolicyT =
-      AgentHistogramPolicy<384, TScale<16>::VALUE, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false>;
-  };
-
-  using MaxPolicy = Policy500;
-};
 
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
@@ -606,6 +575,8 @@ template <int NUM_CHANNELS,
           typename SelectedPolicy =            //
           detail::device_histogram_policy_hub< //
             cub::detail::value_t<SampleIteratorT>,
+            CounterT,
+            NUM_CHANNELS,
             NUM_ACTIVE_CHANNELS>>
 struct DispatchHistogram : SelectedPolicy
 {

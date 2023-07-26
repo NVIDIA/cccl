@@ -39,6 +39,8 @@
 #define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #endif // TUNE_LOAD 
 
+#define TUNE_VEC_SIZE (1 << TUNE_VEC_SIZE_POW)
+
 #if TUNE_MEM_PREFERENCE == 0
 constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::GMEM;
 #elif TUNE_MEM_PREFERENCE == 1
@@ -47,29 +49,32 @@ constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::SMEM;
 constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
 #endif // TUNE_MEM_PREFERENCE
 
+#if TUNE_LOAD_ALGORITHM_ID == 0
+#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
+#elif TUNE_LOAD_ALGORITHM_ID == 1 
+#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
+#else 
+#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_STRIPED
+#endif // TUNE_LOAD_ALGORITHM_ID 
 
-template <typename SampleT, int NUM_ACTIVE_CHANNELS>
+template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS>
 struct policy_hub_t
 {
-  template <int NOMINAL_ITEMS_PER_THREAD>
-  struct TScale
-  {
-    enum
-    {
-      V_SCALE = (sizeof(SampleT) + sizeof(int) - 1) / sizeof(int),
-      VALUE   = CUB_MAX((NOMINAL_ITEMS_PER_THREAD / NUM_ACTIVE_CHANNELS / V_SCALE), 1)
-    };
-  };
-
   struct policy_t : cub::ChainedPolicy<350, policy_t, policy_t>
   {
+    static constexpr cub::BlockLoadAlgorithm load_algorithm =
+      (TUNE_LOAD_ALGORITHM == cub::BLOCK_LOAD_STRIPED)
+        ? (NUM_CHANNELS == 1 ? cub::BLOCK_LOAD_STRIPED : cub::BLOCK_LOAD_DIRECT)
+        : TUNE_LOAD_ALGORITHM;
+
     using AgentHistogramPolicyT = cub::AgentHistogramPolicy<TUNE_THREADS,
-                                                            TScale<TUNE_ITEMS>::VALUE,
-                                                            cub::BLOCK_LOAD_DIRECT,
+                                                            TUNE_ITEMS,
+                                                            load_algorithm,
                                                             TUNE_LOAD_MODIFIER,
                                                             TUNE_RLE_COMPRESS,
                                                             MEM_PREFERENCE,
-                                                            TUNE_WORK_STEALING>;
+                                                            TUNE_WORK_STEALING,
+                                                            TUNE_VEC_SIZE>;
   };
 
   using MaxPolicy = policy_t;
