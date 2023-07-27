@@ -12,9 +12,6 @@
 // template<class From, class To>
 // concept convertible_to;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
@@ -233,11 +230,15 @@ int main(int, char**) {
   CheckConvertibleTo<NoexceptFunction, NoexceptFunction&>();
   CheckConvertibleTo<NoexceptFunction, NoexceptFunction*>();
   CheckConvertibleTo<NoexceptFunction, NoexceptFunction* const>();
+#ifndef TEST_COMPILER_MSVC_2017
   CheckConvertibleTo<NoexceptFunction, Function&>();
+#endif // !TEST_COMPILER_MSVC_2017
   CheckConvertibleTo<NoexceptFunction, Function*>();
   CheckConvertibleTo<NoexceptFunction, Function* const>();
 
+#ifndef TEST_COMPILER_MSVC_2017
   static_assert(convertible_to<NoexceptFunction, Function&&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
   static_assert(convertible_to<NoexceptFunction, NoexceptFunction&&>, "");
 
   CheckNotConvertibleTo<NoexceptFunction, Array>();
@@ -248,9 +249,13 @@ int main(int, char**) {
 
   // NoexceptFunction&
   CheckNotConvertibleTo<NoexceptFunction&, void>();
+#ifndef TEST_COMPILER_MSVC_2017
   CheckNotConvertibleTo<NoexceptFunction&, Function>();
+#endif // !TEST_COMPILER_MSVC_2017
   CheckNotConvertibleTo<NoexceptFunction&, NoexceptFunction>();
+#ifndef TEST_COMPILER_MSVC_2017
   CheckConvertibleTo<NoexceptFunction&, Function&>();
+#endif // !TEST_COMPILER_MSVC_2017
   CheckConvertibleTo<NoexceptFunction&, NoexceptFunction&>();
 
   CheckConvertibleTo<NoexceptFunction&, Function*>();
@@ -294,10 +299,10 @@ int main(int, char**) {
 
   static_assert(!convertible_to<const Array, Array&>, "");
   static_assert(convertible_to<const Array, const Array&>, "");
-#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC has a bug where lets the conversion happen
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC has a bug where lets the conversion happen
   static_assert(!convertible_to<Array, volatile Array&>, "");
   static_assert(!convertible_to<Array, const volatile Array&>, "");
-#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
 
   static_assert(convertible_to<Array, Array&&>, "");
   static_assert(convertible_to<Array, const Array&&>, "");

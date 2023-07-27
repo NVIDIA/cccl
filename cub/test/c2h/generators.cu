@@ -35,6 +35,7 @@
 #include <cstdint>
 
 #include <c2h/custom_type.cuh>
+#include <c2h/extended_types.cuh>
 #include <c2h/generators.cuh>
 #include <curand.h>
 #include <fill_striped.cuh>
@@ -138,7 +139,7 @@ float* generator_t::distribution()
   return thrust::raw_pointer_cast(m_distribution.data());
 }
 
-float *generator_t::prepare_random_generator(seed_t seed, 
+float *generator_t::prepare_random_generator(seed_t seed,
                                              std::size_t num_items)
 {
   curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
@@ -151,32 +152,32 @@ float *generator_t::prepare_random_generator(seed_t seed,
   return this->distribution();
 }
 
-template <bool SetKeys> 
+template <bool SetKeys>
 struct random_to_custom_t
 {
-  static constexpr std::size_t m_max_key = 
+  static constexpr std::size_t m_max_key =
     std::numeric_limits<std::size_t>::max();
 
   __device__ void operator()(std::size_t idx)
   {
-    std::size_t in = 
+    std::size_t in =
       static_cast<std::size_t>(static_cast<float>(m_max_key) * m_in[idx]);
 
-    custom_type_state_t* out = 
+    custom_type_state_t* out =
       reinterpret_cast<custom_type_state_t*>(m_out + idx * m_element_size);
 
     if (SetKeys)
     {
       out->key = in;
     }
-    else 
+    else
     {
       out->val = in;
     }
   }
 
   random_to_custom_t(
-      float *in, 
+      float *in,
       char *out,
       std::size_t element_size)
     : m_in(in)
@@ -238,7 +239,7 @@ namespace detail
 
 void gen(seed_t seed,
          char* d_out,
-         custom_type_state_t /* min */, 
+         custom_type_state_t /* min */,
          custom_type_state_t /* max */,
          std::size_t elements,
          std::size_t element_size)
@@ -270,7 +271,7 @@ void gen(seed_t seed,
 
 
 template <typename T>
-void gen(seed_t seed, 
+void gen(seed_t seed,
          thrust::device_vector<T> &data,
          T min,
          T max)
@@ -279,7 +280,7 @@ void gen(seed_t seed,
 }
 
 template <typename T>
-void gen(modulo_t mod, 
+void gen(modulo_t mod,
          thrust::device_vector<T> &data)
 {
   generator_t::instance()(mod, data);
@@ -315,6 +316,14 @@ INSTANTIATE(std::int64_t);
 
 INSTANTIATE(float);
 INSTANTIATE(double);
+
+#ifdef TEST_HALF_T
+INSTANTIATE(half_t);
+#endif
+
+#ifdef TEST_BF_T
+INSTANTIATE(bfloat16_t);
+#endif
 
 template <typename T, int VecItem>
 struct vec_gen_helper_t;
@@ -378,6 +387,8 @@ VEC_SPECIALIZATION(short, 2);
 VEC_SPECIALIZATION(double, 2);
 
 VEC_SPECIALIZATION(uchar, 3);
+
+VEC_SPECIALIZATION(ulonglong, 2);
 
 VEC_SPECIALIZATION(ulonglong, 4);
 

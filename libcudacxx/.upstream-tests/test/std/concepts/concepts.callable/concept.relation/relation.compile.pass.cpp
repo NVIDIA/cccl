@@ -12,9 +12,6 @@
 // template<class F, class... Args>
 // concept relation;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/concepts>
 

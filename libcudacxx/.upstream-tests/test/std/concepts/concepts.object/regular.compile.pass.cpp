@@ -12,9 +12,6 @@
 // template<class T>
 // concept regular = see below;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
@@ -116,9 +113,9 @@ static_assert(!regular<int const volatile>, "");
 static_assert(!regular<volatile_copy_assignment volatile>, "");
 static_assert(!regular<no_copy_constructor>, "");
 static_assert(!regular<no_copy_assignment>, "");
-#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
 static_assert(!regular<no_copy_assignment_mutable>, "");
-#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
 static_assert(!regular<derived_from_noncopyable>, "");
 static_assert(!regular<has_noncopyable>, "");
 static_assert(!regular<has_const_member>, "");
@@ -131,10 +128,10 @@ static_assert(!regular<deleted_assignment_from_const_rvalue>, "");
 // not default_initializable
 static_assert(!regular<no_copy_constructor>, "");
 static_assert(!regular<no_copy_assignment>, "");
-#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
 static_assert(cuda::std::is_copy_assignable_v<no_copy_assignment_mutable> &&
               !regular<no_copy_assignment_mutable>, "");
-#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
 static_assert(!regular<derived_from_noncopyable>, "");
 static_assert(!regular<has_noncopyable>, "");
 

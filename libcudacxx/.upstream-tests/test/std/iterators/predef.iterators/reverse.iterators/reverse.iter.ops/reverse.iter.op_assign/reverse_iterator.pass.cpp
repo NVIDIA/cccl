@@ -32,7 +32,7 @@ test(U u)
     const cuda::std::reverse_iterator<U> r2(u);
     cuda::std::reverse_iterator<It> r1;
     cuda::std::reverse_iterator<It>& rr = r1 = r2;
-    assert(r1.base() == u);
+    assert(base(r1.base()) == base(u));
     assert(&rr == &r1);
 }
 

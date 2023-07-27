@@ -224,7 +224,7 @@ public:
     static constexpr size_type extent = _Extent;
 
 // [span.cons], span constructors, copy, assignment, and destructor
-    template <size_t _Sz = _Extent, enable_if_t<_Sz == 0, nullptr_t> = nullptr>
+    template <size_t _Sz = _Extent, enable_if_t<_Sz == 0, int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY constexpr span() noexcept : __data{nullptr} {}
 
     span           (const span&) noexcept = default;
@@ -234,41 +234,47 @@ public:
         { (void)__count; _LIBCUDACXX_ASSERT(_Extent == __count, "size mismatch in span's constructor (ptr, len)"); }
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 span(pointer __f, pointer __l) : __data{__f}
         { (void)__l;     _LIBCUDACXX_ASSERT(_Extent == distance(__f, __l), "size mismatch in span's constructor (ptr, ptr)"); }
-#ifdef _LIBCUDACXX_COMPILER_NVRTC
-    template <size_t _Sz = _Extent, enable_if_t<_Sz != 0, nullptr_t> = nullptr>
+#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+ || defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+    template <size_t _Sz = _Extent, enable_if_t<_Sz != 0, int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept : __data{__arr} {}
 #else
     _LIBCUDACXX_INLINE_VISIBILITY constexpr span(type_identity_t<element_type> (&__arr)[_Extent]) noexcept : __data{__arr} {}
 #endif
-    template <class _OtherElementType, enable_if_t<
-                is_convertible<_OtherElementType(*)[], element_type (*)[]>::value, nullptr_t> = nullptr>
+    template <class _OtherElementType,
+              enable_if_t< _LIBCUDACXX_TRAIT(is_convertible, _OtherElementType(*)[], element_type (*)[]), int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     span(      array<_OtherElementType, _Extent>& __arr) noexcept : __data{__arr.data()} {}
-    template <class _OtherElementType, enable_if_t<
-                is_convertible<_OtherElementType(*)[], element_type (*)[]>::value, nullptr_t> = nullptr>
+    template <class _OtherElementType,
+              enable_if_t< _LIBCUDACXX_TRAIT(is_convertible, _OtherElementType(*)[], element_type (*)[]), int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     span(const array<_OtherElementType, _Extent>& __arr) noexcept : __data{__arr.data()} {}
 
-    template <class _OtherElementType, enable_if_t<
-                is_convertible<_OtherElementType(*)[], element_type (*)[]>::value, nullptr_t> = nullptr>
+    template <class _OtherElementType,
+#ifdef _LIBCUDACXX_COMPILER_MSVC_2017
+              size_t _Extent2 = _Extent, enable_if_t< _Extent2 != dynamic_extent, int> = 0,
+#endif // _LIBCUDACXX_COMPILER_MSVC_2017
+              enable_if_t<!_LIBCUDACXX_TRAIT(is_same, _OtherElementType, _Tp), int> = 0,
+              enable_if_t< _LIBCUDACXX_TRAIT(is_convertible, _OtherElementType(*)[], element_type (*)[]), int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY
         constexpr span(const span<_OtherElementType, _Extent>& __other) noexcept
         : __data{__other.data()} {}
 
-    template <class _OtherElementType, enable_if_t<
-                is_convertible<_OtherElementType(*)[], element_type (*)[]>::value, nullptr_t> = nullptr>
+    template <class _OtherElementType,
+              enable_if_t<!_LIBCUDACXX_TRAIT(is_same, _OtherElementType, _Tp), int> = 0,
+              enable_if_t< _LIBCUDACXX_TRAIT(is_convertible, _OtherElementType(*)[], element_type (*)[]), int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY
         _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 span(const span<_OtherElementType, dynamic_extent>& __other) noexcept
         : __data{__other.data()} { _LIBCUDACXX_ASSERT(_Extent == __other.size(), "size mismatch in span's constructor (other span)"); }
 
     template <class _Container, enable_if_t<
-                __is_span_compatible_container<_Container, _Tp>::value, nullptr_t> = nullptr>
+                __is_span_compatible_container<_Container, _Tp>::value, int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY
         constexpr span(      _Container& __c) noexcept(noexcept(_CUDA_VSTD::data(__c)))
         : __data{_CUDA_VSTD::data(__c)} { _LIBCUDACXX_ASSERT(_Extent == _CUDA_VSTD::size(__c), "size mismatch in span's constructor (other span)"); }
 
     template <class _Container, enable_if_t<
-                __is_span_compatible_container<_Container, _Tp>::value, nullptr_t> = nullptr>
+                __is_span_compatible_container<_Container, _Tp>::value, int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY
         constexpr span(const _Container& __c) noexcept(noexcept(_CUDA_VSTD::data(__c)))
         : __data{_CUDA_VSTD::data(__c)} { _LIBCUDACXX_ASSERT(_Extent == _CUDA_VSTD::size(__c), "size mismatch in span's constructor (other span)"); }
@@ -406,30 +412,30 @@ public:
     constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept : __data{__arr}, __size{_Sz} {}
 
     template <class _OtherElementType, size_t _Sz, enable_if_t<
-                is_convertible<_OtherElementType(*)[], element_type (*)[]>::value, nullptr_t> = nullptr>
+                is_convertible<_OtherElementType(*)[], element_type (*)[]>::value, int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 span(array<_OtherElementType, _Sz>& __arr)       noexcept : __data{__arr.data()}, __size{_Sz} {}
 
     template <class _OtherElementType, size_t _Sz, enable_if_t<
-                is_convertible<_OtherElementType(*)[], element_type (*)[]>::value, nullptr_t> = nullptr>
+                is_convertible<_OtherElementType(*)[], element_type (*)[]>::value, int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 span(const array<_OtherElementType, _Sz>& __arr) noexcept : __data{__arr.data()}, __size{_Sz} {}
 
     template <class _Container, enable_if_t<
-                __is_span_compatible_container<_Container, _Tp>::value, nullptr_t> = nullptr>
+                __is_span_compatible_container<_Container, _Tp>::value, int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY
         constexpr span(      _Container& __c)
         : __data{_CUDA_VSTD::data(__c)}, __size{(size_type) _CUDA_VSTD::size(__c)} {}
 
     template <class _Container, enable_if_t<
-                __is_span_compatible_container<_Container, _Tp>::value, nullptr_t> = nullptr>
+                __is_span_compatible_container<_Container, _Tp>::value, int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY
         constexpr span(const _Container& __c)
         : __data{_CUDA_VSTD::data(__c)}, __size{(size_type) _CUDA_VSTD::size(__c)} {}
 
 
     template <class _OtherElementType, size_t _OtherExtent, enable_if_t<
-                is_convertible<_OtherElementType(*)[], element_type (*)[]>::value, nullptr_t> = nullptr>
+                is_convertible<_OtherElementType(*)[], element_type (*)[]>::value, int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY
         constexpr span(const span<_OtherElementType, _OtherExtent>& __other) noexcept
         : __data{__other.data()}, __size{__other.size()} {}

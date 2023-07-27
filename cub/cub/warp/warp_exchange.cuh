@@ -36,10 +36,30 @@
 #include <cub/config.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
+#include <cub/warp/specializations/warp_exchange_shfl.cuh>
+#include <cub/warp/specializations/warp_exchange_smem.cuh>
 
 
 CUB_NAMESPACE_BEGIN
 
+
+enum WarpExchangeAlgorithm
+{
+  WARP_EXCHANGE_SMEM,
+  WARP_EXCHANGE_SHUFFLE,
+};
+
+namespace detail
+{
+template <typename InputT,
+          int ITEMS_PER_THREAD,
+          int LOGICAL_WARP_THREADS,
+          WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM>
+using InternalWarpExchangeImpl =
+  cub::detail::conditional_t<WARP_EXCHANGE_ALGORITHM == WARP_EXCHANGE_SMEM,
+                             WarpExchangeSmem<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>,
+                             WarpExchangeShfl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>>;
+} // namespace detail
 
 /**
  * @brief The WarpExchange class provides [<em>collective</em>](index.html#sec0)
@@ -114,44 +134,24 @@ CUB_NAMESPACE_BEGIN
 template <typename InputT,
           int ITEMS_PER_THREAD,
           int LOGICAL_WARP_THREADS  = CUB_PTX_WARP_THREADS,
-          int LEGACY_PTX_ARCH       = 0>
-class WarpExchange
+          int LEGACY_PTX_ARCH       = 0,
+          WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM = WARP_EXCHANGE_SMEM>
+class WarpExchange : private detail::InternalWarpExchangeImpl<
+    InputT,
+    ITEMS_PER_THREAD,
+    LOGICAL_WARP_THREADS,
+    WARP_EXCHANGE_ALGORITHM>
 {
-  static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE,
-                "LOGICAL_WARP_THREADS must be a power of two");
-
-  constexpr static int ITEMS_PER_TILE =
-    ITEMS_PER_THREAD * LOGICAL_WARP_THREADS + 1;
-
-  constexpr static bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
-
-  constexpr static int LOG_SMEM_BANKS = CUB_LOG_SMEM_BANKS(0);
-
-  // Insert padding if the number of items per thread is a power of two
-  // and > 4 (otherwise we can typically use 128b loads)
-  constexpr static bool INSERT_PADDING = (ITEMS_PER_THREAD > 4) &&
-                                         (PowerOfTwo<ITEMS_PER_THREAD>::VALUE);
-
-  constexpr static int PADDING_ITEMS = INSERT_PADDING
-                                     ? (ITEMS_PER_TILE >> LOG_SMEM_BANKS)
-                                     : 0;
-
-  union _TempStorage
-  {
-    InputT items_shared[ITEMS_PER_TILE + PADDING_ITEMS];
-  }; // union TempStorage
-
-  /// Shared storage reference
-  _TempStorage &temp_storage;
-
-  const unsigned int lane_id;
-  const unsigned int warp_id;
-  const unsigned int member_mask;
+  using InternalWarpExchange = detail::InternalWarpExchangeImpl<
+    InputT,
+    ITEMS_PER_THREAD,
+    LOGICAL_WARP_THREADS,
+    WARP_EXCHANGE_ALGORITHM>;
 
 public:
 
   /// \smemstorage{WarpExchange}
-  struct TempStorage : Uninitialized<_TempStorage> {};
+  using TempStorage = typename InternalWarpExchange::TempStorage;
 
   /*************************************************************************//**
    * @name Collective constructors
@@ -166,10 +166,7 @@ public:
    */
   explicit __device__ __forceinline__
   WarpExchange(TempStorage &temp_storage)
-      : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
-      , warp_id(IS_ARCH_WARP ? 0 : (LaneId() / LOGICAL_WARP_THREADS))
-      , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
+      : InternalWarpExchange(temp_storage)
   {
 
   }
@@ -235,18 +232,7 @@ public:
   BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
                    OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    for (int item = 0; item < ITEMS_PER_THREAD; item++)
-    {
-      const int idx = ITEMS_PER_THREAD * lane_id + item;
-      temp_storage.items_shared[idx] = input_items[item];
-    }
-    WARP_SYNC(member_mask);
-
-    for (int item = 0; item < ITEMS_PER_THREAD; item++)
-    {
-      const int idx = LOGICAL_WARP_THREADS * item + lane_id;
-      output_items[item] = temp_storage.items_shared[idx];
-    }
+    InternalWarpExchange::BlockedToStriped(input_items, output_items);
   }
 
   /**
@@ -302,18 +288,7 @@ public:
   StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD],
                    OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    for (int item = 0; item < ITEMS_PER_THREAD; item++)
-    {
-      const int idx = LOGICAL_WARP_THREADS * item + lane_id;
-      temp_storage.items_shared[idx] = input_items[item];
-    }
-    WARP_SYNC(member_mask);
-
-    for (int item = 0; item < ITEMS_PER_THREAD; item++)
-    {
-      const int idx = ITEMS_PER_THREAD * lane_id + item;
-      output_items[item] = temp_storage.items_shared[idx];
-    }
+    InternalWarpExchange::StripedToBlocked(input_items, output_items);
   }
 
   /**
@@ -371,7 +346,7 @@ public:
   ScatterToStriped(InputT (&items)[ITEMS_PER_THREAD],
                    OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
-    ScatterToStriped(items, items, ranks);
+    InternalWarpExchange::ScatterToStriped(items, ranks);
   }
 
   /**
@@ -438,31 +413,7 @@ public:
                    OutputT (&output_items)[ITEMS_PER_THREAD],
                    OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
-    #pragma unroll
-    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
-    {
-      if (INSERT_PADDING)
-      {
-        ranks[ITEM] = SHR_ADD(ranks[ITEM], LOG_SMEM_BANKS, ranks[ITEM]);
-      }
-
-      temp_storage.items_shared[ranks[ITEM]] = input_items[ITEM];
-    }
-
-    WARP_SYNC(member_mask);
-
-    #pragma unroll
-    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
-    {
-      int item_offset = (ITEM * LOGICAL_WARP_THREADS) + lane_id;
-
-      if (INSERT_PADDING)
-      {
-        item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
-      }
-
-      output_items[ITEM] = temp_storage.items_shared[item_offset];
-    }
+    InternalWarpExchange::ScatterToStriped(input_items, output_items, ranks);
   }
 
   //@}  end member group

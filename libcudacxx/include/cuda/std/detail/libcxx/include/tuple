@@ -254,15 +254,12 @@ public:
         {static_assert(!is_reference<_Hp>::value,
               "Attempted to default construct a reference element in a tuple");}
 
+    template<class _Tp>
+    using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>,
+                               is_constructible<_Hp, _Tp>>;
+
     template <class _Tp,
-              _EnableIf<
-                  _And<
-                      _IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>,
-                      is_constructible<_Hp, _Tp>
-                    >::value,
-                  bool
-                > = false
-            >
+              __enable_if_t<__can_forward<_Tp>::value, int> = 0>
         _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
         explicit __tuple_leaf(_Tp&& __t) _NOEXCEPT_((is_nothrow_constructible<_Hp, _Tp>::value))
             : __value_(_CUDA_VSTD::forward<_Tp>(__t))
@@ -337,18 +334,15 @@ public:
         __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
             : _Hp(__a) {}
 
+    template<class _Tp>
+    using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>,
+                               is_constructible<_Hp, _Tp>>;
+
     template <class _Tp,
-              _EnableIf<
-                  _And<
-                    _IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>,
-                    is_constructible<_Hp, _Tp>
-                  >::value,
-                  bool
-                > = false
-            >
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-        explicit __tuple_leaf(_Tp&& __t) _NOEXCEPT_((is_nothrow_constructible<_Hp, _Tp>::value))
-            : _Hp(_CUDA_VSTD::forward<_Tp>(__t)) {}
+              __enable_if_t<__can_forward<_Tp>::value, int> = 0>
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    explicit __tuple_leaf(_Tp&& __t) _NOEXCEPT_((is_nothrow_constructible<_Hp, _Tp>::value))
+        : _Hp(_CUDA_VSTD::forward<_Tp>(__t)) {}
 
     template <class _Tp, class _Alloc>
         _LIBCUDACXX_INLINE_VISIBILITY

@@ -49,7 +49,7 @@ int main(int, char**)
             P(1, "four"),
             P(2, "four"),
         };
-        C c(input_iterator<P*>(a), input_iterator<P*>(a + sizeof(a)/sizeof(a[0])));
+        C c(cpp17_input_iterator<P*>(a), cpp17_input_iterator<P*>(a + sizeof(a)/sizeof(a[0])));
         assert(c.bucket_count() >= 5);
         assert(c.size() == 4);
         assert(c.at(1) == "one");
@@ -83,7 +83,7 @@ int main(int, char**)
             P(1, "four"),
             P(2, "four"),
         };
-        C c(input_iterator<P*>(a), input_iterator<P*>(a + sizeof(a)/sizeof(a[0])));
+        C c(cpp17_input_iterator<P*>(a), cpp17_input_iterator<P*>(a + sizeof(a)/sizeof(a[0])));
         assert(c.bucket_count() >= 5);
         assert(c.size() == 4);
         assert(c.at(1) == "one");
@@ -117,7 +117,7 @@ int main(int, char**)
             P(1, "four"),
             P(2, "four"),
         };
-        C c(input_iterator<P*>(arr), input_iterator<P*>(arr + sizeof(arr)/sizeof(arr[0])), 14);
+        C c(cpp17_input_iterator<P*>(arr), cpp17_input_iterator<P*>(arr + sizeof(arr)/sizeof(arr[0])), 14);
         assert(c.bucket_count() >= 14);
         assert(c.size() == 4);
         assert(c.at(1) == "one");
@@ -151,7 +151,7 @@ int main(int, char**)
         };
         HF hf(42);
         A a(43);
-        C c(input_iterator<P*>(arr), input_iterator<P*>(arr + sizeof(arr)/sizeof(arr[0])), 14, hf, a);
+        C c(cpp17_input_iterator<P*>(arr), cpp17_input_iterator<P*>(arr + sizeof(arr)/sizeof(arr[0])), 14, hf, a);
         assert(c.bucket_count() >= 14);
         assert(c.size() == 4);
         assert(c.at(1) == "one");

@@ -99,7 +99,7 @@ int main(int, char**)
         assert(cuda::std::get<1>(t1) == int('a'));
         assert(cuda::std::get<2>(t1)->id_ == 3);
     }*/
-#if !(defined(_MSC_VER) && _MSC_VER < 1916)
+#if !defined(TEST_COMPILER_MSVC_2017)
     {
         // Test that tuple evaluates correctly applies an lvalue reference
         // before evaluating is_assignable (ie 'is_assignable<int&, int&&>')

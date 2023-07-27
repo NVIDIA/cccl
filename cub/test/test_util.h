@@ -36,32 +36,28 @@
     #include <sys/resource.h>
 #endif
 
-#include <cstdio>
-#include <cfloat>
-#include <cmath>
-#include <cstddef>
-
-#include <string>
-#include <vector>
-#include <sstream>
-#include <iostream>
-#include <limits>
-
-#include "mersenne.h"
-#include "half.h"
-#include "bfloat16.h"
-
+#include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 #include <cub/util_macro.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/iterator/discard_output_iterator.cuh>
+#include <cub/util_type.cuh>
 
+#include <cfloat>
+#include <cmath>
+#include <cstddef>
+#include <cstdio>
+#include <iostream>
+#include <limits>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "c2h/extended_types.cuh"
+#include "mersenne.h"
 #include "test_util_vec.h"
-
 #include <nv/target>
 
 /******************************************************************************
@@ -428,6 +424,7 @@ __noinline__ bool IsNaN<double4>(double4 val)
 }
 
 
+#ifdef TEST_HALF_T
 template<>
 __noinline__ bool IsNaN<half_t>(half_t val)
 {
@@ -437,7 +434,9 @@ __noinline__ bool IsNaN<half_t>(half_t val)
     return (((bits >= 0x7C01) && (bits <= 0x7FFF)) ||
         ((bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/));
 }
+#endif
 
+#ifdef TEST_BF_T
 template<>
 __noinline__ bool IsNaN<bfloat16_t>(bfloat16_t val)
 {
@@ -447,6 +446,7 @@ __noinline__ bool IsNaN<bfloat16_t>(bfloat16_t val)
     return (((bits >= 0x7F81) && (bits <= 0x7FFF)) ||
         ((bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/));
 }
+#endif
 
 /**
  * Generates random keys.
@@ -765,7 +765,6 @@ static std::ostream& operator<<(std::ostream& os, __int128_t val)
 }
 #endif
 
-
 /******************************************************************************
  * Comparison and ostream operators for CUDA vector types
  ******************************************************************************/
@@ -773,166 +772,65 @@ static std::ostream& operator<<(std::ostream& os, __int128_t val)
 /**
  * Vector1 overloads
  */
-#define CUB_VEC_OVERLOAD_1_OLD(T, BaseT)                    \
-    /* Test initialization */                               \
-    __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T &value, std::size_t index = 0) \
-    {                                                       \
-        InitValue(gen_mode, value.x, index);                \
-    }                                                       \
-    CUB_NAMESPACE_BEGIN                                     \
-    template<>                                              \
-    struct NumericTraits<T>                                 \
-    {                                                       \
-        static const Category CATEGORY = NOT_A_NUMBER;      \
-        enum {                                              \
-            PRIMITIVE       = false,                        \
-            NULL_TYPE       = false,                        \
-        };                                                  \
-        static __host__ __device__ T Max()                  \
-        {                                                   \
-            T retval = {                                    \
-                NumericTraits<BaseT>::Max()};               \
-            return retval;                                  \
-        }                                                   \
-        static __host__ __device__ T Lowest()               \
-        {                                                   \
-            T retval = {                                    \
-                NumericTraits<BaseT>::Lowest()};            \
-            return retval;                                  \
-        }                                                   \
-    };                                                      \
-    CUB_NAMESPACE_END
-
-
+#define CUB_VEC_OVERLOAD_1_OLD(T, BaseT)                                                           \
+  /* Test initialization */                                                                        \
+  __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode,                             \
+                                                     T &value,                                     \
+                                                     std::size_t index = 0)                        \
+  {                                                                                                \
+    InitValue(gen_mode, value.x, index);                                                           \
+  }
 
 /**
  * Vector2 overloads
  */
-#define CUB_VEC_OVERLOAD_2_OLD(T, BaseT)                    \
-    /* Test initialization */                               \
-    __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T &value, std::size_t index = 0) \
-    {                                                       \
-        InitValue(gen_mode, value.x, index);                \
-        InitValue(gen_mode, value.y, index);                \
-    }                                                       \
-    CUB_NAMESPACE_BEGIN                                         \
-    template<>                                              \
-    struct NumericTraits<T>                                 \
-    {                                                       \
-        static const Category CATEGORY = NOT_A_NUMBER;      \
-        enum {                                              \
-            PRIMITIVE       = false,                        \
-            NULL_TYPE       = false,                        \
-        };                                                  \
-        static __host__ __device__ T Max()                  \
-        {                                                   \
-            T retval = {                                    \
-                NumericTraits<BaseT>::Max(),                \
-                NumericTraits<BaseT>::Max()};               \
-            return retval;                                  \
-        }                                                   \
-        static __host__ __device__  T Lowest()              \
-        {                                                   \
-            T retval = {                                    \
-                NumericTraits<BaseT>::Lowest(),             \
-                NumericTraits<BaseT>::Lowest()};            \
-            return retval;                                  \
-        }                                                   \
-    };                                                      \
-    CUB_NAMESPACE_END
-
-
+#define CUB_VEC_OVERLOAD_2_OLD(T, BaseT)                                                           \
+  /* Test initialization */                                                                        \
+  __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode,                             \
+                                                     T &value,                                     \
+                                                     std::size_t index = 0)                        \
+  {                                                                                                \
+    InitValue(gen_mode, value.x, index);                                                           \
+    InitValue(gen_mode, value.y, index);                                                           \
+  }
 
 /**
  * Vector3 overloads
  */
-#define CUB_VEC_OVERLOAD_3_OLD(T, BaseT)                    \
-    /* Test initialization */                               \
-    __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T &value, std::size_t index = 0) \
-    {                                                       \
-        InitValue(gen_mode, value.x, index);                \
-        InitValue(gen_mode, value.y, index);                \
-        InitValue(gen_mode, value.z, index);                \
-    }                                                       \
-    CUB_NAMESPACE_BEGIN                                     \
-    template<>                                              \
-    struct NumericTraits<T>                                 \
-    {                                                       \
-        static const Category CATEGORY = NOT_A_NUMBER;      \
-        enum {                                              \
-            PRIMITIVE       = false,                        \
-            NULL_TYPE       = false,                        \
-        };                                                  \
-        static __host__ __device__ T Max()                  \
-        {                                                   \
-            T retval = {                                    \
-                NumericTraits<BaseT>::Max(),                \
-                NumericTraits<BaseT>::Max(),                \
-                NumericTraits<BaseT>::Max()};               \
-            return retval;                                  \
-        }                                                   \
-        static __host__ __device__ T Lowest()               \
-        {                                                   \
-            T retval = {                                    \
-                NumericTraits<BaseT>::Lowest(),             \
-                NumericTraits<BaseT>::Lowest(),             \
-                NumericTraits<BaseT>::Lowest()};            \
-            return retval;                                  \
-        }                                                   \
-    };                                                      \
-    CUB_NAMESPACE_END
-
+#define CUB_VEC_OVERLOAD_3_OLD(T, BaseT)                                                           \
+  /* Test initialization */                                                                        \
+  __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode,                             \
+                                                     T &value,                                     \
+                                                     std::size_t index = 0)                        \
+  {                                                                                                \
+    InitValue(gen_mode, value.x, index);                                                           \
+    InitValue(gen_mode, value.y, index);                                                           \
+    InitValue(gen_mode, value.z, index);                                                           \
+  }
 
 /**
  * Vector4 overloads
  */
-#define CUB_VEC_OVERLOAD_4_OLD(T, BaseT)                    \
-    /* Test initialization */                               \
-    __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T &value, std::size_t index = 0) \
-    {                                                       \
-        InitValue(gen_mode, value.x, index);                \
-        InitValue(gen_mode, value.y, index);                \
-        InitValue(gen_mode, value.z, index);                \
-        InitValue(gen_mode, value.w, index);                \
-    }                                                       \
-    CUB_NAMESPACE_BEGIN                                     \
-    template<>                                              \
-    struct NumericTraits<T>                                 \
-    {                                                       \
-        static const Category CATEGORY = NOT_A_NUMBER;      \
-        enum {                                              \
-            PRIMITIVE       = false,                        \
-            NULL_TYPE       = false,                        \
-        };                                                  \
-        static __host__ __device__ T Max()                  \
-        {                                                   \
-            T retval = {                                    \
-                NumericTraits<BaseT>::Max(),                \
-                NumericTraits<BaseT>::Max(),                \
-                NumericTraits<BaseT>::Max(),                \
-                NumericTraits<BaseT>::Max()};               \
-            return retval;                                  \
-        }                                                   \
-        static __host__ __device__ T Lowest()               \
-        {                                                   \
-            T retval = {                                    \
-                NumericTraits<BaseT>::Lowest(),             \
-                NumericTraits<BaseT>::Lowest(),             \
-                NumericTraits<BaseT>::Lowest(),             \
-                NumericTraits<BaseT>::Lowest()};            \
-            return retval;                                  \
-        }                                                   \
-    };                                                      \
-    CUB_NAMESPACE_END
+#define CUB_VEC_OVERLOAD_4_OLD(T, BaseT)                                                           \
+  /* Test initialization */                                                                        \
+  __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode,                             \
+                                                     T &value,                                     \
+                                                     std::size_t index = 0)                        \
+  {                                                                                                \
+    InitValue(gen_mode, value.x, index);                                                           \
+    InitValue(gen_mode, value.y, index);                                                           \
+    InitValue(gen_mode, value.z, index);                                                           \
+    InitValue(gen_mode, value.w, index);                                                           \
+  }
 
 /**
  * All vector overloads
  */
-#define CUB_VEC_OVERLOAD_OLD(COMPONENT_T, BaseT)                \
-    CUB_VEC_OVERLOAD_1_OLD(COMPONENT_T##1, BaseT)               \
-    CUB_VEC_OVERLOAD_2_OLD(COMPONENT_T##2, BaseT)               \
-    CUB_VEC_OVERLOAD_3_OLD(COMPONENT_T##3, BaseT)               \
-    CUB_VEC_OVERLOAD_4_OLD(COMPONENT_T##4, BaseT)
+#define CUB_VEC_OVERLOAD_OLD(COMPONENT_T, BaseT)                                                   \
+  CUB_VEC_OVERLOAD_1_OLD(COMPONENT_T##1, BaseT)                                                    \
+  CUB_VEC_OVERLOAD_2_OLD(COMPONENT_T##2, BaseT)                                                    \
+  CUB_VEC_OVERLOAD_3_OLD(COMPONENT_T##3, BaseT)                                                    \
+  CUB_VEC_OVERLOAD_4_OLD(COMPONENT_T##4, BaseT)
 
 /**
  * Define for types

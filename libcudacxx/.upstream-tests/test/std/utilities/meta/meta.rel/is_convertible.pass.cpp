@@ -135,7 +135,7 @@ int main(int, char**)
 
     static_assert((!cuda::std::is_convertible<Array, Array&>::value), "");
     static_assert(( cuda::std::is_convertible<Array, const Array&>::value), "");
-#ifndef TEST_COMPILER_C1XX
+#ifndef TEST_COMPILER_MSVC
     // TODO: Unclear why this fails.
     static_assert((!cuda::std::is_convertible<Array, const volatile Array&>::value), "");
 #endif
@@ -146,7 +146,7 @@ int main(int, char**)
 
     static_assert(( cuda::std::is_convertible<Array, Array&&>::value), "");
     static_assert(( cuda::std::is_convertible<Array, const Array&&>::value), "");
-#if !defined(TEST_COMPILER_NVRTC) && (!defined(TEST_COMPILER_C1XX) || 1920 <= _MSC_VER)
+#if !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_MSVC_2017)
     // No idea why this fails under NVRTC.
     // TODO: File a compiler bug
     static_assert(( cuda::std::is_convertible<Array, volatile Array&&>::value), "");
@@ -191,7 +191,7 @@ int main(int, char**)
     static_assert(( cuda::std::is_convertible<const Array&, const char*>::value), "");
 
     static_assert((cuda::std::is_convertible<Array, StringType>::value), "");
-#if !defined(TEST_COMPILER_C1XX) && !defined(TEST_COMPILER_NVRTC)
+#if !defined(TEST_COMPILER_MSVC) && !defined(TEST_COMPILER_NVRTC)
     // TODO: Investigate why this is failing.
     static_assert((cuda::std::is_convertible<char(&)[], StringType>::value), "");
 #endif
@@ -259,7 +259,7 @@ int main(int, char**)
     // This test requires access control SFINAE which we only have on non-MSVC
     // compilers in C++11 or when we are using the compiler builtin for
     // is_convertible.
-#if !(defined(TEST_COMPILER_C1XX) && defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)) && \
+#if !(defined(TEST_COMPILER_MSVC) && defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)) && \
     (TEST_STD_VER >= 11 || !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK))
     test_is_not_convertible<NonCopyable&, NonCopyable>();
 #endif

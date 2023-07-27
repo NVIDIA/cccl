@@ -12,14 +12,12 @@
 // template<class T, class U>
 // concept invocable;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
-
 #include <cuda/std/chrono>
 #include <cuda/std/concepts>
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
+
+#include "test_macros.h"
 
 using cuda::std::invocable;
 
@@ -319,7 +317,9 @@ static_assert(invocable<lvalue_qualified, S&>, "");
 static_assert(!invocable<lvalue_qualified, S const&>, "");
 static_assert(!invocable<lvalue_qualified, S volatile&>, "");
 static_assert(!invocable<lvalue_qualified, S const volatile&>, "");
+#ifndef TEST_COMPILER_MSVC_2017
 static_assert(!invocable<lvalue_qualified, S&&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 static_assert(!invocable<lvalue_qualified, S const&&>, "");
 static_assert(!invocable<lvalue_qualified, S volatile&&>, "");
 static_assert(!invocable<lvalue_qualified, S const volatile&&>, "");
@@ -345,10 +345,12 @@ static_assert(invocable<lvalue_volatile_qualified, S&>, "");
 static_assert(!invocable<lvalue_volatile_qualified, S const&>, "");
 static_assert(invocable<lvalue_volatile_qualified, S volatile&>, "");
 static_assert(!invocable<lvalue_volatile_qualified, S const volatile&>, "");
+#ifndef TEST_COMPILER_MSVC_2017
 static_assert(!invocable<lvalue_volatile_qualified, S&&>, "");
 static_assert(!invocable<lvalue_volatile_qualified, S const&&>, "");
 static_assert(!invocable<lvalue_volatile_qualified, S volatile&&>, "");
 static_assert(!invocable<lvalue_volatile_qualified, S const volatile&&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 
 static_assert(check_member_is_invocable<int (S::*)() const volatile&, S&>(), "");
 using lvalue_cv_qualified = void (S::*)() const volatile&;
@@ -356,28 +358,34 @@ static_assert(invocable<lvalue_cv_qualified, S&>, "");
 static_assert(invocable<lvalue_cv_qualified, S const&>, "");
 static_assert(invocable<lvalue_cv_qualified, S volatile&>, "");
 static_assert(invocable<lvalue_cv_qualified, S const volatile&>, "");
+#ifndef TEST_COMPILER_MSVC_2017
 static_assert(!invocable<lvalue_cv_qualified, S&&>, "");
 static_assert(!invocable<lvalue_cv_qualified, S const&&>, "");
 static_assert(!invocable<lvalue_cv_qualified, S volatile&&>, "");
 static_assert(!invocable<lvalue_cv_qualified, S const volatile&&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 
 using rvalue_unqualified = void (S::*)() &&;
 static_assert(!invocable<rvalue_unqualified, S&>, "");
 static_assert(!invocable<rvalue_unqualified, S const&>, "");
 static_assert(!invocable<rvalue_unqualified, S volatile&>, "");
 static_assert(!invocable<rvalue_unqualified, S const volatile&>, "");
+#ifndef TEST_COMPILER_MSVC_2017
 static_assert(invocable<rvalue_unqualified, S&&>, "");
 static_assert(!invocable<rvalue_unqualified, S const&&>, "");
 static_assert(!invocable<rvalue_unqualified, S volatile&&>, "");
 static_assert(!invocable<rvalue_unqualified, S const volatile&&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 
 using rvalue_const_unqualified = void (S::*)() const&&;
 static_assert(!invocable<rvalue_const_unqualified, S&>, "");
 static_assert(!invocable<rvalue_const_unqualified, S const&>, "");
 static_assert(!invocable<rvalue_const_unqualified, S volatile&>, "");
 static_assert(!invocable<rvalue_const_unqualified, S const volatile&>, "");
+#ifndef TEST_COMPILER_MSVC_2017
 static_assert(invocable<rvalue_const_unqualified, S&&>, "");
 static_assert(invocable<rvalue_const_unqualified, S const&&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 static_assert(!invocable<rvalue_const_unqualified, S volatile&&>, "");
 static_assert(!invocable<rvalue_const_unqualified, S const volatile&&>, "");
 
@@ -386,20 +394,24 @@ static_assert(!invocable<rvalue_volatile_unqualified, S&>, "");
 static_assert(!invocable<rvalue_volatile_unqualified, S const&>, "");
 static_assert(!invocable<rvalue_volatile_unqualified, S volatile&>, "");
 static_assert(!invocable<rvalue_volatile_unqualified, S const volatile&>, "");
+#ifndef TEST_COMPILER_MSVC_2017
 static_assert(invocable<rvalue_volatile_unqualified, S&&>, "");
 static_assert(!invocable<rvalue_volatile_unqualified, S const&&>, "");
 static_assert(invocable<rvalue_volatile_unqualified, S volatile&&>, "");
 static_assert(!invocable<rvalue_volatile_unqualified, S const volatile&&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 
 using rvalue_cv_unqualified = void (S::*)() const volatile&&;
 static_assert(!invocable<rvalue_cv_unqualified, S&>, "");
 static_assert(!invocable<rvalue_cv_unqualified, S const&>, "");
 static_assert(!invocable<rvalue_cv_unqualified, S volatile&>, "");
 static_assert(!invocable<rvalue_cv_unqualified, S const volatile&>, "");
+#ifndef TEST_COMPILER_MSVC_2017
 static_assert(invocable<rvalue_cv_unqualified, S&&>, "");
 static_assert(invocable<rvalue_cv_unqualified, S const&&>, "");
 static_assert(invocable<rvalue_cv_unqualified, S volatile&&>, "");
 static_assert(invocable<rvalue_cv_unqualified, S const volatile&&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 } // namespace pointer_to_member_functions
 
 // Check the concept with closure types

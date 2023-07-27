@@ -12,9 +12,6 @@
 // template<class From, class To>
 // concept common_with;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
@@ -768,11 +765,11 @@ struct common_type<const volatile int&, const volatile T7&> {
 static_assert(HasValidCommonType<T7, int>(), "");
 static_assert(HasValidCommonType<const T7&, const int&>(), "");
 static_assert(HasCommonReference<const T7&, const int&>(), "");
-#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // Unspecified MSVC bug
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // Unspecified MSVC bug
 static_assert(
     !HasCommonReference<cuda::std::common_type_t<T7, int>&,
                         cuda::std::common_reference_t<const T7&, const int&> >(), "");
-#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
 static_assert(!CheckCommonWith<T7, int>(), "");
 
 struct CommonWithInt {

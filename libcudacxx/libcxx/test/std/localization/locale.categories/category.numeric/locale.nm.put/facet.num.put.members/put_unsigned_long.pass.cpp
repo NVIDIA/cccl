@@ -19,7 +19,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-typedef std::num_put<char, output_iterator<char*> > F;
+typedef std::num_put<char, cpp17_output_iterator<char*> > F;
 
 class my_facet
     : public F
@@ -47,40 +47,40 @@ int main(int, char**)
         std::ios ios(0);
         unsigned long v = 0;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "0");
     }
     {
         std::ios ios(0);
         unsigned long v = 1;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "1");
     }
     {
         std::ios ios(0);
         unsigned long v = static_cast<unsigned long>(-1);
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == (sizeof(unsigned long) == 4 ? "4294967295" : "18446744073709551615"));
     }
     {
         std::ios ios(0);
         unsigned long v = static_cast<unsigned long>(-1000);
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == (sizeof(unsigned long) == 4 ? "4294966296" : "18446744073709550616"));
     }
     {
         std::ios ios(0);
         unsigned long v = 1000;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "1000");
     }
     {
@@ -88,8 +88,8 @@ int main(int, char**)
         showpos(ios);
         unsigned long v = 1000;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "1000");
     }
     {
@@ -97,8 +97,8 @@ int main(int, char**)
         oct(ios);
         unsigned long v = 1000;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "1750");
     }
     {
@@ -107,8 +107,8 @@ int main(int, char**)
         showbase(ios);
         unsigned long v = 1000;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "01750");
     }
     {
@@ -116,8 +116,8 @@ int main(int, char**)
         hex(ios);
         unsigned long v = 1000;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "3e8");
     }
     {
@@ -126,8 +126,8 @@ int main(int, char**)
         showbase(ios);
         unsigned long v = 1000;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "0x3e8");
     }
     {
@@ -137,8 +137,8 @@ int main(int, char**)
         uppercase(ios);
         unsigned long v = 1000;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "0X3E8");
     }
     {
@@ -149,8 +149,8 @@ int main(int, char**)
         uppercase(ios);
         unsigned long v = 1000;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "0X3E_8");
     }
     {
@@ -160,8 +160,8 @@ int main(int, char**)
         showbase(ios);
         unsigned long v = 2147483647;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "0x7f_fff_ff_f");
     }
     {
@@ -170,8 +170,8 @@ int main(int, char**)
         oct(ios);
         unsigned long v = 0123467;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "123_46_7");
     }
     {
@@ -181,8 +181,8 @@ int main(int, char**)
         showbase(ios);
         unsigned long v = 0123467;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "0_123_46_7");
     }
     {
@@ -194,8 +194,8 @@ int main(int, char**)
         ios.width(15);
         unsigned long v = 0123467;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "*****0_123_46_7");
     }
     {
@@ -207,8 +207,8 @@ int main(int, char**)
         ios.width(15);
         unsigned long v = 0123467;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "0_123_46_7*****");
     }
     {
@@ -220,8 +220,8 @@ int main(int, char**)
         ios.width(15);
         unsigned long v = 0123467;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "*****0_123_46_7");
         assert(ios.width() == 0);
     }
@@ -234,8 +234,8 @@ int main(int, char**)
         ios.width(15);
         unsigned long v = 2147483647;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "**0x7f_fff_ff_f");
     }
     {
@@ -247,8 +247,8 @@ int main(int, char**)
         ios.width(15);
         unsigned long v = 2147483647;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "0x7f_fff_ff_f**");
     }
     {
@@ -260,8 +260,8 @@ int main(int, char**)
         ios.width(15);
         unsigned long v = 2147483647;
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "0x**7f_fff_ff_f");
         assert(ios.width() == 0);
     }
@@ -273,8 +273,8 @@ int main(int, char**)
         right(ios);
         ios.width(10);
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "****1_00_0");
         assert(ios.width() == 0);
     }
@@ -286,8 +286,8 @@ int main(int, char**)
         left(ios);
         ios.width(10);
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "1_00_0****");
         assert(ios.width() == 0);
     }
@@ -299,8 +299,8 @@ int main(int, char**)
         internal(ios);
         ios.width(10);
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == "****1_00_0");
         assert(ios.width() == 0);
     }
@@ -312,8 +312,8 @@ int main(int, char**)
         showpos(ios);
         ios.width(10);
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == (sizeof(unsigned long) == 4 ? "4_294_966_29_6"
                                                  : "18_446_744_073_709_550_61_6"));
         assert(ios.width() == 0);
@@ -325,8 +325,8 @@ int main(int, char**)
         left(ios);
         ios.width(10);
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == (sizeof(unsigned long) == 4 ? "4_294_966_29_6"
                                                  : "18_446_744_073_709_550_61_6"));
         assert(ios.width() == 0);
@@ -338,8 +338,8 @@ int main(int, char**)
         internal(ios);
         ios.width(10);
         char str[50];
-        output_iterator<char*> iter = f.put(output_iterator<char*>(str), ios, '*', v);
-        std::string ex(str, iter.base());
+        cpp17_output_iterator<char*> iter = f.put(cpp17_output_iterator<char*>(str), ios, '*', v);
+        std::string ex(str, base(iter));
         assert(ex == (sizeof(unsigned long) == 4 ? "4_294_966_29_6"
                                                  : "18_446_744_073_709_550_61_6"));
         assert(ios.width() == 0);
