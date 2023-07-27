@@ -17,9 +17,6 @@
 #include <cuda/std/concepts>
 #include <cuda/std/cassert>
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include "test_macros.h"
 

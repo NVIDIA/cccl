@@ -12,9 +12,6 @@
 // template<class T>
 // concept copyable = see below;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
@@ -87,10 +84,10 @@ static_assert(copyable<cv_copy_assignment const volatile>, "");
 static_assert(!copyable<no_copy_constructor>, "");
 static_assert(!copyable<no_copy_assignment>, "");
 
-#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
 static_assert(cuda::std::is_copy_assignable_v<no_copy_assignment_mutable>, "");
 static_assert(!copyable<no_copy_assignment_mutable>, "");
-#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
 static_assert(!copyable<derived_from_noncopyable>, "");
 static_assert(!copyable<has_noncopyable>, "");
 static_assert(!copyable<has_const_member>, "");

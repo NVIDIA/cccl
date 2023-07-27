@@ -13,9 +13,6 @@
 // concept constructible_from;
 //    destructible<T> && is_constructible_v<T, Args...>;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/array>
 #include <cuda/std/concepts>

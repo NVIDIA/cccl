@@ -12,9 +12,6 @@
 // template<class T>
 // concept swappable = // see below
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
@@ -22,6 +19,10 @@
 #include "test_macros.h"
 #include "type_classification/moveconstructible.h"
 #include "type_classification/swappable.h"
+
+#ifdef TEST_COMPILER_MSVC_2017
+#pragma warning(disable: 4239)
+#endif // TEST_COMPILER_MSVC_2017
 
 using cuda::std::swappable;
 
@@ -81,7 +82,7 @@ __host__ __device__ constexpr bool check_lvalue_adl_swappable() {
 
 __host__ __device__ constexpr bool check_rvalue_adl_swappable() {
   ASSERT_NOEXCEPT(cuda::std::ranges::swap(rvalue_adl_swappable(0), rvalue_adl_swappable(1)));
-#if (!defined(__GNUC__) || __GNUC__ >= 10)
+#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10)
   assert(check_swap_21(rvalue_adl_swappable(0), rvalue_adl_swappable(1)));
 #endif
   return true;
@@ -104,9 +105,10 @@ __host__ __device__ constexpr bool check_rvalue_lvalue_adl_swappable() {
 __host__ __device__ constexpr bool check_throwable_swappable() {
   auto x = throwable_adl_swappable{0};
   auto y = throwable_adl_swappable{1};
-#ifndef TEST_COMPILER_NVHPC
+#if !defined(TEST_COMPILER_NVHPC) \
+ && !defined(TEST_COMPILER_MSVC_2017)
   ASSERT_NOT_NOEXCEPT(cuda::std::ranges::swap(x, y));
-#endif // TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER_NVHPC && !TEST_COMPILER_MSVC_2017
   assert(check_swap_21(x, y));
   return true;
 }
@@ -120,6 +122,7 @@ __host__ __device__ constexpr bool check_non_move_constructible_adl_swappable() 
 }
 
 #if TEST_STD_VER > 14
+#ifndef TEST_COMPILER_MSVC_2017
 __host__ __device__ constexpr bool check_non_move_assignable_adl_swappable() {
   auto x = non_move_assignable_adl_swappable{0};
   auto y = non_move_assignable_adl_swappable{1};
@@ -127,6 +130,7 @@ __host__ __device__ constexpr bool check_non_move_assignable_adl_swappable() {
   assert(check_swap_21(x, y));
   return true;
 }
+#endif // !TEST_COMPILER_MSVC_2017
 #endif // TEST_STD_VER > 14
 
 namespace swappable_namespace {
@@ -160,9 +164,10 @@ __host__ __device__ constexpr bool check_lvalue_adl_swappable_arrays() {
 __host__ __device__ constexpr bool check_throwable_adl_swappable_arrays() {
   throwable_adl_swappable x[] = {{0}, {1}, {2}, {3}};
   throwable_adl_swappable y[] = {{4}, {5}, {6}, {7}};
-#ifndef TEST_COMPILER_NVHPC
+#if !defined(TEST_COMPILER_NVHPC) \
+ && !defined(TEST_COMPILER_MSVC_2017)
   ASSERT_NOT_NOEXCEPT(cuda::std::ranges::swap(x, y));
-#endif // TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER_NVHPC && !TEST_COMPILER_MSVC_2017
   assert(check_swap_22(x, y));
   return true;
 }
@@ -244,8 +249,10 @@ int main(int, char**) {
   assert(check_throwable_swappable());
   assert(check_non_move_constructible_adl_swappable());
 #if TEST_STD_VER > 14
+#ifndef TEST_COMPILER_MSVC_2017
   assert(check_non_move_assignable_adl_swappable());
-#endif
+#endif // TEST_COMPILER_MSVC_2017
+#endif // TEST_STD_VER > 14
   assert(check_swap_arrays());
   assert(check_lvalue_adl_swappable_arrays());
   assert(check_throwable_adl_swappable_arrays());
@@ -260,8 +267,10 @@ int main(int, char**) {
   static_assert(check_throwable_swappable(), "");
   static_assert(check_non_move_constructible_adl_swappable(), "");
 #if TEST_STD_VER > 14
+#ifndef TEST_COMPILER_MSVC_2017
   static_assert(check_non_move_assignable_adl_swappable(), "");
-#endif
+#endif // TEST_COMPILER_MSVC_2017
+#endif // TEST_STD_VER > 14
   static_assert(check_swap_arrays(), "");
   static_assert(check_lvalue_adl_swappable_arrays(), "");
   static_assert(check_throwable_adl_swappable_arrays(), "");

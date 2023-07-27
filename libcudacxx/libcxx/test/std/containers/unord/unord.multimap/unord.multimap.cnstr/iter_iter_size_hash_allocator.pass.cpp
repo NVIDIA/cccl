@@ -53,7 +53,7 @@ void test(const Allocator& alloc)
         P(2, "four")
     };
 
-    C c(input_iterator<P*>(a), input_iterator<P*>(a + sizeof(a) / sizeof(a[0])),
+    C c(cpp17_input_iterator<P*>(a), cpp17_input_iterator<P*>(a + sizeof(a) / sizeof(a[0])),
         7,
         test_hash<int>(5),
         alloc);

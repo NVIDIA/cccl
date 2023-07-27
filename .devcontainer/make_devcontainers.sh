@@ -20,7 +20,7 @@ IMAGE_ROOT="rapidsai/devcontainers:23.06-cpp-"
 matrix_json=$(yq -o json ../ci/matrix.yaml)
 
 # Get unique combinations of cuda version, compiler name/version, and Ubuntu version
-combinations=$(echo "$matrix_json" | jq -c '[."pull-request"[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_version: .compiler.version, os: .os}] | unique | .[]')
+combinations=$(echo "$matrix_json" | jq -c '[.pull_request.nvcc[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_version: .compiler.version, os: .os}] | unique | .[]')
 
 # For each unique combination
 for combination in $combinations; do

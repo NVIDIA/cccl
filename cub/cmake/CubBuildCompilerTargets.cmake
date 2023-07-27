@@ -4,7 +4,7 @@
 #
 # cub.compiler_interface
 # - Interface target providing compiler-specific options needed to build
-#   Thrust's tests, examples, etc.
+#   CUB's tests, examples, etc.
 
 function(cub_build_compiler_targets)
   set(cxx_compile_definitions)
@@ -12,6 +12,8 @@ function(cub_build_compiler_targets)
   set(cuda_compile_options)
 
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    list(APPEND cxx_compile_definitions _ENABLE_EXTENDED_ALIGNED_STORAGE)
+
     append_option_if_available("/W4" cxx_compile_options)
 
     append_option_if_available("/WX" cxx_compile_options)

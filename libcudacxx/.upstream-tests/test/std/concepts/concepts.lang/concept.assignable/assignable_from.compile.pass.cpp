@@ -19,13 +19,11 @@
 //     { lhs = std::forward<RHS>(rhs) } -> std::same_as<LHS>;
 //   };
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
 #include "MoveOnly.h"
 
 struct NoCommonRef {
@@ -80,6 +78,9 @@ struct Locale {
 static_assert(cuda::std::is_assignable_v<Locale&, const Locale&>, "");
 static_assert(!cuda::std::assignable_from<Locale&, const Locale&>, "");
 
+#ifdef TEST_COMPILER_MSVC_2017
+#pragma warning(disable: 4522) // multiple assignment operators defined
+#endif // TEST_COMPILER_MSVC_2017
 struct Tuple {
     __host__ __device__ Tuple& operator=(const Tuple&);
     __host__ __device__ const Tuple& operator=(const Tuple&) const;
@@ -103,9 +104,13 @@ static_assert( cuda::std::assignable_from<volatile int&, int&>, "");
 static_assert( cuda::std::assignable_from<volatile int&, int&&>, "");
 static_assert(!cuda::std::assignable_from<int(&)[10], int>, "");
 static_assert(!cuda::std::assignable_from<int(&)[10], int(&)[10]>, "");
+#ifndef TEST_COMPILER_MSVC_2017
 static_assert( cuda::std::assignable_from<MoveOnly&, MoveOnly>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 static_assert(!cuda::std::assignable_from<MoveOnly&, MoveOnly&>, "");
+#ifndef TEST_COMPILER_MSVC_2017
 static_assert( cuda::std::assignable_from<MoveOnly&, MoveOnly&&>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 static_assert(!cuda::std::assignable_from<void, int>, "");
 static_assert(!cuda::std::assignable_from<void, void>, "");
 

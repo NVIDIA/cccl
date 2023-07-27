@@ -12,9 +12,6 @@
 // template<class T>
 // concept movable = see below;
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-#endif
 
 #include <cuda/std/concepts>
 
@@ -91,17 +88,19 @@ static_assert(!movable<DerivedFromNonMovable>, "");
 static_assert(!movable<HasANonMovable>, "");
 
 static_assert(movable<cpp03_friendly>, "");
+#ifndef TEST_COMPILER_MSVC_2017
 static_assert(movable<const_move_ctor>, "");
 static_assert(movable<volatile_move_ctor>, "");
 static_assert(movable<cv_move_ctor>, "");
 static_assert(movable<multi_param_move_ctor>, "");
+#endif // !TEST_COMPILER_MSVC_2017
 static_assert(!movable<not_quite_multi_param_move_ctor>, "");
 
-#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
 static_assert(!cuda::std::assignable_from<copy_with_mutable_parameter&,
                                     copy_with_mutable_parameter>, "");
 static_assert(!movable<copy_with_mutable_parameter>, "");
-#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
 
 static_assert(!movable<const_move_assignment>, "");
 static_assert(movable<volatile_move_assignment>, "");
@@ -110,11 +109,11 @@ static_assert(!movable<cv_move_assignment>, "");
 static_assert(!movable<const_move_assign_and_traditional_move_assign>, "");
 static_assert(!movable<volatile_move_assign_and_traditional_move_assign>, "");
 static_assert(!movable<cv_move_assign_and_traditional_move_assign>, "");
-#if !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
 static_assert(movable<const_move_assign_and_default_ops>, "");
 static_assert(movable<volatile_move_assign_and_default_ops>, "");
 static_assert(movable<cv_move_assign_and_default_ops>, "");
-#endif // !defined(TEST_COMPILER_C1XX) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC chokes on multiple definitions of SMF
 
 static_assert(!movable<has_const_member>, "");
 static_assert(!movable<has_cv_member>, "");

@@ -69,7 +69,7 @@ void take_int_return_void(int);
 // just trips this quite special compiler up. Workaround, manually re-spell the same thing again.
 // I don't understand why it's just these that fail with has_or_else, not any of the ones above - but MSVC's error messages are so monumentally
 // unhelpful, that I decided to stop wasting time on this and just work around the cases that were giving it trouble.
-#ifdef TEST_COMPILER_C1XX
+#ifdef TEST_COMPILER_MSVC
 template<class T, class F, class = void>
 struct has_or_else_war : cuda::std::false_type {};
 

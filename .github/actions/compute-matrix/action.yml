@@ -1,0 +1,25 @@
+
+name: Compute Matrix
+description: "Compute the matrix for a given matrix type from the specified matrix file"
+
+inputs:
+  matrix_query:
+    description: "The jq query used to specify the desired matrix. e.g., .pull_request.nvcc"
+    required: true
+  matrix_file:
+    description: 'The file containing the matrix'
+    required: true
+outputs:
+  matrix:
+    description: 'The requested matrix'
+    value: ${{ steps.compute-matrix.outputs.MATRIX }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Compute matrix
+      id: compute-matrix
+      run: |
+        MATRIX=$(./.github/actions/compute-matrix/compute-matrix.sh ${{inputs.matrix_file}}  ${{inputs.matrix_query}} )
+        echo "matrix=$MATRIX" | tee -a $GITHUB_OUTPUT
+      shell: bash -euxo pipefail {0}

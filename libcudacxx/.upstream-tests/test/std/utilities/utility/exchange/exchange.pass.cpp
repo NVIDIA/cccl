@@ -56,6 +56,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_noexcept() {
     ASSERT_NOEXCEPT(cuda::std::exchange(x, 42));
     assert(x == 42);
   }
+#ifndef TEST_COMPILER_MSVC_2017 // TestNoexcept not a literal type
   {
     TestNoexcept<true, true> x{};
     ASSERT_NOEXCEPT(cuda::std::exchange(x, cuda::std::move(x)));
@@ -76,6 +77,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_noexcept() {
     unused(x);
   }
 #endif // TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER_MSVC_2017
 
   return true;
 }

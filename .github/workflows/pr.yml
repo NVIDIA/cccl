@@ -4,7 +4,7 @@ name: pr
 
 defaults:
   run:
-    shell: bash
+    shell: bash -euo pipefail {0}
 
 on:
   push:
@@ -18,51 +18,72 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  compute-matrix:
-    uses: ./.github/workflows/compute-matrix.yml
-    with:
-      matrix_file: "./ci/matrix.yaml"
-      matrix_type: "pull-request"
+  compute-nvcc-matrix:
+    name: Compute NVCC matrix
+    runs-on: ubuntu-latest
+    outputs:
+      CUDA_VERSIONS: ${{ steps.set-outputs.outputs.CUDA_VERSIONS }}
+      HOST_COMPILERS: ${{ steps.set-outputs.outputs.HOST_COMPILERS }}
+      PER_CUDA_COMPILER_MATRIX: ${{ steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Get full nvcc matrix
+        id: compute-nvcc-matrix
+        uses: ./.github/actions/compute-matrix
+        with:
+          matrix_file: './ci/matrix.yaml'
+          matrix_query: '.pull_request.nvcc'
+      - name: Set outputs
+        id: set-outputs
+        run: |
+          FULL_MATRIX='${{steps.compute-nvcc-matrix.outputs.matrix}}'
+          CUDA_VERSIONS=$(echo $FULL_MATRIX | jq -c '[.[] | .cuda] | unique')
+          echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
+          HOST_COMPILERS=$(echo $FULL_MATRIX | jq -c '[.[] | .compiler.name] | unique')
+          echo "HOST_COMPILERS=$HOST_COMPILERS" | tee -a "$GITHUB_OUTPUT"
+          PER_CUDA_COMPILER_MATRIX=$(echo $FULL_MATRIX | jq -c ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')
+          echo "PER_CUDA_COMPILER_MATRIX=$PER_CUDA_COMPILER_MATRIX" | tee -a "$GITHUB_OUTPUT"
 
   thrust:
     name: Thrust CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
-    needs: compute-matrix
+    needs: compute-nvcc-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
       matrix: 
-        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
-        compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
+        cuda_version: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.CUDA_VERSIONS) }} 
+        compiler: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.HOST_COMPILERS) }}
     with:
-      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
+      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-nvcc-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       build_script: "./ci/build_thrust.sh"
       test_script: "./ci/test_thrust.sh"
 
   cub:
     name: CUB CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
-    needs: compute-matrix
+    needs: compute-nvcc-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
       matrix: 
-        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
-        compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
+        cuda_version: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.CUDA_VERSIONS) }} 
+        compiler: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.HOST_COMPILERS) }}
     with:
-      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
+      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-nvcc-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       build_script: "./ci/build_cub.sh"
       test_script: "./ci/test_cub.sh"
   
   libcudacxx:
     name: libcudacxx CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
-    needs: compute-matrix
+    needs: compute-nvcc-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
       matrix: 
-        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }} 
-        compiler: ${{ fromJSON(needs.compute-matrix.outputs.COMPILERS) }}
+        cuda_version: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.CUDA_VERSIONS) }} 
+        compiler: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.HOST_COMPILERS) }}
     with:
-      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
+      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-nvcc-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       build_script: "./ci/build_libcudacxx.sh"
       test_script: "./ci/test_libcudacxx.sh" 
 
