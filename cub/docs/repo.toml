@@ -1,0 +1,114 @@
+########################################################################################################################
+# Repo tool base settings
+########################################################################################################################
+
+[repo_docs]
+enabled = true
+name = "CUB"
+project = "CUB"
+logo = "img/logo.png"
+
+enhanced_search_enabled = true
+api_output_directory = "api"
+use_fast_doxygen_conversion = true
+sphinx_generate_doxygen_groups = true
+sphinx_generate_doxygen_pages = true
+sphinx_exclude_patterns = [
+    "build",
+    "tools",
+    "VERSION.md",
+    "source/extensions/*/docs/Overview.md",
+    "source/extensions/*/docs/CHANGELOG.md",
+]
+
+# list of files from which to extract documentation.  if a directory is specified,
+# it will be recursively searched.
+#
+# paths are relative to ${docs_root}.
+#
+# defaults to an empty list.
+doxygen_input = [
+    "../cub/*.cuh",
+    "../cub/thread/*.cuh",
+    "../cub/warp/*.cuh",
+    "../cub/block/*.cuh",
+    "../cub/device/*.cuh",
+    "../cub/grid/*.cuh",
+    "../cub/iterator/*.cuh"
+]
+
+# Using wildcards is also supported in `doxygen_input`. Assuming there are no other `.h` files
+# in the `include/carb` directory, the above may also be specified as:
+# doxygen_input = [
+#     "include/carb/*.h",
+#     "source/examples/example.doxygen/ExampleDoxygen.h",
+# ]
+
+# doxygen allows the creation of custom commands to ease in the documentation process.
+# for example, this adds a @carb_framework_overview command which creates a link
+# to a reStructuredText document. defaults to an empty list.
+#
+# more information on the format can be found at:
+#     https://www.doxygen.nl/manual/config.html#cfg_aliases
+doxygen_aliases = [
+  "smemwarpreuse=A subsequent `__syncwarp()` warp-wide barrier should be invoked after calling this method if the collective's temporary storage (e.g., @p temp_storage) is to be reused or repurposed.",
+  "smemreuse=A subsequent `__syncthreads()` threadblock barrier should be invoked after calling this method if the collective's temporary storage (e.g., @p temp_storage) is to be reused or repurposed.",
+  "smemreuse{1}=After any operation, a subsequent `__syncthreads()` barrier is required if the collective's \\1 is to be reused or repurposed",
+  "smemstorage{1}=The operations exposed by \\1 require a temporary memory allocation of this nested type for thread communication. This opaque storage can be allocated directly using the `__shared__` keyword. Alternatively, it can be aliased to externally allocated memory (shared or global) or `union`'d with other storage allocation types to facilitate memory reuse.",
+  "granularity=Efficiency is increased with increased granularity `ITEMS_PER_THREAD`. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of `cub::BlockLoad` for efficiently gathering a [<em>blocked arrangement</em>](index.html#sec4sec3) of elements across threads.",
+  "blocksize=The number of threads in the block is a multiple of the architecture's warp size",
+  "ptxversion=The PTX compute capability for which to to specialize this collective, formatted as per the `__CUDA_ARCH__` macro (e.g., 350 for sm_35).  Useful for determining the collective's storage requirements for a given device from the host. (Default: the value of `__CUDA_ARCH__` during the current compiler pass)",
+  "blockcollective{1}=Every thread in the block uses the \\1 class by first specializing the \\1 type, then instantiating an instance with parameters for communication, and finally invoking one or more collective member functions.",
+  "warpcollective{1}=Every thread in the warp uses the \\1 class by first specializing the \\1 type, then instantiating an instance with parameters for communication, and finally invoking or more collective member functions.",
+  "devicestorage=When `d_temp_storage` is `NULL`, no work is done and the required allocation size is returned in `temp_storage_bytes`.",
+  "devicestorageP=This operation requires a relatively small allocation of temporary device storage that is `O(P)`, where `P` is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size `N`).",
+  "devicestorageNP=This operation requires an allocation of temporary device storage that is `O(N+P)`, where `N` is the length of the input and `P` is the number of streaming multiprocessors on the device.",
+  "devicestorageNCP=This operation requires a relatively small allocation of temporary device storage that is `O(N/C + P)`, where `N` is the length of the input, `C` is the number of concurrent threads that can be actively scheduled on each streaming multiprocessor (typically several thousand), and `P` is the number of streaming multiprocessors on the device.",
+  "cdp_class{1}= - Dynamic parallelism. \\1 methods can be called within kernel code on devices in which CUDA dynamic parallelism is supported.",
+  "iterator=(may be a simple pointer type)",
+  "offset_size1=(Consider using 32-bit values as offsets/lengths/etc. For example, `int` will typically yeild better performance than `size_t` in 64-bit memory mode.)",
+  "offset_size2=Careful consideration should be given to the size of integer types used for offsets and lengths. Many (if not most) scenarios will only require 32-bit offsets (e.g., `int`). 64-bit offset types (e.g., `size_t` on 64-bit memory mode) can consume a significant amount of thread storage resources, adversely affecting processor occupancy and performance.",
+  "rowmajor=For multi-dimensional blocks, threads are linearly ranked in row-major order.",
+  "blocked=Assumes a [*blocked arrangement*](index.html#sec4sec3) of (*block-threads* * *items-per-thread*) items across the thread block, where thread<sub><em>i</em></sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items.  For multi-dimensional thread blocks, a row-major thread ordering is assumed.",
+  "striped=Assumes a [<em>striped arrangement</em>](index.html#sec4sec3) of (<em>block-threads</em>*<em>items-per-thread</em>) items across the thread block, where thread<sub><em>i</em></sub> owns items (<em>i</em>), (<em>i</em> + <em>block-threads</em>), ..., (<em>i</em> + (<em>block-threads</em>*(<em>items-per-thread</em>-1))).  For multi-dimensional thread blocks, a row-major thread ordering is assumed.",
+  "warpstriped=Assumes a <em>warp-striped arrangement</em> of elements across threads, where warp<sub><em>i</em></sub> owns the <em>i</em><sup>th</sup> range of (<em>warp-threads</em>*<em>items-per-thread</em>) contiguous items, and each thread owns items (<em>i</em>), (<em>i</em> + <em>warp-threads</em>), ..., (<em>i</em> + (<em>warp-threads</em>*(<em>items-per-thread</em>-1))).",
+  "linear_performance{1}=The work-complexity of \\1 as a function of input size is linear, resulting in performance throughput that plateaus with problem sizes large enough to saturate the GPU."  ,
+  "plots_below=Performance plots for other scenarios can be found in the detailed method descriptions below.",
+  "identityzero=This operation assumes the value of obtained by the `T`'s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value \"zero\" for addition."
+]
+
+# doxygen sometimes gets confused by macros. the array below allows the user to
+# tell doxygen how to expand a macro. defaults to an empty list.
+#
+# more information on the format can be found at:
+#     https://www.doxygen.nl/manual/config.html#cfg_predefined
+doxygen_predefined = [
+    "CUB_DISABLE_NAMESPACE_MAGIC",
+    "CUB_IGNORE_NAMESPACE_MAGIC_ERROR",
+    "CUB_NAMESPACE_BEGIN=namespace cub {",
+    "CUB_NAMESPACE_END=}",
+    "DOXYGEN_SHOULD_SKIP_THIS",
+    "DOXYGEN_ACTIVE",
+    "__device__",
+    "__host__",
+    "__forceinline__",
+    "__declspec(x)=",
+    "__align__(x)=",
+    "CUB_STATIC_ASSERT(cond,msg)=",
+    "CUB_RUNTIME_FUNCTION",
+    "CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED",
+    "CUB_IGNORE_DEPRECATED_CPP_DIALECT"
+]
+
+# make sure to use ./fetch_imgs.sh 
+doxygen_conf_extra = """
+  IMAGE_PATH             = ${config_root}/img
+  DOXYFILE_ENCODING      = UTF-8
+  INPUT_ENCODING         = UTF-8
+  EXTENSION_MAPPING      = cuh=c++ cu=c++
+  EXAMPLE_PATH           = ../examples/device
+  EXAMPLE_RECURSIVE      = NO
+  EXAMPLE_PATTERNS       = *.cu
+  EXCLUDE_SYMBOLS        = "*detail*" "CUB_DETAIL*"
+  AUTOLINK_SUPPORT       = YES
+"""

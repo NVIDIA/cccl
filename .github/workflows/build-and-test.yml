@@ -1,0 +1,47 @@
+name: build and test
+
+defaults:
+  run:
+    shell: bash -exo pipefail {0}
+
+on:
+  workflow_call:
+    inputs:
+      cuda_version: {type: string, required: true}
+      compiler: {type: string, required: true}
+      compiler_exe: {type: string, required: true}
+      compiler_version: {type: string, required: true}
+      std: {type: string, required: true}
+      gpu_build_archs: {type: string, required: true}
+      cpu: {type: string, required: true}
+      os: {type: string, required: true}
+      build_script: {type: string, required: false}
+      test_script: {type: string, required: false}
+      run_tests: {type: boolean, required: false, default: true}
+      build_image: {type: string, required: false}
+      test_image: {type: string, required: false}
+
+jobs:
+  build:
+    if: inputs.build_script != '' && inputs.build_image != ''
+    name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
+    uses: ./.github/workflows/run-as-coder.yml
+    with:
+      name: Build ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
+      runner: linux-${{inputs.cpu}}-cpu16
+      image: ${{inputs.build_image}}
+      command: |
+        ${{ inputs.build_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
+
+  test:
+    needs: build
+    if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.test_script != '' && inputs.test_image != '' && inputs.run_tests}}
+    name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
+    uses: ./.github/workflows/run-as-coder.yml
+    with:
+      name: Test ${{inputs.compiler}}${{inputs.compiler_version}}/C++${{inputs.std}}
+      runner: linux-${{inputs.cpu}}-gpu-v100-latest-1
+      image: ${{inputs.test_image}}
+      command: |
+        nvidia-smi
+        ${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"

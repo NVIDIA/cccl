@@ -1,0 +1,5 @@
+﻿# Dummy omni.repo.format Python module so we don't have to pull down the format package.
+
+# Ignore everything in this directory, except this file to ensure the folder is created.
+*
+!.gitignore

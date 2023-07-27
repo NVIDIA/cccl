@@ -1,0 +1,106 @@
+title: libcu++
+
+repository: nvidia/libcudacxx
+
+remote_theme: pmarsceill/just-the-docs
+
+color_scheme: nvidia
+logo: /assets/images/nvidia_logo.png
+
+search_enabled: true
+search.heading_level: 4
+
+# just-the-docs ignores these filenames by default.
+include: [ "contributing.md", "code_of_conduct.md" ]
+
+plugins_dir:
+  - jekyll-remote-theme
+  - jekyll-optional-front-matter # GitHub Pages.
+  - jekyll-default-layout        # GitHub Pages.
+  - jekyll-titles-from-headings  # GitHub Pages.
+  - jekyll-relative-links        # GitHub Pages.
+
+defaults:
+  -
+    scope:
+      path: overview.md
+    values:
+      title: Overview
+      nav_order: 0
+      permalink: /
+  -
+    scope:
+      path: contributing/code_of_conduct.md
+    values:
+      parent: Contributing
+      nav_order: 0
+  -
+    scope:
+      path: standard_api/time_library.md
+    values:
+      parent: Standard API
+      has_children: true
+      has_toc: false
+      nav_order: 0
+  -
+    scope:
+      path: standard_api/numerics_library.md
+    values:
+      parent: Standard API
+      has_children: true
+      has_toc: false
+      nav_order: 1
+  -
+    scope:
+      path: standard_api/utility_library.md
+    values:
+      parent: Standard API
+      has_children: true
+      has_toc: false
+      nav_order: 2
+  -
+    scope:
+      path: extended_api/shapes.md
+    values:
+      parent: Extended API
+      has_children: true
+      has_toc: false
+      nav_order: 2
+  -
+    scope:
+      path: extended_api/synchronization_primitives.md
+    values:
+      parent: Extended API
+      has_children: true
+      has_toc: false
+      nav_order: 3
+  -
+    scope:
+      path: extended_api/asynchronous_operations.md
+    values:
+      parent: Extended API
+      has_children: true
+      has_toc: false
+      nav_order: 4
+  -
+    scope:
+      path: extended_api/memory_access_properties.md
+    values:
+      parent: Extended API
+      has_children: true
+      has_toc: false
+      nav_order: 5
+  -
+    scope:
+      path: extended_api/functional.md
+    values:
+      parent: Extended API
+      has_children: true
+      has_toc: false
+      nav_order: 6
+  -
+    scope:
+      path: releases/changelog.md
+    values:
+      parent: Releases
+      nav_order: 0

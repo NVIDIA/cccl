@@ -1,0 +1,37 @@
+{
+    "shutdownAction": "stopContainer",
+    "image": "rapidsai/devcontainers:23.06-cpp-gcc12-cuda12.1-ubuntu22.04",
+    "hostRequirements": {
+        "gpu": true
+    },
+    "initializeCommand": [
+        "/bin/bash",
+        "-c",
+        "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config}"
+    ],
+    "containerEnv": {
+        "SCCACHE_REGION": "us-east-2",
+        "SCCACHE_BUCKET": "rapids-sccache-devs",
+        "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
+        "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history"
+    },
+    "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
+    "mounts": [
+        "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
+        "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
+        "source=${localWorkspaceFolder}/.config,target=/home/coder/.config,type=bind,consistency=consistent"
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "llvm-vs-code-extensions.vscode-clangd"
+            ],
+            "settings": {
+                "clangd.arguments": [
+                    "--compile-commands-dir=${workspaceFolder}/build/latest"
+                ]
+            }
+        }
+    }
+}

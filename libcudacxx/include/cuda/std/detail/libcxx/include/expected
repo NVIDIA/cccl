@@ -1,0 +1,39 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _LIBCUDACXX_EXPECTED
+#define _LIBCUDACXX_EXPECTED
+
+/*
+expected synopsis
+namespace std {
+
+}
+
+*/
+
+#ifndef __cuda_std__
+#include <__config>
+#endif // __cuda_std__
+
+#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#include "__expected/bad_expected_access.h"
+#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#include "__expected/expected.h"
+#include "__expected/unexpect.h"
+#include "__expected/unexpected.h"
+
+#include "version"
+
+#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#pragma GCC system_header
+#endif
+
+#endif // _LIBCUDACXX_EXPECTED

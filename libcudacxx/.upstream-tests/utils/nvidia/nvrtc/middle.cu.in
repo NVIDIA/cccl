@@ -1,0 +1,28 @@
+)program";
+
+int main() {
+    list_devices();
+
+    nvrtcProgram prog;
+    NVRTC_SAFE_CALL(nvrtcCreateProgram(
+        &prog,
+        program,
+        "test.cu",
+        0, NULL, NULL));
+
+    const char * opts[] = {
+        "-rdc=true",
+
+#if __cplusplus < 201103L
+        "-std=c++98",
+#elif __cplusplus < 201402L
+        "-std=c++11",
+#elif __cplusplus < 201703L
+        "-std=c++14",
+#elif __cplusplus < 202002L
+        "-std=c++17",
+#elif __cplusplus == 202002L
+        "-std=c++20",
+#else
+        #error "Unknown C++ standard!"
+#endif

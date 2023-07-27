@@ -1,0 +1,37 @@
+    };
+
+    nvrtcResult compile_result = nvrtcCompileProgram(
+        prog,
+        sizeof(opts) / sizeof(*opts),
+        opts);
+
+    size_t log_size;
+    NVRTC_SAFE_CALL(nvrtcGetProgramLogSize(prog, &log_size));
+
+    {
+        std::unique_ptr<char[]> log{ new char[log_size] };
+        NVRTC_SAFE_CALL(nvrtcGetProgramLog(prog, log.get()));
+        printf("%s\n", log.get());
+    }
+
+    if (compile_result != NVRTC_SUCCESS) {
+        exit(1);
+    }
+
+    size_t ptxSize;
+    NVRTC_SAFE_CALL(nvrtcGetPTXSize(prog, &ptxSize));
+    std::unique_ptr<char[]> ptx{ new char[ptxSize] };
+    NVRTC_SAFE_CALL(nvrtcGetPTX(prog, ptx.get()));
+    NVRTC_SAFE_CALL(nvrtcDestroyProgram(&prog));
+
+    CUdevice cuDevice;
+    CUcontext context;
+    CUmodule module;
+    CUfunction kernel;
+    CUDA_SAFE_CALL(cuInit(0));
+    CUDA_SAFE_CALL(cuDeviceGet(&cuDevice, 0));
+    CUDA_SAFE_CALL(cuCtxCreate(&context, 0, cuDevice));
+    CUDA_SAFE_CALL(cuModuleLoadDataEx(&module, ptx.get(), 0, 0, 0));
+    CUDA_SAFE_CALL(cuModuleGetFunction(&kernel, module, "main_kernel"));
+    CUDA_SAFE_CALL(cuLaunchKernel(kernel,
+        1, 1, 1,

@@ -1,0 +1,23 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the CUDA Toolkit, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_STD_EXPECTED
+#define _CUDA_STD_EXPECTED
+
+#include "detail/__config"
+
+#include "detail/__pragma_push"
+
+#include "detail/libcxx/include/expected"
+
+#include "detail/__pragma_pop"
+
+#endif //_CUDA_STD_EXPECTED
+
+

@@ -1,0 +1,17 @@
+# general codeowners for all files
+# (Order matters. This needs to be at the top)
+* @nvidia/cccl-codeowners
+
+# Libraries
+thrust/ @nvidia/cccl-thrust-codeowners @nvidia/cccl-codeowners 
+cub/ @nvidia/cccl-cub-codeowners @nvidia/cccl-codeowners
+libcudacxx/ @nvidia/cccl-libcudacxx-codeowners @nvidia/cccl-codeowners
+
+# Infrastructure
+.github/ @nvidia/cccl-infra-codeowners @nvidia/cccl-codeowners
+ci/ @nvidia/cccl-infra-codeowners @nvidia/cccl-codeowners
+.devcontainer/ @nvidia/cccl-infra-codeowners @nvidia/cccl-codeowners
+
+# cmake
+**/CMakeLists.txt @nvidia/cccl-cmake-codeowners @nvidia/cccl-codeowners
+**/cmake/ @nvidia/cccl-cmake-codeowners  @nvidia/cccl-codeowners
