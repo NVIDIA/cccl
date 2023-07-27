@@ -1,0 +1,352 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Set PR and Linked Issues to In Progress
+
+on:
+  pull_request_target:
+    # Run this action when a PR is opened or edited
+    # Issues do not have a graphQL connection to linked PRs so we can't use that event
+    types: [opened, converted_to_draft]
+  pull_request_review:
+    # Run this action when a PR is reviewed
+    types: [submitted]
+      
+env:
+ ORG: ${{ github.event.repository.owner.login }}
+ PR_NUMBER: ${{ github.event.pull_request.number }}
+ REPO: ${{ github.event.repository.name }}
+ PR_GLOBAL_ID: ${{ github.event.pull_request.node_id}}
+
+ # The environment vars below are hard-coded from external queries to save time + complexity here
+ # Note: PVT means Project V2, not "Private"
+ # PVT = Project V2, PVTSSF = Project V2 Single Select Field, PVTIF = Project V2 Iteration Field
+ PROJECT_ID: "PVT_kwDOABpemM4AEhOI"
+ STATUS_FIELD_ID: "PVTSSF_lADOABpemM4AEhOIzgCmnYc"
+ IN_PROGRESS_PROJECT_OPTION_ID: "47fc9ee4"
+ WORKING_SPRINT_FIELD_ID: "PVTIF_lADOABpemM4AEhOIzgJlRho"
+ START_SPRINT_FIELD_ID: "PVTIF_lADOABpemM4AEhOIzgJlRhU"
+
+jobs:
+  query_and_mutate_project_fields:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check if changes requested from a reviewer
+        id: check_changes_requested
+        run: |
+          if [ ${{ github.event_name }} == 'pull_request_review' ]; then
+            if [ ${{ github.event.review.state }} != 'changes_requested' ]; then
+              echo "Changes not requested, exiting"
+              exit 0
+            fi
+          fi
+
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@v1.8.0
+        with:
+          app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
+          private_key: ${{ secrets.CCCL_AUTH_APP_PEM }}
+
+      - name: Wait 1 Second
+        id: sleep
+        run: sleep 1
+        
+      - name: Get PR Project ID
+        id: get_pr_id
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+            # Query up to 10 projects for the PR
+            gh api graphql -f query='
+              query {
+                organization(login: "${{ env.ORG }}") {
+                  repository(name: "${{ env.REPO }}") {
+                    issueOrPullRequest(number: ${{ env.PR_NUMBER }}) {
+                      ... on PullRequest {
+                        id
+                        projectItems(first: 10) {
+                          edges {
+                            node {
+                              id
+                              project {
+                                id
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }' > project_data.json
+            
+            # Filter the json result to only the project-specific ID for the PR
+            # A PR can be in multiple projects so we need to filter by the project ID we want
+            pr_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
+                           select(.node.project.id == "${{ env.PROJECT_ID }}") |
+                           .node.id' project_data.json)
+            echo "PR_ID=$pr_id" >> $GITHUB_ENV
+        continue-on-error: true
+            
+      - name: Set PR Fields
+        id: set_pr_fields
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+            gh api graphql -f query='
+                mutation {
+                    updateProjectV2ItemFieldValue(
+                        input: {
+                            projectId: "${{ env.PROJECT_ID }}"
+                            itemId: "${{ env.PR_ID }}"
+                            fieldId: "${{ env.STATUS_FIELD_ID }}"
+                        value: {
+                            singleSelectOptionId: "${{ env.IN_PROGRESS_PROJECT_OPTION_ID }}"
+                                }
+                            }
+                        ) {
+                            projectV2Item {
+                                id
+                            }
+                        }
+                    }'
+        
+            # Check if the PR has a start sprint assigned, save the result for the linked issues
+            gh api graphql -f query='
+                query {
+                  node(id: "${{ env.PR_ID }}") {
+                    ... on ProjectV2Item {
+                      id
+                      fieldValueByName(name: "Start Sprint") {
+                        ... on ProjectV2ItemFieldIterationValue {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }' > start_sprint_exists_data.json
+              start_sprint_option_id=$(jq -r '.data.node.fieldValueByName.id' start_sprint_exists_data.json)
+              echo "START_SPRINT_OPTION_ID=$start_sprint_option_id" >> $GITHUB_ENV
+                
+            # If there is no start sprint assigned, assign the current start sprint
+            if [ "$start_sprint_option_id" == 'null' ]; then
+                # Get current start sprint iteration id
+                # The current sprint is always the first iteration in the list
+                gh api graphql -f query='
+                query MyQuery {
+                    node(id: "${{ env.PROJECT_ID }}") {
+                        ... on ProjectV2 {
+                        id
+                        field(name: "Start Sprint") {
+                            ... on ProjectV2IterationField {
+                            id
+                            name
+                            configuration {
+                                iterations {
+                                id
+                                }
+                            }
+                            }
+                        }
+                        }
+                    }
+                    }' > start_sprint_option_data.json
+                current_start_sprint_option_id=$(jq -r '.data.node.field.configuration.iterations[0].id' start_sprint_option_data.json)
+                echo "CURRENT_START_SPRINT_OPTION_ID=$current_start_sprint_option_id" >> $GITHUB_ENV
+            
+                # The query below is constructed differently than the ones above due to bash variable syntax + github actions syntax interactions
+                QUERY="mutation {
+                    updateProjectV2ItemFieldValue(
+                    input: {
+                        projectId: \"$PROJECT_ID\"
+                        itemId: \"$PR_ID\"
+                        fieldId: \"$START_SPRINT_FIELD_ID\"
+                    value: {
+                        iterationId: \"$current_start_sprint_option_id\"
+                        }
+                        }
+                    ) {
+                        projectV2Item {
+                        id
+                        }
+                    }
+                    }"
+                gh api graphql --field query="$QUERY"
+            fi
+            
+            # Assign the current working sprint to the PR (faster/simpler to just overwrite even if it is the same)
+            gh api graphql -f query='
+            query {
+                node(id: "${{ env.PROJECT_ID }}") {
+                    ... on ProjectV2 {
+                    id
+                    field(name: "Working Sprint") {
+                        ... on ProjectV2IterationField {
+                        id
+                        name
+                        configuration {
+                            iterations {
+                            id
+                            }
+                        }
+                        }
+                    }
+                    }
+                }
+                }' > working_sprint_options_data.json
+            current_working_sprint_option_id=$(jq -r '.data.node.field.configuration.iterations[0].id' working_sprint_options_data.json)
+            echo "CURRENT_WORKING_SPRINT_OPTION_ID=$current_working_sprint_option_id" >> $GITHUB_ENV
+            
+            # Set the working sprint to the current working sprint
+            QUERY="mutation {
+                updateProjectV2ItemFieldValue(
+                input: {
+                    projectId: \"$PROJECT_ID\"
+                    itemId: \"$PR_ID\"
+                    fieldId: \"$WORKING_SPRINT_FIELD_ID\"
+                value: {
+                    iterationId: \"$current_working_sprint_option_id\"
+                    }
+                    }
+                ) {
+                    projectV2Item {
+                    id
+                    }
+                }
+                }"
+            gh api graphql --field query="$QUERY"
+        continue-on-error: true
+                  
+      - name: Sync Linked Issues
+        id: sync_linked_issues
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+            # Find the linked issues to the PR
+            gh api graphql -f query='
+                query {
+                organization(login: "${{ env.ORG }}") {
+                    repository(name: "${{ env.REPO }}") {
+                    issueOrPullRequest(number: ${{ env.PR_NUMBER }}) {
+                        ... on PullRequest {
+                        id
+                        closingIssuesReferences(first: 10) {
+                            edges {
+                            node {
+                                id
+                                projectItems(first: 10) {
+                                nodes {
+                                    id
+                                }
+                                edges {
+                                    node {
+                                    id
+                                    project {
+                                        id
+                                    }
+                                    }
+                                }
+                                }
+                            }
+                            }
+                        }
+                        }
+                    }
+                    }
+                }
+                }' > linked_issues.json
+            issue_ids=$(jq -r '.data.organization.repository.issueOrPullRequest.closingIssuesReferences.edges[].node.projectItems.edges[] |
+                                select(.node.project.id == "${{ env.PROJECT_ID }}") |
+                                .node.id' linked_issues.json)
+            
+            # For each linked issue, set the status to "In Progress", the Working Sprint to the current working sprint
+            # If there's no Start Sprint, set that to the current Start Sprint as well
+            for issue_id in $issue_ids; do
+                # Set the status of the linked issues to "In Progress"
+                QUERY="mutation {
+                updateProjectV2ItemFieldValue(
+                    input: {
+                        projectId: \"$PROJECT_ID\"
+                        itemId: \"$issue_id\"
+                        fieldId: \"$STATUS_FIELD_ID\"
+                    value: {
+                        singleSelectOptionId: \"$IN_PROGRESS_PROJECT_OPTION_ID\"
+                        }
+                    }
+                    ) {
+                    projectV2Item {
+                        id
+                    }
+                    }
+                }"
+                gh api graphql --field query="$QUERY"
+                # Set the working sprint of the linked issues to the current working sprint
+                QUERY="mutation {
+                    updateProjectV2ItemFieldValue(
+                    input: {
+                        projectId: \"$PROJECT_ID\"
+                        itemId: \"$issue_id\"
+                        fieldId: \"$WORKING_SPRINT_FIELD_ID\"
+                    value: {
+                        iterationId: \"$CURRENT_WORKING_SPRINT_OPTION_ID\"
+                        }
+                        }
+                    ) {
+                        projectV2Item {
+                          id
+                        }
+                    }
+                    }"
+                gh api graphql --field query="$QUERY"
+                # Set the start sprint of the linked issues to the current start sprint if it's null
+                if [ ${{ env.START_SPRINT_OPTION_ID }} == 'null' ]; then
+                    QUERY="mutation {
+                    updateProjectV2ItemFieldValue(
+                    input: {
+                        projectId: \"$PROJECT_ID\"
+                        itemId: \"$issue_id\"
+                        fieldId: \"$START_SPRINT_FIELD_ID\"
+                    value: {
+                        iterationId: \"$CURRENT_START_SPRINT_OPTION_ID\"
+                        }
+                        }
+                    ) {
+                        projectV2Item {
+                          id
+                        }
+                    }
+                    }"
+                    gh api graphql --field query="$QUERY"
+                fi
+            done
+        continue-on-error: true
+
+      - name: set PR to draft
+        id: set_pr_draft
+        # only run if PR is not a draft
+        if: ${{ github.event.pull_request.draft }} == false
+        env:
+            GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+            # Set the PR to draft using the graphQL API
+            gh api graphql -f query='
+              mutation {
+                convertPullRequestToDraft(input: {pullRequestId: "${{ env.PR_GLOBAL_ID }}"}) {
+                  clientMutationId
+                }
+              }'
+        continue-on-error: true
