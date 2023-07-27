@@ -9,3 +9,4 @@ target_link_libraries(nvbench_helper PUBLIC CUB::CUB
                                      PRIVATE CUDA::curand)
 
 target_include_directories(nvbench_helper PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
+set_target_properties(nvbench_helper PROPERTIES CUDA_STANDARD 17 CXX_STANDARD 17)
