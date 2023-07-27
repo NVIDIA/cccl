@@ -26,3 +26,8 @@ endif()
 
 add_executable(example_project example.cu)
 target_link_libraries(example_project PRIVATE CCCL::CCCL)
+
+# Used by CCCL CI for regression testing:
+include(CTest)
+enable_testing()
+add_test(NAME example_project COMMAND example_project)

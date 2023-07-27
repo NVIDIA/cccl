@@ -1,4 +1,14 @@
 
+
+/*
+This is a simple example demonstrating the use of CCCL functionality from Thrust, CUB, and libcu++.
+
+The example computes the sum of an array of integers using a simple parallel reduction. Each thread block
+computes the sum of a subset of the array using cuB::BlockRecuce. The sum of each block is then reduced 
+to a single value using an atomic add via cuda::atomic_ref from libcu++. The result is stored in a device_vector
+from Thrust. The sum is then printed to the console.
+*/
+
 #include <cstdio>
 #include <thrust/device_vector.h>
 #include <cub/block/block_reduce.cuh>

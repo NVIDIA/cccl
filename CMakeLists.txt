@@ -29,9 +29,12 @@ option(CCCL_ENABLE_LIBCUDACXX "Enable the libcu++ developer build." ON)
 option(CCCL_ENABLE_CUB "Enable the CUB developer build." ON)
 option(CCCL_ENABLE_THRUST "Enable the Thrust developer build." ON)
 option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." ON)
+option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." ON)
 
 include(CTest)
 enable_testing()
+
+include(cmake/CCCLUtilities.cmake)
 
 if (CCCL_ENABLE_LIBCUDACXX)
   set(LIBCUDACXX_TOPLEVEL_PROJECT ON)
@@ -51,4 +54,8 @@ add_subdirectory(thrust)
 
 if (CCCL_ENABLE_TESTING)
   add_subdirectory(test)
+endif()
+
+if (CCCL_ENABLE_EXAMPLES)
+  add_subdirectory(examples)
 endif()
