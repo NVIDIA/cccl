@@ -13,11 +13,14 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 # by replacing the `image:` field with the appropriate image name
 base_devcontainer_file="./devcontainer.json"
 
-# Define image root
-IMAGE_ROOT="rapidsai/devcontainers:23.06-cpp-"
 
 # Read matrix.yaml and convert it to json
 matrix_json=$(yq -o json ../ci/matrix.yaml)
+
+
+# Get the devcontainer image version and define image tag root
+DEVCONTAINER_VERSION=$(echo "$matrix_json" | jq -r '.devcontainer_version')
+IMAGE_ROOT="rapidsai/devcontainers:${DEVCONTAINER_VERSION}-cpp-"
 
 # Get unique combinations of cuda version, compiler name/version, and Ubuntu version
 combinations=$(echo "$matrix_json" | jq -c '[.pull_request.nvcc[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_version: .compiler.version, os: .os}] | unique | .[]')
