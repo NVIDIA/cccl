@@ -105,7 +105,8 @@ function(add_bench target_name bench_name bench_src)
       ARCHIVE_OUTPUT_DIRECTORY "${CUB_LIBRARY_OUTPUT_DIR}"
       LIBRARY_OUTPUT_DIRECTORY "${CUB_LIBRARY_OUTPUT_DIR}"
       RUNTIME_OUTPUT_DIRECTORY "${CUB_EXECUTABLE_OUTPUT_DIR}"
-  )
+      CUDA_STANDARD 17
+      CXX_STANDARD 17)
 endfunction()
 
 function(add_bench_dir bench_dir)
