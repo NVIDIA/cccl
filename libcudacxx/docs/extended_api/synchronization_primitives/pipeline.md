@@ -86,7 +86,7 @@ A thread role cannot change during the lifetime of the pipeline object.
 #include <cooperative_groups.h>
 
 // Disables `pipeline_shared_state` initialization warning.
-#pragma diag_suppress static_var_with_dynamic_init
+#pragma nv_diag_suppress static_var_with_dynamic_init
 
 template <typename T>
 __device__ void compute(T* ptr);

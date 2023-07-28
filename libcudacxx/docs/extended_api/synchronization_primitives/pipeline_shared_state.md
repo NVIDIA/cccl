@@ -47,7 +47,7 @@ warning: dynamic initialization is not supported for a function-scope static
 __shared__ variable within a __device__/__global__ function
 ```
 
-It can be silenced using `#pragma diag_suppress static_var_with_dynamic_init`.
+It can be silenced using `#pragma nv_diag_suppress static_var_with_dynamic_init`.
 
 ## Example
 
@@ -55,7 +55,7 @@ It can be silenced using `#pragma diag_suppress static_var_with_dynamic_init`.
 #include <cuda/pipeline>
 
 // Disables `pipeline_shared_state` initialization warning.
-#pragma diag_suppress static_var_with_dynamic_init
+#pragma nv_diag_suppress static_var_with_dynamic_init
 
 __global__ void example_kernel(char* device_buffer, char* sysmem_buffer) {
   // Allocate a 2 stage block scoped shared state in shared memory.
