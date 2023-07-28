@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:23.06-cpp-llvm15-cuda12.1-ubuntu22.04",
+  "image": "rapidsai/devcontainers:23.08-cpp-gcc10-cuda12.2-ubuntu20.04",
   "hostRequirements": {
     "gpu": true
   },
@@ -14,7 +14,7 @@
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda12.1-llvm15"
+    "DEVCONTAINER_NAME": "cuda12.2-gcc10"
   },
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
@@ -35,5 +35,5 @@
       }
     }
   },
-  "name": "cuda12.1-llvm15"
+  "name": "cuda12.2-gcc10"
 }
