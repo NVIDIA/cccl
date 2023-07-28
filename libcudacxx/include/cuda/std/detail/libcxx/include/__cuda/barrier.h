@@ -525,7 +525,7 @@ public:
 
     template<class _Rep, class _Period>
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
-    bool try_wait_for(arrival_token && __token, const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __dur) {
+    bool try_wait_for(arrival_token & __token, const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __dur) {
         auto __nanosec = _CUDA_VSTD::chrono::duration_cast<_CUDA_VSTD::chrono::nanoseconds>(__dur);
 
         return __try_wait(_CUDA_VSTD::move(__token), __nanosec);
@@ -533,7 +533,7 @@ public:
 
     template<class _Clock, class _Duration>
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
-    bool try_wait_until(arrival_token && __token, const _CUDA_VSTD::chrono::time_point<_Clock, _Duration>& __time) {
+    bool try_wait_until(arrival_token & __token, const _CUDA_VSTD::chrono::time_point<_Clock, _Duration>& __time) {
         return try_wait_for(_CUDA_VSTD::move(__token), (__time - _Clock::now()));
     }
 
