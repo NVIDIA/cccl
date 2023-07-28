@@ -34,7 +34,7 @@ warning: dynamic initialization is not supported for a function-scope static
 __shared__ variable within a __device__/__global__ function
 ```
 
-It can be silenced using `#pragma diag_suppress static_var_with_dynamic_init`.
+It can be silenced using `#pragma nv_diag_suppress static_var_with_dynamic_init`.
 
 To properly initialize a `__shared__` `cuda::barrier`, use the
   [`cuda::barrier::init`] friend function.
