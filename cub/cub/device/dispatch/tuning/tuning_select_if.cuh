@@ -125,7 +125,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
     static constexpr int threads = 256;
     static constexpr int items = 22;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<320, 605>;
 };
@@ -136,7 +136,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
     static constexpr int threads = 384;
     static constexpr int items = 17;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<76, 1150>;
 };
@@ -147,7 +147,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
     static constexpr int threads = 384;
     static constexpr int items = 11;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<380, 1140>;
 };
@@ -285,7 +285,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
     static constexpr int threads = 128;
     static constexpr int items = 12;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<512, 1075>;
 };
@@ -297,7 +297,7 @@ struct sm90_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, 
     static constexpr int threads = 192;
     static constexpr int items = 5;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<1616, 1115>;
 };
@@ -308,7 +308,7 @@ struct sm90_tuning<__uint128_t, flagged::no, keep_rejects::yes, offset_size::_4,
     static constexpr int threads = 192;
     static constexpr int items = 5;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<1616, 1115>;
 };
