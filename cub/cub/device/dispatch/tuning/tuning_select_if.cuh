@@ -33,7 +33,6 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/config.cuh>
 #include <cub/util_type.cuh>
-#include "cub/util_device.cuh"
 
 CUB_NAMESPACE_BEGIN
 
@@ -434,7 +433,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
     static constexpr int threads = 256;
     static constexpr int items = 18;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::no_delay_constructor_t<1130>;
 };
@@ -445,7 +444,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
     static constexpr int threads = 192;
     static constexpr int items = 10;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<832, 1165>;
 };
@@ -492,7 +491,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primi
     static constexpr int threads = 256;
     static constexpr int items = 20;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::no_delay_constructor_t<1155>;
 };
@@ -561,7 +560,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
     static constexpr int threads = 224;
     static constexpr int items = 18;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::no_delay_constructor_t<1045>;
 };
@@ -583,7 +582,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
     static constexpr int threads = 192;
     static constexpr int items = 10;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<68, 1160>;
 };
@@ -595,7 +594,7 @@ struct sm80_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, 
     static constexpr int threads = 256;
     static constexpr int items = 5;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<400, 1090>;
 };
@@ -606,7 +605,7 @@ struct sm80_tuning<__uint128_t, flagged::no, keep_rejects::yes, offset_size::_4,
     static constexpr int threads = 256;
     static constexpr int items = 5;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<400, 1090>;
 };
@@ -630,7 +629,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, prim
     static constexpr int threads = 224;
     static constexpr int items = 18;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::no_delay_constructor_t<1105>;
 };
@@ -652,7 +651,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, prim
     static constexpr int threads = 192;
     static constexpr int items = 12;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<884, 1130>;
 };
@@ -664,7 +663,7 @@ struct sm80_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4,
     static constexpr int threads = 256;
     static constexpr int items = 5;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<400, 1090>;
 };
@@ -675,7 +674,7 @@ struct sm80_tuning<__uint128_t, flagged::yes, keep_rejects::yes, offset_size::_4
     static constexpr int threads = 256;
     static constexpr int items = 5;
 
-    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
     using delay_constructor = detail::fixed_delay_constructor_t<400, 1090>;
 };
