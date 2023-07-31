@@ -134,7 +134,7 @@ struct sm90_tuning<Input, OffsetT, input_size::_8, offset_size::_4>
   static constexpr int threads = 384;
   static constexpr int items   = 7;
 
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
   using delay_constructor = detail::fixed_delay_constructor_t<464, 1165>;
 };
@@ -145,7 +145,7 @@ struct sm90_tuning<Input, OffsetT, input_size::_16, offset_size::_4>
   static constexpr int threads = 128;
   static constexpr int items   = 7;
 
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
   using delay_constructor = detail::no_delay_constructor_t<1040>;
 };
@@ -167,7 +167,7 @@ struct sm90_tuning<Input, OffsetT, input_size::_2, offset_size::_8>
   static constexpr int threads = 640;
   static constexpr int items   = 24;
 
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
   using delay_constructor = detail::no_delay_constructor_t<245>;
 };
@@ -178,7 +178,7 @@ struct sm90_tuning<Input, OffsetT, input_size::_4, offset_size::_8>
   static constexpr int threads = 256;
   static constexpr int items   = 23;
 
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
   using delay_constructor = detail::no_delay_constructor_t<910>;
 };
@@ -189,7 +189,7 @@ struct sm90_tuning<Input, OffsetT, input_size::_8, offset_size::_8>
   static constexpr int threads = 256;
   static constexpr int items   = 18;
 
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
   using delay_constructor = detail::no_delay_constructor_t<1145>;
 };
@@ -200,7 +200,7 @@ struct sm90_tuning<Input, OffsetT, input_size::_16, offset_size::_8>
   static constexpr int threads = 256;
   static constexpr int items   = 11;
 
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_TRANSPOSE;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
   using delay_constructor = detail::no_delay_constructor_t<1050>;
 };
