@@ -31,8 +31,6 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -52,30 +50,9 @@ class WarpExchangeShfl
 
   constexpr static bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
 
-  template <typename OutputT, int IDX, class = void>
-  class CompileTimeArray;
-
-  template <typename OutputT, int IDX> // terminating partial specialization
-  class CompileTimeArray<OutputT, IDX, typename ::cuda::std::enable_if<(IDX >= ITEMS_PER_THREAD)>::type>
-  {
-  protected:
-    // used for dumping back the individual values after transposing
-    InputT (&output_items)[ITEMS_PER_THREAD];
-
-    template <int>
-    __device__ void Foreach(bool, unsigned)
-    {}
-
-  public:
-    __device__ CompileTimeArray(const InputT (&)[ITEMS_PER_THREAD],
-                                OutputT (&output_items)[ITEMS_PER_THREAD])
-        : output_items{output_items}
-    {}
-  };
-
-  template <typename OutputT, int IDX> // concrete recursion class
-  class CompileTimeArray<OutputT, IDX, typename ::cuda::std::enable_if<(IDX < ITEMS_PER_THREAD)>::type>
-      : protected CompileTimeArray<OutputT, IDX + 1>
+  // concrete recursion class
+  template <typename OutputT, int IDX, int SIZE> 
+  class CompileTimeArray : protected CompileTimeArray<OutputT, IDX + 1, SIZE>
   {
   protected:
     InputT val;
@@ -222,14 +199,14 @@ class WarpExchangeShfl
 
       // NOTE: Do *NOT* try to refactor this code to use a reference, since nvcc
       //       tends to choke on it and then drop everything into local memory.
-      const InputT send_val = (xor_bit_set ? CompileTimeArray<OutputT, IDX>::val
-                                           : CompileTimeArray<OutputT, IDX + NUM_ENTRIES>::val);
+      const InputT send_val = (xor_bit_set ? CompileTimeArray<OutputT, IDX, SIZE>::val
+                                           : CompileTimeArray<OutputT, IDX + NUM_ENTRIES, SIZE>::val);
       const InputT recv_val = __shfl_xor_sync(mask, send_val, NUM_ENTRIES, LOGICAL_WARP_THREADS);
-      (xor_bit_set ? CompileTimeArray<OutputT, IDX>::val
-                   : CompileTimeArray<OutputT, IDX + NUM_ENTRIES>::val) = recv_val;
+      (xor_bit_set ? CompileTimeArray<OutputT, IDX, SIZE>::val
+                   : CompileTimeArray<OutputT, IDX + NUM_ENTRIES, SIZE>::val) = recv_val;
 
       constexpr int next_idx = IDX + 1 + ((IDX + 1) % NUM_ENTRIES == 0) * NUM_ENTRIES;
-      CompileTimeArray<OutputT, next_idx>::template Foreach<NUM_ENTRIES>(xor_bit_set, mask);
+      CompileTimeArray<OutputT, next_idx, SIZE>::template Foreach<NUM_ENTRIES>(xor_bit_set, mask);
     }
 
     // terminate recursion
@@ -249,7 +226,7 @@ class WarpExchangeShfl
   public:
     __device__ CompileTimeArray(const InputT (&input_items)[ITEMS_PER_THREAD],
                                 OutputT (&output_items)[ITEMS_PER_THREAD])
-        : CompileTimeArray<OutputT, IDX + 1>{input_items, output_items}
+        : CompileTimeArray<OutputT, IDX + 1, SIZE>{input_items, output_items}
         , val{input_items[IDX]}
     {}
 
@@ -260,6 +237,26 @@ class WarpExchangeShfl
       TransposeImpl(lane_id, mask, Int2Type<ITEMS_PER_THREAD / 2>());
     }
   };
+
+  // terminating partial specialization
+  template <typename OutputT, int SIZE> 
+  class CompileTimeArray<OutputT, SIZE, SIZE>
+  {
+  protected:
+    // used for dumping back the individual values after transposing
+    InputT (&output_items)[ITEMS_PER_THREAD];
+
+    template <int>
+    __device__ void Foreach(bool, unsigned)
+    {}
+
+  public:
+    __device__ CompileTimeArray(const InputT (&)[ITEMS_PER_THREAD],
+                                OutputT (&output_items)[ITEMS_PER_THREAD])
+        : output_items{output_items}
+    {}
+  };
+
 
   const unsigned int lane_id;
   const unsigned int warp_id;
@@ -280,7 +277,7 @@ public:
   __device__ __forceinline__ void BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
                                                    OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    CompileTimeArray<OutputT, 0> arr{input_items, output_items};
+    CompileTimeArray<OutputT, 0, ITEMS_PER_THREAD> arr{input_items, output_items};
     arr.Transpose(lane_id, member_mask);
   }
 
