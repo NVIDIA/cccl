@@ -9,17 +9,18 @@ This repository unifies three essential CUDA C++ libraries into a single, conven
 3. [CUB](https://github.com/nvidia/cub)
 
 Our goal is to provide CUDA C++ developers with the building blocks they need to make it easier to write safe and efficient code. By bringing these libraries together, we hope to streamline your development process and broaden your ability to leverage the power of CUDA C++.
+For more information about our decision to unify these projects, see our announcement here: (TODO)
 
 ## Overview
 
-The CUDA C++ Core Libraries (CCCL) grew organically out of the Thrust, CUB, and libcudacxx projects that were developed independently over the years with a similar goal: to provide a high-quality, high-performance, and easy-to-use C++ abstractions for CUDA developers.
+The concept for the CUDA C++ Core Libraries (CCCL) grew organically out of the Thrust, CUB, and libcudacxx projects that were developed independently over the years with a similar goal: to provide a high-quality, high-performance, and easy-to-use C++ abstractions for CUDA developers.
 Naturally, there was a lot of overlap among the three projects, and we realized that we could better serve the community by unifying them into a single repository.
 
 - **Thrust** is the C++ parallel algorithms library which inspired the introduction of parallel algorithms to the C++ Standard Library. Thrust's high-level interface greatly enhances programmer productivity while enabling performance portability between GPUs and multicore CPUs via configurable backends that allow using multiple parallel programming frameworks (such as CUDA, TBB, and OpenMP).
 
 - **libcudacxx** is the CUDA C++ Standard Library. It provides an implementation of the C++ Standard Library that works in both host and device code. Additionally, it provides abstractions for CUDA-specific hardware features like synchronization primitives, cache control, atomics, and more. 
 
-- **CUB** is a lower-level, CUDA-specific library designed for speed-of-light parallel algorithms across all GPU architectures. In addition to device-wide algorithms, it provides *cooperative algorithms *like block-wide reduce and warp-wide scan, providing CUDA kernel developers with building blocks to create speed-of-light, custom kernels. 
+- **CUB** is a lower-level, CUDA-specific library designed for speed-of-light parallel algorithms across all GPU architectures. In addition to device-wide algorithms, it provides *cooperative algorithms* like block-wide reduce and warp-wide scan, providing CUDA kernel developers with building blocks to create speed-of-light, custom kernels. 
 
 Bringing these libraries together enables us to better deliver the features you need as well as provide a more cohesive experience where everything “just works” out of the box.  
 Our long-term goal is to offer a single, unified, modern C++ library that merges and extends the functionality of our existing libraries and more. 
@@ -62,12 +63,14 @@ __global__ void reduce(int const* data, int* result, std::size_t N) {
 
 int main() {
   std::size_t N = 1000;
-  thrust::device_vector<int> data(N, 1);
+  // Allocate and initialize input data
+  thrust::device_vector<int> data(N);
+  thrust::fill(data.begin(), data.end(), 1);
+  // Allocate output data
   thrust::device_vector<int> kernel_result(1);
 
-  int num_blocks = (N + block_size - 1) / block_size;
-
   // Compute the sum reduction of `data` using a custom kernel
+  int num_blocks = (N + block_size - 1) / block_size;
   reduce<<<num_blocks, block_size>>>(thrust::raw_pointer_cast(data.data()),
                                      thrust::raw_pointer_cast(kernel_result.data()),
                                      N);
@@ -84,7 +87,7 @@ int main() {
   // Ensure the two solutions are identical
   std::printf("Custom Kernel Sum: %d\n", kernel_result[0]);
   std::printf("Thrust reduce Sum: %d\n", thrust_result);
-  assert(kernel_result[0] == thrust_result]);
+  assert(kernel_result[0] == thrust_result);
   return 0;
 }
 ```
@@ -103,18 +106,88 @@ If compiling with another compiler, you will need to add the include path (e.g.,
 
 ### GitHub
 
-For users that do not have the CUDA Toolkit installed, or if you want to stay on the cutting edge of CCCL development, you can clone the CCCL repository from GitHub and include it in your build system.
+For users that want to stay on the cutting edge of CCCL development, we actively support and encourage users to use CCCL from GitHub. 
+We support using a newer version of CCCL with an older version of the CUDA Toolkit, but not the other way around.
+For complete information on compatibility between CCCL and the CUDA Toolkit, see [our platform support](#platform-support).
 
+Everything in CCCL is header-only, so cloning and including it in a simple project is as easy as the following:
 ```bash
 git clone https://github.com/NVIDIA/cccl.git
 nvcc -I/path/to/cloned/cccl main.cu -o main # Note, must use -I and not -isystem or else nvcc will use the version of the headers in the CUDA Toolkit
 ```
 
-
 #### CMake Integration
+
+For more complex projects, we recommend using CMake to integrate CCCL into your project.
 
 CCCL uses [CMake](https://cmake.org/) for all of our build and installation infrastructure, including our tests as well as targets for users to link against their own projects.
 As a result, we recommend anyone using CCCL from GitHub to use CMake to integrate CCCL into your project. For a complete example of how to do this using CMake Package Manager see [our example project](examples/example_project). 
+
+Other build systems should work, but we only test CMake.
+We welcome contributions that would simplify the process of integrating CCCL into other build systems.
+
+## Platform Support and Testing
+
+In general, CCCL should work everywhere the CUDA Toolkit is supported.
+However, it is impossible for us to test every combination of compiler, CUDA Toolkit, and operating system. 
+
+### CUDA Toolkit Compatibility 
+
+We are always adding new features and improving performance to make CCCL better. 
+Therefore, our goal is to empower users to ["live at head"](https://www.youtube.com/watch?v=tISy7EJQPzI) and always use the latest version of CCCL, even if they are using an older version of the CUDA Toolkit.
+
+It is impossible for us to support every version of the CUDA Toolkit, so we have adopted a policy of supporting the current and prior major version series.
+
+Today, that means we support the following versions of the CUDA Toolkit: 
+- CUDA 11.x (11.1 - 11.8)
+- CUDA 12.x (12.0+)
+
+Unless otherwise specified, for a given minor version, we only support the latest patch release of that version. For example, CUDA 11.4.4 is supported, but CUDA 11.4.3 is not.
+
+When a new major version of the CUDA Toolkit is released, we will drop support for the oldest version. 
+For example, when CUDA 13.x is released, we will drop support for CUDA 11.x.
+
+**Important Note:** We support bringing a newer version of CCCL to an older version of the CUDA Toolkit, but not the other way around. 
+For example, if CUDA 12.3 was released with CCCL 2.2, we would not support using CCCL 2.1 with CUDA 12.3.
+This is because parts of the CUDA Toolkit depend on CCCL, so we cannot guarantee that an older version of CCCL will work with a newer version of the CUDA Toolkit.
+
+### C++ Dialects
+- C++11 (Deprecated)
+- C++14 (Deprecated)
+- C++17 
+- C++20
+
+### Host Compilers
+
+Unless otherwise specified, for a given major version of a host compiler, we only support the latest minor version of that compiler
+
+#### Linux - x86
+- GCC 6-12
+- clang 9-16
+- nvc++ latest
+
+#### Linux - ARM
+
+#### Windows - x86
+
+## Versioning
+
+CCCL uses [semantic versioning](https://semver.org/). 
+
+Prior to merging Thrust, CUB, and libcudacxx into this repository, each library was independently versioned.
+Starting with the 2.1 release, all three libraries synchronized their versions.
+Moving forward, CCCL will continue to be released under a single version, with 2.2.0 being the first release from the [nvidia/cccl](www.github.com/nvidia/cccl) repository. 
+
+### Compatibility Guidelines
+
+
+#### API Stability
+
+
+
+#### ABI Stability
+
+
 
 
 ## Frequently Asked Questions (FAQs)
