@@ -39,6 +39,7 @@
 #include <cub/util_allocator.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cstdio>
@@ -747,7 +748,7 @@ void TestNaNs()
   const auto quiet_nan = std::numeric_limits<T>::quiet_NaN();
 
   // Allocate host data
-  std::vector<T> h_in{quiet_nan, quiet_nan, quiet_nan};
+  thrust::host_vector<T> h_in{quiet_nan, quiet_nan, quiet_nan};
   const OffsetT num_items      = static_cast<OffsetT>(h_in.size());
   T *h_unique_reference        = new T[num_items];
   OffsetT *h_offsets_reference = new OffsetT[num_items];
