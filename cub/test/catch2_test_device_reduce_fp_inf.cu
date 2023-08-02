@@ -62,9 +62,6 @@ CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
    */
   SECTION("InfInArgMin")
   {
-    const int n     = 10;
-    const float inf = ::cuda::std::numeric_limits<float>::infinity();
-
     thrust::device_vector<in_t> in(n, inf);
     const in_t *d_in = thrust::raw_pointer_cast(in.data());
 
