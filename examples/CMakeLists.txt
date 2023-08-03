@@ -1,3 +1,6 @@
+
+include(../cmake/CCCLUtilities.cmake)
+
 set(cmake_opts
   -D "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   -D "CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
