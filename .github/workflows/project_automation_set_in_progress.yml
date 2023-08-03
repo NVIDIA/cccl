@@ -29,6 +29,7 @@ env:
  PR_NUMBER: ${{ github.event.pull_request.number }}
  REPO: ${{ github.event.repository.name }}
  PR_GLOBAL_ID: ${{ github.event.pull_request.node_id}}
+ GH_TOKEN: ${{ secrets.CCCL_PROJECT_AUTOMATION_TOKEN }}
 
  # The environment vars below are hard-coded from external queries to save time + complexity here
  # Note: PVT means Project V2, not "Private"
@@ -54,21 +55,12 @@ jobs:
             fi
           fi
 
-      - name: Generate token
-        id: generate_token
-        uses: tibdex/github-app-token@v1.8.0
-        with:
-          app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
-          private_key: ${{ secrets.CCCL_AUTH_APP_PEM }}
-
       - name: Wait 1 Second
         id: sleep
         run: sleep 1
         
       - name: Get PR Project ID
         id: get_pr_id
-        env:
-          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             # Query up to 10 projects for the PR
             gh api graphql -f query='
@@ -104,8 +96,6 @@ jobs:
             
       - name: Set PR Fields
         id: set_pr_fields
-        env:
-          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             gh api graphql -f query='
                 mutation {
@@ -233,8 +223,6 @@ jobs:
                   
       - name: Sync Linked Issues
         id: sync_linked_issues
-        env:
-          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             # Find the linked issues to the PR
             gh api graphql -f query='
@@ -339,8 +327,6 @@ jobs:
         id: set_pr_draft
         # only run if PR is not a draft
         if: ${{ github.event.pull_request.draft }} == false
-        env:
-            GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             # Set the PR to draft using the graphQL API
             gh api graphql -f query='
