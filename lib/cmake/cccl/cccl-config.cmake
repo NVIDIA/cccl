@@ -20,7 +20,7 @@ else()
 endif()
 
 if (NOT TARGET CCCL::CCCL)
-  add_library(CCCL::CCCL INTERFACE IMPORTED)
+  add_library(CCCL::CCCL INTERFACE IMPORTED GLOBAL)
 endif()
 
 foreach(component IN LISTS components)
