@@ -540,13 +540,13 @@ INSTANTIATE(complex);
 #undef INSTANTIATE
 
 template <class T>
-struct gt_t
+struct ge_t
 {
   T val;
 
   __device__ bool operator()(T x)
   {
-    return x > val;
+    return x >= val;
   }
 };
 
@@ -561,7 +561,7 @@ thrust::device_vector<T> gen_uniform_offsets(seed_t seed,
   segment_offsets[total_elements] = total_elements + 1;
   thrust::exclusive_scan(segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
   typename thrust::device_vector<T>::iterator iter =
-    thrust::find_if(segment_offsets.begin(), segment_offsets.end(), gt_t<T>{total_elements});
+    thrust::find_if(segment_offsets.begin(), segment_offsets.end(), ge_t<T>{total_elements});
   *iter = total_elements;
   segment_offsets.erase(iter + 1, segment_offsets.end());
   return segment_offsets;

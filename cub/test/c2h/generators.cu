@@ -27,9 +27,12 @@
 
 #define C2H_EXPORTS
 
+#include <thrust/device_vector.h>
 #include <thrust/distance.h>
 #include <thrust/execution_policy.h>
+#include <thrust/find.h>
 #include <thrust/for_each.h>
+#include <thrust/scan.h>
 #include <thrust/tabulate.h>
 
 #include <cstdint>
@@ -267,8 +270,40 @@ void gen(seed_t seed,
     random_to_custom_t<false>{d_in, d_out, element_size});
 }
 
+template <class T>
+struct greater_equal_op
+{
+  T val;
+
+  __device__ bool operator()(T x) { return x >= val; }
+};
+} // namespace detail
+
+template <typename T>
+thrust::device_vector<T>
+gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
+{
+  thrust::device_vector<T> segment_offsets(total_elements + 2);
+  gen(seed, segment_offsets, min_segment_size, max_segment_size);
+  segment_offsets[total_elements] = total_elements + 1;
+  thrust::exclusive_scan(segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
+  typename thrust::device_vector<T>::iterator iter =
+    thrust::find_if(segment_offsets.begin(),
+                    segment_offsets.end(),
+                    detail::greater_equal_op<T>{total_elements});
+  *iter = total_elements;
+  segment_offsets.erase(iter + 1, segment_offsets.end());
+  return segment_offsets;
 }
 
+template thrust::device_vector<uint32_t> gen_uniform_offsets(seed_t seed,
+                                                             uint32_t total_elements,
+                                                             uint32_t min_segment_size,
+                                                             uint32_t max_segment_size);
+template thrust::device_vector<uint64_t> gen_uniform_offsets(seed_t seed,
+                                                             uint64_t total_elements,
+                                                             uint64_t min_segment_size,
+                                                             uint64_t max_segment_size);
 
 template <typename T>
 void gen(seed_t seed,

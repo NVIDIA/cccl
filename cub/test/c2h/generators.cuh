@@ -99,5 +99,13 @@ void gen(seed_t seed,
 template <typename T>
 void gen(modulo_t mod, thrust::device_vector<T> &data);
 
+/**
+ * @brief Generates an array of offsets with uniformly distributed segment sizes in the range
+ * between [min_segment_size, max_segment_size].
+ */
+template <typename T>
+thrust::device_vector<T>
+gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size);
+
 } // c2h
 
