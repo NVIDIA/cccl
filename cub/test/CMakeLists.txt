@@ -16,7 +16,14 @@ option(METAL_BUILD_EXAMPLES OFF)
 option(METAL_BUILD_TESTS OFF)
 CPMAddPackage("gh:brunocodutra/metal@2.1.4")
 
-find_package(CUDAToolkit REQUIRED)
+find_package(CUDAToolkit)
+
+set(curand_default OFF)
+if (CUDA_curand_LIBRARY)
+  set(curand_default ON)
+endif()
+
+option(CUB_C2H_ENABLE_CURAND "Use CUDA CURAND library" ${curand_default})
 
 # The function below reads the filepath `src`, extracts the %PARAM% comments,
 # and fills `labels_var` with a list of `label1_value1.label2_value2...`
@@ -160,7 +167,14 @@ function(cub_add_test target_name_var test_name test_src cub_target)
 
       cub_clone_target_properties(${config_c2h_target} ${cub_target})
       cub_configure_cuda_target(${config_c2h_target} RDC ${use_rdc_for_catch2_utils})
-      target_link_libraries(${config_c2h_target} PRIVATE CUDA::curand ${cub_target})
+
+      target_link_libraries(${config_c2h_target} PRIVATE ${cub_target})
+      if (CUB_C2H_ENABLE_CURAND)
+        target_link_libraries(${config_c2h_target} PRIVATE CUDA::curand)
+        target_compile_definitions(${config_c2h_target} PRIVATE C2H_HAS_CURAND=1)
+      else()
+        target_compile_definitions(${config_c2h_target} PRIVATE C2H_HAS_CURAND=0)
+      endif()
 
       if (CUB_IN_THRUST)
         thrust_fix_clang_nvcc_build_for(${config_c2h_target})
@@ -183,7 +197,7 @@ function(cub_add_test target_name_var test_name test_src cub_target)
           ${config_c2h_target}
           Metal
           Catch2::Catch2
-          CUDA::cudart
+          CUDA::curand
         )
         cub_clone_target_properties(${config_c2run_target} ${cub_target})
         cub_configure_cuda_target(${config_c2run_target} RDC ${use_rdc_for_catch2_utils})

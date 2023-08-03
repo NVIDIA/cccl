@@ -28,9 +28,10 @@ do
   -h)     usage ;;
   -help)  usage ;;
   --help) usage ;;
-  --verbose) VERBOSE=1; shift ;;
-  -v)        VERBOSE=1; shift ;;
-  -nvcc) CUDA_COMPILER="${2}"; shift 2;;
+  --verbose)           VERBOSE=1; shift ;;
+  -v)                  VERBOSE=1; shift ;;
+  -nvcc)               CUDA_COMPILER="${2}"; shift 2;;
+  -disable-benchmarks) ENABLE_CUB_BENCHMARKS="false"; shift ;;
   *) usage ;;
   esac
 done
