@@ -25,7 +25,6 @@ env:
  ORG: ${{ github.event.repository.owner.login }}
  PR_NUMBER: ${{ github.event.pull_request.number }}
  REPO: ${{ github.event.repository.name }}
- GH_TOKEN: ${{ secrets.CCCL_PROJECT_AUTOMATION_TOKEN }}
 
  # The environment vars below are hard-coded from external queries to save time + complexity here
  # Note: PVT means Project V2, not "Private"
@@ -39,12 +38,21 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@v1.8.0
+        with:
+          app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
+          private_key: ${{ secrets.CCCL_AUTH_APP_PEM }}
+
       - name: Wait 1 Second
         id: sleep
         run: sleep 1
         
       - name: Get PR Project ID
         id: get_pr_id
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             # Query up to 10 projects for the PR
             gh api graphql -f query='
@@ -80,6 +88,8 @@ jobs:
 
       - name: Set PR to In Review
         id: set_pr_in_review
+        env: 
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             # Update the PR status to In Review
             gh api graphql -f query='
@@ -103,6 +113,8 @@ jobs:
 
       - name: Set Linked Issues to In Review
         id: update_linked_issues
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             gh api graphql -f query='
               query {
