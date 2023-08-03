@@ -24,7 +24,7 @@ Naturally, there was a lot of overlap among the three projects, and we realized 
 
 Bringing these libraries together enables us to better deliver the features you need as well as provide a more cohesive experience where everything “just works” out of the box.  
 Our long-term goal is to offer a single, unified, modern C++ library that merges and extends the functionality of our existing libraries and more. 
-We envisage the CUDA C++ Core Libraries to fill a similar role that the Standard C++ Library fills for Standard C++ – equipping you with general-purpose, speed-of-light tools to focus on solving the problems you care about, not boilerplate.
+We envision the CUDA C++ Core Libraries to fill a similar role that the Standard C++ Library fills for Standard C++ – equipping you with general-purpose, speed-of-light tools to focus on solving the problems you care about, not boilerplate.
 
 ## Example
 
@@ -34,7 +34,7 @@ It shows how to use Thrust/CUB/libcudacxx to implement a simple parallel reducti
 computes the sum of a subset of the array using `cub::BlockRecuce`. The sum of each block is then reduced 
 to a single value using an atomic add via `cuda::atomic_ref` from libcudacxx.
 
-It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares to the results.
+It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
 
 ```cpp
 #include <thrust/device_vector.h>
@@ -95,7 +95,8 @@ int main() {
 ## Getting Started
 
 ### CUDA Toolkit 
-The easiest way to get started using CCCL is if you already have the [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit), then you already have CCCL installed on your system and when compiling with `nvcc` you can simply include the desired headers in your code with no additional configuration required.
+The easiest way to get started using CCCL is if you already have the [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit), then you already have CCCL installed on your system.
+When you compile with `nvcc` you can simply include the desired headers in your code with no additional configuration required.
 If compiling with another compiler, you will need to add the include path (e.g., `/usr/local/cuda/include`) to the CCCL headers to your build system.
 
 ```cpp
@@ -121,15 +122,17 @@ nvcc -I/path/to/cloned/cccl main.cu -o main # Note, must use -I and not -isystem
 For more complex projects, we recommend using CMake to integrate CCCL into your project.
 
 CCCL uses [CMake](https://cmake.org/) for all of our build and installation infrastructure, including our tests as well as targets for users to link against their own projects.
-As a result, we recommend anyone using CCCL from GitHub to use CMake to integrate CCCL into your project. For a complete example of how to do this using CMake Package Manager see [our example project](examples/example_project). 
+As a result, we recommend anyone using CCCL from GitHub to use CMake to integrate CCCL into your project. 
+For a complete example of how to do this using CMake Package Manager see [our example project](examples/example_project). 
 
 Other build systems should work, but we only test CMake.
 We welcome contributions that would simplify the process of integrating CCCL into other build systems.
 
 ## Platform Support
 
-In general, CCCL should work everywhere the CUDA Toolkit is supported.
-However, it is impossible for us to test every combination of compiler, CUDA Toolkit, and operating system. 
+In general, CCCL should work everywhere the CUDA Toolkit is supported, however, the devil is in the details. 
+The sections below describe the details of our support for different versions of the CUDA Toolkit, host compilers, and C++ dialects.
+Furthermore, because it is infeasible to test every environment we support, we describe our testing strategy that we use to be confident that CCCL works everywhere it should. 
 
 ### CUDA Toolkit Compatibility 
 
@@ -172,21 +175,17 @@ Unless otherwise specified, we support all the same host compilers as the CUDA T
 
 ### Testing Strategy
 
-The sections above describe the platforms where CCCL _should_ work. 
-However, it is impractical for us to test every combination of compiler, CUDA Toolkit, and operating system.
-Therefore it is impossible for us to _guarantee_ that all the environments lsited above are supported.
+It is impractical for us to test every combination of compiler, CUDA Toolkit, and operating system that we support.
 
-If you ascribe to the rule that "You only support what you test", then this section is for you.
-We have adopted a testing strategy that balances the need to test as many configurations as possible with the need to keep our CI times reasonable.
+If you subscribe to the notion that "You only support what you test", we have adopted a testing strategy that balances the need to test as many configurations as possible with the need to keep our CI times reasonable.
 
 For CUDA Toolkit versions, we test against the oldest and the newest version that we support. 
 For example, if the latest version of the CUDA Toolkit is 12.3, we test against 11.1 and 12.3.
-For each CUDA version, we test against all of the supported host compilers with all of the supported C++ dialects.
+For each CUDA version, we build against all of the supported host compilers with all of the supported C++ dialects.
 
-Our testing strategy and matrix is constantly evolving. 
-We strive to make the matrix defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file our single source of truth.
-If you ever have a question about what we test, please refer to that file.
-
+Our testing strategy and matrix are constantly evolving. 
+The matrix defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file is our single source of truth and you can review it to see exactly what we test against.
+For more information about our CI pipeline, see [here](ci-overview.md).
 
 ## Versioning
 
@@ -198,9 +197,9 @@ Moving forward, CCCL will continue to be released under a single version, with 2
 
 ### Compatibility Guarantees
 
-Informally, SemVer states that "breaking changes" are only allowed in major version updates.
+Informally, SemVer states that changes that break a libraries API are only allowed in major version updates.
 However, SemVer is clear that library authors are responsible for defining what constitutes their public API as well as what constitutes a breaking change to that API.
-For example, in C++ code, there are many changes that could cause build or runtime failures, but are not considered breaking changes. 
+For example, in C++ code, there are many changes that could cause build failures, but may not be considered breaking changes that would require a major version update.
 
 In CCCL, we want to be very clear about what we consider to be a breaking change and what compatibility guarantees we make. 
 
@@ -215,11 +214,6 @@ Entities in the `cuda::` namespace adhere to the ABI stability guarantees descri
 ### Compatibility Guidelines
 
 It is impractical to provide an exhaustive list of all possible breaking changes, but there are some general guidelines we can provide that will minimize the risk of breakages. 
-
-
-
-
-
 
 ## Frequently Asked Questions (FAQs)
 
