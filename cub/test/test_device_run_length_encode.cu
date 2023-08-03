@@ -31,6 +31,9 @@
  ******************************************************************************/
 
 // Ensure printing of CUDA runtime errors to console
+#include "cub/block/block_load.cuh"
+#include "cub/thread/thread_load.cuh"
+#include "thrust/detail/raw_reference_cast.h"
 #define CUB_STDERR
 
 #include <cub/device/device_run_length_encode.cuh>
@@ -40,6 +43,7 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/sequence.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cstdio>
@@ -779,6 +783,123 @@ void TestNaNs()
                  num_items);
 }
 
+
+template <bool TimeSlicing>
+struct device_rle_policy_hub
+{
+  static constexpr int threads = 96;
+  static constexpr int items = 15;
+
+  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
+  {
+    using RleSweepPolicyT = cub::AgentRlePolicy<threads,
+                                                items,
+                                                cub::BLOCK_LOAD_DIRECT,
+                                                cub::LOAD_DEFAULT,
+                                                TimeSlicing,
+                                                cub::BLOCK_SCAN_WARP_SCANS>;
+  };
+
+  using MaxPolicy = Policy350;
+};
+
+template <bool TimeSlicing>
+void TestTrivialRunsInFirstTile()
+{
+  using policy_hub_t = device_rle_policy_hub<TimeSlicing>;
+  using offset_t = int;
+  using keys_input_it_t = const int*;
+  using offset_output_it_t = offset_t*;
+  using length_output_it_t = offset_t*;
+  using num_runs_output_iterator_t = offset_t*;
+  using equality_op_t = cub::Equality;
+
+  using dispatch_t = cub::DeviceRleDispatch<keys_input_it_t,
+                                            offset_output_it_t,
+                                            length_output_it_t,
+                                            num_runs_output_iterator_t,
+                                            equality_op_t,
+                                            offset_t,
+                                            policy_hub_t>;
+
+  constexpr int tile_size = policy_hub_t::threads * policy_hub_t::items; 
+  constexpr int elements = 2 * tile_size;
+
+  thrust::host_vector<int> h_keys(elements);
+  thrust::sequence(h_keys.begin(), h_keys.begin() + tile_size);
+
+  int non_trivial_runs = 0;
+  int value            = tile_size;
+  int large_group_size = 3;
+  for (int i = 0; i < tile_size; i++)
+  {
+    int j = 0;
+    for (; j < large_group_size && i < tile_size; ++j, ++i)
+    {
+      h_keys[tile_size + i] = value;
+    }
+    if (j == large_group_size)
+    {
+      ++non_trivial_runs;
+    }
+    ++value;
+
+    if (i < tile_size)
+    {
+      h_keys[tile_size + i] = value;
+    }
+    ++value;
+  }
+
+  thrust::device_vector<int> d_keys = h_keys;
+  thrust::device_vector<int> lengths(elements + 1);
+  thrust::device_vector<int> offsets(elements + 1);
+  thrust::device_vector<int> num_runs(1);
+
+  const int magic_number = elements + 1;
+  lengths[0] = magic_number;
+  offsets[0] = magic_number;
+
+  int *d_in_keys  = thrust::raw_pointer_cast(d_keys.data());
+  int *d_lengths  = thrust::raw_pointer_cast(lengths.data()) + 1;
+  int *d_offsets  = thrust::raw_pointer_cast(offsets.data()) + 1;
+  int *d_num_runs = thrust::raw_pointer_cast(num_runs.data());
+
+  std::size_t temp_storage_bytes = 0;
+  std::uint8_t *d_temp_storage{};
+
+  CubDebugExit(dispatch_t::Dispatch(d_temp_storage,
+                                    temp_storage_bytes,
+                                    d_in_keys,
+                                    d_offsets,
+                                    d_lengths,
+                                    d_num_runs,
+                                    equality_op_t{},
+                                    elements,
+                                    0));
+
+  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  CubDebugExit(dispatch_t::Dispatch(d_temp_storage,
+                                    temp_storage_bytes,
+                                    d_in_keys,
+                                    d_offsets,
+                                    d_lengths,
+                                    d_num_runs,
+                                    equality_op_t{},
+                                    elements,
+                                    0));
+  CubDebugExit(cudaDeviceSynchronize());
+  const int actual_num_runs = num_runs[0];
+  const int first_length    = lengths[0];
+  const int first_offset    = offsets[0];
+
+  AssertEquals(non_trivial_runs, actual_num_runs);
+  AssertEquals(first_length, magic_number);
+  AssertEquals(first_offset, magic_number);
+}
+
 //---------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------
@@ -835,6 +956,9 @@ int main(int argc, char **argv)
   TestSize<ulonglong4, int, int>(num_items);
   TestSize<TestFoo, int, int>(num_items);
   TestSize<TestBar, int, int>(num_items);
+
+  TestTrivialRunsInFirstTile<false>();
+  TestTrivialRunsInFirstTile<true>();
 
   return 0;
 }
