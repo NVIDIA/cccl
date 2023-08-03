@@ -137,7 +137,7 @@ The CCCL team is committed to providing new features, enhancements, and performa
 As such, we encourage our users to ["live at head"](https://www.youtube.com/watch?v=tISy7EJQPzI) and always use the latest version of CCCL. 
 This applies even if you're using an older version of the CUDA Toolkit.
 
-While we want to support as many users as possible, it is unfeasible for us to support every CUDA Toolkit release, therefore our policy is to always support two major version series: the current and preceding. 
+While we want to support as many users as possible, it is infeasible for us to support every CUDA Toolkit release, therefore our policy is to always support two major version series: the current and preceding. 
 
 Today, we support the following CUDA Toolkit versions: 
 - CUDA 11.x (11.1 - 11.8)
@@ -158,24 +158,17 @@ Exceptions to this might occur if a future CUDA Toolkit discontinues support for
 For example, if CUDA 12.3 was released with CCCL 2.2, we would not support using CCCL 2.1 with CUDA 12.3.
 This is because certain components of the CUDA Toolkit depend on CCCL, so an older CCCL version might lack essential features required by a newer CUDA Toolkit version.
 
+### Host Compilers
+
+Unless otherwise specified, we support all the same host compilers as the CUDA Toolkit, which are documented here:
+- [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#host-compiler-support-policy)
+- [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements)
+
 ### C++ Dialects
 - C++11 (Deprecated in Thrust/CUB)
 - C++14 (Deprecated in Thrust/CUB)
 - C++17 
 - C++20
-
-### Host Compilers
-
-Unless otherwise specified, for a given major version of a host compiler, we only support the latest minor version of that compiler
-
-#### Linux - x86
-- GCC 6-12
-- clang 9-16
-- nvc++ latest
-
-#### Linux - ARM
-
-#### Windows - x86
 
 ### Testing Strategy
 
