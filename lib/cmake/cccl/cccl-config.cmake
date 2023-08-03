@@ -42,7 +42,7 @@ foreach(component IN LISTS components)
     )
     # Can't alias other alias targets, so use the uglified target name instead
     # of libcudacxx::libcudacxx:
-    if (TARGET _libcudacxx_libcudacxx)
+    if (TARGET _libcudacxx_libcudacxx AND NOT TARGET CCCL::libcudacxx)
       add_library(CCCL::libcudacxx ALIAS _libcudacxx_libcudacxx)
       target_link_libraries(CCCL::CCCL INTERFACE CCCL::libcudacxx)
     endif()
@@ -57,7 +57,7 @@ foreach(component IN LISTS components)
     )
     # Can't alias other alias targets, so use the uglified target name instead
     # of CUB::CUB:
-    if (TARGET _CUB_CUB)
+    if (TARGET _CUB_CUB AND NOT TARGET CCCL::CUB)
       add_library(CCCL::CUB ALIAS _CUB_CUB)
       target_link_libraries(CCCL::CCCL INTERFACE CCCL::CUB)
     endif()
@@ -71,7 +71,7 @@ foreach(component IN LISTS components)
         "${cccl_cmake_dir}/.."                            # Install layout
     )
 
-    if (TARGET Thrust::Thrust)
+    if (TARGET Thrust::Thrust AND NOT CCCL::Thrust)
       # By default, configure a CCCL::Thrust target with host=cpp device=cuda
       option(CCCL_ENABLE_DEFAULT_THRUST_TARGET
         "Create a CCCL::Thrust target using CCCL_THRUST_[HOST|DEVICE]_SYSTEM."
