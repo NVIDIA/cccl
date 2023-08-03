@@ -19,7 +19,7 @@ CPMAddPackage("gh:brunocodutra/metal@2.1.4")
 find_package(CUDAToolkit)
 
 set(curand_default OFF)
-if (CUDAToolkit_FOUND)
+if (CUDA_curand_LIBRARY)
   set(curand_default ON)
 endif()
 
@@ -197,6 +197,7 @@ function(cub_add_test target_name_var test_name test_src cub_target)
           ${config_c2h_target}
           Metal
           Catch2::Catch2
+          CUDA::curand
         )
         cub_clone_target_properties(${config_c2run_target} ${cub_target})
         cub_configure_cuda_target(${config_c2run_target} RDC ${use_rdc_for_catch2_utils})
