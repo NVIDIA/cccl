@@ -126,34 +126,41 @@ As a result, we recommend anyone using CCCL from GitHub to use CMake to integrat
 Other build systems should work, but we only test CMake.
 We welcome contributions that would simplify the process of integrating CCCL into other build systems.
 
-## Platform Support and Testing
+## Platform Support
 
 In general, CCCL should work everywhere the CUDA Toolkit is supported.
 However, it is impossible for us to test every combination of compiler, CUDA Toolkit, and operating system. 
 
 ### CUDA Toolkit Compatibility 
 
-We are always adding new features and improving performance to make CCCL better. 
-Therefore, our goal is to empower users to ["live at head"](https://www.youtube.com/watch?v=tISy7EJQPzI) and always use the latest version of CCCL, even if they are using an older version of the CUDA Toolkit.
+The CCCL team is committed to providing new features, enhancements, and performance improvements. 
+As such, we encourage our users to ["live at head"](https://www.youtube.com/watch?v=tISy7EJQPzI) and always use the latest version of CCCL. 
+This applies even if you're using an older version of the CUDA Toolkit.
 
-It is impossible for us to support every version of the CUDA Toolkit, so we have adopted a policy of supporting the current and prior major version series.
+While we want to support as many users as possible, it is unfeasible for us to support every CUDA Toolkit release, therefore our policy is to always support two major version series: the current and preceding. 
 
-Today, that means we support the following versions of the CUDA Toolkit: 
+Today, we support the following CUDA Toolkit versions: 
 - CUDA 11.x (11.1 - 11.8)
 - CUDA 12.x (12.0+)
 
 Unless otherwise specified, for a given minor version, we only support the latest patch release of that version. For example, CUDA 11.4.4 is supported, but CUDA 11.4.3 is not.
 
 When a new major version of the CUDA Toolkit is released, we will drop support for the oldest version. 
-For example, when CUDA 13.x is released, we will drop support for CUDA 11.x.
+For example, when CUDA 13.0 is released, we will drop support for CUDA 11.x.
 
-**Important Note:** We support bringing a newer version of CCCL to an older version of the CUDA Toolkit, but not the other way around. 
+Please note that this policy doesn't imply that all CCCL features will be compatible with older CUDA Toolkit versions.
+While we strive to ensure backward compatibility as much as possible, some new CCCL features might rely on new CUDA Toolkit features, and therefore would be incompatible with older versions.  
+
+However, you can generally expect if a CCCL feature worked with its corresponding CUDA Toolkit release, it should continue to work with newer CCCL versions. 
+Exceptions to this might occur if a future CUDA Toolkit discontinues support for a feature relied upon by a CCCL feature.
+
+**Important Note:** Our compatibility policy allows for the use of a newer CCCL version with an older CUDA Toolkit, but not vice versa.
 For example, if CUDA 12.3 was released with CCCL 2.2, we would not support using CCCL 2.1 with CUDA 12.3.
-This is because parts of the CUDA Toolkit depend on CCCL, so we cannot guarantee that an older version of CCCL will work with a newer version of the CUDA Toolkit.
+This is because certain components of the CUDA Toolkit depend on CCCL, so an older CCCL version might lack essential features required by a newer CUDA Toolkit version.
 
 ### C++ Dialects
-- C++11 (Deprecated)
-- C++14 (Deprecated)
+- C++11 (Deprecated in Thrust/CUB)
+- C++14 (Deprecated in Thrust/CUB)
 - C++17 
 - C++20
 
@@ -170,6 +177,24 @@ Unless otherwise specified, for a given major version of a host compiler, we onl
 
 #### Windows - x86
 
+### Testing Strategy
+
+The sections above describe the platforms where CCCL _should_ work. 
+However, it is impractical for us to test every combination of compiler, CUDA Toolkit, and operating system.
+Therefore it is impossible for us to _guarantee_ that all the environments lsited above are supported.
+
+If you ascribe to the rule that "You only support what you test", then this section is for you.
+We have adopted a testing strategy that balances the need to test as many configurations as possible with the need to keep our CI times reasonable.
+
+For CUDA Toolkit versions, we test against the oldest and the newest version that we support. 
+For example, if the latest version of the CUDA Toolkit is 12.3, we test against 11.1 and 12.3.
+For each CUDA version, we test against all of the supported host compilers with all of the supported C++ dialects.
+
+Our testing strategy and matrix is constantly evolving. 
+We strive to make the matrix defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file our single source of truth.
+If you ever have a question about what we test, please refer to that file.
+
+
 ## Versioning
 
 CCCL uses [semantic versioning](https://semver.org/). 
@@ -178,14 +203,27 @@ Prior to merging Thrust, CUB, and libcudacxx into this repository, each library 
 Starting with the 2.1 release, all three libraries synchronized their versions.
 Moving forward, CCCL will continue to be released under a single version, with 2.2.0 being the first release from the [nvidia/cccl](www.github.com/nvidia/cccl) repository. 
 
-### Compatibility Guidelines
+### Compatibility Guarantees
 
+Informally, SemVer states that "breaking changes" are only allowed in major version updates.
+However, SemVer is clear that library authors are responsible for defining what constitutes their public API as well as what constitutes a breaking change to that API.
+For example, in C++ code, there are many changes that could cause build or runtime failures, but are not considered breaking changes. 
+
+In CCCL, we want to be very clear about what we consider to be a breaking change and what compatibility guarantees we make. 
 
 #### API Stability
 
+#### ABI Stability - Binary Compatibility
+
+Today, entities in the `thrust::` and `cub::` namespaces do not guarantee ABI stability from one release to the next.
+
+Entities in the `cuda::` namespace adhere to the ABI stability guarantees described [here](libcudacxx/docs/releases/versioning.md#libcu-abi-versioning).
+
+### Compatibility Guidelines
+
+It is impractical to provide an exhaustive list of all possible breaking changes, but there are some general guidelines we can provide that will minimize the risk of breakages. 
 
 
-#### ABI Stability
 
 
 
