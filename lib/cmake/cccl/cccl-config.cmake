@@ -77,6 +77,7 @@ foreach(component IN LISTS components)
         "Create a CCCL::Thrust target using CCCL_THRUST_[HOST|DEVICE]_SYSTEM."
         ON
       )
+      mark_as_advanced(CCCL_ENABLE_DEFAULT_THRUST_TARGET)
       if (CCCL_ENABLE_DEFAULT_THRUST_TARGET)
         thrust_create_target(CCCL::Thrust FROM_OPTIONS
           HOST_OPTION CCCL_THRUST_HOST_SYSTEM
@@ -85,6 +86,7 @@ foreach(component IN LISTS components)
             "Host system for CCCL::Thrust target."
           DEVICE_OPTION_DOC
             "Device system for CCCL::Thrust target."
+          ADVANCED
         )
         target_link_libraries(CCCL::CCCL INTERFACE CCCL::Thrust)
       endif()
