@@ -100,6 +100,7 @@ CUB_TEST("Device reduce works with all device interfaces",
   INFO("Test num_items: " << num_items);
 
   // Range of segment sizes to generate
+  // Note that the segment range [0, 1] may also include one last segment with more than 1 items
   const std::tuple<offset_t, offset_t> seg_size_range =
     GENERATE_COPY(table<offset_t, offset_t>({{0, 1}, {1, num_items}, {num_items, num_items}}));
   INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", "

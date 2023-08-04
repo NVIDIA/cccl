@@ -101,7 +101,10 @@ void gen(modulo_t mod, thrust::device_vector<T> &data);
 
 /**
  * @brief Generates an array of offsets with uniformly distributed segment sizes in the range
- * between [min_segment_size, max_segment_size].
+ * between [min_segment_size, max_segment_size]. The lasst offset in the array corresponds to
+ * `total_element`. At most `total_element+2` offsets (or `total_elements+1` segments) and, because
+ * the very last offset must corresponds to `total_element`, the last segment may comprise more than
+ * `max_segment_size` items.
  */
 template <typename T>
 thrust::device_vector<T>
