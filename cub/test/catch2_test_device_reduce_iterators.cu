@@ -42,7 +42,6 @@
 #include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
-#include <nv/target>
 
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::Sum, device_sum);

@@ -36,7 +36,6 @@
 #include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
-#include <nv/target>
 
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
