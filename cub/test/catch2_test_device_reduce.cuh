@@ -393,11 +393,18 @@ void compute_segmented_argmin_reference(const thrust::device_vector<item_t> &d_i
   const auto num_segments = h_offsets.size() - 1;
   for (std::size_t seg = 0; seg < num_segments; seg++)
   {
-    auto expected_result_it = std::min_element(h_items.cbegin() + h_offsets[seg],
-                                               h_items.cbegin() + h_offsets[seg + 1]);
-    int result_offset =
-      static_cast<int>(thrust::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
-    h_results[seg] = {result_offset, *expected_result_it};
+    if (h_offsets[seg] >= h_offsets[seg + 1])
+    {
+      h_results[seg] = {1, cub::Traits<item_t>::Max()};
+    }
+    else
+    {
+      auto expected_result_it = std::min_element(h_items.cbegin() + h_offsets[seg],
+                                                 h_items.cbegin() + h_offsets[seg + 1]);
+      int result_offset =
+        static_cast<int>(thrust::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
+      h_results[seg] = {result_offset, *expected_result_it};
+    }
   }
 }
 
@@ -415,11 +422,18 @@ void compute_segmented_argmax_reference(const thrust::device_vector<item_t> &d_i
   const auto num_segments = h_offsets.size() - 1;
   for (std::size_t seg = 0; seg < num_segments; seg++)
   {
-    auto expected_result_it = std::max_element(h_items.cbegin() + h_offsets[seg],
-                                               h_items.cbegin() + h_offsets[seg + 1]);
-    int result_offset =
-      static_cast<int>(thrust::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
-    h_results[seg] = {result_offset, *expected_result_it};
+    if (h_offsets[seg] >= h_offsets[seg + 1])
+    {
+      h_results[seg] = {1, cub::Traits<item_t>::Lowest()};
+    }
+    else
+    {
+      auto expected_result_it = std::max_element(h_items.cbegin() + h_offsets[seg],
+                                                 h_items.cbegin() + h_offsets[seg + 1]);
+      int result_offset =
+        static_cast<int>(thrust::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
+      h_results[seg] = {result_offset, *expected_result_it};
+    }
   }
 }
 

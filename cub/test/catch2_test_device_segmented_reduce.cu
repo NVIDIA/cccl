@@ -101,7 +101,7 @@ CUB_TEST("Device reduce works with all device interfaces",
 
   // Range of segment sizes to generate
   const std::tuple<offset_t, offset_t> seg_size_range =
-    GENERATE_COPY(table<offset_t, offset_t>({{1, 1}, {1, num_items}, {num_items, num_items}}));
+    GENERATE_COPY(table<offset_t, offset_t>({{0, 1}, {1, num_items}, {num_items, num_items}}));
   INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", "
                                 << std::get<1>(seg_size_range) << "]");
 
@@ -187,7 +187,7 @@ CUB_TEST("Device reduce works with all device interfaces",
     compute_segmented_problem_reference(in_items,
                                         segment_offsets,
                                         op_t{},
-                                        cub::NumericTraits<accum_t>::Max(),
+                                        cub::NumericTraits<item_t>::Max(),
                                         expected_result.begin());
 
     // Run test
@@ -213,7 +213,7 @@ CUB_TEST("Device reduce works with all device interfaces",
     compute_segmented_problem_reference(in_items,
                                         segment_offsets,
                                         op_t{},
-                                        cub::NumericTraits<accum_t>::Lowest(),
+                                        cub::NumericTraits<item_t>::Lowest(),
                                         expected_result.begin());
 
     // Run test
