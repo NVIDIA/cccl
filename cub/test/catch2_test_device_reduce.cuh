@@ -335,7 +335,7 @@ void compute_segmented_problem_reference(const thrust::device_vector<item_t> &d_
   thrust::host_vector<offset_t> h_offsets(d_offsets);
   auto seg_sizes_it = thrust::make_transform_iterator(
     thrust::make_counting_iterator(std::size_t{0}),
-    [offsets_it = h_offsets.cbegin()](auto i) { return offsets_it[i + 1] - offsets_it[i]; });
+    [offsets_it = h_offsets.cbegin()](std::size_t i) { return offsets_it[i + 1] - offsets_it[i]; });
   std::size_t num_segments = h_offsets.size() - 1;
 
   compute_host_reference(h_items.cbegin(),
@@ -365,7 +365,7 @@ void compute_segmented_problem_reference(in_it_t in_it,
   thrust::host_vector<offset_t> h_offsets(d_offsets);
   auto seg_sizes_it = thrust::make_transform_iterator(
     thrust::make_counting_iterator(std::size_t{0}),
-    [offsets_it = h_offsets.cbegin()](auto i) { return offsets_it[i + 1] - offsets_it[i]; });
+    [offsets_it = h_offsets.cbegin()](std::size_t i) { return offsets_it[i + 1] - offsets_it[i]; });
   std::size_t num_segments = h_offsets.size() - 1;
 
   compute_host_reference(in_it,
