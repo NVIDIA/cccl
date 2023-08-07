@@ -14,9 +14,11 @@ from Thrust. The sum is then printed to the console.
 #include <cub/block/block_reduce.cuh>
 #include <cuda/atomic>
 
+constexpr int block_size = 256;
+
 __global__ void sumKernel(int const* data, int* result, std::size_t N)
 {
-    using BlockReduce = cub::BlockReduce<int, 256> ;
+    using BlockReduce = cub::BlockReduce<int, block_size> ;
 
     __shared__ typename BlockReduce::TempStorage temp_storage;
 
@@ -41,11 +43,10 @@ int main()
     thrust::device_vector<int> data(N, 1);
     thrust::device_vector<int> result(1);
 
-    int blockSize = 256;
-    int numBlocks = (N + blockSize - 1) / blockSize;
+    int numBlocks = (N + block_size - 1) / block_size;
 
-    sumKernel<<<numBlocks, blockSize>>>(thrust::raw_pointer_cast(data.data()),
-                                        thrust::raw_pointer_cast(result.data()), N);
+    sumKernel<<<numBlocks, block_size>>>(thrust::raw_pointer_cast(data.data()),
+                                         thrust::raw_pointer_cast(result.data()), N);
 
     auto err = cudaDeviceSynchronize();
     if(err != cudaSuccess){
