@@ -257,7 +257,6 @@ struct AgentRle
                 WarpExchangePairsStorage                        exchange_pairs[ACTIVE_EXCHANGE_WARPS];
                 typename WarpExchangeOffsets::TempStorage       exchange_offsets[ACTIVE_EXCHANGE_WARPS];
                 typename WarpExchangeLengths::TempStorage       exchange_lengths[ACTIVE_EXCHANGE_WARPS];
-
             } scatter_aliasable;
 
         } aliasable;
@@ -377,6 +376,12 @@ struct AgentRle
         #pragma unroll
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {
+            // input                   output
+            // items [ 0 0 0 1 2 3 3 ]
+            // heads [ 1 0 0 1 1 1 0 ]
+            // tails [ 0 0 1 1 1 0 1 ]
+            // key   [ 1 0 0 0 0 1 0 ]  head && !tail - heads of non-trivial (length > 1) runs
+            // value [ 1 1 1 0 0 1 1 ] !head || !tail - elements of non-trivial runs
             lengths_and_num_runs[ITEM].key      = head_flags[ITEM] && (!tail_flags[ITEM]);
             lengths_and_num_runs[ITEM].value    = ((!head_flags[ITEM]) || (!tail_flags[ITEM]));
         }
@@ -405,6 +410,16 @@ struct AgentRle
         identity.value = 0;
 
         LengthOffsetPair thread_inclusive;
+
+        // `thread_exclusive_in_warp.key`:
+        //      number of non-trivial runs starts in previous threads
+        // `thread_exclusive_in_warp.val`: 
+        //      number of items in the last non-trivial run in previous threads
+
+        // `thread_aggregate.key`:
+        //      number of non-trivial runs starts in this thread
+        // `thread_aggregate.val`: 
+        //      number of items in the last non-trivial run in this thread
         LengthOffsetPair thread_aggregate = internal::ThreadReduce(lengths_and_num_runs, scan_op);
         WarpScanPairs(temp_storage.aliasable.scan_storage.warp_scan[warp_id]).Scan(
             thread_aggregate,
@@ -413,18 +428,39 @@ struct AgentRle
             identity,
             scan_op);
 
+        // `thread_inclusive.key`:
+        //      number of non-trivial runs starts in this and previous warp threads
+        // `thread_inclusive.val`: 
+        //      number of items in the last non-trivial run in this or previous warp threads
+
         // Last lane in each warp shares its warp-aggregate
         if (lane_id == WARP_THREADS - 1)
+        {
+            // `temp_storage.aliasable.scan_storage.warp_aggregates[warp_id].key`:
+            //      number of non-trivial runs starts in this warp
+            // `temp_storage.aliasable.scan_storage.warp_aggregates[warp_id].val`:
+            //      number of items in the last non-trivial run in this warp
             temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[warp_id] = thread_inclusive;
+        }
 
         CTA_SYNC();
 
         // Accumulate total selected and the warp-wide prefix
-        warp_exclusive_in_tile          = identity;
-        warp_aggregate                  = temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[warp_id];
-        tile_aggregate                  = temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[0];
 
-        #pragma unroll
+        // `warp_exclusive_in_tile.key`:
+        //      number of non-trivial runs starts in previous warps
+        // `warp_exclusive_in_tile.val`:
+        //      number of items in the last non-trivial run in previous warps
+        warp_exclusive_in_tile = identity;
+        warp_aggregate = temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[warp_id];
+
+        // `tile_aggregate.key`:
+        //      number of non-trivial runs starts in this CTA
+        // `tile_aggregate.val`:
+        //      number of items in the last non-trivial run in this CTA
+        tile_aggregate = temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[0];
+
+#pragma unroll
         for (int WARP = 1; WARP < WARPS; ++WARP)
         {
             if (warp_id == WARP)
@@ -478,6 +514,7 @@ struct AgentRle
         #pragma unroll
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
         {
+            // warp_num_runs_aggregate - number of non-trivial runs starts in current warp
             if ((ITEM * WARP_THREADS) < warp_num_runs_aggregate - lane_id)
             {
                 OffsetT item_offset =
@@ -489,7 +526,7 @@ struct AgentRle
                 d_offsets_out[item_offset] = lengths_and_offsets[ITEM].key;
 
                 // Scatter length if not the first (global) length
-                if ((!FIRST_TILE) || (ITEM != 0) || (threadIdx.x > 0))
+                if ((ITEM != 0) || (item_offset > 0))
                 {
                     d_lengths_out[item_offset - 1] = lengths_and_offsets[ITEM].value;
                 }
@@ -547,7 +584,7 @@ struct AgentRle
                 d_offsets_out[item_offset] = run_offsets[ITEM];
 
                 // Scatter length if not the first (global) length
-                if ((!FIRST_TILE) || (ITEM != 0) || (threadIdx.x > 0))
+                if ((ITEM != 0) || (item_offset > 0))
                 {
                     d_lengths_out[item_offset - 1] = run_lengths[ITEM];
                 }
@@ -581,7 +618,7 @@ struct AgentRle
                 d_offsets_out[item_offset] = lengths_and_offsets[ITEM].key;
 
                 // Scatter length if not the first (global) length
-                if (item_offset >= 1)
+                if (item_offset > 0)
                 {
                     d_lengths_out[item_offset - 1] = lengths_and_offsets[ITEM].value;
                 }
@@ -684,11 +721,19 @@ struct AgentRle
 
             // Update tile status if this is not the last tile
             if (!LAST_TILE && (threadIdx.x == 0))
+            {
                 tile_status.SetInclusive(0, tile_aggregate);
+            }
 
             // Update thread_exclusive_in_warp to fold in warp run-length
             if (thread_exclusive_in_warp.key == 0)
+            {
+                // If there are no non-trivial runs starts in the previous warp threads, then
+                // `thread_exclusive_in_warp.val` denotes the number of items in the last 
+                // non-trivial run of the previous CTA threads, so the better name for it is
+                // `thread_exclusive_in_tile`.
                 thread_exclusive_in_warp.value += warp_exclusive_in_tile.value;
+            }
 
             LengthOffsetPair    lengths_and_offsets[ITEMS_PER_THREAD];
             OffsetT             thread_num_runs_exclusive_in_warp[ITEMS_PER_THREAD];
@@ -779,10 +824,26 @@ struct AgentRle
             // Update thread_exclusive_in_warp to fold in warp and tile run-lengths
             LengthOffsetPair thread_exclusive = scan_op(tile_exclusive_in_global, warp_exclusive_in_tile);
             if (thread_exclusive_in_warp.key == 0)
+            {
+                // If there are no non-trivial runs starts in the previous warp threads, then
+                // `thread_exclusive_in_warp.val` denotes the number of items in the last 
+                // non-trivial run of the previous grid threads, so the better name for it is
+                // `thread_exclusive_in_grid`.
                 thread_exclusive_in_warp.value += thread_exclusive.value;
+            }
 
             // Downsweep scan through lengths_and_num_runs
+
+            // `lengths_and_num_runs2.key`:
+            //      number of non-trivial runs starts in previous grid threads
+            // `lengths_and_num_runs2.val`:
+            //      number of items in the last non-trivial run in previous grid threads
             LengthOffsetPair    lengths_and_num_runs2[ITEMS_PER_THREAD];
+
+            // `lengths_and_offsets.key`:
+            //      offset to the item in the input sequence
+            // `lengths_and_offsets.val`:
+            //      number of items in the last non-trivial run in previous grid threads
             LengthOffsetPair    lengths_and_offsets[ITEMS_PER_THREAD];
             OffsetT             thread_num_runs_exclusive_in_warp[ITEMS_PER_THREAD];
 

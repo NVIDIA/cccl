@@ -668,8 +668,31 @@ private:
   using _TempStorage = cub::NullType;
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  struct InternalWarpReduce
+  {
+    struct TempStorage : Uninitialized<_TempStorage>
+    {};
+
+    __device__ __forceinline__ InternalWarpReduce(TempStorage & /*temp_storage */) {}
+
+    template <bool ALL_LANES_VALID, typename ReductionOp>
+    __device__ __forceinline__ T Reduce(T input,
+                                        int /* valid_items */,
+                                        ReductionOp /* reduction_op */)
+    {
+      return input;
+    }
+
+    template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+    __device__ __forceinline__ T SegmentedReduce(T input,
+                                                 FlagT /* flag */,
+                                                 ReductionOp /* reduction_op */)
+    {
+      return input;
+    }
+  };
+
+  using TempStorage = typename InternalWarpReduce::TempStorage;
 
   __device__ __forceinline__ WarpReduce(TempStorage & /*temp_storage */) {}
 

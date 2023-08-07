@@ -6,6 +6,7 @@ on:
       per_cuda_compiler_matrix: {type: string, required: true}
       build_script: {type: string, required: false}
       test_script: {type: string, required: false}
+      devcontainer_version: {type: string, required: true}
 
 jobs:
   # Using a matrix to dispatch to the build-and-test reusable workflow for each build configuration
@@ -28,8 +29,8 @@ jobs:
       cpu: ${{ matrix.cpu }}
       os: ${{ matrix.os }}
       build_script: ${{ inputs.build_script }}
-      build_image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
+      build_image: rapidsai/devcontainers:${{inputs.devcontainer_version}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       test_script: ${{ inputs.test_script }}
       run_tests: ${{ contains(matrix.jobs, 'test') && !contains(github.event.head_commit.message, 'skip-tests') }}
-      test_image: rapidsai/devcontainers:23.06-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
+      test_image: rapidsai/devcontainers:${{inputs.devcontainer_version}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
 

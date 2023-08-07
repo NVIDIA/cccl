@@ -27,9 +27,12 @@
 
 #define C2H_EXPORTS
 
+#include <thrust/device_vector.h>
 #include <thrust/distance.h>
 #include <thrust/execution_policy.h>
+#include <thrust/find.h>
 #include <thrust/for_each.h>
+#include <thrust/scan.h>
 #include <thrust/tabulate.h>
 
 #include <cstdint>
@@ -37,11 +40,30 @@
 #include <c2h/custom_type.cuh>
 #include <c2h/extended_types.cuh>
 #include <c2h/generators.cuh>
-#include <curand.h>
 #include <fill_striped.cuh>
+
+#if C2H_HAS_CURAND 
+#include <curand.h>
+#else
+#include <thrust/random.h>
+#endif
 
 namespace c2h
 {
+
+#if !C2H_HAS_CURAND 
+struct i_to_rnd_t
+{
+  thrust::default_random_engine m_engine{};
+
+  template <typename IndexType>
+  __host__ __device__ float operator()(IndexType n)
+  {
+    m_engine.discard(n);
+    return thrust::uniform_real_distribution<float>{0.0f, 1.0f}(m_engine);
+  }
+};
+#endif
 
 class generator_t
 {
@@ -64,14 +86,23 @@ public:
                   thrust::device_vector<T> &data);
 
   float* distribution();
+
+#if C2H_HAS_CURAND 
   curandGenerator_t &gen() { return m_gen; }
+#endif
 
   float* prepare_random_generator(
       seed_t seed,
       std::size_t num_items);
+  
+  void generate();
 
 private:
+#if C2H_HAS_CURAND 
   curandGenerator_t m_gen;
+#else
+  thrust::default_random_engine m_re;
+#endif
   thrust::device_vector<float> m_distribution;
 };
 
@@ -126,12 +157,16 @@ RANDOM_TO_VEC_ITEM_SPEC(3, w);
 
 generator_t::generator_t()
 {
+#if C2H_HAS_CURAND 
   curandCreateGenerator(&m_gen, CURAND_RNG_PSEUDO_DEFAULT);
+#endif
 }
 
 generator_t::~generator_t()
 {
+#if C2H_HAS_CURAND 
   curandDestroyGenerator(m_gen);
+#endif
 }
 
 float* generator_t::distribution()
@@ -139,15 +174,32 @@ float* generator_t::distribution()
   return thrust::raw_pointer_cast(m_distribution.data());
 }
 
+void generator_t::generate()
+{
+#if C2H_HAS_CURAND 
+  curandGenerateUniform(m_gen,
+                        this->distribution(),
+                        this->m_distribution.size());
+#else
+  thrust::tabulate(this->m_distribution.begin(),
+                   this->m_distribution.end(),
+                   i_to_rnd_t{m_re});
+  m_re.discard(this->m_distribution.size());
+#endif
+}
+
 float *generator_t::prepare_random_generator(seed_t seed,
                                              std::size_t num_items)
 {
-  curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
-
   m_distribution.resize(num_items);
-  curandGenerateUniform(m_gen,
-                        this->distribution(),
-                        num_items);
+
+#if C2H_HAS_CURAND 
+  curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
+#else
+  m_re.seed(seed.get());
+#endif
+
+  generate();
 
   return this->distribution();
 }
@@ -256,9 +308,7 @@ void gen(seed_t seed,
     cnt_end,
     random_to_custom_t<true>{d_in, d_out, element_size});
 
-  curandGenerateUniform(generator.gen(),
-                        generator.distribution(),
-                        elements);
+  generator.generate();
 
   thrust::for_each(
     thrust::device,
@@ -267,8 +317,40 @@ void gen(seed_t seed,
     random_to_custom_t<false>{d_in, d_out, element_size});
 }
 
+template <class T>
+struct greater_equal_op
+{
+  T val;
+
+  __device__ bool operator()(T x) { return x >= val; }
+};
+} // namespace detail
+
+template <typename T>
+thrust::device_vector<T>
+gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
+{
+  thrust::device_vector<T> segment_offsets(total_elements + 2);
+  gen(seed, segment_offsets, min_segment_size, max_segment_size);
+  segment_offsets[total_elements] = total_elements + 1;
+  thrust::exclusive_scan(segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
+  typename thrust::device_vector<T>::iterator iter =
+    thrust::find_if(segment_offsets.begin(),
+                    segment_offsets.end(),
+                    detail::greater_equal_op<T>{total_elements});
+  *iter = total_elements;
+  segment_offsets.erase(iter + 1, segment_offsets.end());
+  return segment_offsets;
 }
 
+template thrust::device_vector<uint32_t> gen_uniform_offsets(seed_t seed,
+                                                             uint32_t total_elements,
+                                                             uint32_t min_segment_size,
+                                                             uint32_t max_segment_size);
+template thrust::device_vector<uint64_t> gen_uniform_offsets(seed_t seed,
+                                                             uint64_t total_elements,
+                                                             uint64_t min_segment_size,
+                                                             uint64_t max_segment_size);
 
 template <typename T>
 void gen(seed_t seed,
@@ -350,7 +432,7 @@ struct vec_gen_helper_t
     float *d_in = generator.distribution();
     T *d_out = thrust::raw_pointer_cast(data.data());
 
-    curandGenerateUniform(generator.gen(), d_in, data.size());
+    generator.generate();
 
     thrust::for_each(
       thrust::device,

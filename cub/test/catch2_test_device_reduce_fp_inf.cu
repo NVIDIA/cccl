@@ -36,7 +36,6 @@
 #include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
-#include <nv/target>
 
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
@@ -62,9 +61,6 @@ CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
    */
   SECTION("InfInArgMin")
   {
-    const int n     = 10;
-    const float inf = ::cuda::std::numeric_limits<float>::infinity();
-
     thrust::device_vector<in_t> in(n, inf);
     const in_t *d_in = thrust::raw_pointer_cast(in.data());
 

@@ -137,7 +137,7 @@ struct max_full_tile_op_t
 using types = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t, float, double>;
 using vec_types = c2h::type_list<ulonglong4, uchar3, short2>;
 
-// %PARAM% TEST_DIM_X dimx 7:32:65:128
+// %PARAM% TEST_DIM_X dimx 1:7:32:65:128
 // %PARAM% TEST_DIM_YZ dimyz 1:2
 
 using block_dim_xs           = c2h::enum_type_list<int, TEST_DIM_X>;
