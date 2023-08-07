@@ -18,10 +18,14 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
   set(CMAKE_CUDA_ARCHITECTURES native)
 endif()
 
+# Creates a cmake executable target for the main program
 add_executable(example_project example.cu)
+
+# "Links" the CCCL Cmake target to the `example_project` executable. This configures everything needed to use
+# CCCL headers, including setting up include paths, compiler flags, etc.
 target_link_libraries(example_project PRIVATE CCCL::CCCL)
 
-# Used by CCCL CI for regression testing:
+# This is only relevant for internal testing and not needed by end users. 
 include(CTest)
 enable_testing()
 add_test(NAME example_project COMMAND example_project)
