@@ -1,5 +1,7 @@
 # CUDA C++ Core Libraries (CCCL)
 
+// Add logo
+
 Welcome to the CUDA C++ Core Libraries (CCCL) where our mission is to make CUDA C++ more delightful.
 
 This repository unifies three essential CUDA C++ libraries into a single, convenient repository: 
@@ -197,7 +199,7 @@ Moving forward, CCCL will continue to be released under a single version, with 2
 
 ### Compatibility Guarantees
 
-Informally, SemVer states that changes that break a libraries API are only allowed in major version updates.
+Informally, SemVer states that changes that break a library's API are only allowed in major version updates.
 However, SemVer is clear that library authors are responsible for defining what constitutes their public API as well as what constitutes a breaking change to that API.
 For example, in C++ code, there are many changes that could cause build failures, but may not be considered breaking changes that would require a major version update.
 
@@ -205,9 +207,15 @@ In CCCL, we want to be very clear about what we consider to be a breaking change
 
 #### API Stability
 
+__ or _ symbol names
+detail:: namespace
+macros with DETAIL in the name
+
 #### ABI Stability - Binary Compatibility
 
 Today, entities in the `thrust::` and `cub::` namespaces do not guarantee ABI stability from one release to the next.
+
+// ABI for different architectures because CUB uses ARCH_LIST in namespace
 
 Entities in the `cuda::` namespace adhere to the ABI stability guarantees described [here](libcudacxx/docs/releases/versioning.md#libcu-abi-versioning).
 
@@ -225,6 +233,11 @@ A: Please [create an issue](https://github.com/NVIDIA/cccl/issues/new/choose) or
 
 **Q: Can I use a newer version of CCCL than I have in my CUDA Toolkit?**
 A: Yes! For a complete description of our compatibility guarantees, see #TODO
+
+## Mapping to CTK Versions
+
+// Links to old CCCL mapping tables
+// Add new CCCL version to a new table
 
 
 ## CI Pipeline Overview
