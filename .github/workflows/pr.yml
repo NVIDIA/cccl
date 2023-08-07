@@ -120,7 +120,7 @@ jobs:
       runner: linux-${{matrix.cpu}}-gpu-v100-latest-1
       image: rapidsai/devcontainers:${{needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       command: |
-        cd examples
+        cd examples/example_project
         cmake -S . -B build -DCCCL_TAG="$GITHUB_SHA" 
         cmake --build build/
         ctest --test-dir build/ --output-on-failure
