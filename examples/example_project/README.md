@@ -135,7 +135,7 @@ If you would like to build and run this example as-is, you will need:
 
 6. Run the executable.
    ```bash
-   ./example_project
+   ./build/example_project
    ```
 
 If everything is configured correctly, the program will execute and print the sum of an array of integers, demonstrating the use of cccl.
