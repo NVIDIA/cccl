@@ -9,8 +9,8 @@ include(cmake/CPM.cmake)
 # This will automatically clone CCCL from GitHub and make the exported cmake targets available
 CPMAddPackage(
     NAME CCCL
-    GITHUB_REPOSITORY jrhemstad/cccl
-    GIT_TAG example-cmake-project
+    GITHUB_REPOSITORY nvidia/cccl
+    GIT_TAG main
 )
 
 # Default to building for the GPU on the current system
