@@ -40,6 +40,7 @@ jobs:
       - name: Run command
         shell: su coder {0}
         run: | 
+            set -exo pipefail
             cd ~/cccl
             eval "${{inputs.command}}" || exit_code=$?
             if [ ! -z "$exit_code" ]; then
