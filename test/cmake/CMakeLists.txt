@@ -25,6 +25,7 @@ foreach (root_type IN ITEMS SOURCE INSTALL)
     foreach (package_type IN LISTS package_types)
       string(TOLOWER "${root_type}.${package_type}.${components}" suffix)
       cccl_add_compile_test(test_name
+        cccl.test.cmake
         test_export
         "${suffix}"
         ${cmake_opts}

@@ -25,6 +25,7 @@ set(cmake_opts
 )
 
 cccl_add_compile_test(test_name
+  cccl.example
   example_project
   "default"
   ${cmake_opts}
