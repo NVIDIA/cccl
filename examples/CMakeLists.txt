@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include(../cmake/CCCLUtilities.cmake)
-
 set(cmake_opts
   -D "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   -D "CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
