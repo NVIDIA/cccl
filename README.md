@@ -136,32 +136,37 @@ In general, CCCL should work everywhere the CUDA Toolkit is supported, however, 
 The sections below describe the details of our support for different versions of the CUDA Toolkit, host compilers, and C++ dialects.
 Furthermore, because it is infeasible to test every environment we support, we describe our testing strategy that we use to be confident that CCCL works everywhere it should. 
 
-### CUDA Toolkit Compatibility 
+### CUDA Toolkit (CTK) Compatibility 
 
-The CCCL team is committed to providing new features, enhancements, and performance improvements. 
-As such, we encourage our users to ["live at head"](https://www.youtube.com/watch?v=tISy7EJQPzI) and always use the latest version of CCCL. 
-This applies even if you're using an older version of the CUDA Toolkit.
+The CCCL team encourages users to ["live at head"](https://www.youtube.com/watch?v=tISy7EJQPzI) and always use the newest version to take advantage of the latest improvements.
 
-While we want to support as many users as possible, it is infeasible for us to support every CUDA Toolkit release, therefore our policy is to always support two major version series: the current and preceding. 
+We want to enable users to upgrade the version of CCCL they are using without having to worry about upgrading their entire CUDA Toolkit. 
+Therefore, we support every minor CTK release within two major version series: current and preceding, but only the latest patch release. 
+When a new major CTK is released, we drop support for the oldest version.
 
-Today, we support the following CUDA Toolkit versions: 
-- CUDA 11.x (11.1 - 11.8)
-- CUDA 12.x (12.0+)
+| CCCL Version  | Supports CUDA Toolkit Version  |
+|---------------|-------------------------------|
+| 2.x           | 11.1 - 11.8, 12.x (only latest patch releases) |
+| 3.x (Future)  | 12.x, 13.x  (only latest patch releases)       |
 
-Unless otherwise specified, for a given minor version, we only support the latest patch release of that version. For example, CUDA 11.4.4 is supported, but CUDA 11.4.3 is not.
+Well-behaved code using the latest CCCL should compile and run successfully with any supported CTK version. Exceptions may occur with new features.
 
-When a new major version of the CUDA Toolkit is released, we will drop support for the oldest version. 
-For example, when CUDA 13.0 is released, we will drop support for CUDA 11.x.
+The table below summarizes compatibility of CTK and CCCL upgrade scenarios (all version numbers are for illustration purposes only):
 
-Please note that this policy doesn't imply that all CCCL features will be compatible with older CUDA Toolkit versions.
-While we strive to ensure backward compatibility as much as possible, some new CCCL features might rely on new CUDA Toolkit features, and therefore would be incompatible with older versions.  
+| Action                | Example Upgrade     | Supported? | Possible CCCL Breaking Changes? | Notes                                                    |
+|-----------------------|---------------------|------------|---------------------------------|-----------------------------------------------------------|
+| Upgrade CCCL (Minor)  | CCCL 2.1 to CCCL 2.2 (using CTK 11.4) | Yes        | No (New features may vary)     | Existing code works; new features may vary in support.    |
+| Upgrade CCCL (Major)  | CCCL 2.2 to CCCL 3.0 (using CTK 12.1) | Yes        | Yes                            | May need to update existing code for breaking changes.    |
+| Upgrade CTK (Minor)   | CTK 11.4 to CTK 11.5 (using CCCL 2.2) | Yes (If CCCL is compatible) | No  | Ensure CCCL is same or newer than version shipped with CTK.  |
+| Upgrade CTK (Major)   | CTK 11.8 to CTK 12.0 (using CCCL 2.2) | Yes (If CCCL is compatible) | No (unless CTK removes feature used by CCCL)  | Ensure CCCL is same or newer than version shipped with CTK.  |
 
-However, you can generally expect if a CCCL feature worked with its corresponding CUDA Toolkit release, it should continue to work with newer CCCL versions. 
-Exceptions to this might occur if a future CUDA Toolkit discontinues support for a feature relied upon by a CCCL feature.
+For more information on CCCL versioning, API/ABI compatibility, and breaking changes see the [Versioning](#versioning) section below.
 
-**Important Note:** Our compatibility policy allows for the use of a newer CCCL version with an older CUDA Toolkit, but not vice versa.
-For example, if CUDA 12.3 was released with CCCL 2.2, we would not support using CCCL 2.1 with CUDA 12.3.
-This is because certain components of the CUDA Toolkit depend on CCCL, so an older CCCL version might lack essential features required by a newer CUDA Toolkit version.
+**TL;DR:**
+- The latest CCCL version supports the current and preceding CTK major version series. 
+- Minor version CCCL upgrades won't break existing code, but new features may not support all CTK versions.
+- Major version CCCL upgrades may introduce breaking changes.
+- Upgrading CTK: Ensure CCCL is compatible with the new version (same or newer than the one shipped with the new CTK).
 
 ### Host Compilers
 
