@@ -1,0 +1,57 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CCCL_ENABLE_LIBCUDACXX": false,
+        "CCCL_ENABLE_CUB": false,
+        "CCCL_ENABLE_THRUST": false,
+        "CCCL_ENABLE_TESTING": false,
+        "CCCL_ENABLE_EXAMPLES": false
+      }
+    },
+    {
+      "name": "examples",
+      "displayName": "CCCL Examples",
+      "description": "Configure, build, and run the CCCL Examples",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_CUDA_ARCHITECTURES": "70",
+        "CCCL_ENABLE_EXAMPLES": true
+      }
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "examples",
+      "configurePreset": "examples",
+      "inherits": "base",
+      "filter":{
+        "include": {
+          "name": "^cccl\\.example\\."
+        }
+      }
+    }
+  ]
+}
+
