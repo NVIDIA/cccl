@@ -22,9 +22,18 @@ set(cmake_opts
   -D "CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}"
 )
 
+set(CCCL_EXAMPLE_CPM_REPOSITORY "nvidia/cccl" CACHE STRING "GitHub repository used for CPM examples.")
+set(CCCL_EXAMPLE_CPM_TAG "main" CACHE STRING "Git tag/branch used for CPM examples.")
+
+set(cmake_cpm_opts
+  -D "CCCL_REPOSITORY=${CCCL_EXAMPLE_CPM_REPOSITORY}"
+  -D "CCCL_TAG=${CCCL_EXAMPLE_CPM_TAG}"
+)
+
 cccl_add_compile_test(test_name
   cccl.example
   example_project
   "default"
   ${cmake_opts}
+  ${cmake_cpm_opts}
 )
