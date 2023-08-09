@@ -86,10 +86,10 @@ CUB_TEST("Device reduce-by-key works with iterators",
                                        std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
-  const offset_t num_segments               = segment_offsets.size() - 1;
-  thrust::device_vector<key_t> segment_keys = c2h::get_key_segments<key_t>(segment_offsets,
-                                                                           num_items);
-  auto d_keys_it                            = segment_keys.cbegin();
+  const offset_t num_segments = segment_offsets.size() - 1;
+  thrust::device_vector<key_t> segment_keys(num_items);
+  c2h::init_key_segments(segment_offsets, segment_keys);
+  auto d_keys_it = segment_keys.cbegin();
 
   // Prepare input data
   value_t default_constant{};

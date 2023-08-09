@@ -106,10 +106,10 @@ CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
                                        std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
-  const offset_t num_segments               = segment_offsets.size() - 1;
-  thrust::device_vector<key_t> segment_keys = c2h::get_key_segments<key_t>(segment_offsets,
-                                                                           num_items);
-  auto d_keys_it                            = thrust::raw_pointer_cast(segment_keys.data());
+  const offset_t num_segments = segment_offsets.size() - 1;
+  thrust::device_vector<key_t> segment_keys(num_items);
+  c2h::init_key_segments(segment_offsets, segment_keys);
+  auto d_keys_it = thrust::raw_pointer_cast(segment_keys.data());
 
   // Generate input data
   thrust::device_vector<value_t> in_values(num_items);

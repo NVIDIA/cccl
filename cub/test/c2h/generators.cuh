@@ -28,8 +28,6 @@
 #pragma once
 
 #include <thrust/device_vector.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/scatter.h>
 
 #include <limits>
 
@@ -83,31 +81,17 @@ struct le_comparator_op
   }
 };
 
-/**
- * @brief Initializes the given item type with a constant non-zero value.
- */
-template <typename T>
-inline void init_non_zero_constant(T &val)
-{
-  val = T{1};
-}
-
-/**
- * @brief Initializes the given item type with a constant non-zero value.
- */
-template <template <typename> class... Policies>
-inline void init_non_zero_constant(c2h::custom_type_t<Policies...> &val)
-{
-  val.key = 1;
-  val.val = 1;
-}
-
 void gen(seed_t seed,
          char *data,
          c2h::custom_type_state_t min,
          c2h::custom_type_state_t max,
          std::size_t elements,
          std::size_t element_size);
+
+template <typename OffsetT, typename KeyT>
+void init_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
+                       KeyT *d_out,
+                       std::size_t element_size);
 
 } // namespace detail
 
@@ -149,30 +133,23 @@ gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_seg
  * @brief Generates key-segment ranges from an offsets-array like the one given by
  * `gen_uniform_offset`.
  */
-template <typename KeyT, typename OffsetT>
-thrust::device_vector<KeyT> get_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
-                                             OffsetT total_elements)
+template <typename OffsetT, typename KeyT>
+void init_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
+                       thrust::device_vector<KeyT> &keys_out)
 {
-  // Constant iterator returning '1' for any index
-  KeyT non_zero_constant{};
-  detail::init_non_zero_constant(non_zero_constant);
-  auto const_one_it = thrust::make_constant_iterator(non_zero_constant);
+  detail::init_key_segments(segment_offsets,
+                            thrust::raw_pointer_cast(keys_out.data()),
+                            sizeof(KeyT));
+}
 
-  // Iterator of segment offsets (skipping the first segment offset of '0')
-  auto segment_offset_it = thrust::next(segment_offsets.cbegin());
-
-  // Prepare keys array, scattering '1' to segment offsets
-  thrust::device_vector<KeyT> key_segments(total_elements);
-  auto num_segments = segment_offsets.size() - 1;
-  thrust::scatter_if(const_one_it,
-                     const_one_it + num_segments,
-                     segment_offset_it,
-                     segment_offset_it,
-                     key_segments.begin(),
-                     detail::le_comparator_op<OffsetT>{total_elements - 1});
-
-  thrust::inclusive_scan(key_segments.cbegin(), key_segments.cend(), key_segments.begin());
-  return key_segments;
+template <typename OffsetT, template <typename> class... Ps>
+void init_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
+                       thrust::device_vector<custom_type_t<Ps...>> &keys_out)
+{
+  detail::init_key_segments(segment_offsets,
+                            reinterpret_cast<custom_type_state_t *>(
+                              thrust::raw_pointer_cast(keys_out.data())),
+                            sizeof(custom_type_t<Ps...>));
 }
 
 } // namespace c2h
