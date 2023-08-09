@@ -73,7 +73,7 @@ type_triple<custom_t>
 // clang-format on
 #endif
 
-CUB_TEST("Device reduce-by-key works", "[bykey][reduce][device]", full_type_list)
+CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;

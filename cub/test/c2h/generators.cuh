@@ -76,8 +76,8 @@ struct le_comparator_op
 {
   T maximum;
 
-  template <typename val_t>
-  __host__ __device__ __forceinline__ bool operator()(const val_t &val)
+  template <typename ValueT>
+  __host__ __device__ __forceinline__ bool operator()(const ValueT &val)
   {
     return (val <= maximum);
   }
@@ -149,12 +149,12 @@ gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_seg
  * @brief Generates key-segment ranges from an offsets-array like the one given by
  * `gen_uniform_offset`.
  */
-template <typename key_t, typename offset_t>
-thrust::device_vector<key_t>
-get_key_segments(const thrust::device_vector<offset_t> &segment_offsets, offset_t total_elements)
+template <typename KeyT, typename OffsetT>
+thrust::device_vector<KeyT> get_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
+                                             OffsetT total_elements)
 {
   // Constant iterator returning '1' for any index
-  key_t non_zero_constant{};
+  KeyT non_zero_constant{};
   detail::init_non_zero_constant(non_zero_constant);
   auto const_one_it = thrust::make_constant_iterator(non_zero_constant);
 
@@ -162,14 +162,14 @@ get_key_segments(const thrust::device_vector<offset_t> &segment_offsets, offset_
   auto segment_offset_it = thrust::next(segment_offsets.cbegin());
 
   // Prepare keys array, scattering '1' to segment offsets
-  thrust::device_vector<key_t> key_segments(total_elements);
+  thrust::device_vector<KeyT> key_segments(total_elements);
   auto num_segments = segment_offsets.size() - 1;
   thrust::scatter_if(const_one_it,
                      const_one_it + num_segments,
                      segment_offset_it,
                      segment_offset_it,
                      key_segments.begin(),
-                     detail::le_comparator_op<offset_t>{total_elements - 1});
+                     detail::le_comparator_op<OffsetT>{total_elements - 1});
 
   thrust::inclusive_scan(key_segments.cbegin(), key_segments.cend(), key_segments.begin());
   return key_segments;

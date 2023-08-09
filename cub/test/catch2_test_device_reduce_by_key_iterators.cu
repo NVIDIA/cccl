@@ -51,7 +51,9 @@ using custom_t = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable
 using iterator_type_list =
   c2h::type_list<type_triple<custom_t>, type_triple<std::int64_t, std::int64_t, custom_t>>;
 
-CUB_TEST("Device reduce-by-key works with iterators", "[reduce][device]", iterator_type_list)
+CUB_TEST("Device reduce-by-key works with iterators",
+         "[by_key][reduce][device]",
+         iterator_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
