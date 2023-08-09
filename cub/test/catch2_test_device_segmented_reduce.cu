@@ -180,8 +180,7 @@ CUB_TEST("Device reduce works with all device interfaces",
 
   SECTION("min")
   {
-    using op_t    = cub::Min;
-    using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
+    using op_t = cub::Min;
 
     // Prepare verification data
     thrust::host_vector<output_t> expected_result(num_segments);
@@ -206,8 +205,7 @@ CUB_TEST("Device reduce works with all device interfaces",
 
   SECTION("max")
   {
-    using op_t    = cub::Max;
-    using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
+    using op_t = cub::Max;
 
     // Prepare verification data
     thrust::host_vector<output_t> expected_result(num_segments);

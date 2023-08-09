@@ -1,35 +1,37 @@
 /******************************************************************************
-* Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright
-*       notice, this list of conditions and the following disclaimer.
-*     * Redistributions in binary form must reproduce the above copyright
-*       notice, this list of conditions and the following disclaimer in the
-*       documentation and/or other materials provided with the distribution.
-*     * Neither the name of the NVIDIA CORPORATION nor the
-*       names of its contributors may be used to endorse or promote products
-*       derived from this software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-* ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-* DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
-* DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*
-******************************************************************************/
+ * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the NVIDIA CORPORATION nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ ******************************************************************************/
 
 #pragma once
 
-#include <limits>
-
 #include <thrust/device_vector.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/scatter.h>
+
+#include <limits>
 
 #include <c2h/custom_type.cuh>
 
@@ -45,49 +47,82 @@ class value_wrapper_t
   T m_val{};
 
 public:
-  explicit value_wrapper_t(T val) : m_val(val) {}
-  explicit value_wrapper_t(int val) : m_val(static_cast<T>(val)) {}
+  explicit value_wrapper_t(T val)
+      : m_val(val)
+  {}
+  explicit value_wrapper_t(int val)
+      : m_val(static_cast<T>(val))
+  {}
   T get() const { return m_val; }
 };
 
-}
+} // namespace detail
 
-class seed_t : public detail::value_wrapper_t<unsigned long long int> 
+class seed_t : public detail::value_wrapper_t<unsigned long long int>
 {
   using value_wrapper_t::value_wrapper_t;
 };
 
-class modulo_t : public detail::value_wrapper_t<std::size_t> 
+class modulo_t : public detail::value_wrapper_t<std::size_t>
 {
   using value_wrapper_t::value_wrapper_t;
 };
 
 namespace detail
 {
-  
+
+template <typename T>
+struct le_comparator_op
+{
+  T maximum;
+
+  template <typename val_t>
+  __host__ __device__ __forceinline__ bool operator()(const val_t &val)
+  {
+    return (val <= maximum);
+  }
+};
+
+/**
+ * @brief Initializes the given item type with a constant non-zero value.
+ */
+template <typename T>
+inline void init_non_zero_constant(T &val)
+{
+  val = T{1};
+}
+
+/**
+ * @brief Initializes the given item type with a constant non-zero value.
+ */
+template <template <typename> class... Policies>
+inline void init_non_zero_constant(c2h::custom_type_t<Policies...> &val)
+{
+  val.key = 1;
+  val.val = 1;
+}
+
 void gen(seed_t seed,
-         char* data,
+         char *data,
          c2h::custom_type_state_t min,
          c2h::custom_type_state_t max,
          std::size_t elements,
          std::size_t element_size);
 
-}
+} // namespace detail
 
 template <template <typename> class... Ps>
-void gen(
-  seed_t seed,
-  thrust::device_vector<c2h::custom_type_t<Ps...>> &data,
-  c2h::custom_type_t<Ps...> min = std::numeric_limits<c2h::custom_type_t<Ps...>>::lowest(),
-  c2h::custom_type_t<Ps...> max = std::numeric_limits<c2h::custom_type_t<Ps...>>::max())
+void gen(seed_t seed,
+         thrust::device_vector<c2h::custom_type_t<Ps...>> &data,
+         c2h::custom_type_t<Ps...> min = std::numeric_limits<c2h::custom_type_t<Ps...>>::lowest(),
+         c2h::custom_type_t<Ps...> max = std::numeric_limits<c2h::custom_type_t<Ps...>>::max())
 {
-  detail::gen(
-      seed, 
-      reinterpret_cast<char*>(thrust::raw_pointer_cast(data.data())),
-      min,
-      max,
-      data.size(),
-      sizeof(c2h::custom_type_t<Ps...>));
+  detail::gen(seed,
+              reinterpret_cast<char *>(thrust::raw_pointer_cast(data.data())),
+              min,
+              max,
+              data.size(),
+              sizeof(c2h::custom_type_t<Ps...>));
 }
 
 template <typename T>
@@ -110,5 +145,34 @@ template <typename T>
 thrust::device_vector<T>
 gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size);
 
-} // c2h
+/**
+ * @brief Generates key-segment ranges from an offsets-array like the one given by
+ * `gen_uniform_offset`.
+ */
+template <typename key_t, typename offset_t>
+thrust::device_vector<key_t>
+get_key_segments(const thrust::device_vector<offset_t> &segment_offsets, offset_t total_elements)
+{
+  // Constant iterator returning '1' for any index
+  key_t non_zero_constant{};
+  detail::init_non_zero_constant(non_zero_constant);
+  auto const_one_it = thrust::make_constant_iterator(non_zero_constant);
 
+  // Iterator of segment offsets (skipping the first segment offset of '0')
+  auto segment_offset_it = thrust::next(segment_offsets.cbegin());
+
+  // Prepare keys array, scattering '1' to segment offsets
+  thrust::device_vector<key_t> key_segments(total_elements);
+  auto num_segments = segment_offsets.size() - 1;
+  thrust::scatter_if(const_one_it,
+                     const_one_it + num_segments,
+                     segment_offset_it,
+                     segment_offset_it,
+                     key_segments.begin(),
+                     detail::le_comparator_op<offset_t>{total_elements - 1});
+
+  thrust::inclusive_scan(key_segments.cbegin(), key_segments.cend(), key_segments.begin());
+  return key_segments;
+}
+
+} // namespace c2h

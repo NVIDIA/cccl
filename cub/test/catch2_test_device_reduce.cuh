@@ -438,6 +438,60 @@ void compute_segmented_argmax_reference(const thrust::device_vector<item_t> &d_i
 }
 
 /**
+ * @brief Helper function to compute the reference solution for unique keys (i.e., collapsing each
+ * run of equal keys into a single key).
+ */
+template <typename in_it_t, typename out_it_t>
+inline out_it_t compute_unique_keys_reference(in_it_t h_in_begin,
+                                              std::size_t num_keys,
+                                              out_it_t h_out_it)
+{
+  if (num_keys == 0)
+  {
+    return h_out_it;
+  }
+  *h_out_it++ = h_in_begin[0];
+  for (std::size_t i = 1; i < num_keys; i++)
+  {
+    if (!(h_in_begin[i - 1] == h_in_begin[i]))
+    {
+      *h_out_it = h_in_begin[i];
+      h_out_it++;
+    }
+  }
+  return h_out_it;
+}
+
+/**
+ * @brief Helper function to compute the reference solution for unique keys (i.e., collapsing each
+ * run of equal keys into a single key).
+ */
+template <typename item_t>
+inline thrust::host_vector<item_t>
+compute_unique_keys_reference(const thrust::device_vector<item_t> &d_keys)
+{
+  thrust::host_vector<item_t> h_keys(d_keys);
+  thrust::host_vector<item_t> h_unique_keys_out(d_keys.size());
+
+  auto end_it =
+    compute_unique_keys_reference(h_keys.cbegin(), h_keys.size(), h_unique_keys_out.begin());
+  h_unique_keys_out.resize(thrust::distance(h_unique_keys_out.begin(), end_it));
+  return h_unique_keys_out;
+}
+
+/**
+ * @brief Helper class template to facilitate specifying input/output type pairs along with the key
+ * type for reduce-by-key algorithms.
+ */
+template <typename _input_t, typename _output_t = _input_t, typename _key_t = std::int32_t>
+struct type_triple
+{
+  using input_t  = _input_t;
+  using output_t = _output_t;
+  using key_t    = _key_t;
+};
+
+/**
  * @brief Helper class template to facilitate specifying input/output type pairs.
  */
 template <typename _input_t, typename _output_t = _input_t>
