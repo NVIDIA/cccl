@@ -76,7 +76,7 @@ type_triple<custom_t>
 CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_list)
 {
   using params   = params_t<TestType>;
-  using item_t   = typename params::item_t;
+  using value_t  = typename params::item_t;
   using output_t = typename params::output_t;
   using key_t    = typename params::type_pair_t::key_t;
   using offset_t = uint32_t;
@@ -112,21 +112,21 @@ CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
   auto d_keys_it                            = thrust::raw_pointer_cast(segment_keys.data());
 
   // Generate input data
-  thrust::device_vector<item_t> in_items(num_items);
-  c2h::gen(CUB_SEED(2), in_items);
-  auto d_items_it = thrust::raw_pointer_cast(in_items.data());
+  thrust::device_vector<value_t> in_values(num_items);
+  c2h::gen(CUB_SEED(2), in_values);
+  auto d_values_it = thrust::raw_pointer_cast(in_values.data());
 
   SECTION("sum")
   {
     using op_t = cub::Sum;
 
     // Binary reduction operator
-    auto reduction_op = unwrap_op(reference_extended_fp(d_items_it), op_t{});
+    auto reduction_op = unwrap_op(reference_extended_fp(d_values_it), op_t{});
 
     // Prepare verification data
-    using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
+    using accum_t = cub::detail::accumulator_t<op_t, output_t, value_t>;
     thrust::host_vector<output_t> expected_result(num_segments);
-    compute_segmented_problem_reference(in_items,
+    compute_segmented_problem_reference(in_values,
                                         segment_offsets,
                                         reduction_op,
                                         accum_t{},
@@ -139,10 +139,9 @@ CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
     thrust::device_vector<output_t> out_result(num_segments);
     auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
     auto d_keys_out_it = thrust::raw_pointer_cast(out_unique_keys.data());
-    using init_t       = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
     device_reduce_by_key(d_keys_it,
                          d_keys_out_it,
-                         unwrap_it(d_items_it),
+                         unwrap_it(d_values_it),
                          unwrap_it(d_out_it),
                          thrust::raw_pointer_cast(num_unique_keys.data()),
                          reduction_op,
@@ -160,10 +159,10 @@ CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
 
     // Prepare verification data
     thrust::host_vector<output_t> expected_result(num_segments);
-    compute_segmented_problem_reference(in_items,
+    compute_segmented_problem_reference(in_values,
                                         segment_offsets,
                                         op_t{},
-                                        cub::NumericTraits<item_t>::Max(),
+                                        cub::NumericTraits<value_t>::Max(),
                                         expected_result.begin());
     thrust::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
 
@@ -171,13 +170,12 @@ CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
     thrust::device_vector<offset_t> num_unique_keys(1);
     thrust::device_vector<key_t> out_unique_keys(num_segments);
     thrust::device_vector<output_t> out_result(num_segments);
-    auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
-    auto d_keys_out_it = thrust::raw_pointer_cast(out_unique_keys.data());
-    using init_t       = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
+    auto d_result_out_it = thrust::raw_pointer_cast(out_result.data());
+    auto d_keys_out_it   = thrust::raw_pointer_cast(out_unique_keys.data());
     device_reduce_by_key(d_keys_it,
                          d_keys_out_it,
-                         unwrap_it(d_items_it),
-                         unwrap_it(d_out_it),
+                         unwrap_it(d_values_it),
+                         unwrap_it(d_result_out_it),
                          thrust::raw_pointer_cast(num_unique_keys.data()),
                          op_t{},
                          num_items);

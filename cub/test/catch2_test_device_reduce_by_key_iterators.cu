@@ -56,7 +56,7 @@ CUB_TEST("Device reduce-by-key works with iterators",
          iterator_type_list)
 {
   using params   = params_t<TestType>;
-  using item_t   = typename params::item_t;
+  using value_t  = typename params::item_t;
   using output_t = typename params::output_t;
   using key_t    = typename params::type_pair_t::key_t;
   using offset_t = uint32_t;
@@ -89,19 +89,19 @@ CUB_TEST("Device reduce-by-key works with iterators",
   const offset_t num_segments               = segment_offsets.size() - 1;
   thrust::device_vector<key_t> segment_keys = c2h::get_key_segments<key_t>(segment_offsets,
                                                                            num_items);
-  auto d_keys_it                            = thrust::raw_pointer_cast(segment_keys.data());
+  auto d_keys_it                            = segment_keys.cbegin();
 
   // Prepare input data
-  item_t default_constant{};
+  value_t default_constant{};
   init_default_constant(default_constant);
-  auto in_it = thrust::make_constant_iterator(default_constant);
+  auto value_it = thrust::make_constant_iterator(default_constant);
 
   using op_t = cub::Sum;
 
   // Prepare verification data
-  using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
+  using accum_t = cub::detail::accumulator_t<op_t, output_t, value_t>;
   thrust::host_vector<output_t> expected_result(num_segments);
-  compute_segmented_problem_reference(in_it,
+  compute_segmented_problem_reference(value_it,
                                       segment_offsets,
                                       op_t{},
                                       accum_t{},
@@ -112,12 +112,12 @@ CUB_TEST("Device reduce-by-key works with iterators",
   thrust::device_vector<offset_t> num_unique_keys(1);
   thrust::device_vector<key_t> out_unique_keys(num_segments);
   thrust::device_vector<output_t> out_result(num_segments);
-  auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
-  auto d_keys_out_it = thrust::raw_pointer_cast(out_unique_keys.data());
+  auto d_result_out_it = thrust::raw_pointer_cast(out_result.data());
+  auto d_keys_out_it   = out_unique_keys.begin();
   device_reduce_by_key(d_keys_it,
                        d_keys_out_it,
-                       in_it,
-                       d_out_it,
+                       value_it,
+                       d_result_out_it,
                        thrust::raw_pointer_cast(num_unique_keys.data()),
                        op_t{},
                        num_items);
