@@ -307,8 +307,8 @@ struct greater_equal_op
 template <typename T>
 struct spaced_out_it_op
 {
-  char *base_it = nullptr;
-  std::size_t element_size{};
+  char *base_it;
+  std::size_t element_size;
 
   __host__ __device__ __forceinline__ T &operator()(std::size_t offset) const
   {
@@ -319,8 +319,8 @@ struct spaced_out_it_op
 template <typename T>
 struct offset_to_iterator_t
 {
-  char *base_it = nullptr;
-  std::size_t element_size{};
+  char *base_it;
+  std::size_t element_size;
 
   __host__ __device__ __forceinline__
     thrust::transform_iterator<spaced_out_it_op<T>, thrust::counting_iterator<std::size_t>>
@@ -352,14 +352,17 @@ struct repeat_index_t<custom_type_state_t>
   __host__ __device__ __forceinline__ thrust::constant_iterator<custom_type_state_t>
   operator()(std::size_t i)
   {
-    return thrust::constant_iterator<custom_type_state_t>(custom_type_state_t{i, i});
+    custom_type_state_t item{};
+    item.key = i;
+    item.val = i;
+    return thrust::constant_iterator<custom_type_state_t>(item);
   }
 };
 
 template <typename OffsetT>
 struct offset_to_size_t
 {
-  const OffsetT *offsets = nullptr;
+  const OffsetT *offsets;
 
   __host__ __device__ __forceinline__ std::size_t operator()(std::size_t i)
   {
