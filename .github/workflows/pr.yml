@@ -1,3 +1,17 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # This is the main workflow that runs on every PR and push to main
 name: pr
@@ -37,6 +51,7 @@ jobs:
     name: Compute NVCC matrix
     runs-on: ubuntu-latest
     outputs:
+      FULL_MATRIX: ${{ steps.set-outputs.outputs.FULL_MATRIX }}
       CUDA_VERSIONS: ${{ steps.set-outputs.outputs.CUDA_VERSIONS }}
       HOST_COMPILERS: ${{ steps.set-outputs.outputs.HOST_COMPILERS }}
       PER_CUDA_COMPILER_MATRIX: ${{ steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX }}
@@ -53,6 +68,7 @@ jobs:
         id: set-outputs
         run: |
           FULL_MATRIX='${{steps.compute-nvcc-matrix.outputs.matrix}}'
+          echo "FULL_MATRIX=$FULL_MATRIX" | tee -a "$GITHUB_OUTPUT"
           CUDA_VERSIONS=$(echo $FULL_MATRIX | jq -c '[.[] | .cuda] | unique')
           echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
           HOST_COMPILERS=$(echo $FULL_MATRIX | jq -c '[.[] | .compiler.name] | unique')
@@ -104,6 +120,22 @@ jobs:
       build_script: "./ci/build_libcudacxx.sh"
       test_script: "./ci/test_libcudacxx.sh" 
       devcontainer_version: ${{ needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION }}
+  
+  examples:
+    name: CCCL Examples
+    needs: [compute-nvcc-matrix, get-devcontainer-version]
+    strategy:
+      fail-fast: false
+      matrix: 
+        include: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.FULL_MATRIX) }}
+    uses: ./.github/workflows/run-as-coder.yml
+    with:
+      name: CCCL Examples CUDA${{matrix.cuda}} ${{matrix.compiler.name}}${{matrix.compiler.version}}
+      runner: linux-${{matrix.cpu}}-gpu-v100-latest-1
+      image: rapidsai/devcontainers:${{needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
+      command: |
+        cmake -S . --preset=examples -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA} -DCMAKE_CUDA_COMPILER=nvcc
+        ctest --preset=examples
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
@@ -114,5 +146,6 @@ jobs:
       - libcudacxx
       - cub
       - thrust
+      - examples
     steps:
       - run: echo "CI success"

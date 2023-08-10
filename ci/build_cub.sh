@@ -12,7 +12,7 @@ version_compare() {
         echo "false"
     fi
 }
-readonly ENABLE_CUB_BENCHMARKS=$(version_compare $NVCC_VERSION 11.5)
+readonly ENABLE_CUB_BENCHMARKS=${ENABLE_CUB_BENCHMARKS:=$(version_compare $NVCC_VERSION 11.5)}
 
 if [[ $ENABLE_CUB_BENCHMARKS == "true" ]]; then
     echo "CUDA version is $NVCC_VERSION. Building CUB benchmarks."
