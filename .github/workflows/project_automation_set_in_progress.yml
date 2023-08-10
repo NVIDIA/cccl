@@ -42,6 +42,10 @@ env:
 jobs:
   query_and_mutate_project_fields:
     runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+      pull-requests: write
     
     steps:
       - name: Check if changes requested from a reviewer
@@ -51,8 +55,20 @@ jobs:
             if [ ${{ github.event.review.state }} != 'changes_requested' ]; then
               echo "Changes not requested, exiting"
               exit 0
+            
+            # If it is requesting changes, set PR to draft
+            # We use the default token here since we're granting write access to the PR
+            elif [ ${{ github.event.pull_request.draft }} == true ]; then
+              gh api graphql -f query='
+                mutation {
+                  convertPullRequestToDraft(input: {pullRequestId: "${{ env.PR_GLOBAL_ID }}"}) {
+                    clientMutationId
+                  }
+                }'
+              exit 0
             fi
           fi
+        continue-on-error: true
 
       - name: Generate token
         id: generate_token
@@ -333,20 +349,4 @@ jobs:
                     gh api graphql --field query="$QUERY"
                 fi
             done
-        continue-on-error: true
-
-      - name: set PR to draft
-        id: set_pr_draft
-        # only run if PR is not a draft
-        if: ${{ github.event.pull_request.draft }} == false
-        env:
-            GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-        run: |
-            # Set the PR to draft using the graphQL API
-            gh api graphql -f query='
-              mutation {
-                convertPullRequestToDraft(input: {pullRequestId: "${{ env.PR_GLOBAL_ID }}"}) {
-                  clientMutationId
-                }
-              }'
         continue-on-error: true
