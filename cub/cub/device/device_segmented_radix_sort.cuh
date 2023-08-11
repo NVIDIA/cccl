@@ -182,10 +182,9 @@ struct DeviceSegmentedRadixSort
    *   sequence of associated value items
    *
    * @param[in] num_items 
-   *   The total number of items to sort (across all segments). If segments
-   *   are non-contiguous, this should include unused items in between
-   *   segments, namely all items between the start of the first and end
-   *   of the last segment.
+   *   The total number of items within the segmented array, including items not
+   *   covered by segments. `num_items` should match the largest element within
+   *   the range `[d_end_offsets, d_end_offsets + num_segments)`.
    *
    * @param[in] num_segments 
    *   The number of segments that comprise the sorting data
@@ -411,10 +410,9 @@ struct DeviceSegmentedRadixSort
    *   to the sorted output values
    *
    * @param[in] num_items 
-   *   The total number of items to sort (across all segments). If segments
-   *   are non-contiguous, this should include unused items in between
-   *   segments, namely all items between the start of the first and end
-   *   of the last segment.
+   *   The total number of items within the segmented array, including items not
+   *   covered by segments. `num_items` should match the largest element within
+   *   the range `[d_end_offsets, d_end_offsets + num_segments)`.
    *
    * @param[in] num_segments 
    *   The number of segments that comprise the sorting data
@@ -621,10 +619,9 @@ struct DeviceSegmentedRadixSort
    *   sequence of associated value items
    *
    * @param[in] num_items 
-   *   The total number of items to sort (across all segments). If segments
-   *   are non-contiguous, this should include unused items in between
-   *   segments, namely all items between the start of the first and end
-   *   of the last segment.
+   *   The total number of items within the segmented array, including items not
+   *   covered by segments. `num_items` should match the largest element within
+   *   the range `[d_end_offsets, d_end_offsets + num_segments)`.
    *
    * @param[in] num_segments 
    *   The number of segments that comprise the sorting data
@@ -852,10 +849,9 @@ struct DeviceSegmentedRadixSort
    *   to the sorted output values
    *
    * @param[in] num_items 
-   *   The total number of items to sort (across all segments). If segments
-   *   are non-contiguous, this should include unused items in between
-   *   segments, namely all items between the start of the first and end
-   *   of the last segment.
+   *   The total number of items within the segmented array, including items not
+   *   covered by segments. `num_items` should match the largest element within
+   *   the range `[d_end_offsets, d_end_offsets + num_segments)`.
    *
    * @param[in] num_segments 
    *   The number of segments that comprise the sorting data
@@ -1052,10 +1048,9 @@ struct DeviceSegmentedRadixSort
    *   Device-accessible pointer to the sorted output sequence of key data
    *
    * @param[in] num_items  
-   *   The total number of items to sort (across all segments). If segments
-   *   are non-contiguous, this should include unused items in between
-   *   segments, namely all items between the start of the first and end
-   *   of the last segment.
+   *   The total number of items within the segmented array, including items not
+   *   covered by segments. `num_items` should match the largest element within
+   *   the range `[d_end_offsets, d_end_offsets + num_segments)`.
    *
    * @param[in] num_segments  
    *   The number of segments that comprise the sorting data
@@ -1255,10 +1250,9 @@ struct DeviceSegmentedRadixSort
    *   point to the sorted output keys
    *
    * @param[in] num_items  
-   *   The total number of items to sort (across all segments). If segments
-   *   are non-contiguous, this should include unused items in between
-   *   segments, namely all items between the start of the first and end
-   *   of the last segment.
+   *   The total number of items within the segmented array, including items not
+   *   covered by segments. `num_items` should match the largest element within
+   *   the range `[d_end_offsets, d_end_offsets + num_segments)`.
    *
    * @param[in] num_segments  
    *   The number of segments that comprise the sorting data
@@ -1449,10 +1443,9 @@ struct DeviceSegmentedRadixSort
    *   Device-accessible pointer to the sorted output sequence of key data
    *
    * @param[in] num_items  
-   *   The total number of items to sort (across all segments). If segments
-   *   are non-contiguous, this should include unused items in between
-   *   segments, namely all items between the start of the first and end
-   *   of the last segment.
+   *   The total number of items within the segmented array, including items not
+   *   covered by segments. `num_items` should match the largest element within
+   *   the range `[d_end_offsets, d_end_offsets + num_segments)`.
    *
    * @param[in] num_segments  
    *   The number of segments that comprise the sorting data
@@ -1651,10 +1644,9 @@ struct DeviceSegmentedRadixSort
    *   point to the sorted output keys
    *
    * @param[in] num_items  
-   *   The total number of items to sort (across all segments). If segments
-   *   are non-contiguous, this should include unused items in between
-   *   segments, namely all items between the start of the first and end
-   *   of the last segment.
+   *   The total number of items within the segmented array, including items not
+   *   covered by segments. `num_items` should match the largest element within
+   *   the range `[d_end_offsets, d_end_offsets + num_segments)`.
    *
    * @param[in] num_segments  
    *   The number of segments that comprise the sorting data
