@@ -190,17 +190,24 @@ cudaError_t Debug(cudaError_t error, const char *filename, int line)
   #ifndef CUB_RDC_ENABLED
   #define CUB_TEMP_DEVICE_CODE
   #else
-  #define CUB_TEMP_DEVICE_CODE cudaGetLastError()
+  #define CUB_TEMP_DEVICE_CODE last_error = cudaGetLastError()
   #endif
+
+  cudaError_t last_error = cudaSuccess;
 
   NV_IF_TARGET(
     NV_IS_HOST, 
-    (cudaGetLastError();),
+    (last_error = cudaGetLastError();),
     (CUB_TEMP_DEVICE_CODE;)
   );
   
   #undef CUB_TEMP_DEVICE_CODE
   // clang-format on
+
+  if (error == cudaSuccess && last_error != cudaSuccess)
+  {
+    error = last_error;
+  }
 
 #ifdef CUB_STDERR
   if (error)
