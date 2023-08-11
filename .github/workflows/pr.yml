@@ -158,7 +158,7 @@ jobs:
       test_script: "./ci/test_libcudacxx.sh"
       devcontainer_version: ${{ needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION }}
 
-  examples:
+  cccl:
     name: CCCL Infrastructure
     if: ${{ !contains(github.event.head_commit.message, 'skip-tests') }}
     needs: [compute-nvcc-matrix, get-devcontainer-version]
@@ -173,7 +173,7 @@ jobs:
       image: rapidsai/devcontainers:${{needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       command: |
         cmake -S . --preset=ci-cccl -CMAKE_CUDA_ARCHITECTURE=70 -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA} -DCMAKE_CUDA_COMPILER=nvcc
-        ctest --preset=examples
+        ctest --preset=ci-cccl
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
@@ -185,6 +185,6 @@ jobs:
       - libcudacxx
       - nvrtc
       - thrust
-      - examples
+      - cccl
     steps:
       - run: echo "CI success"

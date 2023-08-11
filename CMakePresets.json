@@ -175,6 +175,7 @@
     },
     {
       "name": "ci-cub-base",
+      "hidden": true,
       "inherits": "base",
       "filter": {
         "exclude": {
