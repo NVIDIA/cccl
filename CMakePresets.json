@@ -214,6 +214,21 @@
       "inherits": "ci-cub-base"
     },
     {
+      "name": "ci-thrust-cpp14",
+      "configurePreset": "ci-thrust-cpp14",
+      "inherits": "ci-cub-base"
+    },
+    {
+      "name": "ci-thrust-cpp17",
+      "configurePreset": "ci-thrust-cpp17",
+      "inherits": "ci-cub-base"
+    },
+    {
+      "name": "ci-thrust-cpp20",
+      "configurePreset": "ci-thrust-cpp20",
+      "inherits": "ci-cub-base"
+    },
+    {
       "name": "ci-cccl",
       "configurePreset": "ci-cccl",
       "inherits": "base"
