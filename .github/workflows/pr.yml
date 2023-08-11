@@ -172,7 +172,7 @@ jobs:
       runner: linux-${{matrix.cpu}}-gpu-v100-latest-1
       image: rapidsai/devcontainers:${{needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       command: |
-        cmake -S . --preset=ci-cccl -DCMAKE_CUDA_ARCHITECTURE=70 -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA} -DCMAKE_CUDA_COMPILER=nvcc
+        cmake -S . --preset=ci-cccl -DCMAKE_CUDA_ARCHITECTURES=70 -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA} -DCMAKE_CUDA_COMPILER=nvcc
         ctest --preset=ci-cccl
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
