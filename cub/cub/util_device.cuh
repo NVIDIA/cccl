@@ -70,7 +70,7 @@ CUB_NAMESPACE_BEGIN
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
  */
 template <typename T>
-__global__ void EmptyKernel(void) { }
+CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel(void) { }
 
 #endif  // DOXYGEN_SHOULD_SKIP_THIS
 

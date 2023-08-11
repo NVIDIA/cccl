@@ -68,7 +68,7 @@ CUB_NAMESPACE_BEGIN
  *   Number of tiles
  */
 template <typename ScanTileStateT>
-__global__ void DeviceScanInitKernel(ScanTileStateT tile_state, int num_tiles)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanInitKernel(ScanTileStateT tile_state, int num_tiles)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
@@ -94,9 +94,9 @@ __global__ void DeviceScanInitKernel(ScanTileStateT tile_state, int num_tiles)
  *   (i.e., length of `d_selected_out`)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-__global__ void DeviceCompactInitKernel(ScanTileStateT tile_state,
-                                        int num_tiles,
-                                        NumSelectedIteratorT d_num_selected_out)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(ScanTileStateT tile_state,
+                                                          int num_tiles,
+                                                          NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
@@ -165,13 +165,13 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           typename AccumT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
-  __global__ void DeviceScanKernel(InputIteratorT d_in,
-                                   OutputIteratorT d_out,
-                                   ScanTileStateT tile_state,
-                                   int start_tile,
-                                   ScanOpT scan_op,
-                                   InitValueT init_value,
-                                   OffsetT num_items)
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(InputIteratorT d_in,
+                                                     OutputIteratorT d_out,
+                                                     ScanTileStateT tile_state,
+                                                     int start_tile,
+                                                     ScanOpT scan_op,
+                                                     InitValueT init_value,
+                                                     OffsetT num_items)
 {
   using RealInitValueT = typename InitValueT::value_type;
   typedef typename ChainedPolicyT::ActivePolicy::ScanPolicyT ScanPolicyT;

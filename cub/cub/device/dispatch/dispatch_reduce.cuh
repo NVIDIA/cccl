@@ -153,12 +153,12 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           typename ReductionOpT,
           typename AccumT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) 
-__global__ void DeviceReduceKernel(InputIteratorT d_in,
-                                   AccumT* d_out,
-                                   OffsetT num_items,
-                                   GridEvenShare<OffsetT> even_share,
-                                   ReductionOpT reduction_op)
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceReduceKernel(InputIteratorT d_in,
+                                                       AccumT *d_out,
+                                                       OffsetT num_items,
+                                                       GridEvenShare<OffsetT> even_share,
+                                                       ReductionOpT reduction_op)
 {
   // Thread block type for reducing input tiles
   using AgentReduceT =
@@ -232,12 +232,12 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS), 1) 
-__global__ void DeviceReduceSingleTileKernel(InputIteratorT d_in,
-                                             OutputIteratorT d_out,
-                                             OffsetT num_items,
-                                             ReductionOpT reduction_op,
-                                             InitT init)
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS), 1) //
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceReduceSingleTileKernel(InputIteratorT d_in,
+                                                                 OutputIteratorT d_out,
+                                                                 OffsetT num_items,
+                                                                 ReductionOpT reduction_op,
+                                                                 InitT init)
 {
   // Thread block type for reducing input tiles
   using AgentReduceT =
@@ -358,15 +358,15 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) 
-__global__ void DeviceSegmentedReduceKernel(
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    int /*num_segments*/,
-    ReductionOpT reduction_op,
-    InitT init)
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES
+  void DeviceSegmentedReduceKernel(InputIteratorT d_in,
+                                   OutputIteratorT d_out,
+                                   BeginOffsetIteratorT d_begin_offsets,
+                                   EndOffsetIteratorT d_end_offsets,
+                                   int /*num_segments*/,
+                                   ReductionOpT reduction_op,
+                                   InitT init)
 {
   // Thread block type for reducing input tiles
   using AgentReduceT =

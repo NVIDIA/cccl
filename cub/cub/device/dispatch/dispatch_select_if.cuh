@@ -131,16 +131,16 @@ template <typename ChainedPolicyT,
           typename EqualityOpT,
           typename OffsetT,
           bool KEEP_REJECTS>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::SelectIfPolicyT::BLOCK_THREADS)) __global__
-  void DeviceSelectSweepKernel(InputIteratorT d_in,
-                               FlagsInputIteratorT d_flags,
-                               SelectedOutputIteratorT d_selected_out,
-                               NumSelectedIteratorT d_num_selected_out,
-                               ScanTileStateT tile_status,
-                               SelectOpT select_op,
-                               EqualityOpT equality_op,
-                               OffsetT num_items,
-                               int num_tiles)
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::SelectIfPolicyT::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSelectSweepKernel(InputIteratorT d_in,
+                                                            FlagsInputIteratorT d_flags,
+                                                            SelectedOutputIteratorT d_selected_out,
+                                                            NumSelectedIteratorT d_num_selected_out,
+                                                            ScanTileStateT tile_status,
+                                                            SelectOpT select_op,
+                                                            EqualityOpT equality_op,
+                                                            OffsetT num_items,
+                                                            int num_tiles)
 {
     using AgentSelectIfPolicyT = typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT;
 

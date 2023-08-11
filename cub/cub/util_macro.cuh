@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <cuda/std/detail/__config>
 #include <cuda/std/utility>
 
 #include "util_namespace.cuh"
@@ -111,6 +112,10 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 
     /// Static assert
     #define CUB_STATIC_ASSERT(cond, msg) typedef int CUB_CAT(cub_static_assert, __LINE__)[(cond) ? 1 : -1]
+#endif
+
+#ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
+#define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
 #endif
 
 /** @} */       // end group UtilModule

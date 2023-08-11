@@ -89,7 +89,7 @@ CUB_NAMESPACE_BEGIN
  *   Drain queue descriptor for dynamically mapping tile data onto thread blocks
  */
 template <int NUM_ACTIVE_CHANNELS, typename CounterT, typename OffsetT>
-__global__ void
+CUB_DETAIL_KERNEL_ATTRIBUTES void
 DeviceHistogramInitKernel(ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
                           ArrayWrapper<CounterT *, NUM_ACTIVE_CHANNELS> d_output_histograms_wrapper,
                           GridQueue<int> tile_queue)
@@ -193,8 +193,8 @@ template <typename ChainedPolicyT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK_THREADS)) __global__
-  void DeviceHistogramSweepKernel(
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     SampleIteratorT d_samples,
     ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
     ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper,
