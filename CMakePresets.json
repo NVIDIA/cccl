@@ -17,7 +17,10 @@
         "CCCL_ENABLE_CUB": false,
         "CCCL_ENABLE_THRUST": false,
         "CCCL_ENABLE_TESTING": false,
-        "CCCL_ENABLE_EXAMPLES": false
+        "CCCL_ENABLE_EXAMPLES": false,
+        "libcudacxx_ENABLE_INSTALL_RULES": true,
+        "CUB_ENABLE_INSTALL_RULES": true,
+        "THRUST_ENABLE_INSTALL_RULES": true
       }
     },
     {
