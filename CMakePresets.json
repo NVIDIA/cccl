@@ -12,6 +12,7 @@
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
         "CCCL_ENABLE_LIBCUDACXX": false,
         "CCCL_ENABLE_CUB": false,
         "CCCL_ENABLE_THRUST": false,
@@ -20,14 +21,144 @@
       }
     },
     {
-      "name": "examples",
-      "displayName": "CCCL Examples",
-      "description": "Configure, build, and run the CCCL Examples",
+      "name": "ci-cub-base",
+      "hidden": true,
       "inherits": "base",
       "cacheVariables": {
-        "CMAKE_CUDA_ARCHITECTURES": "70",
-        "CCCL_ENABLE_EXAMPLES": true
+        "CCCL_ENABLE_CUB": true,
+        "CUB_ENABLE_TESTING": true,
+        "CUB_ENABLE_EXAMPLES": true,
+        "CUB_ENABLE_DIALECT_CPP11": false,
+        "CUB_ENABLE_DIALECT_CPP14": false,
+        "CUB_ENABLE_DIALECT_CPP17": false,
+        "CUB_ENABLE_DIALECT_CPP20": false
       }
+    },
+    {
+      "name": "ci-cub-cpp11",
+      "displayName": "CUB GitHub CI: C++11",
+      "inherits": "ci-cub-base",
+      "cacheVariables": {
+        "CUB_IGNORE_DEPRECATED_CPP_DIALECT": true,
+        "CUB_ENABLE_DIALECT_CPP11": true
+      }
+    },
+    {
+      "name": "ci-cub-cpp14",
+      "displayName": "CUB GitHub CI: C++14",
+      "inherits": "ci-cub-base",
+      "cacheVariables": {
+        "CUB_ENABLE_DIALECT_CPP14": true
+      }
+    },
+    {
+      "name": "ci-cub-cpp17",
+      "displayName": "CUB GitHub CI: C++17",
+      "inherits": "ci-cub-base",
+      "cacheVariables": {
+        "CUB_ENABLE_DIALECT_CPP17": true
+      }
+    },
+    {
+      "name": "ci-cub-cpp20",
+      "displayName": "CUB GitHub CI: C++20",
+      "inherits": "ci-cub-base",
+      "cacheVariables": {
+        "CUB_ENABLE_DIALECT_CPP20": true
+      }
+    },
+    {
+      "name": "ci-thrust-base",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "CCCL_ENABLE_THRUST": true,
+        "THRUST_ENABLE_MULTICONFIG": true,
+        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP11": false,
+        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": false,
+        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": false,
+        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20": false
+      }
+    },
+    {
+      "name": "ci-thrust-cpp11",
+      "displayName": "Thrust GitHub CI: C++11",
+      "inherits": "ci-thrust-base",
+      "cacheVariables": {
+        "THRUST_IGNORE_DEPRECATED_CPP_DIALECT": true,
+        "THRUST_ENABLE_DIALECT_CPP11": true
+      }
+    },
+    {
+      "name": "ci-thrust-cpp14",
+      "displayName": "Thrust GitHub CI: C++14",
+      "inherits": "ci-thrust-base",
+      "cacheVariables": {
+        "THRUST_ENABLE_DIALECT_CPP14": true
+      }
+    },
+    {
+      "name": "ci-thrust-cpp17",
+      "displayName": "Thrust GitHub CI: C++17",
+      "inherits": "ci-thrust-base",
+      "cacheVariables": {
+        "THRUST_ENABLE_DIALECT_CPP17": true
+      }
+    },
+    {
+      "name": "ci-thrust-cpp20",
+      "displayName": "Thrust GitHub CI: C++20",
+      "inherits": "ci-thrust-base",
+      "cacheVariables": {
+        "THRUST_ENABLE_DIALECT_CPP20": true
+      }
+    },
+    {
+      "name": "ci-cccl",
+      "displayName": "CCCL Infrastructure Github CI",
+      "inherits": "base",
+      "cacheVariables": {
+        "CCCL_ENABLE_EXAMPLES": true,
+        "CCCL_ENABLE_TESTING": true
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ci-cub-cpp11",
+      "configurePreset": "ci-cub-cpp11"
+    },
+    {
+      "name": "ci-cub-cpp14",
+      "configurePreset": "ci-cub-cpp14"
+    },
+    {
+      "name": "ci-cub-cpp17",
+      "configurePreset": "ci-cub-cpp17"
+    },
+    {
+      "name": "ci-cub-cpp20",
+      "configurePreset": "ci-cub-cpp20"
+    },
+    {
+      "name": "ci-thrust-cpp11",
+      "configurePreset": "ci-thrust-cpp11"
+    },
+    {
+      "name": "ci-thrust-cpp14",
+      "configurePreset": "ci-thrust-cpp14"
+    },
+    {
+      "name": "ci-thrust-cpp17",
+      "configurePreset": "ci-thrust-cpp17"
+    },
+    {
+      "name": "ci-thrust-cpp20",
+      "configurePreset": "ci-thrust-cpp20"
+    },
+    {
+      "name": "ci-cccl",
+      "configurePreset": "ci-cccl"
     }
   ],
   "testPresets": [
@@ -43,15 +174,43 @@
       }
     },
     {
-      "name": "examples",
-      "configurePreset": "examples",
+      "name": "ci-cub-base",
       "inherits": "base",
-      "filter":{
-        "include": {
-          "name": "^cccl\\.example\\."
+      "filter": {
+        "exclude": {
+          "name": "device_radix_sort"
         }
       }
+    },
+    {
+      "name": "ci-cub-cpp11",
+      "configurePreset": "ci-cub-cpp11",
+      "inherits": "ci-cub-base"
+    },
+    {
+      "name": "ci-cub-cpp14",
+      "configurePreset": "ci-cub-cpp14",
+      "inherits": "ci-cub-base"
+    },
+    {
+      "name": "ci-cub-cpp17",
+      "configurePreset": "ci-cub-cpp17",
+      "inherits": "ci-cub-base"
+    },
+    {
+      "name": "ci-cub-cpp20",
+      "configurePreset": "ci-cub-cpp20",
+      "inherits": "ci-cub-base"
+    },
+    {
+      "name": "ci-thrust-cpp11",
+      "configurePreset": "ci-thrust-cpp11",
+      "inherits": "ci-cub-base"
+    },
+    {
+      "name": "ci-cccl",
+      "configurePreset": "ci-cccl",
+      "inherits": "base"
     }
   ]
 }
-

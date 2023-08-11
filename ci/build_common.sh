@@ -110,3 +110,22 @@ function configure_and_build() {
     configure "$CMAKE_OPTIONS"
     build "$BUILD_NAME"
 }
+
+function configure_and_build_preset()
+{
+    local BUILD_NAME=$1
+    local PRESET=$2
+    local CMAKE_OPTIONS=$3
+
+    set CMAKE_BUILD_PARALLEL_LEVEL=$PARALLEL_LEVEL
+
+    pushd ..
+
+    cmake --preset=$PRESET $COMMON_CMAKE_OPTIONS $CMAKE_OPTIONS
+    echo "$BUILD_NAME configure complete."
+
+    cmake --build --preset=$PRESET
+    echo "$BUILD_NAME build complete."
+
+    popd
+}
