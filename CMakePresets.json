@@ -122,7 +122,7 @@
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_CUDA_COMPILER": "nvcc",
-        "CMAKE_CUDA_ARCHITECTURES": "70-virtual",
+        "CMAKE_CUDA_ARCHITECTURES": "70;70-virtual",
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_TESTING": true
       }
