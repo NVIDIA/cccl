@@ -47,17 +47,31 @@
 #  define _LIBCUDACXX_COMPILER_CLANG_CUDA
 #endif
 
-// Some convenience macros to filter nvcc versions
-#if defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1102000
-#define _LIBCUDACXX_COMPILER_NVCC_BELOW_11_2
-#endif // defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1102000
-#if defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000
-#define _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3
-#endif // defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1103000
+#ifdef __CUDACC__
+#  define _LIBCUDACXX_CUDACC
+#  define _LIBCUDACXX_CUDACC_VER_MAJOR __CUDACC_VER_MAJOR__
+#  define _LIBCUDACXX_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
+#  define _LIBCUDACXX_CUDACC_VER_BUILD __CUDACC_VER_BUILD__
+#  define _LIBCUDACXX_CUDACC_VER                                                  \
+      _LIBCUDACXX_CUDACC_VER_MAJOR * 100000 + _LIBCUDACXX_CUDACC_VER_MINOR * 1000 + \
+      _LIBCUDACXX_CUDACC_VER_BUILD
 
-#if defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1108000
-#define _LIBCUDACXX_COMPILER_NVCC_BELOW_11_8
-#endif // defined(_LIBCUDACXX_COMPILER_NVCC) && _LIBCUDACXX_CUDACC_VER < 1108000
+// TODO: Determine if this is necessary, I don't know why we automatically include this in <config>
+#  if defined(__clang__) || defined(__FLT16_MANT_DIG__)
+#    include <cuda_fp16.h>
+#  endif
+#endif
+
+// Some convenience macros to filter CUDACC versions
+#if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1102000
+#define _LIBCUDACXX_CUDACC_BELOW_11_2
+#endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1102000
+#if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1103000
+#define _LIBCUDACXX_CUDACC_BELOW_11_3
+#endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1103000
+#if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1108000
+#define _LIBCUDACXX_CUDACC_BELOW_11_8
+#endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1108000
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #  define _LIBCUDACXX_HAS_PRAGMA_MSVC_WARNING
@@ -651,7 +665,7 @@ extern "C++" {
 #define _LIBCUDACXX_IS_LVALUE_REFERENCE(...) __is_lvalue_reference(__VA_ARGS__)
 #endif // __check_builtin(is_lvalue_reference)
 
-#if defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3)
+#if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK
 #endif // nvcc < 11.3
 
@@ -677,7 +691,7 @@ extern "C++" {
 #define _LIBCUDACXX_IS_OBJECT(...) __is_object(__VA_ARGS__)
 #endif // __check_builtin(is_object)
 
-#if defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3)
+#if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_OBJECT_FALLBACK
 #endif // nvcc < 11.3
 
@@ -779,7 +793,7 @@ extern "C++" {
 #define _LIBCUDACXX_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
 #endif // __check_builtin(is_unsigned)
 
-#if defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3)
+#if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK
 #endif // nvcc < 11.3
 
@@ -864,7 +878,7 @@ extern "C++" {
   _Pragma(_LIBCUDACXX_TOSTRING(diagnostic push)) \
   _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
 # define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(diagnostic pop))
-#else // _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3
+#else // _LIBCUDACXX_CUDACC_BELOW_11_3
 # define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
 # define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)  _Pragma(_LIBCUDACXX_TOSTRING(diag_default _WARNING))
 #endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
@@ -1132,7 +1146,7 @@ typedef __char32_t char32_t;
 #endif // !_LIBCUDACXX_HAS_NO_INT128
 
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#if defined(__CUDACC__)
+#if defined(_LIBCUDACXX_CUDACC)
 #  define _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 #endif
 #endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
@@ -1148,7 +1162,7 @@ typedef __char32_t char32_t;
 // [[msvc::no_unique_address]] though. If/when it does implement
 // [[msvc::no_unique_address]], this should be preferred though.
 #  define _LIBCUDACXX_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
-#elif defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3) \
+#elif defined(_LIBCUDACXX_CUDACC_BELOW_11_3) \
  || (__has_cpp_attribute(no_unique_address) < 201803L)
 #  define _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  define _LIBCUDACXX_NO_UNIQUE_ADDRESS
@@ -1421,17 +1435,17 @@ typedef __char32_t char32_t;
 #  define _LIBCUDACXX_HIDE_FROM_ABI_AFTER_V1 _LIBCUDACXX_HIDE_FROM_ABI
 #endif
 
-#ifdef __CUDACC__
-#define _LIBCUDACXX_HOST __host__
-#define _LIBCUDACXX_DEVICE __device__
-#define _LIBCUDACXX_HOST_DEVICE __host__ __device__
-#define _LIBCUDACXX_FORCE_INLINE __forceinline__
-#else // ^^^ __CUDACC__ ^^^ / vvv !__CUDACC__
-#define _LIBCUDACXX_HOST
-#define _LIBCUDACXX_DEVICE
-#define _LIBCUDACXX_HOST_DEVICE
-#define _LIBCUDACXX_FORCE_INLINE
-#endif // !__CUDACC__
+#ifdef _LIBCUDACXX_CUDACC
+#  define _LIBCUDACXX_HOST __host__
+#  define _LIBCUDACXX_DEVICE __device__
+#  define _LIBCUDACXX_HOST_DEVICE __host__ __device__
+#  define _LIBCUDACXX_FORCE_INLINE __forceinline__
+#else // ^^^ _LIBCUDACXX_CUDACC ^^^ / vvv !_LIBCUDACXX_CUDACC
+#  define _LIBCUDACXX_HOST
+#  define _LIBCUDACXX_DEVICE
+#  define _LIBCUDACXX_HOST_DEVICE
+#  define _LIBCUDACXX_FORCE_INLINE
+#endif // !_LIBCUDACXX_CUDACC
 
 // Just so we can migrate to the new macros gradually.
 
@@ -1671,7 +1685,7 @@ typedef unsigned int   char32_t;
 // by defining _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS.
 // NVCC 11.1 and 11.2 are broken with the deprecated attribute, so disable it
 #if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS) \
- && !defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3)
+ && !defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
 #  if __has_attribute(deprecated)
 #    define _LIBCUDACXX_DEPRECATED __attribute__ ((deprecated))
 #  elif _LIBCUDACXX_STD_VER > 11
@@ -1972,7 +1986,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #endif
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#if defined(_LIBCUDACXX_COMPILER_NVCC) || defined(_LIBCUDACXX_COMPILER_NVRTC) || defined(_LIBCUDACXX_COMPILER_NVHPC) || defined(__CUDACC__)
+#if defined(_LIBCUDACXX_COMPILER_NVCC) || defined(_LIBCUDACXX_COMPILER_NVRTC) || defined(_LIBCUDACXX_COMPILER_NVHPC) || defined(_LIBCUDACXX_CUDACC)
 #  define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
 #endif
 
@@ -2087,7 +2101,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #elif defined(_MSC_VER)
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#elif defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_8)
+#elif defined(_LIBCUDACXX_CUDACC_BELOW_11_8)
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #endif
 
@@ -2224,7 +2238,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #endif
 
 #if !defined(_LIBCUDACXX_DISABLE_EXEC_CHECK)
-#if defined(__CUDACC__)                       \
+#if defined(_LIBCUDACXX_CUDACC)                       \
  && !defined(_LIBCUDACXX_COMPILER_NVRTC)      \
  && !defined(_LIBCUDACXX_COMPILER_NVHPC_CUDA) \
  && !defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)

@@ -11,18 +11,6 @@
 #ifndef __cuda_std__
 #define __cuda_std__
 
-#ifdef __CUDACC__
-    #if defined(__clang__) || defined(__FLT16_MANT_DIG__)
-        #include <cuda_fp16.h>
-    #endif
-    #define _LIBCUDACXX_CUDACC_VER_MAJOR __CUDACC_VER_MAJOR__
-    #define _LIBCUDACXX_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
-    #define _LIBCUDACXX_CUDACC_VER_BUILD __CUDACC_VER_BUILD__
-    #define _LIBCUDACXX_CUDACC_VER                                                  \
-        _LIBCUDACXX_CUDACC_VER_MAJOR * 100000 + _LIBCUDACXX_CUDACC_VER_MINOR * 1000 + \
-        _LIBCUDACXX_CUDACC_VER_BUILD
-#endif
-
 #define _LIBCUDACXX_CUDA_API_VERSION 2002000
 
 #define _LIBCUDACXX_CUDA_API_VERSION_MAJOR \
