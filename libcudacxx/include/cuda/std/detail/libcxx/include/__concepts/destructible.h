@@ -30,6 +30,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _LIBCUDACXX_STD_VER > 11
 
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+
+template<class _Tp>
+_LIBCUDACXX_CONCEPT destructible = __is_nothrow_destructible(_Tp);
+
+#else // ^^^ _LIBCUDACXX_COMPILER_MSVC ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC vvv
+
 template<class _Tp, class = void, class = void>
 _LIBCUDACXX_INLINE_VAR constexpr bool __destructible_impl = false;
 
@@ -57,6 +64,8 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __destructible<_Tp[_Nm]> = __destructible<
 
 template<class _Tp>
 _LIBCUDACXX_CONCEPT destructible = __destructible<_Tp>;
+
+#endif // !_LIBCUDACXX_COMPILER_MSVC
 
 #endif // _LIBCUDACXX_STD_VER > 11
 
