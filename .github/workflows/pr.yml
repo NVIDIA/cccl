@@ -35,6 +35,9 @@ jobs:
   test-windows-aws-auth:
     name: Test if AWS authentication works on Windows
     runs-on: windows-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
     - name: Get AWS credentials for sccache bucket
       uses: aws-actions/configure-aws-credentials@v2
