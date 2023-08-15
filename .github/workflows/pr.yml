@@ -45,6 +45,15 @@ jobs:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2 
         role-duration-seconds: 43200 # 12 hours)
+    - run: |
+        echo "SCCACHE_BUCKET=rapids-sccache-devs" >> $env:GITHUB_ENV
+        echo "SCCACHE_REGION=us-east-2" >> $env:GITHUB_ENV
+        echo "SCCACHE_IDLE_TIMEOUT=32768" >> $env:GITHUB_ENV
+        echo "SCCACHE_S3_USE_SSL=true" >> $env:GITHUB_ENV
+        echo "SCCACHE_S3_NO_CREDENTIALS=false" >> $env:GITHUB_ENV
+        choco install sccache
+        sccache --show-stats
+      shell: powershell
   
   #get-devcontainer-version:
   #  name: Get devcontainer version
