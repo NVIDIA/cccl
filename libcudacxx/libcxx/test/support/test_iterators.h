@@ -1036,9 +1036,9 @@ struct Proxy {
     return *this;
   }
 
-#if defined(TEST_COMPILER_C1XX)
+#if defined(TEST_COMPILER_MSVC)
 TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, adding const is useless
-#endif // TEST_COMPILER_C1XX
+#endif // TEST_COMPILER_MSVC
 
   // const assignment required to make ProxyIterator model std::indirectly_writable
   _LIBCUDACXX_TEMPLATE(class Other)
@@ -1049,9 +1049,9 @@ TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, ad
     return *this;
   }
 
-#if defined(TEST_COMPILER_C1XX)
+#if defined(TEST_COMPILER_MSVC)
 TEST_NV_DIAG_DEFAULT(1805)
-#endif // TEST_COMPILER_C1XX
+#endif // TEST_COMPILER_MSVC
 
   // If `T` is a reference type, the implicitly-generated assignment operator will be deleted (and would take precedence
   // over the templated `operator=` above because it's a better match).
