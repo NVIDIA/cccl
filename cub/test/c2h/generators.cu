@@ -379,7 +379,7 @@ void init_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
                        KeyT *d_out,
                        std::size_t element_size)
 {
-  OffsetT total_segments   = segment_offsets.size() - 1;
+  OffsetT total_segments   = static_cast<OffsetT>(segment_offsets.size() - 1);
   const OffsetT *d_offsets = thrust::raw_pointer_cast(segment_offsets.data());
 
   thrust::counting_iterator<int> iota(0);

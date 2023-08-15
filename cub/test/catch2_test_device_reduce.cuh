@@ -272,7 +272,9 @@ inline void compute_host_reference(InputItT h_in,
   {
     auto seg_begin      = h_in + h_offsets[segment];
     auto seg_end        = seg_begin + h_sizes_begin[segment];
-    h_data_out[segment] = std::accumulate(seg_begin, seg_end, init, reduction_op);
+    // TODO Should this be using cub accumulator t?
+    h_data_out[segment] = static_cast<cub::detail::value_t<ResultOutItT>>(
+      std::accumulate(seg_begin, seg_end, init, reduction_op));
   }
 }
 
