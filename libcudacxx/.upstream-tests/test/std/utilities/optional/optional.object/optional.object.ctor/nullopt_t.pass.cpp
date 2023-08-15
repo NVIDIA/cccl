@@ -81,7 +81,7 @@ int main(int, char**)
 #endif
     test<optional<NonLiteralTypes::NoCtors>>();
 
-#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     static_assert(test_constexpr<optional<int>>(), "");
     static_assert(test_constexpr<optional<int*>>(), "");
 #if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 17
@@ -89,7 +89,7 @@ int main(int, char**)
     static_assert(test_constexpr<optional<NonTrivialTypes::NoCtors>>(), "");
     static_assert(test_constexpr<optional<NonConstexprTypes::NoCtors>>(), "");
 #endif
-#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
   return 0;
 }

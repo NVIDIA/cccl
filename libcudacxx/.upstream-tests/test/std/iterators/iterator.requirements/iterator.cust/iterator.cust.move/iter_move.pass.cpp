@@ -200,10 +200,10 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-#ifndef _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3 // nvcc segfaults here
+#ifndef _LIBCUDACXX_CUDACC_BELOW_11_3 // nvcc segfaults here
 static_assert(!cuda::std::is_invocable_v<IterMoveT, int*, int*>); // too many arguments
 static_assert(!cuda::std::is_invocable_v<IterMoveT, int>);
-#endif // _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3
+#endif // _LIBCUDACXX_CUDACC_BELOW_11_3
 
 #if TEST_STD_VER > 17
 // Test ADL-proofing.

@@ -81,9 +81,9 @@ int main(int, char**)
     }
 #endif
     assert(test() == 7);
-#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     static_assert(test() == 7, "");
-#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
   return 0;
 }

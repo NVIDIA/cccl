@@ -74,25 +74,25 @@ constexpr bool explicit_conversion(Input&& in, const Expect& v)
 __host__ __device__
 void test_implicit()
 {
-#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         static_assert(implicit_conversion<long long>(42, 42), "");
     }
     {
         static_assert(implicit_conversion<double>(3.14, 3.14), "");
     }
-#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         int x = 42;
         optional<void* const> o(&x);
         assert(*o == &x);
     }
-#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         using T = TrivialTestTypes::TestType;
         static_assert(implicit_conversion<T>(42, 42), "");
     }
-#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         using T = TestTypes::TestType;
         assert(implicit_conversion<T>(3, T(3)));
@@ -121,7 +121,7 @@ void test_implicit()
 
 __host__ __device__
 void test_explicit() {
-#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         using T = ExplicitTrivialTestTypes::TestType;
         static_assert(explicit_conversion<T>(42, 42), "");
@@ -131,7 +131,7 @@ void test_explicit() {
         static_assert(explicit_conversion<T>(42, 42), "");
         static_assert(!cuda::std::is_convertible<int, T>::value, "");
     }
-#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         using T = ExplicitTestTypes::TestType;
         T::reset();
