@@ -85,7 +85,7 @@ CUB_TEST("Device segmented reduce works with fancy input iterators",
                                        num_items,
                                        std::get<0>(seg_size_range),
                                        std::get<1>(seg_size_range));
-  const offset_t num_segments = segment_offsets.size() - 1;
+  const offset_t num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
   auto d_offsets_it           = thrust::raw_pointer_cast(segment_offsets.data());
 
   // Prepare input data
