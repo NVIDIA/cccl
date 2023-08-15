@@ -116,7 +116,8 @@ For complete information on compatibility between CCCL and the CUDA Toolkit, see
 Everything in CCCL is header-only, so cloning and including it in a simple project is as easy as the following:
 ```bash
 git clone https://github.com/NVIDIA/cccl.git
-nvcc -I/path/to/cloned/cccl main.cu -o main # Note, must use -I and not -isystem or else nvcc will use the version of the headers in the CUDA Toolkit
+# Note: You need to use -I and not -isystem in order to ensure you're using the cloned headers and not the ones from the CUDA Toolkit
+nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main j
 ```
 
 #### CMake Integration
@@ -157,8 +158,8 @@ The table below summarizes compatibility of CTK and CCCL upgrade scenarios (all 
 |-----------------------|---------------------|------------|---------------------------------|-----------------------------------------------------------|
 | Upgrade CCCL (Minor)  | CCCL 2.1 to CCCL 2.2 (using CTK 11.4) | Yes        | No (New features may vary)     | Existing code works; new features may vary in support.    |
 | Upgrade CCCL (Major)  | CCCL 2.2 to CCCL 3.0 (using CTK 12.1) | Yes        | Yes                            | May need to update existing code for breaking changes.    |
-| Upgrade CTK (Minor)   | CTK 11.4 to CTK 11.5 (using CCCL 2.2) | Yes (If CCCL is compatible) | No  | Ensure CCCL is same or newer than version shipped with CTK.  |
-| Upgrade CTK (Major)   | CTK 11.8 to CTK 12.0 (using CCCL 2.2) | Yes (If CCCL is compatible) | No (unless CTK removes feature used by CCCL)  | Ensure CCCL is same or newer than version shipped with CTK.  |
+| Upgrade CTK (Minor)   | CTK 11.4 to CTK 11.5 (using CCCL 2.2) | Yes (If CCCL is compatible) | No  | Ensure CCCL is same or newer than version shipped with CTK 11.5.  |
+| Upgrade CTK (Major)   | CTK 11.8 to CTK 12.0 (using CCCL 2.2) | Yes (If CCCL is compatible) | No (unless CTK removes feature used by CCCL)  | Ensure CCCL is same or newer than version shipped with CTK 12.0.  |
 
 For more information on CCCL versioning, API/ABI compatibility, and breaking changes see the [Versioning](#versioning) section below.
 
@@ -175,8 +176,8 @@ Unless otherwise specified, we support all the same host compilers as the CUDA T
 - [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements)
 
 ### C++ Dialects
-- C++11 (Deprecated in Thrust/CUB)
-- C++14 (Deprecated in Thrust/CUB)
+- C++11 (Deprecated in Thrust/CUB, to be removed in next major version)
+- C++14 (Deprecated in Thrust/CUB, to be removed in next major version)
 - C++17 
 - C++20
 
