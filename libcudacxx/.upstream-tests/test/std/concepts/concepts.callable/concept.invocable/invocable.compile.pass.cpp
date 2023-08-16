@@ -420,7 +420,8 @@ __host__ __device__ constexpr bool is_invocable(F, Args&&...) {
   return invocable<F, Args...>;
 }
 
-#if TEST_STD_VER > 14
+// execution space annotations on lambda require --extended-lambda flag with nvrtc
+#if TEST_STD_VER > 14 && !defined(TEST_COMPILER_NVRTC)
 static_assert(is_invocable([] {}), "");
 static_assert(is_invocable([](int) {}, 0), "");
 static_assert(is_invocable([](int) {}, 0L), "");

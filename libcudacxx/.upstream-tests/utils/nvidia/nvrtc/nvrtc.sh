@@ -48,9 +48,14 @@ do
             shift
             ;;
 
-        -include|-isystem|-o|-ccbin)
+        -include|-isystem|-o)
             modified_flags=("${modified_flags[@]}" "$1" "$2")
             shift
+            ;;
+
+        -ccbin=*)
+            ccbin=$1
+            modified_flags=("${modified_flags[@]}" "$1")
             ;;
 
         -x)
@@ -59,8 +64,7 @@ do
             ;;
 
         -gencode=*)
-            # head -n1 to handle "compute_70,compute_70"
-            gpu_archs=("${gpu_archs[@]}" "$(echo $1 | egrep -o 'compute_[0-9]+' | egrep -o '[0-9]+' | head -n1)")
+            gpu_archs=("${gpu_archs[@]}" "$(echo $1 | awk -F= '{ print $4 }')")
             modified_flags=("${modified_flags[@]}" "$1")
             ;;
 
@@ -97,12 +101,12 @@ fi
 
 cudart_include_dir=$(
     echo '#include <cuda_pipeline_primitives.h>' \
-        | ${nvcc} -x cu - -M -E "${includes[@]}" \
+        | ${nvcc} -x cu - -M -E "${includes[@]}" "${ccbin}" \
         | grep -e ' /.*/cuda_pipeline_primitives\.h' -o \
         | xargs dirname)
 ext_include_dir=$(
     echo '#include <cuda/pipeline>' \
-        | ${nvcc} -x cu - -M -E "${includes[@]}" -arch sm_70 -std=c++11 \
+        | ${nvcc} -x cu - -M -E "${includes[@]}" "${ccbin}" -arch sm_70 -std=c++11 \
         | grep -e ' /.*/cuda/pipeline' -o \
         | xargs dirname | xargs dirname)
 
@@ -124,7 +128,19 @@ trap finish EXIT
 thread_count=$(cat "${input}" | egrep 'cuda_thread_count = [0-9]+' | egrep -o '[0-9]+' || echo 1)
 shmem_size=$(cat "${input}" | egrep 'cuda_block_shmem_size = [0-9]+' | egrep -o '[0-9]+' || echo 0)
 
-gpu_archs=($(printf "%s\n" "${gpu_archs[@]}" | sort -un | tr '\n' ' '))
+if [[ "${#gpu_archs[@]}" -eq 0 ]]
+then
+    arch=""
+elif [[ "${#gpu_archs[@]}" -eq 1 ]]
+then
+    arch="${gpu_archs}"
+    if echo "${gpu_archs}" | egrep -q 'sm_[0-9]+'
+    then
+        modified_flags=("${modified_flags[@]}" "-DLIBCUDACXX_NVRTC_USE_CUBIN")
+    fi
+else
+    arch="compute_$(printf "%s\n" "${gpu_archs[@]}" | awk -F_ '{ print $2 }' | sort -un | head -n1)"
+fi
 
 cat "${nvrtcdir}/head.cu.in" >> "${tempfile}"
 cat "${input}" >> "${tempfile}"
@@ -136,10 +152,10 @@ echo '        "-I'"${cudart_include_dir}"'",' >> "${tempfile}"
 echo '        "-I'"${ext_include_dir}"'",' >> "${tempfile}"
 echo '        "--pre-include='"${libcudacxxdir}/test/support/nvrtc_limit_macros.h"'",' >> "${tempfile}"
 echo '        "--device-int128",' >> "${tempfile}"
-# The line below intentionally only uses the first element of ${gpu_archs[@]}.
-# They are sorted numerically above, and this selects the lowest of the requested
-# values.
-echo '        "--gpu-architecture='compute_"${gpu_archs}"'",' >> "${tempfile}"
+if [[ -n "${arch}" ]]
+then
+    echo '        "--gpu-architecture='"${arch}"'",' >> "${tempfile}"
+fi
 echo '        // END SCRIPT GENERATED OPTIONS' >> "${tempfile}"
 cat "${nvrtcdir}/tail.cu.in" >> "${tempfile}"
 echo '        '"${thread_count}, 1, 1," >> "${tempfile}"
