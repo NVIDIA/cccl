@@ -14,6 +14,7 @@
 #include <cooperative_groups.h>
 
 #include "cuda_space_selector.h"
+#include "overrun_guard.h"
 
 namespace cg = cooperative_groups;
 
@@ -75,21 +76,24 @@ template <class T,
 __device__ __noinline__
 void test_fully_specialized()
 {
-    SourceSelector<T, constructor_initializer> source_sel;
-    typename DestSelector<T, constructor_initializer>
+    SourceSelector<overrun_guard<T>, constructor_initializer> source_sel;
+    typename DestSelector<overrun_guard<T>, constructor_initializer>
         ::template offsetted<decltype(source_sel)::shared_offset> dest_sel;
     BarrierSelector<cuda::barrier<BarrierScope, CompletionF...>, constructor_initializer> bar_sel;
 
-    __shared__ T * source;
-    __shared__ T * dest;
-    __shared__ cuda::barrier<BarrierScope, CompletionF...> * bar;
+    overrun_guard<T> * source_guard;
+    overrun_guard<T> * dest_guard;
+    cuda::barrier<BarrierScope, CompletionF...> * bar;
 
-    source = source_sel.construct(static_cast<T>(12));
-    dest = dest_sel.construct(static_cast<T>(0));
+    source_guard = source_sel.construct(12);
+    dest_guard = dest_sel.construct(0);
     bar = bar_sel.construct(4);
 
-    assert(*source == 12);
-    assert(*dest == 0);
+    T * source = source_guard->get();
+    T * dest = dest_guard->get();
+
+    assert(*source_guard == 12);
+    assert(*dest_guard == 0);
 
     cuda::memcpy_async(
         cg::this_thread_block(),
@@ -97,11 +101,12 @@ void test_fully_specialized()
 
     bar->arrive_and_wait();
 
-    assert(*source == 12);
-    assert(*dest == 12);
+    assert(*source_guard == 12);
+    assert(*dest_guard == 12);
 
+    cg::this_thread_block().sync();
     if (cg::this_thread_block().thread_rank() == 0) {
-        *source = 24;
+        *source_guard = 24;
     }
     cg::this_thread_block().sync();
 
@@ -111,8 +116,8 @@ void test_fully_specialized()
 
     bar->arrive_and_wait();
 
-    assert(*source == 24);
-    assert(*dest == 24);
+    assert(*source_guard == 24);
+    assert(*dest_guard == 24);
 }
 
 struct completion

@@ -3,3 +3,4 @@
 .cache
 .aws
 .config
+compile_flags.txt

@@ -14,6 +14,7 @@
 
 #include "cuda_space_selector.h"
 #include "large_type.h"
+#include "overrun_guard.h"
 
 template <class T,
     template<typename, typename> class SourceSelector,
@@ -25,24 +26,27 @@ template <class T,
 __host__ __device__ __noinline__
 void test_fully_specialized()
 {
-    SourceSelector<T, constructor_initializer> source_sel;
-    typename DestSelector<T, constructor_initializer>
+    SourceSelector<overrun_guard<T>, constructor_initializer> source_sel;
+    typename DestSelector<overrun_guard<T>, constructor_initializer>
         ::template offsetted<decltype(source_sel)::shared_offset> dest_sel;
     BarrierSelector<cuda::barrier<BarrierScope, CompletionF...>, constructor_initializer> bar_sel;
 
-    T * source = source_sel.construct(static_cast<T>(12));
-    T * dest = dest_sel.construct(static_cast<T>(0));
+    overrun_guard<T> * source_guard = source_sel.construct(12);
+    overrun_guard<T> * dest_guard = dest_sel.construct(0);
     cuda::barrier<BarrierScope, CompletionF...> * bar = bar_sel.construct(1);
 
-    assert(*source == 12);
-    assert(*dest == 0);
+    T * source = source_guard->get();
+    T * dest = dest_guard->get();
+
+    assert(*source_guard == 12);
+    assert(*dest_guard == 0);
 
     cuda::memcpy_async(dest, source, sizeof(T), *bar);
 
     bar->arrive_and_wait();
 
-    assert(*source == 12);
-    assert(*dest == 12);
+    assert(*source_guard == 12);
+    assert(*dest_guard == 12);
 
     *source = 24;
 
@@ -50,8 +54,8 @@ void test_fully_specialized()
 
     bar->arrive_and_wait();
 
-    assert(*source == 24);
-    assert(*dest == 24);
+    assert(*source_guard == 24);
+    assert(*dest_guard == 24);
 }
 
 struct completion

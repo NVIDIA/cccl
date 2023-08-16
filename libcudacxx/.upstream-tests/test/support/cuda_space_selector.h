@@ -13,6 +13,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
+#include <cuda/std/utility>
 
 #include "concurrent_agents.h"
 
@@ -102,7 +103,7 @@ struct init_initializer {
     template<typename T, typename ...Ts>
     __host__ __device__
     static void construct(T & t, Ts && ...ts) {
-        t.init(std::forward<Ts>(ts)...);
+        t.init(cuda::std::forward<Ts>(ts)...);
     }
 };
 
@@ -110,7 +111,7 @@ struct constructor_initializer {
     template<typename T, typename ...Ts>
     __host__ __device__
     static void construct(T & t, Ts && ...ts) {
-        new ((void*)&t) T(std::forward<Ts>(ts)...);
+        cuda::std::__construct_at(&t, cuda::std::forward<Ts>(ts)...);
     }
 };
 
@@ -118,7 +119,7 @@ struct default_initializer {
     template<typename T>
     __host__ __device__
     static void construct(T & t) {
-        new ((void*)&t) T;
+        ::new ((void*)&t) T;
     }
 };
 
