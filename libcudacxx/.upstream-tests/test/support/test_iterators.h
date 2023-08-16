@@ -233,11 +233,11 @@ public:
 #if TEST_STD_VER > 14
   static_assert(cuda::std::random_access_iterator<random_access_iterator<int*>>, "");
 
-template <class It, class = cuda::std::enable_if_t<cuda::std::random_access_iterator<It>>>
+template <class It>
 class cpp20_random_access_iterator {
     It it_;
 
-    template <class U, class>
+    template <class U>
     friend class cpp20_random_access_iterator;
 
 public:
