@@ -218,8 +218,8 @@ class _LIBCUDACXX_EXCEPTION_ABI _LIBCUDACXX_AVAILABILITY_BAD_OPTIONAL_ACCESS bad
 {
 public:
     // Get the key function ~bad_optional_access() into the dylib
-    ~bad_optional_access() _NOEXCEPT override;
-    const char* what() const _NOEXCEPT override;
+    ~bad_optional_access() noexcept override;
+    const char* what() const noexcept override;
 };
 
 } // namespace std

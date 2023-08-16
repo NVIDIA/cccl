@@ -30,7 +30,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _Tp __declval(long);
 _LIBCUDACXX_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() _NOEXCEPT;
+_LIBCUDACXX_INLINE_VISIBILITY decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noexcept;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

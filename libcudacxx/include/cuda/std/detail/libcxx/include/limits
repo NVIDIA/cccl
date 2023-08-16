@@ -155,9 +155,9 @@ protected:
     typedef _Tp type;
 
     static _LIBCUDACXX_CONSTEXPR const  bool is_specialized = false;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() _NOEXCEPT {return type();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() _NOEXCEPT {return type();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() _NOEXCEPT {return type();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() noexcept {return type();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() noexcept {return type();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() noexcept {return type();}
 
     static _LIBCUDACXX_CONSTEXPR const int  digits = 0;
     static _LIBCUDACXX_CONSTEXPR const int  digits10 = 0;
@@ -166,8 +166,8 @@ protected:
     static _LIBCUDACXX_CONSTEXPR const bool is_integer = false;
     static _LIBCUDACXX_CONSTEXPR const bool is_exact = false;
     static _LIBCUDACXX_CONSTEXPR const int  radix = 0;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() _NOEXCEPT {return type();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() _NOEXCEPT {return type();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() noexcept {return type();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() noexcept {return type();}
 
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent = 0;
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent10 = 0;
@@ -179,10 +179,10 @@ protected:
     static _LIBCUDACXX_CONSTEXPR const bool has_signaling_NaN = false;
     static _LIBCUDACXX_CONSTEXPR const float_denorm_style has_denorm = denorm_absent;
     static _LIBCUDACXX_CONSTEXPR const bool has_denorm_loss = false;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() _NOEXCEPT {return type();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() _NOEXCEPT {return type();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() _NOEXCEPT {return type();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() _NOEXCEPT {return type();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() noexcept {return type();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() noexcept {return type();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() noexcept {return type();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() noexcept {return type();}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_iec559 = false;
     static _LIBCUDACXX_CONSTEXPR const bool is_bounded = false;
@@ -219,15 +219,15 @@ protected:
     static _LIBCUDACXX_CONSTEXPR const int  max_digits10 = 0;
     static _LIBCUDACXX_CONSTEXPR const type __min = __libcpp_compute_min<type, digits, is_signed>::value;
     static _LIBCUDACXX_CONSTEXPR const type __max = is_signed ? type(type(~0) ^ __min) : type(~0);
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() _NOEXCEPT {return __min;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() _NOEXCEPT {return __max;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() _NOEXCEPT {return min();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() noexcept {return __min;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() noexcept {return __max;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() noexcept {return min();}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_integer = true;
     static _LIBCUDACXX_CONSTEXPR const bool is_exact = true;
     static _LIBCUDACXX_CONSTEXPR const int  radix = 2;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() _NOEXCEPT {return type(0);}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() _NOEXCEPT {return type(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() noexcept {return type(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() noexcept {return type(0);}
 
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent = 0;
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent10 = 0;
@@ -239,10 +239,10 @@ protected:
     static _LIBCUDACXX_CONSTEXPR const bool has_signaling_NaN = false;
     static _LIBCUDACXX_CONSTEXPR const float_denorm_style has_denorm = denorm_absent;
     static _LIBCUDACXX_CONSTEXPR const bool has_denorm_loss = false;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() _NOEXCEPT {return type(0);}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() _NOEXCEPT {return type(0);}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() _NOEXCEPT {return type(0);}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() _NOEXCEPT {return type(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() noexcept {return type(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() noexcept {return type(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() noexcept {return type(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() noexcept {return type(0);}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_iec559 = false;
     static _LIBCUDACXX_CONSTEXPR const bool is_bounded = true;
@@ -272,15 +272,15 @@ protected:
     static _LIBCUDACXX_CONSTEXPR const int  max_digits10 = 0;
     static _LIBCUDACXX_CONSTEXPR const type __min = false;
     static _LIBCUDACXX_CONSTEXPR const type __max = true;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() _NOEXCEPT {return __min;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() _NOEXCEPT {return __max;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() _NOEXCEPT {return min();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() noexcept {return __min;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() noexcept {return __max;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() noexcept {return min();}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_integer = true;
     static _LIBCUDACXX_CONSTEXPR const bool is_exact = true;
     static _LIBCUDACXX_CONSTEXPR const int  radix = 2;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() _NOEXCEPT {return type(0);}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() _NOEXCEPT {return type(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() noexcept {return type(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() noexcept {return type(0);}
 
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent = 0;
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent10 = 0;
@@ -292,10 +292,10 @@ protected:
     static _LIBCUDACXX_CONSTEXPR const bool has_signaling_NaN = false;
     static _LIBCUDACXX_CONSTEXPR const float_denorm_style has_denorm = denorm_absent;
     static _LIBCUDACXX_CONSTEXPR const bool has_denorm_loss = false;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() _NOEXCEPT {return type(0);}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() _NOEXCEPT {return type(0);}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() _NOEXCEPT {return type(0);}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() _NOEXCEPT {return type(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() noexcept {return type(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() noexcept {return type(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() noexcept {return type(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() noexcept {return type(0);}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_iec559 = false;
     static _LIBCUDACXX_CONSTEXPR const bool is_bounded = true;
@@ -318,15 +318,15 @@ protected:
     static _LIBCUDACXX_CONSTEXPR const int  digits = __FLT_MANT_DIG__;
     static _LIBCUDACXX_CONSTEXPR const int  digits10 = __FLT_DIG__;
     static _LIBCUDACXX_CONSTEXPR const int  max_digits10 = 2+(digits * 30103l)/100000l;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() _NOEXCEPT {return __FLT_MIN__;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() _NOEXCEPT {return __FLT_MAX__;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() _NOEXCEPT {return -max();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() noexcept {return __FLT_MIN__;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() noexcept {return __FLT_MAX__;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() noexcept {return -max();}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_integer = false;
     static _LIBCUDACXX_CONSTEXPR const bool is_exact = false;
     static _LIBCUDACXX_CONSTEXPR const int  radix = __FLT_RADIX__;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() _NOEXCEPT {return __FLT_EPSILON__;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() _NOEXCEPT {return 0.5F;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() noexcept {return __FLT_EPSILON__;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() noexcept {return 0.5F;}
 
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent = __FLT_MIN_EXP__;
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent10 = __FLT_MIN_10_EXP__;
@@ -339,15 +339,15 @@ protected:
     static _LIBCUDACXX_CONSTEXPR const float_denorm_style has_denorm = denorm_present;
     static _LIBCUDACXX_CONSTEXPR const bool has_denorm_loss = false;
 #ifdef _LIBCUDACXX_COMPILER_NVRTC
-    _LIBCUDACXX_INLINE_VISIBILITY static type infinity() _NOEXCEPT {return __builtin_huge_valf();}
-    _LIBCUDACXX_INLINE_VISIBILITY static type quiet_NaN() _NOEXCEPT {return __builtin_nanf("");}
-    _LIBCUDACXX_INLINE_VISIBILITY static type signaling_NaN() _NOEXCEPT {return __builtin_nansf("");}
+    _LIBCUDACXX_INLINE_VISIBILITY static type infinity() noexcept {return __builtin_huge_valf();}
+    _LIBCUDACXX_INLINE_VISIBILITY static type quiet_NaN() noexcept {return __builtin_nanf("");}
+    _LIBCUDACXX_INLINE_VISIBILITY static type signaling_NaN() noexcept {return __builtin_nansf("");}
 #else
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() _NOEXCEPT {return __builtin_huge_valf();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() _NOEXCEPT {return __builtin_nanf("");}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() _NOEXCEPT {return __builtin_nansf("");}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() noexcept {return __builtin_huge_valf();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() noexcept {return __builtin_nanf("");}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() noexcept {return __builtin_nansf("");}
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() _NOEXCEPT {return __FLT_DENORM_MIN__;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() noexcept {return __FLT_DENORM_MIN__;}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_iec559 = true;
     static _LIBCUDACXX_CONSTEXPR const bool is_bounded = true;
@@ -370,15 +370,15 @@ protected:
     static _LIBCUDACXX_CONSTEXPR const int  digits = __DBL_MANT_DIG__;
     static _LIBCUDACXX_CONSTEXPR const int  digits10 = __DBL_DIG__;
     static _LIBCUDACXX_CONSTEXPR const int  max_digits10 = 2+(digits * 30103l)/100000l;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() _NOEXCEPT {return __DBL_MIN__;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() _NOEXCEPT {return __DBL_MAX__;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() _NOEXCEPT {return -max();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() noexcept {return __DBL_MIN__;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() noexcept {return __DBL_MAX__;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() noexcept {return -max();}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_integer = false;
     static _LIBCUDACXX_CONSTEXPR const bool is_exact = false;
     static _LIBCUDACXX_CONSTEXPR const int  radix = __FLT_RADIX__;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() _NOEXCEPT {return __DBL_EPSILON__;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() _NOEXCEPT {return 0.5;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() noexcept {return __DBL_EPSILON__;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() noexcept {return 0.5;}
 
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent = __DBL_MIN_EXP__;
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent10 = __DBL_MIN_10_EXP__;
@@ -391,15 +391,15 @@ protected:
     static _LIBCUDACXX_CONSTEXPR const float_denorm_style has_denorm = denorm_present;
     static _LIBCUDACXX_CONSTEXPR const bool has_denorm_loss = false;
 #ifdef _LIBCUDACXX_COMPILER_NVRTC
-    _LIBCUDACXX_INLINE_VISIBILITY static type infinity() _NOEXCEPT {return __builtin_huge_val();}
-    _LIBCUDACXX_INLINE_VISIBILITY static type quiet_NaN() _NOEXCEPT {return __builtin_nan("");}
-    _LIBCUDACXX_INLINE_VISIBILITY static type signaling_NaN() _NOEXCEPT {return __builtin_nans("");}
+    _LIBCUDACXX_INLINE_VISIBILITY static type infinity() noexcept {return __builtin_huge_val();}
+    _LIBCUDACXX_INLINE_VISIBILITY static type quiet_NaN() noexcept {return __builtin_nan("");}
+    _LIBCUDACXX_INLINE_VISIBILITY static type signaling_NaN() noexcept {return __builtin_nans("");}
 #else
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() _NOEXCEPT {return __builtin_huge_val();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() _NOEXCEPT {return __builtin_nan("");}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() _NOEXCEPT {return __builtin_nans("");}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() noexcept {return __builtin_huge_val();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() noexcept {return __builtin_nan("");}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() noexcept {return __builtin_nans("");}
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() _NOEXCEPT {return __DBL_DENORM_MIN__;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() noexcept {return __DBL_DENORM_MIN__;}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_iec559 = true;
     static _LIBCUDACXX_CONSTEXPR const bool is_bounded = true;
@@ -423,15 +423,15 @@ protected:
     static _LIBCUDACXX_CONSTEXPR const int  digits = __LDBL_MANT_DIG__;
     static _LIBCUDACXX_CONSTEXPR const int  digits10 = __LDBL_DIG__;
     static _LIBCUDACXX_CONSTEXPR const int  max_digits10 = 2+(digits * 30103l)/100000l;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() _NOEXCEPT {return __LDBL_MIN__;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() _NOEXCEPT {return __LDBL_MAX__;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() _NOEXCEPT {return -max();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() noexcept {return __LDBL_MIN__;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() noexcept {return __LDBL_MAX__;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() noexcept {return -max();}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_integer = false;
     static _LIBCUDACXX_CONSTEXPR const bool is_exact = false;
     static _LIBCUDACXX_CONSTEXPR const int  radix = __FLT_RADIX__;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() _NOEXCEPT {return __LDBL_EPSILON__;}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() _NOEXCEPT {return 0.5L;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() noexcept {return __LDBL_EPSILON__;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() noexcept {return 0.5L;}
 
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent = __LDBL_MIN_EXP__;
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent10 = __LDBL_MIN_10_EXP__;
@@ -443,10 +443,10 @@ protected:
     static _LIBCUDACXX_CONSTEXPR const bool has_signaling_NaN = true;
     static _LIBCUDACXX_CONSTEXPR const float_denorm_style has_denorm = denorm_present;
     static _LIBCUDACXX_CONSTEXPR const bool has_denorm_loss = false;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() _NOEXCEPT {return __builtin_huge_vall();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() _NOEXCEPT {return __builtin_nanl("");}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() _NOEXCEPT {return __builtin_nansl("");}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() _NOEXCEPT {return __LDBL_DENORM_MIN__;}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() noexcept {return __builtin_huge_vall();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() noexcept {return __builtin_nanl("");}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() noexcept {return __builtin_nansl("");}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() noexcept {return __LDBL_DENORM_MIN__;}
 
 #if (defined(__ppc__) || defined(__ppc64__))
     static _LIBCUDACXX_CONSTEXPR const bool is_iec559 = false;
@@ -470,9 +470,9 @@ class _LIBCUDACXX_TEMPLATE_VIS numeric_limits
     typedef typename __base::type type;
 public:
     static _LIBCUDACXX_CONSTEXPR const bool is_specialized = __base::is_specialized;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() _NOEXCEPT {return __base::min();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() _NOEXCEPT {return __base::max();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() _NOEXCEPT {return __base::lowest();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() noexcept {return __base::min();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() noexcept {return __base::max();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() noexcept {return __base::lowest();}
 
     static _LIBCUDACXX_CONSTEXPR const int  digits = __base::digits;
     static _LIBCUDACXX_CONSTEXPR const int  digits10 = __base::digits10;
@@ -481,8 +481,8 @@ public:
     static _LIBCUDACXX_CONSTEXPR const bool is_integer = __base::is_integer;
     static _LIBCUDACXX_CONSTEXPR const bool is_exact = __base::is_exact;
     static _LIBCUDACXX_CONSTEXPR const int  radix = __base::radix;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() _NOEXCEPT {return __base::epsilon();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() _NOEXCEPT {return __base::round_error();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() noexcept {return __base::epsilon();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() noexcept {return __base::round_error();}
 
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent = __base::min_exponent;
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent10 = __base::min_exponent10;
@@ -494,10 +494,10 @@ public:
     static _LIBCUDACXX_CONSTEXPR const bool has_signaling_NaN = __base::has_signaling_NaN;
     static _LIBCUDACXX_CONSTEXPR const float_denorm_style has_denorm = __base::has_denorm;
     static _LIBCUDACXX_CONSTEXPR const bool has_denorm_loss = __base::has_denorm_loss;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() _NOEXCEPT {return __base::infinity();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() _NOEXCEPT {return __base::quiet_NaN();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() _NOEXCEPT {return __base::signaling_NaN();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() _NOEXCEPT {return __base::denorm_min();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() noexcept {return __base::infinity();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() noexcept {return __base::quiet_NaN();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() noexcept {return __base::signaling_NaN();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() noexcept {return __base::denorm_min();}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_iec559 = __base::is_iec559;
     static _LIBCUDACXX_CONSTEXPR const bool is_bounded = __base::is_bounded;
@@ -563,9 +563,9 @@ class _LIBCUDACXX_TEMPLATE_VIS numeric_limits<const _Tp>
     typedef _Tp type;
 public:
     static _LIBCUDACXX_CONSTEXPR const bool is_specialized = __base::is_specialized;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() _NOEXCEPT {return __base::min();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() _NOEXCEPT {return __base::max();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() _NOEXCEPT {return __base::lowest();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() noexcept {return __base::min();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() noexcept {return __base::max();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() noexcept {return __base::lowest();}
 
     static _LIBCUDACXX_CONSTEXPR const int  digits = __base::digits;
     static _LIBCUDACXX_CONSTEXPR const int  digits10 = __base::digits10;
@@ -574,8 +574,8 @@ public:
     static _LIBCUDACXX_CONSTEXPR const bool is_integer = __base::is_integer;
     static _LIBCUDACXX_CONSTEXPR const bool is_exact = __base::is_exact;
     static _LIBCUDACXX_CONSTEXPR const int  radix = __base::radix;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() _NOEXCEPT {return __base::epsilon();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() _NOEXCEPT {return __base::round_error();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() noexcept {return __base::epsilon();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() noexcept {return __base::round_error();}
 
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent = __base::min_exponent;
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent10 = __base::min_exponent10;
@@ -587,10 +587,10 @@ public:
     static _LIBCUDACXX_CONSTEXPR const bool has_signaling_NaN = __base::has_signaling_NaN;
     static _LIBCUDACXX_CONSTEXPR const float_denorm_style has_denorm = __base::has_denorm;
     static _LIBCUDACXX_CONSTEXPR const bool has_denorm_loss = __base::has_denorm_loss;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() _NOEXCEPT {return __base::infinity();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() _NOEXCEPT {return __base::quiet_NaN();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() _NOEXCEPT {return __base::signaling_NaN();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() _NOEXCEPT {return __base::denorm_min();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() noexcept {return __base::infinity();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() noexcept {return __base::quiet_NaN();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() noexcept {return __base::signaling_NaN();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() noexcept {return __base::denorm_min();}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_iec559 = __base::is_iec559;
     static _LIBCUDACXX_CONSTEXPR const bool is_bounded = __base::is_bounded;
@@ -656,9 +656,9 @@ class _LIBCUDACXX_TEMPLATE_VIS numeric_limits<volatile _Tp>
     typedef _Tp type;
 public:
     static _LIBCUDACXX_CONSTEXPR const bool is_specialized = __base::is_specialized;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() _NOEXCEPT {return __base::min();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() _NOEXCEPT {return __base::max();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() _NOEXCEPT {return __base::lowest();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() noexcept {return __base::min();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() noexcept {return __base::max();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() noexcept {return __base::lowest();}
 
     static _LIBCUDACXX_CONSTEXPR const int  digits = __base::digits;
     static _LIBCUDACXX_CONSTEXPR const int  digits10 = __base::digits10;
@@ -667,8 +667,8 @@ public:
     static _LIBCUDACXX_CONSTEXPR const bool is_integer = __base::is_integer;
     static _LIBCUDACXX_CONSTEXPR const bool is_exact = __base::is_exact;
     static _LIBCUDACXX_CONSTEXPR const int  radix = __base::radix;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() _NOEXCEPT {return __base::epsilon();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() _NOEXCEPT {return __base::round_error();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() noexcept {return __base::epsilon();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() noexcept {return __base::round_error();}
 
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent = __base::min_exponent;
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent10 = __base::min_exponent10;
@@ -680,10 +680,10 @@ public:
     static _LIBCUDACXX_CONSTEXPR const bool has_signaling_NaN = __base::has_signaling_NaN;
     static _LIBCUDACXX_CONSTEXPR const float_denorm_style has_denorm = __base::has_denorm;
     static _LIBCUDACXX_CONSTEXPR const bool has_denorm_loss = __base::has_denorm_loss;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() _NOEXCEPT {return __base::infinity();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() _NOEXCEPT {return __base::quiet_NaN();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() _NOEXCEPT {return __base::signaling_NaN();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() _NOEXCEPT {return __base::denorm_min();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() noexcept {return __base::infinity();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() noexcept {return __base::quiet_NaN();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() noexcept {return __base::signaling_NaN();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() noexcept {return __base::denorm_min();}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_iec559 = __base::is_iec559;
     static _LIBCUDACXX_CONSTEXPR const bool is_bounded = __base::is_bounded;
@@ -749,9 +749,9 @@ class _LIBCUDACXX_TEMPLATE_VIS numeric_limits<const volatile _Tp>
     typedef _Tp type;
 public:
     static _LIBCUDACXX_CONSTEXPR const bool is_specialized = __base::is_specialized;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() _NOEXCEPT {return __base::min();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() _NOEXCEPT {return __base::max();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() _NOEXCEPT {return __base::lowest();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type min() noexcept {return __base::min();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type max() noexcept {return __base::max();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type lowest() noexcept {return __base::lowest();}
 
     static _LIBCUDACXX_CONSTEXPR const int  digits = __base::digits;
     static _LIBCUDACXX_CONSTEXPR const int  digits10 = __base::digits10;
@@ -760,8 +760,8 @@ public:
     static _LIBCUDACXX_CONSTEXPR const bool is_integer = __base::is_integer;
     static _LIBCUDACXX_CONSTEXPR const bool is_exact = __base::is_exact;
     static _LIBCUDACXX_CONSTEXPR const int  radix = __base::radix;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() _NOEXCEPT {return __base::epsilon();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() _NOEXCEPT {return __base::round_error();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type epsilon() noexcept {return __base::epsilon();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type round_error() noexcept {return __base::round_error();}
 
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent = __base::min_exponent;
     static _LIBCUDACXX_CONSTEXPR const int  min_exponent10 = __base::min_exponent10;
@@ -773,10 +773,10 @@ public:
     static _LIBCUDACXX_CONSTEXPR const bool has_signaling_NaN = __base::has_signaling_NaN;
     static _LIBCUDACXX_CONSTEXPR const float_denorm_style has_denorm = __base::has_denorm;
     static _LIBCUDACXX_CONSTEXPR const bool has_denorm_loss = __base::has_denorm_loss;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() _NOEXCEPT {return __base::infinity();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() _NOEXCEPT {return __base::quiet_NaN();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() _NOEXCEPT {return __base::signaling_NaN();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() _NOEXCEPT {return __base::denorm_min();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type infinity() noexcept {return __base::infinity();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type quiet_NaN() noexcept {return __base::quiet_NaN();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type signaling_NaN() noexcept {return __base::signaling_NaN();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR type denorm_min() noexcept {return __base::denorm_min();}
 
     static _LIBCUDACXX_CONSTEXPR const bool is_iec559 = __base::is_iec559;
     static _LIBCUDACXX_CONSTEXPR const bool is_bounded = __base::is_bounded;

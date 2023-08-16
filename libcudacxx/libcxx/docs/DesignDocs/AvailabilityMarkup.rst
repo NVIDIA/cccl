@@ -49,7 +49,7 @@ type info from the library for example::
 
 or on a particular symbol:
 
-    _LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_AVAILABILITY_SIZED_NEW_DELETE void  operator delete(void* __p, std::size_t __sz) _NOEXCEPT;
+    _LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_AVAILABILITY_SIZED_NEW_DELETE void  operator delete(void* __p, std::size_t __sz) noexcept;
 
 Furthermore, a lit feature should be added to match that availability macro,
 so that tests depending on that feature can be marked to XFAIL if the feature

@@ -990,9 +990,9 @@ template <class _Rep>
 struct _LIBCUDACXX_TEMPLATE_VIS duration_values
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR _Rep zero() _NOEXCEPT {return _Rep(0);}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR _Rep max()  _NOEXCEPT {return numeric_limits<_Rep>::max();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR _Rep min()  _NOEXCEPT {return numeric_limits<_Rep>::lowest();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR _Rep zero() noexcept {return _Rep(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR _Rep max()  noexcept {return numeric_limits<_Rep>::max();}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR _Rep min()  noexcept {return numeric_limits<_Rep>::lowest();}
 };
 
 #if _LIBCUDACXX_STD_VER > 11
@@ -1148,9 +1148,9 @@ public:
 
     // special values
 
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR duration zero() _NOEXCEPT {return duration(duration_values<rep>::zero());}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR duration min()  _NOEXCEPT {return duration(duration_values<rep>::min());}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR duration max()  _NOEXCEPT {return duration(duration_values<rep>::max());}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR duration zero() noexcept {return duration(duration_values<rep>::zero());}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR duration min()  noexcept {return duration(duration_values<rep>::min());}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR duration max()  noexcept {return duration(duration_values<rep>::max());}
 };
 
 typedef duration<long long,         nano> nanoseconds;
@@ -1422,8 +1422,8 @@ public:
 
     // special values
 
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR time_point min() _NOEXCEPT {return time_point(duration::min());}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR time_point max() _NOEXCEPT {return time_point(duration::max());}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR time_point min() noexcept {return time_point(duration::min());}
+    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR time_point max() noexcept {return time_point(duration::max());}
 };
 
 } // chrono
@@ -1610,11 +1610,11 @@ public:
     static _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const bool is_steady = false;
 
     _LIBCUDACXX_HOST_DEVICE
-    static time_point now() _NOEXCEPT;
+    static time_point now() noexcept;
     _LIBCUDACXX_HOST_DEVICE
-    static time_t     to_time_t  (const time_point& __t) _NOEXCEPT;
+    static time_t     to_time_t  (const time_point& __t) noexcept;
     _LIBCUDACXX_HOST_DEVICE
-    static time_point from_time_t(time_t __t) _NOEXCEPT;
+    static time_point from_time_t(time_t __t) noexcept;
 };
 
 #ifndef _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
@@ -1627,7 +1627,7 @@ public:
     typedef chrono::time_point<steady_clock, duration>    time_point;
     static _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const bool is_steady = true;
 
-    static time_point now() _NOEXCEPT;
+    static time_point now() noexcept;
 };
 
 typedef steady_clock high_resolution_clock;

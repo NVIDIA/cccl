@@ -125,11 +125,11 @@ class propagate_const;
 
 template <class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-const _Up& get_underlying(const propagate_const<_Up>& __pu) _NOEXCEPT;
+const _Up& get_underlying(const propagate_const<_Up>& __pu) noexcept;
 
 template <class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-_Up& get_underlying(propagate_const<_Up>& __pu) _NOEXCEPT;
+_Up& get_underlying(propagate_const<_Up>& __pu) noexcept;
 
 template <class _Tp>
 class propagate_const
@@ -185,8 +185,8 @@ private:
 
 public:
 
-  template <class _Up> friend _LIBCUDACXX_CONSTEXPR const _Up& ::_CUDA_VSTD_LFTS_V2::get_underlying(const propagate_const<_Up>& __pu) _NOEXCEPT;
-  template <class _Up> friend _LIBCUDACXX_CONSTEXPR _Up& ::_CUDA_VSTD_LFTS_V2::get_underlying(propagate_const<_Up>& __pu) _NOEXCEPT;
+  template <class _Up> friend _LIBCUDACXX_CONSTEXPR const _Up& ::_CUDA_VSTD_LFTS_V2::get_underlying(const propagate_const<_Up>& __pu) noexcept;
+  template <class _Up> friend _LIBCUDACXX_CONSTEXPR _Up& ::_CUDA_VSTD_LFTS_V2::get_underlying(propagate_const<_Up>& __pu) noexcept;
 
   _LIBCUDACXX_CONSTEXPR propagate_const() = default;
 
@@ -289,7 +289,7 @@ public:
     return *get();
   }
 
-  _LIBCUDACXX_CONSTEXPR void swap(propagate_const& __pt) _NOEXCEPT_(__is_nothrow_swappable<_Tp>::value)
+  _LIBCUDACXX_CONSTEXPR void swap(propagate_const& __pt) noexcept(__is_nothrow_swappable<_Tp>::value)
   {
     using _CUDA_VSTD::swap;
     swap(__t_, __pt.__t_);
@@ -460,19 +460,19 @@ _LIBCUDACXX_CONSTEXPR bool operator>=(const _Tp& __t, const propagate_const<_Up>
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR void swap(propagate_const<_Tp>& __pc1, propagate_const<_Tp>& __pc2) _NOEXCEPT_(__is_nothrow_swappable<_Tp>::value)
+_LIBCUDACXX_CONSTEXPR void swap(propagate_const<_Tp>& __pc1, propagate_const<_Tp>& __pc2) noexcept(__is_nothrow_swappable<_Tp>::value)
 {
   __pc1.swap(__pc2);
 }
 
 template <class _Tp>
-_LIBCUDACXX_CONSTEXPR const _Tp& get_underlying(const propagate_const<_Tp>& __pt) _NOEXCEPT
+_LIBCUDACXX_CONSTEXPR const _Tp& get_underlying(const propagate_const<_Tp>& __pt) noexcept
 {
   return __pt.__t_;
 }
 
 template <class _Tp>
-_LIBCUDACXX_CONSTEXPR _Tp& get_underlying(propagate_const<_Tp>& __pt) _NOEXCEPT
+_LIBCUDACXX_CONSTEXPR _Tp& get_underlying(propagate_const<_Tp>& __pt) noexcept
 {
   return __pt.__t_;
 }

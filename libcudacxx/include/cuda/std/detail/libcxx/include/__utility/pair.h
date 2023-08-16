@@ -69,9 +69,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class, class>
 struct __non_trivially_copyable_base {
   _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
-  __non_trivially_copyable_base() _NOEXCEPT {}
+  __non_trivially_copyable_base() noexcept {}
   _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
-  __non_trivially_copyable_base(__non_trivially_copyable_base const&) _NOEXCEPT {}
+  __non_trivially_copyable_base(__non_trivially_copyable_base const&) noexcept {}
 };
 #endif
 
@@ -159,7 +159,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
             _CheckArgsDep<_Dummy>::__enable_explicit_default::value
     >* = nullptr>
     explicit _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-    pair() _NOEXCEPT_(is_nothrow_default_constructible<first_type>::value &&
+    pair() noexcept(is_nothrow_default_constructible<first_type>::value &&
                       is_nothrow_default_constructible<second_type>::value)
         : first(), second() {}
 
@@ -167,7 +167,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
             _CheckArgsDep<_Dummy>::__enable_implicit_default::value
     >* = nullptr>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-    pair() _NOEXCEPT_(is_nothrow_default_constructible<first_type>::value &&
+    pair() noexcept(is_nothrow_default_constructible<first_type>::value &&
                       is_nothrow_default_constructible<second_type>::value)
         : first(), second() {}
 
@@ -176,7 +176,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     >* = nullptr>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     explicit pair(_T1 const& __t1, _T2 const& __t2)
-        _NOEXCEPT_(is_nothrow_copy_constructible<first_type>::value &&
+        noexcept(is_nothrow_copy_constructible<first_type>::value &&
                    is_nothrow_copy_constructible<second_type>::value)
         : first(__t1), second(__t2) {}
 
@@ -185,7 +185,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     >* = nullptr>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     pair(_T1 const& __t1, _T2 const& __t2)
-        _NOEXCEPT_(is_nothrow_copy_constructible<first_type>::value &&
+        noexcept(is_nothrow_copy_constructible<first_type>::value &&
                    is_nothrow_copy_constructible<second_type>::value)
         : first(__t1), second(__t2) {}
 
@@ -199,7 +199,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     >
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     explicit pair(_U1&& __u1, _U2&& __u2)
-        _NOEXCEPT_((is_nothrow_constructible<first_type, _U1>::value &&
+        noexcept((is_nothrow_constructible<first_type, _U1>::value &&
                     is_nothrow_constructible<second_type, _U2>::value))
         : first(_CUDA_VSTD::forward<_U1>(__u1)), second(_CUDA_VSTD::forward<_U2>(__u2)) {}
 
@@ -213,7 +213,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     >
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     pair(_U1&& __u1, _U2&& __u2)
-        _NOEXCEPT_((is_nothrow_constructible<first_type, _U1>::value &&
+        noexcept((is_nothrow_constructible<first_type, _U1>::value &&
                     is_nothrow_constructible<second_type, _U2>::value))
         : first(_CUDA_VSTD::forward<_U1>(__u1)), second(_CUDA_VSTD::forward<_U2>(__u2)) {}
 
@@ -244,7 +244,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     >* = nullptr>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     explicit pair(pair<_U1, _U2> const& __p)
-        _NOEXCEPT_((is_nothrow_constructible<first_type, _U1 const&>::value &&
+        noexcept((is_nothrow_constructible<first_type, _U1 const&>::value &&
                     is_nothrow_constructible<second_type, _U2 const&>::value))
         : first(__p.first), second(__p.second) {}
 
@@ -254,7 +254,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     >* = nullptr>
     _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     explicit pair(::std::pair<_U1, _U2> const& __p)
-        _NOEXCEPT_((is_nothrow_constructible<first_type, _U1 const&>::value &&
+        noexcept((is_nothrow_constructible<first_type, _U1 const&>::value &&
                     is_nothrow_constructible<second_type, _U2 const&>::value))
         : first(__p.first), second(__p.second) {}
 #endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
@@ -264,7 +264,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     >* = nullptr>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     pair(pair<_U1, _U2> const& __p)
-        _NOEXCEPT_((is_nothrow_constructible<first_type, _U1 const&>::value &&
+        noexcept((is_nothrow_constructible<first_type, _U1 const&>::value &&
                     is_nothrow_constructible<second_type, _U2 const&>::value))
         : first(__p.first), second(__p.second) {}
 
@@ -274,7 +274,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     >* = nullptr>
     _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     pair(::std::pair<_U1, _U2> const& __p)
-        _NOEXCEPT_((is_nothrow_constructible<first_type, _U1 const&>::value &&
+        noexcept((is_nothrow_constructible<first_type, _U1 const&>::value &&
                     is_nothrow_constructible<second_type, _U2 const&>::value))
         : first(__p.first), second(__p.second) {}
 #endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
@@ -284,7 +284,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     >* = nullptr>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     explicit pair(pair<_U1, _U2>&&__p)
-        _NOEXCEPT_((is_nothrow_constructible<first_type, _U1&&>::value &&
+        noexcept((is_nothrow_constructible<first_type, _U1&&>::value &&
                     is_nothrow_constructible<second_type, _U2&&>::value))
         : first(_CUDA_VSTD::forward<_U1>(__p.first)), second(_CUDA_VSTD::forward<_U2>(__p.second)) {}
 
@@ -294,7 +294,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     >* = nullptr>
     _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     explicit pair(::std::pair<_U1, _U2>&&__p)
-        _NOEXCEPT_((is_nothrow_constructible<first_type, _U1&&>::value &&
+        noexcept((is_nothrow_constructible<first_type, _U1&&>::value &&
                     is_nothrow_constructible<second_type, _U2&&>::value))
         : first(_CUDA_VSTD::forward<_U1>(__p.first)), second(_CUDA_VSTD::forward<_U2>(__p.second)) {}
 #endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
@@ -304,7 +304,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     >* = nullptr>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     pair(pair<_U1, _U2>&& __p)
-        _NOEXCEPT_((is_nothrow_constructible<first_type, _U1&&>::value &&
+        noexcept((is_nothrow_constructible<first_type, _U1&&>::value &&
                     is_nothrow_constructible<second_type, _U2&&>::value))
         : first(_CUDA_VSTD::forward<_U1>(__p.first)), second(_CUDA_VSTD::forward<_U2>(__p.second)) {}
 
@@ -314,7 +314,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     >* = nullptr>
     _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     pair(::std::pair<_U1, _U2>&& __p)
-        _NOEXCEPT_((is_nothrow_constructible<first_type, _U1&&>::value &&
+        noexcept((is_nothrow_constructible<first_type, _U1&&>::value &&
                     is_nothrow_constructible<second_type, _U2&&>::value))
         : first(_CUDA_VSTD::forward<_U1>(__p.first)), second(_CUDA_VSTD::forward<_U2>(__p.second)) {}
 #endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
@@ -363,7 +363,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     pair(piecewise_construct_t __pc,
          tuple<_Args1...> __first_args, tuple<_Args2...> __second_args)
-        _NOEXCEPT_((is_nothrow_constructible<first_type, _Args1...>::value &&
+        noexcept((is_nothrow_constructible<first_type, _Args1...>::value &&
                     is_nothrow_constructible<second_type, _Args2...>::value))
         : pair(__pc, __first_args, __second_args,
                 typename __make_tuple_indices<sizeof...(_Args1)>::type(),
@@ -374,7 +374,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
                         is_copy_assignable<first_type>::value &&
                         is_copy_assignable<second_type>::value,
                     pair, __nat> const& __p)
-        _NOEXCEPT_(is_nothrow_copy_assignable<first_type>::value &&
+        noexcept(is_nothrow_copy_assignable<first_type>::value &&
                    is_nothrow_copy_assignable<second_type>::value)
     {
         first = __p.first;
@@ -387,7 +387,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
                                              is_copy_assignable<_T2>::value, int> = 0>
     _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     pair& operator=(::std::pair<_T1, _T2> const& __p)
-        _NOEXCEPT_(is_nothrow_copy_assignable<first_type>::value &&
+        noexcept(is_nothrow_copy_assignable<first_type>::value &&
                    is_nothrow_copy_assignable<second_type>::value)
     {
         first = __p.first;
@@ -401,7 +401,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
                         is_move_assignable<first_type>::value &&
                         is_move_assignable<second_type>::value,
                     pair, __nat>&& __p)
-        _NOEXCEPT_(is_nothrow_move_assignable<first_type>::value &&
+        noexcept(is_nothrow_move_assignable<first_type>::value &&
                    is_nothrow_move_assignable<second_type>::value)
     {
         first = _CUDA_VSTD::forward<first_type>(__p.first);
@@ -414,7 +414,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
                                              is_move_assignable<_T2>::value, int> = 0>
     _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     pair& operator=(::std::pair<_T1, _T2>&& __p)
-        _NOEXCEPT_(is_nothrow_move_assignable<first_type>::value &&
+        noexcept(is_nothrow_move_assignable<first_type>::value &&
                    is_nothrow_move_assignable<second_type>::value)
     {
         first = _CUDA_VSTD::forward<first_type>(__p.first);
@@ -528,7 +528,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-    void swap(pair& __p) _NOEXCEPT_(__is_nothrow_swappable<first_type>::value &&
+    void swap(pair& __p) noexcept(__is_nothrow_swappable<first_type>::value &&
                                     __is_nothrow_swappable<second_type>::value)
     {
         using _CUDA_VSTD::swap;
@@ -661,7 +661,7 @@ __enable_if_t
     void
 >
 swap(pair<_T1, _T2>& __x, pair<_T1, _T2>& __y)
-                     _NOEXCEPT_((__is_nothrow_swappable<_T1>::value &&
+                     noexcept((__is_nothrow_swappable<_T1>::value &&
                                  __is_nothrow_swappable<_T2>::value))
 {
     __x.swap(__y);
@@ -719,25 +719,25 @@ struct __get_pair<0>
     static
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     _T1&
-    get(pair<_T1, _T2>& __p) _NOEXCEPT {return __p.first;}
+    get(pair<_T1, _T2>& __p) noexcept {return __p.first;}
 
     template <class _T1, class _T2>
     static
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     const _T1&
-    get(const pair<_T1, _T2>& __p) _NOEXCEPT {return __p.first;}
+    get(const pair<_T1, _T2>& __p) noexcept {return __p.first;}
 
     template <class _T1, class _T2>
     static
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     _T1&&
-    get(pair<_T1, _T2>&& __p) _NOEXCEPT {return _CUDA_VSTD::forward<_T1>(__p.first);}
+    get(pair<_T1, _T2>&& __p) noexcept {return _CUDA_VSTD::forward<_T1>(__p.first);}
 
     template <class _T1, class _T2>
     static
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     const _T1&&
-    get(const pair<_T1, _T2>&& __p) _NOEXCEPT {return _CUDA_VSTD::forward<const _T1>(__p.first);}
+    get(const pair<_T1, _T2>&& __p) noexcept {return _CUDA_VSTD::forward<const _T1>(__p.first);}
 };
 
 template <>
@@ -747,31 +747,31 @@ struct __get_pair<1>
     static
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     _T2&
-    get(pair<_T1, _T2>& __p) _NOEXCEPT {return __p.second;}
+    get(pair<_T1, _T2>& __p) noexcept {return __p.second;}
 
     template <class _T1, class _T2>
     static
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     const _T2&
-    get(const pair<_T1, _T2>& __p) _NOEXCEPT {return __p.second;}
+    get(const pair<_T1, _T2>& __p) noexcept {return __p.second;}
 
     template <class _T1, class _T2>
     static
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     _T2&&
-    get(pair<_T1, _T2>&& __p) _NOEXCEPT {return _CUDA_VSTD::forward<_T2>(__p.second);}
+    get(pair<_T1, _T2>&& __p) noexcept {return _CUDA_VSTD::forward<_T2>(__p.second);}
 
     template <class _T1, class _T2>
     static
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     const _T2&&
-    get(const pair<_T1, _T2>&& __p) _NOEXCEPT {return _CUDA_VSTD::forward<const _T2>(__p.second);}
+    get(const pair<_T1, _T2>&& __p) noexcept {return _CUDA_VSTD::forward<const _T2>(__p.second);}
 };
 
 template <size_t _Ip, class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 typename tuple_element<_Ip, pair<_T1, _T2> >::type&
-get(pair<_T1, _T2>& __p) _NOEXCEPT
+get(pair<_T1, _T2>& __p) noexcept
 {
     return __get_pair<_Ip>::get(__p);
 }
@@ -779,7 +779,7 @@ get(pair<_T1, _T2>& __p) _NOEXCEPT
 template <size_t _Ip, class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 const typename tuple_element<_Ip, pair<_T1, _T2> >::type&
-get(const pair<_T1, _T2>& __p) _NOEXCEPT
+get(const pair<_T1, _T2>& __p) noexcept
 {
     return __get_pair<_Ip>::get(__p);
 }
@@ -787,7 +787,7 @@ get(const pair<_T1, _T2>& __p) _NOEXCEPT
 template <size_t _Ip, class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 typename tuple_element<_Ip, pair<_T1, _T2> >::type&&
-get(pair<_T1, _T2>&& __p) _NOEXCEPT
+get(pair<_T1, _T2>&& __p) noexcept
 {
     return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
 }
@@ -795,7 +795,7 @@ get(pair<_T1, _T2>&& __p) _NOEXCEPT
 template <size_t _Ip, class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 const typename tuple_element<_Ip, pair<_T1, _T2> >::type&&
-get(const pair<_T1, _T2>&& __p) _NOEXCEPT
+get(const pair<_T1, _T2>&& __p) noexcept
 {
     return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
 }
@@ -803,56 +803,56 @@ get(const pair<_T1, _T2>&& __p) _NOEXCEPT
 #if _LIBCUDACXX_STD_VER > 11
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-constexpr _T1 & get(pair<_T1, _T2>& __p) _NOEXCEPT
+constexpr _T1 & get(pair<_T1, _T2>& __p) noexcept
 {
     return __get_pair<0>::get(__p);
 }
 
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-constexpr _T1 const & get(pair<_T1, _T2> const& __p) _NOEXCEPT
+constexpr _T1 const & get(pair<_T1, _T2> const& __p) noexcept
 {
     return __get_pair<0>::get(__p);
 }
 
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-constexpr _T1 && get(pair<_T1, _T2>&& __p) _NOEXCEPT
+constexpr _T1 && get(pair<_T1, _T2>&& __p) noexcept
 {
     return __get_pair<0>::get(_CUDA_VSTD::move(__p));
 }
 
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-constexpr _T1 const && get(pair<_T1, _T2> const&& __p) _NOEXCEPT
+constexpr _T1 const && get(pair<_T1, _T2> const&& __p) noexcept
 {
     return __get_pair<0>::get(_CUDA_VSTD::move(__p));
 }
 
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-constexpr _T1 & get(pair<_T2, _T1>& __p) _NOEXCEPT
+constexpr _T1 & get(pair<_T2, _T1>& __p) noexcept
 {
     return __get_pair<1>::get(__p);
 }
 
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-constexpr _T1 const & get(pair<_T2, _T1> const& __p) _NOEXCEPT
+constexpr _T1 const & get(pair<_T2, _T1> const& __p) noexcept
 {
     return __get_pair<1>::get(__p);
 }
 
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-constexpr _T1 && get(pair<_T2, _T1>&& __p) _NOEXCEPT
+constexpr _T1 && get(pair<_T2, _T1>&& __p) noexcept
 {
     return __get_pair<1>::get(_CUDA_VSTD::move(__p));
 }
 
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-constexpr _T1 const && get(pair<_T2, _T1> const&& __p) _NOEXCEPT
+constexpr _T1 const && get(pair<_T2, _T1> const&& __p) noexcept
 {
     return __get_pair<1>::get(_CUDA_VSTD::move(__p));
 }

@@ -281,7 +281,7 @@ struct __scalar_hash<_Tp, 0>
     : public __unary_function<_Tp, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(_Tp __v) const _NOEXCEPT
+    size_t operator()(_Tp __v) const noexcept
     {
         union
         {
@@ -299,7 +299,7 @@ struct __scalar_hash<_Tp, 1>
     : public __unary_function<_Tp, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(_Tp __v) const _NOEXCEPT
+    size_t operator()(_Tp __v) const noexcept
     {
         union
         {
@@ -316,7 +316,7 @@ struct __scalar_hash<_Tp, 2>
     : public __unary_function<_Tp, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(_Tp __v) const _NOEXCEPT
+    size_t operator()(_Tp __v) const noexcept
     {
         union
         {
@@ -337,7 +337,7 @@ struct __scalar_hash<_Tp, 3>
     : public __unary_function<_Tp, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(_Tp __v) const _NOEXCEPT
+    size_t operator()(_Tp __v) const noexcept
     {
         union
         {
@@ -359,7 +359,7 @@ struct __scalar_hash<_Tp, 4>
     : public __unary_function<_Tp, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(_Tp __v) const _NOEXCEPT
+    size_t operator()(_Tp __v) const noexcept
     {
         union
         {
@@ -383,7 +383,7 @@ struct _PairT {
 };
 
 _LIBCUDACXX_INLINE_VISIBILITY
-inline size_t __hash_combine(size_t __lhs, size_t __rhs) _NOEXCEPT {
+inline size_t __hash_combine(size_t __lhs, size_t __rhs) noexcept {
     typedef __scalar_hash<_PairT> _HashT;
     const _PairT __p = {__lhs, __rhs};
     return _HashT()(__p);
@@ -394,7 +394,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<_Tp*>
     : public __unary_function<_Tp*, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(_Tp* __v) const _NOEXCEPT
+    size_t operator()(_Tp* __v) const noexcept
     {
         union
         {
@@ -411,7 +411,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<bool>
     : public __unary_function<bool, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(bool __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(bool __v) const noexcept {return static_cast<size_t>(__v);}
 };
 
 template <>
@@ -419,7 +419,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<char>
     : public __unary_function<char, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(char __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(char __v) const noexcept {return static_cast<size_t>(__v);}
 };
 
 template <>
@@ -427,7 +427,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<signed char>
     : public __unary_function<signed char, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(signed char __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(signed char __v) const noexcept {return static_cast<size_t>(__v);}
 };
 
 template <>
@@ -435,7 +435,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<unsigned char>
     : public __unary_function<unsigned char, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(unsigned char __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(unsigned char __v) const noexcept {return static_cast<size_t>(__v);}
 };
 
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
@@ -444,7 +444,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<char16_t>
     : public __unary_function<char16_t, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(char16_t __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(char16_t __v) const noexcept {return static_cast<size_t>(__v);}
 };
 
 template <>
@@ -452,7 +452,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<char32_t>
     : public __unary_function<char32_t, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(char32_t __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(char32_t __v) const noexcept {return static_cast<size_t>(__v);}
 };
 #endif  // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
@@ -462,7 +462,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<wchar_t>
     : public __unary_function<wchar_t, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(wchar_t __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(wchar_t __v) const noexcept {return static_cast<size_t>(__v);}
 };
 #endif // _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
 
@@ -471,7 +471,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<short>
     : public __unary_function<short, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(short __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(short __v) const noexcept {return static_cast<size_t>(__v);}
 };
 
 template <>
@@ -479,7 +479,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<unsigned short>
     : public __unary_function<unsigned short, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(unsigned short __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(unsigned short __v) const noexcept {return static_cast<size_t>(__v);}
 };
 
 template <>
@@ -487,7 +487,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<int>
     : public __unary_function<int, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(int __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(int __v) const noexcept {return static_cast<size_t>(__v);}
 };
 
 template <>
@@ -495,7 +495,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<unsigned int>
     : public __unary_function<unsigned int, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(unsigned int __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(unsigned int __v) const noexcept {return static_cast<size_t>(__v);}
 };
 
 template <>
@@ -503,7 +503,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<long>
     : public __unary_function<long, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(long __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(long __v) const noexcept {return static_cast<size_t>(__v);}
 };
 
 template <>
@@ -511,7 +511,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<unsigned long>
     : public __unary_function<unsigned long, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(unsigned long __v) const _NOEXCEPT {return static_cast<size_t>(__v);}
+    size_t operator()(unsigned long __v) const noexcept {return static_cast<size_t>(__v);}
 };
 
 template <>
@@ -547,7 +547,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<float>
     : public __scalar_hash<float>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(float __v) const _NOEXCEPT
+    size_t operator()(float __v) const noexcept
     {
         // -0.0 and 0.0 should return same hash
        if (__v == 0.0f)
@@ -561,7 +561,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<double>
     : public __scalar_hash<double>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(double __v) const _NOEXCEPT
+    size_t operator()(double __v) const noexcept
     {
         // -0.0 and 0.0 should return same hash
        if (__v == 0.0)
@@ -575,7 +575,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<long double>
     : public __scalar_hash<long double>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(long double __v) const _NOEXCEPT
+    size_t operator()(long double __v) const noexcept
     {
         // -0.0 and 0.0 should return same hash
         if (__v == 0.0L)
@@ -625,7 +625,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS __enum_hash
     : public __unary_function<_Tp, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(_Tp __v) const _NOEXCEPT
+    size_t operator()(_Tp __v) const noexcept
     {
         typedef typename underlying_type<_Tp>::type type;
         return hash<type>()(static_cast<type>(__v));
@@ -650,7 +650,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<nullptr_t>
   : public __unary_function<nullptr_t, size_t>
 {
   _LIBCUDACXX_INLINE_VISIBILITY
-  size_t operator()(nullptr_t) const _NOEXCEPT {
+  size_t operator()(nullptr_t) const noexcept {
     return 662607004ull;
   }
 };

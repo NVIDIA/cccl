@@ -196,34 +196,34 @@ class _LIBCUDACXX_HIDDEN __do_message;
 class _LIBCUDACXX_TYPE_VIS error_category
 {
 public:
-    virtual ~error_category() _NOEXCEPT;
+    virtual ~error_category() noexcept;
 
 #if defined(_LIBCUDACXX_BUILDING_LIBRARY) && \
     defined(_LIBCUDACXX_DEPRECATED_ABI_LEGACY_LIBRARY_DEFINITIONS_FOR_INLINE_FUNCTIONS)
-    error_category() _NOEXCEPT;
+    error_category() noexcept;
 #else
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 error_category() _NOEXCEPT _LIBCUDACXX_DEFAULT
+    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 error_category() noexcept _LIBCUDACXX_DEFAULT
 #endif
 private:
     error_category(const error_category&);// = delete;
     error_category& operator=(const error_category&);// = delete;
 
 public:
-    virtual const char* name() const _NOEXCEPT = 0;
-    virtual error_condition default_error_condition(int __ev) const _NOEXCEPT;
-    virtual bool equivalent(int __code, const error_condition& __condition) const _NOEXCEPT;
-    virtual bool equivalent(const error_code& __code, int __condition) const _NOEXCEPT;
+    virtual const char* name() const noexcept = 0;
+    virtual error_condition default_error_condition(int __ev) const noexcept;
+    virtual bool equivalent(int __code, const error_condition& __condition) const noexcept;
+    virtual bool equivalent(const error_code& __code, int __condition) const noexcept;
     virtual string message(int __ev) const = 0;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator==(const error_category& __rhs) const _NOEXCEPT {return this == &__rhs;}
+    bool operator==(const error_category& __rhs) const noexcept {return this == &__rhs;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator!=(const error_category& __rhs) const _NOEXCEPT {return !(*this == __rhs);}
+    bool operator!=(const error_category& __rhs) const noexcept {return !(*this == __rhs);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator< (const error_category& __rhs) const _NOEXCEPT {return this < &__rhs;}
+    bool operator< (const error_category& __rhs) const noexcept {return this < &__rhs;}
 
     friend class _LIBCUDACXX_HIDDEN __do_message;
 };
@@ -235,8 +235,8 @@ public:
     virtual string message(int ev) const;
 };
 
-_LIBCUDACXX_FUNC_VIS const error_category& generic_category() _NOEXCEPT;
-_LIBCUDACXX_FUNC_VIS const error_category& system_category() _NOEXCEPT;
+_LIBCUDACXX_FUNC_VIS const error_category& generic_category() noexcept;
+_LIBCUDACXX_FUNC_VIS const error_category& system_category() noexcept;
 
 class _LIBCUDACXX_TYPE_VIS error_condition
 {
@@ -244,21 +244,21 @@ class _LIBCUDACXX_TYPE_VIS error_condition
     const error_category* __cat_;
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    error_condition() _NOEXCEPT : __val_(0), __cat_(&generic_category()) {}
+    error_condition() noexcept : __val_(0), __cat_(&generic_category()) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    error_condition(int __val, const error_category& __cat) _NOEXCEPT
+    error_condition(int __val, const error_category& __cat) noexcept
         : __val_(__val), __cat_(&__cat) {}
 
     template <class _Ep>
         _LIBCUDACXX_INLINE_VISIBILITY
         error_condition(_Ep __e,
               typename enable_if<is_error_condition_enum<_Ep>::value>::type* = 0
-                                                                     ) _NOEXCEPT
+                                                                     ) noexcept
             {*this = make_error_condition(__e);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    void assign(int __val, const error_category& __cat) _NOEXCEPT
+    void assign(int __val, const error_category& __cat) noexcept
     {
         __val_ = __val;
         __cat_ = &__cat;
@@ -271,38 +271,38 @@ public:
             is_error_condition_enum<_Ep>::value,
             error_condition&
         >::type
-        operator=(_Ep __e) _NOEXCEPT
+        operator=(_Ep __e) noexcept
             {*this = make_error_condition(__e); return *this;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    void clear() _NOEXCEPT
+    void clear() noexcept
     {
         __val_ = 0;
         __cat_ = &generic_category();
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    int value() const _NOEXCEPT {return __val_;}
+    int value() const noexcept {return __val_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    const error_category& category() const _NOEXCEPT {return *__cat_;}
+    const error_category& category() const noexcept {return *__cat_;}
     string message() const;
 
     _LIBCUDACXX_INLINE_VISIBILITY
         _LIBCUDACXX_EXPLICIT
-        operator bool() const _NOEXCEPT {return __val_ != 0;}
+        operator bool() const noexcept {return __val_ != 0;}
 };
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 error_condition
-make_error_condition(errc __e) _NOEXCEPT
+make_error_condition(errc __e) noexcept
 {
     return error_condition(static_cast<int>(__e), generic_category());
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator<(const error_condition& __x, const error_condition& __y) _NOEXCEPT
+operator<(const error_condition& __x, const error_condition& __y) noexcept
 {
     return __x.category() < __y.category()
         || (__x.category() == __y.category() && __x.value() < __y.value());
@@ -316,21 +316,21 @@ class _LIBCUDACXX_TYPE_VIS error_code
     const error_category* __cat_;
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    error_code() _NOEXCEPT : __val_(0), __cat_(&system_category()) {}
+    error_code() noexcept : __val_(0), __cat_(&system_category()) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    error_code(int __val, const error_category& __cat) _NOEXCEPT
+    error_code(int __val, const error_category& __cat) noexcept
         : __val_(__val), __cat_(&__cat) {}
 
     template <class _Ep>
         _LIBCUDACXX_INLINE_VISIBILITY
         error_code(_Ep __e,
                    typename enable_if<is_error_code_enum<_Ep>::value>::type* = 0
-                                                                     ) _NOEXCEPT
+                                                                     ) noexcept
             {*this = make_error_code(__e);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    void assign(int __val, const error_category& __cat) _NOEXCEPT
+    void assign(int __val, const error_category& __cat) noexcept
     {
         __val_ = __val;
         __cat_ = &__cat;
@@ -343,43 +343,43 @@ public:
             is_error_code_enum<_Ep>::value,
             error_code&
         >::type
-        operator=(_Ep __e) _NOEXCEPT
+        operator=(_Ep __e) noexcept
             {*this = make_error_code(__e); return *this;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    void clear() _NOEXCEPT
+    void clear() noexcept
     {
         __val_ = 0;
         __cat_ = &system_category();
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    int value() const _NOEXCEPT {return __val_;}
+    int value() const noexcept {return __val_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    const error_category& category() const _NOEXCEPT {return *__cat_;}
+    const error_category& category() const noexcept {return *__cat_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    error_condition default_error_condition() const _NOEXCEPT
+    error_condition default_error_condition() const noexcept
         {return __cat_->default_error_condition(__val_);}
 
     string message() const;
 
     _LIBCUDACXX_INLINE_VISIBILITY
         _LIBCUDACXX_EXPLICIT
-        operator bool() const _NOEXCEPT {return __val_ != 0;}
+        operator bool() const noexcept {return __val_ != 0;}
 };
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 error_code
-make_error_code(errc __e) _NOEXCEPT
+make_error_code(errc __e) noexcept
 {
     return error_code(static_cast<int>(__e), generic_category());
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator<(const error_code& __x, const error_code& __y) _NOEXCEPT
+operator<(const error_code& __x, const error_code& __y) noexcept
 {
     return __x.category() < __y.category()
         || (__x.category() == __y.category() && __x.value() < __y.value());
@@ -387,14 +387,14 @@ operator<(const error_code& __x, const error_code& __y) _NOEXCEPT
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator==(const error_code& __x, const error_code& __y) _NOEXCEPT
+operator==(const error_code& __x, const error_code& __y) noexcept
 {
     return __x.category() == __y.category() && __x.value() == __y.value();
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator==(const error_code& __x, const error_condition& __y) _NOEXCEPT
+operator==(const error_code& __x, const error_condition& __y) noexcept
 {
     return __x.category().equivalent(__x.value(), __y)
         || __y.category().equivalent(__x, __y.value());
@@ -402,36 +402,36 @@ operator==(const error_code& __x, const error_condition& __y) _NOEXCEPT
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator==(const error_condition& __x, const error_code& __y) _NOEXCEPT
+operator==(const error_condition& __x, const error_code& __y) noexcept
 {
     return __y == __x;
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator==(const error_condition& __x, const error_condition& __y) _NOEXCEPT
+operator==(const error_condition& __x, const error_condition& __y) noexcept
 {
     return __x.category() == __y.category() && __x.value() == __y.value();
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator!=(const error_code& __x, const error_code& __y) _NOEXCEPT
+operator!=(const error_code& __x, const error_code& __y) noexcept
 {return !(__x == __y);}
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator!=(const error_code& __x, const error_condition& __y) _NOEXCEPT
+operator!=(const error_code& __x, const error_condition& __y) noexcept
 {return !(__x == __y);}
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator!=(const error_condition& __x, const error_code& __y) _NOEXCEPT
+operator!=(const error_condition& __x, const error_code& __y) noexcept
 {return !(__x == __y);}
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator!=(const error_condition& __x, const error_condition& __y) _NOEXCEPT
+operator!=(const error_condition& __x, const error_condition& __y) noexcept
 {return !(__x == __y);}
 
 template <>
@@ -439,7 +439,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<error_code>
     : public __unary_function<error_code, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(const error_code& __ec) const _NOEXCEPT
+    size_t operator()(const error_code& __ec) const noexcept
     {
         return static_cast<size_t>(__ec.value());
     }
@@ -450,7 +450,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<error_condition>
     : public __unary_function<error_condition, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(const error_condition& __ec) const _NOEXCEPT
+    size_t operator()(const error_condition& __ec) const noexcept
     {
         return static_cast<size_t>(__ec.value());
     }
@@ -469,10 +469,10 @@ public:
     system_error(int __ev, const error_category& __ecat, const string& __what_arg);
     system_error(int __ev, const error_category& __ecat, const char* __what_arg);
     system_error(int __ev, const error_category& __ecat);
-    ~system_error() _NOEXCEPT;
+    ~system_error() noexcept;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    const error_code& code() const _NOEXCEPT {return __ec_;}
+    const error_code& code() const noexcept {return __ec_;}
 
 private:
     static string __init(const error_code&, string);

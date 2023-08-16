@@ -59,31 +59,31 @@ class _LIBCUDACXX_TEMPLATE_VIS type_index
     const type_info* __t_;
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    type_index(const type_info& __y) _NOEXCEPT : __t_(&__y) {}
+    type_index(const type_info& __y) noexcept : __t_(&__y) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator==(const type_index& __y) const _NOEXCEPT
+    bool operator==(const type_index& __y) const noexcept
         {return *__t_ == *__y.__t_;}
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator!=(const type_index& __y) const _NOEXCEPT
+    bool operator!=(const type_index& __y) const noexcept
         {return *__t_ != *__y.__t_;}
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator< (const type_index& __y) const _NOEXCEPT
+    bool operator< (const type_index& __y) const noexcept
         {return  __t_->before(*__y.__t_);}
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator<=(const type_index& __y) const _NOEXCEPT
+    bool operator<=(const type_index& __y) const noexcept
         {return !__y.__t_->before(*__t_);}
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator> (const type_index& __y) const _NOEXCEPT
+    bool operator> (const type_index& __y) const noexcept
         {return  __y.__t_->before(*__t_);}
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator>=(const type_index& __y) const _NOEXCEPT
+    bool operator>=(const type_index& __y) const noexcept
         {return !__t_->before(*__y.__t_);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t hash_code() const _NOEXCEPT {return __t_->hash_code();}
+    size_t hash_code() const noexcept {return __t_->hash_code();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const char* name() const _NOEXCEPT {return __t_->name();}
+    const char* name() const noexcept {return __t_->name();}
 };
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS hash;
@@ -93,7 +93,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<type_index>
     : public __unary_function<type_index, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(type_index __index) const _NOEXCEPT
+    size_t operator()(type_index __index) const noexcept
         {return __index.hash_code();}
 };
 

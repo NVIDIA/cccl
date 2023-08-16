@@ -247,7 +247,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     inline static const char*
-    __make_mdstring(ios_base::openmode __mode) _NOEXCEPT;
+    __make_mdstring(ios_base::openmode __mode) noexcept;
 
   protected:
     // 27.9.1.5 Overridden virtual functions:
@@ -504,7 +504,7 @@ basic_filebuf<_CharT, _Traits>::is_open() const
 
 template <class _CharT, class _Traits>
 const char* basic_filebuf<_CharT, _Traits>::__make_mdstring(
-    ios_base::openmode __mode) _NOEXCEPT {
+    ios_base::openmode __mode) noexcept {
   switch (__mode & ~ios_base::ate) {
   case ios_base::out:
   case ios_base::out | ios_base::trunc:
