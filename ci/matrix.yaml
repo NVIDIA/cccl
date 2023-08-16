@@ -8,7 +8,7 @@ gpus:
   - 'a100'
   - 'v100'
 
-# The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers 
+# The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
 devcontainer_version: '23.08'
 
 # Each environment below will generate a unique build/test job
@@ -45,3 +45,5 @@ pull_request:
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '13', exe: 'clang++'}, gpu_build_archs: '70', std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '14', exe: 'clang++'}, gpu_build_archs: '70', std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '15', exe: 'clang++'}, gpu_build_archs: '70', std: [11, 14, 17, 20], jobs: ['build', 'test']}
+  nvrtc:
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', gpu_build_archs: '70', std: [11, 14, 17, 20]}

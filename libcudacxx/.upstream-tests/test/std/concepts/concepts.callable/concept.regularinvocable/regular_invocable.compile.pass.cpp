@@ -465,7 +465,8 @@ __host__ __device__ constexpr bool is_regular_invocable(F, Args&&...) {
 }
 #endif // TEST_STD_VER > 17
 
-#if TEST_STD_VER > 14
+// execution space annotations on lambda require --extended-lambda flag with nvrtc
+#if TEST_STD_VER > 14 && !defined(TEST_COMPILER_NVRTC)
 static_assert(is_regular_invocable([] {}), "");
 static_assert(is_regular_invocable([](int) {}, 0), "");
 static_assert(is_regular_invocable([](int) {}, 0L), "");
