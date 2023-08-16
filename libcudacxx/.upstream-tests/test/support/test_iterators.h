@@ -1032,10 +1032,6 @@ TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, ad
     return *this;
   }
 
-#if defined(TEST_COMPILER_MSVC)
-TEST_NV_DIAG_DEFAULT(1805)
-#endif // TEST_COMPILER_MSVC
-
   // If `T` is a reference type, the implicitly-generated assignment operator will be deleted (and would take precedence
   // over the templated `operator=` above because it's a better match).
   __host__ __device__ constexpr Proxy& operator=(const Proxy& rhs) {
