@@ -59,9 +59,9 @@ class _LIBCUDACXX_EXCEPTION_ABI bad_function_call
 {
 #ifdef _LIBCUDACXX_ABI_BAD_FUNCTION_CALL_KEY_FUNCTION
 public:
-    virtual ~bad_function_call() _NOEXCEPT;
+    virtual ~bad_function_call() noexcept;
 
-    virtual const char* what() const _NOEXCEPT;
+    virtual const char* what() const noexcept;
 #endif
 };
 
@@ -201,7 +201,7 @@ class __alloc_func<_Fp, _Ap, _Rp(_ArgTypes...)>
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    void destroy() _NOEXCEPT { __f_.~__compressed_pair<_Target, _Alloc>(); }
+    void destroy() noexcept { __f_.~__compressed_pair<_Target, _Alloc>(); }
 
     static void __destroy_and_delete(__alloc_func* __f) {
       typedef allocator_traits<_Alloc> __alloc_traits;
@@ -245,7 +245,7 @@ public:
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY
-  void destroy() _NOEXCEPT { __f_.~_Target(); }
+  void destroy() noexcept { __f_.~_Target(); }
 
   static void __destroy_and_delete(__default_alloc_func* __f) {
     __f->destroy();
@@ -267,12 +267,12 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY virtual ~__base() {}
     virtual __base* __clone() const = 0;
     virtual void __clone(__base*) const = 0;
-    virtual void destroy() _NOEXCEPT = 0;
-    virtual void destroy_deallocate() _NOEXCEPT = 0;
+    virtual void destroy() noexcept = 0;
+    virtual void destroy_deallocate() noexcept = 0;
     virtual _Rp operator()(_ArgTypes&& ...) = 0;
 #ifndef _LIBCUDACXX_NO_RTTI
-    virtual const void* target(const type_info&) const _NOEXCEPT = 0;
-    virtual const type_info& target_type() const _NOEXCEPT = 0;
+    virtual const void* target(const type_info&) const noexcept = 0;
+    virtual const type_info& target_type() const noexcept = 0;
 #endif // _LIBCUDACXX_NO_RTTI
 };
 
@@ -304,12 +304,12 @@ public:
 
     virtual __base<_Rp(_ArgTypes...)>* __clone() const;
     virtual void __clone(__base<_Rp(_ArgTypes...)>*) const;
-    virtual void destroy() _NOEXCEPT;
-    virtual void destroy_deallocate() _NOEXCEPT;
+    virtual void destroy() noexcept;
+    virtual void destroy_deallocate() noexcept;
     virtual _Rp operator()(_ArgTypes&&... __arg);
 #ifndef _LIBCUDACXX_NO_RTTI
-    virtual const void* target(const type_info&) const _NOEXCEPT;
-    virtual const type_info& target_type() const _NOEXCEPT;
+    virtual const void* target(const type_info&) const noexcept;
+    virtual const type_info& target_type() const noexcept;
 #endif // _LIBCUDACXX_NO_RTTI
 };
 
@@ -335,14 +335,14 @@ __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::__clone(__base<_Rp(_ArgTypes...)>* __p) 
 
 template<class _Fp, class _Alloc, class _Rp, class ..._ArgTypes>
 void
-__func<_Fp, _Alloc, _Rp(_ArgTypes...)>::destroy() _NOEXCEPT
+__func<_Fp, _Alloc, _Rp(_ArgTypes...)>::destroy() noexcept
 {
     __f_.destroy();
 }
 
 template<class _Fp, class _Alloc, class _Rp, class ..._ArgTypes>
 void
-__func<_Fp, _Alloc, _Rp(_ArgTypes...)>::destroy_deallocate() _NOEXCEPT
+__func<_Fp, _Alloc, _Rp(_ArgTypes...)>::destroy_deallocate() noexcept
 {
     typedef allocator_traits<_Alloc> __alloc_traits;
     typedef typename __rebind_alloc_helper<__alloc_traits, __func>::type _Ap;
@@ -362,7 +362,7 @@ __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::operator()(_ArgTypes&& ... __arg)
 
 template<class _Fp, class _Alloc, class _Rp, class ..._ArgTypes>
 const void*
-__func<_Fp, _Alloc, _Rp(_ArgTypes...)>::target(const type_info& __ti) const _NOEXCEPT
+__func<_Fp, _Alloc, _Rp(_ArgTypes...)>::target(const type_info& __ti) const noexcept
 {
     if (__ti == typeid(_Fp))
         return _CUDA_VSTD::addressof(__f_.__target());
@@ -371,7 +371,7 @@ __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::target(const type_info& __ti) const _NOE
 
 template<class _Fp, class _Alloc, class _Rp, class ..._ArgTypes>
 const type_info&
-__func<_Fp, _Alloc, _Rp(_ArgTypes...)>::target_type() const _NOEXCEPT
+__func<_Fp, _Alloc, _Rp(_ArgTypes...)>::target_type() const noexcept
 {
     return typeid(_Fp);
 }
@@ -396,7 +396,7 @@ template <class _Rp, class... _ArgTypes> class __value_func<_Rp(_ArgTypes...)>
 
   public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    __value_func() _NOEXCEPT : __f_(nullptr) {}
+    __value_func() noexcept : __f_(nullptr) {}
 
     template <class _Fp, class _Alloc>
     _LIBCUDACXX_INLINE_VISIBILITY __value_func(_Fp&& __f, const _Alloc& __a)
@@ -446,7 +446,7 @@ template <class _Rp, class... _ArgTypes> class __value_func<_Rp(_ArgTypes...)>
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    __value_func(__value_func&& __f) _NOEXCEPT
+    __value_func(__value_func&& __f) noexcept
     {
         if (__f.__f_ == nullptr)
             __f_ = nullptr;
@@ -511,7 +511,7 @@ template <class _Rp, class... _ArgTypes> class __value_func<_Rp(_ArgTypes...)>
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    void swap(__value_func& __f) _NOEXCEPT
+    void swap(__value_func& __f) noexcept
     {
         if (&__f == this)
             return;
@@ -549,11 +549,11 @@ template <class _Rp, class... _ArgTypes> class __value_func<_Rp(_ArgTypes...)>
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_EXPLICIT operator bool() const _NOEXCEPT { return __f_ != nullptr; }
+    _LIBCUDACXX_EXPLICIT operator bool() const noexcept { return __f_ != nullptr; }
 
 #ifndef _LIBCUDACXX_NO_RTTI
     _LIBCUDACXX_INLINE_VISIBILITY
-    const type_info& target_type() const _NOEXCEPT
+    const type_info& target_type() const noexcept
     {
         if (__f_ == nullptr)
             return typeid(void);
@@ -561,7 +561,7 @@ template <class _Rp, class... _ArgTypes> class __value_func<_Rp(_ArgTypes...)>
     }
 
     template <typename _Tp>
-    _LIBCUDACXX_INLINE_VISIBILITY const _Tp* target() const _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY const _Tp* target() const noexcept
     {
         if (__f_ == nullptr)
             return nullptr;
@@ -854,20 +854,20 @@ template <class _Rp, class... _ArgTypes> class __policy_func<_Rp(_ArgTypes...)>
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    explicit operator bool() const _NOEXCEPT
+    explicit operator bool() const noexcept
     {
         return !__policy_->__is_null;
     }
 
 #ifndef _LIBCUDACXX_NO_RTTI
     _LIBCUDACXX_INLINE_VISIBILITY
-    const type_info& target_type() const _NOEXCEPT
+    const type_info& target_type() const noexcept
     {
         return *__policy_->__type_info;
     }
 
     template <typename _Tp>
-    _LIBCUDACXX_INLINE_VISIBILITY const _Tp* target() const _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY const _Tp* target() const noexcept
     {
         if (__policy_->__is_null || typeid(_Tp) != *__policy_->__type_info)
             return nullptr;
@@ -924,7 +924,7 @@ public:
         ::new ((void*)__p) __func(__f_);
     }
 
-    virtual void destroy() _NOEXCEPT {
+    virtual void destroy() noexcept {
 #ifndef _LIBCUDACXX_HAS_OBJC_ARC
         if (__f_)
             _Block_release(__f_);
@@ -932,7 +932,7 @@ public:
         __f_ = 0;
     }
 
-    virtual void destroy_deallocate() _NOEXCEPT {
+    virtual void destroy_deallocate() noexcept {
         _LIBCUDACXX_ASSERT(false,
             "Block pointers are just pointers, so they should always fit into "
             "std::function's small buffer optimization. This function should "
@@ -944,13 +944,13 @@ public:
     }
 
 #ifndef _LIBCUDACXX_NO_RTTI
-    virtual const void* target(type_info const& __ti) const _NOEXCEPT {
+    virtual const void* target(type_info const& __ti) const noexcept {
         if (__ti == typeid(__func::__block_type))
             return &__f_;
         return (const void*)nullptr;
     }
 
-    virtual const type_info& target_type() const _NOEXCEPT {
+    virtual const type_info& target_type() const noexcept {
         return typeid(__func::__block_type);
     }
 #endif // _LIBCUDACXX_NO_RTTI
@@ -998,21 +998,21 @@ public:
 
     // construct/copy/destroy:
     _LIBCUDACXX_INLINE_VISIBILITY
-    function() _NOEXCEPT { }
+    function() noexcept { }
     _LIBCUDACXX_INLINE_VISIBILITY
-    function(nullptr_t) _NOEXCEPT {}
+    function(nullptr_t) noexcept {}
     function(const function&);
-    function(function&&) _NOEXCEPT;
+    function(function&&) noexcept;
     template<class _Fp, class = _EnableIfLValueCallable<_Fp>>
     function(_Fp);
 
 #if _LIBCUDACXX_STD_VER <= 14
     template<class _Alloc>
       _LIBCUDACXX_INLINE_VISIBILITY
-      function(allocator_arg_t, const _Alloc&) _NOEXCEPT {}
+      function(allocator_arg_t, const _Alloc&) noexcept {}
     template<class _Alloc>
       _LIBCUDACXX_INLINE_VISIBILITY
-      function(allocator_arg_t, const _Alloc&, nullptr_t) _NOEXCEPT {}
+      function(allocator_arg_t, const _Alloc&, nullptr_t) noexcept {}
     template<class _Alloc>
       function(allocator_arg_t, const _Alloc&, const function&);
     template<class _Alloc>
@@ -1022,15 +1022,15 @@ public:
 #endif
 
     function& operator=(const function&);
-    function& operator=(function&&) _NOEXCEPT;
-    function& operator=(nullptr_t) _NOEXCEPT;
+    function& operator=(function&&) noexcept;
+    function& operator=(nullptr_t) noexcept;
     template<class _Fp, class = _EnableIfLValueCallable<__decay_t<_Fp>>>
     function& operator=(_Fp&&);
 
     ~function();
 
     // function modifiers:
-    void swap(function&) _NOEXCEPT;
+    void swap(function&) noexcept;
 
 #if _LIBCUDACXX_STD_VER <= 14
     template<class _Fp, class _Alloc>
@@ -1041,7 +1041,7 @@ public:
 
     // function capacity:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_EXPLICIT operator bool() const _NOEXCEPT {
+    _LIBCUDACXX_EXPLICIT operator bool() const noexcept {
       return static_cast<bool>(__f_);
     }
 
@@ -1056,9 +1056,9 @@ public:
 
 #ifndef _LIBCUDACXX_NO_RTTI
     // function target access:
-    const type_info& target_type() const _NOEXCEPT;
-    template <typename _Tp> _Tp* target() _NOEXCEPT;
-    template <typename _Tp> const _Tp* target() const _NOEXCEPT;
+    const type_info& target_type() const noexcept;
+    template <typename _Tp> _Tp* target() noexcept;
+    template <typename _Tp> const _Tp* target() const noexcept;
 #endif // _LIBCUDACXX_NO_RTTI
 };
 
@@ -1120,7 +1120,7 @@ function<_Rp(_ArgTypes...)>::function(allocator_arg_t, const _Alloc&,
 #endif
 
 template <class _Rp, class... _ArgTypes>
-function<_Rp(_ArgTypes...)>::function(function&& __f) _NOEXCEPT
+function<_Rp(_ArgTypes...)>::function(function&& __f) noexcept
     : __f_(_CUDA_VSTD::move(__f.__f_)) {}
 
 #if _LIBCUDACXX_STD_VER <= 14
@@ -1153,7 +1153,7 @@ function<_Rp(_ArgTypes...)>::operator=(const function& __f)
 
 template<class _Rp, class ..._ArgTypes>
 function<_Rp(_ArgTypes...)>&
-function<_Rp(_ArgTypes...)>::operator=(function&& __f) _NOEXCEPT
+function<_Rp(_ArgTypes...)>::operator=(function&& __f) noexcept
 {
     __f_ = _CUDA_VSTD::move(__f.__f_);
     return *this;
@@ -1161,7 +1161,7 @@ function<_Rp(_ArgTypes...)>::operator=(function&& __f) _NOEXCEPT
 
 template<class _Rp, class ..._ArgTypes>
 function<_Rp(_ArgTypes...)>&
-function<_Rp(_ArgTypes...)>::operator=(nullptr_t) _NOEXCEPT
+function<_Rp(_ArgTypes...)>::operator=(nullptr_t) noexcept
 {
     __f_ = nullptr;
     return *this;
@@ -1181,7 +1181,7 @@ function<_Rp(_ArgTypes...)>::~function() {}
 
 template<class _Rp, class ..._ArgTypes>
 void
-function<_Rp(_ArgTypes...)>::swap(function& __f) _NOEXCEPT
+function<_Rp(_ArgTypes...)>::swap(function& __f) noexcept
 {
     __f_.swap(__f.__f_);
 }
@@ -1197,7 +1197,7 @@ function<_Rp(_ArgTypes...)>::operator()(_ArgTypes... __arg) const
 
 template<class _Rp, class ..._ArgTypes>
 const type_info&
-function<_Rp(_ArgTypes...)>::target_type() const _NOEXCEPT
+function<_Rp(_ArgTypes...)>::target_type() const noexcept
 {
     return __f_.target_type();
 }
@@ -1205,7 +1205,7 @@ function<_Rp(_ArgTypes...)>::target_type() const _NOEXCEPT
 template<class _Rp, class ..._ArgTypes>
 template <typename _Tp>
 _Tp*
-function<_Rp(_ArgTypes...)>::target() _NOEXCEPT
+function<_Rp(_ArgTypes...)>::target() noexcept
 {
     return (_Tp*)(__f_.template target<_Tp>());
 }
@@ -1213,7 +1213,7 @@ function<_Rp(_ArgTypes...)>::target() _NOEXCEPT
 template<class _Rp, class ..._ArgTypes>
 template <typename _Tp>
 const _Tp*
-function<_Rp(_ArgTypes...)>::target() const _NOEXCEPT
+function<_Rp(_ArgTypes...)>::target() const noexcept
 {
     return __f_.template target<_Tp>();
 }
@@ -1223,27 +1223,27 @@ function<_Rp(_ArgTypes...)>::target() const _NOEXCEPT
 template <class _Rp, class... _ArgTypes>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator==(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) _NOEXCEPT {return !__f;}
+operator==(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) noexcept {return !__f;}
 
 template <class _Rp, class... _ArgTypes>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator==(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) _NOEXCEPT {return !__f;}
+operator==(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) noexcept {return !__f;}
 
 template <class _Rp, class... _ArgTypes>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator!=(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) _NOEXCEPT {return (bool)__f;}
+operator!=(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) noexcept {return (bool)__f;}
 
 template <class _Rp, class... _ArgTypes>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-operator!=(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) _NOEXCEPT {return (bool)__f;}
+operator!=(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) noexcept {return (bool)__f;}
 
 template <class _Rp, class... _ArgTypes>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
-swap(function<_Rp(_ArgTypes...)>& __x, function<_Rp(_ArgTypes...)>& __y) _NOEXCEPT
+swap(function<_Rp(_ArgTypes...)>& __x, function<_Rp(_ArgTypes...)>& __y) noexcept
 {return __x.swap(__y);}
 
 #else // _LIBCUDACXX_CXX03_LANG

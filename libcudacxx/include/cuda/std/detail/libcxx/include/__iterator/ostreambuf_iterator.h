@@ -42,9 +42,9 @@ public:
 private:
     streambuf_type* __sbuf_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator(ostream_type& __s) _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator(ostream_type& __s) noexcept
         : __sbuf_(__s.rdbuf()) {}
-    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator(streambuf_type* __s) _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator(streambuf_type* __s) noexcept
         : __sbuf_(__s) {}
     _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator& operator=(_CharT __c)
         {
@@ -55,7 +55,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator& operator*()     {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator& operator++()    {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator& operator++(int) {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY bool failed() const _NOEXCEPT {return __sbuf_ == 0;}
+    _LIBCUDACXX_INLINE_VISIBILITY bool failed() const noexcept {return __sbuf_ == 0;}
 
     template <class _Ch, class _Tr>
     friend

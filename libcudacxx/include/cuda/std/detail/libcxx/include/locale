@@ -3689,7 +3689,7 @@ public:
     byte_string to_bytes(const _Elem* __first, const _Elem* __last);
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t converted() const _NOEXCEPT {return __cvtcount_;}
+    size_t converted() const noexcept {return __cvtcount_;}
     _LIBCUDACXX_INLINE_VISIBILITY
     state_type state() const {return __cvtstate_;}
 };

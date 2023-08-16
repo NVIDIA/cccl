@@ -96,7 +96,7 @@ namespace std {
 class _LIBCUDACXX_EXCEPTION_ABI _LIBCUDACXX_AVAILABILITY_BAD_ANY_CAST bad_any_cast : public bad_cast
 {
 public:
-    virtual const char* what() const _NOEXCEPT;
+    virtual const char* what() const noexcept;
 };
 } // namespace std
 
@@ -121,11 +121,11 @@ class _LIBCUDACXX_TEMPLATE_VIS any;
 template <class _ValueType>
 _LIBCUDACXX_INLINE_VISIBILITY
 add_pointer_t<add_const_t<_ValueType>>
-any_cast(any const *) _NOEXCEPT;
+any_cast(any const *) noexcept;
 
 template <class _ValueType>
 _LIBCUDACXX_INLINE_VISIBILITY
-add_pointer_t<_ValueType> any_cast(any *) _NOEXCEPT;
+add_pointer_t<_ValueType> any_cast(any *) noexcept;
 
 namespace __any_imp
 {
@@ -184,7 +184,7 @@ class _LIBCUDACXX_TEMPLATE_VIS any
 public:
   // construct/destruct
   _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr any() _NOEXCEPT : __h(nullptr) {}
+  constexpr any() noexcept : __h(nullptr) {}
 
   _LIBCUDACXX_INLINE_VISIBILITY
   any(any const & __other) : __h(nullptr)
@@ -193,7 +193,7 @@ public:
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY
-  any(any && __other) _NOEXCEPT : __h(nullptr)
+  any(any && __other) noexcept : __h(nullptr)
   {
     if (__other.__h) __other.__call(_Action::_Move, this);
   }
@@ -239,7 +239,7 @@ public:
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY
-  any & operator=(any && __rhs) _NOEXCEPT {
+  any & operator=(any && __rhs) noexcept {
     any(_CUDA_VSTD::move(__rhs)).swap(*this);
     return *this;
   }
@@ -274,18 +274,18 @@ public:
 
   // 6.3.3 any modifiers
   _LIBCUDACXX_INLINE_VISIBILITY
-  void reset() _NOEXCEPT { if (__h) this->__call(_Action::_Destroy); }
+  void reset() noexcept { if (__h) this->__call(_Action::_Destroy); }
 
   _LIBCUDACXX_INLINE_VISIBILITY
-  void swap(any & __rhs) _NOEXCEPT;
+  void swap(any & __rhs) noexcept;
 
   // 6.3.4 any observers
   _LIBCUDACXX_INLINE_VISIBILITY
-  bool has_value() const _NOEXCEPT { return __h != nullptr; }
+  bool has_value() const noexcept { return __h != nullptr; }
 
 #if !defined(_LIBCUDACXX_NO_RTTI)
   _LIBCUDACXX_INLINE_VISIBILITY
-  const type_info & type() const _NOEXCEPT {
+  const type_info & type() const noexcept {
     if (__h) {
         return *static_cast<type_info const *>(this->__call(_Action::_TypeInfo));
     } else {
@@ -328,11 +328,11 @@ private:
 
     template <class _ValueType>
     friend add_pointer_t<add_const_t<_ValueType>>
-    any_cast(any const *) _NOEXCEPT;
+    any_cast(any const *) noexcept;
 
     template <class _ValueType>
     friend add_pointer_t<_ValueType>
-    any_cast(any *) _NOEXCEPT;
+    any_cast(any *) noexcept;
 
     _HandleFuncPtr __h = nullptr;
     _Storage __s;
@@ -537,7 +537,7 @@ _Tp& any::emplace(initializer_list<_Up> __il, _Args&&... __args) {
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-void any::swap(any & __rhs) _NOEXCEPT
+void any::swap(any & __rhs) noexcept
 {
     if (this == &__rhs)
       return;
@@ -558,7 +558,7 @@ void any::swap(any & __rhs) _NOEXCEPT
 // 6.4 Non-member functions
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-void swap(any & __lhs, any & __rhs) _NOEXCEPT
+void swap(any & __lhs, any & __rhs) noexcept
 {
     __lhs.swap(__rhs);
 }
@@ -623,7 +623,7 @@ _ValueType any_cast(any && __v)
 template <class _ValueType>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 add_pointer_t<add_const_t<_ValueType>>
-any_cast(any const * __any) _NOEXCEPT
+any_cast(any const * __any) noexcept
 {
     static_assert(!is_reference<_ValueType>::value,
                   "_ValueType may not be a reference.");
@@ -644,7 +644,7 @@ _RetType __pointer_or_func_cast(void*, /*IsFunction*/true_type) noexcept {
 
 template <class _ValueType>
 add_pointer_t<_ValueType>
-any_cast(any * __any) _NOEXCEPT
+any_cast(any * __any) noexcept
 {
     using __any_imp::_Action;
     static_assert(!is_reference<_ValueType>::value,

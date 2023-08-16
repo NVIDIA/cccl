@@ -40,7 +40,7 @@ class _LIBCUDACXX_TYPE_VIS __new_delete_memory_resource_imp
       _CUDA_VSTD::__libcpp_deallocate(p, n, align);
     }
 
-    bool do_is_equal(memory_resource const & other) const _NOEXCEPT override
+    bool do_is_equal(memory_resource const & other) const noexcept override
         { return &other == this; }
 
 public:
@@ -60,7 +60,7 @@ protected:
         __throw_bad_alloc();
     }
     virtual void do_deallocate(void *, size_t, size_t) {}
-    virtual bool do_is_equal(memory_resource const & __other) const _NOEXCEPT
+    virtual bool do_is_equal(memory_resource const & __other) const noexcept
     { return &__other == this; }
 };
 
@@ -96,18 +96,18 @@ ResourceInitHelper res_init _LIBCUDACXX_INIT_PRIORITY_MAX;
 } // end namespace
 
 
-memory_resource * new_delete_resource() _NOEXCEPT {
+memory_resource * new_delete_resource() noexcept {
     return &res_init.resources.new_delete_res;
 }
 
-memory_resource * null_memory_resource() _NOEXCEPT {
+memory_resource * null_memory_resource() noexcept {
     return &res_init.resources.null_res;
 }
 
 // default_memory_resource()
 
 static memory_resource *
-__default_memory_resource(bool set = false, memory_resource * new_res = nullptr) _NOEXCEPT
+__default_memory_resource(bool set = false, memory_resource * new_res = nullptr) noexcept
 {
 #ifndef _LIBCUDACXX_HAS_NO_ATOMIC_HEADER
     _LIBCUDACXX_SAFE_STATIC static atomic<memory_resource*> __res =
@@ -148,12 +148,12 @@ __default_memory_resource(bool set = false, memory_resource * new_res = nullptr)
 #endif
 }
 
-memory_resource * get_default_resource() _NOEXCEPT
+memory_resource * get_default_resource() noexcept
 {
     return __default_memory_resource();
 }
 
-memory_resource * set_default_resource(memory_resource * __new_res) _NOEXCEPT
+memory_resource * set_default_resource(memory_resource * __new_res) noexcept
 {
     return __default_memory_resource(true, __new_res);
 }

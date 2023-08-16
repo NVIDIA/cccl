@@ -107,25 +107,25 @@ struct __cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, true> {
 
 template <typename _Tp, int _Sco, bool _Ref>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-_Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> * __a) _NOEXCEPT {
+_Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> * __a) noexcept {
   return __cxx_get_underlying_atomic(&__a->__a_value);
 }
 
 template <typename _Tp, int _Sco, bool _Ref>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-volatile _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a) _NOEXCEPT {
+volatile _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a) noexcept {
   return __cxx_get_underlying_atomic(&__a->__a_value);
 }
 
 template <typename _Tp, int _Sco, bool _Ref>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-const _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> const* __a) _NOEXCEPT {
+const _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> const* __a) noexcept {
   return __cxx_get_underlying_atomic(&__a->__a_value);
 }
 
 template <typename _Tp, int _Sco, bool _Ref>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-const volatile _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> const volatile* __a) _NOEXCEPT {
+const volatile _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> const volatile* __a) noexcept {
   return __cxx_get_underlying_atomic(&__a->__a_value);
 }
 

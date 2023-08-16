@@ -429,14 +429,14 @@ class __unordered_map_hasher
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
     __unordered_map_hasher()
-        _NOEXCEPT_(is_nothrow_default_constructible<_Hash>::value)
+        noexcept(is_nothrow_default_constructible<_Hash>::value)
         : _Hash() {}
     _LIBCUDACXX_INLINE_VISIBILITY
     __unordered_map_hasher(const _Hash& __h)
-        _NOEXCEPT_(is_nothrow_copy_constructible<_Hash>::value)
+        noexcept(is_nothrow_copy_constructible<_Hash>::value)
         : _Hash(__h) {}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const _Hash& hash_function() const _NOEXCEPT {return *this;}
+    const _Hash& hash_function() const noexcept {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY
     size_t operator()(const _Cp& __x) const
         {return static_cast<const _Hash&>(*this)(__x.__get_value().first);}
@@ -444,7 +444,7 @@ public:
     size_t operator()(const _Key& __x) const
         {return static_cast<const _Hash&>(*this)(__x);}
     void swap(__unordered_map_hasher&__y)
-        _NOEXCEPT_(__is_nothrow_swappable<_Hash>::value)
+        noexcept(__is_nothrow_swappable<_Hash>::value)
     {
         using _CUDA_VSTD::swap;
         swap(static_cast<_Hash&>(*this), static_cast<_Hash&>(__y));
@@ -458,14 +458,14 @@ class __unordered_map_hasher<_Key, _Cp, _Hash, false>
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
     __unordered_map_hasher()
-        _NOEXCEPT_(is_nothrow_default_constructible<_Hash>::value)
+        noexcept(is_nothrow_default_constructible<_Hash>::value)
         : __hash_() {}
     _LIBCUDACXX_INLINE_VISIBILITY
     __unordered_map_hasher(const _Hash& __h)
-        _NOEXCEPT_(is_nothrow_copy_constructible<_Hash>::value)
+        noexcept(is_nothrow_copy_constructible<_Hash>::value)
         : __hash_(__h) {}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const _Hash& hash_function() const _NOEXCEPT {return __hash_;}
+    const _Hash& hash_function() const noexcept {return __hash_;}
     _LIBCUDACXX_INLINE_VISIBILITY
     size_t operator()(const _Cp& __x) const
         {return __hash_(__x.__get_value().first);}
@@ -473,7 +473,7 @@ public:
     size_t operator()(const _Key& __x) const
         {return __hash_(__x);}
     void swap(__unordered_map_hasher&__y)
-        _NOEXCEPT_(__is_nothrow_swappable<_Hash>::value)
+        noexcept(__is_nothrow_swappable<_Hash>::value)
     {
         using _CUDA_VSTD::swap;
         swap(__hash_, __y.__hash_);
@@ -485,7 +485,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(__unordered_map_hasher<_Key, _Cp, _Hash, __b>& __x,
      __unordered_map_hasher<_Key, _Cp, _Hash, __b>& __y)
-    _NOEXCEPT_(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(_NOEXCEPT_(__x.swap(__y)))
 {
     __x.swap(__y);
 }
@@ -498,14 +498,14 @@ class __unordered_map_equal
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
     __unordered_map_equal()
-        _NOEXCEPT_(is_nothrow_default_constructible<_Pred>::value)
+        noexcept(is_nothrow_default_constructible<_Pred>::value)
         : _Pred() {}
     _LIBCUDACXX_INLINE_VISIBILITY
     __unordered_map_equal(const _Pred& __p)
-        _NOEXCEPT_(is_nothrow_copy_constructible<_Pred>::value)
+        noexcept(is_nothrow_copy_constructible<_Pred>::value)
         : _Pred(__p) {}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const _Pred& key_eq() const _NOEXCEPT {return *this;}
+    const _Pred& key_eq() const noexcept {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Cp& __x, const _Cp& __y) const
         {return static_cast<const _Pred&>(*this)(__x.__get_value().first, __y.__get_value().first);}
@@ -516,7 +516,7 @@ public:
     bool operator()(const _Key& __x, const _Cp& __y) const
         {return static_cast<const _Pred&>(*this)(__x, __y.__get_value().first);}
     void swap(__unordered_map_equal&__y)
-        _NOEXCEPT_(__is_nothrow_swappable<_Pred>::value)
+        noexcept(__is_nothrow_swappable<_Pred>::value)
     {
         using _CUDA_VSTD::swap;
         swap(static_cast<_Pred&>(*this), static_cast<_Pred&>(__y));
@@ -530,14 +530,14 @@ class __unordered_map_equal<_Key, _Cp, _Pred, false>
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
     __unordered_map_equal()
-        _NOEXCEPT_(is_nothrow_default_constructible<_Pred>::value)
+        noexcept(is_nothrow_default_constructible<_Pred>::value)
         : __pred_() {}
     _LIBCUDACXX_INLINE_VISIBILITY
     __unordered_map_equal(const _Pred& __p)
-        _NOEXCEPT_(is_nothrow_copy_constructible<_Pred>::value)
+        noexcept(is_nothrow_copy_constructible<_Pred>::value)
         : __pred_(__p) {}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const _Pred& key_eq() const _NOEXCEPT {return __pred_;}
+    const _Pred& key_eq() const noexcept {return __pred_;}
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Cp& __x, const _Cp& __y) const
         {return __pred_(__x.__get_value().first, __y.__get_value().first);}
@@ -548,7 +548,7 @@ public:
     bool operator()(const _Key& __x, const _Cp& __y) const
         {return __pred_(__x, __y.__get_value().first);}
     void swap(__unordered_map_equal&__y)
-        _NOEXCEPT_(__is_nothrow_swappable<_Pred>::value)
+        noexcept(__is_nothrow_swappable<_Pred>::value)
     {
         using _CUDA_VSTD::swap;
         swap(__pred_, __y.__pred_);
@@ -560,7 +560,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(__unordered_map_equal<_Key, _Cp, _Pred, __b>& __x,
      __unordered_map_equal<_Key, _Cp, _Pred, __b>& __y)
-    _NOEXCEPT_(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(_NOEXCEPT_(__x.swap(__y)))
 {
     __x.swap(__y);
 }
@@ -585,7 +585,7 @@ public:
     bool __second_constructed;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    explicit __hash_map_node_destructor(allocator_type& __na) _NOEXCEPT
+    explicit __hash_map_node_destructor(allocator_type& __na) noexcept
         : __na_(__na),
           __first_constructed(false),
           __second_constructed(false)
@@ -594,7 +594,7 @@ public:
 #ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     __hash_map_node_destructor(__hash_node_destructor<allocator_type>&& __x)
-        _NOEXCEPT
+        noexcept
         : __na_(__x.__na_),
           __first_constructed(__x.__value_constructed),
           __second_constructed(__x.__value_constructed)
@@ -613,7 +613,7 @@ public:
 #endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    void operator()(pointer __p) _NOEXCEPT
+    void operator()(pointer __p) noexcept
     {
         if (__second_constructed)
             __alloc_traits::destroy(__na_, _CUDA_VSTD::addressof(__p->__value_.__get_value().second));
@@ -748,10 +748,10 @@ public:
     typedef typename _NodeTypes::__map_value_type_pointer       pointer;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    __hash_map_iterator() _NOEXCEPT {}
+    __hash_map_iterator() noexcept {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    __hash_map_iterator(_HashIterator __i) _NOEXCEPT : __i_(__i) {}
+    __hash_map_iterator(_HashIterator __i) noexcept : __i_(__i) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     reference operator*() const {return __i_->__get_value();}
@@ -797,14 +797,14 @@ public:
     typedef typename _NodeTypes::__const_map_value_type_pointer  pointer;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    __hash_map_const_iterator() _NOEXCEPT {}
+    __hash_map_const_iterator() noexcept {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    __hash_map_const_iterator(_HashIterator __i) _NOEXCEPT : __i_(__i) {}
+    __hash_map_const_iterator(_HashIterator __i) noexcept : __i_(__i) {}
     _LIBCUDACXX_INLINE_VISIBILITY
     __hash_map_const_iterator(
             __hash_map_iterator<typename _HashIterator::__non_const_iterator> __i)
-                 _NOEXCEPT
+                 noexcept
                 : __i_(__i.__i_) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -902,7 +902,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_map()
-        _NOEXCEPT_(is_nothrow_default_constructible<__table>::value)
+        noexcept(is_nothrow_default_constructible<__table>::value)
         {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
             __get_db()->__insert_c(this);
@@ -931,7 +931,7 @@ public:
 #ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_map(unordered_map&& __u)
-        _NOEXCEPT_(is_nothrow_move_constructible<__table>::value);
+        noexcept(is_nothrow_move_constructible<__table>::value);
     unordered_map(unordered_map&& __u, const allocator_type& __a);
     unordered_map(initializer_list<value_type> __il);
     unordered_map(initializer_list<value_type> __il, size_type __n,
@@ -989,34 +989,34 @@ public:
 #ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_map& operator=(unordered_map&& __u)
-        _NOEXCEPT_(is_nothrow_move_assignable<__table>::value);
+        noexcept(is_nothrow_move_assignable<__table>::value);
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_map& operator=(initializer_list<value_type> __il);
 #endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    allocator_type get_allocator() const _NOEXCEPT
+    allocator_type get_allocator() const noexcept
         {return allocator_type(__table_.__node_alloc());}
 
     _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
-    bool      empty() const _NOEXCEPT {return __table_.size() == 0;}
+    bool      empty() const noexcept {return __table_.size() == 0;}
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_type size() const _NOEXCEPT  {return __table_.size();}
+    size_type size() const noexcept  {return __table_.size();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_type max_size() const _NOEXCEPT {return __table_.max_size();}
+    size_type max_size() const noexcept {return __table_.max_size();}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    iterator       begin() _NOEXCEPT        {return __table_.begin();}
+    iterator       begin() noexcept        {return __table_.begin();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    iterator       end() _NOEXCEPT          {return __table_.end();}
+    iterator       end() noexcept          {return __table_.end();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const_iterator begin()  const _NOEXCEPT {return __table_.begin();}
+    const_iterator begin()  const noexcept {return __table_.begin();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const_iterator end()    const _NOEXCEPT {return __table_.end();}
+    const_iterator end()    const noexcept {return __table_.end();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const_iterator cbegin() const _NOEXCEPT {return __table_.begin();}
+    const_iterator cbegin() const noexcept {return __table_.begin();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const_iterator cend()   const _NOEXCEPT {return __table_.end();}
+    const_iterator cend()   const noexcept {return __table_.end();}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     pair<iterator, bool> insert(const value_type& __x)
@@ -1197,7 +1197,7 @@ public:
     iterator erase(const_iterator __first, const_iterator __last)
         {return __table_.erase(__first.__i_, __last.__i_);}
     _LIBCUDACXX_INLINE_VISIBILITY
-        void clear() _NOEXCEPT {__table_.clear();}
+        void clear() noexcept {__table_.clear();}
 
 #if _LIBCUDACXX_STD_VER > 14
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1264,7 +1264,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(unordered_map& __u)
-        _NOEXCEPT_(__is_nothrow_swappable<__table>::value)
+        noexcept(__is_nothrow_swappable<__table>::value)
         { __table_.swap(__u.__table_);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1300,9 +1300,9 @@ public:
     const mapped_type& at(const key_type& __k) const;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_type bucket_count() const _NOEXCEPT {return __table_.bucket_count();}
+    size_type bucket_count() const noexcept {return __table_.bucket_count();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_type max_bucket_count() const _NOEXCEPT {return __table_.max_bucket_count();}
+    size_type max_bucket_count() const noexcept {return __table_.max_bucket_count();}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     size_type bucket_size(size_type __n) const
@@ -1324,9 +1324,9 @@ public:
     const_local_iterator cend(size_type __n) const   {return __table_.cend(__n);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    float load_factor() const _NOEXCEPT {return __table_.load_factor();}
+    float load_factor() const noexcept {return __table_.load_factor();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    float max_load_factor() const _NOEXCEPT {return __table_.max_load_factor();}
+    float max_load_factor() const noexcept {return __table_.max_load_factor();}
     _LIBCUDACXX_INLINE_VISIBILITY
     void max_load_factor(float __mlf) {__table_.max_load_factor(__mlf);}
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1524,7 +1524,7 @@ template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
 inline
 unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>::unordered_map(
         unordered_map&& __u)
-    _NOEXCEPT_(is_nothrow_move_constructible<__table>::value)
+    noexcept(is_nothrow_move_constructible<__table>::value)
     : __table_(_CUDA_VSTD::move(__u.__table_))
 {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
@@ -1595,7 +1595,7 @@ template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
 inline
 unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>&
 unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>::operator=(unordered_map&& __u)
-    _NOEXCEPT_(is_nothrow_move_assignable<__table>::value)
+    noexcept(is_nothrow_move_assignable<__table>::value)
 {
     __table_ = _CUDA_VSTD::move(__u.__table_);
     return *this;
@@ -1698,7 +1698,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
      unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>& __y)
-    _NOEXCEPT_(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(_NOEXCEPT_(__x.swap(__y)))
 {
     __x.swap(__y);
 }
@@ -1799,7 +1799,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multimap()
-        _NOEXCEPT_(is_nothrow_default_constructible<__table>::value)
+        noexcept(is_nothrow_default_constructible<__table>::value)
         {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
             __get_db()->__insert_c(this);
@@ -1828,7 +1828,7 @@ public:
 #ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multimap(unordered_multimap&& __u)
-        _NOEXCEPT_(is_nothrow_move_constructible<__table>::value);
+        noexcept(is_nothrow_move_constructible<__table>::value);
     unordered_multimap(unordered_multimap&& __u, const allocator_type& __a);
     unordered_multimap(initializer_list<value_type> __il);
     unordered_multimap(initializer_list<value_type> __il, size_type __n,
@@ -1887,34 +1887,34 @@ public:
 #ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multimap& operator=(unordered_multimap&& __u)
-        _NOEXCEPT_(is_nothrow_move_assignable<__table>::value);
+        noexcept(is_nothrow_move_assignable<__table>::value);
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multimap& operator=(initializer_list<value_type> __il);
 #endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    allocator_type get_allocator() const _NOEXCEPT
+    allocator_type get_allocator() const noexcept
         {return allocator_type(__table_.__node_alloc());}
 
     _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
-    bool      empty() const _NOEXCEPT {return __table_.size() == 0;}
+    bool      empty() const noexcept {return __table_.size() == 0;}
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_type size() const _NOEXCEPT  {return __table_.size();}
+    size_type size() const noexcept  {return __table_.size();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_type max_size() const _NOEXCEPT {return __table_.max_size();}
+    size_type max_size() const noexcept {return __table_.max_size();}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    iterator       begin() _NOEXCEPT        {return __table_.begin();}
+    iterator       begin() noexcept        {return __table_.begin();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    iterator       end() _NOEXCEPT          {return __table_.end();}
+    iterator       end() noexcept          {return __table_.end();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const_iterator begin()  const _NOEXCEPT {return __table_.begin();}
+    const_iterator begin()  const noexcept {return __table_.begin();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const_iterator end()    const _NOEXCEPT {return __table_.end();}
+    const_iterator end()    const noexcept {return __table_.end();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const_iterator cbegin() const _NOEXCEPT {return __table_.begin();}
+    const_iterator cbegin() const noexcept {return __table_.begin();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const_iterator cend()   const _NOEXCEPT {return __table_.end();}
+    const_iterator cend()   const noexcept {return __table_.end();}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     iterator insert(const value_type& __x) {return __table_.__insert_multi(__x);}
@@ -1972,7 +1972,7 @@ public:
     iterator erase(const_iterator __first, const_iterator __last)
         {return __table_.erase(__first.__i_, __last.__i_);}
     _LIBCUDACXX_INLINE_VISIBILITY
-    void clear() _NOEXCEPT {__table_.clear();}
+    void clear() noexcept {__table_.clear();}
 
 #if _LIBCUDACXX_STD_VER > 14
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -2039,7 +2039,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(unordered_multimap& __u)
-        _NOEXCEPT_(__is_nothrow_swappable<__table>::value)
+        noexcept(__is_nothrow_swappable<__table>::value)
         {__table_.swap(__u.__table_);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -2067,9 +2067,9 @@ public:
         {return __table_.__equal_range_multi(__k);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_type bucket_count() const _NOEXCEPT {return __table_.bucket_count();}
+    size_type bucket_count() const noexcept {return __table_.bucket_count();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_type max_bucket_count() const _NOEXCEPT
+    size_type max_bucket_count() const noexcept
         {return __table_.max_bucket_count();}
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -2092,9 +2092,9 @@ public:
     const_local_iterator cend(size_type __n) const   {return __table_.cend(__n);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    float load_factor() const _NOEXCEPT {return __table_.load_factor();}
+    float load_factor() const noexcept {return __table_.load_factor();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    float max_load_factor() const _NOEXCEPT {return __table_.max_load_factor();}
+    float max_load_factor() const noexcept {return __table_.max_load_factor();}
     _LIBCUDACXX_INLINE_VISIBILITY
     void max_load_factor(float __mlf) {__table_.max_load_factor(__mlf);}
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -2288,7 +2288,7 @@ template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
 inline
 unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>::unordered_multimap(
         unordered_multimap&& __u)
-    _NOEXCEPT_(is_nothrow_move_constructible<__table>::value)
+    noexcept(is_nothrow_move_constructible<__table>::value)
     : __table_(_CUDA_VSTD::move(__u.__table_))
 {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
@@ -2360,7 +2360,7 @@ template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
 inline
 unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>&
 unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>::operator=(unordered_multimap&& __u)
-    _NOEXCEPT_(is_nothrow_move_assignable<__table>::value)
+    noexcept(is_nothrow_move_assignable<__table>::value)
 {
     __table_ = _CUDA_VSTD::move(__u.__table_);
     return *this;
@@ -2396,7 +2396,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
      unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>& __y)
-    _NOEXCEPT_(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(_NOEXCEPT_(__x.swap(__y)))
 {
     __x.swap(__y);
 }

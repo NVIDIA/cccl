@@ -26,55 +26,55 @@ struct __cxx_atomic_base_impl {
 #endif
 
   _LIBCUDACXX_CONSTEXPR
-  __cxx_atomic_base_impl() _NOEXCEPT = default;
+  __cxx_atomic_base_impl() noexcept = default;
   _LIBCUDACXX_CONSTEXPR
-  __cxx_atomic_base_impl(__cxx_atomic_base_impl &&) _NOEXCEPT = default;
+  __cxx_atomic_base_impl(__cxx_atomic_base_impl &&) noexcept = default;
   _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit
-  __cxx_atomic_base_impl(_Tp value) _NOEXCEPT : __a_value(value) {}
+  __cxx_atomic_base_impl(_Tp value) noexcept : __a_value(value) {}
 
-  __cxx_atomic_base_impl& operator=(const __cxx_atomic_base_impl &) _NOEXCEPT = default;
+  __cxx_atomic_base_impl& operator=(const __cxx_atomic_base_impl &) noexcept = default;
 
   _ALIGNAS(sizeof(_Tp)) _Tp __a_value;
 };
 
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-_Tp* __cxx_get_underlying_atomic(__cxx_atomic_base_impl<_Tp, _Sco> * __a) _NOEXCEPT {
+_Tp* __cxx_get_underlying_atomic(__cxx_atomic_base_impl<_Tp, _Sco> * __a) noexcept {
   return &__a->__a_value;
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-volatile _Tp* __cxx_get_underlying_atomic(__cxx_atomic_base_impl<_Tp, _Sco> volatile* __a) _NOEXCEPT {
+volatile _Tp* __cxx_get_underlying_atomic(__cxx_atomic_base_impl<_Tp, _Sco> volatile* __a) noexcept {
   return &__a->__a_value;
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-const _Tp* __cxx_get_underlying_atomic(__cxx_atomic_base_impl<_Tp, _Sco> const* __a) _NOEXCEPT {
+const _Tp* __cxx_get_underlying_atomic(__cxx_atomic_base_impl<_Tp, _Sco> const* __a) noexcept {
   return &__a->__a_value;
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-const volatile _Tp* __cxx_get_underlying_atomic(__cxx_atomic_base_impl<_Tp, _Sco> const volatile* __a) _NOEXCEPT {
+const volatile _Tp* __cxx_get_underlying_atomic(__cxx_atomic_base_impl<_Tp, _Sco> const volatile* __a) noexcept {
   return &__a->__a_value;
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-__cxx_atomic_base_impl<_Tp, _Sco>* __cxx_atomic_unwrap(__cxx_atomic_base_impl<_Tp, _Sco>* __a) _NOEXCEPT {
+__cxx_atomic_base_impl<_Tp, _Sco>* __cxx_atomic_unwrap(__cxx_atomic_base_impl<_Tp, _Sco>* __a) noexcept {
   return __a;
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-volatile __cxx_atomic_base_impl<_Tp, _Sco>* __cxx_atomic_unwrap(__cxx_atomic_base_impl<_Tp, _Sco> volatile* __a) _NOEXCEPT {
+volatile __cxx_atomic_base_impl<_Tp, _Sco>* __cxx_atomic_unwrap(__cxx_atomic_base_impl<_Tp, _Sco> volatile* __a) noexcept {
   return __a;
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-const __cxx_atomic_base_impl<_Tp, _Sco>* __cxx_atomic_unwrap(__cxx_atomic_base_impl<_Tp, _Sco> const* __a) _NOEXCEPT {
+const __cxx_atomic_base_impl<_Tp, _Sco>* __cxx_atomic_unwrap(__cxx_atomic_base_impl<_Tp, _Sco> const* __a) noexcept {
   return __a;
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-const volatile __cxx_atomic_base_impl<_Tp, _Sco>* __cxx_atomic_unwrap(__cxx_atomic_base_impl<_Tp, _Sco> const volatile* __a) _NOEXCEPT {
+const volatile __cxx_atomic_base_impl<_Tp, _Sco>* __cxx_atomic_unwrap(__cxx_atomic_base_impl<_Tp, _Sco> const volatile* __a) noexcept {
   return __a;
 }
 
@@ -92,72 +92,72 @@ struct __cxx_atomic_ref_base_impl {
 #endif
 
   _LIBCUDACXX_CONSTEXPR
-  __cxx_atomic_ref_base_impl() _NOEXCEPT = delete;
+  __cxx_atomic_ref_base_impl() noexcept = delete;
   _LIBCUDACXX_CONSTEXPR
-  __cxx_atomic_ref_base_impl(__cxx_atomic_ref_base_impl &&) _NOEXCEPT = default;
+  __cxx_atomic_ref_base_impl(__cxx_atomic_ref_base_impl &&) noexcept = default;
   _LIBCUDACXX_CONSTEXPR
-  __cxx_atomic_ref_base_impl(const __cxx_atomic_ref_base_impl &) _NOEXCEPT = default;
+  __cxx_atomic_ref_base_impl(const __cxx_atomic_ref_base_impl &) noexcept = default;
   _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit
-  __cxx_atomic_ref_base_impl(_Tp& value) _NOEXCEPT : __a_value(&value) {}
+  __cxx_atomic_ref_base_impl(_Tp& value) noexcept : __a_value(&value) {}
 
   _Tp* __a_value;
 };
 
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-_Tp* __cxx_get_underlying_atomic(__cxx_atomic_ref_base_impl<_Tp, _Sco>* __a) _NOEXCEPT {
+_Tp* __cxx_get_underlying_atomic(__cxx_atomic_ref_base_impl<_Tp, _Sco>* __a) noexcept {
   return __a->__a_value;
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-volatile _Tp* __cxx_get_underlying_atomic(__cxx_atomic_ref_base_impl<_Tp, _Sco> volatile* __a) _NOEXCEPT {
+volatile _Tp* __cxx_get_underlying_atomic(__cxx_atomic_ref_base_impl<_Tp, _Sco> volatile* __a) noexcept {
   return __a->__a_value;
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-const _Tp* __cxx_get_underlying_atomic(__cxx_atomic_ref_base_impl<_Tp, _Sco> const* __a) _NOEXCEPT {
+const _Tp* __cxx_get_underlying_atomic(__cxx_atomic_ref_base_impl<_Tp, _Sco> const* __a) noexcept {
   return __a->__a_value;
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-const volatile _Tp* __cxx_get_underlying_atomic(__cxx_atomic_ref_base_impl<_Tp, _Sco> const volatile* __a) _NOEXCEPT {
+const volatile _Tp* __cxx_get_underlying_atomic(__cxx_atomic_ref_base_impl<_Tp, _Sco> const volatile* __a) noexcept {
   return __a->__a_value;
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-_Tp* __cxx_atomic_unwrap(__cxx_atomic_ref_base_impl<_Tp, _Sco>* __a) _NOEXCEPT {
+_Tp* __cxx_atomic_unwrap(__cxx_atomic_ref_base_impl<_Tp, _Sco>* __a) noexcept {
   return __cxx_get_underlying_atomic(__a);
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-volatile _Tp* __cxx_atomic_unwrap(__cxx_atomic_ref_base_impl<_Tp, _Sco> volatile* __a) _NOEXCEPT {
+volatile _Tp* __cxx_atomic_unwrap(__cxx_atomic_ref_base_impl<_Tp, _Sco> volatile* __a) noexcept {
   return __cxx_get_underlying_atomic(__a);
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-const _Tp* __cxx_atomic_unwrap(__cxx_atomic_ref_base_impl<_Tp, _Sco> const* __a) _NOEXCEPT {
+const _Tp* __cxx_atomic_unwrap(__cxx_atomic_ref_base_impl<_Tp, _Sco> const* __a) noexcept {
   return __cxx_get_underlying_atomic(__a);
 }
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-const volatile _Tp* __cxx_atomic_unwrap(__cxx_atomic_ref_base_impl<_Tp, _Sco> const volatile* __a) _NOEXCEPT {
+const volatile _Tp* __cxx_atomic_unwrap(__cxx_atomic_ref_base_impl<_Tp, _Sco> const volatile* __a) noexcept {
   return __cxx_get_underlying_atomic(__a);
 }
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-_Tp* __cxx_get_underlying_atomic(_Tp* __a) _NOEXCEPT {
+_Tp* __cxx_get_underlying_atomic(_Tp* __a) noexcept {
   return __a;
 }
 
 template <typename _Tp, typename _Up>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-auto __cxx_atomic_wrap_to_base(_Tp*, _Up __val) _NOEXCEPT -> typename _Tp::__wrap_t {
+auto __cxx_atomic_wrap_to_base(_Tp*, _Up __val) noexcept -> typename _Tp::__wrap_t {
   return typename _Tp::__wrap_t(__val);
 }
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-auto __cxx_atomic_base_temporary(_Tp*) _NOEXCEPT -> typename _Tp::__temporary_t {
+auto __cxx_atomic_base_temporary(_Tp*) noexcept -> typename _Tp::__temporary_t {
   return typename _Tp::__temporary_t();
 }
 

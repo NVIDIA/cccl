@@ -83,7 +83,7 @@ operator new(std::size_t size) _THROW_BAD_ALLOC
 
 _LIBCUDACXX_WEAK
 void*
-operator new(size_t size, const std::nothrow_t&) _NOEXCEPT
+operator new(size_t size, const std::nothrow_t&) noexcept
 {
     void* p = 0;
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -109,7 +109,7 @@ operator new[](size_t size) _THROW_BAD_ALLOC
 
 _LIBCUDACXX_WEAK
 void*
-operator new[](size_t size, const std::nothrow_t&) _NOEXCEPT
+operator new[](size_t size, const std::nothrow_t&) noexcept
 {
     void* p = 0;
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -128,42 +128,42 @@ operator new[](size_t size, const std::nothrow_t&) _NOEXCEPT
 
 _LIBCUDACXX_WEAK
 void
-operator delete(void* ptr) _NOEXCEPT
+operator delete(void* ptr) noexcept
 {
     ::free(ptr);
 }
 
 _LIBCUDACXX_WEAK
 void
-operator delete(void* ptr, const std::nothrow_t&) _NOEXCEPT
+operator delete(void* ptr, const std::nothrow_t&) noexcept
 {
     ::operator delete(ptr);
 }
 
 _LIBCUDACXX_WEAK
 void
-operator delete(void* ptr, size_t) _NOEXCEPT
+operator delete(void* ptr, size_t) noexcept
 {
     ::operator delete(ptr);
 }
 
 _LIBCUDACXX_WEAK
 void
-operator delete[] (void* ptr) _NOEXCEPT
+operator delete[] (void* ptr) noexcept
 {
     ::operator delete(ptr);
 }
 
 _LIBCUDACXX_WEAK
 void
-operator delete[] (void* ptr, const std::nothrow_t&) _NOEXCEPT
+operator delete[] (void* ptr, const std::nothrow_t&) noexcept
 {
     ::operator delete[](ptr);
 }
 
 _LIBCUDACXX_WEAK
 void
-operator delete[] (void* ptr, size_t) _NOEXCEPT
+operator delete[] (void* ptr, size_t) noexcept
 {
     ::operator delete[](ptr);
 }
@@ -204,7 +204,7 @@ operator new(std::size_t size, std::align_val_t alignment) _THROW_BAD_ALLOC
 
 _LIBCUDACXX_WEAK
 void*
-operator new(size_t size, std::align_val_t alignment, const std::nothrow_t&) _NOEXCEPT
+operator new(size_t size, std::align_val_t alignment, const std::nothrow_t&) noexcept
 {
     void* p = 0;
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -230,7 +230,7 @@ operator new[](size_t size, std::align_val_t alignment) _THROW_BAD_ALLOC
 
 _LIBCUDACXX_WEAK
 void*
-operator new[](size_t size, std::align_val_t alignment, const std::nothrow_t&) _NOEXCEPT
+operator new[](size_t size, std::align_val_t alignment, const std::nothrow_t&) noexcept
 {
     void* p = 0;
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -249,7 +249,7 @@ operator new[](size_t size, std::align_val_t alignment, const std::nothrow_t&) _
 
 _LIBCUDACXX_WEAK
 void
-operator delete(void* ptr, std::align_val_t) _NOEXCEPT
+operator delete(void* ptr, std::align_val_t) noexcept
 {
 #if defined(_LIBCUDACXX_MSVCRT_LIKE)
     ::_aligned_free(ptr);
@@ -260,35 +260,35 @@ operator delete(void* ptr, std::align_val_t) _NOEXCEPT
 
 _LIBCUDACXX_WEAK
 void
-operator delete(void* ptr, std::align_val_t alignment, const std::nothrow_t&) _NOEXCEPT
+operator delete(void* ptr, std::align_val_t alignment, const std::nothrow_t&) noexcept
 {
     ::operator delete(ptr, alignment);
 }
 
 _LIBCUDACXX_WEAK
 void
-operator delete(void* ptr, size_t, std::align_val_t alignment) _NOEXCEPT
+operator delete(void* ptr, size_t, std::align_val_t alignment) noexcept
 {
     ::operator delete(ptr, alignment);
 }
 
 _LIBCUDACXX_WEAK
 void
-operator delete[] (void* ptr, std::align_val_t alignment) _NOEXCEPT
+operator delete[] (void* ptr, std::align_val_t alignment) noexcept
 {
     ::operator delete(ptr, alignment);
 }
 
 _LIBCUDACXX_WEAK
 void
-operator delete[] (void* ptr, std::align_val_t alignment, const std::nothrow_t&) _NOEXCEPT
+operator delete[] (void* ptr, std::align_val_t alignment, const std::nothrow_t&) noexcept
 {
     ::operator delete[](ptr, alignment);
 }
 
 _LIBCUDACXX_WEAK
 void
-operator delete[] (void* ptr, size_t, std::align_val_t alignment) _NOEXCEPT
+operator delete[] (void* ptr, size_t, std::align_val_t alignment) noexcept
 {
     ::operator delete[](ptr, alignment);
 }

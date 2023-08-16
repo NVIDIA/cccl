@@ -140,23 +140,23 @@ class _LIBCUDACXX_EXCEPTION_ABI bad_alloc
     : public exception
 {
 public:
-    bad_alloc() _NOEXCEPT;
-    virtual ~bad_alloc() _NOEXCEPT;
-    virtual const char* what() const _NOEXCEPT;
+    bad_alloc() noexcept;
+    virtual ~bad_alloc() noexcept;
+    virtual const char* what() const noexcept;
 };
 
 class _LIBCUDACXX_EXCEPTION_ABI bad_array_new_length
     : public bad_alloc
 {
 public:
-    bad_array_new_length() _NOEXCEPT;
-    virtual ~bad_array_new_length() _NOEXCEPT;
-    virtual const char* what() const _NOEXCEPT;
+    bad_array_new_length() noexcept;
+    virtual ~bad_array_new_length() noexcept;
+    virtual const char* what() const noexcept;
 };
 
 typedef void (*new_handler)();
-_LIBCUDACXX_FUNC_VIS new_handler set_new_handler(new_handler) _NOEXCEPT;
-_LIBCUDACXX_FUNC_VIS new_handler get_new_handler() _NOEXCEPT;
+_LIBCUDACXX_FUNC_VIS new_handler set_new_handler(new_handler) noexcept;
+_LIBCUDACXX_FUNC_VIS new_handler get_new_handler() noexcept;
 
 #endif // !_LIBCUDACXX_ABI_VCRUNTIME
 
@@ -191,49 +191,49 @@ _LIBCUDACXX_INLINE_VAR constexpr destroying_delete_t destroying_delete{};
 #if !defined(_LIBCUDACXX_ABI_VCRUNTIME)
 
 _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_OVERRIDABLE_FUNC_VIS void* operator new(std::size_t __sz) _THROW_BAD_ALLOC;
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_OVERRIDABLE_FUNC_VIS void* operator new(std::size_t __sz, const std::nothrow_t&) _NOEXCEPT _LIBCUDACXX_NOALIAS;
-_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete(void* __p) _NOEXCEPT;
-_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete(void* __p, const std::nothrow_t&) _NOEXCEPT;
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_OVERRIDABLE_FUNC_VIS void* operator new(std::size_t __sz, const std::nothrow_t&) noexcept _LIBCUDACXX_NOALIAS;
+_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete(void* __p) noexcept;
+_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete(void* __p, const std::nothrow_t&) noexcept;
 #ifndef _LIBCUDACXX_HAS_NO_LIBRARY_SIZED_DEALLOCATION
-_LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_AVAILABILITY_SIZED_NEW_DELETE void  operator delete(void* __p, std::size_t __sz) _NOEXCEPT;
+_LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_AVAILABILITY_SIZED_NEW_DELETE void  operator delete(void* __p, std::size_t __sz) noexcept;
 #endif
 
 _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_OVERRIDABLE_FUNC_VIS void* operator new[](std::size_t __sz) _THROW_BAD_ALLOC;
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_OVERRIDABLE_FUNC_VIS void* operator new[](std::size_t __sz, const std::nothrow_t&) _NOEXCEPT _LIBCUDACXX_NOALIAS;
-_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete[](void* __p) _NOEXCEPT;
-_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete[](void* __p, const std::nothrow_t&) _NOEXCEPT;
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_OVERRIDABLE_FUNC_VIS void* operator new[](std::size_t __sz, const std::nothrow_t&) noexcept _LIBCUDACXX_NOALIAS;
+_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete[](void* __p) noexcept;
+_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete[](void* __p, const std::nothrow_t&) noexcept;
 #ifndef _LIBCUDACXX_HAS_NO_LIBRARY_SIZED_DEALLOCATION
-_LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_AVAILABILITY_SIZED_NEW_DELETE void  operator delete[](void* __p, std::size_t __sz) _NOEXCEPT;
+_LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_AVAILABILITY_SIZED_NEW_DELETE void  operator delete[](void* __p, std::size_t __sz) noexcept;
 #endif
 
 #ifndef _LIBCUDACXX_HAS_NO_LIBRARY_ALIGNED_ALLOCATION
 _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_OVERRIDABLE_FUNC_VIS void* operator new(std::size_t __sz, std::align_val_t) _THROW_BAD_ALLOC;
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_OVERRIDABLE_FUNC_VIS void* operator new(std::size_t __sz, std::align_val_t, const std::nothrow_t&) _NOEXCEPT _LIBCUDACXX_NOALIAS;
-_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete(void* __p, std::align_val_t) _NOEXCEPT;
-_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete(void* __p, std::align_val_t, const std::nothrow_t&) _NOEXCEPT;
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_OVERRIDABLE_FUNC_VIS void* operator new(std::size_t __sz, std::align_val_t, const std::nothrow_t&) noexcept _LIBCUDACXX_NOALIAS;
+_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete(void* __p, std::align_val_t) noexcept;
+_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete(void* __p, std::align_val_t, const std::nothrow_t&) noexcept;
 #ifndef _LIBCUDACXX_HAS_NO_LIBRARY_SIZED_DEALLOCATION
-_LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_AVAILABILITY_SIZED_NEW_DELETE void  operator delete(void* __p, std::size_t __sz, std::align_val_t) _NOEXCEPT;
+_LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_AVAILABILITY_SIZED_NEW_DELETE void  operator delete(void* __p, std::size_t __sz, std::align_val_t) noexcept;
 #endif
 
 _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_OVERRIDABLE_FUNC_VIS void* operator new[](std::size_t __sz, std::align_val_t) _THROW_BAD_ALLOC;
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_OVERRIDABLE_FUNC_VIS void* operator new[](std::size_t __sz, std::align_val_t, const std::nothrow_t&) _NOEXCEPT _LIBCUDACXX_NOALIAS;
-_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete[](void* __p, std::align_val_t) _NOEXCEPT;
-_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete[](void* __p, std::align_val_t, const std::nothrow_t&) _NOEXCEPT;
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_OVERRIDABLE_FUNC_VIS void* operator new[](std::size_t __sz, std::align_val_t, const std::nothrow_t&) noexcept _LIBCUDACXX_NOALIAS;
+_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete[](void* __p, std::align_val_t) noexcept;
+_LIBCUDACXX_OVERRIDABLE_FUNC_VIS void  operator delete[](void* __p, std::align_val_t, const std::nothrow_t&) noexcept;
 #ifndef _LIBCUDACXX_HAS_NO_LIBRARY_SIZED_DEALLOCATION
-_LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_AVAILABILITY_SIZED_NEW_DELETE void  operator delete[](void* __p, std::size_t __sz, std::align_val_t) _NOEXCEPT;
+_LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_AVAILABILITY_SIZED_NEW_DELETE void  operator delete[](void* __p, std::size_t __sz, std::align_val_t) noexcept;
 #endif
 #endif
 
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 inline _LIBCUDACXX_INLINE_VISIBILITY void* operator new  (std::size_t, void* __p) _NOEXCEPT {return __p;}
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 inline _LIBCUDACXX_INLINE_VISIBILITY void* operator new[](std::size_t, void* __p) _NOEXCEPT {return __p;}
-inline _LIBCUDACXX_INLINE_VISIBILITY void  operator delete  (void*, void*) _NOEXCEPT {}
-inline _LIBCUDACXX_INLINE_VISIBILITY void  operator delete[](void*, void*) _NOEXCEPT {}
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 inline _LIBCUDACXX_INLINE_VISIBILITY void* operator new  (std::size_t, void* __p) noexcept {return __p;}
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 inline _LIBCUDACXX_INLINE_VISIBILITY void* operator new[](std::size_t, void* __p) noexcept {return __p;}
+inline _LIBCUDACXX_INLINE_VISIBILITY void  operator delete  (void*, void*) noexcept {}
+inline _LIBCUDACXX_INLINE_VISIBILITY void  operator delete[](void*, void*) noexcept {}
 
 #endif // !_LIBCUDACXX_ABI_VCRUNTIME
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_CONSTEXPR inline _LIBCUDACXX_INLINE_VISIBILITY bool __is_overaligned_for_new(size_t __align) _NOEXCEPT {
+_LIBCUDACXX_CONSTEXPR inline _LIBCUDACXX_INLINE_VISIBILITY bool __is_overaligned_for_new(size_t __align) noexcept {
 #ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
   return __align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
 #else
@@ -353,7 +353,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_deallocate_unsized(void* __pt
 
 template <class _Tp>
 _LIBCUDACXX_NODISCARD_AFTER_CXX17 inline
-_LIBCUDACXX_CONSTEXPR _Tp* __launder(_Tp* __p) _NOEXCEPT
+_LIBCUDACXX_CONSTEXPR _Tp* __launder(_Tp* __p) noexcept
 {
     static_assert (!(is_function<_Tp>::value), "can't launder functions" );
     static_assert (!(is_same<void, __remove_cv_t<_Tp>>::value), "can't launder cv-void" );

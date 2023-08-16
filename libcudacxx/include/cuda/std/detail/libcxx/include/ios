@@ -357,7 +357,7 @@ protected:
     void __call_callbacks(event);
     void copyfmt(const ios_base&);
     void move(ios_base&);
-    void swap(ios_base&) _NOEXCEPT;
+    void swap(ios_base&) noexcept;
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void set_rdbuf(void* __sb)
@@ -409,18 +409,18 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_error_code_enum<io_errc::__lx> : public true_
 #endif
 
 _LIBCUDACXX_FUNC_VIS
-const error_category& iostream_category() _NOEXCEPT;
+const error_category& iostream_category() noexcept;
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 error_code
-make_error_code(io_errc __e) _NOEXCEPT
+make_error_code(io_errc __e) noexcept
 {
     return error_code(static_cast<int>(__e), iostream_category());
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 error_condition
-make_error_condition(io_errc __e) _NOEXCEPT
+make_error_condition(io_errc __e) noexcept
 {
     return error_condition(static_cast<int>(__e), iostream_category());
 }
@@ -683,7 +683,7 @@ protected:
     void move(basic_ios&& __rhs) {move(__rhs);}
 #endif
     _LIBCUDACXX_INLINE_VISIBILITY
-    void swap(basic_ios& __rhs) _NOEXCEPT;
+    void swap(basic_ios& __rhs) noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
     void set_rdbuf(basic_streambuf<char_type, traits_type>* __sb);
 private:
@@ -827,7 +827,7 @@ basic_ios<_CharT, _Traits>::move(basic_ios& __rhs)
 template <class _CharT, class _Traits>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
-basic_ios<_CharT, _Traits>::swap(basic_ios& __rhs) _NOEXCEPT
+basic_ios<_CharT, _Traits>::swap(basic_ios& __rhs) noexcept
 {
     ios_base::swap(__rhs);
     _CUDA_VSTD::swap(__tie_, __rhs.__tie_);

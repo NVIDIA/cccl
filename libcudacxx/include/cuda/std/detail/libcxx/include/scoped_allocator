@@ -206,7 +206,7 @@ private:
 protected:
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    __scoped_allocator_storage() _NOEXCEPT {}
+    __scoped_allocator_storage() noexcept {}
 
     template <class _OuterA2,
               class = typename enable_if<
@@ -214,7 +214,7 @@ protected:
                       >::type>
         _LIBCUDACXX_INLINE_VISIBILITY
         __scoped_allocator_storage(_OuterA2&& __outerAlloc,
-                                   const _InnerAllocs& ...__innerAllocs) _NOEXCEPT
+                                   const _InnerAllocs& ...__innerAllocs) noexcept
             : outer_allocator_type(_CUDA_VSTD::forward<_OuterA2>(__outerAlloc)),
               __inner_(__innerAllocs...) {}
 
@@ -224,7 +224,7 @@ protected:
                       >::type>
         _LIBCUDACXX_INLINE_VISIBILITY
         __scoped_allocator_storage(
-            const __scoped_allocator_storage<_OuterA2, _InnerAllocs...>& __other) _NOEXCEPT
+            const __scoped_allocator_storage<_OuterA2, _InnerAllocs...>& __other) noexcept
             : outer_allocator_type(__other.outer_allocator()),
               __inner_(__other.inner_allocator()) {}
 
@@ -234,7 +234,7 @@ protected:
                       >::type>
         _LIBCUDACXX_INLINE_VISIBILITY
         __scoped_allocator_storage(
-            __scoped_allocator_storage<_OuterA2, _InnerAllocs...>&& __other) _NOEXCEPT
+            __scoped_allocator_storage<_OuterA2, _InnerAllocs...>&& __other) noexcept
             : outer_allocator_type(_CUDA_VSTD::move(__other.outer_allocator())),
               __inner_(_CUDA_VSTD::move(__other.inner_allocator())) {}
 
@@ -244,27 +244,27 @@ protected:
                       >::type>
         _LIBCUDACXX_INLINE_VISIBILITY
         __scoped_allocator_storage(_OuterA2&& __o,
-                                   const inner_allocator_type& __i) _NOEXCEPT
+                                   const inner_allocator_type& __i) noexcept
             : outer_allocator_type(_CUDA_VSTD::forward<_OuterA2>(__o)),
               __inner_(__i)
         {
         }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    inner_allocator_type& inner_allocator() _NOEXCEPT             {return __inner_;}
+    inner_allocator_type& inner_allocator() noexcept             {return __inner_;}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const inner_allocator_type& inner_allocator() const _NOEXCEPT {return __inner_;}
+    const inner_allocator_type& inner_allocator() const noexcept {return __inner_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    outer_allocator_type& outer_allocator() _NOEXCEPT
+    outer_allocator_type& outer_allocator() noexcept
         {return static_cast<outer_allocator_type&>(*this);}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const outer_allocator_type& outer_allocator() const _NOEXCEPT
+    const outer_allocator_type& outer_allocator() const noexcept
         {return static_cast<const outer_allocator_type&>(*this);}
 
     scoped_allocator_adaptor<outer_allocator_type, _InnerAllocs...>
     _LIBCUDACXX_INLINE_VISIBILITY
-    select_on_container_copy_construction() const _NOEXCEPT
+    select_on_container_copy_construction() const noexcept
         {
             return scoped_allocator_adaptor<outer_allocator_type, _InnerAllocs...>
             (
@@ -287,14 +287,14 @@ protected:
     typedef scoped_allocator_adaptor<_OuterAlloc> inner_allocator_type;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    __scoped_allocator_storage() _NOEXCEPT {}
+    __scoped_allocator_storage() noexcept {}
 
     template <class _OuterA2,
               class = typename enable_if<
                         is_constructible<outer_allocator_type, _OuterA2>::value
                       >::type>
         _LIBCUDACXX_INLINE_VISIBILITY
-        __scoped_allocator_storage(_OuterA2&& __outerAlloc) _NOEXCEPT
+        __scoped_allocator_storage(_OuterA2&& __outerAlloc) noexcept
             : outer_allocator_type(_CUDA_VSTD::forward<_OuterA2>(__outerAlloc)) {}
 
     template <class _OuterA2,
@@ -303,7 +303,7 @@ protected:
                       >::type>
         _LIBCUDACXX_INLINE_VISIBILITY
         __scoped_allocator_storage(
-            const __scoped_allocator_storage<_OuterA2>& __other) _NOEXCEPT
+            const __scoped_allocator_storage<_OuterA2>& __other) noexcept
             : outer_allocator_type(__other.outer_allocator()) {}
 
     template <class _OuterA2,
@@ -312,33 +312,33 @@ protected:
                       >::type>
         _LIBCUDACXX_INLINE_VISIBILITY
         __scoped_allocator_storage(
-            __scoped_allocator_storage<_OuterA2>&& __other) _NOEXCEPT
+            __scoped_allocator_storage<_OuterA2>&& __other) noexcept
             : outer_allocator_type(_CUDA_VSTD::move(__other.outer_allocator())) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    inner_allocator_type& inner_allocator() _NOEXCEPT
+    inner_allocator_type& inner_allocator() noexcept
         {return static_cast<inner_allocator_type&>(*this);}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const inner_allocator_type& inner_allocator() const _NOEXCEPT
+    const inner_allocator_type& inner_allocator() const noexcept
         {return static_cast<const inner_allocator_type&>(*this);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    outer_allocator_type& outer_allocator() _NOEXCEPT
+    outer_allocator_type& outer_allocator() noexcept
         {return static_cast<outer_allocator_type&>(*this);}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const outer_allocator_type& outer_allocator() const _NOEXCEPT
+    const outer_allocator_type& outer_allocator() const noexcept
         {return static_cast<const outer_allocator_type&>(*this);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     scoped_allocator_adaptor<outer_allocator_type>
-    select_on_container_copy_construction() const _NOEXCEPT
+    select_on_container_copy_construction() const noexcept
         {return scoped_allocator_adaptor<outer_allocator_type>(
             allocator_traits<outer_allocator_type>::
                 select_on_container_copy_construction(outer_allocator())
         );}
 
     __scoped_allocator_storage(const outer_allocator_type& __o,
-                               const inner_allocator_type& __i) _NOEXCEPT;
+                               const inner_allocator_type& __i) noexcept;
 
     template <class...> friend class __scoped_allocator_storage;
 };
@@ -367,7 +367,7 @@ struct __outermost
 {
     typedef _Alloc type;
     _LIBCUDACXX_INLINE_VISIBILITY
-    type& operator()(type& __a) const _NOEXCEPT {return __a;}
+    type& operator()(type& __a) const noexcept {return __a;}
 };
 
 template <class _Alloc>
@@ -379,7 +379,7 @@ struct __outermost<_Alloc, true>
                      >::type                                    _OuterAlloc;
     typedef typename __outermost<_OuterAlloc>::type             type;
     _LIBCUDACXX_INLINE_VISIBILITY
-    type& operator()(_Alloc& __a) const _NOEXCEPT
+    type& operator()(_Alloc& __a) const noexcept
         {return __outermost<_OuterAlloc>()(__a.outer_allocator());}
 };
 
@@ -432,14 +432,14 @@ public:
     };
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    scoped_allocator_adaptor() _NOEXCEPT {}
+    scoped_allocator_adaptor() noexcept {}
     template <class _OuterA2,
               class = typename enable_if<
                         is_constructible<outer_allocator_type, _OuterA2>::value
                       >::type>
         _LIBCUDACXX_INLINE_VISIBILITY
         scoped_allocator_adaptor(_OuterA2&& __outerAlloc,
-                                 const _InnerAllocs& ...__innerAllocs) _NOEXCEPT
+                                 const _InnerAllocs& ...__innerAllocs) noexcept
             : base(_CUDA_VSTD::forward<_OuterA2>(__outerAlloc), __innerAllocs...) {}
     // scoped_allocator_adaptor(const scoped_allocator_adaptor& __other) = default;
     template <class _OuterA2,
@@ -448,7 +448,7 @@ public:
                       >::type>
         _LIBCUDACXX_INLINE_VISIBILITY
         scoped_allocator_adaptor(
-            const scoped_allocator_adaptor<_OuterA2, _InnerAllocs...>& __other) _NOEXCEPT
+            const scoped_allocator_adaptor<_OuterA2, _InnerAllocs...>& __other) noexcept
                 : base(__other) {}
     template <class _OuterA2,
               class = typename enable_if<
@@ -456,7 +456,7 @@ public:
                       >::type>
         _LIBCUDACXX_INLINE_VISIBILITY
         scoped_allocator_adaptor(
-            scoped_allocator_adaptor<_OuterA2, _InnerAllocs...>&& __other) _NOEXCEPT
+            scoped_allocator_adaptor<_OuterA2, _InnerAllocs...>&& __other) noexcept
                 : base(_CUDA_VSTD::move(__other)) {}
 
     // scoped_allocator_adaptor& operator=(const scoped_allocator_adaptor&) = default;
@@ -464,17 +464,17 @@ public:
     // ~scoped_allocator_adaptor() = default;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    inner_allocator_type& inner_allocator() _NOEXCEPT
+    inner_allocator_type& inner_allocator() noexcept
         {return base::inner_allocator();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const inner_allocator_type& inner_allocator() const _NOEXCEPT
+    const inner_allocator_type& inner_allocator() const noexcept
         {return base::inner_allocator();}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    outer_allocator_type& outer_allocator() _NOEXCEPT
+    outer_allocator_type& outer_allocator() noexcept
         {return base::outer_allocator();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    const outer_allocator_type& outer_allocator() const _NOEXCEPT
+    const outer_allocator_type& outer_allocator() const noexcept
         {return base::outer_allocator();}
 
     _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
@@ -487,7 +487,7 @@ public:
             allocate(outer_allocator(), __n, __hint);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    void deallocate(pointer __p, size_type __n) _NOEXCEPT
+    void deallocate(pointer __p, size_type __n) noexcept
         {allocator_traits<outer_allocator_type>::
             deallocate(outer_allocator(), __p, __n);}
 
@@ -560,7 +560,7 @@ public:
             }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    scoped_allocator_adaptor select_on_container_copy_construction() const _NOEXCEPT
+    scoped_allocator_adaptor select_on_container_copy_construction() const noexcept
         {return base::select_on_container_copy_construction();}
 
 private:
@@ -572,7 +572,7 @@ private:
                       >::type>
     _LIBCUDACXX_INLINE_VISIBILITY
     scoped_allocator_adaptor(_OuterA2&& __o,
-                             const inner_allocator_type& __i) _NOEXCEPT
+                             const inner_allocator_type& __i) noexcept
         : base(_CUDA_VSTD::forward<_OuterA2>(__o), __i) {}
 
     template <class _Tp, class... _Args>
@@ -652,7 +652,7 @@ template <class _OuterA1, class _OuterA2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
 operator==(const scoped_allocator_adaptor<_OuterA1>& __a,
-           const scoped_allocator_adaptor<_OuterA2>& __b) _NOEXCEPT
+           const scoped_allocator_adaptor<_OuterA2>& __b) noexcept
 {
     return __a.outer_allocator() == __b.outer_allocator();
 }
@@ -661,7 +661,7 @@ template <class _OuterA1, class _OuterA2, class _InnerA0, class... _InnerAllocs>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
 operator==(const scoped_allocator_adaptor<_OuterA1, _InnerA0, _InnerAllocs...>& __a,
-           const scoped_allocator_adaptor<_OuterA2, _InnerA0, _InnerAllocs...>& __b) _NOEXCEPT
+           const scoped_allocator_adaptor<_OuterA2, _InnerA0, _InnerAllocs...>& __b) noexcept
 {
     return __a.outer_allocator() == __b.outer_allocator() &&
            __a.inner_allocator() == __b.inner_allocator();
@@ -671,7 +671,7 @@ template <class _OuterA1, class _OuterA2, class... _InnerAllocs>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
 operator!=(const scoped_allocator_adaptor<_OuterA1, _InnerAllocs...>& __a,
-           const scoped_allocator_adaptor<_OuterA2, _InnerAllocs...>& __b) _NOEXCEPT
+           const scoped_allocator_adaptor<_OuterA2, _InnerAllocs...>& __b) noexcept
 {
     return !(__a == __b);
 }

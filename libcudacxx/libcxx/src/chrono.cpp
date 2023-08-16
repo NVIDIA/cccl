@@ -51,7 +51,7 @@ namespace chrono
 const bool system_clock::is_steady;
 
 system_clock::time_point
-system_clock::now() _NOEXCEPT
+system_clock::now() noexcept
 {
 #if defined(_LIBCUDACXX_WIN32API)
   // FILETIME is in 100ns units
@@ -92,13 +92,13 @@ system_clock::now() _NOEXCEPT
 }
 
 time_t
-system_clock::to_time_t(const time_point& t) _NOEXCEPT
+system_clock::to_time_t(const time_point& t) noexcept
 {
     return time_t(duration_cast<seconds>(t.time_since_epoch()).count());
 }
 
 system_clock::time_point
-system_clock::from_time_t(time_t t) _NOEXCEPT
+system_clock::from_time_t(time_t t) noexcept
 {
     return system_clock::time_point(seconds(t));
 }
@@ -117,7 +117,7 @@ const bool steady_clock::is_steady;
 // Darwin libc versions >= 1133 provide ns precision via CLOCK_UPTIME_RAW
 #if defined(_LIBCUDACXX_USE_CLOCK_GETTIME) && defined(CLOCK_UPTIME_RAW)
 steady_clock::time_point
-steady_clock::now() _NOEXCEPT
+steady_clock::now() noexcept
 {
     struct timespec tp;
     if (0 != clock_gettime(CLOCK_UPTIME_RAW, &tp))
@@ -172,7 +172,7 @@ init_steady_clock()
 }
 
 steady_clock::time_point
-steady_clock::now() _NOEXCEPT
+steady_clock::now() noexcept
 {
     static FP fp = init_steady_clock();
     return time_point(duration(fp()));
@@ -195,7 +195,7 @@ __QueryPerformanceFrequency()
 }
 
 steady_clock::time_point
-steady_clock::now() _NOEXCEPT
+steady_clock::now() noexcept
 {
   static const LARGE_INTEGER freq = __QueryPerformanceFrequency();
 
@@ -214,7 +214,7 @@ steady_clock::now() _NOEXCEPT
 #endif
 
 steady_clock::time_point
-steady_clock::now() _NOEXCEPT
+steady_clock::now() noexcept
 {
     struct timespec tp;
     if (0 != clock_gettime(CLOCK_MONOTONIC, &tp))

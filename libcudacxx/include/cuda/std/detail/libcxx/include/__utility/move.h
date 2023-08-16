@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR __libcpp_remove_reference_t<_Tp>&&
-move(_Tp&& __t) _NOEXCEPT {
+move(_Tp&& __t) noexcept {
   typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tp> _Up;
   return static_cast<_Up&&>(__t);
 }
@@ -39,7 +39,7 @@ using __move_if_noexcept_result_t =
 
 template <class _Tp>
 _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __move_if_noexcept_result_t<_Tp>
-move_if_noexcept(_Tp& __x) _NOEXCEPT {
+move_if_noexcept(_Tp& __x) noexcept {
   return _CUDA_VSTD::move(__x);
 }
 

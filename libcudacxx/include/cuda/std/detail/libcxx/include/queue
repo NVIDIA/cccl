@@ -226,7 +226,7 @@ protected:
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
     queue()
-        _NOEXCEPT_(is_nothrow_default_constructible<container_type>::value)
+        noexcept(is_nothrow_default_constructible<container_type>::value)
         : c() {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -238,12 +238,12 @@ public:
 #ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     queue(queue&& __q)
-        _NOEXCEPT_(is_nothrow_move_constructible<container_type>::value)
+        noexcept(is_nothrow_move_constructible<container_type>::value)
         : c(_CUDA_VSTD::move(__q.c)) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     queue& operator=(queue&& __q)
-        _NOEXCEPT_(is_nothrow_move_assignable<container_type>::value)
+        noexcept(is_nothrow_move_assignable<container_type>::value)
         {c = _CUDA_VSTD::move(__q.c); return *this;}
 #endif  // _LIBCUDACXX_CXX03_LANG
 
@@ -321,7 +321,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(queue& __q)
-        _NOEXCEPT_(__is_nothrow_swappable<container_type>::value)
+        noexcept(__is_nothrow_swappable<container_type>::value)
     {
         using _CUDA_VSTD::swap;
         swap(c, __q.c);
@@ -411,7 +411,7 @@ typename enable_if<
     void
 >::type
 swap(queue<_Tp, _Container>& __x, queue<_Tp, _Container>& __y)
-    _NOEXCEPT_(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(_NOEXCEPT_(__x.swap(__y)))
 {
     __x.swap(__y);
 }
@@ -442,7 +442,7 @@ protected:
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
     priority_queue()
-        _NOEXCEPT_(is_nothrow_default_constructible<container_type>::value &&
+        noexcept(is_nothrow_default_constructible<container_type>::value &&
                    is_nothrow_default_constructible<value_compare>::value)
         : c(), comp() {}
 
@@ -456,13 +456,13 @@ public:
 #ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     priority_queue(priority_queue&& __q)
-        _NOEXCEPT_(is_nothrow_move_constructible<container_type>::value &&
+        noexcept(is_nothrow_move_constructible<container_type>::value &&
                    is_nothrow_move_constructible<value_compare>::value)
         : c(_CUDA_VSTD::move(__q.c)), comp(_CUDA_VSTD::move(__q.comp)) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     priority_queue& operator=(priority_queue&& __q)
-        _NOEXCEPT_(is_nothrow_move_assignable<container_type>::value &&
+        noexcept(is_nothrow_move_assignable<container_type>::value &&
                    is_nothrow_move_assignable<value_compare>::value)
         {c = _CUDA_VSTD::move(__q.c); comp = _CUDA_VSTD::move(__q.comp); return *this;}
 #endif  // _LIBCUDACXX_CXX03_LANG
@@ -546,7 +546,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(priority_queue& __q)
-        _NOEXCEPT_(__is_nothrow_swappable<container_type>::value &&
+        noexcept(__is_nothrow_swappable<container_type>::value &&
                    __is_nothrow_swappable<value_compare>::value);
 };
 
@@ -770,7 +770,7 @@ template <class _Tp, class _Container, class _Compare>
 inline
 void
 priority_queue<_Tp, _Container, _Compare>::swap(priority_queue& __q)
-        _NOEXCEPT_(__is_nothrow_swappable<container_type>::value &&
+        noexcept(__is_nothrow_swappable<container_type>::value &&
                    __is_nothrow_swappable<value_compare>::value)
 {
     using _CUDA_VSTD::swap;
@@ -787,7 +787,7 @@ typename enable_if<
 >::type
 swap(priority_queue<_Tp, _Container, _Compare>& __x,
      priority_queue<_Tp, _Container, _Compare>& __y)
-    _NOEXCEPT_(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(_NOEXCEPT_(__x.swap(__y)))
 {
     __x.swap(__y);
 }

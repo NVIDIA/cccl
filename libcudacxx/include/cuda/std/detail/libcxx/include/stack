@@ -125,7 +125,7 @@ protected:
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
     stack()
-        _NOEXCEPT_(is_nothrow_default_constructible<container_type>::value)
+        noexcept(is_nothrow_default_constructible<container_type>::value)
         : c() {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -138,12 +138,12 @@ public:
 #ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     stack(stack&& __q)
-        _NOEXCEPT_(is_nothrow_move_constructible<container_type>::value)
+        noexcept(is_nothrow_move_constructible<container_type>::value)
         : c(_CUDA_VSTD::move(__q.c)) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     stack& operator=(stack&& __q)
-        _NOEXCEPT_(is_nothrow_move_assignable<container_type>::value)
+        noexcept(is_nothrow_move_assignable<container_type>::value)
         {c = _CUDA_VSTD::move(__q.c); return *this;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -217,7 +217,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(stack& __s)
-        _NOEXCEPT_(__is_nothrow_swappable<container_type>::value)
+        noexcept(__is_nothrow_swappable<container_type>::value)
     {
         using _CUDA_VSTD::swap;
         swap(c, __s.c);
@@ -305,7 +305,7 @@ typename enable_if<
     void
 >::type
 swap(stack<_Tp, _Container>& __x, stack<_Tp, _Container>& __y)
-    _NOEXCEPT_(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(_NOEXCEPT_(__x.swap(__y)))
 {
     __x.swap(__y);
 }

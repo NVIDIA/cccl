@@ -115,7 +115,7 @@ struct __exception_guard_noexceptions {
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions&&)      = delete;
 
   _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _LIBCUDACXX_NODEBUG
-  void __complete() _NOEXCEPT {
+  void __complete() noexcept {
     __completed_ = true;
   }
 

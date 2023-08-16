@@ -223,8 +223,8 @@ private:
 
 public:
     void lock();
-    bool try_lock() _NOEXCEPT;
-    void unlock()  _NOEXCEPT;
+    bool try_lock() noexcept;
+    void unlock()  noexcept;
 
     typedef __libcpp_recursive_mutex_t* native_handle_type;
 
@@ -247,7 +247,7 @@ private:
 
 public:
     void lock();
-    bool try_lock() _NOEXCEPT;
+    bool try_lock() noexcept;
     template <class _Rep, class _Period>
         _LIBCUDACXX_INLINE_VISIBILITY
         bool try_lock_for(const chrono::duration<_Rep, _Period>& __d)
@@ -255,7 +255,7 @@ public:
     template <class _Clock, class _Duration>
         _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
         bool try_lock_until(const chrono::time_point<_Clock, _Duration>& __t);
-    void unlock() _NOEXCEPT;
+    void unlock() noexcept;
 };
 
 template <class _Clock, class _Duration>
@@ -291,7 +291,7 @@ private:
 
 public:
     void lock();
-    bool try_lock() _NOEXCEPT;
+    bool try_lock() noexcept;
     template <class _Rep, class _Period>
         _LIBCUDACXX_INLINE_VISIBILITY
         bool try_lock_for(const chrono::duration<_Rep, _Period>& __d)
@@ -299,7 +299,7 @@ public:
     template <class _Clock, class _Duration>
         _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
         bool try_lock_until(const chrono::time_point<_Clock, _Duration>& __t);
-    void unlock() _NOEXCEPT;
+    void unlock() noexcept;
 };
 
 template <class _Clock, class _Duration>
@@ -574,7 +574,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS once_flag
 {
     _LIBCUDACXX_INLINE_VISIBILITY
     _LIBCUDACXX_CONSTEXPR
-        once_flag() _NOEXCEPT : __state_(0) {}
+        once_flag() noexcept : __state_(0) {}
 
 #if defined(_LIBCUDACXX_ABI_MICROSOFT)
    typedef uintptr_t _State_type;
