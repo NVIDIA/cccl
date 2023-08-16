@@ -609,8 +609,12 @@ public:
     using iterator_concept = cuda::std::input_iterator_tag;
 
     __host__ __device__ constexpr explicit cpp20_input_iterator(It it) : it_(it) {}
+
+#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
     cpp20_input_iterator(cpp20_input_iterator&&) = default;
     cpp20_input_iterator& operator=(cpp20_input_iterator&&) = default;
+#endif // !TEST_COMPILER_MSVC_2017
+
     __host__ __device__ constexpr decltype(auto) operator*() const { return *it_; }
     __host__ __device__ constexpr cpp20_input_iterator& operator++() { ++it_; return *this; }
     __host__ __device__ constexpr void operator++(int) { ++it_; }
@@ -643,8 +647,11 @@ public:
     using difference_type = cuda::std::iter_difference_t<It>;
 
     __host__ __device__ constexpr explicit cpp20_output_iterator(It it) : it_(it) {}
+
+#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
     cpp20_output_iterator(cpp20_output_iterator&&) = default;
     cpp20_output_iterator& operator=(cpp20_output_iterator&&) = default;
+#endif // !TEST_COMPILER_MSVC_2017
 
     __host__ __device__ constexpr decltype(auto) operator*() const { return *it_; }
     __host__ __device__ constexpr cpp20_output_iterator& operator++() {
