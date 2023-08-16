@@ -1,7 +1,7 @@
 name: Documentation Request
 description: Suggest an idea to improve CCCL
 title: '[DOC]: '
-labels: ['Doc']
+labels: ['doc']
 
 body:
   - type: checkboxes
