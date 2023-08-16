@@ -599,6 +599,489 @@ struct sm90_tuning<KeyT,
 
   using delay_constructor = detail::no_delay_constructor_t<1150>;
 };
+
+template <class KeyT,
+          class AccumT,
+          primitive_op PrimitiveOp,
+          primitive_key PrimitiveKey     = is_primitive_key<KeyT>(),
+          primitive_accum PrimitiveAccum = is_primitive_accum<AccumT>(),
+          key_size KeySize               = classify_key_size<KeyT>(),
+          accum_size AccumSize           = classify_accum_size<AccumT>()>
+struct sm80_tuning
+{
+  static constexpr int max_input_bytes      = CUB_MAX(sizeof(KeyT), sizeof(AccumT));
+  static constexpr int combined_input_bytes = sizeof(KeyT) + sizeof(AccumT);
+
+  static constexpr int threads = 128;
+
+  static constexpr int nominal_4b_items_per_thread = 6;
+  static constexpr int items =
+    (max_input_bytes <= 8)
+      ? 6
+      : CUB_MIN(nominal_4b_items_per_thread,
+                CUB_MAX(1,
+                        ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) /
+                          combined_input_bytes));
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+
+  using delay_constructor = detail::default_reduce_by_key_delay_constructor_t<AccumT, int>;
+};
+
+// 8-bit key
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_1,
+                   accum_size::_1>
+{
+  static constexpr int threads = 256;
+
+  static constexpr int items = 13;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+
+  using delay_constructor = detail::no_delay_constructor_t<975>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_1,
+                   accum_size::_2>
+{
+  static constexpr int threads = 224;
+
+  static constexpr int items = 12;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+
+  using delay_constructor = detail::no_delay_constructor_t<840>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_1,
+                   accum_size::_4>
+{
+  static constexpr int threads = 256;
+
+  static constexpr int items = 15;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<760>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_1,
+                   accum_size::_8>
+{
+  static constexpr int threads = 224;
+
+  static constexpr int items = 7;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+
+  using delay_constructor = detail::no_delay_constructor_t<1070>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::no,
+                   key_size::_1,
+                   accum_size::_16>
+{
+  static constexpr int threads = 128;
+
+  static constexpr int items = 9;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<1175>;
+};
+
+// 16-bit key
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_2,
+                   accum_size::_1>
+{
+  static constexpr int threads = 256;
+
+  static constexpr int items = 11;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+
+  using delay_constructor = detail::no_delay_constructor_t<620>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_2,
+                   accum_size::_2>
+{
+  static constexpr int threads = 224;
+
+  static constexpr int items = 14;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<640>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_2,
+                   accum_size::_4>
+{
+  static constexpr int threads = 256;
+
+  static constexpr int items = 14;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<905>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_2,
+                   accum_size::_8>
+{
+  static constexpr int threads = 224;
+
+  static constexpr int items = 9;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<810>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::no,
+                   key_size::_2,
+                   accum_size::_16>
+{
+  static constexpr int threads = 160;
+
+  static constexpr int items = 9;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<1115>;
+};
+
+// 32-bit key
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_4,
+                   accum_size::_1>
+{
+  static constexpr int threads = 288;
+
+  static constexpr int items = 11;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+
+  using delay_constructor = detail::no_delay_constructor_t<1110>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_4,
+                   accum_size::_2>
+{
+  static constexpr int threads = 192;
+
+  static constexpr int items = 15;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<1200>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_4,
+                   accum_size::_4>
+{
+  static constexpr int threads = 256;
+
+  static constexpr int items = 15;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+
+  using delay_constructor = detail::no_delay_constructor_t<1110>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_4,
+                   accum_size::_8>
+{
+  static constexpr int threads = 224;
+
+  static constexpr int items = 9;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<1165>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::no,
+                   key_size::_4,
+                   accum_size::_16>
+{
+  static constexpr int threads = 160;
+
+  static constexpr int items = 9;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<1100>;
+};
+
+// 64-bit key
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_8,
+                   accum_size::_1>
+{
+  static constexpr int threads = 192;
+
+  static constexpr int items = 10;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<1175>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_8,
+                   accum_size::_2>
+{
+  static constexpr int threads = 224;
+
+  static constexpr int items = 7;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+
+  using delay_constructor = detail::no_delay_constructor_t<1075>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_8,
+                   accum_size::_4>
+{
+  static constexpr int threads = 384;
+
+  static constexpr int items = 7;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+
+  using delay_constructor = detail::no_delay_constructor_t<1040>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::yes,
+                   key_size::_8,
+                   accum_size::_8>
+{
+  static constexpr int threads = 128;
+
+  static constexpr int items = 14;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<1080>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::yes,
+                   primitive_accum::no,
+                   key_size::_8,
+                   accum_size::_16>
+{
+  static constexpr int threads = 128;
+
+  static constexpr int items = 11;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<430>;
+};
+
+// 128-bit key
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::no,
+                   primitive_accum::yes,
+                   key_size::_16,
+                   accum_size::_1>
+{
+  static constexpr int threads = 192;
+
+  static constexpr int items = 7;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+
+  using delay_constructor = detail::no_delay_constructor_t<1105>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::no,
+                   primitive_accum::yes,
+                   key_size::_16,
+                   accum_size::_2>
+{
+  static constexpr int threads = 192;
+
+  static constexpr int items = 7;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<755>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::no,
+                   primitive_accum::yes,
+                   key_size::_16,
+                   accum_size::_4>
+{
+  static constexpr int threads = 192;
+
+  static constexpr int items = 7;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<535>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::no,
+                   primitive_accum::yes,
+                   key_size::_16,
+                   accum_size::_8>
+{
+  static constexpr int threads = 192;
+
+  static constexpr int items = 7;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+
+  using delay_constructor = detail::no_delay_constructor_t<1035>;
+};
+
+template <class KeyT, class AccumT>
+struct sm80_tuning<KeyT,
+                   AccumT,
+                   primitive_op::yes,
+                   primitive_key::no,
+                   primitive_accum::no,
+                   key_size::_16,
+                   accum_size::_16>
+{
+  static constexpr int threads = 128;
+
+  static constexpr int items = 11;
+
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+
+  using delay_constructor = detail::no_delay_constructor_t<1090>;
+};
 } // namespace reduce_by_key
 
 template <class ReductionOpT, class AccumT, class KeyT>
@@ -607,8 +1090,7 @@ struct device_reduce_by_key_policy_hub
   static constexpr int MAX_INPUT_BYTES = CUB_MAX(sizeof(KeyT), sizeof(AccumT));
   static constexpr int COMBINED_INPUT_BYTES = sizeof(KeyT) + sizeof(AccumT);
 
-  /// SM35
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  struct DefaultTuning
   {
     static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 6;
     static constexpr int ITEMS_PER_THREAD =
@@ -628,8 +1110,34 @@ struct device_reduce_by_key_policy_hub
                              detail::default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 
+  /// SM35
+  struct Policy350
+      : DefaultTuning
+      , ChainedPolicy<350, Policy350, Policy350>
+  {};
+
+  /// SM80
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
+  {
+    using tuning = detail::reduce_by_key::
+      sm80_tuning<KeyT, AccumT, detail::reduce_by_key::is_primitive_op<ReductionOpT>()>;
+
+    using ReduceByKeyPolicyT = AgentReduceByKeyPolicy<tuning::threads,
+                                                      tuning::items,
+                                                      tuning::load_algorithm,
+                                                      LOAD_DEFAULT,
+                                                      BLOCK_SCAN_WARP_SCANS,
+                                                      typename tuning::delay_constructor>;
+  };
+
+  /// SM86
+  struct Policy860
+      : DefaultTuning
+      , ChainedPolicy<860, Policy860, Policy800>
+  {};
+
   /// SM90
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy350>
+  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
     using tuning = detail::reduce_by_key::
       sm90_tuning<KeyT, AccumT, detail::reduce_by_key::is_primitive_op<ReductionOpT>()>;
