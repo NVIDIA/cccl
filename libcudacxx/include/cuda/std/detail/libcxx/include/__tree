@@ -742,9 +742,9 @@ public:
     }
 
 private:
-  ~__tree_node_base() _LIBCUDACXX_EQUAL_DELETE;
-  __tree_node_base(__tree_node_base const&) _LIBCUDACXX_EQUAL_DELETE;
-  __tree_node_base& operator=(__tree_node_base const&) _LIBCUDACXX_EQUAL_DELETE;
+  ~__tree_node_base() = delete;
+  __tree_node_base(__tree_node_base const&) = delete;
+  __tree_node_base& operator=(__tree_node_base const&) = delete;
 };
 
 template <class _Tp, class _VoidPtr>
@@ -757,9 +757,9 @@ public:
     __node_value_type __value_;
 
 private:
-  ~__tree_node() _LIBCUDACXX_EQUAL_DELETE;
-  __tree_node(__tree_node const&) _LIBCUDACXX_EQUAL_DELETE;
-  __tree_node& operator=(__tree_node const&) _LIBCUDACXX_EQUAL_DELETE;
+  ~__tree_node() = delete;
+  __tree_node(__tree_node const&) = delete;
+  __tree_node& operator=(__tree_node const&) = delete;
 };
 
 

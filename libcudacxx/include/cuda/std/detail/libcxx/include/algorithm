@@ -769,7 +769,7 @@ public:
 // Perform division by two quickly for positive integers (llvm.org/PR39129)
 
 template <typename _Integral>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+_LIBCUDACXX_INLINE_VISIBILITY constexpr
 __enable_if_t
 <
     is_integral<_Integral>::value,
@@ -781,7 +781,7 @@ __half_positive(_Integral __value)
 }
 
 template <typename _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+_LIBCUDACXX_INLINE_VISIBILITY constexpr
 __enable_if_t
 <
     !is_integral<_Tp>::value,
@@ -2676,7 +2676,7 @@ max(::std::initializer_list<_Tp> __t)
 // clamp
 template<class _Tp, class _Compare>
 _LIBCUDACXX_NODISCARD_EXT inline
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+_LIBCUDACXX_INLINE_VISIBILITY constexpr
 const _Tp&
 clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi, _Compare __comp)
 {
@@ -2687,7 +2687,7 @@ clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi, _Compare __comp)
 
 template<class _Tp>
 _LIBCUDACXX_NODISCARD_EXT inline
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+_LIBCUDACXX_INLINE_VISIBILITY constexpr
 const _Tp&
 clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi)
 {
@@ -2892,12 +2892,12 @@ private:
     static const _Working_result_type _Rp = _Engine::_Max - _Engine::_Min
                                           + _Working_result_type(1);
 #else
-    static _LIBCUDACXX_CONSTEXPR const _Working_result_type _Rp = _Engine::max() - _Engine::min()
+    static constexpr const _Working_result_type _Rp = _Engine::max() - _Engine::min()
                                                       + _Working_result_type(1);
 #endif
-    static _LIBCUDACXX_CONSTEXPR const size_t __m = __log2<_Working_result_type, _Rp>::value;
-    static _LIBCUDACXX_CONSTEXPR const size_t _WDt = numeric_limits<_Working_result_type>::digits;
-    static _LIBCUDACXX_CONSTEXPR const size_t _EDt = numeric_limits<_Engine_result_type>::digits;
+    static constexpr const size_t __m = __log2<_Working_result_type, _Rp>::value;
+    static constexpr const size_t _WDt = numeric_limits<_Working_result_type>::digits;
+    static constexpr const size_t _EDt = numeric_limits<_Engine_result_type>::digits;
 
 public:
     // constructors and seeding functions
@@ -3101,8 +3101,8 @@ public:
 
     result_type operator()();
 
-    static _LIBCUDACXX_CONSTEXPR result_type min() {return _Min;}
-    static _LIBCUDACXX_CONSTEXPR result_type max() {return _Max;}
+    static constexpr result_type min() {return _Min;}
+    static constexpr result_type max() {return _Max;}
 
     friend _LIBCUDACXX_FUNC_VIS __rs_default __rs_get();
 };

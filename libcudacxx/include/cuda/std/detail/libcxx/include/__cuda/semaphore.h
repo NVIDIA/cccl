@@ -26,7 +26,7 @@ class counting_semaphore : public _CUDA_VSTD::__semaphore_base<__least_max_value
 {
     static_assert(__least_max_value <= _CUDA_VSTD::__semaphore_base<__least_max_value, _Sco>::max(), "");
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     counting_semaphore(ptrdiff_t __count = 0) : _CUDA_VSTD::__semaphore_base<__least_max_value, _Sco>(__count) { }
     ~counting_semaphore() = default;
 

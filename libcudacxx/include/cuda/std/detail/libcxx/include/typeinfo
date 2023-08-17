@@ -160,11 +160,11 @@ struct __type_info_implementations {
   struct __string_impl_base {
     typedef const char* __type_name_t;
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_ALWAYS_INLINE
-    _LIBCUDACXX_CONSTEXPR static const char* __type_name_to_string(__type_name_t __v) noexcept {
+    constexpr static const char* __type_name_to_string(__type_name_t __v) noexcept {
       return __v;
     }
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_ALWAYS_INLINE
-    _LIBCUDACXX_CONSTEXPR static __type_name_t __string_to_type_name(const char* __v) noexcept {
+    constexpr static __type_name_t __string_to_type_name(const char* __v) noexcept {
       return __v;
     }
   };

@@ -1546,24 +1546,6 @@ typedef unsigned int   char32_t;
 # define decltype(...) __decltype(__VA_ARGS__)
 #endif  // _LIBCUDACXX_CXX03_LANG
 
-#ifdef _LIBCUDACXX_CXX03_LANG
-#  define _LIBCUDACXX_CONSTEXPR
-#else
-#  define _LIBCUDACXX_CONSTEXPR constexpr
-#endif
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-#  define _LIBCUDACXX_DEFAULT {}
-#else
-#  define _LIBCUDACXX_DEFAULT = default;
-#endif
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-#  define _LIBCUDACXX_EQUAL_DELETE
-#else
-#  define _LIBCUDACXX_EQUAL_DELETE = delete
-#endif
-
 #if defined(_LIBCUDACXX_COMPILER_GCC)   \
  || defined(_LIBCUDACXX_COMPILER_CLANG)
 #  define _LIBCUDACXX_NOALIAS __attribute__((__malloc__))

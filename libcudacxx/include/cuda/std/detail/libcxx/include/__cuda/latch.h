@@ -20,7 +20,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 template<thread_scope _Sco>
 class latch : public _CUDA_VSTD::__latch_base<_Sco> {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     latch(_CUDA_VSTD::ptrdiff_t __count)
         : _CUDA_VSTD::__latch_base<_Sco>(__count) {
     }

@@ -403,12 +403,12 @@ class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(float)) comp
 public:
     typedef float value_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR complex(float __re = 0.0f, float __im = 0.0f)
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(float __re = 0.0f, float __im = 0.0f)
         : __re_(__re), __im_(__im) {}
     _LIBCUDACXX_INLINE_VISIBILITY
-    explicit _LIBCUDACXX_CONSTEXPR complex(const complex<double>& __c);
+    explicit constexpr complex(const complex<double>& __c);
     _LIBCUDACXX_INLINE_VISIBILITY
-    explicit _LIBCUDACXX_CONSTEXPR complex(const complex<long double>& __c);
+    explicit constexpr complex(const complex<long double>& __c);
 
 #if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
     template <class _Up>
@@ -429,8 +429,8 @@ public:
     operator ::std::complex<float>() const { return { __re_, __im_ }; }
 #endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR float real() const {return __re_;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR float imag() const {return __im_;}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr float real() const {return __re_;}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr float imag() const {return __im_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void real(value_type __re) {__re_ = __re;}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void imag(value_type __im) {__im_ = __im;}
@@ -498,12 +498,12 @@ class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(double)) com
 public:
     typedef double value_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR complex(double __re = 0.0, double __im = 0.0)
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(double __re = 0.0, double __im = 0.0)
         : __re_(__re), __im_(__im) {}
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR complex(const complex<float>& __c);
+    constexpr complex(const complex<float>& __c);
     _LIBCUDACXX_INLINE_VISIBILITY
-    explicit _LIBCUDACXX_CONSTEXPR complex(const complex<long double>& __c);
+    explicit constexpr complex(const complex<long double>& __c);
 
 #if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
     template <class _Up>
@@ -524,8 +524,8 @@ public:
     operator ::std::complex<double>() const { return { __re_, __im_ }; }
 #endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR double real() const {return __re_;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR double imag() const {return __im_;}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr double real() const {return __re_;}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr double imag() const {return __im_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void real(value_type __re) {__re_ = __re;}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void imag(value_type __im) {__im_ = __im;}
@@ -591,11 +591,11 @@ class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(long double)
 #ifndef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 public:
     template <typename _Dummy = void>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR complex(long double __re = 0.0, long double __im = 0.0)
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(long double __re = 0.0, long double __im = 0.0)
         {static_assert(is_same<_Dummy, void>::value, "complex<long double> is not supported");}
 
     template <typename _Tp, typename _Dummy = void>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR complex(const complex<_Tp> &__c)
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(const complex<_Tp> &__c)
         {static_assert(is_same<_Dummy, void>::value, "complex<long double> is not supported");}
 
 #else
@@ -604,12 +604,12 @@ public:
 public:
     typedef long double value_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR complex(long double __re = 0.0L, long double __im = 0.0L)
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(long double __re = 0.0L, long double __im = 0.0L)
         : __re_(__re), __im_(__im) {}
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR complex(const complex<float>& __c);
+    constexpr complex(const complex<float>& __c);
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR complex(const complex<double>& __c);
+    constexpr complex(const complex<double>& __c);
 
 #if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
     template <class _Up>
@@ -630,8 +630,8 @@ public:
     operator ::std::complex<long double>() const { return { __re_, __im_ }; }
 #endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR long double real() const {return __re_;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR long double imag() const {return __im_;}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr long double real() const {return __re_;}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr long double imag() const {return __im_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void real(value_type __re) {__re_ = __re;}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void imag(value_type __im) {__im_ = __im;}
@@ -698,34 +698,28 @@ public:
   #pragma warning(disable : 4244)
 #endif
 
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 complex<float>::complex(const complex<double>& __c)
     : __re_(__c.real()), __im_(__c.imag()) {}
 
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 complex<double>::complex(const complex<float>& __c)
     : __re_(__c.real()), __im_(__c.imag()) {}
 
 #ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 complex<float>::complex(const complex<long double>& __c)
     : __re_(__c.real()), __im_(__c.imag()) {}
 
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 complex<double>::complex(const complex<long double>& __c)
     : __re_(__c.real()), __im_(__c.imag()) {}
 
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 complex<long double>::complex(const complex<float>& __c)
     : __re_(__c.real()), __im_(__c.imag()) {}
 
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 complex<long double>::complex(const complex<double>& __c)
     : __re_(__c.real()), __im_(__c.imag()) {}
 #endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE

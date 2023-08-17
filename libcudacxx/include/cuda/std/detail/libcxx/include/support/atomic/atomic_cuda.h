@@ -78,7 +78,7 @@ template <typename _Tp, int _Sco, bool _Ref = false>
 struct __cxx_atomic_base_heterogeneous_impl {
     __cxx_atomic_base_heterogeneous_impl() noexcept = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit
       __cxx_atomic_base_heterogeneous_impl(_Tp __value) : __a_value(__value) {
     }
 
@@ -95,7 +95,7 @@ struct __cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, true> {
     static_assert(sizeof(_Tp) >= 4, "atomic_ref does not support 1 or 2 byte types");
     static_assert(sizeof(_Tp) <= 8, "atomic_ref does not support types larger than 8 bytes");
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit
       __cxx_atomic_base_heterogeneous_impl(_Tp& __value) : __a_value(__value) {
     }
 
@@ -106,25 +106,25 @@ struct __cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, true> {
 };
 
 template <typename _Tp, int _Sco, bool _Ref>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+_LIBCUDACXX_INLINE_VISIBILITY constexpr
 _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> * __a) noexcept {
   return __cxx_get_underlying_atomic(&__a->__a_value);
 }
 
 template <typename _Tp, int _Sco, bool _Ref>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+_LIBCUDACXX_INLINE_VISIBILITY constexpr
 volatile _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a) noexcept {
   return __cxx_get_underlying_atomic(&__a->__a_value);
 }
 
 template <typename _Tp, int _Sco, bool _Ref>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+_LIBCUDACXX_INLINE_VISIBILITY constexpr
 const _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> const* __a) noexcept {
   return __cxx_get_underlying_atomic(&__a->__a_value);
 }
 
 template <typename _Tp, int _Sco, bool _Ref>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+_LIBCUDACXX_INLINE_VISIBILITY constexpr
 const volatile _Tp* __cxx_get_underlying_device_atomic(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> const volatile* __a) noexcept {
   return __cxx_get_underlying_atomic(&__a->__a_value);
 }
@@ -134,12 +134,12 @@ using __cxx_atomic_small_to_32 = __conditional_t<is_signed<_Tp>::value, int32_t,
 
 // Arithmetic conversions to/from proxy types
 template<class _Tp, __enable_if_t<is_arithmetic<_Tp>::value, int> = 0>
-_LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY inline __cxx_atomic_small_to_32<_Tp> __cxx_small_to_32(_Tp __val) {
+constexpr _LIBCUDACXX_INLINE_VISIBILITY inline __cxx_atomic_small_to_32<_Tp> __cxx_small_to_32(_Tp __val) {
     return static_cast<__cxx_atomic_small_to_32<_Tp>>(__val);
 }
 
 template<class _Tp, __enable_if_t<is_arithmetic<_Tp>::value, int> = 0>
-_LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY inline _Tp __cxx_small_from_32(__cxx_atomic_small_to_32<_Tp> __val) {
+constexpr _LIBCUDACXX_INLINE_VISIBILITY inline _Tp __cxx_small_from_32(__cxx_atomic_small_to_32<_Tp> __val) {
     return static_cast<_Tp>(__val);
 }
 
@@ -161,7 +161,7 @@ _LIBCUDACXX_INLINE_VISIBILITY inline _Tp __cxx_small_from_32(__cxx_atomic_small_
 template <typename _Tp, int _Sco>
 struct __cxx_atomic_base_small_impl {
     __cxx_atomic_base_small_impl() noexcept = default;
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit
       __cxx_atomic_base_small_impl(_Tp __value) : __a_value(__cxx_small_to_32(__value)) {
     }
 

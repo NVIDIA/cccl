@@ -20,7 +20,7 @@ struct __cxx_atomic_base_impl {
 #else
     __cxx_atomic_base_impl() noexcept : __a_value() {}
 #endif // _LIBCUDACXX_CXX03_LANG
-  _LIBCUDACXX_CONSTEXPR explicit __cxx_atomic_base_impl(_Tp value) noexcept
+  constexpr explicit __cxx_atomic_base_impl(_Tp value) noexcept
     : __a_value(value) {}
   _LIBCUDACXX_DISABLE_EXTENSION_WARNING _Atomic(_Tp) __a_value;
 };

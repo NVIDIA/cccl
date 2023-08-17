@@ -43,7 +43,7 @@ private:
     istream_type* __in_stream_;
     _Tp __value_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR istream_iterator() : __in_stream_(0), __value_() {}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr istream_iterator() : __in_stream_(0), __value_() {}
     _LIBCUDACXX_INLINE_VISIBILITY istream_iterator(istream_type& __s) : __in_stream_(_CUDA_VSTD::addressof(__s))
         {
             if (!(*__in_stream_ >> __value_))

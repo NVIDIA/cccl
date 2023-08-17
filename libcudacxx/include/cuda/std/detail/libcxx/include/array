@@ -215,11 +215,11 @@ struct _LIBCUDACXX_TEMPLATE_VIS array
 
     // capacity:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR size_type size() const noexcept {return _Size;}
+    constexpr size_type size() const noexcept {return _Size;}
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR size_type max_size() const noexcept {return _Size;}
+    constexpr size_type max_size() const noexcept {return _Size;}
     _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR bool empty() const noexcept {return false; }
+    constexpr bool empty() const noexcept {return false; }
 
     // element access:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
@@ -328,11 +328,11 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
 
     // capacity:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR size_type size() const noexcept {return 0; }
+    constexpr size_type size() const noexcept {return 0; }
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR size_type max_size() const noexcept {return 0;}
+    constexpr size_type max_size() const noexcept {return 0;}
     _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR bool empty() const noexcept {return true;}
+    constexpr bool empty() const noexcept {return true;}
 
     // element access:
     _LIBCUDACXX_INLINE_VISIBILITY

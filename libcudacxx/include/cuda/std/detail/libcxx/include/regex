@@ -805,7 +805,7 @@ enum syntax_option_type
     egrep      = 1 << 8
 };
 
-inline _LIBCUDACXX_CONSTEXPR
+inline constexpr
 syntax_option_type __get_grammar(syntax_option_type __g)
 {
 #ifdef _LIBCUDACXX_ABI_REGEX_CONSTANTS_NONZERO
@@ -816,7 +816,7 @@ syntax_option_type __get_grammar(syntax_option_type __g)
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 syntax_option_type
 operator~(syntax_option_type __x)
 {
@@ -824,7 +824,7 @@ operator~(syntax_option_type __x)
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 syntax_option_type
 operator&(syntax_option_type __x, syntax_option_type __y)
 {
@@ -832,7 +832,7 @@ operator&(syntax_option_type __x, syntax_option_type __y)
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 syntax_option_type
 operator|(syntax_option_type __x, syntax_option_type __y)
 {
@@ -840,7 +840,7 @@ operator|(syntax_option_type __x, syntax_option_type __y)
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 syntax_option_type
 operator^(syntax_option_type __x, syntax_option_type __y)
 {
@@ -893,7 +893,7 @@ enum match_flag_type
 };
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 match_flag_type
 operator~(match_flag_type __x)
 {
@@ -901,7 +901,7 @@ operator~(match_flag_type __x)
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 match_flag_type
 operator&(match_flag_type __x, match_flag_type __y)
 {
@@ -909,7 +909,7 @@ operator&(match_flag_type __x, match_flag_type __y)
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 match_flag_type
 operator|(match_flag_type __x, match_flag_type __y)
 {
@@ -917,7 +917,7 @@ operator|(match_flag_type __x, match_flag_type __y)
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 match_flag_type
 operator^(match_flag_type __x, match_flag_type __y)
 {
@@ -4830,7 +4830,7 @@ public:
     bool matched;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR sub_match() : matched() {}
+    constexpr sub_match() : matched() {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     difference_type length() const

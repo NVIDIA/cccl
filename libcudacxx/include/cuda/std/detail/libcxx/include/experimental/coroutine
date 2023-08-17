@@ -92,10 +92,10 @@ template <>
 class _LIBCUDACXX_TEMPLATE_VIS coroutine_handle<void> {
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR coroutine_handle() noexcept : __handle_(nullptr) {}
+    constexpr coroutine_handle() noexcept : __handle_(nullptr) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR coroutine_handle(nullptr_t) noexcept : __handle_(nullptr) {}
+    constexpr coroutine_handle(nullptr_t) noexcept : __handle_(nullptr) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     coroutine_handle& operator=(nullptr_t) noexcept {
@@ -104,10 +104,10 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR void* address() const noexcept { return __handle_; }
+    constexpr void* address() const noexcept { return __handle_; }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR explicit operator bool() const noexcept { return __handle_; }
+    constexpr explicit operator bool() const noexcept { return __handle_; }
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void operator()() { resume(); }
@@ -273,8 +273,8 @@ public:
       __builtin_coro_promise(this->__handle_, _LIBCUDACXX_ALIGNOF(_Promise), false));
   }
 
-  _LIBCUDACXX_CONSTEXPR explicit operator bool() const noexcept { return true; }
-  _LIBCUDACXX_CONSTEXPR bool done() const noexcept { return false; }
+  constexpr explicit operator bool() const noexcept { return true; }
+  constexpr bool done() const noexcept { return false; }
 
   _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void operator()() const noexcept {}
   _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void resume() const noexcept {}

@@ -68,7 +68,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
 template <class, class>
 struct __non_trivially_copyable_base {
-  _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr _LIBCUDACXX_INLINE_VISIBILITY
   __non_trivially_copyable_base() noexcept {}
   _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
   __non_trivially_copyable_base(__non_trivially_copyable_base const&) noexcept {}
@@ -158,7 +158,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     template<bool _Dummy = true, __enable_if_t<
             _CheckArgsDep<_Dummy>::__enable_explicit_default::value
     >* = nullptr>
-    explicit _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    explicit _LIBCUDACXX_INLINE_VISIBILITY constexpr
     pair() noexcept(is_nothrow_default_constructible<first_type>::value &&
                       is_nothrow_default_constructible<second_type>::value)
         : first(), second() {}
@@ -166,7 +166,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     template<bool _Dummy = true, __enable_if_t<
             _CheckArgsDep<_Dummy>::__enable_implicit_default::value
     >* = nullptr>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     pair() noexcept(is_nothrow_default_constructible<first_type>::value &&
                       is_nothrow_default_constructible<second_type>::value)
         : first(), second() {}

@@ -573,8 +573,7 @@ void call_once(once_flag&, const _Callable&);
 struct _LIBCUDACXX_TEMPLATE_VIS once_flag
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR
-        once_flag() noexcept : __state_(0) {}
+    constexpr once_flag() noexcept : __state_(0) {}
 
 #if defined(_LIBCUDACXX_ABI_MICROSOFT)
    typedef uintptr_t _State_type;
