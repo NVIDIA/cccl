@@ -84,9 +84,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits
 
     static inline void _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
         assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR bool eq(char_type __c1, char_type __c2) noexcept
+    static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
         {return __c1 == __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR bool lt(char_type __c1, char_type __c2) noexcept
+    static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
     static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
@@ -101,15 +101,15 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits
     _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       assign(char_type* __s, size_t __n, char_type __a);
 
-    static inline _LIBCUDACXX_CONSTEXPR int_type  not_eof(int_type __c) noexcept
+    static inline constexpr int_type  not_eof(int_type __c) noexcept
         {return eq_int_type(__c, eof()) ? ~eof() : __c;}
-    static inline _LIBCUDACXX_CONSTEXPR char_type to_char_type(int_type __c) noexcept
+    static inline constexpr char_type to_char_type(int_type __c) noexcept
         {return char_type(__c);}
-    static inline _LIBCUDACXX_CONSTEXPR int_type  to_int_type(char_type __c) noexcept
+    static inline constexpr int_type  to_int_type(char_type __c) noexcept
         {return int_type(__c);}
-    static inline _LIBCUDACXX_CONSTEXPR bool      eq_int_type(int_type __c1, int_type __c2) noexcept
+    static inline constexpr bool      eq_int_type(int_type __c1, int_type __c2) noexcept
         {return __c1 == __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR int_type  eof() noexcept
+    static inline constexpr int_type  eof() noexcept
         {return int_type(EOF);}
 };
 
@@ -208,9 +208,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
 
     static inline _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR bool eq(char_type __c1, char_type __c2) noexcept
+    static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
             {return __c1 == __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR bool lt(char_type __c1, char_type __c2) noexcept
+    static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return (unsigned char)__c1 < (unsigned char)__c2;}
 
     static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
@@ -229,15 +229,15 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
     static inline char_type* assign(char_type* __s, size_t __n, char_type __a) noexcept
         {return __n == 0 ? __s : (char_type*)memset(__s, to_int_type(__a), __n);}
 
-    static inline _LIBCUDACXX_CONSTEXPR int_type  not_eof(int_type __c) noexcept
+    static inline constexpr int_type  not_eof(int_type __c) noexcept
         {return eq_int_type(__c, eof()) ? ~eof() : __c;}
-    static inline _LIBCUDACXX_CONSTEXPR char_type to_char_type(int_type __c) noexcept
+    static inline constexpr char_type to_char_type(int_type __c) noexcept
         {return char_type(__c);}
-    static inline _LIBCUDACXX_CONSTEXPR int_type to_int_type(char_type __c) noexcept
+    static inline constexpr int_type to_int_type(char_type __c) noexcept
         {return int_type((unsigned char)__c);}
-    static inline _LIBCUDACXX_CONSTEXPR bool eq_int_type(int_type __c1, int_type __c2) noexcept
+    static inline constexpr bool eq_int_type(int_type __c1, int_type __c2) noexcept
         {return __c1 == __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR int_type  eof() noexcept
+    static inline constexpr int_type  eof() noexcept
         {return int_type(EOF);}
 };
 
@@ -298,9 +298,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<wchar_t>
 
     static inline _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR bool eq(char_type __c1, char_type __c2) noexcept
+    static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
         {return __c1 == __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR bool lt(char_type __c1, char_type __c2) noexcept
+    static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
     static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
@@ -319,15 +319,15 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<wchar_t>
     static inline char_type* assign(char_type* __s, size_t __n, char_type __a) noexcept
         {return __n == 0 ? __s : (char_type*)wmemset(__s, __a, __n);}
 
-    static inline _LIBCUDACXX_CONSTEXPR int_type  not_eof(int_type __c) noexcept
+    static inline constexpr int_type  not_eof(int_type __c) noexcept
         {return eq_int_type(__c, eof()) ? ~eof() : __c;}
-    static inline _LIBCUDACXX_CONSTEXPR char_type to_char_type(int_type __c) noexcept
+    static inline constexpr char_type to_char_type(int_type __c) noexcept
         {return char_type(__c);}
-    static inline _LIBCUDACXX_CONSTEXPR int_type to_int_type(char_type __c) noexcept
+    static inline constexpr int_type to_int_type(char_type __c) noexcept
         {return int_type(__c);}
-    static inline _LIBCUDACXX_CONSTEXPR bool eq_int_type(int_type __c1, int_type __c2) noexcept
+    static inline constexpr bool eq_int_type(int_type __c1, int_type __c2) noexcept
         {return __c1 == __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR int_type eof() noexcept
+    static inline constexpr int_type eof() noexcept
         {return int_type(WEOF);}
 };
 
@@ -356,8 +356,7 @@ char_traits<wchar_t>::compare(const char_type* __s1, const char_type* __s2, size
 
 template <class _Traits>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
-inline size_t __char_traits_length_checked(const typename _Traits::char_type* __s) noexcept {
+constexpr inline size_t __char_traits_length_checked(const typename _Traits::char_type* __s) noexcept {
 #if _LIBCUDACXX_DEBUG_LEVEL >= 1
   return __s ? _Traits::length(__s) : (_CUDA_VSTD::__libcpp_debug_function(_CUDA_VSTD::__libcpp_debug_info(__FILE__, __LINE__, "p == nullptr", "null pointer pass to non-null argument of char_traits<...>::length")), 0);
 #else
@@ -512,9 +511,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char16_t>
 
     static inline _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR bool eq(char_type __c1, char_type __c2) noexcept
+    static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
         {return __c1 == __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR bool lt(char_type __c1, char_type __c2) noexcept
+    static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
     _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
@@ -530,15 +529,15 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char16_t>
     _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       assign(char_type* __s, size_t __n, char_type __a) noexcept;
 
-    static inline _LIBCUDACXX_CONSTEXPR int_type  not_eof(int_type __c) noexcept
+    static inline constexpr int_type  not_eof(int_type __c) noexcept
         {return eq_int_type(__c, eof()) ? ~eof() : __c;}
-    static inline _LIBCUDACXX_CONSTEXPR char_type to_char_type(int_type __c) noexcept
+    static inline constexpr char_type to_char_type(int_type __c) noexcept
         {return char_type(__c);}
-    static inline _LIBCUDACXX_CONSTEXPR int_type to_int_type(char_type __c) noexcept
+    static inline constexpr int_type to_int_type(char_type __c) noexcept
         {return int_type(__c);}
-    static inline _LIBCUDACXX_CONSTEXPR bool eq_int_type(int_type __c1, int_type __c2) noexcept
+    static inline constexpr bool eq_int_type(int_type __c1, int_type __c2) noexcept
         {return __c1 == __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR int_type eof() noexcept
+    static inline constexpr int_type eof() noexcept
         {return int_type(0xFFFF);}
 };
 
@@ -631,9 +630,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char32_t>
 
     static inline _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR bool eq(char_type __c1, char_type __c2) noexcept
+    static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
         {return __c1 == __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR bool lt(char_type __c1, char_type __c2) noexcept
+    static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
     _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
@@ -649,15 +648,15 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char32_t>
     _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       assign(char_type* __s, size_t __n, char_type __a) noexcept;
 
-    static inline _LIBCUDACXX_CONSTEXPR int_type  not_eof(int_type __c) noexcept
+    static inline constexpr int_type  not_eof(int_type __c) noexcept
         {return eq_int_type(__c, eof()) ? ~eof() : __c;}
-    static inline _LIBCUDACXX_CONSTEXPR char_type to_char_type(int_type __c) noexcept
+    static inline constexpr char_type to_char_type(int_type __c) noexcept
         {return char_type(__c);}
-    static inline _LIBCUDACXX_CONSTEXPR int_type to_int_type(char_type __c) noexcept
+    static inline constexpr int_type to_int_type(char_type __c) noexcept
         {return int_type(__c);}
-    static inline _LIBCUDACXX_CONSTEXPR bool eq_int_type(int_type __c1, int_type __c2) noexcept
+    static inline constexpr bool eq_int_type(int_type __c1, int_type __c2) noexcept
         {return __c1 == __c2;}
-    static inline _LIBCUDACXX_CONSTEXPR int_type eof() noexcept
+    static inline constexpr int_type eof() noexcept
         {return int_type(0xFFFFFFFF);}
 };
 

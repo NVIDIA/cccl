@@ -60,7 +60,7 @@ public:
     barrier(const barrier &) = delete;
     barrier & operator=(const barrier &) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     barrier(_CUDA_VSTD::ptrdiff_t __expected, _CompletionF __completion = _CompletionF())
         : _CUDA_VSTD::__barrier_base<_CompletionF, _Sco>(__expected, __completion) {
     }

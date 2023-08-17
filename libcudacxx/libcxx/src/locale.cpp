@@ -112,18 +112,14 @@ make(A0 a0, A1 a1, A2 a2)
 }
 
 template <typename T, size_t N>
-inline
-_LIBCUDACXX_CONSTEXPR
-size_t
+inline constexpr size_t
 countof(const T (&)[N])
 {
     return N;
 }
 
 template <typename T>
-inline
-_LIBCUDACXX_CONSTEXPR
-size_t
+inline constexpr size_t
 countof(const T * const begin, const T * const end)
 {
     return static_cast<size_t>(end - begin);
@@ -1029,7 +1025,7 @@ extern "C" const int ** __ctype_toupper_loc();
 const ctype<char>::mask*
 ctype<char>::classic_table()  noexcept
 {
-    static _LIBCUDACXX_CONSTEXPR const ctype<char>::mask builtin_table[table_size] = {
+    static constexpr const ctype<char>::mask builtin_table[table_size] = {
         cntrl,                          cntrl,
         cntrl,                          cntrl,
         cntrl,                          cntrl,

@@ -44,7 +44,7 @@ class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(capability("mute
 
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR mutex() = default;
+    constexpr mutex() = default;
 
     mutex(const mutex&) = delete;
     mutex& operator=(const mutex&) = delete;
@@ -106,8 +106,8 @@ public:
     ~lock_guard() _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(release_capability()) {__m_.unlock();}
 
 private:
-    lock_guard(lock_guard const&) _LIBCUDACXX_EQUAL_DELETE;
-    lock_guard& operator=(lock_guard const&) _LIBCUDACXX_EQUAL_DELETE;
+    lock_guard(lock_guard const&) = delete;
+    lock_guard& operator=(lock_guard const&) = delete;
 };
 
 template <class _Mutex>
@@ -287,7 +287,7 @@ class _LIBCUDACXX_TYPE_VIS condition_variable
     __libcpp_condvar_t __cv_ = _LIBCUDACXX_CONDVAR_INITIALIZER;
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR condition_variable() noexcept = default;
+    constexpr condition_variable() noexcept = default;
 
 #ifdef _LIBCUDACXX_HAS_TRIVIAL_CONDVAR_DESTRUCTION
     ~condition_variable() = default;

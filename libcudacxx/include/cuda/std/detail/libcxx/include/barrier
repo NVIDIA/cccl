@@ -385,7 +385,7 @@ private:
     _LIBCUDACXX_INLINE_VISIBILITY
     friend bool __call_try_wait_parity(const _Barrier& __b, bool __parity);
 
-    static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    static _LIBCUDACXX_INLINE_VISIBILITY constexpr
     uint64_t __init(ptrdiff_t __count) noexcept
     {
 #if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
@@ -473,7 +473,7 @@ public:
 template<class _CompletionF = __empty_completion>
 class barrier : public __barrier_base<_CompletionF> {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     barrier(ptrdiff_t __count, _CompletionF __completion = _CompletionF())
         : __barrier_base<_CompletionF>(__count, __completion) {
     }

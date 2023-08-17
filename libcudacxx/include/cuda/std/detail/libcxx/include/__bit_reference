@@ -142,14 +142,14 @@ public:
     __bit_const_reference(const __bit_reference<_Cp>& __x) noexcept
         : __seg_(__x.__seg_), __mask_(__x.__mask_) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR operator bool() const noexcept
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr operator bool() const noexcept
         {return static_cast<bool>(*__seg_ & __mask_);}
 
     _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, true> operator&() const noexcept
         {return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(__libcpp_ctz(__mask_)));}
 private:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR
+    constexpr
     __bit_const_reference(__storage_pointer __s, __storage_type __m) noexcept
         : __seg_(__s), __mask_(__m) {}
 

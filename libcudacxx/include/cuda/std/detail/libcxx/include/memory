@@ -862,7 +862,7 @@ struct __const_void_pointer<_Ptr, _Alloc, false>
 };
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 _Tp*
 __to_raw_pointer(_Tp* __p) noexcept
 {
@@ -2238,12 +2238,12 @@ public:
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
   _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_CONSTEXPR unique_ptr() noexcept : __ptr_(pointer()) {}
+  constexpr unique_ptr() noexcept : __ptr_(pointer()) {}
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
   _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_CONSTEXPR unique_ptr(nullptr_t) noexcept : __ptr_(pointer()) {}
+  constexpr unique_ptr(nullptr_t) noexcept : __ptr_(pointer()) {}
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
@@ -2461,12 +2461,12 @@ public:
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
   _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_CONSTEXPR unique_ptr() noexcept : __ptr_(pointer()) {}
+  constexpr unique_ptr() noexcept : __ptr_(pointer()) {}
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
   _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_CONSTEXPR unique_ptr(nullptr_t) noexcept : __ptr_(pointer()) {}
+  constexpr unique_ptr(nullptr_t) noexcept : __ptr_(pointer()) {}
 
   template <class _Pp, bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy>,
@@ -3388,9 +3388,9 @@ private:
     struct __nat {int __for_bool_;};
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR shared_ptr() noexcept;
+    constexpr shared_ptr() noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR shared_ptr(nullptr_t) noexcept;
+    constexpr shared_ptr(nullptr_t) noexcept;
     template<class _Yp>
         explicit shared_ptr(_Yp* __p,
                             typename enable_if<is_convertible<_Yp*, element_type*>::value, __nat>::type = __nat());
@@ -3644,8 +3644,7 @@ private:
 
 
 template<class _Tp>
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 shared_ptr<_Tp>::shared_ptr() noexcept
     : __ptr_(0),
       __cntrl_(0)
@@ -3653,8 +3652,7 @@ shared_ptr<_Tp>::shared_ptr() noexcept
 }
 
 template<class _Tp>
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 shared_ptr<_Tp>::shared_ptr(nullptr_t) noexcept
     : __ptr_(0),
       __cntrl_(0)
@@ -4450,7 +4448,7 @@ private:
 
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR weak_ptr() noexcept;
+    constexpr weak_ptr() noexcept;
     template<class _Yp> _LIBCUDACXX_INLINE_VISIBILITY weak_ptr(shared_ptr<_Yp> const& __r,
                    typename enable_if<is_convertible<_Yp*, _Tp*>::value, __nat*>::type = 0)
                         noexcept;
@@ -4530,8 +4528,7 @@ public:
 };
 
 template<class _Tp>
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 weak_ptr<_Tp>::weak_ptr() noexcept
     : __ptr_(0),
       __cntrl_(0)
@@ -4786,7 +4783,7 @@ class _LIBCUDACXX_TEMPLATE_VIS enable_shared_from_this
 {
     mutable weak_ptr<_Tp> __weak_this_;
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     enable_shared_from_this() noexcept {}
     _LIBCUDACXX_INLINE_VISIBILITY
     enable_shared_from_this(enable_shared_from_this const&) noexcept {}
@@ -4845,7 +4842,7 @@ public:
     void unlock() noexcept;
 
 private:
-    _LIBCUDACXX_CONSTEXPR __sp_mut(void*) noexcept;
+    constexpr __sp_mut(void*) noexcept;
     __sp_mut(const __sp_mut&);
     __sp_mut& operator=(const __sp_mut&);
 
@@ -5109,7 +5106,7 @@ struct __builtin_new_allocator {
   struct __builtin_new_deleter {
     typedef void* pointer_type;
 
-    _LIBCUDACXX_CONSTEXPR explicit __builtin_new_deleter(size_t __size, size_t __align)
+    constexpr explicit __builtin_new_deleter(size_t __size, size_t __align)
         : __size_(__size), __align_(__align) {}
 
     void operator()(void* p) const noexcept {

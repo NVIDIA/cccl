@@ -920,7 +920,7 @@ struct __duration_cast;
 template <class _FromDuration, class _ToDuration, class _Period>
 struct __duration_cast<_FromDuration, _ToDuration, _Period, true, true>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     _ToDuration operator()(const _FromDuration& __fd) const
     {
         return _ToDuration(static_cast<typename _ToDuration::rep>(__fd.count()));
@@ -930,7 +930,7 @@ struct __duration_cast<_FromDuration, _ToDuration, _Period, true, true>
 template <class _FromDuration, class _ToDuration, class _Period>
 struct __duration_cast<_FromDuration, _ToDuration, _Period, true, false>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     _ToDuration operator()(const _FromDuration& __fd) const
     {
         typedef typename common_type<typename _ToDuration::rep, typename _FromDuration::rep, intmax_t>::type _Ct;
@@ -942,7 +942,7 @@ struct __duration_cast<_FromDuration, _ToDuration, _Period, true, false>
 template <class _FromDuration, class _ToDuration, class _Period>
 struct __duration_cast<_FromDuration, _ToDuration, _Period, false, true>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     _ToDuration operator()(const _FromDuration& __fd) const
     {
         typedef typename common_type<typename _ToDuration::rep, typename _FromDuration::rep, intmax_t>::type _Ct;
@@ -954,7 +954,7 @@ struct __duration_cast<_FromDuration, _ToDuration, _Period, false, true>
 template <class _FromDuration, class _ToDuration, class _Period>
 struct __duration_cast<_FromDuration, _ToDuration, _Period, false, false>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     _ToDuration operator()(const _FromDuration& __fd) const
     {
         typedef typename common_type<typename _ToDuration::rep, typename _FromDuration::rep, intmax_t>::type _Ct;
@@ -966,7 +966,7 @@ struct __duration_cast<_FromDuration, _ToDuration, _Period, false, false>
 
 template <class _ToDuration, class _Rep, class _Period>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -982,7 +982,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS treat_as_floating_point : is_floating_point<_Rep
 
 #if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Rep>
-_LIBCUDACXX_INLINE_VAR _LIBCUDACXX_CONSTEXPR bool treat_as_floating_point_v
+_LIBCUDACXX_INLINE_VAR constexpr bool treat_as_floating_point_v
     = treat_as_floating_point<_Rep>::value;
 #endif // _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 
@@ -990,9 +990,9 @@ template <class _Rep>
 struct _LIBCUDACXX_TEMPLATE_VIS duration_values
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR _Rep zero() noexcept {return _Rep(0);}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR _Rep max()  noexcept {return numeric_limits<_Rep>::max();}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR _Rep min()  noexcept {return numeric_limits<_Rep>::lowest();}
+    _LIBCUDACXX_INLINE_VISIBILITY static constexpr _Rep zero() noexcept {return _Rep(0);}
+    _LIBCUDACXX_INLINE_VISIBILITY static constexpr _Rep max()  noexcept {return numeric_limits<_Rep>::max();}
+    _LIBCUDACXX_INLINE_VISIBILITY static constexpr _Rep min()  noexcept {return numeric_limits<_Rep>::lowest();}
 };
 
 #if _LIBCUDACXX_STD_VER > 11
@@ -1094,15 +1094,14 @@ private:
 public:
 
 #if !defined(_LIBCUDACXX_CXX03_LANG)
-    _LIBCUDACXX_CONSTEXPR
-        duration() = default;
+    constexpr duration() = default;
 #else
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
         duration() {}
 #endif
 
     template <class _Rep2>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+        _LIBCUDACXX_INLINE_VISIBILITY constexpr
         explicit duration(const _Rep2& __r,
             __enable_if_t
             <
@@ -1114,7 +1113,7 @@ public:
 
     // conversions
     template <class _Rep2, class _Period2>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+        _LIBCUDACXX_INLINE_VISIBILITY constexpr
         duration(const duration<_Rep2, _Period2>& __d,
             __enable_if_t
             <
@@ -1127,12 +1126,12 @@ public:
 
     // observer
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR rep count() const {return __rep_;}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr rep count() const {return __rep_;}
 
     // arithmetic
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR typename common_type<duration>::type operator+() const {return typename common_type<duration>::type(*this);}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR typename common_type<duration>::type operator-() const {return typename common_type<duration>::type(-__rep_);}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr typename common_type<duration>::type operator+() const {return typename common_type<duration>::type(*this);}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr typename common_type<duration>::type operator-() const {return typename common_type<duration>::type(-__rep_);}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator++()      {++__rep_; return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration  operator++(int)   {return duration(__rep_++);}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator--()      {--__rep_; return *this;}
@@ -1148,9 +1147,9 @@ public:
 
     // special values
 
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR duration zero() noexcept {return duration(duration_values<rep>::zero());}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR duration min()  noexcept {return duration(duration_values<rep>::min());}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR duration max()  noexcept {return duration(duration_values<rep>::max());}
+    _LIBCUDACXX_INLINE_VISIBILITY static constexpr duration zero() noexcept {return duration(duration_values<rep>::zero());}
+    _LIBCUDACXX_INLINE_VISIBILITY static constexpr duration min()  noexcept {return duration(duration_values<rep>::min());}
+    _LIBCUDACXX_INLINE_VISIBILITY static constexpr duration max()  noexcept {return duration(duration_values<rep>::max());}
 };
 
 typedef duration<long long,         nano> nanoseconds;
@@ -1170,7 +1169,7 @@ typedef duration<     int, ratio_divide<years::period, ratio<12>>>           mon
 template <class _LhsDuration, class _RhsDuration>
 struct __duration_eq
 {
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     bool operator()(const _LhsDuration& __lhs, const _RhsDuration& __rhs) const
         {
             typedef typename common_type<_LhsDuration, _RhsDuration>::type _Ct;
@@ -1181,15 +1180,14 @@ struct __duration_eq
 template <class _LhsDuration>
 struct __duration_eq<_LhsDuration, _LhsDuration>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     bool operator()(const _LhsDuration& __lhs, const _LhsDuration& __rhs) const
         {return __lhs.count() == __rhs.count();}
 };
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
-bool
+constexpr bool
 operator==(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
     return __duration_eq<duration<_Rep1, _Period1>, duration<_Rep2, _Period2> >()(__lhs, __rhs);
@@ -1199,8 +1197,7 @@ operator==(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
-bool
+constexpr bool
 operator!=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
     return !(__lhs == __rhs);
@@ -1211,7 +1208,7 @@ operator!=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period
 template <class _LhsDuration, class _RhsDuration>
 struct __duration_lt
 {
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     bool operator()(const _LhsDuration& __lhs, const _RhsDuration& __rhs) const
         {
             typedef typename common_type<_LhsDuration, _RhsDuration>::type _Ct;
@@ -1222,15 +1219,14 @@ struct __duration_lt
 template <class _LhsDuration>
 struct __duration_lt<_LhsDuration, _LhsDuration>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     bool operator()(const _LhsDuration& __lhs, const _LhsDuration& __rhs) const
         {return __lhs.count() < __rhs.count();}
 };
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
-bool
+constexpr bool
 operator< (const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
     return __duration_lt<duration<_Rep1, _Period1>, duration<_Rep2, _Period2> >()(__lhs, __rhs);
@@ -1240,8 +1236,7 @@ operator< (const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
-bool
+constexpr bool
 operator> (const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
     return __rhs < __lhs;
@@ -1251,8 +1246,7 @@ operator> (const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
-bool
+constexpr bool
 operator<=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
     return !(__rhs < __lhs);
@@ -1262,8 +1256,7 @@ operator<=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
-bool
+constexpr bool
 operator>=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
     return !(__lhs < __rhs);
@@ -1273,7 +1266,7 @@ operator>=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2> >::type
 operator+(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1285,7 +1278,7 @@ operator+(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2> >::type
 operator-(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1297,7 +1290,7 @@ operator-(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2
 
 template <class _Rep1, class _Period, class _Rep2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 __enable_if_t
 <
     is_convertible<_Rep2, typename common_type<_Rep1, _Rep2>::type>::value,
@@ -1312,7 +1305,7 @@ operator*(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
 
 template <class _Rep1, class _Period, class _Rep2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 __enable_if_t
 <
     is_convertible<_Rep1, typename common_type<_Rep1, _Rep2>::type>::value,
@@ -1327,7 +1320,7 @@ operator*(const _Rep1& __s, const duration<_Rep2, _Period>& __d)
 
 template <class _Rep1, class _Period, class _Rep2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 __enable_if_t
 <
     !__is_duration<_Rep2>::value &&
@@ -1343,7 +1336,7 @@ operator/(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 typename common_type<_Rep1, _Rep2>::type
 operator/(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1355,7 +1348,7 @@ operator/(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2
 
 template <class _Rep1, class _Period, class _Rep2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 __enable_if_t
 <
     !__is_duration<_Rep2>::value &&
@@ -1371,7 +1364,7 @@ operator%(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR
+constexpr
 typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2> >::type
 operator%(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1422,8 +1415,8 @@ public:
 
     // special values
 
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR time_point min() noexcept {return time_point(duration::min());}
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR time_point max() noexcept {return time_point(duration::max());}
+    _LIBCUDACXX_INLINE_VISIBILITY static constexpr time_point min() noexcept {return time_point(duration::min());}
+    _LIBCUDACXX_INLINE_VISIBILITY static constexpr time_point max() noexcept {return time_point(duration::max());}
 };
 
 } // chrono
@@ -1447,7 +1440,7 @@ time_point_cast(const time_point<_Clock, _Duration>& __t)
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class _ToDuration, class _Clock, class _Duration>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -1459,7 +1452,7 @@ floor(const time_point<_Clock, _Duration>& __t)
 }
 
 template <class _ToDuration, class _Clock, class _Duration>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -1471,7 +1464,7 @@ ceil(const time_point<_Clock, _Duration>& __t)
 }
 
 template <class _ToDuration, class _Clock, class _Duration>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -1483,7 +1476,7 @@ round(const time_point<_Clock, _Duration>& __t)
 }
 
 template <class _Rep, class _Period>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 __enable_if_t
 <
     numeric_limits<_Rep>::is_signed,

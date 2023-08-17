@@ -124,7 +124,7 @@ void from_chars(const char*, const char*, bool, int = 10) = delete;
 namespace __itoa
 {
 
-static _LIBCUDACXX_CONSTEXPR uint64_t __pow10_64[] = {
+static constexpr uint64_t __pow10_64[] = {
     UINT64_C(0),
     UINT64_C(10),
     UINT64_C(100),
@@ -147,7 +147,7 @@ static _LIBCUDACXX_CONSTEXPR uint64_t __pow10_64[] = {
     UINT64_C(10000000000000000000),
 };
 
-static _LIBCUDACXX_CONSTEXPR uint32_t __pow10_32[] = {
+static constexpr uint32_t __pow10_32[] = {
     UINT32_C(0),          UINT32_C(10),       UINT32_C(100),
     UINT32_C(1000),       UINT32_C(10000),    UINT32_C(100000),
     UINT32_C(1000000),    UINT32_C(10000000), UINT32_C(100000000),
@@ -239,7 +239,7 @@ __mul_overflowed(_Tp __a, _Up __b, _Tp& __r)
 template <typename _Tp>
 struct _LIBCUDACXX_HIDDEN __traits : __traits_base<_Tp>
 {
-    static _LIBCUDACXX_CONSTEXPR int digits = numeric_limits<_Tp>::digits10 + 1;
+    static constexpr int digits = numeric_limits<_Tp>::digits10 + 1;
     using __traits_base<_Tp>::__pow;
     using typename __traits_base<_Tp>::type;
 

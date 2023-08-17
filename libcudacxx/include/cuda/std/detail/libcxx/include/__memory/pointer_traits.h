@@ -306,7 +306,7 @@ template <class _Pointer, class = void>
 struct __to_address_helper;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+_LIBCUDACXX_INLINE_VISIBILITY constexpr
 _Tp* __to_address(_Tp* __p) noexcept {
     static_assert(!is_function<_Tp>::value, "_Tp is a function type");
     return __p;
@@ -337,7 +337,7 @@ struct _IsFancyPointer {
 template <class _Pointer, class = __enable_if_t<
     _And<is_class<_Pointer>, _IsFancyPointer<_Pointer> >::value
 > >
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+_LIBCUDACXX_INLINE_VISIBILITY constexpr
 __decay_t<decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>
 __to_address(const _Pointer& __p) noexcept {
     return __to_address_helper<_Pointer>::__call(__p);
@@ -345,7 +345,7 @@ __to_address(const _Pointer& __p) noexcept {
 
 template <class _Pointer, class>
 struct __to_address_helper {
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     static decltype(_CUDA_VSTD::__to_address(declval<const _Pointer&>().operator->()))
     __call(const _Pointer& __p) noexcept {
         return _CUDA_VSTD::__to_address(__p.operator->());
@@ -354,7 +354,7 @@ struct __to_address_helper {
 
 template <class _Pointer>
 struct __to_address_helper<_Pointer, decltype((void)pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))> {
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     static decltype(pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))
     __call(const _Pointer& __p) noexcept {
         return pointer_traits<_Pointer>::to_address(__p);

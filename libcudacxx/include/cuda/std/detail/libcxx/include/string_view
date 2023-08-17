@@ -208,7 +208,7 @@ public:
     typedef const_reverse_iterator                     reverse_iterator;
     typedef size_t                                     size_type;
     typedef ptrdiff_t                                  difference_type;
-    static _LIBCUDACXX_CONSTEXPR const size_type npos = -1; // size_type(-1);
+    static constexpr const size_type npos = -1; // size_type(-1);
 
     static_assert((!is_array<value_type>::value), "Character type of basic_string_view must not be an array");
     static_assert(( is_standard_layout<value_type>::value), "Character type of basic_string_view must be standard-layout");
@@ -217,16 +217,16 @@ public:
                   "traits_type::char_type must be the same type as CharT");
 
     // [string.view.cons], construct/copy
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     basic_string_view() noexcept : __data (nullptr), __size(0) {}
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     basic_string_view(const basic_string_view&) noexcept = default;
 
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     basic_string_view& operator=(const basic_string_view&) noexcept = default;
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     basic_string_view(const _CharT* __s, size_type __len) noexcept
         : __data(__s), __size(__len)
     {
@@ -235,21 +235,21 @@ public:
 #endif
     }
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     basic_string_view(const _CharT* __s)
         : __data(__s), __size(std::__char_traits_length_checked<_Traits>(__s)) {}
 
     // [string.view.iterators], iterators
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     const_iterator begin()  const noexcept { return cbegin(); }
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     const_iterator end()    const noexcept { return cend(); }
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     const_iterator cbegin() const noexcept { return __data; }
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     const_iterator cend()   const noexcept { return __data + __size; }
 
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
@@ -265,23 +265,23 @@ public:
     const_reverse_iterator crend()    const noexcept { return const_reverse_iterator(cbegin()); }
 
     // [string.view.capacity], capacity
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     size_type size()     const noexcept { return __size; }
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     size_type length()   const noexcept { return __size; }
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     size_type max_size() const noexcept { return numeric_limits<size_type>::max(); }
 
-    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY constexpr
     bool empty()         const noexcept { return __size == 0; }
 
     // [string.view.access], element access
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     const_reference operator[](size_type __pos) const noexcept { return __data[__pos]; }
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     const_reference at(size_type __pos) const
     {
         return __pos >= size()
@@ -289,19 +289,19 @@ public:
             : __data[__pos];
     }
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     const_reference front() const noexcept
     {
         return _LIBCUDACXX_ASSERT(!empty(), "string_view::front(): string is empty"), __data[0];
     }
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     const_reference back() const noexcept
     {
         return _LIBCUDACXX_ASSERT(!empty(), "string_view::back(): string is empty"), __data[__size-1];
     }
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     const_pointer data() const noexcept { return __data; }
 
     // [string.view.modifiers], modifiers:
@@ -342,7 +342,7 @@ public:
         return __rlen;
     }
 
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     basic_string_view substr(size_type __pos = 0, size_type __n = npos) const
     {
         return __pos > size()
@@ -800,33 +800,33 @@ inline namespace literals
 {
   inline namespace string_view_literals
   {
-    inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
     basic_string_view<char> operator "" sv(const char *__str, size_t __len) noexcept
     {
         return basic_string_view<char> (__str, __len);
     }
 
-    inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
     basic_string_view<wchar_t> operator "" sv(const wchar_t *__str, size_t __len) noexcept
     {
         return basic_string_view<wchar_t> (__str, __len);
     }
 
 #ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
-    inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
     basic_string_view<char8_t> operator "" sv(const char8_t *__str, size_t __len) noexcept
     {
         return basic_string_view<char8_t> (__str, __len);
     }
 #endif
 
-    inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
     basic_string_view<char16_t> operator "" sv(const char16_t *__str, size_t __len) noexcept
     {
         return basic_string_view<char16_t> (__str, __len);
     }
 
-    inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
     basic_string_view<char32_t> operator "" sv(const char32_t *__str, size_t __len) noexcept
     {
         return basic_string_view<char32_t> (__str, __len);

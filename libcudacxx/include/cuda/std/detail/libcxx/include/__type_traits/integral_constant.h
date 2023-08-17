@@ -23,11 +23,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp, _Tp __v>
 struct _LIBCUDACXX_TEMPLATE_VIS integral_constant
 {
-  static _LIBCUDACXX_CONSTEXPR const _Tp      value = __v;
+  static constexpr const _Tp      value = __v;
   typedef _Tp               value_type;
   typedef integral_constant type;
   _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_CONSTEXPR operator value_type() const noexcept {return value;}
+  constexpr operator value_type() const noexcept {return value;}
 #if _LIBCUDACXX_STD_VER > 11
   _LIBCUDACXX_INLINE_VISIBILITY
   constexpr value_type operator ()() const noexcept {return value;}
@@ -35,7 +35,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS integral_constant
 };
 
 template <class _Tp, _Tp __v>
-_LIBCUDACXX_CONSTEXPR const _Tp integral_constant<_Tp, __v>::value;
+constexpr const _Tp integral_constant<_Tp, __v>::value;
 
 typedef integral_constant<bool, true>  true_type;
 typedef integral_constant<bool, false> false_type;

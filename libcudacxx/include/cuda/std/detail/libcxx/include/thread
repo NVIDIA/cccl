@@ -368,9 +368,9 @@ sleep_for(const chrono::duration<_Rep, _Period>& __d)
     {
 #if defined(_LIBCUDACXX_COMPILER_GCC) && (__powerpc__ || __POWERPC__)
     //  GCC's long double const folding is incomplete for IBM128 long doubles.
-        _LIBCUDACXX_CONSTEXPR duration<long double> _Max = nanoseconds::max();
+        constexpr duration<long double> _Max = nanoseconds::max();
 #else
-        _LIBCUDACXX_CONSTEXPR duration<long double> _Max = duration<long double>(ULLONG_MAX/1000000000ULL) ;
+        constexpr duration<long double> _Max = duration<long double>(ULLONG_MAX/1000000000ULL) ;
 #endif
         nanoseconds __ns;
         if (__d < _Max)
