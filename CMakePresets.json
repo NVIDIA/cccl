@@ -24,7 +24,7 @@
       }
     },
     {
-      "name": "ci-cub-base",
+      "name": "cub-base",
       "hidden": true,
       "inherits": "base",
       "cacheVariables": {
@@ -38,40 +38,40 @@
       }
     },
     {
-      "name": "ci-cub-cpp11",
-      "displayName": "CUB GitHub CI: C++11",
-      "inherits": "ci-cub-base",
+      "name": "cub-cpp11",
+      "displayName": "CUB: C++11",
+      "inherits": "cub-base",
       "cacheVariables": {
         "CUB_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "CUB_ENABLE_DIALECT_CPP11": true
       }
     },
     {
-      "name": "ci-cub-cpp14",
-      "displayName": "CUB GitHub CI: C++14",
-      "inherits": "ci-cub-base",
+      "name": "cub-cpp14",
+      "displayName": "CUB: C++14",
+      "inherits": "cub-base",
       "cacheVariables": {
         "CUB_ENABLE_DIALECT_CPP14": true
       }
     },
     {
-      "name": "ci-cub-cpp17",
-      "displayName": "CUB GitHub CI: C++17",
-      "inherits": "ci-cub-base",
+      "name": "cub-cpp17",
+      "displayName": "CUB: C++17",
+      "inherits": "cub-base",
       "cacheVariables": {
         "CUB_ENABLE_DIALECT_CPP17": true
       }
     },
     {
-      "name": "ci-cub-cpp20",
-      "displayName": "CUB GitHub CI: C++20",
-      "inherits": "ci-cub-base",
+      "name": "cub-cpp20",
+      "displayName": "CUB: C++20",
+      "inherits": "cub-base",
       "cacheVariables": {
         "CUB_ENABLE_DIALECT_CPP20": true
       }
     },
     {
-      "name": "ci-thrust-base",
+      "name": "thrust-base",
       "hidden": true,
       "inherits": "base",
       "cacheVariables": {
@@ -84,41 +84,41 @@
       }
     },
     {
-      "name": "ci-thrust-cpp11",
-      "displayName": "Thrust GitHub CI: C++11",
-      "inherits": "ci-thrust-base",
+      "name": "thrust-cpp11",
+      "displayName": "Thrust: C++11",
+      "inherits": "thrust-base",
       "cacheVariables": {
         "THRUST_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "THRUST_ENABLE_DIALECT_CPP11": true
       }
     },
     {
-      "name": "ci-thrust-cpp14",
-      "displayName": "Thrust GitHub CI: C++14",
-      "inherits": "ci-thrust-base",
+      "name": "thrust-cpp14",
+      "displayName": "Thrust: C++14",
+      "inherits": "thrust-base",
       "cacheVariables": {
         "THRUST_ENABLE_DIALECT_CPP14": true
       }
     },
     {
-      "name": "ci-thrust-cpp17",
-      "displayName": "Thrust GitHub CI: C++17",
-      "inherits": "ci-thrust-base",
+      "name": "thrust-cpp17",
+      "displayName": "Thrust: C++17",
+      "inherits": "thrust-base",
       "cacheVariables": {
         "THRUST_ENABLE_DIALECT_CPP17": true
       }
     },
     {
-      "name": "ci-thrust-cpp20",
-      "displayName": "Thrust GitHub CI: C++20",
-      "inherits": "ci-thrust-base",
+      "name": "thrust-cpp20",
+      "displayName": "Thrust: C++20",
+      "inherits": "thrust-base",
       "cacheVariables": {
         "THRUST_ENABLE_DIALECT_CPP20": true
       }
     },
     {
-      "name": "ci-cccl",
-      "displayName": "CCCL Infrastructure Github CI",
+      "name": "cccl",
+      "displayName": "CCCL Infrastructure",
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_CUDA_COMPILER": "nvcc",
@@ -130,40 +130,40 @@
   ],
   "buildPresets": [
     {
-      "name": "ci-cub-cpp11",
-      "configurePreset": "ci-cub-cpp11"
+      "name": "cub-cpp11",
+      "configurePreset": "cub-cpp11"
     },
     {
-      "name": "ci-cub-cpp14",
-      "configurePreset": "ci-cub-cpp14"
+      "name": "cub-cpp14",
+      "configurePreset": "cub-cpp14"
     },
     {
-      "name": "ci-cub-cpp17",
-      "configurePreset": "ci-cub-cpp17"
+      "name": "cub-cpp17",
+      "configurePreset": "cub-cpp17"
     },
     {
-      "name": "ci-cub-cpp20",
-      "configurePreset": "ci-cub-cpp20"
+      "name": "cub-cpp20",
+      "configurePreset": "cub-cpp20"
     },
     {
-      "name": "ci-thrust-cpp11",
-      "configurePreset": "ci-thrust-cpp11"
+      "name": "thrust-cpp11",
+      "configurePreset": "thrust-cpp11"
     },
     {
-      "name": "ci-thrust-cpp14",
-      "configurePreset": "ci-thrust-cpp14"
+      "name": "thrust-cpp14",
+      "configurePreset": "thrust-cpp14"
     },
     {
-      "name": "ci-thrust-cpp17",
-      "configurePreset": "ci-thrust-cpp17"
+      "name": "thrust-cpp17",
+      "configurePreset": "thrust-cpp17"
     },
     {
-      "name": "ci-thrust-cpp20",
-      "configurePreset": "ci-thrust-cpp20"
+      "name": "thrust-cpp20",
+      "configurePreset": "thrust-cpp20"
     },
     {
-      "name": "ci-cccl",
-      "configurePreset": "ci-cccl"
+      "name": "cccl",
+      "configurePreset": "cccl"
     }
   ],
   "testPresets": [
@@ -179,7 +179,7 @@
       }
     },
     {
-      "name": "ci-cub-base",
+      "name": "cub-base",
       "hidden": true,
       "inherits": "base",
       "filter": {
@@ -189,48 +189,48 @@
       }
     },
     {
-      "name": "ci-cub-cpp11",
-      "configurePreset": "ci-cub-cpp11",
-      "inherits": "ci-cub-base"
+      "name": "cub-cpp11",
+      "configurePreset": "cub-cpp11",
+      "inherits": "cub-base"
     },
     {
-      "name": "ci-cub-cpp14",
-      "configurePreset": "ci-cub-cpp14",
-      "inherits": "ci-cub-base"
+      "name": "cub-cpp14",
+      "configurePreset": "cub-cpp14",
+      "inherits": "cub-base"
     },
     {
-      "name": "ci-cub-cpp17",
-      "configurePreset": "ci-cub-cpp17",
-      "inherits": "ci-cub-base"
+      "name": "cub-cpp17",
+      "configurePreset": "cub-cpp17",
+      "inherits": "cub-base"
     },
     {
-      "name": "ci-cub-cpp20",
-      "configurePreset": "ci-cub-cpp20",
-      "inherits": "ci-cub-base"
+      "name": "cub-cpp20",
+      "configurePreset": "cub-cpp20",
+      "inherits": "cub-base"
     },
     {
-      "name": "ci-thrust-cpp11",
-      "configurePreset": "ci-thrust-cpp11",
-      "inherits": "ci-cub-base"
+      "name": "thrust-cpp11",
+      "configurePreset": "thrust-cpp11",
+      "inherits": "cub-base"
     },
     {
-      "name": "ci-thrust-cpp14",
-      "configurePreset": "ci-thrust-cpp14",
-      "inherits": "ci-cub-base"
+      "name": "thrust-cpp14",
+      "configurePreset": "thrust-cpp14",
+      "inherits": "cub-base"
     },
     {
-      "name": "ci-thrust-cpp17",
-      "configurePreset": "ci-thrust-cpp17",
-      "inherits": "ci-cub-base"
+      "name": "thrust-cpp17",
+      "configurePreset": "thrust-cpp17",
+      "inherits": "cub-base"
     },
     {
-      "name": "ci-thrust-cpp20",
-      "configurePreset": "ci-thrust-cpp20",
-      "inherits": "ci-cub-base"
+      "name": "thrust-cpp20",
+      "configurePreset": "thrust-cpp20",
+      "inherits": "cub-base"
     },
     {
-      "name": "ci-cccl",
-      "configurePreset": "ci-cccl",
+      "name": "cccl",
+      "configurePreset": "cccl",
       "inherits": "base"
     }
   ]
