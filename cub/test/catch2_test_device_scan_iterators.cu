@@ -35,6 +35,7 @@
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
+#include "catch2_test_device_scan.cuh"
 
 // Has to go after all cub headers. Otherwise, this test won't catch unused
 // variables in cub kernels.
@@ -63,7 +64,7 @@ using iterator_type_list =
 CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_list)
 {
   using params   = params_t<TestType>;
-  using item_t   = typename params::item_t;
+  using input_t  = typename params::item_t;
   using output_t = typename params::output_t;
   using offset_t = int32_t;
 
@@ -78,18 +79,22 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
                                            }));
 
   // Prepare input iterator
-  item_t default_constant{};
+  input_t default_constant{};
   init_default_constant(default_constant);
   auto in_it = thrust::make_constant_iterator(default_constant);
 
   SECTION("inclusive sum")
   {
     using op_t    = cub::Sum;
-    using accum_t = cub::detail::accumulator_t<op_t, item_t, item_t>;
+    using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     thrust::host_vector<output_t> expected_result(num_items);
-    std::inclusive_scan(in_it, in_it + num_items, expected_result.begin(), op_t{}, accum_t{});
+    compute_inclusive_scan_reference(in_it,
+                                     in_it + num_items,
+                                     expected_result.begin(),
+                                     op_t{},
+                                     accum_t{});
 
     // Run test
     thrust::device_vector<output_t> out_result(num_items);
@@ -103,11 +108,15 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   SECTION("exclusive sum")
   {
     using op_t    = cub::Sum;
-    using accum_t = cub::detail::accumulator_t<op_t, item_t, item_t>;
+    using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     thrust::host_vector<output_t> expected_result(num_items);
-    std::exclusive_scan(in_it, in_it + num_items, expected_result.begin(), accum_t{}, op_t{});
+    compute_exclusive_scan_reference(in_it,
+                                     in_it + num_items,
+                                     expected_result.begin(),
+                                     accum_t{},
+                                     op_t{});
 
     // Run test
     thrust::device_vector<output_t> out_result(num_items);
@@ -121,15 +130,15 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   SECTION("inclusive scan")
   {
     using op_t    = cub::Min;
-    using accum_t = cub::detail::accumulator_t<op_t, item_t, item_t>;
+    using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     thrust::host_vector<output_t> expected_result(num_items);
-    std::inclusive_scan(in_it,
-                        in_it + num_items,
-                        expected_result.begin(),
-                        op_t{},
-                        cub::NumericTraits<item_t>::Max());
+    compute_inclusive_scan_reference(in_it,
+                                     in_it + num_items,
+                                     expected_result.begin(),
+                                     op_t{},
+                                     cub::NumericTraits<accum_t>::Max());
 
     // Run test
     thrust::device_vector<output_t> out_result(num_items);
@@ -143,16 +152,20 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   SECTION("exclusive scan")
   {
     using op_t    = cub::Sum;
-    using accum_t = cub::detail::accumulator_t<op_t, item_t, item_t>;
+    using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     thrust::host_vector<output_t> expected_result(num_items);
-    std::exclusive_scan(in_it, in_it + num_items, expected_result.begin(), accum_t{}, op_t{});
+    compute_exclusive_scan_reference(in_it,
+                                     in_it + num_items,
+                                     expected_result.begin(),
+                                     accum_t{},
+                                     op_t{});
 
     // Run test
     thrust::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    device_exclusive_scan(in_it, d_out_it, op_t{}, item_t{}, num_items);
+    device_exclusive_scan(in_it, d_out_it, op_t{}, input_t{}, num_items);
 
     // Verify result
     REQUIRE(expected_result == out_result);
@@ -161,13 +174,17 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   SECTION("exclusive scan with future-init value")
   {
     using op_t    = cub::Sum;
-    using accum_t = cub::detail::accumulator_t<op_t, item_t, item_t>;
+    using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     accum_t init_value{};
     init_default_constant(init_value);
     thrust::host_vector<output_t> expected_result(num_items);
-    std::exclusive_scan(in_it, in_it + num_items, expected_result.begin(), init_value, op_t{});
+    compute_exclusive_scan_reference(in_it,
+                                     in_it + num_items,
+                                     expected_result.begin(),
+                                     init_value,
+                                     op_t{});
 
     // Run test
     thrust::device_vector<output_t> out_result(num_items);
