@@ -286,7 +286,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
     thrust::device_vector<init_t> d_initial_value(1);
-    d_initial_value[0] = static_cast<init_t>(init_value);
+    d_initial_value[0] = static_cast<init_t>(*unwrap_it(&init_value));
     auto future_init_value =
       cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
     device_exclusive_scan(unwrap_it(d_in_it),
