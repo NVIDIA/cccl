@@ -72,46 +72,58 @@ mkdir -p $BUILD_DIR
 rm -f ../build/latest
 ln -sf $BUILD_DIR ../build/latest
 
-COMMON_CMAKE_OPTIONS="
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_STANDARD=${CXX_STANDARD} \
-    -DCMAKE_CUDA_STANDARD=${CXX_STANDARD} \
-    -DCMAKE_CXX_COMPILER=${HOST_COMPILER} \
-    -DCMAKE_CUDA_COMPILER=${CUDA_COMPILER} \
-    -DCMAKE_CUDA_HOST_COMPILER=${HOST_COMPILER} \
-    -DCMAKE_CUDA_ARCHITECTURES=${GPU_ARCHS} \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-"
+# Prepare environment for CMake:
+export CCCL_BUILD_INFIX
+export CMAKE_BUILD_PARALLEL_LEVEL="${PARALLEL_LEVEL}"
+export CMAKE_EXPORT_COMPILE_COMMANDS=1
+export CTEST_PARALLEL_LEVEL="${PARALLEL_LEVEL}"
+export CUDAARCHS="${GPU_ARCHS}"
+export CUDACXX="${CUDA_COMPILER}"
+export CUDAHOSTCXX="${HOST_COMPILER}"
+export CXX="${HOST_COMPILER}"
 
 echo "========================================"
 echo "Begin build"
 echo "pwd=$(pwd)"
-echo "NVCC_VERSION=$NVCC_VERSION"
-echo "HOST_COMPILER=$HOST_COMPILER"
-echo "CXX_STANDARD=$CXX_STANDARD"
-echo "GPU_ARCHS=$GPU_ARCHS"
-echo "PARALLEL_LEVEL=$PARALLEL_LEVEL"
 echo "BUILD_DIR=$BUILD_DIR"
+echo "CXX_STANDARD=$CXX_STANDARD"
+echo "CXX=$CXX"
+echo "CUDACXX=$CUDACXX"
+echo "CUDAHOSTCXX=$CUDAHOSTCXX"
+echo "CUDAARCHS=$CUDAARCHS"
+echo "NVCC_VERSION=$NVCC_VERSION"
+echo "CMAKE_BUILD_PARALLEL_LEVEL=$CMAKE_BUILD_PARALLEL_LEVEL"
+echo "CTEST_PARALLEL_LEVEL=$CTEST_PARALLEL_LEVEL"
+echo "CCCL_BUILD_INFIX=$CCCL_BUILD_INFIX"
 echo "========================================"
 
-function configure(){
-    local CMAKE_OPTIONS=$1
-    cmake -S .. -B $BUILD_DIR $COMMON_CMAKE_OPTIONS $CMAKE_OPTIONS -G Ninja
+function configure_preset()
+{
+    local BUILD_NAME=$1
+    local PRESET=$2
+    local CMAKE_OPTIONS=$3
+
+    pushd .. > /dev/null
+
+    cmake --preset=$PRESET $CMAKE_OPTIONS --log-level=VERBOSE --trace 2>&1 | tee config.log
+    echo "$BUILD_NAME configure complete."
+
+    popd > /dev/null
 }
 
-function build(){
+function build_preset()
+{
     local BUILD_NAME=$1
-    source "./sccache_stats.sh" start
-    cmake --build $BUILD_DIR --parallel $PARALLEL_LEVEL
-    echo "${BUILD_NAME} build complete"
-    source "./sccache_stats.sh" end
-}
+    local PRESET=$2
 
-function configure_and_build() {
-    local BUILD_NAME=$1
-    local CMAKE_OPTIONS=$2
-    configure "$CMAKE_OPTIONS"
-    build "$BUILD_NAME"
+    source "./sccache_stats.sh" "start"
+    pushd .. > /dev/null
+
+    cmake --build --preset=$PRESET
+    echo "$BUILD_NAME build complete."
+
+    popd > /dev/null
+    source "./sccache_stats.sh" "end"
 }
 
 function configure_and_build_preset()
@@ -120,15 +132,6 @@ function configure_and_build_preset()
     local PRESET=$2
     local CMAKE_OPTIONS=$3
 
-    set CMAKE_BUILD_PARALLEL_LEVEL=$PARALLEL_LEVEL
-
-    pushd ..
-
-    cmake --preset=$PRESET $COMMON_CMAKE_OPTIONS $CMAKE_OPTIONS
-    echo "$BUILD_NAME configure complete."
-
-    cmake --build --preset=$PRESET
-    echo "$BUILD_NAME build complete."
-
-    popd
+    configure_preset "$BUILD_NAME" "$PRESET" "$CMAKE_OPTIONS"
+    build_preset "$BUILD_NAME" "$PRESET"
 }
