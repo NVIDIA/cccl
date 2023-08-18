@@ -699,6 +699,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "__iterator/iter_swap.h"
 #include "__iterator/iterator.h"
 #include "__iterator/iterator_traits.h"
+#include "__iterator/mergeable.h"
 #include "__iterator/move_iterator.h"
 #include "__iterator/next.h"
 #include "__iterator/ostream_iterator.h"
