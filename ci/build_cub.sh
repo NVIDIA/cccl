@@ -20,7 +20,7 @@ else
     echo "CUDA version is $NVCC_VERSION. Not building CUB benchmarks because CUDA version is less than 11.5."
 fi
 
-PRESET="ci-cub-cpp$CXX_STANDARD"
+PRESET="cub-cpp$CXX_STANDARD"
 
 # TODO Can we move the benchmark logic to CMake?
 CMAKE_OPTIONS="
