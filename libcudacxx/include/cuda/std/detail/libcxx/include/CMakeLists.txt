@@ -100,6 +100,7 @@ set(files
   __iterator/next.h
   __iterator/ostream_iterator.h
   __iterator/ostreambuf_iterator.h
+  __iterator/permutable.h
   __iterator/prev.h
   __iterator/readable_traits.h
   __iterator/reverse_access.h
