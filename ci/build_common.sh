@@ -105,7 +105,7 @@ function configure_preset()
 
     pushd .. > /dev/null
 
-    cmake --preset=$PRESET $CMAKE_OPTIONS --log-level=VERBOSE --trace 2>&1 | tee config.log
+    cmake --preset=$PRESET $CMAKE_OPTIONS --log-level=VERBOSE
     echo "$BUILD_NAME configure complete."
 
     popd > /dev/null
