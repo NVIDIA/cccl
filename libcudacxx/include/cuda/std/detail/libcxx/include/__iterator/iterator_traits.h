@@ -502,22 +502,22 @@ _LIBCUDACXX_CONCEPT __cpp17_random_access_iterator =
 } // namespace __iterator_traits_detail
 
 template<class, class = void>
-inline constexpr bool __has_member_reference = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_reference = false;
 
 template<class _Tp>
-inline constexpr bool __has_member_reference<_Tp, void_t<typename _Tp::reference>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_reference<_Tp, void_t<typename _Tp::reference>> = true;
 
 template<class, class = void>
-inline constexpr bool __has_member_pointer = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_pointer = false;
 
 template<class _Tp>
-inline constexpr bool __has_member_pointer<_Tp, void_t<typename _Tp::pointer>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_pointer<_Tp, void_t<typename _Tp::pointer>> = true;
 
 template<class, class = void>
-inline constexpr bool __has_member_iterator_category = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_iterator_category = false;
 
 template<class _Tp>
-inline constexpr bool __has_member_iterator_category<_Tp, void_t<typename _Tp::iterator_category>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_iterator_category<_Tp, void_t<typename _Tp::iterator_category>> = true;
 
 template<class _Ip>
 _LIBCUDACXX_CONCEPT __specifies_members =
