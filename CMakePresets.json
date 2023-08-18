@@ -10,7 +10,7 @@
       "name": "base",
       "hidden": true,
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/${presetName}",
+      "binaryDir": "${sourceDir}/build/$env{CCCL_BUILD_INFIX}/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CCCL_ENABLE_LIBCUDACXX": false,
