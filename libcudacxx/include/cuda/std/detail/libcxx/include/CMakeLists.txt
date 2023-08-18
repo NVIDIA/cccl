@@ -109,6 +109,7 @@ set(files
   __iterator/reverse_access.h
   __iterator/reverse_iterator.h
   __iterator/size.h
+  __iterator/sortable.h
   __iterator/wrap_iter.h
   __libcpp_version
   __locale
