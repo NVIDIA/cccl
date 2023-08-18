@@ -200,3 +200,121 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
     REQUIRE(expected_result == out_result);
   }
 }
+
+class custom_input_t
+{
+  char m_val{};
+
+public:
+  __host__ __device__ explicit custom_input_t(char val)
+      : m_val(val)
+  {}
+
+  __host__ __device__ int get() const { return static_cast<int>(m_val); }
+};
+
+class custom_accumulator_t
+{
+  int m_val{0};
+  int m_magic_value{42};
+
+  __host__ __device__ custom_accumulator_t(int val)
+      : m_val(val)
+  {}
+
+public:
+  __host__ __device__ custom_accumulator_t() {}
+
+  __host__ __device__ custom_accumulator_t(const custom_accumulator_t &in)
+      : m_val(in.is_valid() * in.get())
+      , m_magic_value(in.is_valid() * 42)
+  {}
+
+  __host__ __device__ custom_accumulator_t(const custom_input_t &in)
+      : m_val(in.get())
+      , m_magic_value(42)
+  {}
+
+  __host__ __device__ void operator=(const custom_input_t &in)
+  {
+    if (this->is_valid())
+    {
+      m_val = in.get();
+    }
+  }
+
+  __host__ __device__ void operator=(const custom_accumulator_t &in)
+  {
+    if (this->is_valid() && in.is_valid())
+    {
+      m_val = in.get();
+    }
+  }
+
+  __host__ __device__ custom_accumulator_t operator+(const custom_input_t &in) const
+  {
+    const int multiplier = this->is_valid();
+    return {(m_val + in.get()) * multiplier};
+  }
+
+  __host__ __device__ custom_accumulator_t operator+(const custom_accumulator_t &in) const
+  {
+    const int multiplier = this->is_valid() && in.is_valid();
+    return {(m_val + in.get()) * multiplier};
+  }
+
+  __host__ __device__ int get() const { return m_val; }
+
+  __host__ __device__ bool is_valid() const { return m_magic_value == 42; }
+};
+
+class custom_output_t
+{
+  int *m_d_ok_count{};
+  int m_expected{};
+
+public:
+  __host__ __device__ custom_output_t(int *d_ok_count, int expected)
+      : m_d_ok_count(d_ok_count)
+      , m_expected(expected)
+  {}
+
+  __device__ void operator=(const custom_accumulator_t &accum) const
+  {
+    const int ok = accum.is_valid() && (accum.get() == m_expected);
+    atomicAdd(m_d_ok_count, ok);
+  }
+};
+
+struct index_to_custom_output_op
+{
+  int *d_ok_count;
+
+  __host__ __device__ __forceinline__ custom_output_t operator()(int index)
+  {
+    return custom_output_t{d_ok_count, index};
+  }
+};
+
+CUB_TEST("Device scan works complex accumulator types", "[scan][device]")
+{
+  const int num_items = 2 * 1024 * 1024;
+
+  custom_accumulator_t init{};
+
+  thrust::device_vector<custom_input_t> d_input(num_items, custom_input_t{1});
+  thrust::device_vector<custom_output_t> d_output{num_items, custom_output_t{nullptr, 0}};
+  thrust::device_vector<int> d_ok_count(1);
+
+  auto index_it = thrust::make_counting_iterator(0);
+  thrust::transform(index_it,
+                    index_it + num_items,
+                    d_output.begin(),
+                    index_to_custom_output_op{thrust::raw_pointer_cast(d_ok_count.data())});
+
+  auto d_in_it  = thrust::raw_pointer_cast(d_input.data());
+  auto d_out_it = thrust::raw_pointer_cast(d_output.data());
+  device_exclusive_scan(d_in_it, d_out_it, cub::Sum{}, init, num_items);
+
+  REQUIRE(d_ok_count[0] == num_items);
+}
