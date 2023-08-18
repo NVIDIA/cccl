@@ -39,8 +39,6 @@ end(_Tp (&__array)[_Np])
     return __array + _Np;
 }
 
-#if !defined(_LIBCUDACXX_CXX03_LANG)
-
 template <class _Cp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
 auto
@@ -90,43 +88,6 @@ auto cend(const _Cp& __c) -> decltype(_CUDA_VSTD::end(__c))
 }
 
 #endif
-
-
-#else  // defined(_LIBCUDACXX_CXX03_LANG)
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Cp::iterator
-begin(_Cp& __c)
-{
-    return __c.begin();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Cp::const_iterator
-begin(const _Cp& __c)
-{
-    return __c.begin();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Cp::iterator
-end(_Cp& __c)
-{
-    return __c.end();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Cp::const_iterator
-end(const _Cp& __c)
-{
-    return __c.end();
-}
-
-#endif // !defined(_LIBCUDACXX_CXX03_LANG)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

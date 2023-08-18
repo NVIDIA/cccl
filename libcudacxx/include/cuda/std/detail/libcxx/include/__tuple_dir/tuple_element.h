@@ -47,8 +47,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, const volatile _Tp>
     typedef _LIBCUDACXX_NODEBUG_TYPE typename add_cv<typename tuple_element<_Ip, _Tp>::type>::type type;
 };
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 #ifdef _LIBCUDACXX_COMPILER_MSVC
 
 namespace __indexer_detail {
@@ -119,8 +117,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, __tuple_types<_Types...> >
 template <size_t _Ip, class ..._Tp>
 using tuple_element_t _LIBCUDACXX_NODEBUG_TYPE = typename tuple_element <_Ip, _Tp...>::type;
 #endif
-
-#endif // _LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

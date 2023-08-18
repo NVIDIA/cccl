@@ -213,12 +213,11 @@ public:
     inline _LIBCUDACXX_INLINE_VISIBILITY
     explicit basic_stringbuf(const string_type& __s,
                              ios_base::openmode __wch = ios_base::in | ios_base::out);
-#ifndef _LIBCUDACXX_CXX03_LANG
     basic_stringbuf(basic_stringbuf&& __rhs);
 
     // 27.8.1.2 Assign and swap:
     basic_stringbuf& operator=(basic_stringbuf&& __rhs);
-#endif
+
     void swap(basic_stringbuf& __rhs);
 
     // 27.8.1.3 Get and set:
@@ -253,8 +252,6 @@ basic_stringbuf<_CharT, _Traits, _Allocator>::basic_stringbuf(const string_type&
 {
     str(__s);
 }
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _CharT, class _Traits, class _Allocator>
 basic_stringbuf<_CharT, _Traits, _Allocator>::basic_stringbuf(basic_stringbuf&& __rhs)
@@ -344,8 +341,6 @@ basic_stringbuf<_CharT, _Traits, _Allocator>::operator=(basic_stringbuf&& __rhs)
     this->pubimbue(__rhs.getloc());
     return *this;
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _CharT, class _Traits, class _Allocator>
 void
@@ -649,13 +644,11 @@ public:
     inline _LIBCUDACXX_INLINE_VISIBILITY
     explicit basic_istringstream(const string_type& __s,
                                  ios_base::openmode __wch = ios_base::in);
-#ifndef _LIBCUDACXX_CXX03_LANG
     inline _LIBCUDACXX_INLINE_VISIBILITY
     basic_istringstream(basic_istringstream&& __rhs);
 
     // 27.8.2.2 Assign and swap:
     basic_istringstream& operator=(basic_istringstream&& __rhs);
-#endif  // _LIBCUDACXX_CXX03_LANG
     inline _LIBCUDACXX_INLINE_VISIBILITY
     void swap(basic_istringstream& __rhs);
 
@@ -683,8 +676,6 @@ basic_istringstream<_CharT, _Traits, _Allocator>::basic_istringstream(const stri
 {
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _CharT, class _Traits, class _Allocator>
 basic_istringstream<_CharT, _Traits, _Allocator>::basic_istringstream(basic_istringstream&& __rhs)
     : basic_istream<_CharT, _Traits>(_CUDA_VSTD::move(__rhs)),
@@ -701,8 +692,6 @@ basic_istringstream<_CharT, _Traits, _Allocator>::operator=(basic_istringstream&
     __sb_ = _CUDA_VSTD::move(__rhs.__sb_);
     return *this;
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _CharT, class _Traits, class _Allocator>
 void basic_istringstream<_CharT, _Traits, _Allocator>::swap(basic_istringstream& __rhs)
@@ -766,13 +755,11 @@ public:
     inline _LIBCUDACXX_INLINE_VISIBILITY
     explicit basic_ostringstream(const string_type& __s,
                                  ios_base::openmode __wch = ios_base::out);
-#ifndef _LIBCUDACXX_CXX03_LANG
     inline _LIBCUDACXX_INLINE_VISIBILITY
     basic_ostringstream(basic_ostringstream&& __rhs);
 
     // 27.8.2.2 Assign and swap:
     basic_ostringstream& operator=(basic_ostringstream&& __rhs);
-#endif  // _LIBCUDACXX_CXX03_LANG
     inline _LIBCUDACXX_INLINE_VISIBILITY
     void swap(basic_ostringstream& __rhs);
 
@@ -800,8 +787,6 @@ basic_ostringstream<_CharT, _Traits, _Allocator>::basic_ostringstream(const stri
 {
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _CharT, class _Traits, class _Allocator>
 basic_ostringstream<_CharT, _Traits, _Allocator>::basic_ostringstream(basic_ostringstream&& __rhs)
     : basic_ostream<_CharT, _Traits>(_CUDA_VSTD::move(__rhs)),
@@ -818,8 +803,6 @@ basic_ostringstream<_CharT, _Traits, _Allocator>::operator=(basic_ostringstream&
     __sb_ = _CUDA_VSTD::move(__rhs.__sb_);
     return *this;
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _CharT, class _Traits, class _Allocator>
 void
@@ -885,13 +868,11 @@ public:
     inline _LIBCUDACXX_INLINE_VISIBILITY
     explicit basic_stringstream(const string_type& __s,
                                 ios_base::openmode __wch = ios_base::in | ios_base::out);
-#ifndef _LIBCUDACXX_CXX03_LANG
     inline _LIBCUDACXX_INLINE_VISIBILITY
     basic_stringstream(basic_stringstream&& __rhs);
 
     // 27.8.2.2 Assign and swap:
     basic_stringstream& operator=(basic_stringstream&& __rhs);
-#endif  // _LIBCUDACXX_CXX03_LANG
     inline _LIBCUDACXX_INLINE_VISIBILITY
     void swap(basic_stringstream& __rhs);
 
@@ -919,8 +900,6 @@ basic_stringstream<_CharT, _Traits, _Allocator>::basic_stringstream(const string
 {
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _CharT, class _Traits, class _Allocator>
 basic_stringstream<_CharT, _Traits, _Allocator>::basic_stringstream(basic_stringstream&& __rhs)
     : basic_iostream<_CharT, _Traits>(_CUDA_VSTD::move(__rhs)),
@@ -937,8 +916,6 @@ basic_stringstream<_CharT, _Traits, _Allocator>::operator=(basic_stringstream&& 
     __sb_ = _CUDA_VSTD::move(__rhs.__sb_);
     return *this;
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _CharT, class _Traits, class _Allocator>
 void

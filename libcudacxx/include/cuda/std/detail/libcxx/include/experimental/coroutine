@@ -196,13 +196,9 @@ template <typename _Promise>
 class _LIBCUDACXX_TEMPLATE_VIS coroutine_handle : public coroutine_handle<> {
     using _Base = coroutine_handle<>;
 public:
-#ifndef _LIBCUDACXX_CXX03_LANG
     // 18.11.2.1 construct/reset
     using coroutine_handle<>::coroutine_handle;
-#else
-    _LIBCUDACXX_INLINE_VISIBILITY coroutine_handle() noexcept : _Base() {}
-    _LIBCUDACXX_INLINE_VISIBILITY coroutine_handle(nullptr_t) noexcept : _Base(nullptr) {}
-#endif
+
     _LIBCUDACXX_INLINE_VISIBILITY
     coroutine_handle& operator=(nullptr_t) noexcept {
         _Base::operator=(nullptr);

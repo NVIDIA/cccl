@@ -76,7 +76,7 @@ namespace placeholders
 
 template <int _Np> struct __ph {};
 
-#if defined(_LIBCUDACXX_CXX03_LANG) || defined(_LIBCUDACXX_BUILDING_LIBRARY)
+#if defined(_LIBCUDACXX_BUILDING_LIBRARY)
 _LIBCUDACXX_FUNC_VIS extern const __ph<1>   _1;
 _LIBCUDACXX_FUNC_VIS extern const __ph<2>   _2;
 _LIBCUDACXX_FUNC_VIS extern const __ph<3>   _3;
@@ -98,7 +98,7 @@ _LIBCUDACXX_FUNC_VIS extern const __ph<10> _10;
 /* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<8>   _8{};
 /* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<9>   _9{};
 /* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<10> _10{};
-#endif // defined(_LIBCUDACXX_CXX03_LANG) || defined(_LIBCUDACXX_BUILDING_LIBRARY)
+#endif // defined(_LIBCUDACXX_BUILDING_LIBRARY)
 
 } // namespace placeholders
 
@@ -106,8 +106,6 @@ template<int _Np>
 struct is_placeholder<placeholders::__ph<_Np> >
     : public integral_constant<int, _Np> {};
 
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Uj>
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -408,8 +406,6 @@ bind(_Fp&& __f, _BoundArgs&&... __bound_args)
     typedef __bind_r<_Rp, _Fp, _BoundArgs...> type;
     return type(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_BoundArgs>(__bound_args)...);
 }
-
-#endif // _LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

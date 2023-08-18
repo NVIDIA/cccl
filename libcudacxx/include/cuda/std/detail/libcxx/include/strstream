@@ -150,12 +150,10 @@ public:
     strstreambuf(unsigned char* __gnext, streamsize __n, unsigned char* __pbeg = 0);
     strstreambuf(const unsigned char* __gnext, streamsize __n);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     strstreambuf(strstreambuf&& __rhs);
     _LIBCUDACXX_INLINE_VISIBILITY
     strstreambuf& operator=(strstreambuf&& __rhs);
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     virtual ~strstreambuf();
 
@@ -190,8 +188,6 @@ private:
     void __init(char* __gnext, streamsize __n, char* __pbeg);
 };
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 inline _LIBCUDACXX_INLINE_VISIBILITY
 strstreambuf::strstreambuf(strstreambuf&& __rhs)
     : streambuf(__rhs),
@@ -225,8 +221,6 @@ strstreambuf::operator=(strstreambuf&& __rhs)
     return *this;
 }
 
-#endif  // _LIBCUDACXX_CXX03_LANG
-
 class _LIBCUDACXX_TYPE_VIS istrstream
     : public istream
 {
@@ -244,7 +238,6 @@ public:
     istrstream(char* __s, streamsize __n)
         : istream(&__sb_), __sb_(__s, __n) {}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     istrstream(istrstream&& __rhs)
         : istream(_CUDA_VSTD::move(__rhs)),
@@ -260,7 +253,6 @@ public:
         __sb_ = _CUDA_VSTD::move(__rhs.__sb_);
         return *this;
     }
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     virtual ~istrstream();
 
@@ -293,7 +285,6 @@ public:
           __sb_(__s, __n, __s + (__mode & ios::app ? strlen(__s) : 0))
         {}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     ostrstream(ostrstream&& __rhs)
         : ostream(_CUDA_VSTD::move(__rhs)),
@@ -309,7 +300,6 @@ public:
         __sb_ = _CUDA_VSTD::move(__rhs.__sb_);
         return *this;
     }
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     virtual ~ostrstream();
 
@@ -353,7 +343,6 @@ public:
           __sb_(__s, __n, __s + (__mode & ios::app ? strlen(__s) : 0))
         {}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     strstream(strstream&& __rhs)
         : iostream(_CUDA_VSTD::move(__rhs)),
@@ -369,7 +358,6 @@ public:
         __sb_ = _CUDA_VSTD::move(__rhs.__sb_);
         return *this;
     }
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     virtual ~strstream();
 

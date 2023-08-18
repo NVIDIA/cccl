@@ -801,7 +801,6 @@ public:
     basic_string(const basic_string& __str);
     basic_string(const basic_string& __str, const allocator_type& __a);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string(basic_string&& __str)
 #if _LIBCUDACXX_STD_VER <= 14
@@ -812,7 +811,6 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string(basic_string&& __str, const allocator_type& __a);
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     template <class = typename enable_if<__is_allocator<_Allocator>::value, nullptr_t>::type>
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -864,12 +862,11 @@ public:
     template<class _InputIterator, class = typename enable_if<__is_cpp17_input_iterator<_InputIterator>::value>::type>
         _LIBCUDACXX_INLINE_VISIBILITY
         basic_string(_InputIterator __first, _InputIterator __last, const allocator_type& __a);
-#ifndef _LIBCUDACXX_CXX03_LANG
+
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string(initializer_list<_CharT> __il);
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string(initializer_list<_CharT> __il, const _Allocator& __a);
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     inline ~basic_string();
 
@@ -882,13 +879,11 @@ public:
     basic_string& operator=(const _Tp& __t)
         {__self_view __sv = __t; return assign(__sv);}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string& operator=(basic_string&& __str)
         noexcept((__noexcept_move_assign_container<_Allocator, __alloc_traits>::value));
      _LIBCUDACXX_INLINE_VISIBILITY
     basic_string& operator=(initializer_list<value_type> __il) {return assign(__il.begin(), __il.size());}
-#endif
     _LIBCUDACXX_INLINE_VISIBILITY basic_string& operator=(const value_type* __s) {return assign(__s);}
     basic_string& operator=(value_type __c);
 
@@ -986,9 +981,7 @@ public:
                                             operator+=(const _Tp& __t)            {__self_view __sv = __t; return append(__sv);}
     _LIBCUDACXX_INLINE_VISIBILITY basic_string& operator+=(const value_type* __s)     {return append(__s);}
     _LIBCUDACXX_INLINE_VISIBILITY basic_string& operator+=(value_type __c)            {push_back(__c); return *this;}
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY basic_string& operator+=(initializer_list<value_type> __il) {return append(__il);}
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string& append(const basic_string& __str);
@@ -1048,10 +1041,8 @@ public:
       return __append_forward_unsafe(__first, __last);
     }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string& append(initializer_list<value_type> __il) {return append(__il.begin(), __il.size());}
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     void push_back(value_type __c);
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1071,12 +1062,10 @@ public:
                  assign(const _Tp & __t) { __self_view __sv = __t; return assign(__sv.data(), __sv.size()); }
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string& assign(const basic_string& __str) { return *this = __str; }
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string& assign(basic_string&& __str)
         noexcept((__noexcept_move_assign_container<_Allocator, __alloc_traits>::value))
         {*this = _CUDA_VSTD::move(__str); return *this;}
-#endif
     basic_string& assign(const basic_string& __str, size_type __pos, size_type __n=npos);
     template <class _Tp>
     _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
@@ -1107,10 +1096,8 @@ public:
             basic_string&
         >::type
         assign(_ForwardIterator __first, _ForwardIterator __last);
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string& assign(initializer_list<value_type> __il) {return assign(__il.begin(), __il.size());}
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string& insert(size_type __pos1, const basic_string& __str);
@@ -1158,11 +1145,9 @@ public:
             iterator
         >::type
         insert(const_iterator __pos, _ForwardIterator __first, _ForwardIterator __last);
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     iterator insert(const_iterator __pos, initializer_list<value_type> __il)
                     {return insert(__pos, __il.begin(), __il.end());}
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     basic_string& erase(size_type __pos = 0, size_type __n = npos);
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1219,11 +1204,9 @@ public:
             basic_string&
         >::type
         replace(const_iterator __i1, const_iterator __i2, _InputIterator __j1, _InputIterator __j2);
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string& replace(const_iterator __i1, const_iterator __i2, initializer_list<value_type> __il)
         {return replace(__i1, __i2, __il.begin(), __il.end());}
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     size_type copy(value_type* __s, size_type __n, size_type __pos = 0) const;
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1606,7 +1589,6 @@ private:
     void __copy_assign_alloc(const basic_string&, false_type) noexcept
         {}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     void __move_assign(basic_string& __str, false_type)
         noexcept(__alloc_traits::is_always_equal::value);
@@ -1616,7 +1598,6 @@ private:
         noexcept;
 #else
         noexcept(is_nothrow_move_assignable<allocator_type>::value);
-#endif
 #endif
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1857,8 +1838,6 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(
 #endif
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _CharT, class _Traits, class _Allocator>
 inline
 basic_string<_CharT, _Traits, _Allocator>::basic_string(basic_string&& __str)
@@ -1895,8 +1874,6 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(basic_string&& __str, co
         __get_db()->swap(this, &__str);
 #endif
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _CharT, class _Traits, class _Allocator>
 void
@@ -2092,7 +2069,6 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(_InputIterator __first, 
 #endif
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _CharT, class _Traits, class _Allocator>
 inline
@@ -2117,8 +2093,6 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(
     __get_db()->__insert_c(this);
 #endif
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _CharT, class _Traits, class _Allocator>
 basic_string<_CharT, _Traits, _Allocator>::~basic_string()
@@ -2267,8 +2241,6 @@ basic_string<_CharT, _Traits, _Allocator>::operator=(const basic_string& __str)
     return *this;
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _CharT, class _Traits, class _Allocator>
 inline
 void
@@ -2307,8 +2279,6 @@ basic_string<_CharT, _Traits, _Allocator>::operator=(basic_string&& __str)
           __alloc_traits::propagate_on_container_move_assignment::value>());
     return *this;
 }
-
-#endif
 
 template <class _CharT, class _Traits, class _Allocator>
 template<class _InputIterator>
@@ -4092,8 +4062,6 @@ operator+(const basic_string<_CharT, _Traits, _Allocator>& __lhs, _CharT __rhs)
     return __r;
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template<class _CharT, class _Traits, class _Allocator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 basic_string<_CharT, _Traits, _Allocator>
@@ -4151,8 +4119,6 @@ operator+(basic_string<_CharT, _Traits, _Allocator>&& __lhs, _CharT __rhs)
     __lhs.push_back(__rhs);
     return _CUDA_VSTD::move(__lhs);
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 // swap
 
@@ -4252,8 +4218,6 @@ basic_istream<_CharT, _Traits>&
 getline(basic_istream<_CharT, _Traits>& __is,
         basic_string<_CharT, _Traits, _Allocator>& __str);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template<class _CharT, class _Traits, class _Allocator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 basic_istream<_CharT, _Traits>&
@@ -4265,8 +4229,6 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 basic_istream<_CharT, _Traits>&
 getline(basic_istream<_CharT, _Traits>&& __is,
         basic_string<_CharT, _Traits, _Allocator>& __str);
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 #if _LIBCUDACXX_STD_VER > 17
 template<class _CharT, class _Traits, class _Allocator, class _Up>

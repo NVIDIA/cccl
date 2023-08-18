@@ -1784,9 +1784,7 @@ struct atomic
 {
     typedef __atomic_base<_Tp> __base;
     using value_type = _Tp;
-#ifdef _LIBCUDACXX_CXX03_LANG
-    _LIBCUDACXX_INLINE_VISIBILITY
-#endif
+
     atomic() noexcept = default;
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr atomic(_Tp __d) noexcept : __base(__d) {}
@@ -1807,9 +1805,7 @@ struct atomic<_Tp*>
 {
     typedef __atomic_base<_Tp*> __base;
     using value_type = _Tp*;
-#ifdef _LIBCUDACXX_CXX03_LANG
-    _LIBCUDACXX_INLINE_VISIBILITY
-#endif
+
     atomic() noexcept = default;
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr atomic(_Tp* __d) noexcept : __base(__d) {}
@@ -2624,27 +2620,14 @@ typedef struct atomic_flag
         {__cxx_atomic_notify_all(&__a_);}
 #endif
 
-#ifdef _LIBCUDACXX_CXX03_LANG
-    _LIBCUDACXX_INLINE_VISIBILITY
-#endif
     atomic_flag() noexcept = default;
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     atomic_flag(bool __b) noexcept : __a_(__b) {} // EXTENSION
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     atomic_flag(const atomic_flag&) = delete;
     atomic_flag& operator=(const atomic_flag&) = delete;
     atomic_flag& operator=(const atomic_flag&) volatile = delete;
-#else
-private:
-    _LIBCUDACXX_INLINE_VISIBILITY
-    atomic_flag(const atomic_flag&);
-    _LIBCUDACXX_INLINE_VISIBILITY
-    atomic_flag& operator=(const atomic_flag&);
-    _LIBCUDACXX_INLINE_VISIBILITY
-    atomic_flag& operator=(const atomic_flag&) volatile;
-#endif
 } atomic_flag;
 
 

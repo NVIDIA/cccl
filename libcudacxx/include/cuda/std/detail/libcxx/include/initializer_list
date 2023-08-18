@@ -54,8 +54,6 @@ template<class E> const E* end(initializer_list<E> il) noexcept; // constexpr in
 namespace std  // purposefully not versioned
 {
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template<class _Ep>
 class _LIBCUDACXX_TEMPLATE_VIS initializer_list
 {
@@ -111,8 +109,6 @@ end(initializer_list<_Ep> __il) noexcept
 {
     return __il.end();
 }
-
-#endif  // !defined(_LIBCUDACXX_CXX03_LANG)
 
 }  // std
 

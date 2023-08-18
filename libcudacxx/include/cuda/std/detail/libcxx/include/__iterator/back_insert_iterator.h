@@ -47,10 +47,8 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY explicit back_insert_iterator(_Container& __x) : container(_CUDA_VSTD::addressof(__x)) {}
     _LIBCUDACXX_INLINE_VISIBILITY back_insert_iterator& operator=(const typename _Container::value_type& __value_)
         {container->push_back(__value_); return *this;}
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY back_insert_iterator& operator=(typename _Container::value_type&& __value_)
         {container->push_back(_CUDA_VSTD::move(__value_)); return *this;}
-#endif  // _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY back_insert_iterator& operator*()     {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY back_insert_iterator& operator++()    {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY back_insert_iterator  operator++(int) {return *this;}

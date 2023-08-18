@@ -48,8 +48,6 @@
 #pragma GCC system_header
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // bad_function_call
@@ -125,8 +123,6 @@ bool __not_null(_Rp (^__p)(_Args...)) { return __p; }
 #endif
 
 } // namespace __function
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 namespace __function {
 
@@ -1246,15 +1242,8 @@ void
 swap(function<_Rp(_ArgTypes...)>& __x, function<_Rp(_ArgTypes...)>& __y) noexcept
 {return __x.swap(__y);}
 
-#else // _LIBCUDACXX_CXX03_LANG
-
-#include <__functional_03>
-
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _LIBCUDACXX_CXX03_LANG
 
 #endif // __cuda_std__
 

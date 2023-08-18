@@ -36,8 +36,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <bool ..._Preds>
 struct __all_dummy;
 
@@ -147,7 +145,7 @@ struct _LIBCUDACXX_TYPE_VIS __check_tuple_constructor_fail {
     template <class ...>
     using __enable_assign = false_type;
 };
-#endif // !defined(_LIBCUDACXX_CXX03_LANG)
+
 #if _LIBCUDACXX_STD_VER > 11
 
 template <bool _CanCopy, bool _CanMove>

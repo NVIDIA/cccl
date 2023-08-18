@@ -306,18 +306,8 @@ public:
         >::type type;
 };
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _R1, class _R2> using ratio_multiply
                                     = typename __ratio_multiply<_R1, _R2>::type;
-
-#else  // _LIBCUDACXX_CXX03_LANG
-
-template <class _R1, class _R2>
-struct _LIBCUDACXX_TEMPLATE_VIS ratio_multiply
-    : public __ratio_multiply<_R1, _R2>::type {};
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _R1, class _R2>
 struct __ratio_divide
@@ -333,18 +323,8 @@ public:
         >::type type;
 };
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _R1, class _R2> using ratio_divide
                                       = typename __ratio_divide<_R1, _R2>::type;
-
-#else  // _LIBCUDACXX_CXX03_LANG
-
-template <class _R1, class _R2>
-struct _LIBCUDACXX_TEMPLATE_VIS ratio_divide
-    : public __ratio_divide<_R1, _R2>::type {};
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _R1, class _R2>
 struct __ratio_add
@@ -368,18 +348,8 @@ public:
         >::type type;
 };
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _R1, class _R2> using ratio_add
                                          = typename __ratio_add<_R1, _R2>::type;
-
-#else  // _LIBCUDACXX_CXX03_LANG
-
-template <class _R1, class _R2>
-struct _LIBCUDACXX_TEMPLATE_VIS ratio_add
-    : public __ratio_add<_R1, _R2>::type {};
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _R1, class _R2>
 struct __ratio_subtract
@@ -403,18 +373,8 @@ public:
         >::type type;
 };
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _R1, class _R2> using ratio_subtract
                                     = typename __ratio_subtract<_R1, _R2>::type;
-
-#else  // _LIBCUDACXX_CXX03_LANG
-
-template <class _R1, class _R2>
-struct _LIBCUDACXX_TEMPLATE_VIS ratio_subtract
-    : public __ratio_subtract<_R1, _R2>::type {};
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 // ratio_equal
 

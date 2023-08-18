@@ -96,8 +96,6 @@ _LIBCUDACXX_FUNC_VIS char* __u64toa(uint64_t __value, char* __buffer);
 _LIBCUDACXX_FUNC_VIS char* __u32toa(uint32_t __value, char* __buffer);
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 enum class _LIBCUDACXX_ENUM_VIS chars_format
 {
     scientific = 0x1,
@@ -606,8 +604,6 @@ from_chars(const char* __first, const char* __last, _Tp& __value, int __base)
     _LIBCUDACXX_ASSERT(2 <= __base && __base <= 36, "base not in [2, 36]");
     return __from_chars_integral(__first, __last, __value, __base);
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

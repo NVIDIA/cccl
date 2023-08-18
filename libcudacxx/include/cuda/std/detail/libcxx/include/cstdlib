@@ -185,7 +185,7 @@ using ::mbtowc;
 using ::wctomb;
 using ::mbstowcs;
 using ::wcstombs;
-#if !defined(_LIBCUDACXX_CXX03_LANG) && defined(_LIBCUDACXX_HAS_QUICK_EXIT)
+#if defined(_LIBCUDACXX_HAS_QUICK_EXIT)
 using ::at_quick_exit;
 using ::quick_exit;
 #endif

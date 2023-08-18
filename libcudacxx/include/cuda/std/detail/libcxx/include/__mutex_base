@@ -70,7 +70,7 @@ struct _LIBCUDACXX_TYPE_VIS defer_lock_t { explicit defer_lock_t() = default; };
 struct _LIBCUDACXX_TYPE_VIS try_to_lock_t { explicit try_to_lock_t() = default; };
 struct _LIBCUDACXX_TYPE_VIS adopt_lock_t { explicit adopt_lock_t() = default; };
 
-#if defined(_LIBCUDACXX_CXX03_LANG) || defined(_LIBCUDACXX_BUILDING_LIBRARY)
+#if defined(_LIBCUDACXX_BUILDING_LIBRARY)
 
 extern _LIBCUDACXX_EXPORTED_FROM_ABI const defer_lock_t  defer_lock;
 extern _LIBCUDACXX_EXPORTED_FROM_ABI const try_to_lock_t try_to_lock;
@@ -155,7 +155,6 @@ private:
     unique_lock& operator=(unique_lock const&); // = delete;
 
 public:
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     unique_lock(unique_lock&& __u) noexcept
         : __m_(__u.__m_), __owns_(__u.__owns_)
@@ -171,8 +170,6 @@ public:
             __u.__owns_ = false;
             return *this;
         }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     void lock();
     bool try_lock();

@@ -30,7 +30,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS tuple_size;
 
-#if !defined(_LIBCUDACXX_CXX03_LANG)
 template <class _Tp, class...>
 using __enable_if_tuple_size_imp = _Tp;
 
@@ -54,14 +53,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<__enable_if_tuple_size_imp<
     integral_constant<size_t, sizeof(tuple_size<_Tp>)>>>
     : public integral_constant<size_t, tuple_size<_Tp>::value> {};
 
-#else
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<const _Tp> : public tuple_size<_Tp> {};
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<volatile _Tp> : public tuple_size<_Tp> {};
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<const volatile _Tp> : public tuple_size<_Tp> {};
-#endif
-
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class ..._Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<tuple<_Tp...> >
     : public integral_constant<size_t, sizeof...(_Tp)>
@@ -73,8 +64,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<__tuple_types<_Tp...> >
     : public integral_constant<size_t, sizeof...(_Tp)>
 {
 };
-
-#endif // _LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
