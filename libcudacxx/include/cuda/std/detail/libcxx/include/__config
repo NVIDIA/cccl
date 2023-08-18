@@ -135,6 +135,10 @@ extern "C++" {
 #  endif
 #endif  // _LIBCUDACXX_STD_VER
 
+#if _LIBCUDACXX_STD_VER < 11
+#  error libcu++ requires C++11 or later
+#endif
+
 #if (defined(_LIBCUDACXX_COMPILER_NVHPC) && defined(__linux__)) \
  || defined(_LIBCUDACXX_COMPILER_NVRTC)
     #define __ELF__
