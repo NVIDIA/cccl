@@ -181,15 +181,14 @@ public:
     }
 
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
-
-    arrival_token arrive_tx(_CUDA_VSTD::ptrdiff_t arrive_count_update,
-                            _CUDA_VSTD::ptrdiff_t transaction_count_update) {
+    arrival_token arrive_tx(_CUDA_VSTD::ptrdiff_t __arrive_count_update,
+                            _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
 #if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(arrive_count_update >= 0);
-        _LIBCUDACXX_DEBUG_ASSERT(transaction_count_update >= 0);
+        _LIBCUDACXX_DEBUG_ASSERT(__arrive_count_update >= 0);
+        _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0);
         // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
         // Maximum value of tx-count is 2^20 -1.
-        _LIBCUDACXX_DEBUG_ASSERT(transaction_count_update <= (1 << 20) - 1);
+        _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1);
         _LIBCUDACXX_DEBUG_ASSERT(__isClusterShared(&__barrier));
 #endif
         arrival_token __token = {};
@@ -203,7 +202,7 @@ public:
                     "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
                     : "=l"(__token)
                     : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier)))
-                    , "r"(static_cast<_CUDA_VSTD::uint32_t>(transaction_count_update))
+                    , "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
                     : "memory");
             ), NV_IS_DEVICE, (
                 static_assert("barrier::arrive_tx is only supported for sm_90 and up.");
