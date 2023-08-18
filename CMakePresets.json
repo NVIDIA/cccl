@@ -138,7 +138,7 @@
       "inherits": "thrust-base",
       "cacheVariables": {
         "THRUST_IGNORE_DEPRECATED_CPP_DIALECT": true,
-        "THRUST_ENABLE_DIALECT_CPP11": true
+        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP11": true
       }
     },
     {
@@ -146,7 +146,7 @@
       "displayName": "Thrust: C++14",
       "inherits": "thrust-base",
       "cacheVariables": {
-        "THRUST_ENABLE_DIALECT_CPP14": true
+        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": true
       }
     },
     {
@@ -154,7 +154,7 @@
       "displayName": "Thrust: C++17",
       "inherits": "thrust-base",
       "cacheVariables": {
-        "THRUST_ENABLE_DIALECT_CPP17": true
+        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": true
       }
     },
     {
@@ -162,7 +162,7 @@
       "displayName": "Thrust: C++20",
       "inherits": "thrust-base",
       "cacheVariables": {
-        "THRUST_ENABLE_DIALECT_CPP20": true
+        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20": true
       }
     },
     {
