@@ -180,7 +180,7 @@ public:
         )
     }
 
-    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE
     arrival_token arrive_tx(_CUDA_VSTD::ptrdiff_t __arrive_count_update,
                             _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
 #if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
@@ -205,9 +205,7 @@ public:
                     , "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
                     : "memory");
             ), NV_IS_DEVICE, (
-                static_assert("barrier::arrive_tx is only supported for sm_90 and up.");
-            ), NV_IS_HOST, (
-                static_assert("barrier::arrive_tx is only supported on device code.");
+                __trap(); // mbarrier.arrive.expect_tx is not supported for architectures before SM90.
             )
         )
         return __token;
