@@ -2,7 +2,7 @@
 
 source "$(dirname "$0")/build_common.sh"
 
-PRESET="ci-thrust-cpp$CXX_STANDARD"
+PRESET="thrust-cpp$CXX_STANDARD"
 
 CMAKE_OPTIONS=""
 

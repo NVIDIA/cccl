@@ -172,8 +172,8 @@ jobs:
       runner: linux-${{matrix.cpu}}-gpu-v100-latest-1
       image: rapidsai/devcontainers:${{needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       command: |
-        cmake -S . --preset=ci-cccl -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA}
-        ctest --preset=ci-cccl
+        cmake -S . --preset=cccl -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA}
+        ctest --preset=cccl
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
