@@ -260,22 +260,22 @@
     {
       "name": "thrust-cpp11",
       "configurePreset": "thrust-cpp11",
-      "inherits": "cub-base"
+      "inherits": "base"
     },
     {
       "name": "thrust-cpp14",
       "configurePreset": "thrust-cpp14",
-      "inherits": "cub-base"
+      "inherits": "base"
     },
     {
       "name": "thrust-cpp17",
       "configurePreset": "thrust-cpp17",
-      "inherits": "cub-base"
+      "inherits": "base"
     },
     {
       "name": "thrust-cpp20",
       "configurePreset": "thrust-cpp20",
-      "inherits": "cub-base"
+      "inherits": "base"
     },
     {
       "name": "cccl",
