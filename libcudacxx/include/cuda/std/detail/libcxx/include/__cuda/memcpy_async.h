@@ -12,6 +12,7 @@
 #define _LIBCUDACXX__CUDA_MEMCPY_ASYNC_H
 
 #include "../cstdlib"
+#include "../bit"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -148,11 +149,11 @@ template<_CUDA_VSTD::size_t _MaxInterestingAlignment,
 _LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment __dispatch_alignment_bit(_Fn && __f, _CUDA_VSTD::size_t __alignment_fsb) {
     _CUDA_VSTD::size_t __alignment_v = 1ull << (__alignment_fsb - 1);
 
-    if (__alignment_v >= _MaxInterestingAlignment) [[likely]] {
+    if (__builtin_expect(__alignment_v >= _MaxInterestingAlignment, true)) {
         return _CUDA_VSTD::forward<_Fn>(__f)(__alignment<_MaxInterestingAlignment>());
     }
 
-    if (__alignment_v < _MinInterestingAlignment) [[unlikely]] {
+    if (__builtin_expect(__alignment_v < _MinInterestingAlignment, false)) {
         return __invoke_if_applicable<_GuaranteedAlignment, _MaxInterestingAlignment, 0, 1>::__invoke(_CUDA_VSTD::forward<_Fn>(__f));
     }
 
@@ -316,27 +317,39 @@ struct __memcpy_async_default_aligned_impl<
     }
 };
 
+_LIBCUDACXX_INLINE_VISIBILITY
+_CUDA_VSTD::size_t __memcpy_async_ffs(_CUDA_VSTD::size_t __val) {
+    NV_IF_ELSE_TARGET(
+        NV_IS_DEVICE,
+        (return __ffsll(__val);),
+        (return _CUDA_VSTD::__libcpp_ctz(__val) + 1;)
+    )
+}
+
 struct __proto_hooks {
     template<typename _Group, typename _Size, typename _Sync>
     _LIBCUDACXX_INLINE_VISIBILITY static _CUDA_VSTD::size_t __compute_alignment_bit(const _Group & __g,
         char * __out_ptr,
         const char *__in_ptr,
         _Size __size,
-        const _Sync & __sync)
-    {
+        const _Sync & __sync
+    ) {
         auto __out_addr = reinterpret_cast<_CUDA_VSTD::uintptr_t>(__out_ptr);
         auto __in_addr = reinterpret_cast<_CUDA_VSTD::uintptr_t>(__in_ptr);
         auto __size_val = __get_size(__size);
 
-        auto __ret = __builtin_ffsll((__out_addr | __in_addr | __size_val) & (__max_interesting_alignment - 1));
-        if (__ret == 0) {
-            __ret = __builtin_ffsll(__max_interesting_alignment);
+        auto __bit_pattern = (__out_addr | __in_addr | __size_val) & (__max_interesting_alignment - 1);
+
+        if (__bit_pattern == 0) {
+            return __memcpy_async_ffs(__max_interesting_alignment);
         }
-        return __ret;
+        else {
+            return __memcpy_async_ffs(__bit_pattern);
+        }
     }
 
-    static const constexpr auto __max_interesting_alignment = 16;
-    static const constexpr auto __min_interesting_alignment = 4;
+    static const constexpr _CUDA_VSTD::size_t __max_interesting_alignment = 16;
+    static const constexpr _CUDA_VSTD::size_t __min_interesting_alignment = 4;
 };
 
 template<bool _Tx, typename _Arch, __space _OutSpace, __space _InSpace, __space _SyncSpace, typename = void>
