@@ -252,6 +252,7 @@ template<_CUDA_VSTD::size_t _Alignment>
 __device__
 async_contract_fulfillment __cp_async_cg_shared_global(_CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __group_size, char * __out_ptr, const char * __in_ptr, _CUDA_VSTD::size_t __size) {
     auto __shptr = __cvta_generic_to_shared(__out_ptr) + __rank * _Alignment;
+    __in_ptr += __rank * _Alignment;
     const auto __stride = __group_size * _Alignment;
 
     for (_CUDA_VSTD::size_t __offset = __rank * _Alignment; __offset < __size; __offset += __stride) {
@@ -270,6 +271,7 @@ template<_CUDA_VSTD::size_t _Alignment>
 __device__
 async_contract_fulfillment __cp_async_ca_shared_global(_CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __group_size, char * __out_ptr, const char * __in_ptr, _CUDA_VSTD::size_t __size) {
     auto __shptr = __cvta_generic_to_shared(__out_ptr) + __rank * _Alignment;
+    __in_ptr += __rank * _Alignment;
     const auto __stride = __group_size * _Alignment;
 
     for (_CUDA_VSTD::size_t __offset = __rank * _Alignment; __offset < __size; __offset += __stride) {
