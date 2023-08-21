@@ -154,7 +154,7 @@ _LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment __dispatch_alignment_bi
     }
 
     if (__builtin_expect(__alignment_v < _MinInterestingAlignment, false)) {
-        return __invoke_if_applicable<_GuaranteedAlignment, _MaxInterestingAlignment, 0, 1>::__invoke(_CUDA_VSTD::forward<_Fn>(__f));
+        return __invoke_if_applicable<1, _MaxInterestingAlignment, 0, 1>::__invoke(_CUDA_VSTD::forward<_Fn>(__f));
     }
 
     switch (__alignment_fsb) {
@@ -251,11 +251,12 @@ struct __memcpy_async_default_aligned_impl {
 template<_CUDA_VSTD::size_t _Alignment>
 __device__
 async_contract_fulfillment __cp_async_cg_shared_global(_CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __group_size, char * __out_ptr, const char * __in_ptr, _CUDA_VSTD::size_t __size) {
-    auto __shptr = __cvta_generic_to_shared(__out_ptr) + __rank * _Alignment;
-    __in_ptr += __rank * _Alignment;
+    _CUDA_VSTD::size_t __offset = __rank * _Alignment;
+    auto __shptr = __cvta_generic_to_shared(__out_ptr) + __offset;
+    __in_ptr += __offset;
     const auto __stride = __group_size * _Alignment;
 
-    for (_CUDA_VSTD::size_t __offset = __rank * _Alignment; __offset < __size; __offset += __stride) {
+    for (; __offset < __size; __offset += __stride) {
         asm volatile ("cp.async.cg.shared.global [%0], [%1], %2, %2;"
             :: "l"(__shptr),
                 "l"(__in_ptr),
@@ -270,11 +271,12 @@ async_contract_fulfillment __cp_async_cg_shared_global(_CUDA_VSTD::size_t __rank
 template<_CUDA_VSTD::size_t _Alignment>
 __device__
 async_contract_fulfillment __cp_async_ca_shared_global(_CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __group_size, char * __out_ptr, const char * __in_ptr, _CUDA_VSTD::size_t __size) {
-    auto __shptr = __cvta_generic_to_shared(__out_ptr) + __rank * _Alignment;
-    __in_ptr += __rank * _Alignment;
+    _CUDA_VSTD::size_t __offset = __rank * _Alignment;
+    auto __shptr = __cvta_generic_to_shared(__out_ptr) + __offset;
+    __in_ptr += __offset;
     const auto __stride = __group_size * _Alignment;
 
-    for (_CUDA_VSTD::size_t __offset = __rank * _Alignment; __offset < __size; __offset += __stride) {
+    for (; __offset < __size; __offset += __stride) {
         asm volatile ("cp.async.ca.shared.global [%0], [%1], %2, %2;"
             :: "l"(__shptr),
                 "l"(__in_ptr),
@@ -531,7 +533,6 @@ _LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment __memcpy_async(
     _Size __size,
     _SyncObject & __sync)
 {
-    auto __sync_ptr = &__sync;
     return __dispatch_architecture<async_contract_fulfillment>(__memcpy_async_arch_dispatcher<_Tx, _NativeAlignment>(_CUDA_VSTD::forward<_Group>(__g), __out_ptr, __in_ptr, __size, __sync));
 }
 

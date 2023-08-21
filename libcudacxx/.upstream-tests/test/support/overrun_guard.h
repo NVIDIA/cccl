@@ -22,6 +22,7 @@ struct overrun_guard {
     __host__ __device__
     overrun_guard(U u) : init_value(u), val{static_cast<T>(u), static_cast<T>(u + 1)} {}
 
+    __host__ __device__
     overrun_guard(const overrun_guard & other) : init_value(other.init_value), val{other.val[0], other.val[1]} {
         assert(other.val[1] == static_cast<T>(other.init_value + 1));
     }
@@ -56,6 +57,7 @@ struct overrun_guard {
         return val[0] == u;
     }
 
+    __host__ __device__
     bool operator==(const overrun_guard & other) const {
         assert(val[1] == static_cast<T>(init_value + 1));
         assert(other.val[1] == static_cast<T>(other.init_value + 1));

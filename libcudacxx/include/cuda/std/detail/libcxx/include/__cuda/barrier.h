@@ -71,19 +71,19 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 _LIBCUDACXX_DEVICE
-inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> & b);
+inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> & __b);
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template<>
-class barrier<thread_scope_block, _CUDA_VSTD::__empty_completion> : public __block_scope_barrier_base {
-    using __barrier_base = _CUDA_VSTD::__barrier_base<_CUDA_VSTD::__empty_completion, (int)thread_scope_block>;
+template<thread_scope _Sco>
+class barrier<_Sco, _CUDA_VSTD::__enable_if_t<_Sco == thread_scope_thread || _Sco == thread_scope_block, _CUDA_VSTD::__empty_completion>> : public __block_scope_barrier_base {
+    using __barrier_base = _CUDA_VSTD::__barrier_base<_CUDA_VSTD::__empty_completion, (int)_Sco>;
     __barrier_base __barrier;
 
     _LIBCUDACXX_DEVICE
-    friend inline _CUDA_VSTD::uint64_t * device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(barrier<thread_scope_block> & b);
+    friend inline _CUDA_VSTD::uint64_t * device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(barrier<thread_scope_block> & __b);
 
 template<typename _Barrier>
 friend class _CUDA_VSTD::__barrier_poll_tester_phase;
@@ -99,7 +99,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     barrier(_CUDA_VSTD::ptrdiff_t __expected, _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion()) {
-        static_assert(_LIBCUDACXX_OFFSET_IS_ZERO(barrier<thread_scope_block>, __barrier), "fatal error: bad barrier layout");
+        static_assert(_LIBCUDACXX_OFFSET_IS_ZERO(barrier<_Sco>, __barrier), "fatal error: bad barrier layout");
         init(this, __expected, __completion);
     }
 
@@ -126,7 +126,12 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    friend void init(barrier * __b, _CUDA_VSTD::ptrdiff_t __expected, _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion()) {
+    friend void init(barrier * __b, _CUDA_VSTD::ptrdiff_t __expected) {
+        init(__b, __expected, _CUDA_VSTD::__empty_completion());
+    }
+
+    _LIBCUDACXX_INLINE_VISIBILITY
+    friend void init(barrier * __b, _CUDA_VSTD::ptrdiff_t __expected, _CUDA_VSTD::__empty_completion __completion) {
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_90, (
                 if (__isShared(&__b->__barrier)) {
@@ -538,41 +543,13 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 _LIBCUDACXX_DEVICE
-inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> & b) {
-    return reinterpret_cast<_CUDA_VSTD::uint64_t *>(&b.__barrier);
+inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> & __b) {
+    return reinterpret_cast<_CUDA_VSTD::uint64_t *>(&__b.__barrier);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-
-template<>
-class barrier<thread_scope_thread, _CUDA_VSTD::__empty_completion> : private barrier<thread_scope_block> {
-    using __base = barrier<thread_scope_block>;
-
-    template<typename, bool, typename, __space, __space, __space, typename>
-    friend struct __memcpy_async_sync_hooks;
-
-public:
-    using __base::__base;
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    friend void init(barrier * __b, _CUDA_VSTD::ptrdiff_t __expected, _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion()) {
-        init(static_cast<__base *>(__b), __expected, __completion);
-    }
-
-    using __base::arrive;
-    using __base::wait;
-    using __base::arrive_and_wait;
-    using __base::arrive_and_drop;
-    using __base::max;
-};
-
-template <typename ... _Ty>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool __unused(_Ty...) {return true;}
-
-template <typename _Ty>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool __unused(_Ty&) {return true;}
 
 template<thread_scope _Sco, typename _CompF>
 struct __barrier_arrive_on_dispatcher_t {
@@ -620,8 +597,8 @@ struct __memcpy_async_sync_hooks<
     }
 
     template<thread_scope _Scope = _Sco, typename = _CUDA_VSTD::__enable_if_t<
-        _Scope >= thread_scope_block && (_SyncSpace == __space::__shared || _SyncSpace == __space::__cluster)>
-    >
+        (_Scope == thread_scope_thread || _Scope == thread_scope_block) && (_SyncSpace == __space::__shared || _SyncSpace == __space::__cluster)
+    >>
     _LIBCUDACXX_DEVICE
     static async_contract_fulfillment __synchronize(__arch::__cuda<80>, barrier<_Scope> & __b, async_contract_fulfillment __acf) {
         if (__acf == async_contract_fulfillment::async) {
@@ -632,8 +609,11 @@ struct __memcpy_async_sync_hooks<
         return __acf;
     }
 
+    // This is a template so that it is always a worse match for a call than the more specialized overload above.
+    // This function is never called with more than 3 arguments, so _Empty is always an empty pack.
+    template<typename... _Empty>
     _LIBCUDACXX_DEVICE
-    static async_contract_fulfillment __synchronize(__arch::__cuda<80>, barrier<_Sco, _CompF> &, async_contract_fulfillment __acf) {
+    static async_contract_fulfillment __synchronize(__arch::__cuda<80>, barrier<_Sco, _CompF> &, async_contract_fulfillment __acf, _Empty...) {
         if (__acf == async_contract_fulfillment::async) {
             asm volatile ("cp.async.wait_all;" ::: "memory");
         }
