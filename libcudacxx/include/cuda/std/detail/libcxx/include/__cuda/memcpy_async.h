@@ -72,7 +72,7 @@ bool __is_cluster_shared(const void * __p) {
 
 _LIBCUDACXX_DEVICE
 bool __is_grid_constant(const void * __p) {
-#ifdef _LIBCUDACXX_COMPILER_NVCC_BELOW_11_7
+#ifdef _LIBCUDACXX_CUDACC_BELOW_11_7
     return false;
 #else
     return __isGridConstant(__p);
