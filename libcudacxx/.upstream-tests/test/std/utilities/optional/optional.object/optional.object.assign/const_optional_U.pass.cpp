@@ -203,7 +203,7 @@ int main(int, char**)
 {
     test_with_test_type();
     test_ambiguous_assign();
-#if !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         optional<int> opt;
         constexpr optional<short> opt2;
@@ -236,7 +236,7 @@ int main(int, char**)
         assert(static_cast<bool>(opt) == static_cast<bool>(opt2));
         assert(*opt == *opt2);
     }
-#endif // !(defined(TEST_COMPILER_NVCC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #ifndef TEST_HAS_NO_EXCEPTIONS
     {
         optional<X> opt;

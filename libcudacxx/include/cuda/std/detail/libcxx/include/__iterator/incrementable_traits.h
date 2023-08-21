@@ -92,18 +92,18 @@ template<class _Ip>
 struct incrementable_traits<const _Ip> : incrementable_traits<_Ip> {};
 
 template<class _Tp, class = void>
-inline constexpr bool __has_member_difference_type = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_difference_type = false;
 
 template<class _Tp>
-inline constexpr bool __has_member_difference_type<_Tp, void_t<typename _Tp::difference_type>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_difference_type<_Tp, void_t<typename _Tp::difference_type>> = true;
 
 template<class _Tp,class = void, class = void>
-inline constexpr bool __has_integral_minus = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_integral_minus = false;
 
 // In C++17 we get issues trying to bind void* to a const& so special case it here
 template<class _Tp>
-inline constexpr bool __has_integral_minus<_Tp, enable_if_t<!same_as<_Tp, void*>>,
-                                                void_t<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>>
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_integral_minus<_Tp, enable_if_t<!same_as<_Tp, void*>>,
+                                                                void_t<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>>
   = integral<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>;
 
 template <class _Tp>

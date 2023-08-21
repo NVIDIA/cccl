@@ -233,11 +233,11 @@ public:
 #if TEST_STD_VER > 14
   static_assert(cuda::std::random_access_iterator<random_access_iterator<int*>>, "");
 
-template <class It, class = cuda::std::enable_if_t<cuda::std::random_access_iterator<It>>>
+template <class It>
 class cpp20_random_access_iterator {
     It it_;
 
-    template <class U, class>
+    template <class U>
     friend class cpp20_random_access_iterator;
 
 public:
@@ -609,8 +609,12 @@ public:
     using iterator_concept = cuda::std::input_iterator_tag;
 
     __host__ __device__ constexpr explicit cpp20_input_iterator(It it) : it_(it) {}
+
+#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
     cpp20_input_iterator(cpp20_input_iterator&&) = default;
     cpp20_input_iterator& operator=(cpp20_input_iterator&&) = default;
+#endif // !TEST_COMPILER_MSVC_2017
+
     __host__ __device__ constexpr decltype(auto) operator*() const { return *it_; }
     __host__ __device__ constexpr cpp20_input_iterator& operator++() { ++it_; return *this; }
     __host__ __device__ constexpr void operator++(int) { ++it_; }
@@ -643,8 +647,11 @@ public:
     using difference_type = cuda::std::iter_difference_t<It>;
 
     __host__ __device__ constexpr explicit cpp20_output_iterator(It it) : it_(it) {}
+
+#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
     cpp20_output_iterator(cpp20_output_iterator&&) = default;
     cpp20_output_iterator& operator=(cpp20_output_iterator&&) = default;
+#endif // !TEST_COMPILER_MSVC_2017
 
     __host__ __device__ constexpr decltype(auto) operator*() const { return *it_; }
     __host__ __device__ constexpr cpp20_output_iterator& operator++() {
@@ -1019,9 +1026,9 @@ struct Proxy {
     return *this;
   }
 
-#if defined(TEST_COMPILER_C1XX)
+#if defined(TEST_COMPILER_MSVC)
 TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, adding const is useless
-#endif // TEST_COMPILER_C1XX
+#endif // TEST_COMPILER_MSVC
 
   // const assignment required to make ProxyIterator model cuda::std::indirectly_writable
   _LIBCUDACXX_TEMPLATE(class Other)
@@ -1031,10 +1038,6 @@ TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, ad
     data = cuda::std::forward<Other>(other).getData();
     return *this;
   }
-
-#if defined(TEST_COMPILER_C1XX)
-TEST_NV_DIAG_DEFAULT(1805)
-#endif // TEST_COMPILER_C1XX
 
   // If `T` is a reference type, the implicitly-generated assignment operator will be deleted (and would take precedence
   // over the templated `operator=` above because it's a better match).

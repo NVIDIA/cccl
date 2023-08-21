@@ -263,7 +263,7 @@ private:
   using __base_t = typename __partially_static_array_impl_maker<_Tp, _static_t, _ValsSeq, __sentinal>::__impl_base;
 public:
 #if defined(_LIBCUDACXX_COMPILER_NVRTC) \
- || defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3)
+ || defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
   constexpr __partially_static_array_with_sentinal() = default;
 
   template<class... _Args>
@@ -288,7 +288,7 @@ private:
     T, _static_t, _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>>;
 public:
 #if defined(_LIBCUDACXX_COMPILER_NVRTC) \
- || defined(_LIBCUDACXX_COMPILER_NVCC_BELOW_11_3)
+ || defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
   constexpr __partially_static_sizes() = default;
 
   template<class... _Args>
