@@ -356,7 +356,7 @@ char_traits<wchar_t>::compare(const char_type* __s1, const char_type* __s2, size
 
 template <class _Traits>
 _LIBCUDACXX_INLINE_VISIBILITY
-constexpr inline size_t __char_traits_length_checked(const typename _Traits::char_type* __s) noexcept {
+inline constexpr size_t __char_traits_length_checked(const typename _Traits::char_type* __s) noexcept {
 #if _LIBCUDACXX_DEBUG_LEVEL >= 1
   return __s ? _Traits::length(__s) : (_CUDA_VSTD::__libcpp_debug_function(_CUDA_VSTD::__libcpp_debug_info(__FILE__, __LINE__, "p == nullptr", "null pointer pass to non-null argument of char_traits<...>::length")), 0);
 #else
