@@ -520,7 +520,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
         )
     }
 
-    template<thread_scope _Sco, bool _Tx, typename _Arch, __space _OutSpace, __space _InSpace, __space _SyncSpace>
+    template<thread_scope _Sco, __tx_api _Tx, typename _Arch, __space _OutSpace, __space _InSpace, __space _SyncSpace>
     struct __memcpy_async_sync_hooks<
         pipeline<_Sco>, _Tx, _Arch,
         _OutSpace, _InSpace, _SyncSpace
@@ -537,7 +537,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
     async_contract_fulfillment memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, pipeline<_Sco> & __pipeline) {
         static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
 
-        return __memcpy_async<false, alignof(_Tp)>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
+        return __memcpy_async<__tx_api::__no, alignof(_Tp)>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
     }
 
     template<class _Tp, typename _Size, thread_scope _Sco>
@@ -549,7 +549,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
     template<typename _Group, typename _Size, thread_scope _Sco>
     _LIBCUDACXX_INLINE_VISIBILITY
     async_contract_fulfillment memcpy_async(_Group const & __group, void * __destination, void const * __source, _Size __size, pipeline<_Sco> & __pipeline) {
-        return __memcpy_async<false, 1>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
+        return __memcpy_async<__tx_api::__no, 1>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
     }
 
     template<typename _Size, thread_scope _Sco>

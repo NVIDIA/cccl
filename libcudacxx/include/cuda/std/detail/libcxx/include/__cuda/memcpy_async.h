@@ -45,6 +45,11 @@ enum async_contract_fulfillment {
     async
 };
 
+enum class __tx_api {
+    __yes,
+    __no
+};
+
 enum class __space {
     __local,
     __shared,
@@ -61,7 +66,7 @@ _LIBCUDACXX_DEVICE
 bool __is_cluster_shared(const void * __p) {
     NV_IF_TARGET(NV_PROVIDES_SM_90,
         (return __isClusterShared(__p);),
-        (return false;)
+        ((void)__p; return false;)
     )
 }
 
@@ -116,9 +121,10 @@ template<_CUDA_VSTD::size_t _GuaranteedAlignment,
     _CUDA_VSTD::size_t _MinInterestingAlignment,
     _CUDA_VSTD::size_t _Alignment,
     typename = void>
-struct __invoke_if_applicable {
+struct __memcpy_async_invoke_if_applicable {
     template<typename _Fn>
-    _LIBCUDACXX_INLINE_VISIBILITY static async_contract_fulfillment __invoke(_Fn && __f) {
+    _LIBCUDACXX_INLINE_VISIBILITY
+    static async_contract_fulfillment __invoke(_Fn && __f) {
         return _CUDA_VSTD::forward<_Fn>(__f)(__alignment<_Alignment>());
     }
 };
@@ -127,17 +133,43 @@ template<_CUDA_VSTD::size_t _GuaranteedAlignment,
     _CUDA_VSTD::size_t _MaxInterestingAlignment,
     _CUDA_VSTD::size_t _MinInterestingAlignment,
     _CUDA_VSTD::size_t _Alignment>
-struct __invoke_if_applicable<_GuaranteedAlignment,
+struct __memcpy_async_invoke_if_applicable<_GuaranteedAlignment,
     _MaxInterestingAlignment,
     _MinInterestingAlignment,
     _Alignment,
     _CUDA_VSTD::__enable_if_t<
+        // These are the cases in which we want to _not_ generate code in the switch below.
+        // If alignment is greater than max interesting, there's an if in front of the switch for that.
+        // If alignment is less than min interesting, there's also an if that sets the alignment to 1
+        // (so that non-interesting cases can all be handled with just 1 as the value, avoiding instantiating
+        // them a bunch of times).
+        // If alignment is less than guaranteed alignment, then that switch case will never be taken, because
+        // the alignment is guaranteed to be above the value it represents.
         _Alignment >= _MaxInterestingAlignment
             || _Alignment < _MinInterestingAlignment
             || _Alignment < _GuaranteedAlignment
 >> {
     template<typename _Fn>
-    _LIBCUDACXX_INLINE_VISIBILITY static async_contract_fulfillment __invoke(_Fn && __f) {
+    _LIBCUDACXX_INLINE_VISIBILITY
+    static async_contract_fulfillment __invoke(_Fn && __f) {
+        _LIBCUDACXX_UNREACHABLE();
+    }
+};
+
+template<bool _ShouldInvoke>
+struct __memcpy_async_invoke_if_true : _CUDA_VSTD::true_type {
+    template<typename _Fn>
+    _LIBCUDACXX_INLINE_VISIBILITY
+    static async_contract_fulfillment __invoke(_Fn && __f) {
+        return _CUDA_VSTD::forward<_Fn>(__f)(__alignment<1>());
+    }
+};
+
+template<>
+struct __memcpy_async_invoke_if_true<false> : _CUDA_VSTD::false_type {
+    template<typename _Fn>
+    _LIBCUDACXX_INLINE_VISIBILITY
+    static async_contract_fulfillment __invoke(_Fn && __f) {
         _LIBCUDACXX_UNREACHABLE();
     }
 };
@@ -147,20 +179,23 @@ template<_CUDA_VSTD::size_t _MaxInterestingAlignment,
     _CUDA_VSTD::size_t _GuaranteedAlignment,
     typename _Fn>
 _LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment __dispatch_alignment_bit(_Fn && __f, _CUDA_VSTD::size_t __alignment_fsb) {
-    _CUDA_VSTD::size_t __alignment_v = 1ull << (__alignment_fsb - 1);
+    const _CUDA_VSTD::size_t __alignment_v = 1ull << (__alignment_fsb - 1);
 
     if (__builtin_expect(__alignment_v >= _MaxInterestingAlignment, true)) {
         return _CUDA_VSTD::forward<_Fn>(__f)(__alignment<_MaxInterestingAlignment>());
     }
 
-    if (__builtin_expect(__alignment_v < _MinInterestingAlignment, false)) {
-        return __invoke_if_applicable<1, _MaxInterestingAlignment, 0, 1>::__invoke(_CUDA_VSTD::forward<_Fn>(__f));
+    using __not_guaranteed_interesting = __memcpy_async_invoke_if_true<_GuaranteedAlignment < _MinInterestingAlignment>;
+    if (__not_guaranteed_interesting::value) {
+        if (__builtin_expect(__alignment_v < _MinInterestingAlignment, false)) {
+            __not_guaranteed_interesting::__invoke(_CUDA_VSTD::forward<_Fn>(__f));
+        }
     }
 
     switch (__alignment_fsb) {
 #define _ADD_CASE(val)                                                                                      \
     case val:                                                                                               \
-        return __invoke_if_applicable<                                                                      \
+        return __memcpy_async_invoke_if_applicable<                                                                      \
             _GuaranteedAlignment,                                                                           \
             _MaxInterestingAlignment,                                                                       \
             _MinInterestingAlignment,                                                                       \
@@ -215,8 +250,7 @@ template<_CUDA_VSTD::size_t _ProvidedSM, _CUDA_VSTD::size_t _RequestedSM>
 struct __is_cuda_provides_sm<__cuda<_ProvidedSM>, _RequestedSM> : _CUDA_VSTD::_LIBCUDACXX_BOOL_CONSTANT((_ProvidedSM >= _RequestedSM)) {
 };
 
-struct __host {
-};
+struct __host {};
 }
 
 _LIBCUDACXX_INLINE_VISIBILITY
@@ -232,7 +266,7 @@ async_contract_fulfillment __strided_memcpy(_CUDA_VSTD::size_t __rank, _CUDA_VST
     return async_contract_fulfillment::none;
 }
 
-template<typename _Arch, bool _Tx, _CUDA_VSTD::size_t _Alignment, __space _OutSpace, __space InSpace, __space _SyncSpace, typename = void>
+template<typename _Arch, __tx_api _Tx, _CUDA_VSTD::size_t _Alignment, __space _OutSpace, __space InSpace, __space _SyncSpace, typename = void>
 struct __memcpy_async_default_aligned_impl {
     template<typename _Group, typename _Sync>
     _LIBCUDACXX_INLINE_VISIBILITY static async_contract_fulfillment __memcpy_async(
@@ -290,7 +324,7 @@ async_contract_fulfillment __cp_async_ca_shared_global(_CUDA_VSTD::size_t __rank
 
 template<_CUDA_VSTD::size_t _ProvidedSM, _CUDA_VSTD::size_t _Alignment, __space _SyncSpace>
 struct __memcpy_async_default_aligned_impl<
-    __arch::__cuda<_ProvidedSM>, false, _Alignment,
+    __arch::__cuda<_ProvidedSM>, __tx_api::__no, _Alignment,
     __space::__shared, __space::__global, _SyncSpace,
     _CUDA_VSTD::__enable_if_t<_Alignment >= 4>
 > {
@@ -356,12 +390,12 @@ struct __proto_hooks {
     static const constexpr _CUDA_VSTD::size_t __min_interesting_alignment = 4;
 };
 
-template<bool _Tx, typename _Arch, __space _OutSpace, __space _InSpace, __space _SyncSpace, typename = void>
+template<__tx_api _Tx, typename _Arch, __space _OutSpace, __space _InSpace, __space _SyncSpace, typename = void>
 struct __memcpy_async_hooks : __proto_hooks {
     using __unspecialized = void;
 };
 
-template<bool _Tx, _CUDA_VSTD::size_t _ProvidedSM, __space _SyncSpace>
+template<__tx_api _Tx, _CUDA_VSTD::size_t _ProvidedSM, __space _SyncSpace>
 struct __memcpy_async_hooks<_Tx, __arch::__cuda<_ProvidedSM>, __space::__shared, __space::__global, _SyncSpace, _CUDA_VSTD::__enable_if_t<_ProvidedSM >= 80>>
     : __proto_hooks {
     template<_CUDA_VSTD::size_t _Alignment>
@@ -371,7 +405,7 @@ struct __memcpy_async_hooks<_Tx, __arch::__cuda<_ProvidedSM>, __space::__shared,
 template<typename _Tp>
 struct __dependent_false : std::false_type {};
 
-template<typename _Sync, bool _Tx, typename _Arch, __space _OutSpace, __space _InSpace, __space _SyncSpace, typename = void>
+template<typename _Sync, __tx_api _Tx, typename _Arch, __space _OutSpace, __space _InSpace, __space _SyncSpace, typename = void>
 struct __memcpy_async_sync_hooks {
     static_assert(
         __dependent_false<_Sync>::value,
@@ -390,7 +424,7 @@ struct __noop_sync_hooks {
     }
 };
 
-template<bool _Tx, typename _Arch, typename _InSpace, typename _OutSpace, typename _SyncSpace, typename = void>
+template<__tx_api _Tx, typename _Arch, typename _InSpace, typename _OutSpace, typename _SyncSpace, typename = void>
 struct __are_memcpy_async_hooks_specialized : _CUDA_VSTD::true_type {
     template<typename _Fn>
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -399,7 +433,7 @@ struct __are_memcpy_async_hooks_specialized : _CUDA_VSTD::true_type {
     }
 };
 
-template<bool _Tx, typename _Arch, typename _InSpace, typename _OutSpace, typename _SyncSpace>
+template<__tx_api _Tx, typename _Arch, typename _InSpace, typename _OutSpace, typename _SyncSpace>
 struct __are_memcpy_async_hooks_specialized<_Tx, _Arch, _InSpace, _OutSpace, _SyncSpace,
     _CUDA_VSTD::__void_t<
         typename __memcpy_async_hooks<_Tx, _Arch, _InSpace::value, _OutSpace::value, _SyncSpace::value>::__unspecialized
@@ -448,7 +482,7 @@ __memcpy_async_alignment_dispatcher_t<_Hooks, _NativeAlignment, _Arch, _Group, _
     return { _CUDA_VSTD::forward<_Group>(__g), __out_ptr, __in_ptr, __size, __sync };
 }
 
-template<bool _Tx, _CUDA_VSTD::size_t _NativeAlignment, typename _Arch, typename _Group, typename _Size, typename _SyncObject>
+template<__tx_api _Tx, _CUDA_VSTD::size_t _NativeAlignment, typename _Arch, typename _Group, typename _Size, typename _SyncObject>
 struct __memcpy_async_space_dispatcher_t {
     _Group && __g;
     char * __out_ptr;
@@ -485,13 +519,13 @@ struct __memcpy_async_space_dispatcher_t {
     }
 };
 
-template<bool _Tx, _CUDA_VSTD::size_t _NativeAlignment, typename _Arch, typename _Group, typename _Size, typename _SyncObject>
+template<__tx_api _Tx, _CUDA_VSTD::size_t _NativeAlignment, typename _Arch, typename _Group, typename _Size, typename _SyncObject>
 _LIBCUDACXX_INLINE_VISIBILITY
 __memcpy_async_space_dispatcher_t<_Tx, _NativeAlignment, _Arch, _Group, _Size, _SyncObject> __memcpy_async_space_dispatcher(_Group && __g, char * __out_ptr, const char * __in_ptr, _Size __size, _SyncObject & __sync) {
     return { _CUDA_VSTD::forward<_Group>(__g), __out_ptr, __in_ptr, __size, __sync };
 }
 
-template<bool _Tx, _CUDA_VSTD::size_t _NativeAlignment, typename _Group, typename _Size, typename _SyncObject>
+template<__tx_api _Tx, _CUDA_VSTD::size_t _NativeAlignment, typename _Group, typename _Size, typename _SyncObject>
 struct __memcpy_async_arch_dispatcher_t {
     _Group && __g;
     char * __out_ptr;
@@ -519,13 +553,13 @@ struct __memcpy_async_arch_dispatcher_t {
     }
 };
 
-template<bool _Tx, _CUDA_VSTD::size_t _NativeAlignment, typename _Group, typename _Size, typename _SyncObject>
+template<__tx_api _Tx, _CUDA_VSTD::size_t _NativeAlignment, typename _Group, typename _Size, typename _SyncObject>
 _LIBCUDACXX_INLINE_VISIBILITY
 __memcpy_async_arch_dispatcher_t<_Tx, _NativeAlignment, _Group, _Size, _SyncObject> __memcpy_async_arch_dispatcher(_Group && __g, char * __out_ptr, const char * __in_ptr, _Size __size, _SyncObject & __sync) {
     return { _CUDA_VSTD::forward<_Group>(__g), __out_ptr, __in_ptr, __size, __sync };
 }
 
-template<bool _Tx, _CUDA_VSTD::size_t _NativeAlignment, typename _Group, typename _Size, typename _SyncObject>
+template<__tx_api _Tx, _CUDA_VSTD::size_t _NativeAlignment, typename _Group, typename _Size, typename _SyncObject>
 _LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment __memcpy_async(
     _Group && __g,
     char * __out_ptr,
@@ -538,4 +572,4 @@ _LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment __memcpy_async(
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif
+#endif // _LIBCUDACXX__CUDA_MEMCPY_ASYNC_H

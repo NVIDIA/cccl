@@ -19,7 +19,7 @@
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif
 
-#include "memcpy_async.h"
+#include "../__cuda/memcpy_async.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
@@ -562,7 +562,7 @@ struct __barrier_arrive_on_dispatcher_t {
 
         _LIBCUDACXX_HANDLE_POINTER_SPACE(__p,
             __memcpy_async_sync_hooks<
-                barrier<_Sco, _CompF>, false, _Arch,
+                barrier<_Sco, _CompF>, __tx_api::__no, _Arch,
                 __space::__shared, __space::__global, __p_space_t::value
             >::__synchronize(_Arch{}, __b,
                 __arch::__is_cuda_provides_sm<_Arch, 80>::value ? async_contract_fulfillment::async : async_contract_fulfillment::none);
@@ -584,7 +584,7 @@ void __barrier_cp_async_arrive_on(barrier<_Sco, _CompF> & __b) {
 
 template<thread_scope _Sco, typename _CompF, _CUDA_VSTD::size_t _ProvidedSM, __space _SyncSpace>
 struct __memcpy_async_sync_hooks<
-    barrier<_Sco, _CompF>, false, __arch::__cuda<_ProvidedSM>,
+    barrier<_Sco, _CompF>, __tx_api::__no, __arch::__cuda<_ProvidedSM>,
     __space::__shared, __space::__global, _SyncSpace,
     _CUDA_VSTD::__enable_if_t<_ProvidedSM >= 80>
 > {
@@ -625,7 +625,7 @@ struct __memcpy_async_sync_hooks<
 // TODO: when only C++20 is supported, rewrite these specializations with concepts.
 template<thread_scope _Scope, typename _CompF, typename _Arch, __space _OutSpace, __space _InSpace, __space _SyncSpace>
 struct __memcpy_async_sync_hooks<
-    barrier<_Scope, _CompF>, false, _Arch,
+    barrier<_Scope, _CompF>, __tx_api::__no, _Arch,
     _OutSpace, _InSpace, _SyncSpace,
     _CUDA_VSTD::__enable_if_t<
         !__arch::__is_cuda_provides_sm<_Arch, 80>::value
@@ -639,7 +639,7 @@ _LIBCUDACXX_INLINE_VISIBILITY
 async_contract_fulfillment memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, barrier<_Sco, _CompF> & __barrier) {
     static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
 
-    return __memcpy_async<false, alignof(_Tp)>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
+    return __memcpy_async<__tx_api::__no, alignof(_Tp)>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
 }
 
 template<class _Tp, typename _Size, thread_scope _Sco, typename _CompF>
@@ -651,7 +651,7 @@ async_contract_fulfillment memcpy_async(_Tp * __destination, _Tp const * __sourc
 template<typename _Group, typename _Size, thread_scope _Sco, typename _CompF>
 _LIBCUDACXX_INLINE_VISIBILITY
 async_contract_fulfillment memcpy_async(_Group const & __group, void * __destination, void const * __source, _Size __size, barrier<_Sco, _CompF> & __barrier) {
-    return __memcpy_async<false, 1>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
+    return __memcpy_async<__tx_api::__no, 1>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
 }
 
 template<typename _Size, thread_scope _Sco, typename _CompF>
