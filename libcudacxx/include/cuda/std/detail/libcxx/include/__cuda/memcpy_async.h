@@ -63,7 +63,7 @@ template<__space _Sp>
 using __space_constant = _CUDA_VSTD::integral_constant<__space, _Sp>;
 
 _LIBCUDACXX_DEVICE
-bool __is_cluster_shared(const void * __p) {
+inline bool __is_cluster_shared(const void * __p) {
     NV_IF_TARGET(NV_PROVIDES_SM_90,
         (return __isClusterShared(__p);),
         ((void)__p; return false;)
@@ -71,7 +71,7 @@ bool __is_cluster_shared(const void * __p) {
 }
 
 _LIBCUDACXX_DEVICE
-bool __is_grid_constant(const void * __p) {
+inline bool __is_grid_constant(const void * __p) {
 #ifdef _LIBCUDACXX_CUDACC_BELOW_11_7
     return false;
 #else
@@ -220,21 +220,37 @@ _LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment __dispatch_alignment_bi
     _LIBCUDACXX_UNREACHABLE();
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY _CUDA_VSTD::size_t __get_size(_CUDA_VSTD::size_t __size) {
-    return __size;
-}
+template<typename _Tp>
+struct __dependent_false : std::false_type {};
 
-template<_CUDA_VSTD::size_t _Alignment>
-_LIBCUDACXX_INLINE_VISIBILITY _CUDA_VSTD::size_t __get_size(aligned_size_t<_Alignment> __size) {
-    return __size.value;
-}
+template<typename _Hooks, typename _Size, _CUDA_VSTD::size_t _NativeAlignment, typename = void>
+struct __memcpy_async_dispatch_size_type {
+    static_assert(__dependent_false<_Hooks>::value, "this size type is not valid for this invocation of memcpy_async");
+};
 
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr _CUDA_VSTD::integral_constant<_CUDA_VSTD::size_t, 1> __get_alignment(_CUDA_VSTD::size_t);
+template<typename _Hooks, typename _Size, _CUDA_VSTD::size_t _NativeAlignment>
+struct __memcpy_async_dispatch_size_type<_Hooks, _Size, _NativeAlignment, _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::is_integral<_Size>::value>> {
+    template<typename _Fn>
+    _LIBCUDACXX_INLINE_VISIBILITY
+    static async_contract_fulfillment __invoke(_Fn && __f) {
+        auto __alignment_bit_v = _Hooks::__compute_alignment_bit(__f.__g, __f.__out_ptr, __f.__in_ptr, __f.__size, __f.__sync);
 
-template<_CUDA_VSTD::size_t _Alignment>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr _CUDA_VSTD::integral_constant<_CUDA_VSTD::size_t, _Alignment> __get_alignment(aligned_size_t<_Alignment>);
+        return __dispatch_alignment_bit<
+            _Hooks::__max_interesting_alignment,
+            _Hooks::__min_interesting_alignment,
+            _NativeAlignment
+        >(__f, __alignment_bit_v);
+    }
+};
+
+template<typename _Hooks, _CUDA_VSTD::size_t _Alignment, _CUDA_VSTD::size_t _NativeAlignment>
+struct __memcpy_async_dispatch_size_type<_Hooks, aligned_size_t<_Alignment>, _NativeAlignment> {
+    template<typename _Fn>
+    _LIBCUDACXX_INLINE_VISIBILITY
+    static async_contract_fulfillment __invoke(_Fn && __f) {
+        return _CUDA_VSTD::forward<_Fn>(__f)(__alignment<(_Alignment > _NativeAlignment ? _Alignment : _NativeAlignment)>());
+    }
+};
 
 namespace __arch
 {
@@ -254,7 +270,7 @@ struct __host {};
 }
 
 _LIBCUDACXX_INLINE_VISIBILITY
-async_contract_fulfillment __strided_memcpy(_CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __group_size, char * __out_ptr, const char * __in_ptr, _CUDA_VSTD::size_t __size, _CUDA_VSTD::size_t __alignment) {
+inline async_contract_fulfillment __strided_memcpy(_CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __group_size, char * __out_ptr, const char * __in_ptr, _CUDA_VSTD::size_t __size, _CUDA_VSTD::size_t __alignment) {
     if (__group_size == 1) {
         memcpy(__out_ptr, __in_ptr, __size);
     }
@@ -356,7 +372,7 @@ struct __memcpy_async_default_aligned_impl<
 };
 
 _LIBCUDACXX_INLINE_VISIBILITY
-_CUDA_VSTD::size_t __memcpy_async_ffs(_CUDA_VSTD::size_t __val) {
+inline _CUDA_VSTD::size_t __memcpy_async_ffs(_CUDA_VSTD::size_t __val) {
     NV_IF_ELSE_TARGET(
         NV_IS_DEVICE,
         (return __ffsll(__val);),
@@ -365,16 +381,16 @@ _CUDA_VSTD::size_t __memcpy_async_ffs(_CUDA_VSTD::size_t __val) {
 }
 
 struct __proto_hooks {
-    template<typename _Group, typename _Size, typename _Sync>
+    template<typename _Group, typename _Sync>
     _LIBCUDACXX_INLINE_VISIBILITY static _CUDA_VSTD::size_t __compute_alignment_bit(const _Group & __g,
         char * __out_ptr,
         const char *__in_ptr,
-        _Size __size,
+        _CUDA_VSTD::size_t __size,
         const _Sync & __sync
     ) {
         auto __out_addr = reinterpret_cast<_CUDA_VSTD::uintptr_t>(__out_ptr);
         auto __in_addr = reinterpret_cast<_CUDA_VSTD::uintptr_t>(__in_ptr);
-        auto __size_val = __get_size(__size);
+        auto __size_val = __size;
 
         auto __bit_pattern = (__out_addr | __in_addr | __size_val) & (__max_interesting_alignment - 1);
 
@@ -401,9 +417,6 @@ struct __memcpy_async_hooks<_Tx, __arch::__cuda<_ProvidedSM>, __space::__shared,
     template<_CUDA_VSTD::size_t _Alignment>
     using __aligned = __memcpy_async_default_aligned_impl<__arch::__cuda<_ProvidedSM>, _Tx, _Alignment, __space::__shared, __space::__global, _SyncSpace>;
 };
-
-template<typename _Tp>
-struct __dependent_false : std::false_type {};
 
 template<typename _Sync, __tx_api _Tx, typename _Arch, __space _OutSpace, __space _InSpace, __space _SyncSpace, typename = void>
 struct __memcpy_async_sync_hooks {
@@ -460,25 +473,25 @@ _LIBCUDACXX_INLINE_VISIBILITY _Ret __dispatch_architecture(_Fn && __f)
         (return _CUDA_VSTD::forward<_Fn>(__f)(__arch::__host());))
 }
 
-template<typename _Hooks, _CUDA_VSTD::size_t _NativeAlignment, typename _Arch, typename _Group, typename _Size, typename _SyncObject>
+template<typename _Hooks, _CUDA_VSTD::size_t _NativeAlignment, typename _Arch, typename _Group, typename _SyncObject>
 struct __memcpy_async_alignment_dispatcher_t {
     _Group && __g;
     char * __out_ptr;
     const char * __in_ptr;
-    _Size __size;
+    _CUDA_VSTD::size_t __size;
     _SyncObject & __sync;
 
     template<typename _Alignment>
     _LIBCUDACXX_INLINE_VISIBILITY
     async_contract_fulfillment operator()(_Alignment) {
         return _Hooks::template __aligned<_Alignment::value>::__memcpy_async(
-            _Arch{}, _Alignment{}, __g, __out_ptr, __in_ptr, __get_size(__size), __sync);
+            _Arch{}, _Alignment{}, __g, __out_ptr, __in_ptr, __size, __sync);
     }
 };
 
-template<typename _Hooks, _CUDA_VSTD::size_t _NativeAlignment, typename _Arch, typename _Group, typename _Size, typename _SyncObject>
+template<typename _Hooks, _CUDA_VSTD::size_t _NativeAlignment, typename _Arch, typename _Group, typename _SyncObject>
 _LIBCUDACXX_INLINE_VISIBILITY
-__memcpy_async_alignment_dispatcher_t<_Hooks, _NativeAlignment, _Arch, _Group, _Size, _SyncObject> __memcpy_async_alignment_dispatcher(_Group && __g, char * __out_ptr, const char * __in_ptr, _Size __size, _SyncObject & __sync) {
+__memcpy_async_alignment_dispatcher_t<_Hooks, _NativeAlignment, _Arch, _Group, _SyncObject> __memcpy_async_alignment_dispatcher(_Group && __g, char * __out_ptr, const char * __in_ptr, _CUDA_VSTD::size_t __size, _SyncObject & __sync) {
     return { _CUDA_VSTD::forward<_Group>(__g), __out_ptr, __in_ptr, __size, __sync };
 }
 
@@ -501,13 +514,7 @@ struct __memcpy_async_space_dispatcher_t {
 
         auto __f = __memcpy_async_alignment_dispatcher<__hooks, _NativeAlignment, _Arch>(_CUDA_VSTD::forward<_Group>(__g), __out_ptr, __in_ptr, __size, __sync);
 
-        auto __alignment_bit_v = __hooks::__compute_alignment_bit(__g, __out_ptr, __in_ptr, __size, __sync);
-
-        auto __acf = __dispatch_alignment_bit<
-            __hooks::__max_interesting_alignment,
-            __hooks::__min_interesting_alignment,
-            (_NativeAlignment > decltype(__get_alignment(__size))::value ? _NativeAlignment : decltype(__get_alignment(__size))::value)
-        >(__f, __alignment_bit_v);
+        auto __acf = __memcpy_async_dispatch_size_type<__hooks, _Size, _NativeAlignment>::__invoke(__f);;
 
         using __sync_hooks = __memcpy_async_sync_hooks<_CUDA_VSTD::__remove_cvref_t<_SyncObject>,
             _Tx,
@@ -548,7 +555,7 @@ struct __memcpy_async_arch_dispatcher_t {
 
         // fallback to unspecialized implementation
         auto __alignment_bit_v = __proto_hooks::__compute_alignment_bit(__g, __out_ptr, __in_ptr, __size, __sync);
-        __strided_memcpy(__g.thread_rank(), __g.size(), __out_ptr, __in_ptr, __get_size(__size), 1ull << (__alignment_bit_v - 1));
+        __strided_memcpy(__g.thread_rank(), __g.size(), __out_ptr, __in_ptr, static_cast<_CUDA_VSTD::size_t>(__size), 1ull << (__alignment_bit_v - 1));
         return async_contract_fulfillment::none;
     }
 };
