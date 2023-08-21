@@ -8,19 +8,46 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pre-sm-90
+// UNSUPPORTED: pre-sm-70
 
 #include <cuda/barrier>
 
-#include "cuda_space_selector.h"
-#include "test_macros.h"
 #include <cstdint>              // uint and friends
 #include <utility>              // std::move
+
+#include "cuda_space_selector.h"
+#include "test_macros.h"
+
+
+enum class BlockSize {
+    Thread = 1,
+    Warp   = 32,
+    CTA    = 256
+};
 
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
 using barrier = cuda::barrier<cuda::thread_scope_block>;
+
+
+inline __device__ void mbarrier_complete_tx(barrier &bar, int transaction_count) {
+
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_90, (
+      asm volatile(
+          "mbarrier.complete_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
+          :
+          : "r"((uint32_t) __cvta_generic_to_shared(cuda::device::barrier_native_handle(bar)))
+          , "r"(transaction_count)
+          : "memory");
+    ), NV_IS_DEVICE, (
+      // On architectures pre-SM90, we drop the transaction count
+      // update. The barriers do not keep track of transaction counts.
+    )
+  );
+
+}
 
 __device__ bool run_arrive_tx_test(barrier &bar) {
   if (threadIdx.x == 0) {
@@ -33,12 +60,7 @@ __device__ bool run_arrive_tx_test(barrier &bar) {
   // Manually increase the transaction count of the barrier by blockDim.x.
   // This emulates a cp.async.bulk instruction or equivalently, a memcpy_async call.
   if (threadIdx.x == 0) {
-      asm volatile(
-          "mbarrier.complete_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
-          :
-          : "r"((uint32_t) __cvta_generic_to_shared(cuda::device::barrier_native_handle(bar)))
-          , "r"(blockDim.x)
-          : "memory");
+    mbarrier_complete_tx(bar, blockDim.x);
   }
   bar.wait(std::move(token));
 
@@ -47,7 +69,7 @@ __device__ bool run_arrive_tx_test(barrier &bar) {
 
 
 
-#ifdef __CUDACC_RTC__
+#ifdef TEST_COMPILER_NVRTC
 __device__ void arrive_on_nvrtc()
 {
     __shared__ barrier bar;
@@ -61,15 +83,14 @@ __global__ void arrive_on_kernel(bool* success)
     *success = run_arrive_tx_test(bar);
 }
 
-void arrive_on_launch(bool* success_dptr, volatile bool* success_hptr, unsigned block_size)
+template <BlockSize block_size>
+void arrive_on_launch(bool* success_dptr, volatile bool* success_hptr)
 {
     *success_hptr = false;
-    printf("arrive_on_kernel<<<%u, %2u>>> ", 1, block_size);
-    arrive_on_kernel<<<1, block_size>>>(success_dptr);
+    arrive_on_kernel<<<1, static_cast<int>(block_size)>>>(success_dptr);
     cudaError_t result;
     CUDA_CALL(result, cudaDeviceSynchronize());
     CUDA_CALL(result, cudaGetLastError());
-    printf("%s\n", *success_hptr ? "[ OK ]" : "[FAIL]");
     assert(*success_hptr);
 }
 
@@ -85,22 +106,11 @@ void arrive_on()
     CUDA_CALL(result, cudaDeviceGetAttribute(&lanes_per_warp, cudaDevAttrWarpSize, 0));
 
     // 1 Thread
-    {
-        const unsigned block_size = 1;
-        arrive_on_launch(success_dptr, success_hptr, block_size);
-    }
-
+    arrive_on_launch<BlockSize::Thread>(success_dptr, success_hptr);
     // 1 Warp
-    {
-        const unsigned block_size = 1 * lanes_per_warp;
-        arrive_on_launch(success_dptr, success_hptr, block_size);
-    }
-
+    arrive_on_launch<BlockSize::Warp>(success_dptr, success_hptr);
     // 1 CTA
-    {
-        const unsigned block_size = 2 * lanes_per_warp;
-        arrive_on_launch(success_dptr, success_hptr, block_size);
-    }
+    arrive_on_launch<BlockSize::CTA>(success_dptr, success_hptr);
 
     CUDA_CALL(result, cudaFreeHost((void*)success_hptr));
 }
@@ -117,7 +127,7 @@ int main(int argc, char ** argv)
     int cuda_thread_count = 64;
     int cuda_block_shmem_size = 40000;
 
-    arrive_on_nvrtc(cuda_block_shmem_size - sizeof(cuda::barrier<cuda::thread_scope_block>) - sizeof(char *));
+    arrive_on_nvrtc();
 #endif // TEST_COMPILER_NVRTC
 
     return 0;

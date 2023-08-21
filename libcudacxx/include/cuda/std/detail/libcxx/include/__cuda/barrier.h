@@ -205,7 +205,9 @@ public:
                     , "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
                     : "memory");
             ), NV_IS_DEVICE, (
-                __trap(); // mbarrier.arrive.expect_tx is not supported for architectures before SM90.
+                // On architectures pre-SM90, we drop the transaction count
+                // update. The barriers do not keep track of transaction counts.
+                __barrier.arrive(__arrive_count_update);
             )
         )
         return __token;
