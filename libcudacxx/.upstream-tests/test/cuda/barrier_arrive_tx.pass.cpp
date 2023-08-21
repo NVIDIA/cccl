@@ -12,9 +12,6 @@
 
 #include <cuda/barrier>
 
-#include <cstdint>              // uint and friends
-#include <utility>              // std::move
-
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 
@@ -38,7 +35,7 @@ inline __device__ void mbarrier_complete_tx(barrier &bar, int transaction_count)
       asm volatile(
           "mbarrier.complete_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
           :
-          : "r"((uint32_t) __cvta_generic_to_shared(cuda::device::barrier_native_handle(bar)))
+          : "r"((unsigned int) __cvta_generic_to_shared(cuda::device::barrier_native_handle(bar)))
           , "r"(transaction_count)
           : "memory");
     ), NV_IS_DEVICE, (
@@ -62,7 +59,8 @@ __device__ bool run_arrive_tx_test(barrier &bar) {
   if (threadIdx.x == 0) {
     mbarrier_complete_tx(bar, blockDim.x);
   }
-  bar.wait(std::move(token));
+  // Do not use std::move here, as it might not be available in nvrtc
+  bar.wait(static_cast<barrier::arrival_token&&>(token));
 
   return true;
 }
