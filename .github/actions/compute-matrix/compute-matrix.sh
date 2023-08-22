@@ -33,7 +33,6 @@ main() {
 
   if [ $# -ne 2 ] || [ "$2" != "pull_request" ]; then
     echo "Usage: $0 [-v] MATRIX_FILE MATRIX_TYPE"
-    echo "Hello"
     echo "  -v            : Enable verbose output"
     echo "  MATRIX_FILE   : The path to the matrix file."
     echo "  MATRIX_TYPE   : The desired matrix. Supported values: 'pull_request'"
