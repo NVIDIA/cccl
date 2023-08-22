@@ -265,10 +265,13 @@ void TestTransformBinarySimple(void)
 
     typename Vector::iterator iter;
 
-    Vector input1(3);
-    Vector input2(3);
-    Vector output(3);
-    Vector result(3);
+    // There is a strange gcc bug here where it belives we would write out of bounds.
+    // It seems to go away if we add one more element that we leave untouched. Luckily 0 - 0 = 0 so all is fine.
+    // Note that we still write the element, so it does not hide a functional thrust bug
+    Vector input1(4);
+    Vector input2(4);
+    Vector output(4);
+    Vector result(4);
     input1[0] =  1; input1[1] = -2; input1[2] =  3;
     input2[0] = -4; input2[1] =  5; input2[2] =  6;
     result[0] =  5; result[1] = -7; result[2] = -3;
