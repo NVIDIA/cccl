@@ -63,12 +63,12 @@ private:
         return __sbuf_ == 0;
     }
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR istreambuf_iterator() _NOEXCEPT : __sbuf_(0) {}
-    _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(istream_type& __s) _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR istreambuf_iterator() noexcept : __sbuf_(0) {}
+    _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(istream_type& __s) noexcept
         : __sbuf_(__s.rdbuf()) {}
-    _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(streambuf_type* __s) _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(streambuf_type* __s) noexcept
         : __sbuf_(__s) {}
-    _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(const __proxy& __p) _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(const __proxy& __p) noexcept
         : __sbuf_(__p.__sbuf_) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY char_type  operator*() const

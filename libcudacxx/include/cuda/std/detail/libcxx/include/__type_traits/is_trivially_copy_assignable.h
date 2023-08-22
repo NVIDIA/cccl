@@ -50,7 +50,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_copy_assignable
 
 #if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-inline constexpr bool is_trivially_copy_assignable_v = is_trivially_copy_assignable<_Tp>::value;
+_LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_copy_assignable_v = is_trivially_copy_assignable<_Tp>::value;
 #endif
 
 #endif // defined(_LIBCUDACXX_IS_TRIVIALLY_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_ASSIGNABLE_FALLBACK)

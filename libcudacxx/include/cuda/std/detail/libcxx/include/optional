@@ -218,8 +218,8 @@ class _LIBCUDACXX_EXCEPTION_ABI _LIBCUDACXX_AVAILABILITY_BAD_OPTIONAL_ACCESS bad
 {
 public:
     // Get the key function ~bad_optional_access() into the dylib
-    ~bad_optional_access() _NOEXCEPT override;
-    const char* what() const _NOEXCEPT override;
+    ~bad_optional_access() noexcept override;
+    const char* what() const noexcept override;
 };
 
 } // namespace std
@@ -659,6 +659,57 @@ struct __is_std_optional<optional<_Tp>> : true_type
 {
 };
 
+// Constraits
+template <class _Tp, class _Up, class _Opt = optional<_Up>>
+using __opt_check_constructible_from_opt = _Or<
+    is_constructible<_Tp, _Opt&>,
+    is_constructible<_Tp, _Opt const&>,
+    is_constructible<_Tp, _Opt&&>,
+    is_constructible<_Tp, _Opt const&&>,
+    is_convertible<_Opt&, _Tp>,
+    is_convertible<_Opt const&, _Tp>,
+    is_convertible<_Opt&&, _Tp>,
+    is_convertible<_Opt const&&, _Tp>
+>;
+
+template <class _Tp, class _Up, class _Opt = optional<_Up>>
+using __opt_check_assignable_from_opt = _Or<
+    is_assignable<_Tp&, _Opt&>,
+    is_assignable<_Tp&, _Opt const&>,
+    is_assignable<_Tp&, _Opt&&>,
+    is_assignable<_Tp&, _Opt const&&>
+>;
+
+template<class _Tp, class _Up>
+_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_implictly_constructible =  _LIBCUDACXX_TRAIT(is_constructible, _Tp, _Up)
+                                                                      &&  _LIBCUDACXX_TRAIT(is_convertible, _Up, _Tp);
+
+template<class _Tp, class _Up>
+_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_explictly_constructible =  _LIBCUDACXX_TRAIT(is_constructible, _Tp, _Up)
+                                                                      && !_LIBCUDACXX_TRAIT(is_convertible, _Up, _Tp);
+
+template<class _Tp, class _Up>
+_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_constructible_from_U = !_LIBCUDACXX_TRAIT(is_same, __remove_cvref_t<_Up>, in_place_t)
+                                                                   && !_LIBCUDACXX_TRAIT(is_same, __remove_cvref_t<_Up>, optional<_Tp>);
+
+template<class _Tp, class _Up>
+_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_constructible_from_opt = !_LIBCUDACXX_TRAIT(is_same, _Up, _Tp)
+                                                                     && !__opt_check_constructible_from_opt<_Tp, _Up>::value;
+
+template<class _Tp, class _Up>
+_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_assignable = _LIBCUDACXX_TRAIT(is_constructible, _Tp, _Up)
+                                                         && _LIBCUDACXX_TRAIT(is_assignable, _Tp&, _Up);
+
+template<class _Tp, class _Up>
+_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_assignable_from_U =  !_LIBCUDACXX_TRAIT(is_same, __remove_cvref_t<_Up>, optional<_Tp>)
+                                                                && (!_LIBCUDACXX_TRAIT(is_same, __remove_cvref_t<_Up>, _Tp)
+                                                                    || !_LIBCUDACXX_TRAIT(is_scalar, _Tp));
+
+template<class _Tp, class _Up>
+_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_assignable_from_opt = !_LIBCUDACXX_TRAIT(is_same, _Up, _Tp)
+                                                                  && !__opt_check_constructible_from_opt<_Tp, _Up>::value
+                                                                  && !__opt_check_assignable_from_opt<_Tp, _Up>::value;
+
 template <class _Tp>
 class optional
     : private __optional_move_assign_base<_Tp>
@@ -686,26 +737,6 @@ private:
     static_assert(!_LIBCUDACXX_TRAIT(is_array, value_type),
         "instantiation of optional with an array type is ill-formed");
 
-    template <class _Up, class _Opt = optional<_Up>>
-    using __check_constructible_from_opt = _Or<
-        is_constructible<_Tp, _Opt&>,
-        is_constructible<_Tp, _Opt const&>,
-        is_constructible<_Tp, _Opt&&>,
-        is_constructible<_Tp, _Opt const&&>,
-        is_convertible<_Opt&, _Tp>,
-        is_convertible<_Opt const&, _Tp>,
-        is_convertible<_Opt&&, _Tp>,
-        is_convertible<_Opt const&&, _Tp>
-    >;
-
-    template <class _Up, class _Opt = optional<_Up>>
-    using __check_assignable_from_opt = _Or<
-        is_assignable<_Tp&, _Opt&>,
-        is_assignable<_Tp&, _Opt const&>,
-        is_assignable<_Tp&, _Opt&&>,
-        is_assignable<_Tp&, _Opt const&&>
-    >;
-
 public:
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr optional() noexcept {}
@@ -726,61 +757,45 @@ public:
     explicit optional(in_place_t, initializer_list<_Up> __il, _Args&&... __args)
         : __base(in_place, __il, _CUDA_VSTD::forward<_Args>(__args)...) {}
 
-    template<class _Up>
-    static constexpr bool __is_implictly_constructible =  _LIBCUDACXX_TRAIT(is_constructible, _Tp, _Up)
-                                                      &&  _LIBCUDACXX_TRAIT(is_convertible, _Up, _Tp);
-
-    template<class _Up>
-    static constexpr bool __is_explictly_constructible =  _LIBCUDACXX_TRAIT(is_constructible, _Tp, _Up)
-                                                      && !_LIBCUDACXX_TRAIT(is_convertible, _Up, _Tp);
-
-    template<class _Up>
-    static constexpr bool __is_constructible_from_U = !_LIBCUDACXX_TRAIT(is_same, __remove_cvref_t<_Up>, in_place_t)
-                                                   && !_LIBCUDACXX_TRAIT(is_same, __remove_cvref_t<_Up>, optional);
-
     _LIBCUDACXX_TEMPLATE(class _Up = value_type)
-      (requires __is_constructible_from_U<_Up> _LIBCUDACXX_AND
-                __is_implictly_constructible<_Up>)
+      (requires __opt_is_constructible_from_U<_Tp, _Up> _LIBCUDACXX_AND
+                __opt_is_implictly_constructible<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional(_Up&& __v) : __base(in_place, _CUDA_VSTD::forward<_Up>(__v)) {}
 
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __is_constructible_from_U<_Up> _LIBCUDACXX_AND
-                __is_explictly_constructible<_Up>)
+      (requires __opt_is_constructible_from_U<_Tp, _Up> _LIBCUDACXX_AND
+                __opt_is_explictly_constructible<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     explicit optional(_Up&& __v) : __base(in_place, _CUDA_VSTD::forward<_Up>(__v)) {}
 
-    template<class _Up>
-    static constexpr bool __is_constructible_from_opt = !_LIBCUDACXX_TRAIT(is_same, _Up, _Tp)
-                                                     && !__check_constructible_from_opt<_Up>::value;
-
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __is_constructible_from_opt<_Up> _LIBCUDACXX_AND
-                __is_implictly_constructible<const _Up&>)
+      (requires __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND
+                __opt_is_implictly_constructible<_Tp, const _Up&>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional(const optional<_Up>& __v) {
         this->__construct_from(__v);
     }
 
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __is_constructible_from_opt<_Up> _LIBCUDACXX_AND
-                __is_explictly_constructible<const _Up&>)
+      (requires __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND
+                __opt_is_explictly_constructible<_Tp, const _Up&>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     explicit optional(const optional<_Up>& __v) {
         this->__construct_from(__v);
     }
 
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __is_constructible_from_opt<_Up> _LIBCUDACXX_AND
-                __is_implictly_constructible<_Up>)
+      (requires __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND
+                __opt_is_implictly_constructible<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional(optional<_Up>&& __v) {
         this->__construct_from(_CUDA_VSTD::move(__v));
     }
 
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __is_constructible_from_opt<_Up> _LIBCUDACXX_AND
-                __is_explictly_constructible<_Up>)
+      (requires __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND
+                __opt_is_explictly_constructible<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     explicit optional(optional<_Up>&& __v) {
         this->__construct_from(_CUDA_VSTD::move(__v));
@@ -804,19 +819,9 @@ public:
     constexpr optional& operator=(const optional&) = default;
     constexpr optional& operator=(optional&&) = default;
 
-    // Note: __is__assignable is potentially a built-in
-    template<class _Up>
-    static constexpr bool __is_assignable_from = _LIBCUDACXX_TRAIT(is_constructible, _Tp, _Up)
-                                              && _LIBCUDACXX_TRAIT(is_assignable, _Tp&, _Up);
-
-    template<class _Up>
-    static constexpr bool __is_assignable_from_U =  !_LIBCUDACXX_TRAIT(is_same, __remove_cvref_t<_Up>, optional)
-                                                && (!_LIBCUDACXX_TRAIT(is_same, __remove_cvref_t<_Up>, _Tp)
-                                                 || !_LIBCUDACXX_TRAIT(is_scalar, _Tp));
-
     _LIBCUDACXX_TEMPLATE(class _Up = value_type)
-      (requires __is_assignable_from_U<_Up> _LIBCUDACXX_AND
-                __is_assignable_from<_Up>)
+      (requires __opt_is_assignable_from_U<_Tp, _Up> _LIBCUDACXX_AND
+                __opt_is_assignable<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional& operator=(_Up&& __v) {
         if (this->has_value())
@@ -826,14 +831,9 @@ public:
         return *this;
     }
 
-    template<class _Up>
-    static constexpr bool __is_assignable_from_opt = !_LIBCUDACXX_TRAIT(is_same, _Up, _Tp)
-                                                  && !__check_constructible_from_opt<_Up>::value
-                                                  && !__check_assignable_from_opt<_Up>::value;
-
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __is_assignable_from_opt<_Up> _LIBCUDACXX_AND
-                __is_assignable_from<const _Up&>)
+      (requires __opt_is_assignable_from_opt<_Tp, _Up> _LIBCUDACXX_AND
+                __opt_is_assignable<_Tp, const _Up&>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional& operator=(const optional<_Up>& __v) {
         this->__assign_from(__v);
@@ -841,8 +841,8 @@ public:
     }
 
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __is_assignable_from_opt<_Up> _LIBCUDACXX_AND
-                __is_assignable_from<_Up>)
+      (requires __opt_is_assignable_from_opt<_Tp, _Up> _LIBCUDACXX_AND
+                __opt_is_assignable<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional& operator=(optional<_Up>&& __v) {
         this->__assign_from(_CUDA_VSTD::move(__v));

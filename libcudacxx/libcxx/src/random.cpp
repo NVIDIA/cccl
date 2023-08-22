@@ -170,7 +170,7 @@ random_device::operator()()
 #endif
 
 double
-random_device::entropy() const _NOEXCEPT
+random_device::entropy() const noexcept
 {
     return 0;
 }

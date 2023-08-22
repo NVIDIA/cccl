@@ -111,7 +111,7 @@ class _LIBCUDACXX_TYPE_VIS locale;
 template <class _Facet>
 _LIBCUDACXX_INLINE_VISIBILITY
 bool
-has_facet(const locale&) _NOEXCEPT;
+has_facet(const locale&) noexcept;
 
 template <class _Facet>
 _LIBCUDACXX_INLINE_VISIBILITY
@@ -138,8 +138,8 @@ public:
         all = collate | ctype | monetary | numeric | time | messages;
 
     // construct/copy/destroy:
-    locale()  _NOEXCEPT;
-    locale(const locale&)  _NOEXCEPT;
+    locale()  noexcept;
+    locale(const locale&)  noexcept;
     explicit locale(const char*);
     explicit locale(const string&);
     locale(const locale&, const char*, category);
@@ -150,7 +150,7 @@ public:
 
     ~locale();
 
-    const locale& operator=(const locale&)  _NOEXCEPT;
+    const locale& operator=(const locale&)  noexcept;
 
     template <class _Facet>
       _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
@@ -178,7 +178,7 @@ private:
     bool has_facet(id&) const;
     const facet* use_facet(id&) const;
 
-    template <class _Facet> friend bool has_facet(const locale&)  _NOEXCEPT;
+    template <class _Facet> friend bool has_facet(const locale&)  noexcept;
     template <class _Facet> friend const _Facet& use_facet(const locale&);
 };
 
@@ -195,7 +195,7 @@ protected:
 //    facet(const facet&) = delete;     // effectively done in __shared_count
 //    void operator=(const facet&) = delete;
 private:
-    virtual void __on_zero_shared() _NOEXCEPT;
+    virtual void __on_zero_shared() noexcept;
 };
 
 class _LIBCUDACXX_TYPE_VIS locale::id
@@ -237,7 +237,7 @@ locale::combine(const locale& __other) const
 template <class _Facet>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
-has_facet(const locale& __l)  _NOEXCEPT
+has_facet(const locale& __l)  noexcept
 {
     return __l.has_facet(_Facet::id);
 }
@@ -706,15 +706,15 @@ public:
 #else
     static const size_t table_size = 256;  // FIXME: Don't hardcode this.
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY const mask* table() const  _NOEXCEPT {return __tab_;}
-    static const mask* classic_table()  _NOEXCEPT;
+    _LIBCUDACXX_INLINE_VISIBILITY const mask* table() const  noexcept {return __tab_;}
+    static const mask* classic_table()  noexcept;
 #if defined(__GLIBC__) || defined(__EMSCRIPTEN__)
-    static const int* __classic_upper_table() _NOEXCEPT;
-    static const int* __classic_lower_table() _NOEXCEPT;
+    static const int* __classic_upper_table() noexcept;
+    static const int* __classic_lower_table() noexcept;
 #endif
 #if defined(__NetBSD__)
-    static const short* __classic_upper_table() _NOEXCEPT;
-    static const short* __classic_lower_table() _NOEXCEPT;
+    static const short* __classic_upper_table() noexcept;
+    static const short* __classic_lower_table() noexcept;
 #endif
 
 protected:
@@ -934,13 +934,13 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    int encoding() const  _NOEXCEPT
+    int encoding() const  noexcept
     {
         return do_encoding();
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool always_noconv() const  _NOEXCEPT
+    bool always_noconv() const  noexcept
     {
         return do_always_noconv();
     }
@@ -952,7 +952,7 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    int max_length() const  _NOEXCEPT
+    int max_length() const  noexcept
     {
         return do_max_length();
     }
@@ -974,10 +974,10 @@ protected:
                          intern_type* __to, intern_type* __to_end, intern_type*& __to_nxt) const;
     virtual result do_unshift(state_type& __st,
                               extern_type* __to, extern_type* __to_end, extern_type*& __to_nxt) const;
-    virtual int do_encoding() const  _NOEXCEPT;
-    virtual bool do_always_noconv() const  _NOEXCEPT;
+    virtual int do_encoding() const  noexcept;
+    virtual bool do_always_noconv() const  noexcept;
     virtual int do_length(state_type& __st, const extern_type* __frm, const extern_type* __end, size_t __mx) const;
-    virtual int do_max_length() const  _NOEXCEPT;
+    virtual int do_max_length() const  noexcept;
 };
 
 // template <> class codecvt<wchar_t, char, mbstate_t>
@@ -1019,13 +1019,13 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    int encoding() const  _NOEXCEPT
+    int encoding() const  noexcept
     {
         return do_encoding();
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool always_noconv() const  _NOEXCEPT
+    bool always_noconv() const  noexcept
     {
         return do_always_noconv();
     }
@@ -1037,7 +1037,7 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    int max_length() const  _NOEXCEPT
+    int max_length() const  noexcept
     {
         return do_max_length();
     }
@@ -1057,10 +1057,10 @@ protected:
                          intern_type* __to, intern_type* __to_end, intern_type*& __to_nxt) const;
     virtual result do_unshift(state_type& __st,
                               extern_type* __to, extern_type* __to_end, extern_type*& __to_nxt) const;
-    virtual int do_encoding() const  _NOEXCEPT;
-    virtual bool do_always_noconv() const  _NOEXCEPT;
+    virtual int do_encoding() const  noexcept;
+    virtual bool do_always_noconv() const  noexcept;
     virtual int do_length(state_type&, const extern_type* __frm, const extern_type* __end, size_t __mx) const;
-    virtual int do_max_length() const  _NOEXCEPT;
+    virtual int do_max_length() const  noexcept;
 };
 
 // template <> class codecvt<char16_t, char, mbstate_t>
@@ -1103,13 +1103,13 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    int encoding() const  _NOEXCEPT
+    int encoding() const  noexcept
     {
         return do_encoding();
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool always_noconv() const  _NOEXCEPT
+    bool always_noconv() const  noexcept
     {
         return do_always_noconv();
     }
@@ -1121,7 +1121,7 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    int max_length() const  _NOEXCEPT
+    int max_length() const  noexcept
     {
         return do_max_length();
     }
@@ -1143,10 +1143,10 @@ protected:
                          intern_type* __to, intern_type* __to_end, intern_type*& __to_nxt) const;
     virtual result do_unshift(state_type& __st,
                               extern_type* __to, extern_type* __to_end, extern_type*& __to_nxt) const;
-    virtual int do_encoding() const  _NOEXCEPT;
-    virtual bool do_always_noconv() const  _NOEXCEPT;
+    virtual int do_encoding() const  noexcept;
+    virtual bool do_always_noconv() const  noexcept;
     virtual int do_length(state_type&, const extern_type* __frm, const extern_type* __end, size_t __mx) const;
-    virtual int do_max_length() const  _NOEXCEPT;
+    virtual int do_max_length() const  noexcept;
 };
 
 // template <> class codecvt<char32_t, char, mbstate_t>
@@ -1189,13 +1189,13 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    int encoding() const  _NOEXCEPT
+    int encoding() const  noexcept
     {
         return do_encoding();
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool always_noconv() const  _NOEXCEPT
+    bool always_noconv() const  noexcept
     {
         return do_always_noconv();
     }
@@ -1207,7 +1207,7 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    int max_length() const  _NOEXCEPT
+    int max_length() const  noexcept
     {
         return do_max_length();
     }
@@ -1229,10 +1229,10 @@ protected:
                          intern_type* __to, intern_type* __to_end, intern_type*& __to_nxt) const;
     virtual result do_unshift(state_type& __st,
                               extern_type* __to, extern_type* __to_end, extern_type*& __to_nxt) const;
-    virtual int do_encoding() const  _NOEXCEPT;
-    virtual bool do_always_noconv() const  _NOEXCEPT;
+    virtual int do_encoding() const  noexcept;
+    virtual bool do_always_noconv() const  noexcept;
     virtual int do_length(state_type&, const extern_type* __frm, const extern_type* __end, size_t __mx) const;
-    virtual int do_max_length() const  _NOEXCEPT;
+    virtual int do_max_length() const  noexcept;
 };
 
 // template <class _InternT, class _ExternT, class _StateT> class codecvt_byname

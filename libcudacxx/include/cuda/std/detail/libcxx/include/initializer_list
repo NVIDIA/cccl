@@ -64,7 +64,7 @@ class _LIBCUDACXX_TEMPLATE_VIS initializer_list
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    initializer_list(const _Ep* __b, size_t __s) _NOEXCEPT
+    initializer_list(const _Ep* __b, size_t __s) noexcept
         : __begin_(__b),
           __size_(__s)
         {}
@@ -79,26 +79,26 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    initializer_list() _NOEXCEPT : __begin_(nullptr), __size_(0) {}
+    initializer_list() noexcept : __begin_(nullptr), __size_(0) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    size_t    size()  const _NOEXCEPT {return __size_;}
+    size_t    size()  const noexcept {return __size_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    const _Ep* begin() const _NOEXCEPT {return __begin_;}
+    const _Ep* begin() const noexcept {return __begin_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    const _Ep* end()   const _NOEXCEPT {return __begin_ + __size_;}
+    const _Ep* end()   const noexcept {return __begin_ + __size_;}
 };
 
 template<class _Ep>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 const _Ep*
-begin(initializer_list<_Ep> __il) _NOEXCEPT
+begin(initializer_list<_Ep> __il) noexcept
 {
     return __il.begin();
 }
@@ -107,7 +107,7 @@ template<class _Ep>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 const _Ep*
-end(initializer_list<_Ep> __il) _NOEXCEPT
+end(initializer_list<_Ep> __il) noexcept
 {
     return __il.end();
 }

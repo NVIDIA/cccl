@@ -50,28 +50,28 @@ jobs:
     steps:
       - name: Check if changes requested from a reviewer
         id: check_changes_requested
+        if: github.event_name == 'pull_request_review'
         run: |
-          if [ ${{ github.event_name }} == 'pull_request_review' ]; then
-            if [ ${{ github.event.review.state }} != 'changes_requested' ]; then
-              echo "Changes not requested, exiting"
-              exit 0
-            
-            # If it is requesting changes, set PR to draft
-            # We use the default token here since we're granting write access to the PR
-            elif [ ${{ github.event.pull_request.draft }} == true ]; then
-              gh api graphql -f query='
-                mutation {
-                  convertPullRequestToDraft(input: {pullRequestId: "${{ env.PR_GLOBAL_ID }}"}) {
-                    clientMutationId
-                  }
-                }'
-              exit 0
-            fi
+          if [ ${{ github.event.review.state }} != 'changes_requested' ]; then
+            echo "Changes not requested, exiting"
+            exit 0
+          
+          # If it is requesting changes, set PR to draft
+          # We use the default token here since we're granting write access to the PR
+          elif [ ${{ github.event.pull_request.draft }} == true ]; then
+            gh api graphql -f query='
+              mutation {
+                convertPullRequestToDraft(input: {pullRequestId: "${{ env.PR_GLOBAL_ID }}"}) {
+                  clientMutationId
+                }
+              }'
+            exit 0
           fi
         continue-on-error: true
 
       - name: Generate token
         id: generate_token
+        if: github.event_name == 'pull_request_target'
         uses: tibdex/github-app-token@v1.8.0
         with:
           app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
@@ -79,10 +79,12 @@ jobs:
 
       - name: Wait 1 Second
         id: sleep
+        if: github.event_name == 'pull_request_target'
         run: sleep 1
         
       - name: Get PR Project ID
         id: get_pr_id
+        if: github.event_name == 'pull_request_target'
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
@@ -120,6 +122,7 @@ jobs:
             
       - name: Set PR Fields
         id: set_pr_fields
+        if: github.event_name == 'pull_request_target'
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
@@ -249,6 +252,7 @@ jobs:
                   
       - name: Sync Linked Issues
         id: sync_linked_issues
+        if: github.event_name == 'pull_request_target'
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |

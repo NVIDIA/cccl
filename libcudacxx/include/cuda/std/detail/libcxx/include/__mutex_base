@@ -52,12 +52,12 @@ public:
 #if defined(_LIBCUDACXX_HAS_TRIVIAL_MUTEX_DESTRUCTION)
     ~mutex() = default;
 #else
-    ~mutex() _NOEXCEPT;
+    ~mutex() noexcept;
 #endif
 
     void lock() _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(acquire_capability());
-    bool try_lock() _NOEXCEPT _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(try_acquire_capability(true));
-    void unlock() _NOEXCEPT _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(release_capability());
+    bool try_lock() noexcept _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(try_acquire_capability(true));
+    void unlock() noexcept _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(release_capability());
 
     typedef __libcpp_mutex_t* native_handle_type;
     _LIBCUDACXX_INLINE_VISIBILITY native_handle_type native_handle() {return &__m_;}
@@ -122,12 +122,12 @@ private:
 
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    unique_lock() _NOEXCEPT : __m_(nullptr), __owns_(false) {}
+    unique_lock() noexcept : __m_(nullptr), __owns_(false) {}
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit unique_lock(mutex_type& __m)
         : __m_(_CUDA_VSTD::addressof(__m)), __owns_(true) {__m_->lock();}
     _LIBCUDACXX_INLINE_VISIBILITY
-    unique_lock(mutex_type& __m, defer_lock_t) _NOEXCEPT
+    unique_lock(mutex_type& __m, defer_lock_t) noexcept
         : __m_(_CUDA_VSTD::addressof(__m)), __owns_(false) {}
     _LIBCUDACXX_INLINE_VISIBILITY
     unique_lock(mutex_type& __m, try_to_lock_t)
@@ -157,11 +157,11 @@ private:
 public:
 #ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
-    unique_lock(unique_lock&& __u) _NOEXCEPT
+    unique_lock(unique_lock&& __u) noexcept
         : __m_(__u.__m_), __owns_(__u.__owns_)
         {__u.__m_ = nullptr; __u.__owns_ = false;}
     _LIBCUDACXX_INLINE_VISIBILITY
-    unique_lock& operator=(unique_lock&& __u) _NOEXCEPT
+    unique_lock& operator=(unique_lock&& __u) noexcept
         {
             if (__owns_)
                 __m_->unlock();
@@ -185,13 +185,13 @@ public:
     void unlock();
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    void swap(unique_lock& __u) _NOEXCEPT
+    void swap(unique_lock& __u) noexcept
     {
         _CUDA_VSTD::swap(__m_, __u.__m_);
         _CUDA_VSTD::swap(__owns_, __u.__owns_);
     }
     _LIBCUDACXX_INLINE_VISIBILITY
-    mutex_type* release() _NOEXCEPT
+    mutex_type* release() noexcept
     {
         mutex_type* __m = __m_;
         __m_ = nullptr;
@@ -200,12 +200,12 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool owns_lock() const _NOEXCEPT {return __owns_;}
+    bool owns_lock() const noexcept {return __owns_;}
     _LIBCUDACXX_INLINE_VISIBILITY
     _LIBCUDACXX_EXPLICIT
-        operator bool () const _NOEXCEPT {return __owns_;}
+        operator bool () const noexcept {return __owns_;}
     _LIBCUDACXX_INLINE_VISIBILITY
-    mutex_type* mutex() const _NOEXCEPT {return __m_;}
+    mutex_type* mutex() const noexcept {return __m_;}
 };
 
 template <class _Mutex>
@@ -271,7 +271,7 @@ unique_lock<_Mutex>::unlock()
 template <class _Mutex>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
-swap(unique_lock<_Mutex>& __x, unique_lock<_Mutex>& __y) _NOEXCEPT
+swap(unique_lock<_Mutex>& __x, unique_lock<_Mutex>& __y) noexcept
     {__x.swap(__y);}
 
 //enum class cv_status
@@ -287,7 +287,7 @@ class _LIBCUDACXX_TYPE_VIS condition_variable
     __libcpp_condvar_t __cv_ = _LIBCUDACXX_CONDVAR_INITIALIZER;
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR condition_variable() _NOEXCEPT = default;
+    _LIBCUDACXX_CONSTEXPR condition_variable() noexcept = default;
 
 #ifdef _LIBCUDACXX_HAS_TRIVIAL_CONDVAR_DESTRUCTION
     ~condition_variable() = default;
@@ -298,10 +298,10 @@ public:
     condition_variable(const condition_variable&) = delete;
     condition_variable& operator=(const condition_variable&) = delete;
 
-    void notify_one() _NOEXCEPT;
-    void notify_all() _NOEXCEPT;
+    void notify_one() noexcept;
+    void notify_all() noexcept;
 
-    void wait(unique_lock<mutex>& __lk) _NOEXCEPT;
+    void wait(unique_lock<mutex>& __lk) noexcept;
     template <class _Predicate>
         _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
         void wait(unique_lock<mutex>& __lk, _Predicate __pred);
@@ -337,14 +337,14 @@ public:
 
 private:
     void __do_timed_wait(unique_lock<mutex>& __lk,
-       chrono::time_point<chrono::system_clock, chrono::nanoseconds>) _NOEXCEPT;
+       chrono::time_point<chrono::system_clock, chrono::nanoseconds>) noexcept;
 #if defined(_LIBCUDACXX_HAS_COND_CLOCKWAIT)
     void __do_timed_wait(unique_lock<mutex>& __lk,
-       chrono::time_point<chrono::steady_clock, chrono::nanoseconds>) _NOEXCEPT;
+       chrono::time_point<chrono::steady_clock, chrono::nanoseconds>) noexcept;
 #endif
     template <class _Clock>
     void __do_timed_wait(unique_lock<mutex>& __lk,
-       chrono::time_point<_Clock, chrono::nanoseconds>) _NOEXCEPT;
+       chrono::time_point<_Clock, chrono::nanoseconds>) noexcept;
 };
 #endif // !_LIBCUDACXX_HAS_NO_THREADS
 
@@ -496,7 +496,7 @@ condition_variable::wait_for(unique_lock<mutex>& __lk,
 inline
 void
 condition_variable::__do_timed_wait(unique_lock<mutex>& __lk,
-     chrono::time_point<chrono::steady_clock, chrono::nanoseconds> __tp) _NOEXCEPT
+     chrono::time_point<chrono::steady_clock, chrono::nanoseconds> __tp) noexcept
 {
     using namespace chrono;
     if (!__lk.owns_lock())
@@ -527,7 +527,7 @@ template <class _Clock>
 inline
 void
 condition_variable::__do_timed_wait(unique_lock<mutex>& __lk,
-     chrono::time_point<_Clock, chrono::nanoseconds> __tp) _NOEXCEPT
+     chrono::time_point<_Clock, chrono::nanoseconds> __tp) noexcept
 {
     wait_for(__lk, __tp - _Clock::now());
 }

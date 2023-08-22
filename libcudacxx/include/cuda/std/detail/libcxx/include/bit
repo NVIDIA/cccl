@@ -85,40 +85,40 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #define _LIBCUDACXX_BIT_CONSTEXPR constexpr
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __binary_ctz2(uint64_t __x, int __c)           _NOEXCEPT {
+int __binary_ctz2(uint64_t __x, int __c)           noexcept {
   return (__x & 0x1) ? __c : __c + 1;
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __binary_ctz4(uint64_t __x, int __c)           _NOEXCEPT {
+int __binary_ctz4(uint64_t __x, int __c)           noexcept {
   return __binary_ctz2(
             __x >> 2*!(__x & 0x3),
             __c + 2*!(__x & 0x3));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __binary_ctz8(uint64_t __x, int __c)           _NOEXCEPT {
+int __binary_ctz8(uint64_t __x, int __c)           noexcept {
   return __binary_ctz4(
             __x >> 4*!(__x & 0x0F),
             __c + 4*!(__x & 0x0F));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __binary_ctz16(uint64_t __x, int __c)           _NOEXCEPT {
+int __binary_ctz16(uint64_t __x, int __c)           noexcept {
   return __binary_ctz8(
             __x >> 8*!(__x & 0x00FF),
             __c + 8*!(__x & 0x00FF));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __binary_ctz32(uint64_t __x, int __c)           _NOEXCEPT {
+int __binary_ctz32(uint64_t __x, int __c)           noexcept {
   return __binary_ctz16(
             __x >> 16*!(__x & 0x0000FFFF),
             __c + 16*!(__x & 0x0000FFFF));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __binary_ctz64(uint64_t __x)           _NOEXCEPT {
+int __binary_ctz64(uint64_t __x)           noexcept {
   return __binary_ctz32(
             __x >> 32*!(__x & 0x00000000FFFFFFFF),
             32*!(__x & 0x00000000FFFFFFFF));
@@ -230,7 +230,7 @@ int __libcpp_ctz(unsigned long __x) noexcept {
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __libcpp_ctz(unsigned long long __x) _NOEXCEPT {
+int __libcpp_ctz(unsigned long long __x) noexcept {
 // For whatever reason __builtin_ctzll does not compile although it should
 #if 1 //def _LIBCUDACXX_COMPILER_NVRTC
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
@@ -250,7 +250,7 @@ int __libcpp_ctz(unsigned long long __x) _NOEXCEPT {
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __libcpp_clz(unsigned __x)           _NOEXCEPT {
+int __libcpp_clz(unsigned __x)           noexcept {
 #if defined(_LIBCUDACXX_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
@@ -269,7 +269,7 @@ int __libcpp_clz(unsigned __x)           _NOEXCEPT {
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __libcpp_clz(unsigned long __x)      _NOEXCEPT {
+int __libcpp_clz(unsigned long __x)      noexcept {
 #if defined(_LIBCUDACXX_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
@@ -289,7 +289,7 @@ int __libcpp_clz(unsigned long __x)      _NOEXCEPT {
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __libcpp_clz(unsigned long long __x) _NOEXCEPT {
+int __libcpp_clz(unsigned long long __x) noexcept {
 #if defined(_LIBCUDACXX_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
@@ -309,7 +309,7 @@ int __libcpp_clz(unsigned long long __x) _NOEXCEPT {
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __libcpp_popcount(unsigned __x)           _NOEXCEPT {
+int __libcpp_popcount(unsigned __x)           noexcept {
 #if defined(_LIBCUDACXX_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
@@ -329,7 +329,7 @@ int __libcpp_popcount(unsigned __x)           _NOEXCEPT {
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __libcpp_popcount(unsigned long __x)      _NOEXCEPT {
+int __libcpp_popcount(unsigned long __x)      noexcept {
 #if defined(_LIBCUDACXX_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
@@ -349,7 +349,7 @@ int __libcpp_popcount(unsigned long __x)      _NOEXCEPT {
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __libcpp_popcount(unsigned long long __x) _NOEXCEPT {
+int __libcpp_popcount(unsigned long long __x) noexcept {
 #if defined(_LIBCUDACXX_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
@@ -500,7 +500,7 @@ constexpr int __libcpp_popcount(unsigned long long __x) {
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-_Tp __rotl(_Tp __t, unsigned int __cnt) _NOEXCEPT
+_Tp __rotl(_Tp __t, unsigned int __cnt) noexcept
 {
     static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__rotl requires unsigned");
     using __nlt = numeric_limits<_Tp>;
@@ -513,7 +513,7 @@ _Tp __rotl(_Tp __t, unsigned int __cnt) _NOEXCEPT
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-_Tp __rotr(_Tp __t, unsigned int __cnt) _NOEXCEPT
+_Tp __rotr(_Tp __t, unsigned int __cnt) noexcept
 {
     static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__rotr requires unsigned");
     using __nlt = numeric_limits<_Tp>;
@@ -526,18 +526,18 @@ _Tp __rotr(_Tp __t, unsigned int __cnt) _NOEXCEPT
 // Forward decl for recursive use in split word operations
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __countr_zero(_Tp __t) _NOEXCEPT;
+int __countr_zero(_Tp __t) noexcept;
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-__enable_if_t<sizeof(_Tp) <= sizeof(unsigned int), int> __countr_zero_dispatch(_Tp __t) _NOEXCEPT
+__enable_if_t<sizeof(_Tp) <= sizeof(unsigned int), int> __countr_zero_dispatch(_Tp __t) noexcept
 {
   return __libcpp_ctz(static_cast<unsigned int>(__t));
 }
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-__enable_if_t<sizeof(_Tp) == sizeof(unsigned long long), int> __countr_zero_dispatch(_Tp __t) _NOEXCEPT
+__enable_if_t<sizeof(_Tp) == sizeof(unsigned long long), int> __countr_zero_dispatch(_Tp __t) noexcept
 {
   return __libcpp_ctz(static_cast<unsigned long long>(__t));
 }
@@ -571,12 +571,12 @@ struct __countr_zero_rsh_impl<_Tp, 1> {
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-__enable_if_t<(sizeof(_Tp) > sizeof(unsigned long long)), int> __countr_zero_dispatch(_Tp __t) _NOEXCEPT
+__enable_if_t<(sizeof(_Tp) > sizeof(unsigned long long)), int> __countr_zero_dispatch(_Tp __t) noexcept
 { return __countr_zero_rsh_impl<_Tp>::__count(__t, 0); }
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __countr_zero(_Tp __t) _NOEXCEPT
+int __countr_zero(_Tp __t) noexcept
 {
     static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__countr_zero requires unsigned");
 
@@ -586,11 +586,11 @@ int __countr_zero(_Tp __t) _NOEXCEPT
 // Forward decl for recursive use in split word operations
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __countl_zero(_Tp __t) _NOEXCEPT;
+int __countl_zero(_Tp __t) noexcept;
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-__enable_if_t<sizeof(_Tp) <= sizeof(unsigned int), int> __countl_zero_dispatch(_Tp __t) _NOEXCEPT
+__enable_if_t<sizeof(_Tp) <= sizeof(unsigned int), int> __countl_zero_dispatch(_Tp __t) noexcept
 {
   return __libcpp_clz(static_cast<unsigned int>(__t))
               - (numeric_limits<unsigned int>::digits - numeric_limits<_Tp>::digits);
@@ -598,7 +598,7 @@ __enable_if_t<sizeof(_Tp) <= sizeof(unsigned int), int> __countl_zero_dispatch(_
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-__enable_if_t<sizeof(_Tp) == sizeof(unsigned long long), int> __countl_zero_dispatch(_Tp __t) _NOEXCEPT
+__enable_if_t<sizeof(_Tp) == sizeof(unsigned long long), int> __countl_zero_dispatch(_Tp __t) noexcept
 {
   return __libcpp_clz(static_cast<unsigned long long>(__t))
               - (numeric_limits<unsigned long long>::digits - numeric_limits<_Tp>::digits);
@@ -639,12 +639,12 @@ struct __countl_zero_rotl_impl<_Tp, 1> {
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-__enable_if_t<(sizeof(_Tp) > sizeof(unsigned long long)), int> __countl_zero_dispatch(_Tp __t) _NOEXCEPT
+__enable_if_t<(sizeof(_Tp) > sizeof(unsigned long long)), int> __countl_zero_dispatch(_Tp __t) noexcept
 { return __countl_zero_rotl_impl<_Tp>::__count(__t); }
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __countl_zero(_Tp __t) _NOEXCEPT
+int __countl_zero(_Tp __t) noexcept
 {
     static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__countl_zero requires unsigned");
     return __t ? __countl_zero_dispatch(__t) : numeric_limits<_Tp>::digits;
@@ -652,7 +652,7 @@ int __countl_zero(_Tp __t) _NOEXCEPT
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __countl_one(_Tp __t) _NOEXCEPT
+int __countl_one(_Tp __t) noexcept
 {
     static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__countl_one requires unsigned");
     return __t != numeric_limits<_Tp>::max()
@@ -663,7 +663,7 @@ int __countl_one(_Tp __t) _NOEXCEPT
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __countr_one(_Tp __t) _NOEXCEPT
+int __countr_one(_Tp __t) noexcept
 {
     static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__countr_one requires unsigned");
     return __t != numeric_limits<_Tp>::max()
@@ -673,12 +673,12 @@ int __countr_one(_Tp __t) _NOEXCEPT
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-__enable_if_t<sizeof(_Tp) <= sizeof(unsigned int), int> __popcount_dispatch(_Tp __t) _NOEXCEPT
+__enable_if_t<sizeof(_Tp) <= sizeof(unsigned int), int> __popcount_dispatch(_Tp __t) noexcept
 { return __libcpp_popcount(static_cast<unsigned int>(__t)); }
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-__enable_if_t<sizeof(_Tp) == sizeof(unsigned long long), int> __popcount_dispatch(_Tp __t) _NOEXCEPT
+__enable_if_t<sizeof(_Tp) == sizeof(unsigned long long), int> __popcount_dispatch(_Tp __t) noexcept
 { return __libcpp_popcount(static_cast<unsigned long long>(__t)); }
 
 template <typename _Tp, int _St = sizeof(_Tp)/sizeof(unsigned long long)>
@@ -701,12 +701,12 @@ struct __popcount_rsh_impl<_Tp, 1> {
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-__enable_if_t<(sizeof(_Tp) > sizeof(unsigned long long)), int> __popcount_dispatch(_Tp __t) _NOEXCEPT
+__enable_if_t<(sizeof(_Tp) > sizeof(unsigned long long)), int> __popcount_dispatch(_Tp __t) noexcept
 { return __popcount_rsh_impl<_Tp>::__count(__t); }
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-int __popcount(_Tp __t) _NOEXCEPT
+int __popcount(_Tp __t) noexcept
 {
     static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__libcpp_popcount requires unsigned");
 
@@ -717,7 +717,7 @@ int __popcount(_Tp __t) _NOEXCEPT
 // integral log base 2
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-unsigned __bit_log2(_Tp __t) _NOEXCEPT
+unsigned __bit_log2(_Tp __t) noexcept
 {
     static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__bit_log2 requires unsigned");
     return std::numeric_limits<_Tp>::digits - 1 - __countl_zero(__t);
@@ -725,7 +725,7 @@ unsigned __bit_log2(_Tp __t) _NOEXCEPT
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
-bool __has_single_bit(_Tp __t) _NOEXCEPT
+bool __has_single_bit(_Tp __t) noexcept
 {
     static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__has_single_bit requires unsigned");
 	return __t != 0 && (((__t & (__t - 1)) == 0));

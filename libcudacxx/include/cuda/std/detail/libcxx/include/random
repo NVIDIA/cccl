@@ -2880,7 +2880,7 @@ public:
 
     // property functions
     _LIBCUDACXX_INLINE_VISIBILITY
-    const _Engine& base() const _NOEXCEPT {return __e_;}
+    const _Engine& base() const noexcept {return __e_;}
 
     template<class _Eng, size_t _Pp, size_t _Rp>
     friend
@@ -3091,7 +3091,7 @@ public:
 
     // property functions
     _LIBCUDACXX_INLINE_VISIBILITY
-    const _Engine& base() const _NOEXCEPT {return __e_;}
+    const _Engine& base() const noexcept {return __e_;}
 
     template<class _Eng, size_t _Wp, class _UInt>
     friend
@@ -3321,7 +3321,7 @@ public:
 
     // property functions
     _LIBCUDACXX_INLINE_VISIBILITY
-    const _Engine& base() const _NOEXCEPT {return __e_;}
+    const _Engine& base() const noexcept {return __e_;}
 
 private:
     template<class _Eng, size_t _Kp>
@@ -3503,7 +3503,7 @@ public:
     result_type operator()();
 
     // property functions
-    double entropy() const _NOEXCEPT;
+    double entropy() const noexcept;
 
 private:
     // no copy functions
@@ -3527,7 +3527,7 @@ private:
 public:
     // constructors
     _LIBCUDACXX_INLINE_VISIBILITY
-    seed_seq() _NOEXCEPT {}
+    seed_seq() noexcept {}
 #ifndef _LIBCUDACXX_CXX03_LANG
     template<class _Tp>
         _LIBCUDACXX_INLINE_VISIBILITY
@@ -3545,7 +3545,7 @@ public:
 
     // property functions
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t size() const _NOEXCEPT {return __v_.size();}
+    size_t size() const noexcept {return __v_.size();}
     template<class _OutputIterator>
         _LIBCUDACXX_INLINE_VISIBILITY
         void param(_OutputIterator __dest) const

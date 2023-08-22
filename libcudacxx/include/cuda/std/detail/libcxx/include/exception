@@ -97,18 +97,18 @@ namespace std  // purposefully not using versioning namespace
 class _LIBCUDACXX_EXCEPTION_ABI exception
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY exception() _NOEXCEPT {}
-    virtual ~exception() _NOEXCEPT;
-    virtual const char* what() const _NOEXCEPT;
+    _LIBCUDACXX_INLINE_VISIBILITY exception() noexcept {}
+    virtual ~exception() noexcept;
+    virtual const char* what() const noexcept;
 };
 
 class _LIBCUDACXX_EXCEPTION_ABI bad_exception
     : public exception
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY bad_exception() _NOEXCEPT {}
-    virtual ~bad_exception() _NOEXCEPT;
-    virtual const char* what() const _NOEXCEPT;
+    _LIBCUDACXX_INLINE_VISIBILITY bad_exception() noexcept {}
+    virtual ~bad_exception() noexcept;
+    virtual const char* what() const noexcept;
 };
 #endif // !_LIBCUDACXX_ABI_VCRUNTIME
 
@@ -116,22 +116,22 @@ public:
     || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNEXPECTED_FUNCTIONS) \
     || defined(_LIBCUDACXX_BUILDING_LIBRARY)
 typedef void (*unexpected_handler)();
-_LIBCUDACXX_FUNC_VIS unexpected_handler set_unexpected(unexpected_handler) _NOEXCEPT;
-_LIBCUDACXX_FUNC_VIS unexpected_handler get_unexpected() _NOEXCEPT;
+_LIBCUDACXX_FUNC_VIS unexpected_handler set_unexpected(unexpected_handler) noexcept;
+_LIBCUDACXX_FUNC_VIS unexpected_handler get_unexpected() noexcept;
 _LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void unexpected();
 #endif
 
 typedef void (*terminate_handler)();
-_LIBCUDACXX_FUNC_VIS terminate_handler set_terminate(terminate_handler) _NOEXCEPT;
-_LIBCUDACXX_FUNC_VIS terminate_handler get_terminate() _NOEXCEPT;
-_LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void terminate() _NOEXCEPT;
+_LIBCUDACXX_FUNC_VIS terminate_handler set_terminate(terminate_handler) noexcept;
+_LIBCUDACXX_FUNC_VIS terminate_handler get_terminate() noexcept;
+_LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void terminate() noexcept;
 
-_LIBCUDACXX_FUNC_VIS bool uncaught_exception() _NOEXCEPT;
-_LIBCUDACXX_FUNC_VIS _LIBCUDACXX_AVAILABILITY_UNCAUGHT_EXCEPTIONS int uncaught_exceptions() _NOEXCEPT;
+_LIBCUDACXX_FUNC_VIS bool uncaught_exception() noexcept;
+_LIBCUDACXX_FUNC_VIS _LIBCUDACXX_AVAILABILITY_UNCAUGHT_EXCEPTIONS int uncaught_exceptions() noexcept;
 
 class _LIBCUDACXX_TYPE_VIS exception_ptr;
 
-_LIBCUDACXX_FUNC_VIS exception_ptr current_exception() _NOEXCEPT;
+_LIBCUDACXX_FUNC_VIS exception_ptr current_exception() noexcept;
 _LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void rethrow_exception(exception_ptr);
 
 #ifndef _LIBCUDACXX_ABI_MICROSOFT
@@ -140,31 +140,31 @@ class _LIBCUDACXX_TYPE_VIS exception_ptr
 {
     void* __ptr_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr() _NOEXCEPT : __ptr_() {}
-    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr(nullptr_t) _NOEXCEPT : __ptr_() {}
+    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr() noexcept : __ptr_() {}
+    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr(nullptr_t) noexcept : __ptr_() {}
 
-    exception_ptr(const exception_ptr&) _NOEXCEPT;
-    exception_ptr& operator=(const exception_ptr&) _NOEXCEPT;
-    ~exception_ptr() _NOEXCEPT;
+    exception_ptr(const exception_ptr&) noexcept;
+    exception_ptr& operator=(const exception_ptr&) noexcept;
+    ~exception_ptr() noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_EXPLICIT operator bool() const _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_EXPLICIT operator bool() const noexcept
     {return __ptr_ != nullptr;}
 
     friend _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator==(const exception_ptr& __x, const exception_ptr& __y) _NOEXCEPT
+    bool operator==(const exception_ptr& __x, const exception_ptr& __y) noexcept
         {return __x.__ptr_ == __y.__ptr_;}
 
     friend _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator!=(const exception_ptr& __x, const exception_ptr& __y) _NOEXCEPT
+    bool operator!=(const exception_ptr& __x, const exception_ptr& __y) noexcept
         {return !(__x == __y);}
 
-    friend _LIBCUDACXX_FUNC_VIS exception_ptr current_exception() _NOEXCEPT;
+    friend _LIBCUDACXX_FUNC_VIS exception_ptr current_exception() noexcept;
     friend _LIBCUDACXX_FUNC_VIS void rethrow_exception(exception_ptr);
 };
 
 template<class _Ep>
 _LIBCUDACXX_INLINE_VISIBILITY exception_ptr
-make_exception_ptr(_Ep __e) _NOEXCEPT
+make_exception_ptr(_Ep __e) noexcept
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
     try
@@ -195,26 +195,26 @@ class _LIBCUDACXX_TYPE_VIS exception_ptr
 #pragma clang diagnostic pop
 #endif
 public:
-    exception_ptr() _NOEXCEPT;
-    exception_ptr(nullptr_t) _NOEXCEPT;
-    exception_ptr(const exception_ptr& __other) _NOEXCEPT;
-    exception_ptr& operator=(const exception_ptr& __other) _NOEXCEPT;
-    exception_ptr& operator=(nullptr_t) _NOEXCEPT;
-    ~exception_ptr() _NOEXCEPT;
-    _LIBCUDACXX_EXPLICIT operator bool() const _NOEXCEPT;
+    exception_ptr() noexcept;
+    exception_ptr(nullptr_t) noexcept;
+    exception_ptr(const exception_ptr& __other) noexcept;
+    exception_ptr& operator=(const exception_ptr& __other) noexcept;
+    exception_ptr& operator=(nullptr_t) noexcept;
+    ~exception_ptr() noexcept;
+    _LIBCUDACXX_EXPLICIT operator bool() const noexcept;
 };
 
 _LIBCUDACXX_FUNC_VIS
-bool operator==(const exception_ptr& __x, const exception_ptr& __y) _NOEXCEPT;
+bool operator==(const exception_ptr& __x, const exception_ptr& __y) noexcept;
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-bool operator!=(const exception_ptr& __x, const exception_ptr& __y) _NOEXCEPT
+bool operator!=(const exception_ptr& __x, const exception_ptr& __y) noexcept
     {return !(__x == __y);}
 
-_LIBCUDACXX_FUNC_VIS void swap(exception_ptr&, exception_ptr&) _NOEXCEPT;
+_LIBCUDACXX_FUNC_VIS void swap(exception_ptr&, exception_ptr&) noexcept;
 
 _LIBCUDACXX_FUNC_VIS exception_ptr __copy_exception_ptr(void *__except, const void* __ptr);
-_LIBCUDACXX_FUNC_VIS exception_ptr current_exception() _NOEXCEPT;
+_LIBCUDACXX_FUNC_VIS exception_ptr current_exception() noexcept;
 _LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void rethrow_exception(exception_ptr p);
 
 // This is a built-in template function which automagically extracts the required
@@ -223,7 +223,7 @@ template <class _E> void *__GetExceptionInfo(_E);
 
 template<class _Ep>
 _LIBCUDACXX_INLINE_VISIBILITY exception_ptr
-make_exception_ptr(_Ep __e) _NOEXCEPT
+make_exception_ptr(_Ep __e) noexcept
 {
   return __copy_exception_ptr(_CUDA_VSTD::addressof(__e), __GetExceptionInfo(__e));
 }
@@ -235,14 +235,14 @@ class _LIBCUDACXX_EXCEPTION_ABI nested_exception
 {
     exception_ptr __ptr_;
 public:
-    nested_exception() _NOEXCEPT;
+    nested_exception() noexcept;
 //     nested_exception(const nested_exception&) noexcept = default;
 //     nested_exception& operator=(const nested_exception&) noexcept = default;
-    virtual ~nested_exception() _NOEXCEPT;
+    virtual ~nested_exception() noexcept;
 
     // access functions
     _LIBCUDACXX_NORETURN void rethrow_nested() const;
-    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr nested_ptr() const _NOEXCEPT {return __ptr_;}
+    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr nested_ptr() const noexcept {return __ptr_;}
 };
 
 template <class _Tp>

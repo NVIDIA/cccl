@@ -70,11 +70,11 @@ class _LIBCUDACXX_HIDDEN __libcpp_refstring
     _LIBCUDACXX_HOST_DEVICE bool __uses_refcount() const;
 public:
     _LIBCUDACXX_HOST_DEVICE explicit __libcpp_refstring(const char* __msg);
-    _LIBCUDACXX_HOST_DEVICE __libcpp_refstring(const __libcpp_refstring& __s) _NOEXCEPT;
-    _LIBCUDACXX_HOST_DEVICE __libcpp_refstring& operator=(const __libcpp_refstring& __s) _NOEXCEPT;
+    _LIBCUDACXX_HOST_DEVICE __libcpp_refstring(const __libcpp_refstring& __s) noexcept;
+    _LIBCUDACXX_HOST_DEVICE __libcpp_refstring& operator=(const __libcpp_refstring& __s) noexcept;
     _LIBCUDACXX_HOST_DEVICE ~__libcpp_refstring();
 
-    _LIBCUDACXX_HOST_DEVICE const char* c_str() const _NOEXCEPT {return __imp_;}
+    _LIBCUDACXX_HOST_DEVICE const char* c_str() const noexcept {return __imp_;}
 };
 #endif // !_LIBCUDACXX_ABI_VCRUNTIME
 
@@ -98,12 +98,12 @@ public:
     explicit logic_error(const string&);
     explicit logic_error(const char*);
 
-    logic_error(const logic_error&) _NOEXCEPT;
-    logic_error& operator=(const logic_error&) _NOEXCEPT;
+    logic_error(const logic_error&) noexcept;
+    logic_error& operator=(const logic_error&) noexcept;
 
-    virtual ~logic_error() _NOEXCEPT;
+    virtual ~logic_error() noexcept;
 
-    virtual const char* what() const _NOEXCEPT;
+    virtual const char* what() const noexcept;
 #else
 public:
     explicit logic_error(const _CUDA_VSTD::string&); // Symbol uses versioned std::string
@@ -121,12 +121,12 @@ public:
     explicit runtime_error(const string&);
     explicit runtime_error(const char*);
 
-    runtime_error(const runtime_error&) _NOEXCEPT;
-    runtime_error& operator=(const runtime_error&) _NOEXCEPT;
+    runtime_error(const runtime_error&) noexcept;
+    runtime_error& operator=(const runtime_error&) noexcept;
 
-    virtual ~runtime_error() _NOEXCEPT;
+    virtual ~runtime_error() noexcept;
 
-    virtual const char* what() const _NOEXCEPT;
+    virtual const char* what() const noexcept;
 #else
 public:
    explicit runtime_error(const _CUDA_VSTD::string&); // Symbol uses versioned std::string
@@ -142,7 +142,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY explicit domain_error(const char* __s)   : logic_error(__s) {}
 
 #ifndef _LIBCUDACXX_ABI_VCRUNTIME
-    virtual ~domain_error() _NOEXCEPT;
+    virtual ~domain_error() noexcept;
 #endif
 };
 
@@ -154,7 +154,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY explicit invalid_argument(const char* __s)   : logic_error(__s) {}
 
 #ifndef _LIBCUDACXX_ABI_VCRUNTIME
-    virtual ~invalid_argument() _NOEXCEPT;
+    virtual ~invalid_argument() noexcept;
 #endif
 };
 
@@ -165,7 +165,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY explicit length_error(const string& __s) : logic_error(__s) {}
     _LIBCUDACXX_INLINE_VISIBILITY explicit length_error(const char* __s)   : logic_error(__s) {}
 #ifndef _LIBCUDACXX_ABI_VCRUNTIME
-    virtual ~length_error() _NOEXCEPT;
+    virtual ~length_error() noexcept;
 #endif
 };
 
@@ -177,7 +177,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY explicit out_of_range(const char* __s)   : logic_error(__s) {}
 
 #ifndef _LIBCUDACXX_ABI_VCRUNTIME
-    virtual ~out_of_range() _NOEXCEPT;
+    virtual ~out_of_range() noexcept;
 #endif
 };
 
@@ -189,7 +189,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY explicit range_error(const char* __s)   : runtime_error(__s) {}
 
 #ifndef _LIBCUDACXX_ABI_VCRUNTIME
-    virtual ~range_error() _NOEXCEPT;
+    virtual ~range_error() noexcept;
 #endif
 };
 
@@ -201,7 +201,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY explicit overflow_error(const char* __s)   : runtime_error(__s) {}
 
 #ifndef _LIBCUDACXX_ABI_VCRUNTIME
-    virtual ~overflow_error() _NOEXCEPT;
+    virtual ~overflow_error() noexcept;
 #endif
 };
 
@@ -213,7 +213,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY explicit underflow_error(const char* __s)   : runtime_error(__s) {}
 
 #ifndef _LIBCUDACXX_ABI_VCRUNTIME
-    virtual ~underflow_error() _NOEXCEPT;
+    virtual ~underflow_error() noexcept;
 #endif
 };
 

@@ -287,7 +287,7 @@ private:
     struct __nat {};
 public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-    static pointer pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r) _NOEXCEPT
+    static pointer pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r) noexcept
         {return _CUDA_VSTD::addressof(__r);}
 };
 
@@ -307,7 +307,7 @@ struct __to_address_helper;
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-_Tp* __to_address(_Tp* __p) _NOEXCEPT {
+_Tp* __to_address(_Tp* __p) noexcept {
     static_assert(!is_function<_Tp>::value, "_Tp is a function type");
     return __p;
 }
@@ -339,7 +339,7 @@ template <class _Pointer, class = __enable_if_t<
 > >
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
 __decay_t<decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>
-__to_address(const _Pointer& __p) _NOEXCEPT {
+__to_address(const _Pointer& __p) noexcept {
     return __to_address_helper<_Pointer>::__call(__p);
 }
 
@@ -347,7 +347,7 @@ template <class _Pointer, class>
 struct __to_address_helper {
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
     static decltype(_CUDA_VSTD::__to_address(declval<const _Pointer&>().operator->()))
-    __call(const _Pointer& __p) _NOEXCEPT {
+    __call(const _Pointer& __p) noexcept {
         return _CUDA_VSTD::__to_address(__p.operator->());
     }
 };
@@ -356,7 +356,7 @@ template <class _Pointer>
 struct __to_address_helper<_Pointer, decltype((void)pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))> {
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
     static decltype(pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))
-    __call(const _Pointer& __p) _NOEXCEPT {
+    __call(const _Pointer& __p) noexcept {
         return pointer_traits<_Pointer>::to_address(__p);
     }
 };

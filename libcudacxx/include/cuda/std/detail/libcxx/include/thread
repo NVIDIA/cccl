@@ -201,7 +201,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<__thread_id>
     : public __unary_function<__thread_id, size_t>
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t operator()(__thread_id __v) const _NOEXCEPT
+    size_t operator()(__thread_id __v) const noexcept
     {
         return hash<__libcpp_thread_id>()(__v.__id_);
     }
@@ -224,7 +224,7 @@ public:
     typedef __libcpp_thread_t native_handle_type;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    thread() _NOEXCEPT : __t_(_LIBCUDACXX_NULL_THREAD) {}
+    thread() noexcept : __t_(_LIBCUDACXX_NULL_THREAD) {}
 #ifndef _LIBCUDACXX_CXX03_LANG
     template <class _Fp, class ..._Args,
               class = typename enable_if
@@ -243,24 +243,24 @@ public:
 
 #ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
-    thread(thread&& __t) _NOEXCEPT : __t_(__t.__t_) {__t.__t_ = _LIBCUDACXX_NULL_THREAD;}
+    thread(thread&& __t) noexcept : __t_(__t.__t_) {__t.__t_ = _LIBCUDACXX_NULL_THREAD;}
     _LIBCUDACXX_INLINE_VISIBILITY
-    thread& operator=(thread&& __t) _NOEXCEPT;
+    thread& operator=(thread&& __t) noexcept;
 #endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    void swap(thread& __t) _NOEXCEPT {_CUDA_VSTD::swap(__t_, __t.__t_);}
+    void swap(thread& __t) noexcept {_CUDA_VSTD::swap(__t_, __t.__t_);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool joinable() const _NOEXCEPT {return !__libcpp_thread_isnull(&__t_);}
+    bool joinable() const noexcept {return !__libcpp_thread_isnull(&__t_);}
     void join();
     void detach();
     _LIBCUDACXX_INLINE_VISIBILITY
-    id get_id() const _NOEXCEPT {return __libcpp_thread_get_id(&__t_);}
+    id get_id() const noexcept {return __libcpp_thread_get_id(&__t_);}
     _LIBCUDACXX_INLINE_VISIBILITY
-    native_handle_type native_handle() _NOEXCEPT {return __t_;}
+    native_handle_type native_handle() noexcept {return __t_;}
 
-    static unsigned hardware_concurrency() _NOEXCEPT;
+    static unsigned hardware_concurrency() noexcept;
 };
 
 #ifndef _LIBCUDACXX_CXX03_LANG
@@ -305,7 +305,7 @@ thread::thread(_Fp&& __f, _Args&&... __args)
 
 inline
 thread&
-thread::operator=(thread&& __t) _NOEXCEPT
+thread::operator=(thread&& __t) noexcept
 {
     if (!__libcpp_thread_isnull(&__t_))
         terminate();
@@ -352,7 +352,7 @@ thread::thread(_Fp __f)
 #endif  // _LIBCUDACXX_CXX03_LANG
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-void swap(thread& __x, thread& __y) _NOEXCEPT {__x.swap(__y);}
+void swap(thread& __x, thread& __y) noexcept {__x.swap(__y);}
 
 namespace this_thread
 {
@@ -407,7 +407,7 @@ sleep_until(const chrono::time_point<chrono::steady_clock, _Duration>& __t)
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
-void yield() _NOEXCEPT {__libcpp_thread_yield();}
+void yield() noexcept {__libcpp_thread_yield();}
 
 }  // this_thread
 

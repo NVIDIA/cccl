@@ -219,7 +219,7 @@ namespace std { // explicitly not using versioning namespace
 
 class _LIBCUDACXX_EXCEPTION_ABI _LIBCUDACXX_AVAILABILITY_BAD_VARIANT_ACCESS bad_variant_access : public exception {
 public:
-  virtual const char* what() const _NOEXCEPT;
+  virtual const char* what() const noexcept;
 };
 
 } // namespace std
@@ -1653,7 +1653,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<monostate> {
   using result_type = size_t;
 
   inline _LIBCUDACXX_INLINE_VISIBILITY
-  result_type operator()(const argument_type&) const _NOEXCEPT {
+  result_type operator()(const argument_type&) const noexcept {
     return 66740831; // return a fundamentally attractive random value.
   }
 };

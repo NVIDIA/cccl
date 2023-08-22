@@ -27,10 +27,10 @@ struct _LIBCUDACXX_TEMPLATE_VIS integral_constant
   typedef _Tp               value_type;
   typedef integral_constant type;
   _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_CONSTEXPR operator value_type() const _NOEXCEPT {return value;}
+  _LIBCUDACXX_CONSTEXPR operator value_type() const noexcept {return value;}
 #if _LIBCUDACXX_STD_VER > 11
   _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr value_type operator ()() const _NOEXCEPT {return value;}
+  constexpr value_type operator ()() const noexcept {return value;}
 #endif
 };
 

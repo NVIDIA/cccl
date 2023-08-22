@@ -683,7 +683,7 @@ struct alignas(64) __libcpp_contention_t {
 };
 
 _LIBCUDACXX_FUNC_VIS
-__libcpp_contention_t * __libcpp_contention_state(void const volatile * p) _NOEXCEPT;
+__libcpp_contention_t * __libcpp_contention_state(void const volatile * p) noexcept;
 
 #endif // _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
 
@@ -702,7 +702,7 @@ class _LIBCUDACXX_TYPE_VIS __thread_id;
 namespace this_thread
 {
 
-_LIBCUDACXX_INLINE_VISIBILITY __thread_id get_id() _NOEXCEPT;
+_LIBCUDACXX_INLINE_VISIBILITY __thread_id get_id() noexcept;
 
 }  // this_thread
 
@@ -717,33 +717,33 @@ class _LIBCUDACXX_TEMPLATE_VIS __thread_id
 
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    __thread_id() _NOEXCEPT : __id_(0) {}
+    __thread_id() noexcept : __id_(0) {}
 
     friend _LIBCUDACXX_INLINE_VISIBILITY
-        bool operator==(__thread_id __x, __thread_id __y) _NOEXCEPT
+        bool operator==(__thread_id __x, __thread_id __y) noexcept
         { // don't pass id==0 to underlying routines
         if (__x.__id_ == 0) return __y.__id_ == 0;
         if (__y.__id_ == 0) return false;
         return __libcpp_thread_id_equal(__x.__id_, __y.__id_);
         }
     friend _LIBCUDACXX_INLINE_VISIBILITY
-        bool operator!=(__thread_id __x, __thread_id __y) _NOEXCEPT
+        bool operator!=(__thread_id __x, __thread_id __y) noexcept
         {return !(__x == __y);}
     friend _LIBCUDACXX_INLINE_VISIBILITY
-        bool operator< (__thread_id __x, __thread_id __y) _NOEXCEPT
+        bool operator< (__thread_id __x, __thread_id __y) noexcept
         { // id==0 is always less than any other thread_id
         if (__x.__id_ == 0) return __y.__id_ != 0;
         if (__y.__id_ == 0) return false;
         return  __libcpp_thread_id_less(__x.__id_, __y.__id_);
         }
     friend _LIBCUDACXX_INLINE_VISIBILITY
-        bool operator<=(__thread_id __x, __thread_id __y) _NOEXCEPT
+        bool operator<=(__thread_id __x, __thread_id __y) noexcept
         {return !(__y < __x);}
     friend _LIBCUDACXX_INLINE_VISIBILITY
-        bool operator> (__thread_id __x, __thread_id __y) _NOEXCEPT
+        bool operator> (__thread_id __x, __thread_id __y) noexcept
         {return   __y < __x ;}
     friend _LIBCUDACXX_INLINE_VISIBILITY
-        bool operator>=(__thread_id __x, __thread_id __y) _NOEXCEPT
+        bool operator>=(__thread_id __x, __thread_id __y) noexcept
         {return !(__x < __y);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -761,7 +761,7 @@ private:
     _LIBCUDACXX_INLINE_VISIBILITY
     __thread_id(__libcpp_thread_id __id) : __id_(__id) {}
 
-    friend __thread_id this_thread::get_id() _NOEXCEPT;
+    friend __thread_id this_thread::get_id() noexcept;
     friend class _LIBCUDACXX_TYPE_VIS thread;
     friend struct _LIBCUDACXX_TEMPLATE_VIS hash<__thread_id>;
 };
@@ -771,7 +771,7 @@ namespace this_thread
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __thread_id
-get_id() _NOEXCEPT
+get_id() noexcept
 {
     return __libcpp_thread_get_current_id();
 }

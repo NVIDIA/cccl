@@ -14,7 +14,7 @@
 #include <cstdlib>
 
 #if !defined(_THROW_BAD_ALLOC) || !defined(_NOEXCEPT) || !defined(_LIBCXXABI_WEAK)
-#error The _THROW_BAD_ALLOC, _NOEXCEPT, and _LIBCXXABI_WEAK libc++ macros must \
+#error The _THROW_BAD_ALLOC, noexcept, and _LIBCXXABI_WEAK libc++ macros must \
        already be defined by libc++.
 #endif
 // Implement all new and delete operators as weak definitions
@@ -47,7 +47,7 @@ operator new(std::size_t size) _THROW_BAD_ALLOC
 
 _LIBCXXABI_WEAK
 void*
-operator new(size_t size, const std::nothrow_t&) _NOEXCEPT
+operator new(size_t size, const std::nothrow_t&) noexcept
 {
     void* p = 0;
 #ifndef _LIBCXXABI_NO_EXCEPTIONS
@@ -73,7 +73,7 @@ operator new[](size_t size) _THROW_BAD_ALLOC
 
 _LIBCXXABI_WEAK
 void*
-operator new[](size_t size, const std::nothrow_t&) _NOEXCEPT
+operator new[](size_t size, const std::nothrow_t&) noexcept
 {
     void* p = 0;
 #ifndef _LIBCXXABI_NO_EXCEPTIONS
@@ -92,7 +92,7 @@ operator new[](size_t size, const std::nothrow_t&) _NOEXCEPT
 
 _LIBCXXABI_WEAK
 void
-operator delete(void* ptr) _NOEXCEPT
+operator delete(void* ptr) noexcept
 {
     if (ptr)
         ::free(ptr);
@@ -100,35 +100,35 @@ operator delete(void* ptr) _NOEXCEPT
 
 _LIBCXXABI_WEAK
 void
-operator delete(void* ptr, const std::nothrow_t&) _NOEXCEPT
+operator delete(void* ptr, const std::nothrow_t&) noexcept
 {
     ::operator delete(ptr);
 }
 
 _LIBCXXABI_WEAK
 void
-operator delete(void* ptr, size_t) _NOEXCEPT
+operator delete(void* ptr, size_t) noexcept
 {
     ::operator delete(ptr);
 }
 
 _LIBCXXABI_WEAK
 void
-operator delete[] (void* ptr) _NOEXCEPT
+operator delete[] (void* ptr) noexcept
 {
     ::operator delete(ptr);
 }
 
 _LIBCXXABI_WEAK
 void
-operator delete[] (void* ptr, const std::nothrow_t&) _NOEXCEPT
+operator delete[] (void* ptr, const std::nothrow_t&) noexcept
 {
     ::operator delete[](ptr);
 }
 
 _LIBCXXABI_WEAK
 void
-operator delete[] (void* ptr, size_t) _NOEXCEPT
+operator delete[] (void* ptr, size_t) noexcept
 {
     ::operator delete[](ptr);
 }
@@ -169,7 +169,7 @@ operator new(std::size_t size, std::align_val_t alignment) _THROW_BAD_ALLOC
 
 _LIBCXXABI_WEAK
 void*
-operator new(size_t size, std::align_val_t alignment, const std::nothrow_t&) _NOEXCEPT
+operator new(size_t size, std::align_val_t alignment, const std::nothrow_t&) noexcept
 {
     void* p = 0;
 #ifndef _LIBCXXABI_NO_EXCEPTIONS
@@ -195,7 +195,7 @@ operator new[](size_t size, std::align_val_t alignment) _THROW_BAD_ALLOC
 
 _LIBCXXABI_WEAK
 void*
-operator new[](size_t size, std::align_val_t alignment, const std::nothrow_t&) _NOEXCEPT
+operator new[](size_t size, std::align_val_t alignment, const std::nothrow_t&) noexcept
 {
     void* p = 0;
 #ifndef _LIBCXXABI_NO_EXCEPTIONS
@@ -214,7 +214,7 @@ operator new[](size_t size, std::align_val_t alignment, const std::nothrow_t&) _
 
 _LIBCXXABI_WEAK
 void
-operator delete(void* ptr, std::align_val_t) _NOEXCEPT
+operator delete(void* ptr, std::align_val_t) noexcept
 {
     if (ptr)
 #if defined(_LIBCUDACXX_WIN32API)
@@ -226,35 +226,35 @@ operator delete(void* ptr, std::align_val_t) _NOEXCEPT
 
 _LIBCXXABI_WEAK
 void
-operator delete(void* ptr, std::align_val_t alignment, const std::nothrow_t&) _NOEXCEPT
+operator delete(void* ptr, std::align_val_t alignment, const std::nothrow_t&) noexcept
 {
     ::operator delete(ptr, alignment);
 }
 
 _LIBCXXABI_WEAK
 void
-operator delete(void* ptr, size_t, std::align_val_t alignment) _NOEXCEPT
+operator delete(void* ptr, size_t, std::align_val_t alignment) noexcept
 {
     ::operator delete(ptr, alignment);
 }
 
 _LIBCXXABI_WEAK
 void
-operator delete[] (void* ptr, std::align_val_t alignment) _NOEXCEPT
+operator delete[] (void* ptr, std::align_val_t alignment) noexcept
 {
     ::operator delete(ptr, alignment);
 }
 
 _LIBCXXABI_WEAK
 void
-operator delete[] (void* ptr, std::align_val_t alignment, const std::nothrow_t&) _NOEXCEPT
+operator delete[] (void* ptr, std::align_val_t alignment, const std::nothrow_t&) noexcept
 {
     ::operator delete[](ptr, alignment);
 }
 
 _LIBCXXABI_WEAK
 void
-operator delete[] (void* ptr, size_t, std::align_val_t alignment) _NOEXCEPT
+operator delete[] (void* ptr, size_t, std::align_val_t alignment) noexcept
 {
     ::operator delete[](ptr, alignment);
 }

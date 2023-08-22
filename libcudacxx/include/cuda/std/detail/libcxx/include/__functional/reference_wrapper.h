@@ -32,22 +32,22 @@ public:
 private:
     type* __f_;
 
-    static _LIBCUDACXX_INLINE_VISIBILITY void __fun(_Tp&) _NOEXCEPT;
+    static _LIBCUDACXX_INLINE_VISIBILITY void __fun(_Tp&) noexcept;
     static void __fun(_Tp&&) = delete;
 
 public:
     template <class _Up, class = __enable_if_t<!__is_same_uncvref<_Up, reference_wrapper>::value, decltype(__fun(declval<_Up>())) > >
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-    reference_wrapper(_Up&& __u) _NOEXCEPT_(noexcept(__fun(declval<_Up>()))) {
+    reference_wrapper(_Up&& __u) noexcept(noexcept(__fun(declval<_Up>()))) {
         type& __f = static_cast<_Up&&>(__u);
         __f_ = _CUDA_VSTD::addressof(__f);
     }
 
     // access
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-    operator type&() const _NOEXCEPT {return *__f_;}
+    operator type&() const noexcept {return *__f_;}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-    type& get() const _NOEXCEPT {return *__f_;}
+    type& get() const noexcept {return *__f_;}
 
     // invoke
     template <class... _ArgTypes>
@@ -66,7 +66,7 @@ reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 reference_wrapper<_Tp>
-ref(_Tp& __t) _NOEXCEPT
+ref(_Tp& __t) noexcept
 {
     return reference_wrapper<_Tp>(__t);
 }
@@ -74,7 +74,7 @@ ref(_Tp& __t) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 reference_wrapper<_Tp>
-ref(reference_wrapper<_Tp> __t) _NOEXCEPT
+ref(reference_wrapper<_Tp> __t) noexcept
 {
     return __t;
 }
@@ -82,7 +82,7 @@ ref(reference_wrapper<_Tp> __t) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 reference_wrapper<const _Tp>
-cref(const _Tp& __t) _NOEXCEPT
+cref(const _Tp& __t) noexcept
 {
     return reference_wrapper<const _Tp>(__t);
 }
@@ -90,7 +90,7 @@ cref(const _Tp& __t) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 reference_wrapper<const _Tp>
-cref(reference_wrapper<_Tp> __t) _NOEXCEPT
+cref(reference_wrapper<_Tp> __t) noexcept
 {
     return __t;
 }

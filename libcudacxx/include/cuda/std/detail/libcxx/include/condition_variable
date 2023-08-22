@@ -127,9 +127,9 @@ public:
     condition_variable_any();
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    void notify_one() _NOEXCEPT;
+    void notify_one() noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
-    void notify_all() _NOEXCEPT;
+    void notify_all() noexcept;
 
     template <class _Lock>
         _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
@@ -171,7 +171,7 @@ condition_variable_any::condition_variable_any()
 
 inline
 void
-condition_variable_any::notify_one() _NOEXCEPT
+condition_variable_any::notify_one() noexcept
 {
     {lock_guard<mutex> __lx(*__mut_);}
     __cv_.notify_one();
@@ -179,7 +179,7 @@ condition_variable_any::notify_one() _NOEXCEPT
 
 inline
 void
-condition_variable_any::notify_all() _NOEXCEPT
+condition_variable_any::notify_all() noexcept
 {
     {lock_guard<mutex> __lx(*__mut_);}
     __cv_.notify_all();

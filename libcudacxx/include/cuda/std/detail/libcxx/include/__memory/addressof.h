@@ -29,7 +29,7 @@ template <class _Tp>
 inline _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _LIBCUDACXX_NO_CFI _LIBCUDACXX_INLINE_VISIBILITY
 _Tp*
-addressof(_Tp& __x) _NOEXCEPT
+addressof(_Tp& __x) noexcept
 {
     return __builtin_addressof(__x);
 }
@@ -39,7 +39,7 @@ addressof(_Tp& __x) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_NO_CFI _LIBCUDACXX_INLINE_VISIBILITY
 _Tp*
-addressof(_Tp& __x) _NOEXCEPT
+addressof(_Tp& __x) noexcept
 {
   return reinterpret_cast<_Tp *>(
       const_cast<char *>(&reinterpret_cast<const volatile char &>(__x)));
@@ -55,7 +55,7 @@ addressof(_Tp& __x) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __strong _Tp*
-addressof(__strong _Tp& __x) _NOEXCEPT
+addressof(__strong _Tp& __x) noexcept
 {
   return &__x;
 }
@@ -64,7 +64,7 @@ addressof(__strong _Tp& __x) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __weak _Tp*
-addressof(__weak _Tp& __x) _NOEXCEPT
+addressof(__weak _Tp& __x) noexcept
 {
   return &__x;
 }
@@ -73,7 +73,7 @@ addressof(__weak _Tp& __x) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __autoreleasing _Tp*
-addressof(__autoreleasing _Tp& __x) _NOEXCEPT
+addressof(__autoreleasing _Tp& __x) noexcept
 {
   return &__x;
 }
@@ -81,7 +81,7 @@ addressof(__autoreleasing _Tp& __x) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __unsafe_unretained _Tp*
-addressof(__unsafe_unretained _Tp& __x) _NOEXCEPT
+addressof(__unsafe_unretained _Tp& __x) noexcept
 {
   return &__x;
 }

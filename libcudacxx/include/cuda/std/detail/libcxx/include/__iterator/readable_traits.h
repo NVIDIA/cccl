@@ -101,16 +101,16 @@ template<class _Tp>
 struct __cond_value_type<_Tp, enable_if_t<_LIBCUDACXX_TRAIT(is_object, _Tp)>> { using value_type = remove_cv_t<_Tp>; };
 
 template<class _Tp, class = void>
-inline constexpr bool __has_member_value_type = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_value_type = false;
 
 template<class _Tp>
-inline constexpr bool __has_member_value_type<_Tp, void_t<typename _Tp::value_type>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_value_type<_Tp, void_t<typename _Tp::value_type>> = true;
 
 template<class _Tp, class = void>
-inline constexpr bool __has_member_element_type = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_element_type = false;
 
 template<class _Tp>
-inline constexpr bool __has_member_element_type<_Tp, void_t<typename _Tp::element_type>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_element_type<_Tp, void_t<typename _Tp::element_type>> = true;
 
 template<class, class = void> struct indirectly_readable_traits {};
 

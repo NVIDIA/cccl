@@ -50,13 +50,13 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     __bit_reference(const __bit_reference&) = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY operator bool() const _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY operator bool() const noexcept
         {return static_cast<bool>(*__seg_ & __mask_);}
-    _LIBCUDACXX_INLINE_VISIBILITY bool operator ~() const _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY bool operator ~() const noexcept
         {return !static_cast<bool>(*this);}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    __bit_reference& operator=(bool __x) _NOEXCEPT
+    __bit_reference& operator=(bool __x) noexcept
     {
         if (__x)
             *__seg_ |= __mask_;
@@ -66,15 +66,15 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    __bit_reference& operator=(const __bit_reference& __x) _NOEXCEPT
+    __bit_reference& operator=(const __bit_reference& __x) noexcept
         {return operator=(static_cast<bool>(__x));}
 
-    _LIBCUDACXX_INLINE_VISIBILITY void flip() _NOEXCEPT {*__seg_ ^= __mask_;}
-    _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, false> operator&() const _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY void flip() noexcept {*__seg_ ^= __mask_;}
+    _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, false> operator&() const noexcept
         {return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(__libcpp_ctz(__mask_)));}
 private:
     _LIBCUDACXX_INLINE_VISIBILITY
-    __bit_reference(__storage_pointer __s, __storage_type __m) _NOEXCEPT
+    __bit_reference(__storage_pointer __s, __storage_type __m) noexcept
         : __seg_(__s), __mask_(__m) {}
 };
 
@@ -86,7 +86,7 @@ class __bit_reference<_Cp, false>
 template <class _Cp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
-swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) _NOEXCEPT
+swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
 {
     bool __t = __x;
     __x = __y;
@@ -96,7 +96,7 @@ swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) _NOEXCEPT
 template <class _Cp, class _Dp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
-swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) _NOEXCEPT
+swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) noexcept
 {
     bool __t = __x;
     __x = __y;
@@ -106,7 +106,7 @@ swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) _NOEXCEPT
 template <class _Cp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
-swap(__bit_reference<_Cp> __x, bool& __y) _NOEXCEPT
+swap(__bit_reference<_Cp> __x, bool& __y) noexcept
 {
     bool __t = __x;
     __x = __y;
@@ -116,7 +116,7 @@ swap(__bit_reference<_Cp> __x, bool& __y) _NOEXCEPT
 template <class _Cp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
-swap(bool& __x, __bit_reference<_Cp> __y) _NOEXCEPT
+swap(bool& __x, __bit_reference<_Cp> __y) noexcept
 {
     bool __t = __x;
     __x = __y;
@@ -139,18 +139,18 @@ public:
     __bit_const_reference(const __bit_const_reference&) = default;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    __bit_const_reference(const __bit_reference<_Cp>& __x) _NOEXCEPT
+    __bit_const_reference(const __bit_reference<_Cp>& __x) noexcept
         : __seg_(__x.__seg_), __mask_(__x.__mask_) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR operator bool() const _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR operator bool() const noexcept
         {return static_cast<bool>(*__seg_ & __mask_);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, true> operator&() const _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, true> operator&() const noexcept
         {return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(__libcpp_ctz(__mask_)));}
 private:
     _LIBCUDACXX_INLINE_VISIBILITY
     _LIBCUDACXX_CONSTEXPR
-    __bit_const_reference(__storage_pointer __s, __storage_type __m) _NOEXCEPT
+    __bit_const_reference(__storage_pointer __s, __storage_type __m) noexcept
         : __seg_(__s), __mask_(__m) {}
 
     __bit_const_reference& operator=(const __bit_const_reference&) = delete;
@@ -1108,7 +1108,7 @@ private:
     unsigned          __ctz_;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator() _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator() noexcept
 #if _LIBCUDACXX_STD_VER > 11
     : __seg_(nullptr), __ctz_(0)
 #endif
@@ -1118,10 +1118,10 @@ public:
       _If<_IsConst, __bit_iterator<_Cp, false>, struct __private_nat>;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    __bit_iterator(const __type_for_copy_to_const& __it) _NOEXCEPT
+    __bit_iterator(const __type_for_copy_to_const& __it) noexcept
         : __seg_(__it.__seg_), __ctz_(__it.__ctz_) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY reference operator*() const _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY reference operator*() const noexcept
         {return reference(__seg_, __storage_type(1) << __ctz_);}
 
     _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator& operator++()
@@ -1222,7 +1222,7 @@ public:
 
 private:
     _LIBCUDACXX_INLINE_VISIBILITY
-    __bit_iterator(__storage_pointer __s, unsigned __ctz) _NOEXCEPT
+    __bit_iterator(__storage_pointer __s, unsigned __ctz) noexcept
         : __seg_(__s), __ctz_(__ctz) {}
 
     friend typename _Cp::__self;
