@@ -29,7 +29,6 @@ TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
 using barrier = cuda::barrier<cuda::thread_scope_block>;
 inline __device__ void mbarrier_complete_tx(barrier &bar, int transaction_count) {
-
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (
       asm volatile(
