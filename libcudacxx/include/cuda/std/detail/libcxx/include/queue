@@ -411,7 +411,7 @@ typename enable_if<
     void
 >::type
 swap(queue<_Tp, _Container>& __x, queue<_Tp, _Container>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }
@@ -787,7 +787,7 @@ typename enable_if<
 >::type
 swap(priority_queue<_Tp, _Container, _Compare>& __x,
      priority_queue<_Tp, _Container, _Compare>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

@@ -4161,7 +4161,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(basic_string<_CharT, _Traits, _Allocator>& __lhs,
      basic_string<_CharT, _Traits, _Allocator>& __rhs)
-     noexcept(_NOEXCEPT_(__lhs.swap(__rhs)))
+     noexcept(noexcept(__lhs.swap(__rhs)))
 {
     __lhs.swap(__rhs);
 }

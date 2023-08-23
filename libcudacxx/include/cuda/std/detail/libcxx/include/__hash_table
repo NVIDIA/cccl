@@ -2883,7 +2883,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(__hash_table<_Tp, _Hash, _Equal, _Alloc>& __x,
      __hash_table<_Tp, _Hash, _Equal, _Alloc>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

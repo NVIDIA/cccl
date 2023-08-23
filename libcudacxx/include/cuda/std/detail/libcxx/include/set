@@ -952,7 +952,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(set<_Key, _Compare, _Allocator>& __x,
      set<_Key, _Compare, _Allocator>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }
@@ -1476,7 +1476,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(multiset<_Key, _Compare, _Allocator>& __x,
      multiset<_Key, _Compare, _Allocator>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }
