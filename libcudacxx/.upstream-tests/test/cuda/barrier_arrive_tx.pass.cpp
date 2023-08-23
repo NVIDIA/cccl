@@ -57,8 +57,7 @@ __device__ bool run_arrive_tx_test(barrier &bar) {
   if (threadIdx.x == 0) {
     mbarrier_complete_tx(bar, blockDim.x);
   }
-  // Do not use std::move here, as it might not be available in nvrtc
-  bar.wait(static_cast<barrier::arrival_token&&>(token));
+  bar.wait(cuda::std::move(token));
 
   return true;
 }
