@@ -2731,7 +2731,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(__tree<_Tp, _Compare, _Allocator>& __x,
      __tree<_Tp, _Compare, _Allocator>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

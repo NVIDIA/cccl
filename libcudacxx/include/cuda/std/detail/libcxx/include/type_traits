@@ -623,8 +623,8 @@ template <class _ForwardIterator1, class _ForwardIterator2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 void
 iter_swap(_ForwardIterator1 __a, _ForwardIterator2 __b)
-    //                                  noexcept(_NOEXCEPT_(swap(*__a, *__b)))
-               noexcept(_NOEXCEPT_(swap(*_CUDA_VSTD::declval<_ForwardIterator1>(),
+    //                                  noexcept(noexcept(swap(*__a, *__b)))
+               noexcept(noexcept(swap(*_CUDA_VSTD::declval<_ForwardIterator1>(),
                                           *_CUDA_VSTD::declval<_ForwardIterator2>())))
 {
     swap(*__a, *__b);

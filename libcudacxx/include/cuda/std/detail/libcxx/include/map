@@ -592,7 +592,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(__map_value_compare<_Key, _CP, _Compare, __b>& __x,
      __map_value_compare<_Key, _CP, _Compare, __b>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }
@@ -1583,7 +1583,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(map<_Key, _Tp, _Compare, _Allocator>& __x,
      map<_Key, _Tp, _Compare, _Allocator>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }
@@ -2146,7 +2146,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(multimap<_Key, _Tp, _Compare, _Allocator>& __x,
      multimap<_Key, _Tp, _Compare, _Allocator>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

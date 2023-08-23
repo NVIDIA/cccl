@@ -13,7 +13,7 @@
 #include <new>
 #include <cstdlib>
 
-#if !defined(_THROW_BAD_ALLOC) || !defined(_NOEXCEPT) || !defined(_LIBCXXABI_WEAK)
+#if !defined(_THROW_BAD_ALLOC) || !defined(_LIBCXXABI_WEAK)
 #error The _THROW_BAD_ALLOC, noexcept, and _LIBCXXABI_WEAK libc++ macros must \
        already be defined by libc++.
 #endif

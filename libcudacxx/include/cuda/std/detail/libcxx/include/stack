@@ -299,7 +299,7 @@ typename enable_if<
     void
 >::type
 swap(stack<_Tp, _Container>& __x, stack<_Tp, _Container>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }
