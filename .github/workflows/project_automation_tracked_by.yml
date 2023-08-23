@@ -1,0 +1,180 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Update Tracker
+
+on:
+  pull_request_target:
+    # Run this action when a PR is opened or edited
+    types: [opened, edited]
+  issues:
+    # Or run when an issue is opened or edited
+    types: [opened, edited]
+      
+env:
+  ORG: ${{ github.event.repository.owner.login }}
+  REPO: ${{ github.event.repository.name }}
+  GH_TOKEN: ${{ github.token }}
+  KEEP_RUNNING: 'true'
+
+jobs:
+  set_tracked_by:
+    runs-on: ubuntu-latest
+    permissions:
+        # Using the default github token here - we could use the PAT if we want reach outside of CCCL issues
+        # We need to update the tracker issue, so write permission here
+        issues: write
+        # PRs can't be trackers, so we only need to read them
+        pull-requests: read
+
+    steps:
+      - name: Wait 1 Second
+        id: sleep
+        run: sleep 1
+
+      - name: Set Body if Pull Request Target
+        id : set_body_pr_target
+        if: github.event_name == 'pull_request_target'
+        env:
+          TEMP_BODY: "${{ github.event.pull_request.body }}"
+        run: |
+          # We can't store the body as an environment variable as-is
+          # GHA environment variables must be a single line. We replace with a placeholder here
+          # _NL_PH_ = Newline Placeholder, _CR_PH_ = Carriage Return Placeholder
+          # And later on, we'll un-replace when updating the body of the tracker-issue
+          # GitHub uses /r/n for newlines outside of codeblocks, but inside codeblocks just \n
+          
+          BODY=$(echo "$TEMP_BODY" | sed ':a;N;$!ba;s/\n/_NL_PH_/g' | sed ':a;N;$!ba;s/\r/_CR_PH_/g')
+          echo "BODY=${BODY}" >> $GITHUB_ENV
+          echo "ITEM_URL=${{ github.event.pull_request.html_url }}" >> $GITHUB_ENV
+          
+      - name: Set Body if Issue
+        id : set_body_issue
+        if: github.event_name == 'issues'
+        env:
+          TEMP_BODY: "${{ github.event.issue.body }}"
+        run: |
+          # This step is duplicated from above but it references issue instead of PR
+          # We can use a single action to update PR or Issue tracked-by status this way
+          
+          BODY=$(echo "$TEMP_BODY" | sed ':a;N;$!ba;s/\n/_NL_PH_/g' | sed ':a;N;$!ba;s/\r/_CR_PH_/g')
+          echo "BODY=${BODY}" >> $GITHUB_ENV
+          echo "ITEM_URL=${{ github.event.issue.html_url }}" >> $GITHUB_ENV
+        
+      - name: Look for Tracked By
+        id : look_for_tracked_by
+        run: |
+            # This runs on issue edit/open, we want to exit as early as we can if we don't need to run things
+            # First we look for a case-insensitive `tracked by` and if it's not there, we set KEEP_RUNNING to false
+            # We do it this way so the action will pass instead of fail like if we used `exit 1`
+            
+            body_lower=$(echo "${{ env.BODY }}" | tr '[:upper:]' '[:lower:]')
+            if [[ "$body_lower" != *'tracked by'* ]]; then
+                echo "No 'Tracked By' found in PR body"
+                echo "KEEP_RUNNING=false" >> $GITHUB_ENV
+            fi
+      
+      - name: Get Tracking Issue
+        id : get_tracking_issue
+        if: env.KEEP_RUNNING == 'true'
+        run: |
+            # This step gets the text after the `Tracked By` text
+            # We don't know if it's in the format of a shorthand reference like #117, or a URL yet
+            
+            TRACKING_ISSUE=$(echo "${{ env.BODY }}" | grep -oP '(?i)Tracked By \K([^ _CR_PH__NL_PH_]+)')
+            echo "TRACKING_ISSUE=${TRACKING_ISSUE}" >> $GITHUB_ENV
+            echo "Tracking Issue: ${{ env.TRACKING_ISSUE }}"
+
+      - name: Check if URL
+        id : check_if_url
+        if: env.KEEP_RUNNING == 'true'
+        run: |
+            # In this step we either are happy it's a URL and do nothing
+            # Or we build the URL since that's what we need for the tasklist
+            
+            if [[ "${{ env.TRACKING_ISSUE }}" = *'https?://'* ]]; then
+                echo "Tracking Issue is a URL"
+            else
+                # convert it to a url
+                stripped_text=$(echo "${{ env.TRACKING_ISSUE }}" | sed -e 's/#//g')
+                new_url="https://github.com/${{ env.ORG }}/${{ env.REPO }}/issues/${stripped_text}"
+                echo "TRACKING_ISSUE=${new_url}" >> $GITHUB_ENV
+                echo "Tracking Issue: ${{ env.TRACKING_ISSUE }}"
+            fi
+      
+      - name: Get Tracker Body Text
+        id : get_tracker_body_text
+        if: env.KEEP_RUNNING == 'true'
+        run: |
+          # Get the issue body using the GitHub CLI and convert to a single line
+          TRACKER_BODY=$(gh issue view ${{ env.TRACKING_ISSUE }} --json body | jq -r '.body')
+          TRACKER_BODY=$(echo "$TRACKER_BODY" | sed ':a;N;$!ba;s/\n/_NL_PH_/g' | sed ':a;N;$!ba;s/\r/_CR_PH_/g')
+          
+          # Set the issue body as an environment variable
+          echo "TRACKER_BODY=${TRACKER_BODY}" >> $GITHUB_ENV
+
+      - name: Check if already tracked
+        id: check_if_already_tracked
+        if: env.KEEP_RUNNING == 'true'
+        run: |
+          # If it's already tracked, we need to skip this action
+          # Because of this logic, right now we only support adding a single Tracked-By this way
+          # A future enhancement could be supporting multiple Tracked By in the issue
+          
+          tracker_body_sanitized=$(echo '${{ env.TRACKER_BODY }}' | sed 's/`//g' | sed 's/\///g')
+          item_url_sanitized=$(echo '${{ env.ITEM_URL }}' | sed 's/`//g' | sed 's/\///g')
+
+          if [[ "$tracker_body_sanitized" = *"$item_url_sanitized"* ]]; then
+              echo "Issue is already tracked"
+              echo "KEEP_RUNNING=false" >> $GITHUB_ENV
+          fi
+
+      - name: Check for a tasklist
+        id : check_for_tasklist
+        if: env.KEEP_RUNNING == 'true'
+        run: |
+          # If there's an existing tasklist, let's add it to the existing tasklist
+          # If there's no existing tasklist, or one with a custom name, let's create a new one
+          # We don't append to custom named ones because it might not be thematically appropriate
+          # if the custom named one is 'Bugs' that might not be applicable for a new tracked issue
+          
+          TRACKER_BODY_BASH='${{ env.TRACKER_BODY }}'
+          ITEM_URL_BASH="${{ env.ITEM_URL }}"
+          if [[ "$TRACKER_BODY_BASH" == *'[tasklist]'* ]]; then
+            # Add a new tasklist to the existing one
+            prefix="${TRACKER_BODY_BASH%%\[tasklist\]*}"
+            suffix="${TRACKER_BODY_BASH##*\[tasklist\]}"
+            if [[ "$suffix" == $'\r_NL_PH_###'* ]]; then
+              # Add a new tasklist to the body
+              TASKLIST_TEXT="_CR_PH__NL_PH_\`\`\`[tasklist]_NL_PH_ - [ ] "
+              TASKLIST_CLOSE="_NL_PH_\`\`\`"
+              NEW_BODY="$TRACKER_BODY_BASH$TASKLIST_TEXT$ITEM_URL_BASH$TASKLIST_CLOSE"
+            else
+              NEW_BODY="$prefix[tasklist]_NL_PH_- [ ] $ITEM_URL_BASH$suffix"
+            fi
+          else
+            # Add a new tasklist to the body
+            TASKLIST_TEXT="_CR_PH__NL_PH_\`\`\`[tasklist]_NL_PH_ - [ ] "
+            TASKLIST_CLOSE="_NL_PH_\`\`\`"
+            NEW_BODY="$TRACKER_BODY_BASH$TASKLIST_TEXT$ITEM_URL_BASH$TASKLIST_CLOSE"
+          fi
+          echo "NEW_BODY=${NEW_BODY}" >> $GITHUB_ENV
+          
+      - name: Track the issue in the Tracker
+        id: track_the_issue
+        if: env.KEEP_RUNNING == 'true'
+        run: |
+          # Finally, update the body to the new body
+          gh issue edit ${{ env.TRACKING_ISSUE }} --body "$(echo '${{ env.NEW_BODY }}' | sed 's/_CR_PH_/\r/g' | sed 's/_NL_PH_/\n/g')"
