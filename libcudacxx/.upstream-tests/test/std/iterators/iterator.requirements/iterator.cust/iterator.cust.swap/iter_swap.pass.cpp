@@ -38,7 +38,7 @@ struct HasIterSwap {
   }
 };
 
-#ifndef _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3 // nvcc segfaults here
+#ifndef TEST_COMPILER_CUDACC_BELOW_11_3 // nvcc segfaults here
 static_assert( cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, HasIterSwap&>);
 static_assert( cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, int&>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasIterSwap&>);
@@ -50,7 +50,7 @@ static_assert(!cuda::std::is_invocable_v<IterSwapT&, int&, HasIterSwap&>);
 static_assert( cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, HasIterSwap&>);
 static_assert( cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, int&>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT&&, int&, HasIterSwap&>);
-#endif // _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3
+#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
 struct NodiscardIterSwap {
   __host__ __device__ friend _LIBCUDACXX_NODISCARD_EXT int iter_swap(NodiscardIterSwap&, NodiscardIterSwap&) { return 0; }
@@ -82,12 +82,12 @@ struct HasRangesSwapWrapper {
   __host__ __device__ constexpr HasRangesSwap& operator*() const { return value_; }
 };
 
-#ifndef _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3 // nvcc segfaults here
+#ifndef TEST_COMPILER_CUDACC_BELOW_11_3 // nvcc segfaults here
 static_assert( cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, HasRangesSwapWrapper&>);
 // Does not satisfy swappable_with, even though swap(X, Y) is valid.
 static_assert(!cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, int&>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasRangesSwapWrapper&>);
-#endif // _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3
+#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
 struct B;
 
@@ -213,13 +213,13 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-#ifndef _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3 // nvcc segfaults here
+#ifndef TEST_COMPILER_CUDACC_BELOW_11_3 // nvcc segfaults here
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int*>); // too few arguments
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int*, int*>); // too many arguments
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int, int*>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT, void*, void*>);
-#endif // _LIBCUDACXX_COMPILER_NVCC_BELOW_11_3
+#endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
 #if TEST_STD_VER > 17
 // Test ADL-proofing.
