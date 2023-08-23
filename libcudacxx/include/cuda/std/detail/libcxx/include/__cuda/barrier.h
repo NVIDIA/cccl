@@ -207,7 +207,7 @@ public:
             ), NV_IS_DEVICE, (
                 // On architectures pre-SM90, we drop the transaction count
                 // update. The barriers do not keep track of transaction counts.
-                __barrier.arrive(__arrive_count_update);
+                __token = __barrier.arrive(__arrive_count_update);
             )
         )
         return __token;
