@@ -12,6 +12,8 @@
 
 #include <cuda/barrier>
 
+#include <cuda/std/utility>
+
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 
