@@ -90,7 +90,6 @@ struct PurePublicDestructor              { public:    __host__ __device__ virtua
 struct PureProtectedDestructor           { protected: __host__ __device__ virtual ~PureProtectedDestructor() = 0; };
 struct PurePrivateDestructor             { private:   __host__ __device__ virtual ~PurePrivateDestructor() = 0; };
 
-#if TEST_STD_VER >= 11
 struct DeletedPublicDestructor           { public:    __host__ __device__ ~DeletedPublicDestructor() = delete; };
 struct DeletedProtectedDestructor        { protected: __host__ __device__ ~DeletedProtectedDestructor() = delete; };
 struct DeletedPrivateDestructor          { private:   __host__ __device__ ~DeletedPrivateDestructor() = delete; };
@@ -98,7 +97,6 @@ struct DeletedPrivateDestructor          { private:   __host__ __device__ ~Delet
 struct DeletedVirtualPublicDestructor    { public:    __host__ __device__ virtual ~DeletedVirtualPublicDestructor() = delete; };
 struct DeletedVirtualProtectedDestructor { protected: __host__ __device__ virtual ~DeletedVirtualProtectedDestructor() = delete; };
 struct DeletedVirtualPrivateDestructor   { private:   __host__ __device__ virtual ~DeletedVirtualPrivateDestructor() = delete; };
-#endif
 
 
 int main(int, char**)
@@ -125,7 +123,6 @@ int main(int, char**)
     test_is_not_destructible<void>();
     test_is_not_destructible<Function>();
 
-#if TEST_STD_VER >= 11
     // Test access controlled destructors
     test_is_not_destructible<ProtectedDestructor>();
     test_is_not_destructible<PrivateDestructor>();
@@ -144,8 +141,6 @@ int main(int, char**)
 
     // Test private destructors
     test_is_not_destructible<NotEmpty>();
-#endif
-
 
   return 0;
 }

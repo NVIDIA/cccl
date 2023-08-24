@@ -112,7 +112,6 @@ int main(int, char**)
     test_is_trivially_destructible<char[3]>();
     test_is_trivially_destructible<bit_zero>();
 
-#if TEST_STD_VER >= 11
     // requires access control sfinae
     test_is_not_trivially_destructible<ProtectedDestructor>();
     test_is_not_trivially_destructible<PrivateDestructor>();
@@ -120,7 +119,6 @@ int main(int, char**)
     test_is_not_trivially_destructible<VirtualPrivateDestructor>();
     test_is_not_trivially_destructible<PureProtectedDestructor>();
     test_is_not_trivially_destructible<PurePrivateDestructor>();
-#endif
 
 #if TEST_HAS_BUILTIN_IDENTIFIER(_Atomic)
     test_is_trivially_destructible<_Atomic int>();

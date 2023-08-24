@@ -260,7 +260,7 @@ int main(int, char**)
     // compilers in C++11 or when we are using the compiler builtin for
     // is_convertible.
 #if !(defined(TEST_COMPILER_MSVC) && defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)) && \
-    (TEST_STD_VER >= 11 || !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK))
+    (!defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK))
     test_is_not_convertible<NonCopyable&, NonCopyable>();
 #endif
 

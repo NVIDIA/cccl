@@ -96,7 +96,6 @@ public:
       assert(a.data_ != destructed_value && a.id_ != destructed_value &&
              "copying from destroyed allocator");
     }
-#if TEST_STD_VER >= 11
     test_allocator(test_allocator&& a) TEST_NOEXCEPT : data_(a.data_),
                                                        id_(a.id_) {
       ++count;
@@ -106,7 +105,6 @@ public:
       a.data_ = moved_value;
       a.id_ = moved_value;
     }
-#endif
     template <class U>
     test_allocator(const test_allocator<U>& a) TEST_NOEXCEPT : data_(a.data_),
                                                                id_(a.id_) {
@@ -139,13 +137,8 @@ public:
         {assert(data_ >= 0); --alloc_count; ::operator delete((void*)p);}
     size_type max_size() const TEST_NOEXCEPT
         {return UINT_MAX / sizeof(T);}
-#if TEST_STD_VER < 11
-    void construct(pointer p, const T& val)
-        {::new(static_cast<void*>(p)) T(val);}
-#else
     template <class U> void construct(pointer p, U&& val)
         {::new(static_cast<void*>(p)) T(std::forward<U>(val));}
-#endif
     void destroy(pointer p)
         {p->~T();}
     friend bool operator==(const test_allocator& x, const test_allocator& y)
@@ -203,13 +196,8 @@ public:
         {assert(data_ >= 0); --alloc_count; ::operator delete((void*)p); }
     size_type max_size() const TEST_NOEXCEPT
         {return UINT_MAX / sizeof(T);}
-#if TEST_STD_VER < 11
-    void construct(pointer p, const T& val)
-        {::new(static_cast<void*>(p)) T(val);}
-#else
     template <class U> void construct(pointer p, U&& val)
         {::new(static_cast<void*>(p)) T(std::forward<U>(val));}
-#endif
     void destroy(pointer p) {p->~T();}
 
     friend bool operator==(const non_default_test_allocator& x, const non_default_test_allocator& y)
@@ -283,15 +271,7 @@ public:
     typedef std::true_type propagate_on_container_copy_assignment;
     typedef std::true_type propagate_on_container_move_assignment;
     typedef std::true_type propagate_on_container_swap;
-
-#if TEST_STD_VER < 11
-    std::size_t max_size() const
-        {return UINT_MAX / sizeof(T);}
-#endif
-
 };
-
-#if TEST_STD_VER >= 11
 
 struct Ctor_Tag {};
 
@@ -366,7 +346,6 @@ template<typename T, typename U>
 bool
 operator!=(const TaggingAllocator<T>&, const TaggingAllocator<U>&)
 { return false; }
-#endif
 
 template <std::size_t MaxAllocs>
 struct limited_alloc_handle {

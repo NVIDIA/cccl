@@ -52,13 +52,11 @@ enum E { V = INT_MIN };
 enum F { W = UINT_MAX };
 #endif // TEST_UNSIGNED_UNDERLYING_TYPE
 
-#if TEST_STD_VER >= 11
 enum G : char {};
 enum class H { red, green = 20, blue };
 enum class I : long { red, green = 20, blue };
 enum struct J { red, green = 20, blue };
 enum struct K : short { red, green = 20, blue };
-#endif
 
 int main(int, char**)
 {
@@ -69,13 +67,11 @@ int main(int, char**)
 #endif // TEST_UNSIGNED_UNDERLYING_TYPE
 
 //  Class enums and enums with specified underlying type
-#if TEST_STD_VER >= 11
     check<G, char>();
     check<H, int>();
     check<I, long>();
     check<J, int>();
     check<K, short>();
-#endif
 
 //  SFINAE-able underlying_type
 #if TEST_STD_VER > 17

@@ -54,7 +54,6 @@ int main(int, char**)
         test(s+5, 4, '0');
     }
 #if defined(_LIBCUDACXX_HAS_MEMORY)
-#if TEST_STD_VER >= 11
     {
         int i[5];
         typedef cuda::std::unique_ptr<int, do_nothing> Ptr;
@@ -63,7 +62,6 @@ int main(int, char**)
             p[j].reset(i+j);
         test(p, 3, Ptr(i+3));
     }
-#endif
 #endif
 #if TEST_STD_VER > 14
     {

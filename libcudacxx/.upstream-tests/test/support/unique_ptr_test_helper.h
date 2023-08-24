@@ -56,13 +56,11 @@ int getNumIncompleteTypeAlive();
 IncompleteType* getNewIncomplete();
 IncompleteType* getNewIncompleteArray(int size);
 
-#if TEST_STD_VER >= 11
 template <class ThisT, class ...Args>
 struct args_is_this_type : std::false_type {};
 
 template <class ThisT, class A1>
 struct args_is_this_type<ThisT, A1> : std::is_same<ThisT, typename std::decay<A1>::type> {};
-#endif
 
 template <class IncompleteT = IncompleteType,
           class Del = std::default_delete<IncompleteT> >
@@ -72,7 +70,6 @@ struct StoresIncomplete {
 
   std::unique_ptr<IncompleteT, Del> m_ptr;
 
-#if TEST_STD_VER >= 11
   StoresIncomplete(StoresIncomplete const&) = delete;
   StoresIncomplete(StoresIncomplete&&) = default;
 
@@ -80,12 +77,6 @@ struct StoresIncomplete {
   StoresIncomplete(Args&&... args) : m_ptr(std::forward<Args>(args)...) {
     static_assert(!args_is_this_type<StoresIncomplete, Args...>::value, "");
   }
-#else
-private:
-  StoresIncomplete();
-  StoresIncomplete(StoresIncomplete const&);
-public:
-#endif
 
   ~StoresIncomplete();
 
@@ -93,7 +84,6 @@ public:
   Del& get_deleter() { return m_ptr.get_deleter(); }
 };
 
-#if TEST_STD_VER >= 11
 template <class IncompleteT = IncompleteType,
           class Del = std::default_delete<IncompleteT>, class... Args>
 void doIncompleteTypeTest(int expect_alive, Args&&... ctor_args) {
@@ -108,7 +98,6 @@ void doIncompleteTypeTest(int expect_alive, Args&&... ctor_args) {
   }
   checkNumIncompleteTypeAlive(0);
 }
-#endif
 
 #define INCOMPLETE_TEST_EPILOGUE()                                             \
   int is_incomplete_test_anchor = is_incomplete_test();                        \
@@ -139,15 +128,9 @@ void doIncompleteTypeTest(int expect_alive, Args&&... ctor_args) {
 #pragma GCC diagnostic ignored "-Wvariadic-macros"
 #endif
 
-#if TEST_STD_VER >= 11
 #define DEFINE_AND_RUN_IS_INCOMPLETE_TEST(...)                                 \
   static int is_incomplete_test() { __VA_ARGS__ return 0; }                    \
   INCOMPLETE_TEST_EPILOGUE()
-#else
-#define DEFINE_AND_RUN_IS_INCOMPLETE_TEST(...)                                 \
-  static int is_incomplete_test() { return 0; }                                \
-  INCOMPLETE_TEST_EPILOGUE()
-#endif
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop

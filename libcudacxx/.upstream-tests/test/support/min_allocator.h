@@ -47,11 +47,7 @@ public:
 template <class T>
 class no_default_allocator
 {
-#if TEST_STD_VER >= 11
     no_default_allocator() = delete;
-#else
-    no_default_allocator();
-#endif
     struct construct_tag {};
     explicit no_default_allocator(construct_tag) {}
 

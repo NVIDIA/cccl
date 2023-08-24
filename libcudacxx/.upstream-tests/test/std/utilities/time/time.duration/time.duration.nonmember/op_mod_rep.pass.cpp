@@ -27,13 +27,11 @@ int main(int, char**)
     ns = ns % 6;
     assert(ns.count() == 3);
     }
-#if TEST_STD_VER >= 11
     {
     constexpr cuda::std::chrono::nanoseconds ns(15);
     constexpr cuda::std::chrono::nanoseconds ns2 = ns % 6;
     static_assert(ns2.count() == 3, "");
     }
-#endif
 
   return 0;
 }

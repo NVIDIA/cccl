@@ -84,9 +84,7 @@ int main(int, char**)
         C0 l = {};
         C0 r = {};
         l.swap(r);
-#if TEST_STD_VER >= 11
         static_assert(noexcept(l.swap(r)), "");
-#endif
     }
 
 
