@@ -600,7 +600,7 @@ struct __memcpy_async_sync_hooks<
         (_Scope == thread_scope_thread || _Scope == thread_scope_block) && (_SyncSpace == __space::__shared || _SyncSpace == __space::__cluster)
     >>
     _LIBCUDACXX_DEVICE
-    static async_contract_fulfillment __synchronize(__arch::__cuda<80>, barrier<_Scope> & __b, async_contract_fulfillment __acf) {
+    static async_contract_fulfillment __synchronize(__arch::__cuda<80>, barrier<_Sco> & __b, async_contract_fulfillment __acf) {
         if (__acf == async_contract_fulfillment::async) {
             asm volatile ("cp.async.mbarrier.arrive.shared.b64 [%0];"
                 :: "l"(__cvta_generic_to_shared(&__b))
