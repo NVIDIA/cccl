@@ -827,7 +827,7 @@ struct __void_pointer
 template <class _Ptr, class _Alloc>
 struct __void_pointer<_Ptr, _Alloc, false>
 {
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename pointer_traits<_Ptr>::template rebind<void>::other type;
+    typedef _LIBCUDACXX_NODEBUG_TYPE typename pointer_traits<_Ptr>::template rebind<void> type;
 };
 
 template <class _Tp, class = void>
@@ -4887,12 +4887,10 @@ struct _LIBCUDACXX_TYPE_VIS pointer_safety
 _LIBCUDACXX_FUNC_VIS pointer_safety get_pointer_safety() noexcept;
 #else
 // This function is only offered in C++03 under ABI v1.
-# if !defined(_LIBCUDACXX_ABI_POINTER_SAFETY_ENUM_TYPE)
 inline _LIBCUDACXX_INLINE_VISIBILITY
 pointer_safety get_pointer_safety() noexcept {
   return pointer_safety::relaxed;
 }
-# endif
 #endif
 
 
