@@ -139,10 +139,10 @@ Furthermore, because it is infeasible to test every environment we support, we d
 
 ### CUDA Toolkit (CTK) Compatibility 
 
-The CCCL team encourages users to ["live at head"](https://www.youtube.com/watch?v=tISy7EJQPzI) and always use the newest version to take advantage of the latest improvements.
+The CCCL team encourages users to ["live at head"](https://www.youtube.com/watch?v=tISy7EJQPzI) and always use the newest version of CCCL from GitHub to take advantage of the latest improvements.
 
-We want to enable users to upgrade the version of CCCL they are using without having to worry about upgrading their entire CUDA Toolkit. 
-Therefore, we support every minor CTK release within two major version series: current and preceding, but only the latest patch release. 
+We want to enable users to upgrade the version of CCCL they are using without upgrading their entire CUDA Toolkit. 
+Therefore, CCCL is backwards compatible with the latest patch release of every minor CTK release within two major version series: current and preceding. 
 When a new major CTK is released, we drop support for the oldest version.
 
 | CCCL Version  | Supports CUDA Toolkit Version  |
@@ -150,24 +150,36 @@ When a new major CTK is released, we drop support for the oldest version.
 | 2.x           | 11.1 - 11.8, 12.x (only latest patch releases) |
 | 3.x (Future)  | 12.x, 13.x  (only latest patch releases)       |
 
-Well-behaved code using the latest CCCL should compile and run successfully with any supported CTK version. Exceptions may occur with new features.
+[Well-behaved code](#compatibility-guidelines) using the latest CCCL should compile and run successfully with any supported CTK version. 
+Exceptions may occur for new features that depend on new CTK features, so those features would not work on older versions of the CTK. 
+For example, C++20 support was not added to `nvcc` until CUDA 12.0, so CCCL features that depend on C++20 would not work with CTK 11.x. 
 
-The table below summarizes compatibility of CTK and CCCL upgrade scenarios (all version numbers are for illustration purposes only):
+We want to enable users to bring a newer version of CCCL to an older CTK, but not vice versa.
+This means you cannot bring an older version of CCCL to a newer CTK.
+In other words, CCCL is never forwards compatible with the CUDA Toolkit. 
 
-| Action                | Example Upgrade     | Supported? | Possible CCCL Breaking Changes? | Notes                                                    |
-|-----------------------|---------------------|------------|---------------------------------|-----------------------------------------------------------|
-| Upgrade CCCL (Minor)  | CCCL 2.1 to CCCL 2.2 (using CTK 11.4) | Yes        | No (New features may vary)     | Existing code works; new features may vary in support.    |
-| Upgrade CCCL (Major)  | CCCL 2.2 to CCCL 3.0 (using CTK 12.1) | Yes        | Yes                            | May need to update existing code for breaking changes.    |
-| Upgrade CTK (Minor)   | CTK 11.4 to CTK 11.5 (using CCCL 2.2) | Yes (If CCCL is compatible) | No  | Ensure CCCL is same or newer than version shipped with CTK 11.5.  |
-| Upgrade CTK (Major)   | CTK 11.8 to CTK 12.0 (using CCCL 2.2) | Yes (If CCCL is compatible) | No (unless CTK removes feature used by CCCL)  | Ensure CCCL is same or newer than version shipped with CTK 12.0.  |
+The table below summarizes compatibility of the CTK and CCCL:
+
+| CTK Version | Included CCCL Version |   Trying to use...  | Supported? |                            Notes                           |
+|:-----------:|:---------------------:|:-------------------:|:----------:|:----------------------------------------------------------:|
+|   CTK `X.Y`   |    CCCL `MAJOR.MINOR`   | CCCL `MAJOR.MINOR+n`  |     Yes    |               Some new features may not work               |
+|   CTK `X.Y`   |    CCCL `MAJOR.MINOR`   | CCCL `MAJOR+1.MINOR`  |     Yes    | Possible breaking changes.  Some new features may not work |
+|   CTK `X.Y`   |    CCCL `MAJOR.MINOR`   | CCCL `MAJOR+2.MINOR`  |     No     |           CCCL supports only 2 CTK major verions           |
+|   CTK `X.Y`   |    CCCL `MAJOR.MINOR`   | CCCL `MAJOR.MINOR-n`  |     No     |               CCCL is not forwards compatible              |
+
 
 For more information on CCCL versioning, API/ABI compatibility, and breaking changes see the [Versioning](#versioning) section below.
 
 **TL;DR:**
-- The latest CCCL version supports the current and preceding CTK major version series. 
-- Minor version CCCL upgrades won't break existing code, but new features may not support all CTK versions.
-- Major version CCCL upgrades may introduce breaking changes.
-- Upgrading CTK: Ensure CCCL is compatible with the new version (same or newer than the one shipped with the new CTK).
+- The latest version of CCCL is backwards compatible with the current and preceding CTK major version series
+- CCCL is never forwards compatible with any version of the CTK. Always use the same or newer than what is included with your CTK. 
+- Minor version CCCL upgrades won't break existing code, but new features may not support all CTK versions
+
+### Operating Systems
+
+Unless otherwise specified, we support all the same operating systems as the CUDA toolkit, which are documented here:
+ - [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#system-requirements)
+ - [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements)
 
 ### Host Compilers
 
