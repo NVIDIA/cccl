@@ -590,7 +590,9 @@ struct __memcpy_async_sync_hooks<
 > {
     _LIBCUDACXX_DEVICE
     static async_contract_fulfillment __synchronize(__arch::__cuda<90>, barrier<_Sco, _CompF> & __b, async_contract_fulfillment __acf) {
-        if (_SyncSpace == __space::__cluster && !__isShared(&__b)) {
+        if (_SyncSpace == __space::__cluster && (_Sco == thread_scope_thread || _Sco == thread_scope_block)
+            && _CUDA_VSTD::is_same<_CompF, _CUDA_VSTD::__empty_completion>::value
+        ) {
             __trap();
         }
         return __synchronize(__arch::__cuda<80>{}, __b, __acf);

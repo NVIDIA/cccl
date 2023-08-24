@@ -64,7 +64,7 @@ using __space_constant = _CUDA_VSTD::integral_constant<__space, _Sp>;
 
 _LIBCUDACXX_DEVICE
 inline bool __is_cluster_shared(const void * __p) {
-    NV_IF_TARGET(NV_PROVIDES_SM_90,
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
         (return __isClusterShared(__p);),
         ((void)__p; return false;)
     )
@@ -88,8 +88,8 @@ inline bool __is_grid_constant(const void * __p) {
 #define _LIBCUDACXX_HANDLE_POINTER_SPACE(name, ...) \
     NV_IF_ELSE_TARGET( \
         NV_IS_DEVICE, ( \
-            _LIBCUDACXX_HANDLE_SPACE(__is_cluster_shared,__cluster, name, __VA_ARGS__) \
             _LIBCUDACXX_HANDLE_SPACE(__isShared, __shared, name, __VA_ARGS__) \
+            _LIBCUDACXX_HANDLE_SPACE(__is_cluster_shared, __cluster, name, __VA_ARGS__) \
             _LIBCUDACXX_HANDLE_SPACE(__isGlobal, __global, name, __VA_ARGS__) \
             _LIBCUDACXX_HANDLE_SPACE(__is_grid_constant, __grid_constant, name, __VA_ARGS__) \
             _LIBCUDACXX_HANDLE_SPACE(__isConstant, __constant, name, __VA_ARGS__) \
@@ -282,7 +282,7 @@ inline async_contract_fulfillment __strided_memcpy(_CUDA_VSTD::size_t __rank, _C
     return async_contract_fulfillment::none;
 }
 
-template<typename _Arch, __tx_api _Tx, _CUDA_VSTD::size_t _Alignment, __space _OutSpace, __space InSpace, __space _SyncSpace, typename = void>
+template<typename _Arch, __tx_api _Tx, _CUDA_VSTD::size_t _Alignment, __space _OutSpace, __space _InSpace, __space _SyncSpace, typename = void>
 struct __memcpy_async_default_aligned_impl {
     template<typename _Group, typename _Sync>
     _LIBCUDACXX_INLINE_VISIBILITY static async_contract_fulfillment __memcpy_async(
@@ -437,20 +437,18 @@ struct __noop_sync_hooks {
     }
 };
 
-template<__tx_api _Tx, typename _Arch, typename _InSpace, typename _OutSpace, typename _SyncSpace, typename = void>
+template<__tx_api _Tx, typename _Arch, typename _OutSpace, typename _InSpace, typename _SyncSpace, typename = void>
 struct __are_memcpy_async_hooks_specialized : _CUDA_VSTD::true_type {
     template<typename _Fn>
     _LIBCUDACXX_INLINE_VISIBILITY
     static async_contract_fulfillment __invoke(_Fn && __f) {
-        return _CUDA_VSTD::forward<_Fn>(__f)(_InSpace{}, _OutSpace{}, _SyncSpace{});
+        return _CUDA_VSTD::forward<_Fn>(__f)(_OutSpace{}, _InSpace{}, _SyncSpace{});
     }
 };
 
-template<__tx_api _Tx, typename _Arch, typename _InSpace, typename _OutSpace, typename _SyncSpace>
-struct __are_memcpy_async_hooks_specialized<_Tx, _Arch, _InSpace, _OutSpace, _SyncSpace,
-    _CUDA_VSTD::__void_t<
-        typename __memcpy_async_hooks<_Tx, _Arch, _InSpace::value, _OutSpace::value, _SyncSpace::value>::__unspecialized
-    >
+template<__tx_api _Tx, typename _Arch, typename _OutSpace, typename _InSpace, typename _SyncSpace>
+struct __are_memcpy_async_hooks_specialized<_Tx, _Arch, _OutSpace, _InSpace, _SyncSpace,
+    typename __memcpy_async_hooks<_Tx, _Arch, _OutSpace::value, _InSpace::value, _SyncSpace::value>::__unspecialized
 > : _CUDA_VSTD::false_type {
     template<typename _Fn>
     _LIBCUDACXX_INLINE_VISIBILITY
