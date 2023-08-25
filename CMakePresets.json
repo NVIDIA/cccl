@@ -36,7 +36,7 @@
     },
     {
       "name": "libcudacxx-cpp11",
-      "displayName": "libcu++: C++11 (requires manual usage of lit to build/test)",
+      "displayName": "libcu++: C++11",
       "inherits": "libcudacxx-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "11",
@@ -46,7 +46,7 @@
     },
     {
       "name": "libcudacxx-cpp14",
-      "displayName": "libcu++: C++14 (requires manual usage of lit to build/test)",
+      "displayName": "libcu++: C++14",
       "inherits": "libcudacxx-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "14",
@@ -57,7 +57,7 @@
     },
     {
       "name": "libcudacxx-cpp17",
-      "displayName": "libcu++: C++17 (requires manual usage of lit to build/test)",
+      "displayName": "libcu++: C++17",
       "inherits": "libcudacxx-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "17",
@@ -68,7 +68,7 @@
     },
     {
       "name": "libcudacxx-cpp20",
-      "displayName": "libcu++: C++20 (requires manual usage of lit to build/test)",
+      "displayName": "libcu++: C++20",
       "inherits": "libcudacxx-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "20",
@@ -87,7 +87,7 @@
     },
     {
       "name": "libcudacxx-nvrtc-cpp11",
-      "displayName": "libcu++ NVRTC: C++11 (requires manual usage of lit to build/test)",
+      "displayName": "libcu++ NVRTC: C++11",
       "inherits": "libcudacxx-nvrtc-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "11",
@@ -97,7 +97,7 @@
     },
     {
       "name": "libcudacxx-nvrtc-cpp14",
-      "displayName": "libcu++ NVRTC: C++14 (requires manual usage of lit to build/test)",
+      "displayName": "libcu++ NVRTC: C++14",
       "inherits": "libcudacxx-nvrtc-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "14",
@@ -107,7 +107,7 @@
     },
     {
       "name": "libcudacxx-nvrtc-cpp17",
-      "displayName": "libcu++ NVRTC: C++17 (requires manual usage of lit to build/test)",
+      "displayName": "libcu++ NVRTC: C++17",
       "inherits": "libcudacxx-nvrtc-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "17",
@@ -117,7 +117,7 @@
     },
     {
       "name": "libcudacxx-nvrtc-cpp20",
-      "displayName": "libcu++ NVRTC: C++20 (requires manual usage of lit to build/test)",
+      "displayName": "libcu++ NVRTC: C++20",
       "inherits": "libcudacxx-nvrtc-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "20",
