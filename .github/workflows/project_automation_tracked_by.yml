@@ -33,7 +33,6 @@ jobs:
   set_tracked_by:
     runs-on: ubuntu-latest
     permissions:
-        # Using the default github token here - we could use the PAT if we want reach outside of CCCL issues
         # We need to update the tracker issue, so write permission here
         issues: write
         # PRs can't be trackers, so we only need to read them
@@ -52,11 +51,11 @@ jobs:
         run: |
           # We can't store the body as an environment variable as-is
           # GHA environment variables must be a single line. We replace with a placeholder here
-          # _NL_PH_ = Newline Placeholder, _CR_PH_ = Carriage Return Placeholder
+          # _NL_PH_ = Newline Placeholder, _CR_PH_ = Carriage Return Placeholder (used later)
           # And later on, we'll un-replace when updating the body of the tracker-issue
+
           # GitHub uses /r/n for newlines outside of codeblocks, but inside codeblocks just \n
-          
-          BODY=$(echo "$TEMP_BODY" | sed ':a;N;$!ba;s/\n/_NL_PH_/g' | sed ':a;N;$!ba;s/\r/_CR_PH_/g')
+          BODY=$(echo "$TEMP_BODY" | sed ':a;N;$!ba;s/\n/_NL_PH_/g')
           echo "BODY=${BODY}" >> $GITHUB_ENV
           echo "ITEM_URL=${{ github.event.pull_request.html_url }}" >> $GITHUB_ENV
           
@@ -69,7 +68,7 @@ jobs:
           # This step is duplicated from above but it references issue instead of PR
           # We can use a single action to update PR or Issue tracked-by status this way
           
-          BODY=$(echo "$TEMP_BODY" | sed ':a;N;$!ba;s/\n/_NL_PH_/g' | sed ':a;N;$!ba;s/\r/_CR_PH_/g')
+          BODY=$(echo "$TEMP_BODY" | sed ':a;N;$!ba;s/\n/_NL_PH_/g')
           echo "BODY=${BODY}" >> $GITHUB_ENV
           echo "ITEM_URL=${{ github.event.issue.html_url }}" >> $GITHUB_ENV
         
@@ -93,7 +92,7 @@ jobs:
             # This step gets the text after the `Tracked By` text
             # We don't know if it's in the format of a shorthand reference like #117, or a URL yet
             
-            TRACKING_ISSUE=$(echo "${{ env.BODY }}" | grep -oP '(?i)Tracked By \K([^ _CR_PH__NL_PH_]+)')
+            TRACKING_ISSUE=$(echo "${{ env.BODY }}" | grep -oP '(?i)Tracked By \K([^ ]+)')
             echo "TRACKING_ISSUE=${TRACKING_ISSUE}" >> $GITHUB_ENV
             echo "Tracking Issue: ${{ env.TRACKING_ISSUE }}"
 
@@ -104,7 +103,7 @@ jobs:
             # In this step we either are happy it's a URL and do nothing
             # Or we build the URL since that's what we need for the tasklist
             
-            if [[ "${{ env.TRACKING_ISSUE }}" = *'https?://'* ]]; then
+            if [[ "${{ env.TRACKING_ISSUE }}" = *'github.com'* ]]; then
                 echo "Tracking Issue is a URL"
             else
                 # convert it to a url
@@ -120,7 +119,7 @@ jobs:
         run: |
           # Get the issue body using the GitHub CLI and convert to a single line
           TRACKER_BODY=$(gh issue view ${{ env.TRACKING_ISSUE }} --json body | jq -r '.body')
-          TRACKER_BODY=$(echo "$TRACKER_BODY" | sed ':a;N;$!ba;s/\n/_NL_PH_/g' | sed ':a;N;$!ba;s/\r/_CR_PH_/g')
+          TRACKER_BODY=$(echo "$TRACKER_BODY" | sed ':a;N;$!ba;s/\n/_NL_PH_/g')
           
           # Set the issue body as an environment variable
           echo "TRACKER_BODY=${TRACKER_BODY}" >> $GITHUB_ENV
