@@ -14,9 +14,9 @@
 
 #include <cuda/std/utility>
 
+#include "concurrent_agents.h"
 #include "cuda_space_selector.h"
 #include "test_macros.h"
-
 
 enum class BlockSize {
     Thread = 1,
@@ -42,7 +42,6 @@ inline __device__ void mbarrier_complete_tx(barrier &bar, int transaction_count)
       // update. The barriers do not keep track of transaction counts.
     )
   );
-
 }
 
 __device__ bool run_arrive_tx_test(barrier &bar) {
