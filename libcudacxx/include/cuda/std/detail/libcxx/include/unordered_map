@@ -591,7 +591,6 @@ public:
           __second_constructed(false)
         {}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     __hash_map_node_destructor(__hash_node_destructor<allocator_type>&& __x)
         noexcept
@@ -601,16 +600,6 @@ public:
         {
             __x.__value_constructed = false;
         }
-#else  // _LIBCUDACXX_CXX03_LANG
-    _LIBCUDACXX_INLINE_VISIBILITY
-    __hash_map_node_destructor(const __hash_node_destructor<allocator_type>& __x)
-        : __na_(__x.__na_),
-          __first_constructed(__x.__value_constructed),
-          __second_constructed(__x.__value_constructed)
-        {
-            const_cast<bool&>(__x.__value_constructed) = false;
-        }
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void operator()(pointer __p) noexcept
@@ -624,7 +613,6 @@ public:
     }
 };
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Key, class _Tp>
 struct __hash_value_type
 {
@@ -708,30 +696,6 @@ private:
 
     ~__hash_value_type() = delete;
 };
-
-#else
-
-template <class _Key, class _Tp>
-struct __hash_value_type
-{
-    typedef _Key                                     key_type;
-    typedef _Tp                                      mapped_type;
-    typedef pair<const key_type, mapped_type>        value_type;
-
-private:
-    value_type __cc;
-
-public:
-    _LIBCUDACXX_INLINE_VISIBILITY
-    value_type& __get_value() { return __cc; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    const value_type& __get_value() const { return __cc; }
-
-private:
-   ~__hash_value_type();
-};
-
-#endif
 
 template <class _HashIterator>
 class _LIBCUDACXX_TEMPLATE_VIS __hash_map_iterator
@@ -928,7 +892,6 @@ public:
     explicit unordered_map(const allocator_type& __a);
     unordered_map(const unordered_map& __u);
     unordered_map(const unordered_map& __u, const allocator_type& __a);
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_map(unordered_map&& __u)
         noexcept(is_nothrow_move_constructible<__table>::value);
@@ -939,7 +902,6 @@ public:
     unordered_map(initializer_list<value_type> __il, size_type __n,
                   const hasher& __hf, const key_equal& __eql,
                   const allocator_type& __a);
-#endif  // _LIBCUDACXX_CXX03_LANG
 #if _LIBCUDACXX_STD_VER > 11
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_map(size_type __n, const allocator_type& __a)
@@ -972,27 +934,14 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_map& operator=(const unordered_map& __u)
     {
-#ifndef _LIBCUDACXX_CXX03_LANG
         __table_ = __u.__table_;
-#else
-        if (this != &__u) {
-            __table_.clear();
-            __table_.hash_function() = __u.__table_.hash_function();
-            __table_.key_eq() = __u.__table_.key_eq();
-            __table_.max_load_factor() = __u.__table_.max_load_factor();
-            __table_.__copy_assign_alloc(__u.__table_);
-            insert(__u.begin(), __u.end());
-        }
-#endif
         return *this;
     }
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_map& operator=(unordered_map&& __u)
         noexcept(is_nothrow_move_assignable<__table>::value);
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_map& operator=(initializer_list<value_type> __il);
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     allocator_type get_allocator() const noexcept
@@ -1037,7 +986,6 @@ public:
         _LIBCUDACXX_INLINE_VISIBILITY
         void insert(_InputIterator __first, _InputIterator __last);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     void insert(initializer_list<value_type> __il)
         {insert(__il.begin(), __il.end());}
@@ -1096,8 +1044,6 @@ public:
 #endif
         return __table_.__emplace_unique(_CUDA_VSTD::forward<_Args>(__args)...).first;
     }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 #if _LIBCUDACXX_STD_VER > 14
     template <class... _Args>
@@ -1292,9 +1238,7 @@ public:
         {return __table_.__equal_range_unique(__k);}
 
     mapped_type& operator[](const key_type& __k);
-#ifndef _LIBCUDACXX_CXX03_LANG
     mapped_type& operator[](key_type&& __k);
-#endif
 
     mapped_type&       at(const key_type& __k);
     const mapped_type& at(const key_type& __k) const;
@@ -1349,9 +1293,7 @@ public:
 
 private:
 
-#ifdef _LIBCUDACXX_CXX03_LANG
     __node_holder __construct_node_with_key(const key_type& __k);
-#endif
 };
 
 #ifndef _LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES
@@ -1518,8 +1460,6 @@ unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>::unordered_map(
     insert(__u.begin(), __u.end());
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
 inline
 unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>::unordered_map(
@@ -1611,8 +1551,6 @@ unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>::operator=(
     return *this;
 }
 
-#endif  // _LIBCUDACXX_CXX03_LANG
-
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
 template <class _InputIterator>
 inline
@@ -1623,8 +1561,6 @@ unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>::insert(_InputIterator __first,
     for (; __first != __last; ++__first)
         __table_.__insert_unique(*__first);
 }
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
 _Tp&
@@ -1643,35 +1579,6 @@ unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>::operator[](key_type&& __k)
         std::piecewise_construct, std::forward_as_tuple(std::move(__k)),
                                   std::forward_as_tuple()).first->__get_value().second;
 }
-#else // _LIBCUDACXX_CXX03_LANG
-
-template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
-typename unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>::__node_holder
-unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>::__construct_node_with_key(const key_type& __k)
-{
-    __node_allocator& __na = __table_.__node_alloc();
-    __node_holder __h(__node_traits::allocate(__na, 1), _Dp(__na));
-    __node_traits::construct(__na, _CUDA_VSTD::addressof(__h->__value_.__get_value().first), __k);
-    __h.get_deleter().__first_constructed = true;
-    __node_traits::construct(__na, _CUDA_VSTD::addressof(__h->__value_.__get_value().second));
-    __h.get_deleter().__second_constructed = true;
-    return _LIBCUDACXX_EXPLICIT_MOVE(__h);  // explicitly moved for C++03
-}
-
-template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
-_Tp&
-unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>::operator[](const key_type& __k)
-{
-    iterator __i = find(__k);
-    if (__i != end())
-        return __i->second;
-    __node_holder __h = __construct_node_with_key(__k);
-    pair<iterator, bool> __r = __table_.__node_insert_unique(__h.get());
-    __h.release();
-    return __r.first->second;
-}
-
-#endif  // _LIBCUDACXX_CXX03_MODE
 
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
 _Tp&
@@ -1825,7 +1732,6 @@ public:
     explicit unordered_multimap(const allocator_type& __a);
     unordered_multimap(const unordered_multimap& __u);
     unordered_multimap(const unordered_multimap& __u, const allocator_type& __a);
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multimap(unordered_multimap&& __u)
         noexcept(is_nothrow_move_constructible<__table>::value);
@@ -1837,7 +1743,6 @@ public:
     unordered_multimap(initializer_list<value_type> __il, size_type __n,
                        const hasher& __hf, const key_equal& __eql,
                        const allocator_type& __a);
-#endif  // _LIBCUDACXX_CXX03_LANG
 #if _LIBCUDACXX_STD_VER > 11
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multimap(size_type __n, const allocator_type& __a)
@@ -1870,27 +1775,14 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multimap& operator=(const unordered_multimap& __u)
     {
-#ifndef _LIBCUDACXX_CXX03_LANG
         __table_ = __u.__table_;
-#else
-        if (this != &__u) {
-            __table_.clear();
-            __table_.hash_function() = __u.__table_.hash_function();
-            __table_.key_eq() = __u.__table_.key_eq();
-            __table_.max_load_factor() = __u.__table_.max_load_factor();
-            __table_.__copy_assign_alloc(__u.__table_);
-            insert(__u.begin(), __u.end());
-        }
-#endif
         return *this;
     }
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multimap& operator=(unordered_multimap&& __u)
         noexcept(is_nothrow_move_assignable<__table>::value);
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multimap& operator=(initializer_list<value_type> __il);
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     allocator_type get_allocator() const noexcept
@@ -1927,7 +1819,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     void insert(_InputIterator __first, _InputIterator __last);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     void insert(initializer_list<value_type> __il)
         {insert(__il.begin(), __il.end());}
@@ -1959,8 +1850,6 @@ public:
     iterator emplace_hint(const_iterator __p, _Args&&... __args) {
         return __table_.__emplace_hint_multi(__p.__i_, _CUDA_VSTD::forward<_Args>(__args)...);
     }
-#endif  // _LIBCUDACXX_CXX03_LANG
-
 
     _LIBCUDACXX_INLINE_VISIBILITY
     iterator erase(const_iterator __p) {return __table_.erase(__p.__i_);}
@@ -2282,8 +2171,6 @@ unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>::unordered_multimap(
     insert(__u.begin(), __u.end());
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
 inline
 unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>::unordered_multimap(
@@ -2375,9 +2262,6 @@ unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>::operator=(
     __table_.__assign_multi(__il.begin(), __il.end());
     return *this;
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
-
 
 
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>

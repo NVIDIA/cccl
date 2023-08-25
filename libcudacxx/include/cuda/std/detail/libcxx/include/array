@@ -490,8 +490,6 @@ get(const array<_Tp, _Size>& __a) noexcept
     return __a.__elems_[_Ip];
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <size_t _Ip, class _Tp, size_t _Size>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _Tp&&
@@ -509,8 +507,6 @@ get(const array<_Tp, _Size>&& __a) noexcept
     static_assert(_Ip < _Size, "Index out of bounds in std::get<> (const std::array &&)");
     return _CUDA_VSTD::move(__a.__elems_[_Ip]);
 }
-
-#endif  // !_LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

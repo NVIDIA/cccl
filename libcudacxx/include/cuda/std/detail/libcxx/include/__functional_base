@@ -38,17 +38,11 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#ifdef _LIBCUDACXX_CXX03_LANG
-
-#include <__functional_base_03>
-
-#endif  // !defined(_LIBCUDACXX_CXX03_LANG)
-
 // allocator_arg_t
 
 struct _LIBCUDACXX_TEMPLATE_VIS allocator_arg_t { explicit allocator_arg_t() = default; };
 
-#if defined(_LIBCUDACXX_CXX03_LANG) || defined(_LIBCUDACXX_BUILDING_LIBRARY)
+#if defined(_LIBCUDACXX_BUILDING_LIBRARY)
 extern _LIBCUDACXX_EXPORTED_FROM_ABI const allocator_arg_t allocator_arg;
 #else
 /* _LIBCUDACXX_INLINE_VAR */ constexpr allocator_arg_t allocator_arg = allocator_arg_t();
@@ -91,8 +85,6 @@ template <class _Tp, class _Alloc>
 _LIBCUDACXX_INLINE_VAR constexpr size_t uses_allocator_v = uses_allocator<_Tp, _Alloc>::value;
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 // allocator construction
 
 template <class _Tp, class _Alloc, class ..._Args>
@@ -132,8 +124,6 @@ void __user_alloc_construct_impl (integral_constant<int, 2>, _Tp *__storage, con
 {
     new (__storage) _Tp (_CUDA_VSTD::forward<_Args>(__args)..., __a);
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -49,10 +49,8 @@ public:
         : container(_CUDA_VSTD::addressof(__x)), iter(__i) {}
     _LIBCUDACXX_INLINE_VISIBILITY insert_iterator& operator=(const typename _Container::value_type& __value_)
         {iter = container->insert(iter, __value_); ++iter; return *this;}
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY insert_iterator& operator=(typename _Container::value_type&& __value_)
         {iter = container->insert(iter, _CUDA_VSTD::move(__value_)); ++iter; return *this;}
-#endif  // _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY insert_iterator& operator*()        {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY insert_iterator& operator++()       {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY insert_iterator& operator++(int)    {return *this;}

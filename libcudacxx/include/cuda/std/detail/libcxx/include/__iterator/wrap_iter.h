@@ -64,18 +64,11 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator<=(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) noexcept;
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 auto
 operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 -> decltype(__x.base() - __y.base());
-#else
-template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename __wrap_iter<_Iter1>::difference_type
-operator-(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) noexcept;
-#endif
 
 template <class _Iter>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
@@ -275,18 +268,11 @@ private:
     bool
     operator<=(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) noexcept;
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     template <class _Iter1, class _Iter2>
     _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
     auto
     operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
     -> decltype(__x.base() - __y.base());
-#else
-    template <class _Iter1, class _Iter2>
-    _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
-    typename __wrap_iter<_Iter1>::difference_type
-    operator-(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) noexcept;
-#endif
 
     template <class _Iter1>
     _LIBCUDACXX_HOST_DEVICE _LIBCUDACXX_CONSTEXPR_IF_NODEBUG friend
@@ -403,7 +389,6 @@ operator<=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexc
     return !(__y < __x);
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Iter1, class _Iter2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 auto
@@ -416,19 +401,6 @@ operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexce
 #endif
     return __x.base() - __y.base();
 }
-#else
-template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
-typename __wrap_iter<_Iter1>::difference_type
-operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
-{
-#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
-    _LIBCUDACXX_ASSERT(__get_const_db()->__less_than_comparable(&__x, &__y),
-                   "Attempted to subtract incompatible iterators");
-#endif
-    return __x.base() - __y.base();
-}
-#endif
 
 template <class _Iter>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG

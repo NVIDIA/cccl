@@ -71,9 +71,7 @@ set(files
   __functional/unary_negate.h
   __functional/unwrap_ref.h
   __functional/weak_result_type.h
-  __functional_03
   __functional_base
-  __functional_base_03
   __fwd/array.h
   __fwd/get.h
   __fwd/hash.h

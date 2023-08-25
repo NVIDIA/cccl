@@ -23,7 +23,7 @@ int main (int, char**) {
     ASSERT_SAME_TYPE(decltype(std::__libcpp_is_constant_evaluated()), bool);
     ASSERT_NOEXCEPT(std::__libcpp_is_constant_evaluated());
 
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_CXX03_LANG)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
     static_assert(std::__libcpp_is_constant_evaluated(), "");
 #endif
 

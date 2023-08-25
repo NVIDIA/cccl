@@ -23,13 +23,11 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr typename underlying_type<_Tp>::type
 __to_underlying(_Tp __val) noexcept {
   return static_cast<typename underlying_type<_Tp>::type>(__val);
 }
-#endif // !_LIBCUDACXX_CXX03_LANG
 
 #if _LIBCUDACXX_STD_VER > 20
 template <class _Tp>

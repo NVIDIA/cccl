@@ -33,9 +33,7 @@ template <class _Tp> struct __tuple_like<const _Tp> : public __tuple_like<_Tp> {
 template <class _Tp> struct __tuple_like<volatile _Tp> : public __tuple_like<_Tp> {};
 template <class _Tp> struct __tuple_like<const volatile _Tp> : public __tuple_like<_Tp> {};
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class... _Tp> struct __tuple_like<tuple<_Tp...> > : true_type {};
-#endif
 
 template <class _T1, class _T2> struct __tuple_like<pair<_T1, _T2> > : true_type {};
 

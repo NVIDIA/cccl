@@ -630,8 +630,6 @@ iter_swap(_ForwardIterator1 __a, _ForwardIterator2 __b)
     swap(*__a, *__b);
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _Tp>
 struct __has_operator_addressof_member_imp
 {
@@ -665,8 +663,6 @@ struct __has_operator_addressof
     : public integral_constant<bool, __has_operator_addressof_member_imp<_Tp>::value
                                   || __has_operator_addressof_free_imp<_Tp>::value>
 {};
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -863,11 +863,9 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 // chrono user-defined literals; this seems like the lesser of two evils, so...
 _LIBCUDACXX_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM
 struct _FilesystemClock;
 _LIBCUDACXX_END_NAMESPACE_FILESYSTEM
-#endif // !_LIBCUDACXX_CXX03_LANG
 
 # if _LIBCUDACXX_CUDA_ABI_VERSION > 3
 #  define _LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T double
@@ -1093,12 +1091,7 @@ private:
     rep __rep_;
 public:
 
-#if !defined(_LIBCUDACXX_CXX03_LANG)
     constexpr duration() = default;
-#else
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
-        duration() {}
-#endif
 
     template <class _Rep2>
         _LIBCUDACXX_INLINE_VISIBILITY constexpr
@@ -3314,7 +3307,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #ifndef __cuda_std__
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM
 struct _FilesystemClock {
 #if !defined(_LIBCUDACXX_HAS_NO_INT128)
@@ -3347,7 +3339,6 @@ struct _FilesystemClock {
   }
 };
 _LIBCUDACXX_END_NAMESPACE_FILESYSTEM
-#endif // !_LIBCUDACXX_CXX03_LANG
 #endif // __cuda_std__
 
 _LIBCUDACXX_NV_DIAG_DEFAULT(cuda_demote_unsupported_floating_point)

@@ -40,16 +40,12 @@ public:
     typedef typename iterator_traits<iterator_type>::value_type value_type;
     typedef typename iterator_traits<iterator_type>::difference_type difference_type;
     typedef iterator_type pointer;
-#ifndef _LIBCUDACXX_CXX03_LANG
     typedef typename iterator_traits<iterator_type>::reference __reference;
     typedef __conditional_t<
             is_reference<__reference>::value,
             __libcpp_remove_reference_t<__reference>&&,
             __reference
         > reference;
-#else
-    typedef typename iterator_traits<iterator_type>::reference reference;
-#endif
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     move_iterator() : __i() {}
@@ -131,7 +127,6 @@ operator<=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
     return __x.base() <= __y.base();
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Iter1, class _Iter2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
 auto
@@ -140,15 +135,6 @@ operator-(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
     return __x.base() - __y.base();
 }
-#else
-template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename move_iterator<_Iter1>::difference_type
-operator-(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
-{
-    return __x.base() - __y.base();
-}
-#endif
 
 template <class _Iter>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
