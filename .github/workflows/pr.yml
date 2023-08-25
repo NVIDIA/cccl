@@ -110,7 +110,7 @@ jobs:
       runner: linux-${{matrix.cpu}}-gpu-v100-latest-1
       image: rapidsai/devcontainers:${{needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION}}-cpp-gcc12-cuda${{matrix.cuda}}-${{matrix.os}}
       command: |
-        ./ci/nvrtc_libcudacxx.sh g++ ${{matrix.std}} ${{matrix.gpu_build_archs}}
+        ./ci/nvrtc_libcudacxx.sh g++ ${{matrix.std}}
 
 
   thrust:

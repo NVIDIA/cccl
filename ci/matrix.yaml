@@ -3,7 +3,6 @@ cuda_oldest: &cuda_oldest '11.1'
 cuda_newest: &cuda_newest '12.2'
 
 # The GPUs to test on
-# Note: This assumes that the appropriate gpu_build_archs are set to include building for the GPUs listed here
 gpus:
   - 'a100'
   - 'v100'
@@ -20,31 +19,30 @@ devcontainer_version: '23.08'
 #   name: The compiler name
 #   version: The compiler version
 #   exe: The unverionsed compiler binary name
-# gpu_build_archs: The GPU architectures to build for using the syntax of CMAKE_CUDA_ARCHITECTURES (semi-colon separated list)
 # std: The C++ standards to build for
 #    This field is unique as it will generate an independent build/test job for each value
 
 # Configurations that will run for every PR
 pull_request:
   nvcc:
-    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '6', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14], jobs: ['build']}
-    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17], jobs: ['build']}
-    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17], jobs: ['build']}
-    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '10', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '11', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '12', exe: 'g++'}, gpu_build_archs: '70', std: [11, 14, 17, 20], jobs: ['build', 'test']}
-    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}, gpu_build_archs: '70', std: [11, 14, 17], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}, gpu_build_archs: '70', std: [11, 14, 17], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '10', exe: 'clang++'}, gpu_build_archs: '70', std: [11, 14, 17], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '11', exe: 'clang++'}, gpu_build_archs: '70', std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '12', exe: 'clang++'}, gpu_build_archs: '70', std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '13', exe: 'clang++'}, gpu_build_archs: '70', std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '6', exe: 'g++'}, std: [11, 14], jobs: ['build']}
+    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}, std: [11, 14, 17], jobs: ['build']}
+    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}, std: [11, 14, 17], jobs: ['build']}
+    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}, std: [11, 14, 17], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '7', exe: 'g++'}, std: [11, 14, 17], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '8', exe: 'g++'}, std: [11, 14, 17], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '9', exe: 'g++'}, std: [11, 14, 17], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'gcc', version: '10', exe: 'g++'}, std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '11', exe: 'g++'}, std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '12', exe: 'g++'}, std: [11, 14, 17, 20], jobs: ['build', 'test']}
+    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}, std: [11, 14, 17], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}, std: [11, 14, 17], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '10', exe: 'clang++'}, std: [11, 14, 17], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '11', exe: 'clang++'}, std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '12', exe: 'clang++'}, std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '13', exe: 'clang++'}, std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '14', exe: 'clang++'}, gpu_build_archs: '70', std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '15', exe: 'clang++'}, gpu_build_archs: '70', std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '16', exe: 'clang++'}, gpu_build_archs: '70', std: [11, 14, 17, 20], jobs: ['build', 'test']}
   nvrtc:
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', gpu_build_archs: '70', std: [11, 14, 17, 20]}
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', std: [11, 14, 17, 20]}

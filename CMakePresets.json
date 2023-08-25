@@ -30,7 +30,8 @@
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_LIBCUDACXX": true,
-        "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true
+        "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
+        "LIBCUDACXX_COMPUTE_ARCHS": "70"
       }
     },
     {
@@ -39,8 +40,8 @@
       "inherits": "libcudacxx-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "11",
-        "CMAKE_CUDA_STANDARD": "11"
-
+        "CMAKE_CUDA_STANDARD": "11",
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++11"
       }
     },
     {
@@ -49,7 +50,8 @@
       "inherits": "libcudacxx-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "14",
-        "CMAKE_CUDA_STANDARD": "14"
+        "CMAKE_CUDA_STANDARD": "14",
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++14"
 
       }
     },
@@ -59,7 +61,8 @@
       "inherits": "libcudacxx-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "17",
-        "CMAKE_CUDA_STANDARD": "17"
+        "CMAKE_CUDA_STANDARD": "17",
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++17"
 
       }
     },
@@ -69,7 +72,8 @@
       "inherits": "libcudacxx-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "20",
-        "CMAKE_CUDA_STANDARD": "20"
+        "CMAKE_CUDA_STANDARD": "20",
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++20"
       }
     },
     {
@@ -77,7 +81,8 @@
       "hidden": true,
       "inherits": "libcudacxx-base",
       "cacheVariables": {
-        "LIBCUDACXX_TEST_WITH_NVRTC": true
+        "LIBCUDACXX_TEST_WITH_NVRTC": true,
+        "LIBCUDACXX_COMPUTE_ARCHS": "70"
       }
     },
     {
@@ -86,7 +91,8 @@
       "inherits": "libcudacxx-nvrtc-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "11",
-        "CMAKE_CUDA_STANDARD": "11"
+        "CMAKE_CUDA_STANDARD": "11",
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++11"
       }
     },
     {
@@ -95,7 +101,8 @@
       "inherits": "libcudacxx-nvrtc-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "14",
-        "CMAKE_CUDA_STANDARD": "14"
+        "CMAKE_CUDA_STANDARD": "14",
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++14"
       }
     },
     {
@@ -104,7 +111,8 @@
       "inherits": "libcudacxx-nvrtc-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "17",
-        "CMAKE_CUDA_STANDARD": "17"
+        "CMAKE_CUDA_STANDARD": "17",
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++17"
       }
     },
     {
@@ -113,7 +121,8 @@
       "inherits": "libcudacxx-nvrtc-base",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "20",
-        "CMAKE_CUDA_STANDARD": "20"
+        "CMAKE_CUDA_STANDARD": "20",
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++20"
       }
     },
     {

@@ -12,7 +12,6 @@ on:
       compiler_exe: {type: string, required: true}
       compiler_version: {type: string, required: true}
       std: {type: string, required: true}
-      gpu_build_archs: {type: string, required: true}
       cpu: {type: string, required: true}
       os: {type: string, required: true}
       build_script: {type: string, required: false}
@@ -31,7 +30,7 @@ jobs:
       runner: linux-${{inputs.cpu}}-cpu16
       image: ${{inputs.build_image}}
       command: |
-        ${{ inputs.build_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
+        ${{ inputs.build_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}"
 
   test:
     needs: build
@@ -44,4 +43,4 @@ jobs:
       image: ${{inputs.test_image}}
       command: |
         nvidia-smi
-        ${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}" "${{inputs.gpu_build_archs}}"
+        ${{ inputs.test_script }} "${{inputs.compiler_exe}}" "${{inputs.std}}"

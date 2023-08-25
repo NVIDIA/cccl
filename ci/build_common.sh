@@ -10,10 +10,10 @@ CUDA_COMPILER=nvcc
 
 # Check if the correct number of arguments has been provided
 function usage {
-    echo "Usage: $0 [OPTIONS] <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>"
+    echo "Usage: $0 [OPTIONS] <HOST_COMPILER> <CXX_STANDARD>"
     echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores."
-    echo "Example: PARALLEL_LEVEL=8 $0 g++-8 14 \"70\" "
-    echo "Example: $0 clang++-8 17 \"70;75;80-virtual\" "
+    echo "Example: PARALLEL_LEVEL=8 $0 g++-8 14"
+    echo "Example: $0 clang++-8 17"
     echo "Possible options: "
     echo "  -nvcc: path/to/nvcc"
     echo "  -v/--verbose: enable shell echo for debugging"
@@ -21,8 +21,8 @@ function usage {
 }
 
 # Check for extra options
-# While there are more than 3 arguments, parse switches/options
-while [ "$#" -gt 3 ]
+# While there are more than 2 arguments, parse switches/options
+while [ "$#" -gt 2 ]
 do
   case "${1}" in
   -h)     usage ;;
@@ -40,7 +40,7 @@ if [ $VERBOSE ]; then
     set -x
 fi
 
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 2 ]; then
     echo "Invalid number of arguments"
     usage
 fi
@@ -51,9 +51,6 @@ set -u
 # Assign command line arguments to variables
 readonly HOST_COMPILER=$(which $1)
 readonly CXX_STANDARD=$2
-
-# Replace spaces, commas and semicolons with semicolons for CMake list
-readonly GPU_ARCHS=$(echo $3 | tr ' ,' ';')
 
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
 readonly NVCC_VERSION=$($CUDA_COMPILER --version | grep release | awk '{print $6}' | cut -c2-)
@@ -77,7 +74,6 @@ export CCCL_BUILD_INFIX
 export CMAKE_BUILD_PARALLEL_LEVEL="${PARALLEL_LEVEL}"
 export CMAKE_EXPORT_COMPILE_COMMANDS=1
 export CTEST_PARALLEL_LEVEL="4"
-export CUDAARCHS="${GPU_ARCHS}"
 export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"
 export CXX="${HOST_COMPILER}"
@@ -90,7 +86,6 @@ echo "CXX_STANDARD=$CXX_STANDARD"
 echo "CXX=$CXX"
 echo "CUDACXX=$CUDACXX"
 echo "CUDAHOSTCXX=$CUDAHOSTCXX"
-echo "CUDAARCHS=$CUDAARCHS"
 echo "NVCC_VERSION=$NVCC_VERSION"
 echo "CMAKE_BUILD_PARALLEL_LEVEL=$CMAKE_BUILD_PARALLEL_LEVEL"
 echo "CTEST_PARALLEL_LEVEL=$CTEST_PARALLEL_LEVEL"
