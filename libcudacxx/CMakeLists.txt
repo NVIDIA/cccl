@@ -27,14 +27,15 @@ if (NOT LIBCUDACXX_TOPLEVEL_PROJECT)
   return()
 endif()
 
+# Must be called in root CMakeLists.txt
+include(CTest)
+enable_testing()
+
 # Note that this currently returns and skips the rest of the build
 # system.
-option(libcudacxx_ENABLE_CMAKE_TESTS "Enable ctest-based testing." OFF)
+option(libcudacxx_ENABLE_CMAKE_TESTS "Enable ctest-based testing." ON)
 if (libcudacxx_ENABLE_CMAKE_TESTS)
-  include(CTest)
-  enable_testing() # Must be called in root CMakeLists.txt
   add_subdirectory(cmake/test/)
-  return()
 endif()
 
 set(CMAKE_MODULE_PATH "${libcudacxx_SOURCE_DIR}/cmake")
