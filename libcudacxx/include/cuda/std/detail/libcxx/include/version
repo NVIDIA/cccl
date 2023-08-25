@@ -219,6 +219,11 @@ __cpp_lib_void_t                                        201411L <type_traits>
 #pragma GCC system_header
 #endif
 
+// We define certain feature test macros depending on availability
+#if NV_PROVIDES_SM_90
+# define __cccl_lib_has_experimental_ctk12_cp_async_exposure
+#endif // NV_PROVIDES_SM_90
+
 // We unconditionally define `__cccl_lib_meow` so that there is only one place to set the value
 #if _LIBCUDACXX_STD_VER > 11
 # define __cccl_lib_chrono_udls                          201304L
