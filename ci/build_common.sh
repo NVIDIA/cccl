@@ -121,6 +121,19 @@ function build_preset()
     source "./sccache_stats.sh" "end"
 }
 
+function test_preset()
+{
+    local BUILD_NAME=$1
+    local PRESET=$2
+
+    pushd .. > /dev/null
+
+    ctest --preset=$PRESET
+    echo "$BUILD_NAME testing complete."
+
+    popd > /dev/null
+}
+
 function configure_and_build_preset()
 {
     local BUILD_NAME=$1
