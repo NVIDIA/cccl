@@ -305,44 +305,123 @@
       }
     },
     {
-      "name": "libcudacxx-cpp11",
+      "name": "libcudacxx-ctest-base",
+      "hidden": true,
+      "inherits": [
+        "base"
+      ],
+      "filter": {
+        "exclude": {
+          "name": "^libcudacxx\\.test\\.lit$"
+        }
+      }
+    },
+    {
+      "name": "libcudacxx-ctest-cpp11",
       "configurePreset": "libcudacxx-cpp11",
-      "inherits": ["base"]
+      "inherits": [
+        "libcudacxx-ctest-base"
+      ]
     },
     {
-      "name": "libcudacxx-cpp14",
+      "name": "libcudacxx-ctest-cpp14",
       "configurePreset": "libcudacxx-cpp14",
-      "inherits": ["base"]
+      "inherits": [
+        "libcudacxx-ctest-base"
+      ]
     },
     {
-      "name": "libcudacxx-cpp17",
+      "name": "libcudacxx-ctest-cpp17",
       "configurePreset": "libcudacxx-cpp17",
-      "inherits": ["base"]
+      "inherits": [
+        "libcudacxx-ctest-base"
+      ]
     },
     {
-      "name": "libcudacxx-cpp20",
+      "name": "libcudacxx-ctest-cpp20",
       "configurePreset": "libcudacxx-cpp20",
-      "inherits": ["base"]
+      "inherits": [
+        "libcudacxx-ctest-base"
+      ]
+    },
+    {
+      "name": "libcudacxx-lit-base",
+      "hidden": true,
+      "inherits": [
+        "base"
+      ],
+      "filter": {
+        "include": {
+          "name": "^libcudacxx\\.test\\.lit$"
+        }
+      },
+      "output": {
+        "verbosity": "extra",
+        "outputOnFailure": false
+      }
+    },
+    {
+      "name": "libcudacxx-lit-cpp11",
+      "configurePreset": "libcudacxx-cpp11",
+      "inherits": [
+        "libcudacxx-lit-base"
+      ]
+    },
+    {
+      "name": "libcudacxx-lit-cpp14",
+      "configurePreset": "libcudacxx-cpp14",
+      "inherits": [
+        "libcudacxx-lit-base"
+      ]
+    },
+    {
+      "name": "libcudacxx-lit-cpp17",
+      "configurePreset": "libcudacxx-cpp17",
+      "inherits": [
+        "libcudacxx-lit-base"
+      ]
+    },
+    {
+      "name": "libcudacxx-lit-cpp20",
+      "configurePreset": "libcudacxx-cpp20",
+      "inherits": [
+        "libcudacxx-lit-base"
+      ]
+    },
+    {
+      "name": "libcudacxx-nvrtc-base",
+      "hidden": true,
+      "inherits": [
+        "libcudacxx-lit-base"
+      ]
     },
     {
       "name": "libcudacxx-nvrtc-cpp11",
       "configurePreset": "libcudacxx-nvrtc-cpp11",
-      "inherits": ["base"]
+      "inherits": [
+        "libcudacxx-nvrtc-base"
+      ]
     },
     {
       "name": "libcudacxx-nvrtc-cpp14",
       "configurePreset": "libcudacxx-nvrtc-cpp14",
-      "inherits": ["base"]
+      "inherits": [
+        "libcudacxx-nvrtc-base"
+      ]
     },
     {
       "name": "libcudacxx-nvrtc-cpp17",
       "configurePreset": "libcudacxx-nvrtc-cpp17",
-      "inherits": ["base"]
+      "inherits": [
+        "libcudacxx-nvrtc-base"
+      ]
     },
     {
       "name": "libcudacxx-nvrtc-cpp20",
       "configurePreset": "libcudacxx-nvrtc-cpp20",
-      "inherits": ["base"]
+      "inherits": [
+        "libcudacxx-nvrtc-base"
+      ]
     },
     {
       "name": "cub-base",
