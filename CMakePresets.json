@@ -81,8 +81,7 @@
       "hidden": true,
       "inherits": "libcudacxx-base",
       "cacheVariables": {
-        "LIBCUDACXX_TEST_WITH_NVRTC": true,
-        "LIBCUDACXX_COMPUTE_ARCHS": "70"
+        "LIBCUDACXX_TEST_WITH_NVRTC": true
       }
     },
     {
