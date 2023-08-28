@@ -7,15 +7,15 @@
 //===----------------------------------------------------------------------===//
 //
 // UNSUPPORTED: libcpp-has-no-threads
-// UNSUPPORTED: pre-sm-90
+// UNSUPPORTED: pre-sm-70
 
 // <cuda/barrier>
 
 #include <cuda/barrier>
 
-#ifndef __cccl_lib_has_experimental_ctk12_cp_async_exposure
-static_assert(false, "should define __cccl_lib_has_experimental_ctk12_cp_async_exposure for SM_90 up");
-#endif // __cccl_lib_has_experimental_ctk12_cp_async_exposure
+#ifndef  _cccl_lib_local_barrier_arrive_tx
+static_assert(false, "should define __cccl_lib_local_barrier_arrive_tx");
+#endif // __cccl_lib_local_barrier_arrive_tx
 
 int main(int, char**)
 {}
