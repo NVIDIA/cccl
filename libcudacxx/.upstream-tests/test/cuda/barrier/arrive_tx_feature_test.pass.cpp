@@ -13,7 +13,7 @@
 
 #include <cuda/barrier>
 
-#if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 700
+#if defined(__CUDA_MINIMUM_ARCH__) && 700 <= __CUDA_MINIMUM_ARCH__
 
 #ifndef  __cccl_lib_local_barrier_arrive_tx
 static_assert(false, "should define __cccl_lib_local_barrier_arrive_tx");

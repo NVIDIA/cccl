@@ -220,7 +220,7 @@ __cpp_lib_void_t                                        201411L <type_traits>
 #endif
 
 // We define certain feature test macros depending on availability
-#if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 700
+#if defined(__CUDA_MINIMUM_ARCH__) && 700 <= __CUDA_MINIMUM_ARCH__
 # define __cccl_lib_local_barrier_arrive_tx
 #endif
 
