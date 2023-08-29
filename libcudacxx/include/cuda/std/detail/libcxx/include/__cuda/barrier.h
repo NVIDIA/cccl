@@ -180,7 +180,7 @@ public:
         )
     }
 
-    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
     arrival_token arrive_tx(_CUDA_VSTD::ptrdiff_t __arrive_count_update,
                             _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
 #if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
@@ -189,24 +189,33 @@ public:
         // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
         // Maximum value of tx-count is 2^20 -1.
         _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1);
-        _LIBCUDACXX_DEBUG_ASSERT(__isClusterShared(&__barrier));
 #endif
         arrival_token __token = {};
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_90, (
-                if (!__isShared(&__barrier)) {
-                    __trap(); // XXX: We do no support arriving on remote cluster barrier in this method.
-                }
-
+                if (__isShared(&__barrier)) {
                 asm volatile(
                     "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
                     : "=l"(__token)
                     : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier)))
-                    , "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
+                      , "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
                     : "memory");
-            ), NV_IS_DEVICE, (
-                // On architectures pre-SM90, we drop the transaction count
-                // update. The barriers do not keep track of transaction counts.
+                }
+                else if (__isClusterShared(&__barrier)) {
+                    // The hardware does not return an arrival token when
+                    // arriving on a remote cluster-shared barrier. Better to
+                    // trap in this case.
+                    __trap();
+                } else {
+                    // When arriving on non-shared barriers, we drop the transaction count
+                    // update. The barriers do not keep track of transaction counts.
+                    (void)__transaction_count_update;
+                    __token = __barrier.arrive(__arrive_count_update);
+                }
+            ), NV_ANY_TARGET, (
+                // On architectures pre-SM90 (and in host code), we drop the
+                // transaction count update. The barriers do not keep track of
+                // transaction counts.
                 (void)__transaction_count_update;
                 __token = __barrier.arrive(__arrive_count_update);
             )
