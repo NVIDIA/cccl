@@ -117,7 +117,7 @@ Everything in CCCL is header-only, so cloning and including it in a simple proje
 ```bash
 git clone https://github.com/NVIDIA/cccl.git
 # Note: You need to use -I and not -isystem in order to ensure you're using the cloned headers and not the ones from the CUDA Toolkit
-nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main j
+nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main 
 ```
 
 #### CMake Integration
