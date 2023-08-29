@@ -197,7 +197,7 @@ Unless otherwise specified, we support all the same host compilers as the CUDA T
 
 It is impractical for us to test every combination of compiler, CUDA Toolkit, and operating system that we support.
 
-If you subscribe to the notion that "You only support what you test", we have adopted a testing strategy that balances the need to test as many configurations as possible with the need to keep our CI times reasonable.
+We have adopted a testing strategy that balances the need to test as many configurations as possible with the need to keep our CI times reasonable.
 
 For CUDA Toolkit versions, we test against the oldest and the newest version that we support. 
 For example, if the latest version of the CUDA Toolkit is 12.3, we test against 11.1 and 12.3.
@@ -209,11 +209,62 @@ For more information about our CI pipeline, see [here](ci-overview.md).
 
 ## Versioning
 
-CCCL uses [semantic versioning](https://semver.org/). 
+**Summary**
+- The API of all CCCL components share a common semantic version
+- Major version bumps and breaking changes will only coincide with a new major version release of the CUDA Toolkit 
+- Not all source breaking changes are considered API breaking changes
+- Do not rely on ABI stability of `cub::` or `thrust::` entities
+- The ABI of `cuda::` entities is versioned and encoded in an inline namespace, but do not guarantee long-term ABI stability
 
-Prior to merging Thrust, CUB, and libcudacxx into this repository, each library was independently versioned.
-Starting with the 2.1 release, all three libraries synchronized their versions.
-Moving forward, CCCL will continue to be released under a single version, with 2.2.0 being the first release from the [nvidia/cccl](www.github.com/nvidia/cccl) repository. 
+Prior to merging Thrust, CUB, and libcudacxx into this repository, each library was independently versioned according to semantic versioning. 
+Starting with the 2.1 release, all three libraries synchronized their release versions in their separate repositories. 
+Moving forward, CCCL will continue to be released under a single [semantic version](https://semver.org/), with 2.2.0 being the first release from the [nvidia/cccl](www.github.com/nvidia/cccl) repository. 
+
+### Application Programming Interface (API)
+
+The entirety of CCCL's API across all components shares a common semantic version.
+For historical reasons, these versions are encoded separately in each of Thrust/CUB/libcudacxx as follows:
+
+**`libcudacxx`**
+
+Defined in `<cuda/std/version>`:
+- `_LIBCUDACXX_CUDA_API_VERSION_MAJOR`: Major version, an 8 bit unsigned integer. The major version represents API stability to the best of our ability (outstanding, but not perfect). When API-backwards-incompatible changes are made, this component is incremented. Such changes are only made when a new major CUDA Compute Capability is released. ABI changes that do not have an associated API-backwards-incompatible change do not trigger a new major release.
+- `_LIBCUDACXX_CUDA_API_VERSION_MINOR`: Minor version, an 8 bit unsigned integer. When API-backwards-compatible features are added are made, this component is incremented. Such changes may be made at any time.
+- `_LIBCUDACXX_CUDA_API_VERSION_PATCH`: Subminor version, an 8 bit unsigned integer. When changes are made that do not qualify for an increase in either of the other two versions, it is incremented. Such changes may be made at any time.
+- `_LIBCUDACXX_CUDA_API_VERSION`: A concatenation of the decimal digits of all three components, a 32 bit unsigned integer.
+
+**`Thrust`**
+
+Defined in `<thrust/version.h>`:
+- `THRUST_MAJOR_VERSION`:
+- `THRUST_MINOR_VERSION`:
+- `THRUST_SUBMINOR_VERSION`:
+- `THRUST_VERSION`:
+
+**`CUB`**
+
+Defined in `<cub/version.h>`:
+
+- `CUB_MAJOR_VERSION`:
+- `CUB_MINOR_VERSION`:
+- `CUB_SUBMINOR_VERSION`:
+- `CUB_VERSION`:
+
+### Application Binary Interface (ABI)
+
+The Application Binary Interface (ABI) of a software library is the convention for how:
+- The library's entities are represented in machine code, and
+- Library entities built in one translation unit interact with entities from another.
+
+A library's ABI includes, but is not limited to:
+- The mangled names of functions.
+- The mangled names of types, including instantiations of class templates.
+- The number of bytes (sizeof) and the alignment of objects and types.
+- The semantics of the bytes in the binary representation of an object.
+- The register-level calling conventions governing parameter passing and function invocation.
+
+To learn more about ABI and why it is important, see [What is ABI, and What Should C++ Do About It?](https://wg21.link/P2028R0).
+
 
 ### Compatibility Guarantees
 
