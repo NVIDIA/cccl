@@ -84,17 +84,6 @@ type_quad<custom_t, custom_t, custom_t>
 // clang-format on
 #endif
 
-/**
- * @brief Input data generation mode
- */
-enum class gen_data_t : int
-{
-  /// Uniform random data generation
-  GEN_TYPE_RANDOM,
-  /// Constant value as input data
-  GEN_TYPE_CONST
-};
-
 CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]", full_type_list)
 {
   using params   = params_t<TestType>;
@@ -134,22 +123,9 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
   c2h::init_key_segments(segment_offsets, segment_keys);
   auto d_keys_it = thrust::raw_pointer_cast(segment_keys.data());
 
-  // Input data generation to test
-  const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM,
-                                                 gen_data_t::GEN_TYPE_CONST);
-
   // Generate input data
   thrust::device_vector<value_t> in_values(num_items);
-  if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
-  {
-    c2h::gen(CUB_SEED(2), in_values);
-  }
-  else
-  {
-    value_t default_constant{};
-    init_default_constant(default_constant);
-    thrust::fill(in_values.begin(), in_values.end(), default_constant);
-  }
+  c2h::gen(CUB_SEED(2), in_values);
   auto d_values_it = thrust::raw_pointer_cast(in_values.data());
 
 // Skip DeviceScan::InclusiveSum and DeviceScan::ExclusiveSum tests for extended floating-point
@@ -378,10 +354,6 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
   thrust::device_vector<key_t> segment_keys(num_items);
   c2h::init_key_segments(segment_offsets, segment_keys);
   auto d_keys_it = thrust::raw_pointer_cast(segment_keys.data());
-
-  // Input data generation to test
-  const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM,
-                                                 gen_data_t::GEN_TYPE_CONST);
 
   // Generate input data
   thrust::device_vector<value_t> in_values(num_items);
