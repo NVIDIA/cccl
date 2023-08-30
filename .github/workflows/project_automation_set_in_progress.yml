@@ -96,6 +96,7 @@ jobs:
             echo "PR is not draft, setting status to 'In Review'"
             echo "STATUS_OPTION_ID=$IN_REVIEW_PROJECT_OPTION_ID" >> $GITHUB_ENV
           fi
+        continue-on-error: true
 
       - name: Get PR Project ID
         id: get_pr_id
