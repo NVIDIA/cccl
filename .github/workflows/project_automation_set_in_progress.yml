@@ -35,9 +35,10 @@ env:
  # PVT = Project V2, PVTSSF = Project V2 Single Select Field, PVTIF = Project V2 Iteration Field
  PROJECT_ID: "PVT_kwDOABpemM4AEhOI"
  STATUS_FIELD_ID: "PVTSSF_lADOABpemM4AEhOIzgCmnYc"
- IN_PROGRESS_PROJECT_OPTION_ID: "47fc9ee4"
  WORKING_SPRINT_FIELD_ID: "PVTIF_lADOABpemM4AEhOIzgJlRho"
  START_SPRINT_FIELD_ID: "PVTIF_lADOABpemM4AEhOIzgJlRhU"
+ IN_PROGRESS_PROJECT_OPTION_ID: "47fc9ee4"
+ IN_REVIEW_PROJECT_OPTION_ID: "c6b49c6b"
 
 jobs:
   query_and_mutate_project_fields:
@@ -80,8 +81,22 @@ jobs:
       - name: Wait 1 Second
         id: sleep
         if: github.event_name == 'pull_request_target'
-        run: sleep 1
-        
+        run: sleep 1  # We sleep here to ensure the pr is added to the project before we query for it
+
+      - name: Select Status Field Value
+        id: select_status_field_value
+        if: github.event_name == 'pull_request_target' && github.event.action == 'opened'
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          if [ ${{ github.event.pull_request.draft }} == true ]; then
+            echo "PR is draft, setting status to 'In Progress'"
+            echo "STATUS_OPTION_ID=$IN_PROGRESS_PROJECT_OPTION_ID" >> $GITHUB_ENV
+          else
+            echo "PR is not draft, setting status to 'In Review'"
+            echo "STATUS_OPTION_ID=$IN_REVIEW_PROJECT_OPTION_ID" >> $GITHUB_ENV
+          fi
+
       - name: Get PR Project ID
         id: get_pr_id
         if: github.event_name == 'pull_request_target'
@@ -134,7 +149,7 @@ jobs:
                             itemId: "${{ env.PR_ID }}"
                             fieldId: "${{ env.STATUS_FIELD_ID }}"
                         value: {
-                            singleSelectOptionId: "${{ env.IN_PROGRESS_PROJECT_OPTION_ID }}"
+                            singleSelectOptionId: "${{ env.STATUS_OPTION_ID }}"
                                 }
                             }
                         ) {
@@ -304,7 +319,7 @@ jobs:
                         itemId: \"$issue_id\"
                         fieldId: \"$STATUS_FIELD_ID\"
                     value: {
-                        singleSelectOptionId: \"$IN_PROGRESS_PROJECT_OPTION_ID\"
+                        singleSelectOptionId: \"$STATUS_OPTION_ID\"
                         }
                     }
                     ) {
