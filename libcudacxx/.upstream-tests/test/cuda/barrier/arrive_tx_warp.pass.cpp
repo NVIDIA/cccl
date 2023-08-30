@@ -19,20 +19,14 @@ int main(int, char**)
 {
     BlockSize block_size = BlockSize::Warp;
 
-    NV_IF_TARGET(NV_IS_HOST,(
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (
         //Required by concurrent_agents_launch to know how many we're launching
         cuda_thread_count = block_size;
-    ));
 
-    NV_DISPATCH_TARGET(
-        NV_IS_HOST, (
-            // This does not work. (It hangs)
-            // test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>(block_size);
-        ),
-        NV_IS_DEVICE, (
-            test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>(block_size);
-            test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>(block_size);
-        )
-    );
+        test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>(block_size);
+    ),(
+        test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>(block_size);
+        test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>(block_size);
+    ));
     return 0;
 }

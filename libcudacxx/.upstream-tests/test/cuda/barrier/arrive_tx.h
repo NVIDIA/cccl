@@ -33,14 +33,15 @@ enum BlockSize {
 };
 
 using barrier = cuda::barrier<cuda::thread_scope_block>;
-inline __host__  __device__ void mbarrier_complete_tx(barrier *bar, int transaction_count) {
+inline __host__  __device__
+void mbarrier_complete_tx(barrier *b, int transaction_count) {
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (
-        if (__isShared(bar)) {
+        if (__isShared(b)) {
         asm volatile(
             "mbarrier.complete_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
             :
-            : "r"((unsigned int) __cvta_generic_to_shared(cuda::device::barrier_native_handle(*bar)))
+            : "r"((unsigned int) __cvta_generic_to_shared(cuda::device::barrier_native_handle(*b)))
               , "r"(transaction_count)
             : "memory");
         } else {
@@ -54,6 +55,8 @@ inline __host__  __device__ void mbarrier_complete_tx(barrier *bar, int transact
   );
 }
 
+constexpr int tx_count = 1;
+
 template<typename Barrier,
     template<typename, typename> typename Selector,
     typename Initializer = constructor_initializer>
@@ -63,9 +66,8 @@ void test(BlockSize block_size)
   Selector<Barrier, Initializer> sel;
   SHARED Barrier *b;
   b = sel.construct((int) block_size);
-  int arrival_count = 1;
-  int tx_count = 1;
-  auto tok = b->arrive_tx(arrival_count, tx_count);
+
+  auto tok = b->arrive_tx(1, tx_count);
 
   // Manually increase the transaction count of the barrier by blockDim.x.
   // This emulates a cp.async.bulk instruction or equivalently, a memcpy_async call.
