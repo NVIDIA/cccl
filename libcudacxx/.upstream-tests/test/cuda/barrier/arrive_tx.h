@@ -55,6 +55,19 @@ void mbarrier_complete_tx(barrier *b, int transaction_count) {
   );
 }
 
+template<typename Barrier>
+__host__ __device__
+void thread(Barrier* b)
+{
+  constexpr int tx_count = 1;
+  auto tok = b->arrive_tx(1, tx_count);
+
+  // Manually increase the transaction count of the barrier.
+  mbarrier_complete_tx(b, tx_count);
+
+  b->wait(cuda::std::move(tok));
+}
+
 constexpr int tx_count = 1;
 
 template<typename Barrier,
@@ -63,17 +76,29 @@ template<typename Barrier,
 __host__ __device__
 void test(BlockSize block_size)
 {
-  Selector<Barrier, Initializer> sel;
-  SHARED Barrier *b;
-  b = sel.construct((int) block_size);
+  NV_DISPATCH_TARGET(
+    NV_IS_HOST, (
+      // Ignore block_size and Selector on the host.
+      int num_threads = 3;
+      Barrier bar{num_threads};
+      // Launch 3 agents
+      concurrent_agents_launch(
+        [&]() { thread(&bar); },
+        [&]() { thread(&bar); },
+        [&]() { thread(&bar); }
+      );
+    ),
+    NV_IS_DEVICE, (
+      // Initialize barrier in main thread
+      Selector<Barrier, Initializer> sel;
+      SHARED Barrier *b;
+      b = sel.construct((int) block_size);
 
-  auto tok = b->arrive_tx(1, tx_count);
+      // Run all threads
+      thread(b);
+    )
+  );
 
-  // Manually increase the transaction count of the barrier by blockDim.x.
-  // This emulates a cp.async.bulk instruction or equivalently, a memcpy_async call.
-  mbarrier_complete_tx(b, tx_count);
-
-  b->wait(cuda::std::move(tok));
 }
 
 #endif // TEST_ARRIVE_TX_H_
