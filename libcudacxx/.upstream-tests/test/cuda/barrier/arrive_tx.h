@@ -57,7 +57,7 @@ inline __host__  __device__ void mbarrier_complete_tx(barrier *bar, int transact
 template<typename Barrier,
     template<typename, typename> typename Selector,
     typename Initializer = constructor_initializer>
-__device__ __host__
+__host__ __device__
 void test(BlockSize block_size)
 {
   Selector<Barrier, Initializer> sel;
