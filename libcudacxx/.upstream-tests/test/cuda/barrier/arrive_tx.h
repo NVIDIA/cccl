@@ -32,9 +32,10 @@ enum BlockSize {
     CTA    = 256
 };
 
-using barrier = cuda::barrier<cuda::thread_scope_block>;
 inline __host__  __device__
-void mbarrier_complete_tx(barrier *b, int transaction_count) {
+void mbarrier_complete_tx(
+  cuda::barrier<cuda::thread_scope_block> *b, int transaction_count)
+{
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (
         if (__isShared(b)) {
@@ -53,6 +54,15 @@ void mbarrier_complete_tx(barrier *b, int transaction_count) {
       // update. The barriers do not keep track of transaction counts.
     )
   );
+}
+
+template <cuda::thread_scope Sco>
+inline __host__  __device__
+void mbarrier_complete_tx(
+  cuda::barrier<Sco> *b, int transaction_count)
+{
+  // On non-thread-scope barriers, we drop the transaction count update. These
+  // barriers do not keep track of transaction counts.
 }
 
 template<typename Barrier>
@@ -98,7 +108,6 @@ void test(BlockSize block_size)
       thread(b);
     )
   );
-
 }
 
 #endif // TEST_ARRIVE_TX_H_

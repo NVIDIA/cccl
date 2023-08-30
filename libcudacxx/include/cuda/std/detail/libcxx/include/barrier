@@ -30,6 +30,8 @@ namespace std
     barrier& operator=(const barrier&) = delete;
 
     [[nodiscard]] arrival_token arrive(ptrdiff_t update = 1);
+    [[nodiscard]] arrival_token arrive_tx(ptrdiff_t arrival_count_update,
+                                          ptrdiff_t transaction_count_update);
     void wait(arrival_token&& arrival) const;
 
     void arrive_and_wait();
@@ -181,6 +183,22 @@ public:
             }
         return __old_phase;
     }
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+    arrival_token arrive_tx(_CUDA_VSTD::ptrdiff_t __arrive_count_update,
+                            _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
+        _LIBCUDACXX_DEBUG_ASSERT(__arrive_count_update >= 0, "Arrival count update must  be non-negative.");
+        _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+        // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
+        // Maximum value of tx-count is 2^20 -1.
+        _LIBCUDACXX_DEBUG_ASSERT(
+            __transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
+
+        // Only the thread-block scope specialization can keep track of the
+        // transaction count. Here, we drop the transaction count update. The
+        // barriers do not keep track of transaction counts.
+        (void)__transaction_count_update;
+        return this->arrive(__arrive_count_update);
+    }
     inline _LIBCUDACXX_INLINE_VISIBILITY
     void wait(arrival_token&& __old_phase) const
     {
@@ -330,6 +348,22 @@ public:
         }
         return __old_phase;
     }
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+    arrival_token arrive_tx(_CUDA_VSTD::ptrdiff_t __arrive_count_update,
+                            _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
+        _LIBCUDACXX_DEBUG_ASSERT(__arrive_count_update >= 0, "Arrival count update must  be non-negative.");
+        _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+        // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
+        // Maximum value of tx-count is 2^20 -1.
+        _LIBCUDACXX_DEBUG_ASSERT(
+            __transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
+
+        // Only the thread-block scope specialization can keep track of the
+        // transaction count. Here, we drop the transaction count update. The
+        // barriers do not keep track of transaction counts.
+        (void)__transaction_count_update;
+        return this->arrive(__arrive_count_update);
+    }
     _LIBCUDACXX_INLINE_VISIBILITY
     void wait(arrival_token&& __old_phase) const
     {
@@ -434,6 +468,22 @@ public:
             __phase_arrived_expected.notify_all();
         }
         return __old & __phase_bit;
+    }
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+    arrival_token arrive_tx(_CUDA_VSTD::ptrdiff_t __arrive_count_update,
+                            _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
+        _LIBCUDACXX_DEBUG_ASSERT(__arrive_count_update >= 0, "Arrival count update must  be non-negative.");
+        _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+        // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
+        // Maximum value of tx-count is 2^20 -1.
+        _LIBCUDACXX_DEBUG_ASSERT(
+            __transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
+
+        // Only the thread-block scope specialization can keep track of the
+        // transaction count. Here, we drop the transaction count update. The
+        // barriers do not keep track of transaction counts.
+        (void)__transaction_count_update;
+        return this->arrive(__arrive_count_update);
     }
     _LIBCUDACXX_INLINE_VISIBILITY
     void wait(arrival_token&& __phase) const

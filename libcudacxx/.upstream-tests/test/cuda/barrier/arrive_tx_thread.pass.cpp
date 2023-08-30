@@ -28,5 +28,9 @@ int main(int, char**)
     test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>(block_size);
     test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>(block_size);
 
+    // Repeat for device and system scope
+    test<cuda::barrier<cuda::thread_scope_device>, global_memory_selector>(block_size);
+    test<cuda::barrier<cuda::thread_scope_system>, global_memory_selector>(block_size);
+
     return 0;
 }
