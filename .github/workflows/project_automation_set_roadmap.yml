@@ -36,7 +36,7 @@ env:
  ROADMAP_FIELD_ID: "PVTSSF_lADOABpemM4AEhOIzgC_MXI"
 
 jobs:
-  query_and_mutate_project_fields:
+  set_roadmap_value:
     runs-on: ubuntu-latest
     
     steps:
