@@ -81,7 +81,8 @@
       "hidden": true,
       "inherits": "libcudacxx-base",
       "cacheVariables": {
-        "LIBCUDACXX_TEST_WITH_NVRTC": true
+        "LIBCUDACXX_TEST_WITH_NVRTC": true,
+        "CMAKE_CUDA_ARCHITECTURES": "70"
       }
     },
     {
