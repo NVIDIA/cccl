@@ -23,14 +23,6 @@
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 
-#include <cuda/barrier>
-
-#include <cuda/std/utility> // cuda::std::move
-
-#include "concurrent_agents.h"
-#include "cuda_space_selector.h"
-#include "test_macros.h"
-
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
