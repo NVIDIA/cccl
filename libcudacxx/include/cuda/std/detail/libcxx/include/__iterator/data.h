@@ -29,14 +29,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Cont> constexpr
 _LIBCUDACXX_INLINE_VISIBILITY
 auto data(_Cont& __c)
-_NOEXCEPT_(noexcept(__c.data()))
+noexcept(noexcept(__c.data()))
 -> decltype        (__c.data())
 { return            __c.data(); }
 
 template <class _Cont> constexpr
 _LIBCUDACXX_INLINE_VISIBILITY
 auto data(const _Cont& __c)
-_NOEXCEPT_(noexcept(__c.data()))
+noexcept(noexcept(__c.data()))
 -> decltype        (__c.data())
 { return            __c.data(); }
 

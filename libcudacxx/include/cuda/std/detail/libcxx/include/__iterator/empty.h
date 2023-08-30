@@ -29,7 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Cont>
 _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
 constexpr auto empty(const _Cont& __c)
-_NOEXCEPT_(noexcept(__c.empty()))
+noexcept(noexcept(__c.empty()))
 -> decltype        (__c.empty())
 { return            __c.empty(); }
 

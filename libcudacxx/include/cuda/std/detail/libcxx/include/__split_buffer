@@ -616,7 +616,7 @@ template <class _Tp, class _Allocator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(__split_buffer<_Tp, _Allocator>& __x, __split_buffer<_Tp, _Allocator>& __y)
-        noexcept(_NOEXCEPT_(__x.swap(__y)))
+        noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }
