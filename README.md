@@ -96,8 +96,13 @@ int main() {
 
 ## Getting Started
 
-### CUDA Toolkit 
-The easiest way to get started using CCCL is if you already have the [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit), then you already have CCCL installed on your system.
+### Users
+
+Generally speaking, because CCCL is a header-only library, users need only concern themselves with how they get the header files and how they incorporate them into their build system. 
+Anyone interested in using CCCL in their CUDA C++ application can get started by referring to the information below. 
+
+#### CUDA Toolkit 
+The easiest way to get started using CCCL is if you already have the [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit), then you already have the CCCL headers installed on your system.
 When you compile with `nvcc` you can simply include the desired headers in your code with no additional configuration required.
 If compiling with another compiler, you will need to add the include path (e.g., `/usr/local/cuda/include`) to the CCCL headers to your build system.
 
@@ -107,7 +112,7 @@ If compiling with another compiler, you will need to add the include path (e.g.,
 #include <cuda/std/atomic>
 ```
 
-### GitHub
+#### GitHub
 
 For users that want to stay on the cutting edge of CCCL development, we actively support and encourage users to use CCCL from GitHub. 
 We support using a newer version of CCCL with an older version of the CUDA Toolkit, but not the other way around.
@@ -120,7 +125,7 @@ git clone https://github.com/NVIDIA/cccl.git
 nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main 
 ```
 
-#### CMake Integration
+##### CMake Integration
 
 For more complex projects, we recommend using CMake to integrate CCCL into your project.
 
@@ -131,11 +136,15 @@ For a complete example of how to do this using CMake Package Manager see [our ex
 Other build systems should work, but we only test CMake.
 We welcome contributions that would simplify the process of integrating CCCL into other build systems.
 
+### Contributors
+
 ## Platform Support
+
+**Objective:** This section describes where users can expect CCCL to compile and run successfully. 
 
 In general, CCCL should work everywhere the CUDA Toolkit is supported, however, the devil is in the details. 
 The sections below describe the details of our support for different versions of the CUDA Toolkit, host compilers, and C++ dialects.
-Furthermore, because it is infeasible to test every environment we support, we describe our testing strategy that we use to be confident that CCCL works everywhere it should. 
+Furthermore, we describe our testing strategy to be confident that CCCL works everywhere it should. 
 
 ### CUDA Toolkit (CTK) Compatibility 
 
@@ -156,7 +165,7 @@ For example, C++20 support was not added to `nvcc` until CUDA 12.0, so CCCL feat
 
 We want to enable users to bring a newer version of CCCL to an older CTK, but not vice versa.
 This means you cannot bring an older version of CCCL to a newer CTK.
-In other words, CCCL is never forwards compatible with the CUDA Toolkit. 
+In other words, **CCCL is never forwards compatible with the CUDA Toolkit.** 
 
 The table below summarizes compatibility of the CTK and CCCL:
 
@@ -166,6 +175,7 @@ The table below summarizes compatibility of the CTK and CCCL:
 |   CTK `X.Y`   |    CCCL `MAJOR.MINOR`   | CCCL `MAJOR+1.MINOR`  |     Yes    | Possible breaking changes.  Some new features may not work |
 |   CTK `X.Y`   |    CCCL `MAJOR.MINOR`   | CCCL `MAJOR+2.MINOR`  |     No     |           CCCL supports only 2 CTK major verions           |
 |   CTK `X.Y`   |    CCCL `MAJOR.MINOR`   | CCCL `MAJOR.MINOR-n`  |     No     |               CCCL is not forwards compatible              |
+|   CTK `X.Y`   |    CCCL `MAJOR.MINOR`   | CCCL `MAJOR-n.MINOR`  |     No     |               CCCL is not forwards compatible              |
 
 
 For more information on CCCL versioning, API/ABI compatibility, and breaking changes see the [Versioning](#versioning) section below.
@@ -177,13 +187,13 @@ For more information on CCCL versioning, API/ABI compatibility, and breaking cha
 
 ### Operating Systems
 
-Unless otherwise specified, we support all the same operating systems as the CUDA toolkit, which are documented here:
+Unless otherwise specified, CCCL supports all the same operating systems as the CUDA toolkit, which are documented here:
  - [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#system-requirements)
  - [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements)
 
 ### Host Compilers
 
-Unless otherwise specified, we support all the same host compilers as the CUDA Toolkit, which are documented here:
+Unless otherwise specified, CCCL supports all the same host compilers as the CUDA Toolkit, which are documented here:
 - [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#host-compiler-support-policy)
 - [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements)
 
@@ -193,11 +203,15 @@ Unless otherwise specified, we support all the same host compilers as the CUDA T
 - C++17 
 - C++20
 
+### GPU Architectures
+
+Unless otherwise specified, CCCL supports all the same GPU architectures/Compute Capabilities as the CUDA Toolkit, which are documented here: https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capability
+
+Note that some features may only support certain architectures/Compute Capabilities. 
+
 ### Testing Strategy
 
-It is impractical for us to test every combination of compiler, CUDA Toolkit, and operating system that we support.
-
-We have adopted a testing strategy that balances the need to test as many configurations as possible with the need to keep our CI times reasonable.
+Our testing strategy that balances the need to test as many configurations as possible with reasonable CI times. 
 
 For CUDA Toolkit versions, we test against the oldest and the newest version that we support. 
 For example, if the latest version of the CUDA Toolkit is 12.3, we test against 11.1 and 12.3.
@@ -209,46 +223,67 @@ For more information about our CI pipeline, see [here](ci-overview.md).
 
 ## Versioning
 
-**Summary**
-- The API of all CCCL components share a common semantic version
-- Major version bumps and breaking changes will only coincide with a new major version release of the CUDA Toolkit 
-- Not all source breaking changes are considered API breaking changes
-- Do not rely on ABI stability of `cub::` or `thrust::` entities
-- The ABI of `cuda::` entities is versioned and encoded in an inline namespace, but do not guarantee long-term ABI stability
+**Objective:** This section describes how CCCL is versioned, API/ABI stability guarantees, and compatibility guideliness to minimize upgrade headaches. 
 
-Prior to merging Thrust, CUB, and libcudacxx into this repository, each library was independently versioned according to semantic versioning. 
+**Summary**
+- The entirety of CCCL's API shares a common semantic version across all components
+- We support only the most recently released version (we do not backport fixes to prior releases) 
+- API breaking changes and incrementing CCCL's major version will only coincide with a new major version release of the CUDA Toolkit 
+- Not all source breaking changes are considered breaking changes of the public API that warrant bumping the major version number
+- Do not rely on ABI stability of enities in the `cub::` or `thrust::` namespaces
+- ABI breaking changes for symbols in the `cuda::` namespace may happen at any time, but will be reflected by incrementing the ABI version which is embedded in an inline namespace for all `cuda::` symbols. Multiple ABI versions may be supported concurrently. 
+
+**Note:** Prior to merging Thrust, CUB, and libcudacxx into this repository, each library was independently versioned according to semantic versioning. 
 Starting with the 2.1 release, all three libraries synchronized their release versions in their separate repositories. 
 Moving forward, CCCL will continue to be released under a single [semantic version](https://semver.org/), with 2.2.0 being the first release from the [nvidia/cccl](www.github.com/nvidia/cccl) repository. 
 
+### Breaking Change 
+
+A Breaking Change is a change to **explicitly supported** functionality between released versions that would require a user to do work in order to upgrade to the newer version.
+
+In the limit, [_any_ change](https://www.hyrumslaw.com/) has the potential to break someone somewhere. 
+As a result, we do not consider all possible source breaking changes as Breaking Changes to the public API that warrant bumping the major semantic version. 
+
+This section describes the details of CCCL's API, ABI, and what we consider to be Breaking Changes.
+
 ### Application Programming Interface (API)
 
-The entirety of CCCL's API across all components shares a common semantic version.
+CCCL's public API is the entirety of the functionality _intentionally_ exposed to provide the utility of the library.
+
+In other words, CCCL's public API goes beyond just function signatures and includes:
+- The location and names of headers intended for direct inclusion in user code
+- The namespaces intended for direct use in user code
+- The declarations and/or definitions of functions, classes, and variables located in headers and intended for direct use in user code
+- The semantics of functions, classes, and variables intended for direct use in user code
+
+Moreover, CCCL's public API does **not** include any of the following: 
+- Any symbol prefixed with `_` or `__`
+- Any symbol whose name contains `detail` including the `detail::` namespace or a macro
+- Any header file contained in a `detail/` directory or sub-directory thereof
+- The header files implicitly included by any header part of the public API
+
+In general, we strive to not break public APIs and only do so when such changes benefits our users with better performance, easier-to-understand APIs, and/or more consistent APIs. 
+
+Any breaking change to the public API will require bumping CCCL's major version number. 
+In keeping with [CUDA Minor Version Compatibility](https://docs.nvidia.com/deploy/cuda-compatibility/#minor-version-compatibility), 
+API breaking changes and CCCL major version bumps will only occur coinciding with a new major version release of the CUDA Toolkit.
+
+Anything not part of the public API may change at any time without warning.
+
+#### API Versioning
+
+The entirety of CCCL's public API across all components shares a common semantic version of `MAJOR.MINOR.PATCH`.
 For historical reasons, these versions are encoded separately in each of Thrust/CUB/libcudacxx as follows:
 
-**`libcudacxx`**
 
-Defined in `<cuda/std/version>`:
-- `_LIBCUDACXX_CUDA_API_VERSION_MAJOR`: Major version, an 8 bit unsigned integer. The major version represents API stability to the best of our ability (outstanding, but not perfect). When API-backwards-incompatible changes are made, this component is incremented. Such changes are only made when a new major CUDA Compute Capability is released. ABI changes that do not have an associated API-backwards-incompatible change do not trigger a new major release.
-- `_LIBCUDACXX_CUDA_API_VERSION_MINOR`: Minor version, an 8 bit unsigned integer. When API-backwards-compatible features are added are made, this component is incremented. Such changes may be made at any time.
-- `_LIBCUDACXX_CUDA_API_VERSION_PATCH`: Subminor version, an 8 bit unsigned integer. When changes are made that do not qualify for an increase in either of the other two versions, it is incremented. Such changes may be made at any time.
-- `_LIBCUDACXX_CUDA_API_VERSION`: A concatenation of the decimal digits of all three components, a 32 bit unsigned integer.
+|                  | libcudacxx                              | Thrust              | CUB                | Incremented when? |
+|------------------|-----------------------------------------|---------------------|--------------------|--------------------------------------------------------|
+| Header           | `<cuda/std/version>`                      | `<thrust/version.h>`  | `<cub/version.h>`    | -                                                      |
+| Major Version    | `_LIBCUDACXX_CUDA_API_VERSION_MAJOR`     | `THRUST_MAJOR_VERSION` | `CUB_MAJOR_VERSION`  | Public API breaking changes (only at new CTK major release)       |
+| Minor Version    | `_LIBCUDACXX_CUDA_API_VERSION_MINOR`      | `THRUST_MINOR_VERSION` | `CUB_MINOR_VERSION`  | Non-breaking feature additions             |
+| Patch/Subminor Version | `_LIBCUDACXX_CUDA_API_VERSION_PATCH`      | `THRUST_SUBMINOR_VERSION` | `CUB_SUBMINOR_VERSION`  | Minor changes not covered by major/minor versions     |
+| Concatenated Version | `_LIBCUDACXX_CUDA_API_VERSION` (`MMMmmmppp`)         | `THRUST_VERSION` (`MMMmmmpp`)      | CUB_VERSION (`MMMmmmpp`)        | -                                                      |
 
-**`Thrust`**
-
-Defined in `<thrust/version.h>`:
-- `THRUST_MAJOR_VERSION`:
-- `THRUST_MINOR_VERSION`:
-- `THRUST_SUBMINOR_VERSION`:
-- `THRUST_VERSION`:
-
-**`CUB`**
-
-Defined in `<cub/version.h>`:
-
-- `CUB_MAJOR_VERSION`:
-- `CUB_MINOR_VERSION`:
-- `CUB_SUBMINOR_VERSION`:
-- `CUB_VERSION`:
 
 ### Application Binary Interface (ABI)
 
@@ -265,32 +300,33 @@ A library's ABI includes, but is not limited to:
 
 To learn more about ABI and why it is important, see [What is ABI, and What Should C++ Do About It?](https://wg21.link/P2028R0).
 
-
-### Compatibility Guarantees
-
-Informally, SemVer states that changes that break a library's API are only allowed in major version updates.
-However, SemVer is clear that library authors are responsible for defining what constitutes their public API as well as what constitutes a breaking change to that API.
-For example, in C++ code, there are many changes that could cause build failures, but may not be considered breaking changes that would require a major version update.
-
-In CCCL, we want to be very clear about what we consider to be a breaking change and what compatibility guarantees we make. 
-
-#### API Stability
-
-__ or _ symbol names
-detail:: namespace
-macros with DETAIL in the name
-
-#### ABI Stability - Binary Compatibility
-
-Today, entities in the `thrust::` and `cub::` namespaces do not guarantee ABI stability from one release to the next.
-
-// ABI for different architectures because CUB uses ARCH_LIST in namespace
-
-Entities in the `cuda::` namespace adhere to the ABI stability guarantees described [here](libcudacxx/docs/releases/versioning.md#libcu-abi-versioning).
-
 ### Compatibility Guidelines
 
-It is impractical to provide an exhaustive list of all possible breaking changes, but there are some general guidelines we can provide that will minimize the risk of breakages. 
+As mentioned above, we do not consider all possible source breaking changes to warrant incrementing CCCL's API major version number. 
+
+It is impractical to provide an exhaustive list of all possible breaking changes, but here are some general guidelines that will minimize the risk of breakages. 
+Portions of this section were inspired by [Abseil's Compatibility Guidelines](https://abseil.io/about/compatibility).
+
+- Do not add any declarations to the `thrust::`, `cub::`, `nv::`, or `cuda::` namespaces unless an exception is noted for a specific symbol, e.g., specializing a type trait.
+    - **Rationale**: This would cause symbol conflicts if we added a symbol with the same name. 
+- Do not take the address of any API in the `thrust::`, `cub::`, `cuda::`, or `nv::` namespaces. 
+    - **Rationale**: This would prevent us from adding overloads of these APIs.
+- Do not forward declare any API in the `thrust::`, `cub::`, `cuda::`, or `nv::` namespaces.
+    - **Rationale**: This would prevent us from adding overloads of these APIs.
+- Do not directly reference any symbol prefixed with `_`, `__`, or with `detail` anywhere in its name including a `detail::` namespace or macro
+     - **Rationale**: These symbols are for internal use only and may change at any time without warning. 
+- Include what you use. For every CCCL symbol that you use, directly `#include` the header file that declares that symbol. In other words, do not rely on headers implicitly included by other headers.
+     - **Rationale**: Internal includes may change at any time.
+
+
+## Deprecation Policy
+
+We will do our best to notify users prior to making any breaking changes to the public API, ABI, or modifying the platforms and compilers we support.
+
+As appropriate, deprecations will come in the form of programmatic warnings which can be disabled.
+
+The deprecation period will depend on the impact of the change, but will usually last at least 2 minor version releases.
+
 
 ## Frequently Asked Questions (FAQs)
 
