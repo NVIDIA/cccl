@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef ARRIVE_TX_H_
-#define ARRIVE_TX_H_
+#ifndef TEST_ARRIVE_TX_H_
+#define TEST_ARRIVE_TX_H_
 
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-70
@@ -74,7 +74,4 @@ void test(BlockSize block_size)
   b->wait(cuda::std::move(tok));
 }
 
-
-
-
-#endif // ARRIVE_TX_H_
+#endif // TEST_ARRIVE_TX_H_
