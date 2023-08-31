@@ -26,12 +26,6 @@
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
-enum BlockSize {
-    Thread = 2,
-    Warp   = 32,
-    CTA    = 256
-};
-
 inline __host__  __device__
 void mbarrier_complete_tx(
   cuda::barrier<cuda::thread_scope_block> *b, int transaction_count)
@@ -84,11 +78,11 @@ template<typename Barrier,
     template<typename, typename> typename Selector,
     typename Initializer = constructor_initializer>
 __host__ __device__
-void test(BlockSize block_size)
+void test()
 {
   NV_DISPATCH_TARGET(
     NV_IS_HOST, (
-      // Ignore block_size and Selector on the host.
+      // Ignore Selector on the host.
       int num_threads = 3;
       Barrier bar{num_threads};
       // Launch 3 agents
@@ -102,7 +96,7 @@ void test(BlockSize block_size)
       // Initialize barrier in main thread
       Selector<Barrier, Initializer> sel;
       SHARED Barrier *b;
-      b = sel.construct((int) block_size);
+      b = sel.construct((int) blockDim.x);
 
       // Run all threads
       thread(b);
