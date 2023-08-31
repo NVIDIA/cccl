@@ -55,6 +55,10 @@ readonly CXX_STANDARD=$2
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
 readonly NVCC_VERSION=$($CUDA_COMPILER --version | grep release | awk '{print $6}' | cut -c2-)
 
+if [ -z ${CCCL_BUILD_INFIX+x} ]; then
+    CCCL_BUILD_INFIX=""
+fi
+
 # Presets will be configured in this directory:
 BUILD_DIR=../build/${CCCL_BUILD_INFIX}
 
