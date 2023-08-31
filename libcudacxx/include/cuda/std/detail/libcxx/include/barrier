@@ -186,11 +186,10 @@ public:
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
     arrival_token arrive_tx(_CUDA_VSTD::ptrdiff_t __arrive_count_update,
                             _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
-        _LIBCUDACXX_DEBUG_ASSERT(__arrive_count_update >= 0, "Arrival count update must  be non-negative.");
-        _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+        _LIBCUDACXX_ASSERT(__arrive_count_update >= 0, "Arrival count update must be non-negative.");
+        _LIBCUDACXX_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
         // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
-        // Maximum value of tx-count is 2^20 -1.
-        _LIBCUDACXX_DEBUG_ASSERT(
+        _LIBCUDACXX_ASSERT(
             __transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
 
         // Only the thread-block scope specialization can keep track of the
@@ -336,9 +335,7 @@ public:
         auto const __result = __arrived.fetch_sub(__update, memory_order_acq_rel) - __update;
         auto const __new_expected = __expected.load(memory_order_relaxed);
 
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__result >= 0);
-#endif
+        _LIBCUDACXX_ASSERT(__result >= 0);
 
         if(0 == __result) {
             __completion();
@@ -351,11 +348,10 @@ public:
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
     arrival_token arrive_tx(_CUDA_VSTD::ptrdiff_t __arrive_count_update,
                             _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
-        _LIBCUDACXX_DEBUG_ASSERT(__arrive_count_update >= 0, "Arrival count update must  be non-negative.");
-        _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+        _LIBCUDACXX_ASSERT(__arrive_count_update >= 0, "Arrival count update must be non-negative.");
+        _LIBCUDACXX_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
         // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
-        // Maximum value of tx-count is 2^20 -1.
-        _LIBCUDACXX_DEBUG_ASSERT(
+        _LIBCUDACXX_ASSERT(
             __transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
 
         // Only the thread-block scope specialization can keep track of the
@@ -418,9 +414,7 @@ private:
     static _LIBCUDACXX_INLINE_VISIBILITY constexpr
     uint64_t __init(ptrdiff_t __count) noexcept
     {
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__count >= 0);
-#endif
+        _LIBCUDACXX_ASSERT(__count >= 0);
 
         return (((1u << 31) - __count) << 32)
               | ((1u << 31) - __count);
@@ -448,9 +442,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     __barrier_base(ptrdiff_t __count, __empty_completion = __empty_completion())
         : __phase_arrived_expected(__init(__count)) {
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__count >= 0);
-#endif
+        _LIBCUDACXX_ASSERT(__count >= 0);
     }
 
     ~__barrier_base() = default;
@@ -472,11 +464,10 @@ public:
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
     arrival_token arrive_tx(_CUDA_VSTD::ptrdiff_t __arrive_count_update,
                             _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
-        _LIBCUDACXX_DEBUG_ASSERT(__arrive_count_update >= 0, "Arrival count update must  be non-negative.");
-        _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+        _LIBCUDACXX_ASSERT(__arrive_count_update >= 0, "Arrival count update must be non-negative.");
+        _LIBCUDACXX_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
         // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
-        // Maximum value of tx-count is 2^20 -1.
-        _LIBCUDACXX_DEBUG_ASSERT(
+        _LIBCUDACXX_ASSERT(
             __transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
 
         // Only the thread-block scope specialization can keep track of the

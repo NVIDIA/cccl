@@ -67,18 +67,13 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     friend void init(barrier * __b, _CUDA_VSTD::ptrdiff_t __expected) {
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__expected >= 0);
-#endif
-
+        _LIBCUDACXX_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
         new (__b) barrier(__expected);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
     friend void init(barrier * __b, _CUDA_VSTD::ptrdiff_t __expected, _CompletionF __completion) {
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__expected >= 0);
-#endif
+        _LIBCUDACXX_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
         new (__b) barrier(__expected, __completion);
     }
 };
@@ -183,13 +178,10 @@ public:
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
     arrival_token arrive_tx(_CUDA_VSTD::ptrdiff_t __arrive_count_update,
                             _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__arrive_count_update >= 0);
-        _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0);
+        _LIBCUDACXX_ASSERT(__arrive_count_update >= 0, "Arrival count update must be non-negative.");
+        _LIBCUDACXX_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
         // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
-        // Maximum value of tx-count is 2^20 -1.
-        _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1);
-#endif
+        _LIBCUDACXX_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
         arrival_token __token = {};
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_90, (
@@ -225,10 +217,7 @@ public:
 
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
     arrival_token arrive(_CUDA_VSTD::ptrdiff_t __update = 1) {
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__update >= 0);
-        _LIBCUDACXX_DEBUG_ASSERT(__expected_unit >=0);
-#endif
+        _LIBCUDACXX_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
         arrival_token __token = {};
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_90, (
