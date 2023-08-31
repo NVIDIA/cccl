@@ -85,18 +85,19 @@ jobs:
 
       - name: Select Status Field Value
         id: select_status_field_value
-        if: github.event_name == 'pull_request_target' && github.event.action == 'opened'
+        if: github.event_name == 'pull_request_target'
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          if [ ${{ github.event.pull_request.draft }} == true ]; then
-            echo "PR is draft, setting status to 'In Progress'"
-            echo "STATUS_OPTION_ID=$IN_PROGRESS_PROJECT_OPTION_ID" >> $GITHUB_ENV
-          else
-            echo "PR is not draft, setting status to 'In Review'"
+          # If it's not a draft and it's an opened trigger, the status should be "Ready for Review", otherwise "In Progress"
+          if [ ${{ github.event.pull_request.draft }} == false ] && [ ${{ github.event.action }} == "opened" ]; then
+            echo "PR is not a draft, setting status to 'In Review'"
             echo "STATUS_OPTION_ID=$IN_REVIEW_PROJECT_OPTION_ID" >> $GITHUB_ENV
+          else
+            echo "PR is a draft, setting status to 'In Progress'"
+            echo "STATUS_OPTION_ID=$IN_PROGRESS_PROJECT_OPTION_ID" >> $GITHUB_ENV
           fi
-        continue-on-error: true
+          continue-on-error: true
 
       - name: Get PR Project ID
         id: get_pr_id
