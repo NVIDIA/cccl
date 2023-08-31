@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script parses the CI matrix.yaml file and generates a devcontainer.json file for each unique combination of 
+# This script parses the CI matrix.yaml file and generates a devcontainer.json file for each unique combination of
 # CUDA version, compiler name/version, and Ubuntu version. The devcontainer.json files are written to the
 # .devcontainer directory to a subdirectory named after the CUDA version and compiler name/version.
 # GitHub docs on using multiple devcontainer.json files:
@@ -40,7 +40,7 @@ for combination in $combinations; do
     # Use the base_devcontainer.json as a template, plug in the CUDA, compiler names, versions, and Ubuntu version,
     # and write the output to the new devcontainer.json file
     #jq --arg image "$image"  --arg name "$name" '. + {image: $image, name: $name}' $base_devcontainer_file > "$devcontainer_file"
-    jq --arg image "$image" --arg name "$name" '.image = $image | .name = $name | .containerEnv.DEVCONTAINER_NAME = $name' $base_devcontainer_file > "$devcontainer_file"
+    jq --arg image "$image" --arg name "$name" '.image = $image | .name = $name | .containerEnv.DEVCONTAINER_NAME = $name | .containerEnv.CCCL_BUILD_INFIX = $name' $base_devcontainer_file > "$devcontainer_file"
 
     echo "Created $devcontainer_file"
 done

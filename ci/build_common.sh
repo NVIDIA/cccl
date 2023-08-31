@@ -55,12 +55,6 @@ readonly CXX_STANDARD=$2
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
 readonly NVCC_VERSION=$($CUDA_COMPILER --version | grep release | awk '{print $6}' | cut -c2-)
 
-if [ -z ${DEVCONTAINER_NAME+x} ]; then
-    CCCL_BUILD_INFIX=local
-else
-    CCCL_BUILD_INFIX=${DEVCONTAINER_NAME}
-fi
-
 # Presets will be configured in this directory:
 BUILD_DIR=../build/${CCCL_BUILD_INFIX}
 
@@ -70,7 +64,6 @@ rm -f ../build/latest
 ln -sf $BUILD_DIR ../build/latest
 
 # Prepare environment for CMake:
-export CCCL_BUILD_INFIX
 export CMAKE_BUILD_PARALLEL_LEVEL="${PARALLEL_LEVEL}"
 export CTEST_PARALLEL_LEVEL="1"
 export CUDACXX="${CUDA_COMPILER}"
