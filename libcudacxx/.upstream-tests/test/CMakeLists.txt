@@ -93,13 +93,15 @@ add_lit_testsuite(check-cudacxx
 # Add test target for standalone headers
 add_subdirectory(host_only)
 
+find_program(lit libcudacxx_LIT REQUIRED)
+
 if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
   # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
   # Only executed if explicitly requested.
   add_custom_target(libcudacxx.test.lit.precompile
-    ${CMAKE_COMMAND} -E env
+    "${CMAKE_COMMAND}" -E env
       "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-    lit -vv --no-progress-bar
+    "${libcudacxx_LIT}" -vv --no-progress-bar
       "-Dexecutor=\"NoopExecutor()\"" # Don't run the compiled tests.
       "${libcudacxx_SOURCE_DIR}/.upstream-tests/test"
   )
@@ -111,10 +113,13 @@ set(libcudacxx_LIT_PARALLEL_LEVEL 8 CACHE STRING
 )
 
 add_test(NAME libcudacxx.test.lit COMMAND
-  ${CMAKE_COMMAND} -E env
+  "${CMAKE_COMMAND}" -E env
     "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-  lit -vv --no-progress-bar
+  "${libcudacxx_LIT}" -vv --no-progress-bar
     -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
     "${libcudacxx_SOURCE_DIR}/.upstream-tests/test"
 )
-set_tests_properties(libcudacxx.test.lit PROPERTIES TIMEOUT 3600 RUN_SERIAL TRUE)
+set_tests_properties(libcudacxx.test.lit PROPERTIES
+  TIMEOUT 3600
+  RUN_SERIAL TRUE
+)

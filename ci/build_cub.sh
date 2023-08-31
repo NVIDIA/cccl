@@ -22,7 +22,6 @@ fi
 
 PRESET="cub-cpp$CXX_STANDARD"
 
-# TODO Can we move the benchmark logic to CMake?
 CMAKE_OPTIONS="
     -DCUB_ENABLE_BENCHMARKS="$ENABLE_CUB_BENCHMARKS"\
 "

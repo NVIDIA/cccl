@@ -30,8 +30,7 @@
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_LIBCUDACXX": true,
-        "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
-        "LIBCUDACXX_COMPUTE_ARCHS": "70"
+        "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true
       }
     },
     {
