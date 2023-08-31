@@ -72,7 +72,6 @@ ln -sf $BUILD_DIR ../build/latest
 # Prepare environment for CMake:
 export CCCL_BUILD_INFIX
 export CMAKE_BUILD_PARALLEL_LEVEL="${PARALLEL_LEVEL}"
-export CMAKE_EXPORT_COMPILE_COMMANDS=1
 export CTEST_PARALLEL_LEVEL="1"
 export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"

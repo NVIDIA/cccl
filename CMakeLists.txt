@@ -35,7 +35,8 @@ option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." ON)
 include(CTest)
 enable_testing()
 
-include(cmake/CCCLUtilities.cmake)
+include(cmake/CCCLUtilities.cmake) # include this first
+include(cmake/CCCLClangdCompileInfo.cmake)
 
 if (CCCL_ENABLE_LIBCUDACXX)
   set(LIBCUDACXX_TOPLEVEL_PROJECT ON)

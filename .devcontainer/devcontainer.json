@@ -26,12 +26,7 @@
         "vscode": {
             "extensions": [
                 "llvm-vs-code-extensions.vscode-clangd"
-            ],
-            "settings": {
-                "clangd.arguments": [
-                    "--compile-commands-dir=${workspaceFolder}/build/latest"
-                ]
-            }
+            ]
         }
     }
 }
