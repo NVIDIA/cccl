@@ -335,7 +335,7 @@ public:
         auto const __result = __arrived.fetch_sub(__update, memory_order_acq_rel) - __update;
         auto const __new_expected = __expected.load(memory_order_relaxed);
 
-        _LIBCUDACXX_ASSERT(__result >= 0);
+        _LIBCUDACXX_ASSERT(__result >= 0, "");
 
         if(0 == __result) {
             __completion();
@@ -414,7 +414,7 @@ private:
     static _LIBCUDACXX_INLINE_VISIBILITY constexpr
     uint64_t __init(ptrdiff_t __count) noexcept
     {
-        _LIBCUDACXX_ASSERT(__count >= 0);
+        _LIBCUDACXX_ASSERT(__count >= 0, "");
 
         return (((1u << 31) - __count) << 32)
               | ((1u << 31) - __count);
@@ -442,7 +442,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     __barrier_base(ptrdiff_t __count, __empty_completion = __empty_completion())
         : __phase_arrived_expected(__init(__count)) {
-        _LIBCUDACXX_ASSERT(__count >= 0);
+        _LIBCUDACXX_ASSERT(__count >= 0, "");
     }
 
     ~__barrier_base() = default;
