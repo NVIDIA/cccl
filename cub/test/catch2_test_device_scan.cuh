@@ -61,33 +61,39 @@ struct Mod2Equality
   }
 };
 
-template <typename InputIt, typename OutputIt, typename T, typename BinaryOp>
+template <typename InputIt, typename OutputIt, typename InitT, typename BinaryOp>
 void compute_exclusive_scan_reference(InputIt first,
                                       InputIt last,
                                       OutputIt result,
-                                      T init,
+                                      InitT init,
                                       BinaryOp op)
 {
-  T acc = init;
+  using value_t  = cub::detail::value_t<InputIt>;
+  using accum_t  = cub::detail::accumulator_t<BinaryOp, InitT, value_t>;
+  using output_t = cub::detail::value_t<OutputIt>;
+  accum_t acc    = static_cast<accum_t>(init);
   for (; first != last; ++first)
   {
-    *result++ = acc;
+    *result++ = static_cast<output_t>(acc);
     acc       = op(acc, *first);
   }
 }
 
-template <typename InputIt, typename OutputIt, typename BinaryOp, typename T>
+template <typename InputIt, typename OutputIt, typename BinaryOp, typename InitT>
 void compute_inclusive_scan_reference(InputIt first,
                                       InputIt last,
                                       OutputIt result,
                                       BinaryOp op,
-                                      T init)
+                                      InitT init)
 {
-  T acc = init;
+  using value_t  = cub::detail::value_t<InputIt>;
+  using accum_t  = cub::detail::accumulator_t<BinaryOp, InitT, value_t>;
+  using output_t = cub::detail::value_t<OutputIt>;
+  accum_t acc    = static_cast<accum_t>(init);
   for (; first != last; ++first)
   {
     acc       = op(acc, *first);
-    *result++ = acc;
+    *result++ = static_cast<output_t>(acc);
   }
 }
 
