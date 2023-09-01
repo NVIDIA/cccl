@@ -93,7 +93,7 @@ add_lit_testsuite(check-cudacxx
 # Add test target for standalone headers
 add_subdirectory(host_only)
 
-find_program(lit libcudacxx_LIT REQUIRED)
+find_program(libcudacxx_LIT lit REQUIRED)
 
 if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
   # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
