@@ -22,7 +22,7 @@ transaction count.
 ## Notes
 
 If `bar` is not in `__shared__` memory, the behavior is undefined. This function
-can only be used with compute capability 9.0 or higher.
+can only be used under CUDA Compute Capability 9.0 (Hopper) or higher.
 
 ## Return Value
 
