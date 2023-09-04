@@ -18,16 +18,17 @@
 
 int main(int, char**)
 {
-    NV_IF_TARGET(NV_IS_HOST, (
+    NV_DISPATCH_TARGET(
+        NV_IS_HOST, (
         // Required by concurrent_agents_launch to know how many we're
         // launching. This can only be an int, because the nvrtc tests use grep
         // to figure out how many threads to launch.
         cuda_thread_count = 256;
-    ));
-
-    // Run test on both host and device
-    test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>();
-    test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>();
+        ),
+        NV_IS_DEVICE, (
+            test<cuda::barrier<cuda::thread_scope_block>>();
+        )
+    );
 
     return 0;
 }

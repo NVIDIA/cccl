@@ -62,9 +62,7 @@ void thread(Barrier& b, int arrives_per_thread)
   b.wait(cuda::std::move(tok));
 }
 
-template<typename Barrier,
-    template<typename, typename> typename Selector,
-    typename Initializer = constructor_initializer>
+template<typename Barrier>
 __device__
 void test()
 {
