@@ -26,19 +26,19 @@
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
-inline __host__  __device__
+inline __device__
 void mbarrier_complete_tx(
-  cuda::barrier<cuda::thread_scope_block> *b, int transaction_count)
+  cuda::barrier<cuda::thread_scope_block> &b, int transaction_count)
 {
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (
-        if (__isShared(b)) {
-        asm volatile(
-            "mbarrier.complete_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
-            :
-            : "r"((unsigned int) __cvta_generic_to_shared(cuda::device::barrier_native_handle(*b)))
-              , "r"(transaction_count)
-            : "memory");
+        if (__isShared(cuda::device::barrier_native_handle(b))) {
+            asm volatile(
+              "mbarrier.complete_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
+              :
+              : "r"((unsigned int) __cvta_generic_to_shared(cuda::device::barrier_native_handle(b))),
+                "r"(transaction_count)
+              : "memory");
         } else {
             // When arriving on non-shared barriers, we drop the transaction count
             // update. The barriers do not keep track of transaction counts.
@@ -50,56 +50,36 @@ void mbarrier_complete_tx(
   );
 }
 
-template <cuda::thread_scope Sco>
-inline __host__  __device__
-void mbarrier_complete_tx(
-  cuda::barrier<Sco> *b, int transaction_count)
-{
-  // On non-thread-scope barriers, we drop the transaction count update. These
-  // barriers do not keep track of transaction counts.
-}
-
 template<typename Barrier>
-__host__ __device__
-void thread(Barrier* b)
+__device__
+void thread(Barrier& b, int arrives_per_thread)
 {
   constexpr int tx_count = 1;
-  auto tok = b->arrive_tx(1, tx_count);
-
+  auto tok = cuda::device::arrive_tx(b, arrives_per_thread, tx_count);
   // Manually increase the transaction count of the barrier.
   mbarrier_complete_tx(b, tx_count);
 
-  b->wait(cuda::std::move(tok));
+  b.wait(cuda::std::move(tok));
 }
-
-constexpr int tx_count = 1;
 
 template<typename Barrier,
     template<typename, typename> typename Selector,
     typename Initializer = constructor_initializer>
-__host__ __device__
+__device__
 void test()
 {
   NV_DISPATCH_TARGET(
-    NV_IS_HOST, (
-      // Ignore Selector on the host.
-      int num_threads = 3;
-      Barrier bar{num_threads};
-      // Launch 3 agents
-      concurrent_agents_launch(
-        [&]() { thread(&bar); },
-        [&]() { thread(&bar); },
-        [&]() { thread(&bar); }
-      );
-    ),
     NV_IS_DEVICE, (
       // Initialize barrier in main thread
-      Selector<Barrier, Initializer> sel;
-      SHARED Barrier *b;
-      b = sel.construct((int) blockDim.x);
+      __shared__ Barrier bar_1;
+      __shared__ Barrier bar_2;
+      init(&bar_1, (int) blockDim.x);
+      init(&bar_2, (int) 2 * blockDim.x);
 
-      // Run all threads
-      thread(b);
+      // Run all threads, each arriving with arrival count 1
+      thread(bar_1, 1);
+      // Run all threads, each arriving with arrival count 2
+      thread(bar_2, 2);
     )
   );
 }
