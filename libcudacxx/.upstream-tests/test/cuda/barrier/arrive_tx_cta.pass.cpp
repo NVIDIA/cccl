@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 //
 // UNSUPPORTED: libcpp-has-no-threads
-// UNSUPPORTED: pre-sm-70
+// UNSUPPORTED: pre-sm-90
 
 // <cuda/barrier>
 

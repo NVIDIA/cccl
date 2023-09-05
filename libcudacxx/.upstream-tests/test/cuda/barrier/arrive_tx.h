@@ -10,11 +10,6 @@
 #ifndef TEST_ARRIVE_TX_H_
 #define TEST_ARRIVE_TX_H_
 
-// UNSUPPORTED: libcpp-has-no-threads
-// UNSUPPORTED: pre-sm-70
-
-// <cuda/barrier>
-
 #include <cuda/barrier>
 
 #include <cuda/std/utility>
