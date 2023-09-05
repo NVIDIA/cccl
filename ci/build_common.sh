@@ -89,6 +89,8 @@ echo "CXX_STANDARD=$CXX_STANDARD"
 echo "GPU_ARCHS=$GPU_ARCHS"
 echo "PARALLEL_LEVEL=$PARALLEL_LEVEL"
 echo "BUILD_DIR=$BUILD_DIR"
+echo "Current commit is:"
+git show --pretty=oneline --abbrev-commit
 echo "========================================"
 
 function configure(){
