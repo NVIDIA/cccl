@@ -15,13 +15,9 @@
 
 #include <cuda/barrier>
 
-#if defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__
-
 #ifndef  __cccl_lib_local_barrier_arrive_tx
 static_assert(false, "should define __cccl_lib_local_barrier_arrive_tx");
 #endif // __cccl_lib_local_barrier_arrive_tx
-
-#endif // __CUDA_MINIMUM_ARCH__
 
 int main(int, char**){
     return 0;

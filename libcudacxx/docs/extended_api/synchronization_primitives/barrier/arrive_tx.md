@@ -37,11 +37,13 @@ An arrival_token, just like the one returned from `cuda::barrier:arrive`.
 #include <cuda/barrier>
 #include <cuda/std/utility> // cuda::std::move
 
-#if defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__
+#if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 900
+static_assert(false, "Insufficient CUDA Compute Capability: cuda::device::arrive_tx is not available.");
+#endif // __CUDA_MINIMUM_ARCH__
+
 #ifndef  __cccl_lib_local_barrier_arrive_tx
 static_assert(false, "Insufficient libcu++ version: cuda::device::arrive_tx is not yet available.");
 #endif // __cccl_lib_local_barrier_arrive_tx
-#endif // __CUDA_MINIMUM_ARCH__
 
 __global__ void example_kernel() {
   __shared__ cuda::barrier<cuda::thread_scope_block> bar;
@@ -55,7 +57,7 @@ __global__ void example_kernel() {
 }
 ```
 
-[See it on Godbolt](https://godbolt.org/z/joja75jK8){: .btn }
+[See it on Godbolt](https://godbolt.org/z/nz47c14vz){: .btn }
 
 
 [`cuda::thread_scope`]: ./memory_model.md
