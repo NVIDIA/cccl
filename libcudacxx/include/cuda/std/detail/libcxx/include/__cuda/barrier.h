@@ -610,6 +610,42 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
     );
     return __token;
 }
+
+template <typename T, _CUDA_VSTD::size_t Alignment>
+_LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
+    T* __dest,
+    const T* __src,
+    ::cuda::aligned_size_t<Alignment> __size,
+    ::cuda::barrier<::cuda::thread_scope_block> & __b) {
+    static_assert(16 <= Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
+
+    NV_DISPATCH_TARGET(
+        NV_PROVIDES_SM_90, (
+            if (__isShared(__dest) && __isGlobal(__src) && __isShared(barrier_native_handle(__b))) {
+                asm volatile(
+                    "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
+                    :
+                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+                      "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
+                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(::cuda::device::barrier_native_handle(__b))))
+                    : "memory");
+
+            } else {
+                // memcpy_async_tx only supports copying from global to shared
+                // or from shared to remote cluster dsmem. To copy to remote
+                // dsmem, we need to arrive on a cluster-scoped barrier, which
+                // is not yet implemented. So we trap in this case as well.
+                __trap();
+            }
+        ), NV_ANY_TARGET, (
+            // On architectures pre-SM90 (and in host code), arriving with a
+            // transaction count update is not supported and we trap.
+            __trap();
+        )
+    );
+    return async_contract_fulfillment::async;
+}
 #endif // __CUDA_MINIMUM_ARCH__
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
