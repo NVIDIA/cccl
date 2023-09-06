@@ -3,14 +3,15 @@
 
 launch_devcontainer() {
 
-    # Ensure we're in the repo root
-    cd "$( cd "$( dirname "$(realpath -m "${BASH_SOURCE[0]}")" )" && pwd )/..";
-
     if [[ -z $1 ]] || [[ -z $2 ]]; then
         echo "Usage: $0 [CUDA version] [Host compiler]"
         echo "Example: $0 12.2 gcc12"
         return 1
     fi
+    set -euo pipefail
+    # Ensure we're in the repo root
+    cd "$( cd "$( dirname "$(realpath -m "${BASH_SOURCE[0]}")" )" && pwd )/..";
+
 
     local cuda_version="$1"
     local host_compiler="$2"
