@@ -90,7 +90,7 @@ echo "GPU_ARCHS=$GPU_ARCHS"
 echo "PARALLEL_LEVEL=$PARALLEL_LEVEL"
 echo "BUILD_DIR=$BUILD_DIR"
 echo "Current commit is:"
-git show --pretty=oneline --abbrev-commit
+git log -1
 echo "========================================"
 
 function configure(){
