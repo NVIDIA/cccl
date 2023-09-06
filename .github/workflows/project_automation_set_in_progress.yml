@@ -58,7 +58,7 @@ jobs:
           
           # If it is requesting changes, set PR to draft
           # We use the default token here since we're granting write access to the PR
-          elif [ ${{ github.event.pull_request.draft }} == false ]; then
+          elif [ ${{ github.event.pull_request.draft }} == true ]; then
             gh api graphql -f query='
               mutation {
                 convertPullRequestToDraft(input: {pullRequestId: "${{ env.PR_GLOBAL_ID }}"}) {
