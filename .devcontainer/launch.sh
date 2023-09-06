@@ -8,7 +8,7 @@ launch_devcontainer() {
 
     if [[ -z $1 ]] || [[ -z $2 ]]; then
         echo "Usage: $0 [CUDA version] [Host compiler]"
-        echo "Example: $0 12.1 gcc12"
+        echo "Example: $0 12.2 gcc12"
         return 1
     fi
 
