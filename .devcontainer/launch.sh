@@ -17,7 +17,11 @@ launch_devcontainer() {
     local workspace="$(basename "$(pwd)")";
     local tmpdir="$(mktemp -d)/${workspace}";
     local path="$(pwd)/.devcontainer/cuda${cuda_version}-${host_compiler}";
-
+    if [[ ! -f ${path}/devcontainer.json ]]; then
+        echo "Unknown CUDA [${cuda_version}] compiler [${host_compiler}] combination"
+        echo "Requested devcontainer ${path}/devcontainer.json does not exist"
+        return 1
+    fi
     mkdir -p "${tmpdir}";
     mkdir -p "${tmpdir}/.devcontainer";
     cp -arL "$path/devcontainer.json" "${tmpdir}/.devcontainer";
