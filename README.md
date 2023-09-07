@@ -159,10 +159,10 @@ We want to enable users to upgrade the version of CCCL they are using without up
 Therefore, CCCL is backwards compatible with the latest patch release of every minor CTK release within two major version series: current and preceding. 
 When a new major CTK is released, we drop support for the oldest version.
 
-| CCCL Version  | Supports CUDA Toolkit Version  |
-|---------------|-------------------------------|
-| 2.x           | 11.1 - 11.8, 12.x (only latest patch releases) |
-| 3.x (Future)  | 12.x, 13.x  (only latest patch releases)       |
+| CCCL Version | Supports CUDA Toolkit Version                  |
+|--------------|------------------------------------------------|
+| 2.x          | 11.1 - 11.8, 12.x (only latest patch releases) |
+| 3.x (Future) | 12.x, 13.x  (only latest patch releases)       |
 
 [Well-behaved code](#compatibility-guidelines) using the latest CCCL should compile and run successfully with any supported CTK version. 
 Exceptions may occur for new features that depend on new CTK features, so those features would not work on older versions of the CTK. 
