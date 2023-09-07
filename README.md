@@ -31,7 +31,7 @@ Unifying these projects is the first step towards realizing that goal.
 This is a simple example demonstrating the use of CCCL functionality from Thrust, CUB, and libcudacxx.
 
 It shows how to use Thrust/CUB/libcudacxx to implement a simple parallel reduction kernel. 
-Each thread block computes the sum of a subset of the array using `cub::BlockRecuce`. 
+Each thread block computes the sum of a subset of the array using `cub::BlockReduce`. 
 The sum of each block is then reduced to a single value using an atomic add via `cuda::atomic_ref` from libcudacxx.
 
 It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
@@ -62,10 +62,12 @@ __global__ void reduce(int const* data, int* result, std::size_t N) {
 }
 
 int main() {
-  std::size_t N = 1000;
+
   // Allocate and initialize input data
+  std::size_t N = 1000;
   thrust::device_vector<int> data(N);
   thrust::fill(data.begin(), data.end(), 1);
+
   // Allocate output data
   thrust::device_vector<int> kernel_result(1);
 
@@ -85,8 +87,8 @@ int main() {
   int thrust_result = thrust::reduce(thrust::device, data.begin(), data.end(), 0);
 
   // Ensure the two solutions are identical
-  std::printf("Custom Kernel Sum: %d\n", kernel_result[0]);
-  std::printf("Thrust reduce Sum: %d\n", thrust_result);
+  std::printf("Custom kernel sum: %d\n", kernel_result[0]);
+  std::printf("Thrust reduce sum: %d\n", thrust_result);
   assert(kernel_result[0] == thrust_result);
   return 0;
 }
@@ -96,8 +98,8 @@ int main() {
 
 ### Users
 
-Generally speaking, because CCCL is a header-only library, users need only concern themselves with how they get the header files and how they incorporate them into their build system. 
-Anyone interested in using CCCL in their CUDA C++ application can get started by referring to the information below. 
+Everything in CCCL is header-only. 
+Therefore, users need only concern themselves with how they get the header files and how they incorporate them into their build system. 
 
 #### CUDA Toolkit 
 The easiest way to get started using CCCL is via the [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) which includes the CCCL headers. 
@@ -120,9 +122,11 @@ For complete information on compatibility between CCCL and the CUDA Toolkit, see
 Everything in CCCL is header-only, so cloning and including it in a simple project is as easy as the following:
 ```bash
 git clone https://github.com/NVIDIA/cccl.git
-# Note: You need to use -I and not -isystem in order to ensure you're using the cloned headers and not the ones from the CUDA Toolkit
+# Note: 
 nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main 
 ```
+> **Note**
+> Ensure to use `-I` and not `-isystem` in order to ensure the cloned headers are found before those included in the CUDA Toolkit
 
 ##### CMake Integration
 
@@ -184,7 +188,7 @@ For more information on CCCL versioning, API/ABI compatibility, and breaking cha
 
 ### Operating Systems
 
-Unless otherwise specified, CCCL supports all the same operating systems as the CUDA toolkit, which are documented here:
+Unless otherwise specified, CCCL supports all the same operating systems as the CUDA Toolkit, which are documented here:
  - [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#system-requirements)
  - [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements)
 
@@ -197,7 +201,7 @@ Unless otherwise specified, CCCL supports all the same host compilers as the CUD
 ### C++ Dialects
 - C++11 (Deprecated in Thrust/CUB, to be removed in next major version)
 - C++14 (Deprecated in Thrust/CUB, to be removed in next major version)
-- C++17 
+- C++17
 - C++20
 
 ### GPU Architectures
@@ -227,7 +231,7 @@ For more information about our CI pipeline, see [here](ci-overview.md).
 - Only the most recently released version is supported and fixes are not backported to prior releases
 - API breaking changes and incrementing CCCL's major version will only coincide with a new major version release of the CUDA Toolkit 
 - Not all source breaking changes are considered breaking changes of the public API that warrant bumping the major version number
-- Do not rely on ABI stability of enities in the `cub::` or `thrust::` namespaces
+- Do not rely on ABI stability of entities in the `cub::` or `thrust::` namespaces
 - ABI breaking changes for symbols in the `cuda::` namespace may happen at any time, but will be reflected by incrementing the ABI version which is embedded in an inline namespace for all `cuda::` symbols. Multiple ABI versions may be supported concurrently. 
 
 **Note:** Prior to merging Thrust, CUB, and libcudacxx into this repository, each library was independently versioned according to semantic versioning. 
