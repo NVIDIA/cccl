@@ -15,22 +15,21 @@
 
 #include <cuda/barrier>
 
-#if defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__
-static_assert(false, "Fail manually for SM90 and up.");
-#endif // __CUDA_MINIMUM_ARCH__
-
-__global__ void kernel() {
-  __shared__ cuda::barrier<cuda::thread_scope_block> bar;
-  if (threadIdx.x == 0) {
-    init(&bar, blockDim.x);
-  }
-  __syncthreads();
-
-  // arrive_tx should fail with a static_assert for SM70 and SM80.
-  auto token = cuda::device::arrive_tx(bar, 1, 0);
-}
-
-
 int main(int, char**){
+    NV_IF_TARGET(
+        NV_IS_DEVICE, (
+            __shared__ cuda::barrier<cuda::thread_scope_block> bar;
+            if (threadIdx.x == 0) {
+                init(&bar, blockDim.x);
+            }
+            __syncthreads();
+
+            // arrive_tx should fail with a static_assert for SM70 and SM80.
+            auto token = cuda::device::arrive_tx(bar, 1, 0);
+
+#if defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__
+            static_assert(false, "Fail manually for SM90 and up.");
+#endif // __CUDA_MINIMUM_ARCH__
+    ));
     return 0;
 }
