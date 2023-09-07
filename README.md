@@ -4,9 +4,9 @@ Welcome to the CUDA C++ Core Libraries (CCCL) where our mission is to make CUDA 
 
 This repository unifies three essential CUDA C++ libraries into a single, convenient repository: 
 
-1. [Thrust](https://github.com/nvidia/thrust)
-2. [libcudacxx](https://github.com/nvidia/libcudacxx)
-3. [CUB](https://github.com/nvidia/cub)
+- [Thrust](thrust) (former [repo](https://github.com/nvidia/thrust))
+- [CUB](cub) (former [repo](https://github.com/nvidia/cub))
+- [libcudacxx](libcudacxx) (former [repo](https://github.com/nvidia/libcudacxx))
 
 Our goal is to provide CUDA C++ developers with the building blocks they need to make it easier to write safe and efficient code. By bringing these libraries together, we hope to streamline your development process and broaden your ability to leverage the power of CUDA C++.
 For more information about our decision to unify these projects, see our announcement here: (TODO)
@@ -17,6 +17,8 @@ The concept for the CUDA C++ Core Libraries (CCCL) grew organically out of the T
 Naturally, there was a lot of overlap among the three projects, and we realized that we could better serve the community by unifying them into a single repository.
 
 - **Thrust** is the C++ parallel algorithms library which inspired the introduction of parallel algorithms to the C++ Standard Library. Thrust's high-level interface greatly enhances programmer productivity while enabling performance portability between GPUs and multicore CPUs via configurable backends that allow using multiple parallel programming frameworks (such as CUDA, TBB, and OpenMP).
+
+- **CUB** is a lower-level, CUDA-specific library designed for speed-of-light parallel algorithms across all GPU architectures. In addition to device-wide algorithms, it provides *cooperative algorithms* like block-wide reduce and warp-wide scan, providing CUDA kernel developers with building blocks to create speed-of-light, custom kernels. 
 
 - **libcudacxx** is the CUDA C++ Standard Library. It provides an implementation of the C++ Standard Library that works in both host and device code. Additionally, it provides abstractions for CUDA-specific hardware features like synchronization primitives, cache control, atomics, and more. 
 
