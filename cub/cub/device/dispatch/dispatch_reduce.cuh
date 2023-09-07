@@ -51,59 +51,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace reduce
-{
-
-/**
- * All cub::DeviceReduce::* algorithms are using the same implementation. Some of them, however,
- * should use initial value only for empty problems. If this struct is used as initial value with
- * one of the `DeviceReduce` algorithms, the `init` value wrapped by this struct will only be used
- * for empty problems; it will not be incorporated into the aggregate of non-empty problems.
- */
-template <class T>
-struct empty_problem_init_t
-{
-  T init;
-
-  __host__ __device__ operator T() const { return init; }
-};
-
-/**
- * @brief Applies initial value to the block aggregate and stores the result to the output iterator.
- *
- * @param d_out Iterator to the output aggregate
- * @param reduction_op Binary reduction functor
- * @param init Initial value
- * @param block_aggregate Aggregate value computed by the block
- */
-template <class OutputIteratorT, class ReductionOpT, class InitT, class AccumT>
-__host__ __device__ void finalize_and_store_aggregate(OutputIteratorT d_out,
-                                                      ReductionOpT reduction_op,
-                                                      InitT init,
-                                                      AccumT block_aggregate)
-{
-  *d_out = reduction_op(init, block_aggregate);
-}
-
-/**
- * @brief Ignores initial value and stores the block aggregate to the output iterator.
- *
- * @param d_out Iterator to the output aggregate
- * @param block_aggregate Aggregate value computed by the block
- */
-template <class OutputIteratorT, class ReductionOpT, class InitT, class AccumT>
-__host__ __device__ void finalize_and_store_aggregate(OutputIteratorT d_out,
-                                                      ReductionOpT,
-                                                      empty_problem_init_t<InitT>,
-                                                      AccumT block_aggregate)
-{
-  *d_out = block_aggregate;
-}
-} // namespace reduce
-} // namespace detail
-
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
@@ -268,7 +215,7 @@ __global__ void DeviceReduceSingleTileKernel(InputIteratorT d_in,
   // Output result
   if (threadIdx.x == 0)
   {
-    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
+    *d_out = reduction_op(init, block_aggregate);
   }
 }
 
@@ -363,7 +310,7 @@ __global__ void DeviceSegmentedReduceKernel(
     OutputIteratorT d_out,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int /*num_segments*/,
+    OffsetT /*num_segments*/,
     ReductionOpT reduction_op,
     InitT init)
 {
@@ -387,7 +334,7 @@ __global__ void DeviceSegmentedReduceKernel(
   {
     if (threadIdx.x == 0)
     {
-      *(d_out + blockIdx.x) = init;
+      d_out[blockIdx.x] = init;
     }
     return;
   }
@@ -401,10 +348,7 @@ __global__ void DeviceSegmentedReduceKernel(
 
   if (threadIdx.x == 0)
   {
-    detail::reduce::finalize_and_store_aggregate(d_out + blockIdx.x,
-                                                 reduction_op,
-                                                 init,
-                                                 block_aggregate);
+    d_out[blockIdx.x] = reduction_op(init, block_aggregate);
   }
 }
 
@@ -1320,7 +1264,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
            size_t &temp_storage_bytes,
            InputIteratorT d_in,
            OutputIteratorT d_out,
-           int num_segments,
+           OffsetT num_segments,
            BeginOffsetIteratorT d_begin_offsets,
            EndOffsetIteratorT d_end_offsets,
            ReductionOpT reduction_op,
@@ -1374,7 +1318,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
            size_t &temp_storage_bytes,
            InputIteratorT d_in,
            OutputIteratorT d_out,
-           int num_segments,
+           OffsetT num_segments,
            BeginOffsetIteratorT d_begin_offsets,
            EndOffsetIteratorT d_end_offsets,
            ReductionOpT reduction_op,

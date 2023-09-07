@@ -56,6 +56,36 @@ struct ChooseOffsetT
                                          unsigned long long>::type;
 };
 
+template <typename T,typename = void>
+struct is_iterator : std::false_type {};
+template <typename T>
+struct is_iterator<T,std::void_t<typename std::iterator_traits<T>::iterator_category>> : std::true_type {};
+template <typename T>
+inline constexpr bool is_iterator_v = is_iterator<T>::value;
+
+// checks if input type is a valid offset iterator and assigns iterator's value_type to member ::type
+template <typename OffsetIterT>
+struct offset_iter_value {
+	static_assert(
+		is_iterator_v<OffsetIterT>,
+		"input must be a valid iterator type"
+	);
+	using type = typename std::iterator_traits<OffsetIterT>::value_type;
+	static_assert(
+		!std::is_integral_v<OffsetIterT> && !std::is_same_v<std::remove_cv_t<OffsetIterT>,bool>,
+		"value_type of input type must be an integral type but not bool"
+	);
+};
+
+template <typename... OffsetIter>
+struct common_offset_value {
+	using type = std::common_type_t<
+		typename offset_iter_value<OffsetIter>::type...
+	>;
+};
+template <typename... OffsetIter>
+using common_offset_value_t = typename common_offset_value<OffsetIter...>::type;
+
 } // namespace detail
 
 CUB_NAMESPACE_END
