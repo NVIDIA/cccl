@@ -8,7 +8,7 @@ This repository unifies three essential CUDA C++ libraries into a single, conven
 - [CUB](cub) (former [repo](https://github.com/nvidia/cub))
 - [libcudacxx](libcudacxx) (former [repo](https://github.com/nvidia/libcudacxx))
 
-Our goal is to provide CUDA C++ developers with the building blocks they need to make it easier to write safe and efficient code. By bringing these libraries together, we hope to streamline your development process and broaden your ability to leverage the power of CUDA C++.
+The goal of CCCL is to provide CUDA C++ developers with building blocks that make it easier to write safe and efficient code. Bringing these libraries together streamlines your development process and broadens your ability to leverage the power of CUDA C++.
 For more information about our decision to unify these projects, see our announcement here: (TODO)
 
 ## Overview
