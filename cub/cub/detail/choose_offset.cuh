@@ -72,7 +72,7 @@ struct offset_iter_value {
 	);
 	using type = typename std::iterator_traits<OffsetIterT>::value_type;
 	static_assert(
-		std::is_integral_v<OffsetIterT> && !std::is_same_v<std::remove_cv_t<OffsetIterT>,bool>,
+		std::is_integral_v<type> && !std::is_same_v<std::remove_cv_t<type>,bool>,
 		"value_type of input type must be an integral type but not bool"
 	);
 };
