@@ -332,7 +332,6 @@ public:
           __second_constructed(false)
         {}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     __hash_map_node_destructor(std::__hash_node_destructor<allocator_type>&& __x)
         : __na_(__x.__na_),
@@ -341,16 +340,6 @@ public:
         {
             __x.__value_constructed = false;
         }
-#else  // _LIBCUDACXX_CXX03_LANG
-    _LIBCUDACXX_INLINE_VISIBILITY
-    __hash_map_node_destructor(const std::__hash_node_destructor<allocator_type>& __x)
-        : __na_(__x.__na_),
-          __first_constructed(__x.__value_constructed),
-          __second_constructed(__x.__value_constructed)
-        {
-            const_cast<bool&>(__x.__value_constructed) = false;
-        }
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void operator()(pointer __p)

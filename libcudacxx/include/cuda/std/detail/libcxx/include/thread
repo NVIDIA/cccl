@@ -92,9 +92,7 @@ void sleep_for(const chrono::duration<Rep, Period>& rel_time);
 #include <system_error>
 #include <chrono>
 #include <__mutex_base>
-#ifndef _LIBCUDACXX_CXX03_LANG
 #include <tuple>
-#endif
 #include <__threading_support>
 #include <__debug>
 
@@ -225,7 +223,6 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     thread() noexcept : __t_(_LIBCUDACXX_NULL_THREAD) {}
-#ifndef _LIBCUDACXX_CXX03_LANG
     template <class _Fp, class ..._Args,
               class = typename enable_if
               <
@@ -234,19 +231,12 @@ public:
              >
         _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
         explicit thread(_Fp&& __f, _Args&&... __args);
-#else  // _LIBCUDACXX_CXX03_LANG
-    template <class _Fp>
-    _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
-    explicit thread(_Fp __f);
-#endif
     ~thread();
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     thread(thread&& __t) noexcept : __t_(__t.__t_) {__t.__t_ = _LIBCUDACXX_NULL_THREAD;}
     _LIBCUDACXX_INLINE_VISIBILITY
     thread& operator=(thread&& __t) noexcept;
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(thread& __t) noexcept {_CUDA_VSTD::swap(__t_, __t.__t_);}
@@ -262,8 +252,6 @@ public:
 
     static unsigned hardware_concurrency() noexcept;
 };
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _TSp, class _Fp, class ..._Args, size_t ..._Indices>
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -314,43 +302,6 @@ thread::operator=(thread&& __t) noexcept
     return *this;
 }
 
-#else  // _LIBCUDACXX_CXX03_LANG
-
-template <class _Fp>
-struct __thread_invoke_pair {
-    // This type is used to pass memory for thread local storage and a functor
-    // to a newly created thread because std::pair doesn't work with
-    // std::unique_ptr in C++03.
-    __thread_invoke_pair(_Fp& __f) : __tsp_(new __thread_struct), __fn_(__f) {}
-    unique_ptr<__thread_struct> __tsp_;
-    _Fp __fn_;
-};
-
-template <class _Fp>
-void* __thread_proxy_cxx03(void* __vp)
-{
-    std::unique_ptr<_Fp> __p(static_cast<_Fp*>(__vp));
-    __thread_local_data().set_pointer(__p->__tsp_.release());
-    (__p->__fn_)();
-    return nullptr;
-}
-
-template <class _Fp>
-thread::thread(_Fp __f)
-{
-
-    typedef __thread_invoke_pair<_Fp> _InvokePair;
-    typedef std::unique_ptr<_InvokePair> _PairPtr;
-    _PairPtr __pp(new _InvokePair(__f));
-    int __ec = __libcpp_thread_create(&__t_, &__thread_proxy_cxx03<_InvokePair>, __pp.get());
-    if (__ec == 0)
-        __pp.release();
-    else
-        __throw_system_error(__ec, "thread constructor failed");
-}
-
-#endif  // _LIBCUDACXX_CXX03_LANG
-
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void swap(thread& __x, thread& __y) noexcept {__x.swap(__y);}
 
@@ -368,9 +319,9 @@ sleep_for(const chrono::duration<_Rep, _Period>& __d)
     {
 #if defined(_LIBCUDACXX_COMPILER_GCC) && (__powerpc__ || __POWERPC__)
     //  GCC's long double const folding is incomplete for IBM128 long doubles.
-        _LIBCUDACXX_CONSTEXPR duration<long double> _Max = nanoseconds::max();
+        constexpr duration<long double> _Max = nanoseconds::max();
 #else
-        _LIBCUDACXX_CONSTEXPR duration<long double> _Max = duration<long double>(ULLONG_MAX/1000000000ULL) ;
+        constexpr duration<long double> _Max = duration<long double>(ULLONG_MAX/1000000000ULL) ;
 #endif
         nanoseconds __ns;
         if (__d < _Max)

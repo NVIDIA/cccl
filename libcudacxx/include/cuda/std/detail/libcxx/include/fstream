@@ -211,16 +211,12 @@ public:
 
     // 27.9.1.2 Constructors/destructor:
     basic_filebuf();
-#ifndef _LIBCUDACXX_CXX03_LANG
     basic_filebuf(basic_filebuf&& __rhs);
-#endif
     virtual ~basic_filebuf();
 
     // 27.9.1.3 Assign/swap:
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_filebuf& operator=(basic_filebuf&& __rhs);
-#endif
     void swap(basic_filebuf& __rhs);
 
     // 27.9.1.4 Members:
@@ -310,8 +306,6 @@ basic_filebuf<_CharT, _Traits>::basic_filebuf()
     setbuf(0, 4096);
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _CharT, class _Traits>
 basic_filebuf<_CharT, _Traits>::basic_filebuf(basic_filebuf&& __rhs)
     : basic_streambuf<_CharT, _Traits>(__rhs)
@@ -385,8 +379,6 @@ basic_filebuf<_CharT, _Traits>::operator=(basic_filebuf&& __rhs)
     swap(__rhs);
     return *this;
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _CharT, class _Traits>
 basic_filebuf<_CharT, _Traits>::~basic_filebuf()
@@ -1155,13 +1147,11 @@ public:
       : basic_ifstream(__p.c_str(), __mode) {}
 #endif // _LIBCUDACXX_STD_VER >= 17
 #endif
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_ifstream(basic_ifstream&& __rhs);
 
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_ifstream& operator=(basic_ifstream&& __rhs);
-#endif
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(basic_ifstream& __rhs);
 
@@ -1231,8 +1221,6 @@ basic_ifstream<_CharT, _Traits>::basic_ifstream(const string& __s, ios_base::ope
 }
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _CharT, class _Traits>
 inline
 basic_ifstream<_CharT, _Traits>::basic_ifstream(basic_ifstream&& __rhs)
@@ -1251,8 +1239,6 @@ basic_ifstream<_CharT, _Traits>::operator=(basic_ifstream&& __rhs)
     __sb_ = _CUDA_VSTD::move(__rhs.__sb_);
     return *this;
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _CharT, class _Traits>
 inline
@@ -1369,13 +1355,12 @@ public:
       : basic_ofstream(__p.c_str(), __mode) {}
 #endif // _LIBCUDACXX_STD_VER >= 17
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_ofstream(basic_ofstream&& __rhs);
 
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_ofstream& operator=(basic_ofstream&& __rhs);
-#endif
+
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(basic_ofstream& __rhs);
 
@@ -1444,8 +1429,6 @@ basic_ofstream<_CharT, _Traits>::basic_ofstream(const string& __s, ios_base::ope
 }
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _CharT, class _Traits>
 inline
 basic_ofstream<_CharT, _Traits>::basic_ofstream(basic_ofstream&& __rhs)
@@ -1464,8 +1447,6 @@ basic_ofstream<_CharT, _Traits>::operator=(basic_ofstream&& __rhs)
     __sb_ = _CUDA_VSTD::move(__rhs.__sb_);
     return *this;
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _CharT, class _Traits>
 inline
@@ -1584,13 +1565,12 @@ public:
 #endif // _LIBCUDACXX_STD_VER >= 17
 
 #endif
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_fstream(basic_fstream&& __rhs);
 
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_fstream& operator=(basic_fstream&& __rhs);
-#endif
+
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(basic_fstream& __rhs);
 
@@ -1657,8 +1637,6 @@ basic_fstream<_CharT, _Traits>::basic_fstream(const string& __s, ios_base::openm
 }
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _CharT, class _Traits>
 inline
 basic_fstream<_CharT, _Traits>::basic_fstream(basic_fstream&& __rhs)
@@ -1677,8 +1655,6 @@ basic_fstream<_CharT, _Traits>::operator=(basic_fstream&& __rhs)
     __sb_ = _CUDA_VSTD::move(__rhs.__sb_);
     return *this;
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _CharT, class _Traits>
 inline

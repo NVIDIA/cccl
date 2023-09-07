@@ -269,11 +269,7 @@ struct __throw_with_nested<_Tp, _Up, true> {
 template <class _Tp, class _Up>
 struct __throw_with_nested<_Tp, _Up, false> {
     _LIBCUDACXX_NORETURN static inline _LIBCUDACXX_INLINE_VISIBILITY void
-#ifndef _LIBCUDACXX_CXX03_LANG
     __do_throw(_Tp&& __t)
-#else
-    __do_throw (_Tp& __t)
-#endif  // _LIBCUDACXX_CXX03_LANG
     {
         throw _CUDA_VSTD::forward<_Tp>(__t);
     }

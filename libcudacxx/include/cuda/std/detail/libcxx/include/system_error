@@ -203,7 +203,7 @@ public:
     error_category() noexcept;
 #else
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 error_category() noexcept _LIBCUDACXX_DEFAULT
+    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 error_category() noexcept = default;
 #endif
 private:
     error_category(const error_category&);// = delete;

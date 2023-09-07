@@ -27,7 +27,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR __libcpp_remove_reference_t<_Tp>&&
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY constexpr __libcpp_remove_reference_t<_Tp>&&
 move(_Tp&& __t) noexcept {
   typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tp> _Up;
   return static_cast<_Up&&>(__t);

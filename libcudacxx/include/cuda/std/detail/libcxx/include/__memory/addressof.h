@@ -87,9 +87,7 @@ addressof(__unsafe_unretained _Tp& __x) noexcept
 }
 #endif
 
-#if !defined(_LIBCUDACXX_CXX03_LANG)
 template <class _Tp> _Tp* addressof(const _Tp&&) noexcept = delete;
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

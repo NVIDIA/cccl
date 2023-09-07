@@ -193,8 +193,6 @@ template <class... Types>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 
 // __tuple_leaf
 
@@ -228,7 +226,7 @@ class __tuple_leaf
 
     _LIBCUDACXX_INLINE_VISIBILITY __tuple_leaf& operator=(const __tuple_leaf&);
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR __tuple_leaf()
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr __tuple_leaf()
              noexcept(is_nothrow_default_constructible<_Hp>::value) : __value_()
        {static_assert(!is_reference<_Hp>::value,
               "Attempted to default construct a reference element in a tuple");}
@@ -317,7 +315,7 @@ class __tuple_leaf<_Ip, _Hp, true>
 
     _LIBCUDACXX_INLINE_VISIBILITY __tuple_leaf& operator=(const __tuple_leaf&);
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR __tuple_leaf()
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr __tuple_leaf()
              noexcept(is_nothrow_default_constructible<_Hp>::value) {}
 
     template <class _Alloc>
@@ -404,7 +402,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, 
     : public __tuple_leaf<_Indx, _Tp>...
 {
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR __tuple_impl()
+    constexpr __tuple_impl()
         noexcept(__all<is_nothrow_default_constructible<_Tp>::value...>::value) {}
 
 
@@ -747,11 +745,11 @@ public:
     };
 
     template <bool _Dummy = true, __enable_if_t<_EnableConstructor<_Dummy>::__implicit_default, bool> = false>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     tuple() noexcept(__all<is_nothrow_default_constructible<_Tp>::value...>::value) {}
 
     template <bool _Dummy = true, __enable_if_t<_EnableConstructor<_Dummy>::__explicit_default, bool> = false>
-    explicit _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    explicit _LIBCUDACXX_INLINE_VISIBILITY constexpr
     tuple() noexcept(__all<is_nothrow_default_constructible<_Tp>::value...>::value) {}
 
     tuple(tuple const&) = default;
@@ -1012,7 +1010,7 @@ template <>
 class _LIBCUDACXX_TEMPLATE_VIS tuple<>
 {
 public:
-    _LIBCUDACXX_CONSTEXPR tuple() noexcept = default;
+    constexpr tuple() noexcept = default;
     template <class _Alloc>
     _LIBCUDACXX_INLINE_VISIBILITY
         tuple(allocator_arg_t, const _Alloc&) noexcept {}
@@ -1496,8 +1494,6 @@ _LIBCUDACXX_NOEXCEPT_RETURN(
 #undef _LIBCUDACXX_NOEXCEPT_RETURN
 
 #endif // _LIBCUDACXX_STD_VER > 14
-
-#endif // !defined(_LIBCUDACXX_CXX03_LANG)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -26,8 +26,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <size_t _Ip, class ..._Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 typename tuple_element<_Ip, tuple<_Tp...> >::type&
@@ -48,8 +46,6 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 const typename tuple_element<_Ip, tuple<_Tp...> >::type&&
 get(const tuple<_Tp...>&&) noexcept;
 
-#endif // _LIBCUDACXX_CXX03_LANG
-
 template <size_t _Ip, class _T1, class _T2>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 typename tuple_element<_Ip, pair<_T1, _T2> >::type&
@@ -60,7 +56,6 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 const typename tuple_element<_Ip, pair<_T1, _T2> >::type&
 get(const pair<_T1, _T2>&) noexcept;
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <size_t _Ip, class _T1, class _T2>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 typename tuple_element<_Ip, pair<_T1, _T2> >::type&&
@@ -70,7 +65,6 @@ template <size_t _Ip, class _T1, class _T2>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 const typename tuple_element<_Ip, pair<_T1, _T2> >::type&&
 get(const pair<_T1, _T2>&&) noexcept;
-#endif // _LIBCUDACXX_CXX03_LANG
 
 template <size_t _Ip, class _Tp, size_t _Size>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
@@ -82,7 +76,6 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 const _Tp&
 get(const array<_Tp, _Size>&) noexcept;
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <size_t _Ip, class _Tp, size_t _Size>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _Tp&&
@@ -92,7 +85,6 @@ template <size_t _Ip, class _Tp, size_t _Size>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 const _Tp&&
 get(const array<_Tp, _Size>&&) noexcept;
-#endif // _LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

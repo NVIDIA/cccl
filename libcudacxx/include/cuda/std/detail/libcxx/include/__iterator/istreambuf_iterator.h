@@ -63,7 +63,7 @@ private:
         return __sbuf_ == 0;
     }
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR istreambuf_iterator() noexcept : __sbuf_(0) {}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr istreambuf_iterator() noexcept : __sbuf_(0) {}
     _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(istream_type& __s) noexcept
         : __sbuf_(__s.rdbuf()) {}
     _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(streambuf_type* __s) noexcept

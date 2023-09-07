@@ -28,7 +28,7 @@ int main(int, char**)
         C c(std::begin(t1), std::end(t1));
         c = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         int n = 0;
-        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, ++n)
+        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, (void)++n)
             assert(*i == n);
         assert(n == 10);
     }
@@ -39,7 +39,7 @@ int main(int, char**)
         C c(std::begin(t1), std::end(t1));
         c = {10, 11, 12, 13};
         int n = 0;
-        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, ++n)
+        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, (void)++n)
             assert(*i == 10+n);
         assert(n == 4);
     }
@@ -50,7 +50,7 @@ int main(int, char**)
         C c(std::begin(t1), std::end(t1));
         c = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         int n = 0;
-        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, ++n)
+        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, (void)++n)
             assert(*i == n);
         assert(n == 10);
     }
@@ -61,7 +61,7 @@ int main(int, char**)
         C c(std::begin(t1), std::end(t1));
         c = {10, 11, 12, 13};
         int n = 0;
-        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, ++n)
+        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, (void)++n)
             assert(*i == 10+n);
         assert(n == 4);
     }

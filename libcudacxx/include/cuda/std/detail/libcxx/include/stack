@@ -135,7 +135,6 @@ public:
     stack& operator=(const stack& __q) {c = __q.c; return *this;}
 
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     stack(stack&& __q)
         noexcept(is_nothrow_move_constructible<container_type>::value)
@@ -148,7 +147,6 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit stack(container_type&& __c) : c(_CUDA_VSTD::move(__c)) {}
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit stack(const container_type& __c) : c(__c) {}
@@ -171,7 +169,6 @@ public:
               typename enable_if<uses_allocator<container_type,
                                                 _Alloc>::value>::type* = 0)
             : c(__s.c, __a) {}
-#ifndef _LIBCUDACXX_CXX03_LANG
     template <class _Alloc>
         _LIBCUDACXX_INLINE_VISIBILITY
         stack(container_type&& __c, const _Alloc& __a,
@@ -184,7 +181,6 @@ public:
               typename enable_if<uses_allocator<container_type,
                                                 _Alloc>::value>::type* = 0)
             : c(_CUDA_VSTD::move(__s.c), __a) {}
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
     bool empty()     const      {return c.empty();}
@@ -197,7 +193,6 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void push(const value_type& __v) {c.push_back(__v);}
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     void push(value_type&& __v) {c.push_back(_CUDA_VSTD::move(__v));}
 
@@ -210,7 +205,6 @@ public:
         void      emplace(_Args&&... __args)
         {        c.emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);}
 #endif
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void pop() {c.pop_back();}
@@ -305,7 +299,7 @@ typename enable_if<
     void
 >::type
 swap(stack<_Tp, _Container>& __x, stack<_Tp, _Container>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

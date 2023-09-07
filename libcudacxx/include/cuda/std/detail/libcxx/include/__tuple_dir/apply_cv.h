@@ -23,8 +23,6 @@
 #pragma GCC system_header
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <bool _ApplyLV, bool _ApplyConst, bool _ApplyVolatile>
@@ -68,7 +66,5 @@ using __apply_cv_t _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_mf<
     is_volatile<_RawTp>::value>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _LIBCUDACXX_CXX03_LANG
 
 #endif // _LIBCUDACXX___TUPLE_APPLY_CV_H

@@ -533,7 +533,6 @@ __tree_remove(_NodePtr __root, _NodePtr __z) noexcept
 // node traits
 
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Tp>
 struct __is_tree_value_type_imp : false_type {};
 
@@ -545,7 +544,6 @@ struct __is_tree_value_type : false_type {};
 
 template <class _One>
 struct __is_tree_value_type<_One> : __is_tree_value_type_imp<__remove_cvref_t<_One>> {};
-#endif
 
 template <class _Tp>
 struct __tree_key_value_types {
@@ -566,12 +564,10 @@ struct __tree_key_value_types {
   static __container_value_type* __get_ptr(__node_value_type& __n) {
     return _CUDA_VSTD::addressof(__n);
   }
-#ifndef _LIBCUDACXX_CXX03_LANG
   _LIBCUDACXX_INLINE_VISIBILITY
   static __container_value_type&& __move(__node_value_type& __v) {
     return _CUDA_VSTD::move(__v);
   }
-#endif
 };
 
 template <class _Key, class _Tp>
@@ -616,12 +612,10 @@ struct __tree_key_value_types<__value_type<_Key, _Tp> > {
     return _CUDA_VSTD::addressof(__n.__get_value());
   }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
   _LIBCUDACXX_INLINE_VISIBILITY
   static pair<key_type&&, mapped_type&&> __move(__node_value_type& __v) {
     return __v.__move();
   }
-#endif
 };
 
 template <class _VoidPtr>
@@ -742,9 +736,9 @@ public:
     }
 
 private:
-  ~__tree_node_base() _LIBCUDACXX_EQUAL_DELETE;
-  __tree_node_base(__tree_node_base const&) _LIBCUDACXX_EQUAL_DELETE;
-  __tree_node_base& operator=(__tree_node_base const&) _LIBCUDACXX_EQUAL_DELETE;
+  ~__tree_node_base() = delete;
+  __tree_node_base(__tree_node_base const&) = delete;
+  __tree_node_base& operator=(__tree_node_base const&) = delete;
 };
 
 template <class _Tp, class _VoidPtr>
@@ -757,9 +751,9 @@ public:
     __node_value_type __value_;
 
 private:
-  ~__tree_node() _LIBCUDACXX_EQUAL_DELETE;
-  __tree_node(__tree_node const&) _LIBCUDACXX_EQUAL_DELETE;
-  __tree_node& operator=(__tree_node const&) _LIBCUDACXX_EQUAL_DELETE;
+  ~__tree_node() = delete;
+  __tree_node(__tree_node const&) = delete;
+  __tree_node& operator=(__tree_node const&) = delete;
 };
 
 
@@ -970,10 +964,8 @@ private:
 };
 
 template<class _Tp, class _Compare>
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_DIAGNOSE_WARNING(!std::__invokable<_Compare const&, _Tp const&, _Tp const&>::value,
         "the specified comparator type does not provide a viable const call operator")
-#endif
 int __diagnose_non_const_comparator();
 
 template <class _Tp, class _Compare, class _Allocator>
@@ -1101,7 +1093,6 @@ public:
         void __assign_unique(_ForwardIterator __first, _ForwardIterator __last);
     template <class _InputIterator>
         void __assign_multi(_InputIterator __first, _InputIterator __last);
-#ifndef _LIBCUDACXX_CXX03_LANG
     __tree(__tree&& __t)
         noexcept(
             is_nothrow_move_constructible<__node_allocator>::value &&
@@ -1112,7 +1103,6 @@ public:
             __node_traits::propagate_on_container_move_assignment::value &&
             is_nothrow_move_assignable<value_compare>::value &&
             is_nothrow_move_assignable<__node_allocator>::value);
-#endif // _LIBCUDACXX_CXX03_LANG
 
     ~__tree();
 
@@ -1144,7 +1134,6 @@ public:
         noexcept(__is_nothrow_swappable<value_compare>::value);
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     template <class _Key, class ..._Args>
     pair<iterator, bool>
     __emplace_unique_key_args(_Key const&, _Args&&... __args);
@@ -1253,15 +1242,6 @@ public:
       return __emplace_hint_unique_key_args(__p, __x.first, _CUDA_VSTD::forward<_Pp>(__x));
     }
 
-#else
-    template <class _Key, class _Args>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    pair<iterator, bool> __emplace_unique_key_args(_Key const&, _Args& __args);
-    template <class _Key, class _Args>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    iterator __emplace_hint_unique_key_args(const_iterator, _Key const&, _Args&);
-#endif
-
     _LIBCUDACXX_INLINE_VISIBILITY
     pair<iterator, bool> __insert_unique(const __container_value_type& __v) {
         return __emplace_unique_key_args(_NodeTypes::__get_key(__v), __v);
@@ -1272,12 +1252,6 @@ public:
         return __emplace_hint_unique_key_args(__p, _NodeTypes::__get_key(__v), __v);
     }
 
-#ifdef _LIBCUDACXX_CXX03_LANG
-    _LIBCUDACXX_INLINE_VISIBILITY
-    iterator __insert_multi(const __container_value_type& __v);
-    _LIBCUDACXX_INLINE_VISIBILITY
-    iterator __insert_multi(const_iterator __p, const __container_value_type& __v);
-#else
     _LIBCUDACXX_INLINE_VISIBILITY
     pair<iterator, bool> __insert_unique(__container_value_type&& __v) {
         return __emplace_unique_key_args(_NodeTypes::__get_key(__v), _CUDA_VSTD::move(__v));
@@ -1329,8 +1303,6 @@ public:
     iterator __insert_multi(const_iterator __p, _Vp&& __v) {
         return __emplace_hint_multi(__p, _CUDA_VSTD::forward<_Vp>(__v));
     }
-
-#endif // !_LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     pair<iterator, bool> __node_assign_unique(const __container_value_type& __v, __node_pointer __dest);
@@ -1469,12 +1441,8 @@ private:
                      __node_base_pointer& __dummy,
                      const _Key& __v);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     template <class ..._Args>
     __node_holder __construct_node(_Args&& ...__args);
-#else
-    __node_holder __construct_node(const __container_value_type& __v);
-#endif
 
     void destroy(__node_pointer __nd) noexcept;
 
@@ -1704,8 +1672,6 @@ __tree<_Tp, _Compare, _Allocator>::__tree(const __tree& __t)
     __begin_node() = __end_node();
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _Tp, class _Compare, class _Allocator>
 __tree<_Tp, _Compare, _Allocator>::__tree(__tree&& __t)
     noexcept(
@@ -1811,8 +1777,6 @@ __tree<_Tp, _Compare, _Allocator>::operator=(__tree&& __t)
                   __node_traits::propagate_on_container_move_assignment::value>());
     return *this;
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Compare, class _Allocator>
 __tree<_Tp, _Compare, _Allocator>::~__tree()
@@ -2115,17 +2079,10 @@ void __tree<_Tp, _Compare, _Allocator>::__insert_node_at(
     ++size();
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Tp, class _Compare, class _Allocator>
 template <class _Key, class... _Args>
 pair<typename __tree<_Tp, _Compare, _Allocator>::iterator, bool>
 __tree<_Tp, _Compare, _Allocator>::__emplace_unique_key_args(_Key const& __k, _Args&&... __args)
-#else
-template <class _Tp, class _Compare, class _Allocator>
-template <class _Key, class _Args>
-pair<typename __tree<_Tp, _Compare, _Allocator>::iterator, bool>
-__tree<_Tp, _Compare, _Allocator>::__emplace_unique_key_args(_Key const& __k, _Args& __args)
-#endif
 {
     __parent_pointer __parent;
     __node_base_pointer& __child = __find_equal(__parent, __k);
@@ -2133,11 +2090,7 @@ __tree<_Tp, _Compare, _Allocator>::__emplace_unique_key_args(_Key const& __k, _A
     bool __inserted = false;
     if (__child == nullptr)
     {
-#ifndef _LIBCUDACXX_CXX03_LANG
         __node_holder __h = __construct_node(_CUDA_VSTD::forward<_Args>(__args)...);
-#else
-        __node_holder __h = __construct_node(__args);
-#endif
         __insert_node_at(__parent, __child, static_cast<__node_base_pointer>(__h.get()));
         __r = __h.release();
         __inserted = true;
@@ -2146,19 +2099,11 @@ __tree<_Tp, _Compare, _Allocator>::__emplace_unique_key_args(_Key const& __k, _A
 }
 
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Tp, class _Compare, class _Allocator>
 template <class _Key, class... _Args>
 typename __tree<_Tp, _Compare, _Allocator>::iterator
 __tree<_Tp, _Compare, _Allocator>::__emplace_hint_unique_key_args(
     const_iterator __p, _Key const& __k, _Args&&... __args)
-#else
-template <class _Tp, class _Compare, class _Allocator>
-template <class _Key, class _Args>
-typename __tree<_Tp, _Compare, _Allocator>::iterator
-__tree<_Tp, _Compare, _Allocator>::__emplace_hint_unique_key_args(
-    const_iterator __p, _Key const& __k, _Args& __args)
-#endif
 {
     __parent_pointer __parent;
     __node_base_pointer __dummy;
@@ -2166,19 +2111,13 @@ __tree<_Tp, _Compare, _Allocator>::__emplace_hint_unique_key_args(
     __node_pointer __r = static_cast<__node_pointer>(__child);
     if (__child == nullptr)
     {
-#ifndef _LIBCUDACXX_CXX03_LANG
         __node_holder __h = __construct_node(_CUDA_VSTD::forward<_Args>(__args)...);
-#else
-        __node_holder __h = __construct_node(__args);
-#endif
         __insert_node_at(__parent, __child, static_cast<__node_base_pointer>(__h.get()));
         __r = __h.release();
     }
     return iterator(__r);
 }
 
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Compare, class _Allocator>
 template <class ..._Args>
@@ -2256,46 +2195,6 @@ __tree<_Tp, _Compare, _Allocator>::__emplace_hint_multi(const_iterator __p,
     __insert_node_at(__parent, __child, static_cast<__node_base_pointer>(__h.get()));
     return iterator(static_cast<__node_pointer>(__h.release()));
 }
-
-
-#else  // _LIBCUDACXX_CXX03_LANG
-
-template <class _Tp, class _Compare, class _Allocator>
-typename __tree<_Tp, _Compare, _Allocator>::__node_holder
-__tree<_Tp, _Compare, _Allocator>::__construct_node(const __container_value_type& __v)
-{
-    __node_allocator& __na = __node_alloc();
-    __node_holder __h(__node_traits::allocate(__na, 1), _Dp(__na));
-    __node_traits::construct(__na, _NodeTypes::__get_ptr(__h->__value_), __v);
-    __h.get_deleter().__value_constructed = true;
-    return _LIBCUDACXX_EXPLICIT_MOVE(__h);  // explicitly moved for C++03
-}
-
-#endif  // _LIBCUDACXX_CXX03_LANG
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-template <class _Tp, class _Compare, class _Allocator>
-typename __tree<_Tp, _Compare, _Allocator>::iterator
-__tree<_Tp, _Compare, _Allocator>::__insert_multi(const __container_value_type& __v)
-{
-    __parent_pointer __parent;
-    __node_base_pointer& __child = __find_leaf_high(__parent, _NodeTypes::__get_key(__v));
-    __node_holder __h = __construct_node(__v);
-    __insert_node_at(__parent, __child, static_cast<__node_base_pointer>(__h.get()));
-    return iterator(__h.release());
-}
-
-template <class _Tp, class _Compare, class _Allocator>
-typename __tree<_Tp, _Compare, _Allocator>::iterator
-__tree<_Tp, _Compare, _Allocator>::__insert_multi(const_iterator __p, const __container_value_type& __v)
-{
-    __parent_pointer __parent;
-    __node_base_pointer& __child = __find_leaf(__p, __parent, _NodeTypes::__get_key(__v));
-    __node_holder __h = __construct_node(__v);
-    __insert_node_at(__parent, __child, static_cast<__node_base_pointer>(__h.get()));
-    return iterator(__h.release());
-}
-#endif
 
 template <class _Tp, class _Compare, class _Allocator>
 pair<typename __tree<_Tp, _Compare, _Allocator>::iterator, bool>
@@ -2832,7 +2731,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(__tree<_Tp, _Compare, _Allocator>& __x,
      __tree<_Tp, _Compare, _Allocator>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

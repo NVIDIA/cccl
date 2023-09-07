@@ -167,13 +167,13 @@ protected:
     typedef __bit_iterator<__bitset, true>             const_iterator;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR __bitset() noexcept;
+    constexpr __bitset() noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
-    explicit _LIBCUDACXX_CONSTEXPR __bitset(unsigned long long __v) noexcept;
+    explicit constexpr __bitset(unsigned long long __v) noexcept;
 
     _LIBCUDACXX_INLINE_VISIBILITY reference __make_ref(size_t __pos) noexcept
         {return reference(__first_ + __pos / __bits_per_word, __storage_type(1) << __pos % __bits_per_word);}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR const_reference __make_ref(size_t __pos) const noexcept
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference __make_ref(size_t __pos) const noexcept
         {return const_reference(__first_ + __pos / __bits_per_word, __storage_type(1) << __pos % __bits_per_word);}
     _LIBCUDACXX_INLINE_VISIBILITY iterator __make_iter(size_t __pos) noexcept
         {return iterator(__first_ + __pos / __bits_per_word, __pos % __bits_per_word);}
@@ -198,11 +198,6 @@ protected:
     _LIBCUDACXX_INLINE_VISIBILITY
     size_t __hash_code() const noexcept;
 private:
-#ifdef _LIBCUDACXX_CXX03_LANG
-    void __init(unsigned long long __v, false_type) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
-    void __init(unsigned long long __v, true_type) noexcept;
-#endif  // _LIBCUDACXX_CXX03_LANG
     unsigned long to_ulong(false_type) const;
     _LIBCUDACXX_INLINE_VISIBILITY
     unsigned long to_ulong(true_type) const;
@@ -215,56 +210,15 @@ private:
 };
 
 template <size_t _N_words, size_t _Size>
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 __bitset<_N_words, _Size>::__bitset() noexcept
-#ifndef _LIBCUDACXX_CXX03_LANG
     : __first_{0}
-#endif
-{
-#ifdef _LIBCUDACXX_CXX03_LANG
-    _CUDA_VSTD::fill_n(__first_, _N_words, __storage_type(0));
-#endif
-}
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-
-template <size_t _N_words, size_t _Size>
-void
-__bitset<_N_words, _Size>::__init(unsigned long long __v, false_type) noexcept
-{
-    __storage_type __t[sizeof(unsigned long long) / sizeof(__storage_type)];
-    size_t __sz = _Size;
-    for (size_t __i = 0; __i < sizeof(__t)/sizeof(__t[0]); ++__i, __v >>= __bits_per_word, __sz -= __bits_per_word )
-        if ( __sz < __bits_per_word)
-            __t[__i] = static_cast<__storage_type>(__v) & ( 1ULL << __sz ) - 1;
-        else
-            __t[__i] = static_cast<__storage_type>(__v);
-
-    _CUDA_VSTD::copy(__t, __t + sizeof(__t)/sizeof(__t[0]), __first_);
-    _CUDA_VSTD::fill(__first_ + sizeof(__t)/sizeof(__t[0]), __first_ + sizeof(__first_)/sizeof(__first_[0]),
-               __storage_type(0));
-}
-
-template <size_t _N_words, size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-__bitset<_N_words, _Size>::__init(unsigned long long __v, true_type) noexcept
-{
-    __first_[0] = __v;
-    if (_Size < __bits_per_word)
-        __first_[0] &= ( 1ULL << _Size ) - 1;
-
-    _CUDA_VSTD::fill(__first_ + 1, __first_ + sizeof(__first_)/sizeof(__first_[0]), __storage_type(0));
-}
-
-#endif  // _LIBCUDACXX_CXX03_LANG
+{}
 
 template <size_t _N_words, size_t _Size>
 inline
-_LIBCUDACXX_CONSTEXPR
+constexpr
 __bitset<_N_words, _Size>::__bitset(unsigned long long __v) noexcept
-#ifndef _LIBCUDACXX_CXX03_LANG
 #if __SIZEOF_SIZE_T__ == 8
     : __first_{__v}
 #elif __SIZEOF_SIZE_T__ == 4
@@ -274,12 +228,7 @@ __bitset<_N_words, _Size>::__bitset(unsigned long long __v) noexcept
 #else
 #error This constructor has not been ported to this platform
 #endif
-#endif
-{
-#ifdef _LIBCUDACXX_CXX03_LANG
-    __init(__v, integral_constant<bool, sizeof(unsigned long long) == sizeof(__storage_type)>());
-#endif
-}
+{}
 
 template <size_t _N_words, size_t _Size>
 inline
@@ -463,13 +412,13 @@ protected:
     typedef __bit_iterator<__bitset, true>             const_iterator;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR __bitset() noexcept;
+    constexpr __bitset() noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
-    explicit _LIBCUDACXX_CONSTEXPR __bitset(unsigned long long __v) noexcept;
+    explicit constexpr __bitset(unsigned long long __v) noexcept;
 
     _LIBCUDACXX_INLINE_VISIBILITY reference __make_ref(size_t __pos) noexcept
         {return reference(&__first_, __storage_type(1) << __pos);}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR const_reference __make_ref(size_t __pos) const noexcept
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference __make_ref(size_t __pos) const noexcept
         {return const_reference(&__first_, __storage_type(1) << __pos);}
     _LIBCUDACXX_INLINE_VISIBILITY iterator __make_iter(size_t __pos) noexcept
         {return iterator(&__first_ + __pos / __bits_per_word, __pos % __bits_per_word);}
@@ -501,16 +450,14 @@ protected:
 };
 
 template <size_t _Size>
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 __bitset<1, _Size>::__bitset() noexcept
     : __first_(0)
 {
 }
 
 template <size_t _Size>
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 __bitset<1, _Size>::__bitset(unsigned long long __v) noexcept
     : __first_(
         _Size == __bits_per_word ? static_cast<__storage_type>(__v)
@@ -620,13 +567,13 @@ protected:
     typedef __bit_iterator<__bitset, true>             const_iterator;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR __bitset() noexcept;
+    constexpr __bitset() noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
-    explicit _LIBCUDACXX_CONSTEXPR __bitset(unsigned long long) noexcept;
+    explicit constexpr __bitset(unsigned long long) noexcept;
 
     _LIBCUDACXX_INLINE_VISIBILITY reference __make_ref(size_t) noexcept
         {return reference(0, 1);}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR const_reference __make_ref(size_t) const noexcept
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference __make_ref(size_t) const noexcept
         {return const_reference(0, 1);}
     _LIBCUDACXX_INLINE_VISIBILITY iterator __make_iter(size_t) noexcept
         {return iterator(0, 0);}
@@ -649,13 +596,13 @@ protected:
 };
 
 inline
-_LIBCUDACXX_CONSTEXPR
+constexpr
 __bitset<0, 0>::__bitset() noexcept
 {
 }
 
 inline
-_LIBCUDACXX_CONSTEXPR
+constexpr
 __bitset<0, 0>::__bitset(unsigned long long) noexcept
 {
 }
@@ -676,8 +623,8 @@ public:
     typedef typename base::const_reference const_reference;
 
     // 23.3.5.1 constructors:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR bitset() noexcept {}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr bitset() noexcept {}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
         bitset(unsigned long long __v) noexcept : base(__v) {}
     template<class _CharT, class = _EnableIf<_IsCharLikeType<_CharT>::value> >
         explicit bitset(const _CharT* __str,
@@ -712,7 +659,7 @@ public:
     bitset& flip(size_t __pos);
 
     // element access:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
                               const_reference operator[](size_t __p) const {return base::__make_ref(__p);}
     _LIBCUDACXX_INLINE_VISIBILITY       reference operator[](size_t __p)       {return base::__make_ref(__p);}
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -735,7 +682,7 @@ public:
                                                                       char __one = '1') const;
     _LIBCUDACXX_INLINE_VISIBILITY
     size_t count() const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR size_t size() const noexcept {return _Size;}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr size_t size() const noexcept {return _Size;}
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator==(const bitset& __rhs) const noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY

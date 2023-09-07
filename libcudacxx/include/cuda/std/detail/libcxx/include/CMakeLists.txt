@@ -71,9 +71,7 @@ set(files
   __functional/unary_negate.h
   __functional/unwrap_ref.h
   __functional/weak_result_type.h
-  __functional_03
   __functional_base
-  __functional_base_03
   __fwd/array.h
   __fwd/get.h
   __fwd/hash.h
@@ -95,12 +93,14 @@ set(files
   __iterator/istream_iterator.h
   __iterator/istreambuf_iterator.h
   __iterator/iter_move.h
+  __iterator/iter_swap.h
   __iterator/iterator.h
   __iterator/iterator_traits.h
   __iterator/move_iterator.h
   __iterator/next.h
   __iterator/ostream_iterator.h
   __iterator/ostreambuf_iterator.h
+  __iterator/permutable.h
   __iterator/prev.h
   __iterator/readable_traits.h
   __iterator/reverse_access.h

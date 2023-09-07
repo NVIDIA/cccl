@@ -808,11 +808,7 @@ struct __const_pointer
 template <class _Tp, class _Ptr, class _Alloc>
 struct __const_pointer<_Tp, _Ptr, _Alloc, false>
 {
-#ifndef _LIBCUDACXX_CXX03_LANG
     typedef _LIBCUDACXX_NODEBUG_TYPE typename pointer_traits<_Ptr>::template rebind<const _Tp> type;
-#else
-    typedef typename pointer_traits<_Ptr>::template rebind<const _Tp>::other type;
-#endif
 };
 
 template <class _Tp, class = void>
@@ -831,11 +827,7 @@ struct __void_pointer
 template <class _Ptr, class _Alloc>
 struct __void_pointer<_Ptr, _Alloc, false>
 {
-#ifndef _LIBCUDACXX_CXX03_LANG
     typedef _LIBCUDACXX_NODEBUG_TYPE typename pointer_traits<_Ptr>::template rebind<void> type;
-#else
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename pointer_traits<_Ptr>::template rebind<void>::other type;
-#endif
 };
 
 template <class _Tp, class = void>
@@ -854,15 +846,11 @@ struct __const_void_pointer
 template <class _Ptr, class _Alloc>
 struct __const_void_pointer<_Ptr, _Alloc, false>
 {
-#ifndef _LIBCUDACXX_CXX03_LANG
     typedef _LIBCUDACXX_NODEBUG_TYPE typename pointer_traits<_Ptr>::template rebind<const void> type;
-#else
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename pointer_traits<_Ptr>::template rebind<const void>::other type;
-#endif
 };
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 _Tp*
 __to_raw_pointer(_Tp* __p) noexcept
 {
@@ -1088,8 +1076,6 @@ struct __allocator_traits_rebind<_Alloc<_Tp, _A0, _A1, _A2>, _Up, false>
 
 #endif  // _LIBCUDACXX_HAS_NO_VARIADICS
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _Alloc, class _SizeType, class _ConstVoidPtr>
 auto
 __has_allocate_hint_test(_Alloc&& __a, _SizeType&& __sz, _ConstVoidPtr&& __p)
@@ -1110,18 +1096,6 @@ struct __has_allocate_hint
             true_type>::value>
 {
 };
-
-#else  // _LIBCUDACXX_CXX03_LANG
-
-template <class _Alloc, class _SizeType, class _ConstVoidPtr>
-struct __has_allocate_hint
-    : true_type
-{
-};
-
-#endif  // _LIBCUDACXX_CXX03_LANG
-
-#if !defined(_LIBCUDACXX_CXX03_LANG)
 
 template <class _Alloc, class _Tp, class ..._Args>
 decltype(_CUDA_VSTD::declval<_Alloc>().construct(_CUDA_VSTD::declval<_Tp*>(),
@@ -1202,38 +1176,6 @@ struct __has_select_on_container_copy_construction
 {
 };
 
-#else  // _LIBCUDACXX_CXX03_LANG
-
-template <class _Alloc, class _Pointer, class _Tp, class = void>
-struct __has_construct : std::false_type {};
-
-template <class _Alloc, class _Pointer, class _Tp>
-struct __has_construct<_Alloc, _Pointer, _Tp, __void_t<
-    decltype(_CUDA_VSTD::declval<_Alloc>().construct(_CUDA_VSTD::declval<_Pointer>(), _CUDA_VSTD::declval<_Tp>()))>>
-    : std::true_type {};
-
-template <class _Alloc, class _Pointer, class = void>
-struct __has_destroy : false_type {};
-
-template <class _Alloc, class _Pointer>
-struct __has_destroy<_Alloc, _Pointer, __void_t<
-    decltype(_CUDA_VSTD::declval<_Alloc>().destroy(_CUDA_VSTD::declval<_Pointer>()))>>
-    : std::true_type {};
-
-template <class _Alloc>
-struct __has_max_size
-    : true_type
-{
-};
-
-template <class _Alloc>
-struct __has_select_on_container_copy_construction
-    : false_type
-{
-};
-
-#endif  // _LIBCUDACXX_CXX03_LANG
-
 template <class _Alloc, class _Ptr, bool = __has_difference_type<_Alloc>::value>
 struct __alloc_traits_difference_type
 {
@@ -1300,16 +1242,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
     typedef typename __is_always_equal<allocator_type>::type
                      is_always_equal;
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     template <class _Tp> using rebind_alloc =
                   typename __allocator_traits_rebind<allocator_type, _Tp>::type;
     template <class _Tp> using rebind_traits = allocator_traits<rebind_alloc<_Tp> >;
-#else  // _LIBCUDACXX_CXX03_LANG
-    template <class _Tp> struct rebind_alloc
-        {typedef typename __allocator_traits_rebind<allocator_type, _Tp>::type other;};
-    template <class _Tp> struct rebind_traits
-        {typedef allocator_traits<typename rebind_alloc<_Tp>::other> other;};
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
     static pointer allocate(allocator_type& __a, size_type __n)
@@ -1553,11 +1488,7 @@ private:
 template <class _Traits, class _Tp>
 struct __rebind_alloc_helper
 {
-#ifndef _LIBCUDACXX_CXX03_LANG
     typedef _LIBCUDACXX_NODEBUG_TYPE typename _Traits::template rebind_alloc<_Tp>        type;
-#else
-    typedef typename _Traits::template rebind_alloc<_Tp>::other type;
-#endif
 };
 
 // allocator
@@ -1921,7 +1852,6 @@ struct __compressed_pair_elem {
   typedef _Tp& reference;
   typedef const _Tp& const_reference;
 
-#ifndef _LIBCUDACXX_CXX03_LANG
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __compressed_pair_elem() : __value_() {}
 
   template <class _Up, class = typename enable_if<
@@ -1939,11 +1869,6 @@ struct __compressed_pair_elem {
   __compressed_pair_elem(piecewise_construct_t, tuple<_Args...> __args,
                          __tuple_indices<_Indexes...>)
       : __value_(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indexes>(__args))...) {}
-#else
-  _LIBCUDACXX_INLINE_VISIBILITY __compressed_pair_elem() : __value_() {}
-  _LIBCUDACXX_INLINE_VISIBILITY
-  __compressed_pair_elem(_ParamT __p) : __value_(std::forward<_ParamT>(__p)) {}
-#endif
 
   _LIBCUDACXX_INLINE_VISIBILITY reference __get() noexcept { return __value_; }
   _LIBCUDACXX_INLINE_VISIBILITY
@@ -1960,7 +1885,6 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp {
   typedef const _Tp& const_reference;
   typedef _Tp __value_type;
 
-#ifndef _LIBCUDACXX_CXX03_LANG
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __compressed_pair_elem() = default;
 
   template <class _Up, class = typename enable_if<
@@ -1977,12 +1901,6 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp {
   __compressed_pair_elem(piecewise_construct_t, tuple<_Args...> __args,
                          __tuple_indices<_Indexes...>)
       : __value_type(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indexes>(__args))...) {}
-#else
-  _LIBCUDACXX_INLINE_VISIBILITY __compressed_pair_elem() : __value_type() {}
-  _LIBCUDACXX_INLINE_VISIBILITY
-  __compressed_pair_elem(_ParamT __p)
-      : __value_type(std::forward<_ParamT>(__p)) {}
-#endif
 
   _LIBCUDACXX_INLINE_VISIBILITY reference __get() noexcept { return *this; }
   _LIBCUDACXX_INLINE_VISIBILITY
@@ -2008,7 +1926,6 @@ class __compressed_pair : private __compressed_pair_elem<_T1, 0>,
     "implementation for this configuration");
 
 public:
-#ifndef _LIBCUDACXX_CXX03_LANG
   template <bool _Dummy = true,
       class = typename enable_if<
           __dependent_type<is_default_constructible<_T1>, _Dummy>::value &&
@@ -2043,22 +1960,6 @@ public:
                typename __make_tuple_indices<sizeof...(_Args1)>::type()),
         _Base2(__pc, _CUDA_VSTD::move(__second_args),
                typename __make_tuple_indices<sizeof...(_Args2)>::type()) {}
-
-#else
-  _LIBCUDACXX_INLINE_VISIBILITY
-  __compressed_pair() {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY explicit
-  __compressed_pair(_T1 __t1) : _Base1(_CUDA_VSTD::forward<_T1>(__t1)) {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY
-  __compressed_pair(__second_tag, _T2 __t2)
-      : _Base1(), _Base2(_CUDA_VSTD::forward<_T2>(__t2)) {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY
-  __compressed_pair(_T1 __t1, _T2 __t2)
-      : _Base1(_CUDA_VSTD::forward<_T1>(__t1)), _Base2(_CUDA_VSTD::forward<_T2>(__t2)) {}
-#endif
 
   _LIBCUDACXX_INLINE_VISIBILITY
   typename _Base1::reference first() noexcept {
@@ -2105,11 +2006,8 @@ template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS default_delete {
     static_assert(!is_function<_Tp>::value,
                   "default_delete cannot be instantiated for function types");
-#ifndef _LIBCUDACXX_CXX03_LANG
   _LIBCUDACXX_INLINE_VISIBILITY constexpr default_delete() noexcept = default;
-#else
-  _LIBCUDACXX_INLINE_VISIBILITY default_delete() {}
-#endif
+
   template <class _Up>
   _LIBCUDACXX_INLINE_VISIBILITY
   default_delete(const default_delete<_Up>&,
@@ -2133,11 +2031,7 @@ private:
       : enable_if<is_convertible<_Up(*)[], _Tp(*)[]>::value> {};
 
 public:
-#ifndef _LIBCUDACXX_CXX03_LANG
   _LIBCUDACXX_INLINE_VISIBILITY constexpr default_delete() noexcept = default;
-#else
-  _LIBCUDACXX_INLINE_VISIBILITY default_delete() {}
-#endif
 
   template <class _Up>
   _LIBCUDACXX_INLINE_VISIBILITY
@@ -2238,12 +2132,12 @@ public:
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
   _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_CONSTEXPR unique_ptr() noexcept : __ptr_(pointer()) {}
+  constexpr unique_ptr() noexcept : __ptr_(pointer()) {}
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
   _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_CONSTEXPR unique_ptr(nullptr_t) noexcept : __ptr_(pointer()) {}
+  constexpr unique_ptr(nullptr_t) noexcept : __ptr_(pointer()) {}
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
@@ -2322,12 +2216,6 @@ public:
     return *this;
   }
 #endif
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-  unique_ptr(unique_ptr const&) = delete;
-  unique_ptr& operator=(unique_ptr const&) = delete;
-#endif
-
 
   _LIBCUDACXX_INLINE_VISIBILITY
   ~unique_ptr() { reset(); }
@@ -2461,12 +2349,12 @@ public:
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
   _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_CONSTEXPR unique_ptr() noexcept : __ptr_(pointer()) {}
+  constexpr unique_ptr() noexcept : __ptr_(pointer()) {}
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
   _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_CONSTEXPR unique_ptr(nullptr_t) noexcept : __ptr_(pointer()) {}
+  constexpr unique_ptr(nullptr_t) noexcept : __ptr_(pointer()) {}
 
   template <class _Pp, bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy>,
@@ -2545,11 +2433,6 @@ public:
     __ptr_.second() = _CUDA_VSTD::forward<_Ep>(__u.get_deleter());
     return *this;
   }
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-  unique_ptr(unique_ptr const&) = delete;
-  unique_ptr& operator=(unique_ptr const&) = delete;
-#endif
 
 public:
   _LIBCUDACXX_INLINE_VISIBILITY
@@ -2805,12 +2688,8 @@ template<class _Tp, class... _Args>
 #endif  // _LIBCUDACXX_STD_VER > 11
 
 template <class _Tp, class _Dp>
-#ifdef _LIBCUDACXX_CXX03_LANG
-struct _LIBCUDACXX_TEMPLATE_VIS hash<unique_ptr<_Tp, _Dp> >
-#else
 struct _LIBCUDACXX_TEMPLATE_VIS hash<__enable_hash_helper<
     unique_ptr<_Tp, _Dp>, typename unique_ptr<_Tp, _Dp>::pointer> >
-#endif
 {
     typedef unique_ptr<_Tp, _Dp> argument_type;
     typedef size_t               result_type;
@@ -3388,9 +3267,9 @@ private:
     struct __nat {int __for_bool_;};
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR shared_ptr() noexcept;
+    constexpr shared_ptr() noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR shared_ptr(nullptr_t) noexcept;
+    constexpr shared_ptr(nullptr_t) noexcept;
     template<class _Yp>
         explicit shared_ptr(_Yp* __p,
                             typename enable_if<is_convertible<_Yp*, element_type*>::value, __nat>::type = __nat());
@@ -3644,8 +3523,7 @@ private:
 
 
 template<class _Tp>
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 shared_ptr<_Tp>::shared_ptr() noexcept
     : __ptr_(0),
       __cntrl_(0)
@@ -3653,8 +3531,7 @@ shared_ptr<_Tp>::shared_ptr() noexcept
 }
 
 template<class _Tp>
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 shared_ptr<_Tp>::shared_ptr(nullptr_t) noexcept
     : __ptr_(0),
       __cntrl_(0)
@@ -4450,7 +4327,7 @@ private:
 
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR weak_ptr() noexcept;
+    constexpr weak_ptr() noexcept;
     template<class _Yp> _LIBCUDACXX_INLINE_VISIBILITY weak_ptr(shared_ptr<_Yp> const& __r,
                    typename enable_if<is_convertible<_Yp*, _Tp*>::value, __nat*>::type = 0)
                         noexcept;
@@ -4530,8 +4407,7 @@ public:
 };
 
 template<class _Tp>
-inline
-_LIBCUDACXX_CONSTEXPR
+inline constexpr
 weak_ptr<_Tp>::weak_ptr() noexcept
     : __ptr_(0),
       __cntrl_(0)
@@ -4786,7 +4662,7 @@ class _LIBCUDACXX_TEMPLATE_VIS enable_shared_from_this
 {
     mutable weak_ptr<_Tp> __weak_this_;
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     enable_shared_from_this() noexcept {}
     _LIBCUDACXX_INLINE_VISIBILITY
     enable_shared_from_this(enable_shared_from_this const&) noexcept {}
@@ -4845,7 +4721,7 @@ public:
     void unlock() noexcept;
 
 private:
-    _LIBCUDACXX_CONSTEXPR __sp_mut(void*) noexcept;
+    constexpr __sp_mut(void*) noexcept;
     __sp_mut(const __sp_mut&);
     __sp_mut& operator=(const __sp_mut&);
 
@@ -4979,13 +4855,11 @@ atomic_compare_exchange_weak_explicit(shared_ptr<_Tp>* __p, shared_ptr<_Tp>* __v
 
 //enum class
 #if defined(_LIBCUDACXX_ABI_POINTER_SAFETY_ENUM_TYPE)
-# ifndef _LIBCUDACXX_CXX03_LANG
 enum class pointer_safety : unsigned char {
   relaxed,
   preferred,
   strict
 };
-# endif
 #else
 struct _LIBCUDACXX_TYPE_VIS pointer_safety
 {
@@ -5013,12 +4887,10 @@ struct _LIBCUDACXX_TYPE_VIS pointer_safety
 _LIBCUDACXX_FUNC_VIS pointer_safety get_pointer_safety() noexcept;
 #else
 // This function is only offered in C++03 under ABI v1.
-# if !defined(_LIBCUDACXX_ABI_POINTER_SAFETY_ENUM_TYPE) || !defined(_LIBCUDACXX_CXX03_LANG)
 inline _LIBCUDACXX_INLINE_VISIBILITY
 pointer_safety get_pointer_safety() noexcept {
   return pointer_safety::relaxed;
 }
-# endif
 #endif
 
 
@@ -5109,7 +4981,7 @@ struct __builtin_new_allocator {
   struct __builtin_new_deleter {
     typedef void* pointer_type;
 
-    _LIBCUDACXX_CONSTEXPR explicit __builtin_new_deleter(size_t __size, size_t __align)
+    constexpr explicit __builtin_new_deleter(size_t __size, size_t __align)
         : __size_(__size), __align_(__align) {}
 
     void operator()(void* p) const noexcept {

@@ -360,9 +360,7 @@ protected:
     __vector_base()
         noexcept(is_nothrow_default_constructible<allocator_type>::value);
     _LIBCUDACXX_INLINE_VISIBILITY __vector_base(const allocator_type& __a);
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY __vector_base(allocator_type&& __a) noexcept;
-#endif
     ~__vector_base();
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -446,14 +444,12 @@ __vector_base<_Tp, _Allocator>::__vector_base(const allocator_type& __a)
 {
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Tp, class _Allocator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __vector_base<_Tp, _Allocator>::__vector_base(allocator_type&& __a) noexcept
     : __begin_(nullptr),
       __end_(nullptr),
       __end_cap_(nullptr, std::move(__a)) {}
-#endif
 
 template <class _Tp, class _Allocator>
 __vector_base<_Tp, _Allocator>::~__vector_base()
@@ -559,7 +555,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     vector& operator=(const vector& __x);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     vector(initializer_list<value_type> __il);
 
@@ -583,8 +578,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     vector& operator=(initializer_list<value_type> __il)
         {assign(__il.begin(), __il.end()); return *this;}
-
-#endif  // !_LIBCUDACXX_CXX03_LANG
 
     template <class _InputIterator>
         typename enable_if
@@ -610,11 +603,9 @@ public:
 
     void assign(size_type __n, const_reference __u);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     void assign(initializer_list<value_type> __il)
         {assign(__il.begin(), __il.end());}
-#endif
 
     _LIBCUDACXX_INLINE_VISIBILITY
     allocator_type get_allocator() const noexcept
@@ -697,20 +688,14 @@ public:
     const value_type* data() const noexcept
         {return _CUDA_VSTD::__to_raw_pointer(this->__begin_);}
 
-#ifdef _LIBCUDACXX_CXX03_LANG
-    _LIBCUDACXX_INLINE_VISIBILITY
-    void __emplace_back(const value_type& __x) { push_back(__x); }
-#else
     template <class _Arg>
     _LIBCUDACXX_INLINE_VISIBILITY
     void __emplace_back(_Arg&& __arg) {
       emplace_back(_CUDA_VSTD::forward<_Arg>(__arg));
     }
-#endif
 
     _LIBCUDACXX_INLINE_VISIBILITY void push_back(const_reference __x);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY void push_back(value_type&& __x);
 
     template <class... _Args>
@@ -720,18 +705,15 @@ public:
 #else
         void      emplace_back(_Args&&... __args);
 #endif
-#endif // !_LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void pop_back();
 
     iterator insert(const_iterator __position, const_reference __x);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     iterator insert(const_iterator __position, value_type&& __x);
     template <class... _Args>
         iterator emplace(const_iterator __position, _Args&&... __args);
-#endif  // !_LIBCUDACXX_CXX03_LANG
 
     iterator insert(const_iterator __position, size_type __n, const_reference __x);
     template <class _InputIterator>
@@ -756,11 +738,9 @@ public:
         >::type
         insert(const_iterator __position, _ForwardIterator __first, _ForwardIterator __last);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     iterator insert(const_iterator __position, initializer_list<value_type> __il)
         {return insert(__position, __il.begin(), __il.end());}
-#endif
 
     _LIBCUDACXX_INLINE_VISIBILITY iterator erase(const_iterator __position);
     iterator erase(const_iterator __first, const_iterator __last);
@@ -834,7 +814,6 @@ private:
         __annotate_shrink(__old_size);
     }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     template <class _Up>
     _LIBCUDACXX_INLINE_VISIBILITY
     inline void __push_back_slow_path(_Up&& __x);
@@ -842,11 +821,6 @@ private:
     template <class... _Args>
     _LIBCUDACXX_INLINE_VISIBILITY
     inline void __emplace_back_slow_path(_Args&&... __args);
-#else
-    template <class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline void __push_back_slow_path(_Up& __x);
-#endif
 
     // The following functions are no-ops outside of AddressSanitizer mode.
     // We call annotatations only for the default Allocator because other allocators
@@ -1274,8 +1248,6 @@ vector<_Tp, _Allocator>::vector(const vector& __x, const allocator_type& __a)
     }
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _Tp, class _Allocator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 vector<_Tp, _Allocator>::vector(vector&& __x)
@@ -1390,8 +1362,6 @@ vector<_Tp, _Allocator>::__move_assign(vector& __c, true_type)
     __get_db()->swap(this, &__c);
 #endif
 }
-
-#endif  // !_LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Allocator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -1613,11 +1583,7 @@ vector<_Tp, _Allocator>::shrink_to_fit() noexcept
 template <class _Tp, class _Allocator>
 template <class _Up>
 void
-#ifndef _LIBCUDACXX_CXX03_LANG
 vector<_Tp, _Allocator>::__push_back_slow_path(_Up&& __x)
-#else
-vector<_Tp, _Allocator>::__push_back_slow_path(_Up& __x)
-#endif
 {
     allocator_type& __a = this->__alloc();
     __split_buffer<value_type, allocator_type&> __v(__recommend(size() + 1), size(), __a);
@@ -1639,8 +1605,6 @@ vector<_Tp, _Allocator>::push_back(const_reference __x)
     else
         __push_back_slow_path(__x);
 }
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Allocator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -1688,8 +1652,6 @@ vector<_Tp, _Allocator>::emplace_back(_Args&&... __args)
     return this->back();
 #endif
 }
-
-#endif  // !_LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Allocator>
 inline
@@ -1751,7 +1713,7 @@ vector<_Tp, _Allocator>::__move_range(pointer __from_s, pointer __from_e, pointe
     {
       pointer __i = __from_s + __n;
       _ConstructTransaction __tx(*this, __from_e - __i);
-      for (; __i < __from_e; ++__i, ++__tx.__pos_) {
+      for (; __i < __from_e; ++__i, (void)++__tx.__pos_) {
           __alloc_traits::construct(this->__alloc(),
                                     _CUDA_VSTD::__to_raw_pointer(__tx.__pos_),
                                     _CUDA_VSTD::move(*__i));
@@ -1794,8 +1756,6 @@ vector<_Tp, _Allocator>::insert(const_iterator __position, const_reference __x)
     }
     return __make_iter(__p);
 }
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Allocator>
 typename vector<_Tp, _Allocator>::iterator
@@ -1862,8 +1822,6 @@ vector<_Tp, _Allocator>::emplace(const_iterator __position, _Args&&... __args)
     }
     return __make_iter(__p);
 }
-
-#endif  // !_LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Allocator>
 typename vector<_Tp, _Allocator>::iterator
@@ -2248,7 +2206,6 @@ public:
     vector(const vector& __v, const allocator_type& __a);
     vector& operator=(const vector& __v);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     vector(initializer_list<value_type> __il);
     vector(initializer_list<value_type> __il, const allocator_type& __a);
 
@@ -2268,8 +2225,6 @@ public:
     vector& operator=(initializer_list<value_type> __il)
         {assign(__il.begin(), __il.end()); return *this;}
 
-#endif  // !_LIBCUDACXX_CXX03_LANG
-
     template <class _InputIterator>
         typename enable_if
         <
@@ -2288,11 +2243,9 @@ public:
 
     void assign(size_type __n, const value_type& __x);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     void assign(initializer_list<value_type> __il)
         {assign(__il.begin(), __il.end());}
-#endif
 
     _LIBCUDACXX_INLINE_VISIBILITY allocator_type get_allocator() const noexcept
         {return allocator_type(this->__alloc());}
@@ -2402,11 +2355,9 @@ public:
         >::type
         insert(const_iterator __position, _ForwardIterator __first, _ForwardIterator __last);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     iterator insert(const_iterator __position, initializer_list<value_type> __il)
         {return insert(__position, __il.begin(), __il.end());}
-#endif
 
     _LIBCUDACXX_INLINE_VISIBILITY iterator erase(const_iterator __position);
     iterator erase(const_iterator __first, const_iterator __last);
@@ -2780,8 +2731,6 @@ vector<bool, _Allocator>::vector(_ForwardIterator __first, _ForwardIterator __la
     }
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _Allocator>
 vector<bool, _Allocator>::vector(initializer_list<value_type> __il)
     : __begin_(nullptr),
@@ -2809,8 +2758,6 @@ vector<bool, _Allocator>::vector(initializer_list<value_type> __il, const alloca
         __construct_at_end(__il.begin(), __il.end());
     }
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _Allocator>
 vector<bool, _Allocator>::~vector()
@@ -2866,8 +2813,6 @@ vector<bool, _Allocator>::operator=(const vector& __v)
     }
     return *this;
 }
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _Allocator>
 inline _LIBCUDACXX_INLINE_VISIBILITY vector<bool, _Allocator>::vector(vector&& __v)
@@ -2939,8 +2884,6 @@ vector<bool, _Allocator>::__move_assign(vector& __c, true_type)
     __c.__begin_ = nullptr;
     __c.__cap() = __c.__size_ = 0;
 }
-
-#endif  // !_LIBCUDACXX_CXX03_LANG
 
 template <class _Allocator>
 void
@@ -3382,7 +3325,7 @@ template <class _Tp, class _Allocator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(vector<_Tp, _Allocator>& __x, vector<_Tp, _Allocator>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

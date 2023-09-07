@@ -145,7 +145,6 @@ operator<=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& 
     return __x.base() >= __y.base();
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Iter1, class _Iter2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
 auto
@@ -154,15 +153,6 @@ operator-(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& _
 {
     return __y.base() - __x.base();
 }
-#else
-template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename reverse_iterator<_Iter1>::difference_type
-operator-(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-{
-    return __y.base() - __x.base();
-}
-#endif
 
 template <class _Iter>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14

@@ -22,12 +22,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __nat
 {
-#ifndef _LIBCUDACXX_CXX03_LANG
     __nat() = delete;
     __nat(const __nat&) = delete;
     __nat& operator=(const __nat&) = delete;
     ~__nat() = delete;
-#endif
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD

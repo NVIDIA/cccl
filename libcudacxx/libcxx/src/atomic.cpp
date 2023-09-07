@@ -11,7 +11,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE) && (_LIBCUDACXX_STD_VER >= 11)
+#if !defined(_LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE)
 
 __libcpp_contention_t __libcpp_contention_state_[ 256 /* < there's no magic in this number */ ];
 

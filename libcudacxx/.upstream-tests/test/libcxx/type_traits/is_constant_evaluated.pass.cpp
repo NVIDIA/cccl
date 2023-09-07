@@ -23,7 +23,7 @@ int main (int, char**) {
     ASSERT_SAME_TYPE(decltype(cuda::std::__libcpp_is_constant_evaluated()), bool);
     ASSERT_NOEXCEPT(cuda::std::__libcpp_is_constant_evaluated());
 
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_CXX03_LANG)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
     static_assert(cuda::std::__libcpp_is_constant_evaluated(), "");
 #endif
 

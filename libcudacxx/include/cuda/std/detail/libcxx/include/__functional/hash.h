@@ -656,7 +656,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<nullptr_t>
 };
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Key, class _Hash>
 using __check_hash_requirements _LIBCUDACXX_NODEBUG_TYPE = integral_constant<bool,
     is_copy_constructible<_Hash>::value &&
@@ -682,8 +681,6 @@ using __enable_hash_helper _LIBCUDACXX_NODEBUG_TYPE = __enable_hash_helper_imp<_
 template <class _Type, class ...>
 using __enable_hash_helper _LIBCUDACXX_NODEBUG_TYPE = _Type;
 #endif
-
-#endif // !_LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -151,11 +151,7 @@ public:
 template <class _Tp, class _Up, bool = __has_rebind<_Tp, _Up>::value>
 struct __pointer_traits_rebind
 {
-#ifndef _LIBCUDACXX_CXX03_LANG
     typedef _LIBCUDACXX_NODEBUG_TYPE typename _Tp::template rebind<_Up> type;
-#else
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename _Tp::template rebind<_Up>::other type;
-#endif
 };
 
 #ifndef _LIBCUDACXX_HAS_NO_VARIADICS
@@ -163,11 +159,7 @@ struct __pointer_traits_rebind
 template <template <class, class...> class _Sp, class _Tp, class ..._Args, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, true>
 {
-#ifndef _LIBCUDACXX_CXX03_LANG
     typedef _LIBCUDACXX_NODEBUG_TYPE typename _Sp<_Tp, _Args...>::template rebind<_Up> type;
-#else
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename _Sp<_Tp, _Args...>::template rebind<_Up>::other type;
-#endif
 };
 
 template <template <class, class...> class _Sp, class _Tp, class ..._Args, class _Up>
@@ -181,11 +173,7 @@ struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, false>
 template <template <class> class _Sp, class _Tp, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp>, _Up, true>
 {
-#ifndef _LIBCUDACXX_CXX03_LANG
     typedef typename _Sp<_Tp>::template rebind<_Up> type;
-#else
-    typedef typename _Sp<_Tp>::template rebind<_Up>::other type;
-#endif
 };
 
 template <template <class> class _Sp, class _Tp, class _Up>
@@ -197,11 +185,7 @@ struct __pointer_traits_rebind<_Sp<_Tp>, _Up, false>
 template <template <class, class> class _Sp, class _Tp, class _A0, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp, _A0>, _Up, true>
 {
-#ifndef _LIBCUDACXX_CXX03_LANG
     typedef typename _Sp<_Tp, _A0>::template rebind<_Up> type;
-#else
-    typedef typename _Sp<_Tp, _A0>::template rebind<_Up>::other type;
-#endif
 };
 
 template <template <class, class> class _Sp, class _Tp, class _A0, class _Up>
@@ -214,11 +198,7 @@ template <template <class, class, class> class _Sp, class _Tp, class _A0,
                                          class _A1, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp, _A0, _A1>, _Up, true>
 {
-#ifndef _LIBCUDACXX_CXX03_LANG
     typedef typename _Sp<_Tp, _A0, _A1>::template rebind<_Up> type;
-#else
-    typedef typename _Sp<_Tp, _A0, _A1>::template rebind<_Up>::other type;
-#endif
 };
 
 template <template <class, class, class> class _Sp, class _Tp, class _A0,
@@ -232,11 +212,7 @@ template <template <class, class, class, class> class _Sp, class _Tp, class _A0,
                                                 class _A1, class _A2, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp, _A0, _A1, _A2>, _Up, true>
 {
-#ifndef _LIBCUDACXX_CXX03_LANG
     typedef typename _Sp<_Tp, _A0, _A1, _A2>::template rebind<_Up> type;
-#else
-    typedef typename _Sp<_Tp, _A0, _A1, _A2>::template rebind<_Up>::other type;
-#endif
 };
 
 template <template <class, class, class, class> class _Sp, class _Tp, class _A0,
@@ -255,12 +231,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits
     typedef typename __pointer_traits_element_type<pointer>::type    element_type;
     typedef typename __pointer_traits_difference_type<pointer>::type difference_type;
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     template <class _Up> using rebind = typename __pointer_traits_rebind<pointer, _Up>::type;
-#else
-    template <class _Up> struct rebind
-        {typedef typename __pointer_traits_rebind<pointer, _Up>::type other;};
-#endif // _LIBCUDACXX_CXX03_LANG
 
 private:
     struct __nat {};
@@ -277,11 +248,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits<_Tp*>
     typedef _Tp       element_type;
     typedef ptrdiff_t difference_type;
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     template <class _Up> using rebind = _Up*;
-#else
-    template <class _Up> struct rebind {typedef _Up* other;};
-#endif
 
 private:
     struct __nat {};
@@ -293,11 +260,7 @@ public:
 
 template <class _From, class _To>
 struct __rebind_pointer {
-#ifndef _LIBCUDACXX_CXX03_LANG
     typedef typename pointer_traits<_From>::template rebind<_To>        type;
-#else
-    typedef typename pointer_traits<_From>::template rebind<_To>::other type;
-#endif
 };
 
 // to_address
@@ -306,7 +269,7 @@ template <class _Pointer, class = void>
 struct __to_address_helper;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+_LIBCUDACXX_INLINE_VISIBILITY constexpr
 _Tp* __to_address(_Tp* __p) noexcept {
     static_assert(!is_function<_Tp>::value, "_Tp is a function type");
     return __p;
@@ -337,7 +300,7 @@ struct _IsFancyPointer {
 template <class _Pointer, class = __enable_if_t<
     _And<is_class<_Pointer>, _IsFancyPointer<_Pointer> >::value
 > >
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+_LIBCUDACXX_INLINE_VISIBILITY constexpr
 __decay_t<decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>
 __to_address(const _Pointer& __p) noexcept {
     return __to_address_helper<_Pointer>::__call(__p);
@@ -345,7 +308,7 @@ __to_address(const _Pointer& __p) noexcept {
 
 template <class _Pointer, class>
 struct __to_address_helper {
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     static decltype(_CUDA_VSTD::__to_address(declval<const _Pointer&>().operator->()))
     __call(const _Pointer& __p) noexcept {
         return _CUDA_VSTD::__to_address(__p.operator->());
@@ -354,7 +317,7 @@ struct __to_address_helper {
 
 template <class _Pointer>
 struct __to_address_helper<_Pointer, decltype((void)pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))> {
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     static decltype(pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))
     __call(const _Pointer& __p) noexcept {
         return pointer_traits<_Pointer>::to_address(__p);

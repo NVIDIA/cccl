@@ -25,7 +25,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __identity {
   template <class _Tp>
-  _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR _Tp&& operator()(_Tp&& __t) const noexcept {
+  _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp&& operator()(_Tp&& __t) const noexcept {
     return _CUDA_VSTD::forward<_Tp>(__t);
   }
 

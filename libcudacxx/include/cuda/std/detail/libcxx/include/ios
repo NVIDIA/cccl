@@ -590,13 +590,6 @@ ios_base::exceptions(iostate __iostate)
     clear(__rdstate_);
 }
 
-#if defined(_LIBCUDACXX_CXX03_LANG)
-struct _LIBCUDACXX_TYPE_VIS __cxx03_bool {
-  typedef void (__cxx03_bool::*__bool_type)();
-  void __true_value() {}
-};
-#endif
-
 template <class _CharT, class _Traits>
 class _LIBCUDACXX_TEMPLATE_VIS basic_ios
     : public ios_base
@@ -616,16 +609,8 @@ public:
   // __true_value will generate undefined references when linking unless
   // we give it internal linkage.
 
-#if defined(_LIBCUDACXX_CXX03_LANG)
-    _LIBCUDACXX_INLINE_VISIBILITY
-    operator __cxx03_bool::__bool_type() const {
-        return !fail() ? &__cxx03_bool::__true_value : nullptr;
-    }
-#else
     _LIBCUDACXX_INLINE_VISIBILITY
     _LIBCUDACXX_EXPLICIT operator bool() const {return !fail();}
-#endif
-
     _LIBCUDACXX_INLINE_VISIBILITY bool operator!() const    {return  fail();}
     _LIBCUDACXX_INLINE_VISIBILITY iostate rdstate() const   {return ios_base::rdstate();}
     _LIBCUDACXX_INLINE_VISIBILITY void clear(iostate __state = goodbit) {ios_base::clear(__state);}
@@ -678,10 +663,8 @@ protected:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void move(basic_ios& __rhs);
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     void move(basic_ios&& __rhs) {move(__rhs);}
-#endif
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(basic_ios& __rhs) noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY

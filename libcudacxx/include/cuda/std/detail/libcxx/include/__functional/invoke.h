@@ -342,7 +342,7 @@ _LIBCUDACXX_DISABLE_EXEC_CHECK
 template <class _Fp, class _A0, class ..._Args,
           class = __enable_if_bullet1<_Fp, _A0> >
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR decltype((_CUDA_VSTD::declval<_A0>().*_CUDA_VSTD::declval<_Fp>())(_CUDA_VSTD::declval<_Args>()...))
+constexpr decltype((_CUDA_VSTD::declval<_A0>().*_CUDA_VSTD::declval<_Fp>())(_CUDA_VSTD::declval<_Args>()...))
 __invoke(_Fp&& __f, _A0&& __a0, _Args&& ...__args)
     noexcept(noexcept((static_cast<_A0&&>(__a0).*__f)(static_cast<_Args&&>(__args)...)))
     { return           (static_cast<_A0&&>(__a0).*__f)(static_cast<_Args&&>(__args)...); }
@@ -351,7 +351,7 @@ _LIBCUDACXX_DISABLE_EXEC_CHECK
 template <class _Fp, class _A0, class ..._Args,
           class = __enable_if_bullet2<_Fp, _A0> >
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR decltype((_CUDA_VSTD::declval<_A0>().get().*_CUDA_VSTD::declval<_Fp>())(_CUDA_VSTD::declval<_Args>()...))
+constexpr decltype((_CUDA_VSTD::declval<_A0>().get().*_CUDA_VSTD::declval<_Fp>())(_CUDA_VSTD::declval<_Args>()...))
 __invoke(_Fp&& __f, _A0&& __a0, _Args&& ...__args)
     noexcept(noexcept((__a0.get().*__f)(static_cast<_Args&&>(__args)...)))
     { return          (__a0.get().*__f)(static_cast<_Args&&>(__args)...); }
@@ -360,7 +360,7 @@ _LIBCUDACXX_DISABLE_EXEC_CHECK
 template <class _Fp, class _A0, class ..._Args,
           class = __enable_if_bullet3<_Fp, _A0> >
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR decltype(((*_CUDA_VSTD::declval<_A0>()).*_CUDA_VSTD::declval<_Fp>())(_CUDA_VSTD::declval<_Args>()...))
+constexpr decltype(((*_CUDA_VSTD::declval<_A0>()).*_CUDA_VSTD::declval<_Fp>())(_CUDA_VSTD::declval<_Args>()...))
 __invoke(_Fp&& __f, _A0&& __a0, _Args&& ...__args)
     noexcept(noexcept(((*static_cast<_A0&&>(__a0)).*__f)(static_cast<_Args&&>(__args)...)))
     { return          ((*static_cast<_A0&&>(__a0)).*__f)(static_cast<_Args&&>(__args)...); }
@@ -371,7 +371,7 @@ _LIBCUDACXX_DISABLE_EXEC_CHECK
 template <class _Fp, class _A0,
           class = __enable_if_bullet4<_Fp, _A0> >
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR decltype(_CUDA_VSTD::declval<_A0>().*_CUDA_VSTD::declval<_Fp>())
+constexpr decltype(_CUDA_VSTD::declval<_A0>().*_CUDA_VSTD::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0)
     noexcept(noexcept(static_cast<_A0&&>(__a0).*__f))
     { return          static_cast<_A0&&>(__a0).*__f; }
@@ -380,7 +380,7 @@ _LIBCUDACXX_DISABLE_EXEC_CHECK
 template <class _Fp, class _A0,
           class = __enable_if_bullet5<_Fp, _A0> >
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR decltype(_CUDA_VSTD::declval<_A0>().get().*_CUDA_VSTD::declval<_Fp>())
+constexpr decltype(_CUDA_VSTD::declval<_A0>().get().*_CUDA_VSTD::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0)
     noexcept(noexcept(__a0.get().*__f))
     { return          __a0.get().*__f; }
@@ -389,7 +389,7 @@ _LIBCUDACXX_DISABLE_EXEC_CHECK
 template <class _Fp, class _A0,
           class = __enable_if_bullet6<_Fp, _A0> >
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR decltype((*_CUDA_VSTD::declval<_A0>()).*_CUDA_VSTD::declval<_Fp>())
+constexpr decltype((*_CUDA_VSTD::declval<_A0>()).*_CUDA_VSTD::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0)
     noexcept(noexcept((*static_cast<_A0&&>(__a0)).*__f))
     { return          (*static_cast<_A0&&>(__a0)).*__f; }
@@ -399,7 +399,7 @@ __invoke(_Fp&& __f, _A0&& __a0)
 _LIBCUDACXX_DISABLE_EXEC_CHECK
 template <class _Fp, class ..._Args>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR decltype(_CUDA_VSTD::declval<_Fp>()(_CUDA_VSTD::declval<_Args>()...))
+constexpr decltype(_CUDA_VSTD::declval<_Fp>()(_CUDA_VSTD::declval<_Args>()...))
 __invoke(_Fp&& __f, _Args&& ...__args)
     noexcept(noexcept(static_cast<_Fp&&>(__f)(static_cast<_Args&&>(__args)...)))
     { return          static_cast<_Fp&&>(__f)(static_cast<_Args&&>(__args)...); }

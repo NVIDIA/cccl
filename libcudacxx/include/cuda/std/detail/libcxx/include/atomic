@@ -789,7 +789,7 @@ struct __cxx_atomic_lock_impl {
   _LIBCUDACXX_INLINE_VISIBILITY
   __cxx_atomic_lock_impl() noexcept
     : __a_value(), __a_lock(0) {}
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit
   __cxx_atomic_lock_impl(_Tp value) noexcept
     : __a_value(value), __a_lock(0) {}
 
@@ -1098,8 +1098,8 @@ template <typename _Tp, int _Sco,
           typename _Base = __cxx_atomic_base_impl<_Tp, _Sco> >
 #endif //_LIBCUDACXX_ATOMIC_ONLY_USE_BUILTINS
 struct __cxx_atomic_impl : public _Base {
-  __cxx_atomic_impl() noexcept _LIBCUDACXX_DEFAULT
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR explicit __cxx_atomic_impl(_Tp value) noexcept
+  __cxx_atomic_impl() noexcept = default;
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __cxx_atomic_impl(_Tp value) noexcept
     : _Base(value) {}
 };
 
@@ -1291,7 +1291,7 @@ struct __atomic_base_storage {
     __atomic_base_storage& operator=(const __atomic_base_storage&) = default;
     __atomic_base_storage& operator=(__atomic_base_storage&&) = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __atomic_base_storage(_Storage&& __a) noexcept : __a_(_CUDA_VSTD::forward<_Storage>(__a)) {}
 };
 
@@ -1304,11 +1304,11 @@ struct __atomic_base_core : public __atomic_base_storage<_Tp, _Storage>{
     __atomic_base_core& operator=(const __atomic_base_core&) = delete;
     __atomic_base_core& operator=(__atomic_base_core&&) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __atomic_base_core(_Storage&& __a) noexcept : __atomic_base_storage<_Tp, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-    static _LIBCUDACXX_CONSTEXPR bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+    static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
 #endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1429,11 +1429,11 @@ struct __atomic_base_core<_Tp, true, _Storage> : public __atomic_base_storage<_T
     __atomic_base_core& operator=(const __atomic_base_core&) = default;
     __atomic_base_core& operator=(__atomic_base_core&&) = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __atomic_base_core(_Storage&& __a) noexcept : __atomic_base_storage<_Tp, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-    static _LIBCUDACXX_CONSTEXPR bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+    static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
 #endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1554,7 +1554,7 @@ struct __atomic_base_arithmetic : public __atomic_base_core<_Tp, _Cq, _Storage> 
     __atomic_base_arithmetic& operator=(const __atomic_base_arithmetic&) = delete;
     __atomic_base_arithmetic& operator=(__atomic_base_arithmetic&&) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __atomic_base_arithmetic(_Storage&& __a) noexcept : __atomic_base_core<_Tp, _Cq, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1605,7 +1605,7 @@ struct __atomic_base_arithmetic<_Tp, true, _Storage> : public __atomic_base_core
     __atomic_base_arithmetic& operator=(const __atomic_base_arithmetic&) = default;
     __atomic_base_arithmetic& operator=(__atomic_base_arithmetic&&) = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __atomic_base_arithmetic(_Storage&& __a) noexcept : __atomic_base_core<_Tp, true, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1656,7 +1656,7 @@ struct __atomic_base_bitwise : public __atomic_base_arithmetic<_Tp, _Cq, _Storag
     __atomic_base_bitwise& operator=(const __atomic_base_bitwise&) = delete;
     __atomic_base_bitwise& operator=(__atomic_base_bitwise&&) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __atomic_base_bitwise(_Storage&& __a) noexcept : __atomic_base_arithmetic<_Tp, _Cq, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1701,7 +1701,7 @@ struct __atomic_base_bitwise<_Tp, true, _Storage> : public __atomic_base_arithme
     __atomic_base_bitwise& operator=(const __atomic_base_bitwise&) = default;
     __atomic_base_bitwise& operator=(__atomic_base_bitwise&&) = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __atomic_base_bitwise(_Storage&& __a) noexcept : __atomic_base_arithmetic<_Tp, true, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1753,7 +1753,7 @@ struct __atomic_base : public _Base {
     __atomic_base& operator=(const __atomic_base&) = delete;
     __atomic_base& operator=(__atomic_base&&) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __atomic_base(const _Tp& __a) noexcept :
         _Base(__cxx_atomic_impl<_Tp, _Sco>(__a)) {}
 };
@@ -1767,14 +1767,14 @@ struct __atomic_base_ref : public _Base {
     __atomic_base_ref& operator=(const __atomic_base_ref&) = default;
     __atomic_base_ref& operator=(__atomic_base_ref&&) = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __atomic_base_ref(_Tp& __a) noexcept :
         _Base(__cxx_atomic_ref_impl<_Tp, _Sco>(__a)) {}
 };
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
 template <class _Tp, bool _Cq, typename _Storage>
-_LIBCUDACXX_CONSTEXPR bool __atomic_base_core<_Tp, _Cq, _Storage>::is_always_lock_free;
+constexpr bool __atomic_base_core<_Tp, _Cq, _Storage>::is_always_lock_free;
 #endif
 
 // atomic<T>
@@ -1784,12 +1784,10 @@ struct atomic
 {
     typedef __atomic_base<_Tp> __base;
     using value_type = _Tp;
-#ifdef _LIBCUDACXX_CXX03_LANG
+
+    atomic() noexcept = default;
     _LIBCUDACXX_INLINE_VISIBILITY
-#endif
-    atomic() noexcept _LIBCUDACXX_DEFAULT
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR atomic(_Tp __d) noexcept : __base(__d) {}
+    constexpr atomic(_Tp __d) noexcept : __base(__d) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator=(_Tp __d) volatile noexcept
@@ -1807,12 +1805,10 @@ struct atomic<_Tp*>
 {
     typedef __atomic_base<_Tp*> __base;
     using value_type = _Tp*;
-#ifdef _LIBCUDACXX_CXX03_LANG
+
+    atomic() noexcept = default;
     _LIBCUDACXX_INLINE_VISIBILITY
-#endif
-    atomic() noexcept _LIBCUDACXX_DEFAULT
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR atomic(_Tp* __d) noexcept : __base(__d) {}
+    constexpr atomic(_Tp* __d) noexcept : __base(__d) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp* operator=(_Tp* __d) volatile noexcept
@@ -2624,27 +2620,14 @@ typedef struct atomic_flag
         {__cxx_atomic_notify_all(&__a_);}
 #endif
 
-#ifdef _LIBCUDACXX_CXX03_LANG
-    _LIBCUDACXX_INLINE_VISIBILITY
-#endif
-    atomic_flag() noexcept _LIBCUDACXX_DEFAULT
+    atomic_flag() noexcept = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     atomic_flag(bool __b) noexcept : __a_(__b) {} // EXTENSION
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     atomic_flag(const atomic_flag&) = delete;
     atomic_flag& operator=(const atomic_flag&) = delete;
     atomic_flag& operator=(const atomic_flag&) volatile = delete;
-#else
-private:
-    _LIBCUDACXX_INLINE_VISIBILITY
-    atomic_flag(const atomic_flag&);
-    _LIBCUDACXX_INLINE_VISIBILITY
-    atomic_flag& operator=(const atomic_flag&);
-    _LIBCUDACXX_INLINE_VISIBILITY
-    atomic_flag& operator=(const atomic_flag&) volatile;
-#endif
 } atomic_flag;
 
 

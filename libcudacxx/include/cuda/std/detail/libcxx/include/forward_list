@@ -497,14 +497,12 @@ protected:
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit __forward_list_base(const __node_allocator& __a)
         : __before_begin_(__begin_node(), __a) {}
-#ifndef _LIBCUDACXX_CXX03_LANG
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
     __forward_list_base(__forward_list_base&& __x)
         noexcept(is_nothrow_move_constructible<__node_allocator>::value);
     _LIBCUDACXX_INLINE_VISIBILITY
     __forward_list_base(__forward_list_base&& __x, const allocator_type& __a);
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 private:
     __forward_list_base(const __forward_list_base&);
@@ -558,8 +556,6 @@ private:
         {__alloc() = _CUDA_VSTD::move(__x.__alloc());}
 };
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _Tp, class _Alloc>
 inline
 __forward_list_base<_Tp, _Alloc>::__forward_list_base(__forward_list_base&& __x)
@@ -581,8 +577,6 @@ __forward_list_base<_Tp, _Alloc>::__forward_list_base(__forward_list_base&& __x,
         __x.__before_begin()->__next_ = nullptr;
     }
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Alloc>
 __forward_list_base<_Tp, _Alloc>::~__forward_list_base()
@@ -683,7 +677,6 @@ public:
 
     forward_list& operator=(const forward_list& __x);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     forward_list(forward_list&& __x)
         noexcept(is_nothrow_move_constructible<base>::value)
@@ -704,7 +697,6 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void assign(initializer_list<value_type> __il);
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     // ~forward_list() = default;
 
@@ -766,26 +758,22 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     const_reference front() const {return base::__before_begin()->__next_->__value_;}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 #if _LIBCUDACXX_STD_VER > 14
     template <class... _Args> reference emplace_front(_Args&&... __args);
 #else
     template <class... _Args> void      emplace_front(_Args&&... __args);
 #endif
     void push_front(value_type&& __v);
-#endif  // _LIBCUDACXX_CXX03_LANG
     void push_front(const value_type& __v);
 
     void pop_front();
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     template <class... _Args>
         iterator emplace_after(const_iterator __p, _Args&&... __args);
 
     iterator insert_after(const_iterator __p, value_type&& __v);
     iterator insert_after(const_iterator __p, initializer_list<value_type> __il)
         {return insert_after(__p, __il.begin(), __il.end());}
-#endif  // _LIBCUDACXX_CXX03_LANG
     iterator insert_after(const_iterator __p, const value_type& __v);
     iterator insert_after(const_iterator __p, size_type __n, const value_type& __v);
     template <class _InputIterator>
@@ -831,14 +819,12 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     __remove_return_type unique() {return unique(__equal_to<value_type>());}
     template <class _BinaryPredicate> __remove_return_type unique(_BinaryPredicate __binary_pred);
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     void merge(forward_list&& __x) {merge(__x, __less<value_type>());}
     template <class _Compare>
         _LIBCUDACXX_INLINE_VISIBILITY
         void merge(forward_list&& __x, _Compare __comp)
         {merge(__x, _CUDA_VSTD::move(__comp));}
-#endif  // _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     void merge(forward_list& __x) {merge(__x, __less<value_type>());}
     template <class _Compare> void merge(forward_list& __x, _Compare __comp);
@@ -849,11 +835,9 @@ public:
 
 private:
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     void __move_assign(forward_list& __x, true_type)
         noexcept(is_nothrow_move_assignable<allocator_type>::value);
     void __move_assign(forward_list& __x, false_type);
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     template <class _Compare>
         static
@@ -995,7 +979,6 @@ forward_list<_Tp, _Alloc>::operator=(const forward_list& __x)
     return *this;
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Tp, class _Alloc>
 forward_list<_Tp, _Alloc>::forward_list(forward_list&& __x,
                                         const allocator_type& __a)
@@ -1068,8 +1051,6 @@ forward_list<_Tp, _Alloc>::operator=(initializer_list<value_type> __il)
     return *this;
 }
 
-#endif  // _LIBCUDACXX_CXX03_LANG
-
 template <class _Tp, class _Alloc>
 template <class _InputIterator>
 typename enable_if
@@ -1104,8 +1085,6 @@ forward_list<_Tp, _Alloc>::assign(size_type __n, const value_type& __v)
     else
         erase_after(__i, __e);
 }
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Alloc>
 inline
@@ -1148,8 +1127,6 @@ forward_list<_Tp, _Alloc>::push_front(value_type&& __v)
     base::__before_begin()->__next_ = __h.release();
 }
 
-#endif  // _LIBCUDACXX_CXX03_LANG
-
 template <class _Tp, class _Alloc>
 void
 forward_list<_Tp, _Alloc>::push_front(const value_type& __v)
@@ -1172,8 +1149,6 @@ forward_list<_Tp, _Alloc>::pop_front()
     __node_traits::destroy(__a, _CUDA_VSTD::addressof(__p->__value_));
     __node_traits::deallocate(__a, __p, 1);
 }
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Alloc>
 template <class... _Args>
@@ -1204,8 +1179,6 @@ forward_list<_Tp, _Alloc>::insert_after(const_iterator __p, value_type&& __v)
     __r->__next_ = __h.release();
     return iterator(__r->__next_);
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Alloc>
 typename forward_list<_Tp, _Alloc>::iterator
@@ -1757,7 +1730,7 @@ template <class _Tp, class _Alloc>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(forward_list<_Tp, _Alloc>& __x, forward_list<_Tp, _Alloc>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

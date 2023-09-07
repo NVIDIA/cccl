@@ -592,7 +592,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(__map_value_compare<_Key, _CP, _Compare, __b>& __x,
      __map_value_compare<_Key, _CP, _Compare, __b>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }
@@ -622,7 +622,6 @@ public:
           __second_constructed(false)
         {}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     __map_node_destructor(__tree_node_destructor<allocator_type>&& __x) noexcept
         : __na_(__x.__na_),
@@ -631,7 +630,6 @@ public:
         {
             __x.__value_constructed = false;
         }
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void operator()(pointer __p) noexcept
@@ -650,8 +648,6 @@ template <class _Key, class _Tp, class _Compare, class _Allocator>
 template <class _Key, class _Tp, class _Compare, class _Allocator>
     class multimap;
 template <class _TreeIterator> class __map_const_iterator;
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _Key, class _Tp>
 struct __value_type
@@ -729,10 +725,10 @@ public:
     }
 
 private:
-    __value_type() _LIBCUDACXX_EQUAL_DELETE;
-    ~__value_type() _LIBCUDACXX_EQUAL_DELETE;
-    __value_type(const __value_type& __v) _LIBCUDACXX_EQUAL_DELETE;
-    __value_type(__value_type&& __v) _LIBCUDACXX_EQUAL_DELETE;
+    __value_type() = delete;
+    ~__value_type() = delete;
+    __value_type(const __value_type& __v) = delete;
+    __value_type(__value_type&& __v) = delete;
 };
 
 #else
@@ -759,8 +755,6 @@ private:
    __value_type& operator=(__value_type const&);
    ~__value_type();
 };
-
-#endif // _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp>
 struct __extract_key_value_types;
@@ -1010,20 +1004,9 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     map& operator=(const map& __m)
         {
-#ifndef _LIBCUDACXX_CXX03_LANG
             __tree_ = __m.__tree_;
-#else
-            if (this != &__m) {
-                __tree_.clear();
-                __tree_.value_comp() = __m.__tree_.value_comp();
-                __tree_.__copy_assign_alloc(__m.__tree_);
-                insert(__m.begin(), __m.end());
-            }
-#endif
             return *this;
         }
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     map(map&& __m)
@@ -1068,8 +1051,6 @@ public:
             __tree_.__assign_unique(__il.begin(), __il.end());
             return *this;
         }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit map(const allocator_type& __a)
@@ -1127,9 +1108,7 @@ public:
     size_type max_size() const noexcept {return __tree_.max_size();}
 
     mapped_type& operator[](const key_type& __k);
-#ifndef _LIBCUDACXX_CXX03_LANG
     mapped_type& operator[](key_type&& __k);
-#endif
 
           mapped_type& at(const key_type& __k);
     const mapped_type& at(const key_type& __k) const;
@@ -1141,7 +1120,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     value_compare  value_comp()    const {return value_compare(__tree_.value_comp().key_comp());}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     template <class ..._Args>
     _LIBCUDACXX_INLINE_VISIBILITY
     pair<iterator, bool> emplace(_Args&& ...__args) {
@@ -1166,8 +1144,6 @@ public:
         iterator insert(const_iterator __pos, _Pp&& __p)
             {return __tree_.__insert_unique(__pos.__i_, _CUDA_VSTD::forward<_Pp>(__p));}
 
-#endif  // _LIBCUDACXX_CXX03_LANG
-
     _LIBCUDACXX_INLINE_VISIBILITY
     pair<iterator, bool>
         insert(const value_type& __v) {return __tree_.__insert_unique(__v);}
@@ -1177,7 +1153,6 @@ public:
         insert(const_iterator __p, const value_type& __v)
             {return __tree_.__insert_unique(__p.__i_, __v);}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     pair<iterator, bool>
     insert(value_type&& __v) {return __tree_.__insert_unique(_CUDA_VSTD::move(__v));}
@@ -1189,7 +1164,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     void insert(initializer_list<value_type> __il)
         {insert(__il.begin(), __il.end());}
-#endif
 
     template <class _InputIterator>
         _LIBCUDACXX_INLINE_VISIBILITY
@@ -1465,10 +1439,6 @@ private:
 
     typedef __map_node_destructor<__node_allocator> _Dp;
     typedef unique_ptr<__node, _Dp> __node_holder;
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-    __node_holder __construct_node_with_key(const key_type& __k);
-#endif
 };
 
 #ifndef _LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES
@@ -1498,7 +1468,6 @@ map(initializer_list<pair<_Key, _Tp>>, _Allocator)
   -> map<remove_const_t<_Key>, _Tp, less<remove_const_t<_Key>>, _Allocator>;
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Key, class _Tp, class _Compare, class _Allocator>
 map<_Key, _Tp, _Compare, _Allocator>::map(map&& __m, const allocator_type& __a)
     : __tree_(_CUDA_VSTD::move(__m.__tree_), typename __base::allocator_type(__a))
@@ -1531,39 +1500,6 @@ map<_Key, _Tp, _Compare, _Allocator>::operator[](key_type&& __k)
         _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::move(__k)),
         _CUDA_VSTD::forward_as_tuple()).first->__get_value().second;
 }
-
-#else // _LIBCUDACXX_CXX03_LANG
-
-template <class _Key, class _Tp, class _Compare, class _Allocator>
-typename map<_Key, _Tp, _Compare, _Allocator>::__node_holder
-map<_Key, _Tp, _Compare, _Allocator>::__construct_node_with_key(const key_type& __k)
-{
-    __node_allocator& __na = __tree_.__node_alloc();
-    __node_holder __h(__node_traits::allocate(__na, 1), _Dp(__na));
-    __node_traits::construct(__na, _CUDA_VSTD::addressof(__h->__value_.__get_value().first), __k);
-    __h.get_deleter().__first_constructed = true;
-    __node_traits::construct(__na, _CUDA_VSTD::addressof(__h->__value_.__get_value().second));
-    __h.get_deleter().__second_constructed = true;
-    return _LIBCUDACXX_EXPLICIT_MOVE(__h);  // explicitly moved for C++03
-}
-
-template <class _Key, class _Tp, class _Compare, class _Allocator>
-_Tp&
-map<_Key, _Tp, _Compare, _Allocator>::operator[](const key_type& __k)
-{
-    __parent_pointer __parent;
-    __node_base_pointer& __child = __tree_.__find_equal(__parent, __k);
-    __node_pointer __r = static_cast<__node_pointer>(__child);
-    if (__child == nullptr)
-    {
-        __node_holder __h = __construct_node_with_key(__k);
-        __tree_.__insert_node_at(__parent, __child, static_cast<__node_base_pointer>(__h.get()));
-        __r = __h.release();
-    }
-    return __r->__value_.__get_value().second;
-}
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _Key, class _Tp, class _Compare, class _Allocator>
 _Tp&
@@ -1647,7 +1583,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(map<_Key, _Tp, _Compare, _Allocator>& __x,
      map<_Key, _Tp, _Compare, _Allocator>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }
@@ -1778,20 +1714,9 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     multimap& operator=(const multimap& __m)
         {
-#ifndef _LIBCUDACXX_CXX03_LANG
             __tree_ = __m.__tree_;
-#else
-            if (this != &__m) {
-                __tree_.clear();
-                __tree_.value_comp() = __m.__tree_.value_comp();
-                __tree_.__copy_assign_alloc(__m.__tree_);
-                insert(__m.begin(), __m.end());
-            }
-#endif
             return *this;
         }
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     multimap(multimap&& __m)
@@ -1836,8 +1761,6 @@ public:
             __tree_.__assign_multi(__il.begin(), __il.end());
             return *this;
         }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit multimap(const allocator_type& __a)
@@ -1901,8 +1824,6 @@ public:
     value_compare  value_comp() const
         {return value_compare(__tree_.value_comp().key_comp());}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
     template <class ..._Args>
     _LIBCUDACXX_INLINE_VISIBILITY
     iterator emplace(_Args&& ...__args) {
@@ -1939,8 +1860,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     void insert(initializer_list<value_type> __il)
         {insert(__il.begin(), __il.end());}
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     iterator insert(const value_type& __v) {return __tree_.__insert_multi(__v);}
@@ -2155,7 +2074,6 @@ multimap(initializer_list<pair<_Key, _Tp>>, _Allocator)
   -> multimap<remove_const_t<_Key>, _Tp, less<remove_const_t<_Key>>, _Allocator>;
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Key, class _Tp, class _Compare, class _Allocator>
 multimap<_Key, _Tp, _Compare, _Allocator>::multimap(multimap&& __m, const allocator_type& __a)
     : __tree_(_CUDA_VSTD::move(__m.__tree_), typename __base::allocator_type(__a))
@@ -2168,7 +2086,6 @@ multimap<_Key, _Tp, _Compare, _Allocator>::multimap(multimap&& __m, const alloca
                     _CUDA_VSTD::move(__m.__tree_.remove(__m.begin().__i_)->__value_.__move()));
     }
 }
-#endif
 
 template <class _Key, class _Tp, class _Compare, class _Allocator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -2229,7 +2146,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(multimap<_Key, _Tp, _Compare, _Allocator>& __x,
      multimap<_Key, _Tp, _Compare, _Allocator>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

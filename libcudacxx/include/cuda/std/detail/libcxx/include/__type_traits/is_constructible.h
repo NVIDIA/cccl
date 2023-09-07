@@ -39,7 +39,7 @@ struct __nat {};
 }
 
 // FIXME: This logic isn't awesome.
-#if !defined(_LIBCUDACXX_CXX03_LANG) && (!defined(_LIBCUDACXX_IS_CONSTRUCTIBLE) || \
+#if (!defined(_LIBCUDACXX_IS_CONSTRUCTIBLE) || \
     defined(_LIBCUDACXX_TESTING_FALLBACK_IS_CONSTRUCTIBLE) || \
     defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK))
 

@@ -48,8 +48,6 @@
 #pragma GCC system_header
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // bad_function_call
@@ -125,8 +123,6 @@ bool __not_null(_Rp (^__p)(_Args...)) { return __p; }
 #endif
 
 } // namespace __function
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 namespace __function {
 
@@ -612,7 +608,7 @@ struct __policy
     _LIBCUDACXX_INLINE_VISIBILITY
     static const __policy* __create_empty()
     {
-        static const _LIBCUDACXX_CONSTEXPR __policy __policy_ = {nullptr, nullptr,
+        static const constexpr __policy __policy_ = {nullptr, nullptr,
                                                              true,
 #ifndef _LIBCUDACXX_NO_RTTI
                                                              &typeid(void)
@@ -638,7 +634,7 @@ struct __policy
     template <typename _Fun>
     _LIBCUDACXX_INLINE_VISIBILITY static const __policy*
     __choose_policy(/* is_small = */ false_type) {
-      static const _LIBCUDACXX_CONSTEXPR __policy __policy_ = {
+      static const constexpr __policy __policy_ = {
           &__large_clone<_Fun>, &__large_destroy<_Fun>, false,
 #ifndef _LIBCUDACXX_NO_RTTI
           &typeid(typename _Fun::_Target)
@@ -653,7 +649,7 @@ struct __policy
     _LIBCUDACXX_INLINE_VISIBILITY static const __policy*
         __choose_policy(/* is_small = */ true_type)
     {
-        static const _LIBCUDACXX_CONSTEXPR __policy __policy_ = {
+        static const constexpr __policy __policy_ = {
             nullptr, nullptr, false,
 #ifndef _LIBCUDACXX_NO_RTTI
             &typeid(typename _Fun::_Target)
@@ -1246,15 +1242,8 @@ void
 swap(function<_Rp(_ArgTypes...)>& __x, function<_Rp(_ArgTypes...)>& __y) noexcept
 {return __x.swap(__y);}
 
-#else // _LIBCUDACXX_CXX03_LANG
-
-#include <__functional_03>
-
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _LIBCUDACXX_CXX03_LANG
 
 #endif // __cuda_std__
 

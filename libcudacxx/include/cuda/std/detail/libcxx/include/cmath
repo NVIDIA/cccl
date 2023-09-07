@@ -610,7 +610,7 @@ hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR __enable_if_t<is_floating_point<_A1>::value, bool>
+constexpr __enable_if_t<is_floating_point<_A1>::value, bool>
 __constexpr_isnan(_A1 __lcpp_x) noexcept
 {
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_8)
@@ -624,7 +624,7 @@ __constexpr_isnan(_A1 __lcpp_x) noexcept
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR __enable_if_t<!is_floating_point<_A1>::value, bool>
+constexpr __enable_if_t<!is_floating_point<_A1>::value, bool>
 __constexpr_isnan(_A1 __lcpp_x) noexcept
 {
     return isnan(__lcpp_x);
@@ -632,7 +632,7 @@ __constexpr_isnan(_A1 __lcpp_x) noexcept
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR __enable_if_t<is_floating_point<_A1>::value, bool>
+constexpr __enable_if_t<is_floating_point<_A1>::value, bool>
 __constexpr_isinf(_A1 __lcpp_x) noexcept
 {
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_8)
@@ -646,7 +646,7 @@ __constexpr_isinf(_A1 __lcpp_x) noexcept
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR __enable_if_t<!is_floating_point<_A1>::value, bool>
+constexpr __enable_if_t<!is_floating_point<_A1>::value, bool>
 __constexpr_isinf(_A1 __lcpp_x) noexcept
 {
     return isinf(__lcpp_x);
@@ -654,7 +654,7 @@ __constexpr_isinf(_A1 __lcpp_x) noexcept
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR __enable_if_t<is_floating_point<_A1>::value, bool>
+constexpr __enable_if_t<is_floating_point<_A1>::value, bool>
 __constexpr_isfinite(_A1 __lcpp_x) noexcept
 {
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_8)
@@ -668,7 +668,7 @@ __constexpr_isfinite(_A1 __lcpp_x) noexcept
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR __enable_if_t<!is_floating_point<_A1>::value, bool>
+constexpr __enable_if_t<!is_floating_point<_A1>::value, bool>
 __constexpr_isfinite(_A1 __lcpp_x) noexcept
 {
     return isfinite(__lcpp_x);
@@ -937,7 +937,7 @@ template <class _IntT, class _FloatT,
     bool _FloatBigger = (numeric_limits<_FloatT>::digits > numeric_limits<_IntT>::digits),
     int _Bits = (numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits)>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR _IntT __max_representable_int_for_float() noexcept {
+constexpr _IntT __max_representable_int_for_float() noexcept {
   static_assert(is_floating_point<_FloatT>::value, "must be a floating point type");
   static_assert(is_integral<_IntT>::value, "must be an integral type");
   static_assert(numeric_limits<_FloatT>::radix == 2, "FloatT has incorrect radix");

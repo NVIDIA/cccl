@@ -601,9 +601,7 @@ protected:
     __list_imp(const allocator_type& __a);
     _LIBCUDACXX_INLINE_VISIBILITY
     __list_imp(const __node_allocator& __a);
-#ifndef _LIBCUDACXX_CXX03_LANG
     __list_imp(__node_allocator&& __a) noexcept;
-#endif
     ~__list_imp();
     void clear() noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -730,11 +728,9 @@ template <class _Tp, class _Alloc>
 inline __list_imp<_Tp, _Alloc>::__list_imp(const __node_allocator& __a)
     : __size_alloc_(0, __a) {}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Tp, class _Alloc>
 inline __list_imp<_Tp, _Alloc>::__list_imp(__node_allocator&& __a) noexcept
     : __size_alloc_(0, std::move(__a)) {}
-#endif
 
 template <class _Tp, class _Alloc>
 __list_imp<_Tp, _Alloc>::~__list_imp() {
@@ -896,7 +892,6 @@ public:
     list(const list& __c, const allocator_type& __a);
     _LIBCUDACXX_INLINE_VISIBILITY
     list& operator=(const list& __c);
-#ifndef _LIBCUDACXX_CXX03_LANG
     list(initializer_list<value_type> __il);
     list(initializer_list<value_type> __il, const allocator_type& __a);
 
@@ -918,7 +913,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     void assign(initializer_list<value_type> __il)
         {assign(__il.begin(), __il.end());}
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     template <class _InpIter>
         void assign(_InpIter __f, _InpIter __l,
@@ -997,7 +991,6 @@ public:
         return base::__end_.__prev_->__as_node()->__value_;
     }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     void push_front(value_type&& __x);
     void push_back(value_type&& __x);
 
@@ -1021,19 +1014,13 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     iterator insert(const_iterator __p, initializer_list<value_type> __il)
         {return insert(__p, __il.begin(), __il.end());}
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     void push_front(const value_type& __x);
     void push_back(const value_type& __x);
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     template <class _Arg>
     _LIBCUDACXX_INLINE_VISIBILITY
     void __emplace_back(_Arg&& __arg) { emplace_back(_CUDA_VSTD::forward<_Arg>(__arg)); }
-#else
-    _LIBCUDACXX_INLINE_VISIBILITY
-    void __emplace_back(value_type const& __arg) { push_back(__arg); }
-#endif
 
     iterator insert(const_iterator __p, const value_type& __x);
     iterator insert(const_iterator __p, size_type __n, const value_type& __x);
@@ -1063,7 +1050,6 @@ public:
     void resize(size_type __n, const value_type& __x);
 
     void splice(const_iterator __p, list& __c);
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     void splice(const_iterator __p, list&& __c) {splice(__p, __c);}
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1072,7 +1058,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     void splice(const_iterator __p, list&& __c, const_iterator __f, const_iterator __l)
         {splice(__p, __c, __f, __l);}
-#endif
     void splice(const_iterator __p, list& __c, const_iterator __i);
     void splice(const_iterator __p, list& __c, const_iterator __f, const_iterator __l);
 
@@ -1084,14 +1069,12 @@ public:
         __remove_return_type unique(_BinaryPred __binary_pred);
     _LIBCUDACXX_INLINE_VISIBILITY
     void merge(list& __c);
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     void merge(list&& __c) {merge(__c);}
 
     template <class _Comp>
     _LIBCUDACXX_INLINE_VISIBILITY
         void merge(list&& __c, _Comp __comp) {merge(__c, __comp);}
-#endif
     template <class _Comp>
         void merge(list& __c, _Comp __comp);
 
@@ -1209,11 +1192,7 @@ list<_Tp, _Alloc>::list(size_type __n)
     __get_db()->__insert_c(this);
 #endif
     for (; __n > 0; --__n)
-#ifndef _LIBCUDACXX_CXX03_LANG
         emplace_back();
-#else
-        push_back(value_type());
-#endif
 }
 
 #if _LIBCUDACXX_STD_VER > 11
@@ -1295,8 +1274,6 @@ list<_Tp, _Alloc>::list(const list& __c, const allocator_type& __a)
     for (const_iterator __i = __c.begin(), __e = __c.end(); __i != __e; ++__i)
         push_back(*__i);
 }
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Alloc>
 list<_Tp, _Alloc>::list(initializer_list<value_type> __il, const allocator_type& __a)
@@ -1384,8 +1361,6 @@ list<_Tp, _Alloc>::__move_assign(list& __c, true_type)
     splice(end(), __c);
 }
 
-#endif  // _LIBCUDACXX_CXX03_LANG
-
 template <class _Tp, class _Alloc>
 inline
 list<_Tp, _Alloc>&
@@ -1407,7 +1382,7 @@ list<_Tp, _Alloc>::assign(_InpIter __f, _InpIter __l,
 {
     iterator __i = begin();
     iterator __e = end();
-    for (; __f != __l && __i != __e; ++__f, ++__i)
+    for (; __f != __l && __i != __e; ++__f, (void)++__i)
         *__i = *__f;
     if (__i == __e)
         insert(__e, __f, __l);
@@ -1619,8 +1594,6 @@ list<_Tp, _Alloc>::push_back(const value_type& __x)
     __hold.release();
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template <class _Tp, class _Alloc>
 void
 list<_Tp, _Alloc>::push_front(value_type&& __x)
@@ -1734,8 +1707,6 @@ list<_Tp, _Alloc>::insert(const_iterator __p, value_type&& __x)
     return iterator(__nl);
 #endif
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Alloc>
 void
@@ -2464,7 +2435,7 @@ template <class _Tp, class _Alloc>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(list<_Tp, _Alloc>& __x, list<_Tp, _Alloc>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

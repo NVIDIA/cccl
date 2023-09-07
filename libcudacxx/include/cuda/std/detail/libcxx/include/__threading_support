@@ -321,7 +321,7 @@ __libcpp_timespec_t __libcpp_to_timespec(const chrono::nanoseconds& __ns)
      seconds __s = duration_cast<seconds>(__ns);
      __libcpp_timespec_t __ts;
      typedef decltype(__ts.tv_sec) ts_sec;
-     _LIBCUDACXX_CONSTEXPR ts_sec __ts_sec_max = numeric_limits<ts_sec>::max();
+     constexpr ts_sec __ts_sec_max = numeric_limits<ts_sec>::max();
 
      if (__s.count() < __ts_sec_max)
      {

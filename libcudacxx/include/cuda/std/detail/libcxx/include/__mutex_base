@@ -44,7 +44,7 @@ class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(capability("mute
 
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR mutex() = default;
+    constexpr mutex() = default;
 
     mutex(const mutex&) = delete;
     mutex& operator=(const mutex&) = delete;
@@ -70,7 +70,7 @@ struct _LIBCUDACXX_TYPE_VIS defer_lock_t { explicit defer_lock_t() = default; };
 struct _LIBCUDACXX_TYPE_VIS try_to_lock_t { explicit try_to_lock_t() = default; };
 struct _LIBCUDACXX_TYPE_VIS adopt_lock_t { explicit adopt_lock_t() = default; };
 
-#if defined(_LIBCUDACXX_CXX03_LANG) || defined(_LIBCUDACXX_BUILDING_LIBRARY)
+#if defined(_LIBCUDACXX_BUILDING_LIBRARY)
 
 extern _LIBCUDACXX_EXPORTED_FROM_ABI const defer_lock_t  defer_lock;
 extern _LIBCUDACXX_EXPORTED_FROM_ABI const try_to_lock_t try_to_lock;
@@ -106,8 +106,8 @@ public:
     ~lock_guard() _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(release_capability()) {__m_.unlock();}
 
 private:
-    lock_guard(lock_guard const&) _LIBCUDACXX_EQUAL_DELETE;
-    lock_guard& operator=(lock_guard const&) _LIBCUDACXX_EQUAL_DELETE;
+    lock_guard(lock_guard const&) = delete;
+    lock_guard& operator=(lock_guard const&) = delete;
 };
 
 template <class _Mutex>
@@ -155,7 +155,6 @@ private:
     unique_lock& operator=(unique_lock const&); // = delete;
 
 public:
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     unique_lock(unique_lock&& __u) noexcept
         : __m_(__u.__m_), __owns_(__u.__owns_)
@@ -171,8 +170,6 @@ public:
             __u.__owns_ = false;
             return *this;
         }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     void lock();
     bool try_lock();
@@ -287,7 +284,7 @@ class _LIBCUDACXX_TYPE_VIS condition_variable
     __libcpp_condvar_t __cv_ = _LIBCUDACXX_CONDVAR_INITIALIZER;
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR condition_variable() noexcept = default;
+    constexpr condition_variable() noexcept = default;
 
 #ifdef _LIBCUDACXX_HAS_TRIVIAL_CONDVAR_DESTRUCTION
     ~condition_variable() = default;

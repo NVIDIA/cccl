@@ -29,8 +29,6 @@
 #pragma GCC system_header
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // __make_tuple_types<_Tuple<_Types...>, _Ep, _Sp>::type is a
@@ -82,7 +80,5 @@ struct __make_tuple_types<__tuple_types<_Types...>, _Ep, 0, true> {
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _LIBCUDACXX_CXX03_LANG
 
 #endif // _LIBCUDACXX___TUPLE_MAKE_TUPLE_TYPES_H

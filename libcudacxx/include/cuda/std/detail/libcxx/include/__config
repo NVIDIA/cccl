@@ -136,7 +136,7 @@ extern "C++" {
 #endif  // _LIBCUDACXX_STD_VER
 
 #if _LIBCUDACXX_STD_VER < 11
-#define _LIBCUDACXX_CXX03_LANG
+#  error libcu++ requires C++11 or later
 #endif
 
 #if (defined(_LIBCUDACXX_COMPILER_NVHPC) && defined(__linux__)) \
@@ -1528,41 +1528,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES _LIBCUDACXX_END_NAMESPACE_RANGES
 #  endif
 #endif
 
-#ifndef _LIBCUDACXX_HAS_NO_NOEXCEPT
-#  define _NOEXCEPT noexcept
-#  define _NOEXCEPT_(x) noexcept(x)
-#else
-#  define _NOEXCEPT throw()
-#  define _NOEXCEPT_(x)
-#endif
-
 #ifdef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 typedef unsigned short char16_t;
 typedef unsigned int   char32_t;
 #endif  // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-# define static_assert(...) _Static_assert(__VA_ARGS__)
-# define decltype(...) __decltype(__VA_ARGS__)
-#endif  // _LIBCUDACXX_CXX03_LANG
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-#  define _LIBCUDACXX_CONSTEXPR
-#else
-#  define _LIBCUDACXX_CONSTEXPR constexpr
-#endif
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-#  define _LIBCUDACXX_DEFAULT {}
-#else
-#  define _LIBCUDACXX_DEFAULT = default;
-#endif
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-#  define _LIBCUDACXX_EQUAL_DELETE
-#else
-#  define _LIBCUDACXX_EQUAL_DELETE = delete
-#endif
 
 #if defined(_LIBCUDACXX_COMPILER_GCC)   \
  || defined(_LIBCUDACXX_COMPILER_CLANG)
@@ -1696,11 +1665,7 @@ typedef unsigned int   char32_t;
 #  define _LIBCUDACXX_DEPRECATED
 #endif
 
-#if !defined(_LIBCUDACXX_CXX03_LANG)
-#  define _LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_DEPRECATED
-#else
-#  define _LIBCUDACXX_DEPRECATED_IN_CXX11
-#endif
+#define _LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_DEPRECATED
 
 #if _LIBCUDACXX_STD_VER >= 14
 #  define _LIBCUDACXX_DEPRECATED_IN_CXX14 _LIBCUDACXX_DEPRECATED
@@ -1755,7 +1720,7 @@ typedef unsigned int   char32_t;
 // NODISCARD macros to the correct attribute.
 #if __has_cpp_attribute(nodiscard) || (defined(_LIBCUDACXX_COMPILER_MSVC) && _LIBCUDACXX_STD_VER > 14)
 #  define _LIBCUDACXX_NODISCARD_ATTRIBUTE [[nodiscard]]
-#elif defined(_LIBCUDACXX_COMPILER_CLANG) && !defined(_LIBCUDACXX_CXX03_LANG)
+#elif defined(_LIBCUDACXX_COMPILER_CLANG)
 #  define _LIBCUDACXX_NODISCARD_ATTRIBUTE [[clang::warn_unused_result]]
 #else
 // We can't use GCC's [[gnu::warn_unused_result]] and

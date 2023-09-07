@@ -29,7 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Cont>
 _LIBCUDACXX_INLINE_VISIBILITY
 constexpr auto size(const _Cont& __c)
-_NOEXCEPT_(noexcept(__c.size()))
+noexcept(noexcept(__c.size()))
 -> decltype        (__c.size())
 { return            __c.size(); }
 
@@ -42,7 +42,7 @@ constexpr size_t size(const _Tp (&)[_Sz]) noexcept { return _Sz; }
 template <class _Cont>
 _LIBCUDACXX_INLINE_VISIBILITY
 constexpr auto ssize(const _Cont& __c)
-_NOEXCEPT_(noexcept(static_cast<common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>>(__c.size())))
+noexcept(noexcept(static_cast<common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>>(__c.size())))
 ->                              common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>
 { return            static_cast<common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>>(__c.size()); }
 

@@ -124,11 +124,11 @@ template <class _Tp>
 class propagate_const;
 
 template <class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 const _Up& get_underlying(const propagate_const<_Up>& __pu) noexcept;
 
 template <class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 _Up& get_underlying(propagate_const<_Up>& __pu) noexcept;
 
 template <class _Tp>
@@ -148,25 +148,25 @@ public:
 
 private:
   template <class _Up>
-  static _LIBCUDACXX_CONSTEXPR element_type* __get_pointer(_Up* __u)
+  static constexpr element_type* __get_pointer(_Up* __u)
   {
     return __u;
   }
 
   template <class _Up>
-  static _LIBCUDACXX_CONSTEXPR element_type* __get_pointer(_Up& __u)
+  static constexpr element_type* __get_pointer(_Up& __u)
   {
     return __get_pointer(__u.get());
   }
 
   template <class _Up>
-  static _LIBCUDACXX_CONSTEXPR const element_type* __get_pointer(const _Up* __u)
+  static constexpr const element_type* __get_pointer(const _Up* __u)
   {
     return __u;
   }
 
   template <class _Up>
-  static _LIBCUDACXX_CONSTEXPR const element_type* __get_pointer(const _Up& __u)
+  static constexpr const element_type* __get_pointer(const _Up& __u)
   {
     return __get_pointer(__u.get());
   }
@@ -185,25 +185,25 @@ private:
 
 public:
 
-  template <class _Up> friend _LIBCUDACXX_CONSTEXPR const _Up& ::_CUDA_VSTD_LFTS_V2::get_underlying(const propagate_const<_Up>& __pu) noexcept;
-  template <class _Up> friend _LIBCUDACXX_CONSTEXPR _Up& ::_CUDA_VSTD_LFTS_V2::get_underlying(propagate_const<_Up>& __pu) noexcept;
+  template <class _Up> friend constexpr const _Up& ::_CUDA_VSTD_LFTS_V2::get_underlying(const propagate_const<_Up>& __pu) noexcept;
+  template <class _Up> friend constexpr _Up& ::_CUDA_VSTD_LFTS_V2::get_underlying(propagate_const<_Up>& __pu) noexcept;
 
-  _LIBCUDACXX_CONSTEXPR propagate_const() = default;
+  constexpr propagate_const() = default;
 
   propagate_const(const propagate_const&) = delete;
 
-  _LIBCUDACXX_CONSTEXPR propagate_const(propagate_const&&) = default;
+  constexpr propagate_const(propagate_const&&) = default;
 
   template <class _Up, enable_if_t<!is_convertible<_Up, _Tp>::value &&
                                  is_constructible<_Tp, _Up&&>::value,bool> = true>
-  explicit _LIBCUDACXX_CONSTEXPR propagate_const(propagate_const<_Up>&& __pu)
+  explicit constexpr propagate_const(propagate_const<_Up>&& __pu)
       : __t_(std::move(_CUDA_VSTD_LFTS_V2::get_underlying(__pu)))
   {
   }
 
   template <class _Up, enable_if_t<is_convertible<_Up&&, _Tp>::value &&
                                  is_constructible<_Tp, _Up&&>::value,bool> = false>
-  _LIBCUDACXX_CONSTEXPR propagate_const(propagate_const<_Up>&& __pu)
+  constexpr propagate_const(propagate_const<_Up>&& __pu)
       : __t_(std::move(_CUDA_VSTD_LFTS_V2::get_underlying(__pu)))
   {
   }
@@ -211,7 +211,7 @@ public:
   template <class _Up, enable_if_t<!is_convertible<_Up&&, _Tp>::value &&
                                  is_constructible<_Tp, _Up&&>::value &&
                                  !__is_propagate_const<decay_t<_Up>>::value,bool> = true>
-  explicit _LIBCUDACXX_CONSTEXPR propagate_const(_Up&& __u)
+  explicit constexpr propagate_const(_Up&& __u)
       : __t_(std::forward<_Up>(__u))
   {
   }
@@ -219,77 +219,77 @@ public:
   template <class _Up, enable_if_t<is_convertible<_Up&&, _Tp>::value &&
                                  is_constructible<_Tp, _Up&&>::value &&
                                  !__is_propagate_const<decay_t<_Up>>::value,bool> = false>
-  _LIBCUDACXX_CONSTEXPR propagate_const(_Up&& __u)
+  constexpr propagate_const(_Up&& __u)
       : __t_(std::forward<_Up>(__u))
   {
   }
 
   propagate_const& operator=(const propagate_const&) = delete;
 
-  _LIBCUDACXX_CONSTEXPR propagate_const& operator=(propagate_const&&) = default;
+  constexpr propagate_const& operator=(propagate_const&&) = default;
 
   template <class _Up>
-  _LIBCUDACXX_CONSTEXPR propagate_const& operator=(propagate_const<_Up>&& __pu)
+  constexpr propagate_const& operator=(propagate_const<_Up>&& __pu)
   {
     __t_ = std::move(_CUDA_VSTD_LFTS_V2::get_underlying(__pu));
     return *this;
   }
 
   template <class _Up, class _Vp = enable_if_t<!__is_propagate_const<decay_t<_Up>>::value>>
-  _LIBCUDACXX_CONSTEXPR propagate_const& operator=(_Up&& __u)
+  constexpr propagate_const& operator=(_Up&& __u)
   {
     __t_ = std::forward<_Up>(__u);
     return *this;
   }
 
-  _LIBCUDACXX_CONSTEXPR const element_type* get() const
+  constexpr const element_type* get() const
   {
     return __get_pointer(__t_);
   }
 
-  _LIBCUDACXX_CONSTEXPR element_type* get()
+  constexpr element_type* get()
   {
     return __get_pointer(__t_);
   }
 
-  explicit _LIBCUDACXX_CONSTEXPR operator bool() const
+  explicit constexpr operator bool() const
   {
     return get() != nullptr;
   }
 
-  _LIBCUDACXX_CONSTEXPR const element_type* operator->() const
+  constexpr const element_type* operator->() const
   {
     return get();
   }
 
   template <class _Tp_ = _Tp, class _Up = enable_if_t<is_convertible<
                                   const _Tp_, const element_type *>::value>>
-  _LIBCUDACXX_CONSTEXPR operator const element_type *() const {
+  constexpr operator const element_type *() const {
     return get();
   }
 
-  _LIBCUDACXX_CONSTEXPR const element_type& operator*() const
+  constexpr const element_type& operator*() const
   {
     return *get();
   }
 
-  _LIBCUDACXX_CONSTEXPR element_type* operator->()
+  constexpr element_type* operator->()
   {
     return get();
   }
 
   template <class _Tp_ = _Tp, class _Up = enable_if_t<
                                   is_convertible<_Tp_, element_type *>::value>>
-  _LIBCUDACXX_CONSTEXPR operator element_type *() {
+  constexpr operator element_type *() {
     return get();
   }
 
-  _LIBCUDACXX_CONSTEXPR element_type& operator*()
+  constexpr element_type& operator*()
   {
     return *get();
   }
 
-  _LIBCUDACXX_CONSTEXPR void swap(propagate_const& __pt) noexcept(__is_nothrow_swappable<_Tp>::value)
+  constexpr void swap(propagate_const& __pt) noexcept(__is_nothrow_swappable<_Tp>::value)
   {
     using _CUDA_VSTD::swap;
     swap(__t_, __pt.__t_);
@@ -299,35 +299,35 @@ public:
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator==(const propagate_const<_Tp>& __pt, nullptr_t)
+constexpr bool operator==(const propagate_const<_Tp>& __pt, nullptr_t)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) == nullptr;
 }
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator==(nullptr_t, const propagate_const<_Tp>& __pt)
+constexpr bool operator==(nullptr_t, const propagate_const<_Tp>& __pt)
 {
   return nullptr == _CUDA_VSTD_LFTS_V2::get_underlying(__pt);
 }
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator!=(const propagate_const<_Tp>& __pt, nullptr_t)
+constexpr bool operator!=(const propagate_const<_Tp>& __pt, nullptr_t)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) != nullptr;
 }
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator!=(nullptr_t, const propagate_const<_Tp>& __pt)
+constexpr bool operator!=(nullptr_t, const propagate_const<_Tp>& __pt)
 {
   return nullptr != _CUDA_VSTD_LFTS_V2::get_underlying(__pt);
 }
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator==(const propagate_const<_Tp>& __pt,
+constexpr bool operator==(const propagate_const<_Tp>& __pt,
                           const propagate_const<_Up>& __pu)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) == _CUDA_VSTD_LFTS_V2::get_underlying(__pu);
@@ -335,7 +335,7 @@ _LIBCUDACXX_CONSTEXPR bool operator==(const propagate_const<_Tp>& __pt,
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator!=(const propagate_const<_Tp>& __pt,
+constexpr bool operator!=(const propagate_const<_Tp>& __pt,
                           const propagate_const<_Up>& __pu)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) != _CUDA_VSTD_LFTS_V2::get_underlying(__pu);
@@ -343,7 +343,7 @@ _LIBCUDACXX_CONSTEXPR bool operator!=(const propagate_const<_Tp>& __pt,
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator<(const propagate_const<_Tp>& __pt,
+constexpr bool operator<(const propagate_const<_Tp>& __pt,
                          const propagate_const<_Up>& __pu)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) < _CUDA_VSTD_LFTS_V2::get_underlying(__pu);
@@ -351,7 +351,7 @@ _LIBCUDACXX_CONSTEXPR bool operator<(const propagate_const<_Tp>& __pt,
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator>(const propagate_const<_Tp>& __pt,
+constexpr bool operator>(const propagate_const<_Tp>& __pt,
                          const propagate_const<_Up>& __pu)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) > _CUDA_VSTD_LFTS_V2::get_underlying(__pu);
@@ -359,7 +359,7 @@ _LIBCUDACXX_CONSTEXPR bool operator>(const propagate_const<_Tp>& __pt,
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator<=(const propagate_const<_Tp>& __pt,
+constexpr bool operator<=(const propagate_const<_Tp>& __pt,
                           const propagate_const<_Up>& __pu)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) <= _CUDA_VSTD_LFTS_V2::get_underlying(__pu);
@@ -367,7 +367,7 @@ _LIBCUDACXX_CONSTEXPR bool operator<=(const propagate_const<_Tp>& __pt,
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator>=(const propagate_const<_Tp>& __pt,
+constexpr bool operator>=(const propagate_const<_Tp>& __pt,
                           const propagate_const<_Up>& __pu)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) >= _CUDA_VSTD_LFTS_V2::get_underlying(__pu);
@@ -375,42 +375,42 @@ _LIBCUDACXX_CONSTEXPR bool operator>=(const propagate_const<_Tp>& __pt,
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator==(const propagate_const<_Tp>& __pt, const _Up& __u)
+constexpr bool operator==(const propagate_const<_Tp>& __pt, const _Up& __u)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) == __u;
 }
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator!=(const propagate_const<_Tp>& __pt, const _Up& __u)
+constexpr bool operator!=(const propagate_const<_Tp>& __pt, const _Up& __u)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) != __u;
 }
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator<(const propagate_const<_Tp>& __pt, const _Up& __u)
+constexpr bool operator<(const propagate_const<_Tp>& __pt, const _Up& __u)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) < __u;
 }
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator>(const propagate_const<_Tp>& __pt, const _Up& __u)
+constexpr bool operator>(const propagate_const<_Tp>& __pt, const _Up& __u)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) > __u;
 }
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator<=(const propagate_const<_Tp>& __pt, const _Up& __u)
+constexpr bool operator<=(const propagate_const<_Tp>& __pt, const _Up& __u)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) <= __u;
 }
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator>=(const propagate_const<_Tp>& __pt, const _Up& __u)
+constexpr bool operator>=(const propagate_const<_Tp>& __pt, const _Up& __u)
 {
   return _CUDA_VSTD_LFTS_V2::get_underlying(__pt) >= __u;
 }
@@ -418,61 +418,61 @@ _LIBCUDACXX_CONSTEXPR bool operator>=(const propagate_const<_Tp>& __pt, const _U
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator==(const _Tp& __t, const propagate_const<_Up>& __pu)
+constexpr bool operator==(const _Tp& __t, const propagate_const<_Up>& __pu)
 {
   return __t == _CUDA_VSTD_LFTS_V2::get_underlying(__pu);
 }
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator!=(const _Tp& __t, const propagate_const<_Up>& __pu)
+constexpr bool operator!=(const _Tp& __t, const propagate_const<_Up>& __pu)
 {
   return __t != _CUDA_VSTD_LFTS_V2::get_underlying(__pu);
 }
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator<(const _Tp& __t, const propagate_const<_Up>& __pu)
+constexpr bool operator<(const _Tp& __t, const propagate_const<_Up>& __pu)
 {
   return __t < _CUDA_VSTD_LFTS_V2::get_underlying(__pu);
 }
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator>(const _Tp& __t, const propagate_const<_Up>& __pu)
+constexpr bool operator>(const _Tp& __t, const propagate_const<_Up>& __pu)
 {
   return __t > _CUDA_VSTD_LFTS_V2::get_underlying(__pu);
 }
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator<=(const _Tp& __t, const propagate_const<_Up>& __pu)
+constexpr bool operator<=(const _Tp& __t, const propagate_const<_Up>& __pu)
 {
   return __t <= _CUDA_VSTD_LFTS_V2::get_underlying(__pu);
 }
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR bool operator>=(const _Tp& __t, const propagate_const<_Up>& __pu)
+constexpr bool operator>=(const _Tp& __t, const propagate_const<_Up>& __pu)
 {
   return __t >= _CUDA_VSTD_LFTS_V2::get_underlying(__pu);
 }
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR void swap(propagate_const<_Tp>& __pc1, propagate_const<_Tp>& __pc2) noexcept(__is_nothrow_swappable<_Tp>::value)
+constexpr void swap(propagate_const<_Tp>& __pc1, propagate_const<_Tp>& __pc2) noexcept(__is_nothrow_swappable<_Tp>::value)
 {
   __pc1.swap(__pc2);
 }
 
 template <class _Tp>
-_LIBCUDACXX_CONSTEXPR const _Tp& get_underlying(const propagate_const<_Tp>& __pt) noexcept
+constexpr const _Tp& get_underlying(const propagate_const<_Tp>& __pt) noexcept
 {
   return __pt.__t_;
 }
 
 template <class _Tp>
-_LIBCUDACXX_CONSTEXPR _Tp& get_underlying(propagate_const<_Tp>& __pt) noexcept
+constexpr _Tp& get_underlying(propagate_const<_Tp>& __pt) noexcept
 {
   return __pt.__t_;
 }
