@@ -23,7 +23,7 @@ Naturally, there was a lot of overlap among the three projects, and it became cl
 
 - **libcudacxx** is the CUDA C++ Standard Library. It provides an implementation of the C++ Standard Library that works in both host and device code. Additionally, it provides abstractions for CUDA-specific hardware features like synchronization primitives, cache control, atomics, and more. 
 
-The main goal of CCCL is to fill a similar role that the Standard C++ Library fills for Standard C++ – provide general-purpose, speed-of-light tools to CUDA C++ developers with general-purpose, speed-of-light tools to focus on solving the problems that matter.
+The main goal of CCCL is to fill a similar role that the Standard C++ Library fills for Standard C++ – provide general-purpose, speed-of-light tools to CUDA C++ developers allowing them to focus on solving the problems that matter.
 Unifying these projects is the first step towards realizing that goal. 
 
 ## Example
@@ -105,7 +105,7 @@ Therefore, users need only concern themselves with how they get the header files
 The easiest way to get started using CCCL is via the [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) which includes the CCCL headers. 
 When you compile with `nvcc`, it automatically adds CCCL headers to your include path so you can simply `#include` any CCCL header in your code with no additional configuration required.
 
-If compiling with another compiler, you will need to update your build system's include search path to point to the CCCL headers in your CTK instal (e.g., `/usr/local/cuda/include`). 
+If compiling with another compiler, you will need to update your build system's include search path to point to the CCCL headers in your CTK install (e.g., `/usr/local/cuda/include`). 
 
 ```cpp
 #include <thrust/device_vector.h>
