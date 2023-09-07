@@ -15,7 +15,6 @@
 
 #include "arrive_tx.h"
 
-
 int main(int, char**)
 {
     NV_DISPATCH_TARGET(
@@ -26,7 +25,7 @@ int main(int, char**)
         cuda_thread_count = 32;
         ),
         NV_IS_DEVICE, (
-            test<cuda::barrier<cuda::thread_scope_block>>();
+            test();
         )
     );
 

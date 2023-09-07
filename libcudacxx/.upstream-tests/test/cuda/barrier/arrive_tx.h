@@ -21,9 +21,10 @@
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
+template<typename Barrier>
 inline __device__
 void mbarrier_complete_tx(
-  cuda::barrier<cuda::thread_scope_block> &b, int transaction_count)
+  Barrier &b, int transaction_count)
 {
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (
@@ -57,21 +58,33 @@ void thread(Barrier& b, int arrives_per_thread)
   b.wait(cuda::std::move(tok));
 }
 
-template<typename Barrier>
+struct CF {
+  __host__ __device__ CF() {}
+
+  __device__ void operator()() const {
+    // do nothing
+  }
+
+  int x = 1;
+};
+
 __device__
 void test()
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE, (
-      // Initialize barrier in main thread
-      __shared__ Barrier bar_1;
-      __shared__ Barrier bar_2;
-      init(&bar_1, (int) blockDim.x);
-      init(&bar_2, (int) 2 * blockDim.x);
-
       // Run all threads, each arriving with arrival count 1
+      constexpr auto block = cuda::thread_scope_block;
+
+      __shared__ cuda::barrier<block> bar_1;
+      init(&bar_1, (int) blockDim.x);
+      __syncthreads();
       thread(bar_1, 1);
+
       // Run all threads, each arriving with arrival count 2
+      __shared__ cuda::barrier<block> bar_2;
+      init(&bar_2, (int) 2 * blockDim.x);
+      __syncthreads();
       thread(bar_2, 2);
     )
   );
