@@ -38,6 +38,8 @@
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/config.cuh>
 #include <cub/detail/cpp_compatibility.cuh>
+#include <cub/util_device.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>

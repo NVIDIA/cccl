@@ -36,6 +36,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 #include <nv/target>
 
