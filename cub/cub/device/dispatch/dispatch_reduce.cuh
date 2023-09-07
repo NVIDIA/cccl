@@ -387,7 +387,7 @@ __global__ void DeviceSegmentedReduceKernel(
   {
     if (threadIdx.x == 0)
     {
-	  *(d_out + blockIdx.x) = init;
+      *(d_out + blockIdx.x) = init;
     }
     return;
   }

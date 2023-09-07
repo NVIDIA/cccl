@@ -202,7 +202,7 @@ struct DeviceSegmentedReduce
             typename EndOffsetIteratorT,
             typename ReductionOpT,
             typename T,
-			typename NumSegmentsT>
+            typename NumSegmentsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Reduce(void *d_temp_storage,
          size_t &temp_storage_bytes,
@@ -217,9 +217,9 @@ struct DeviceSegmentedReduce
   {
     // Signed integer type for global offsets
     using OffsetT = detail::common_offset_value_t<
-		BeginOffsetIteratorT,
-	    EndOffsetIteratorT
-	>;
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT
+    >;
 
     return DispatchSegmentedReduce<InputIteratorT,
                                    OutputIteratorT,
@@ -227,15 +227,15 @@ struct DeviceSegmentedReduce
                                    EndOffsetIteratorT,
                                    OffsetT,
                                    ReductionOpT>::Dispatch(d_temp_storage,
-                                                          temp_storage_bytes,
-                                                          d_in,
-                                                          d_out,
-                                                          static_cast<OffsetT>(num_segments),
-                                                          d_begin_offsets,
-                                                          d_end_offsets,
-                                                          reduction_op,
-                                                          initial_value,
-                                                          stream);
+                                                           temp_storage_bytes,
+                                                           d_in,
+                                                           d_out,
+                                                           static_cast<OffsetT>(num_segments),
+                                                           d_begin_offsets,
+                                                           d_end_offsets,
+                                                           reduction_op,
+                                                           initial_value,
+                                                           stream);
   }
 
   template <typename InputIteratorT,
@@ -244,7 +244,7 @@ struct DeviceSegmentedReduce
             typename EndOffsetIteratorT,
             typename ReductionOpT,
             typename T,
-			typename NumSegmentsT>
+            typename NumSegmentsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t
   Reduce(void *d_temp_storage,
@@ -267,7 +267,7 @@ struct DeviceSegmentedReduce
                   EndOffsetIteratorT,
                   ReductionOpT,
                   T,
-				  NumSegmentsT>(d_temp_storage,
+                  NumSegmentsT>(d_temp_storage,
                                 temp_storage_bytes,
                                 d_in,
                                 d_out,
@@ -385,7 +385,7 @@ struct DeviceSegmentedReduce
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-			typename NumSegmentsT>
+            typename NumSegmentsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(void *d_temp_storage,
       size_t &temp_storage_bytes,
@@ -398,9 +398,9 @@ struct DeviceSegmentedReduce
   {
     // Signed integer type for global offsets
     using OffsetT = detail::common_offset_value_t<
-		BeginOffsetIteratorT,
-	    EndOffsetIteratorT
-	>;
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT
+    >;
 
 
     // The output value type
@@ -430,7 +430,7 @@ struct DeviceSegmentedReduce
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-			typename NumSegmentsT>
+            typename NumSegmentsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(void *d_temp_storage,
@@ -449,7 +449,7 @@ struct DeviceSegmentedReduce
                OutputIteratorT,
                BeginOffsetIteratorT,
                EndOffsetIteratorT,
-			   NumSegmentsT>(d_temp_storage,
+               NumSegmentsT>(d_temp_storage,
                              temp_storage_bytes,
                              d_in,
                              d_out,
@@ -566,7 +566,7 @@ struct DeviceSegmentedReduce
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-			typename NumSegmentsT>
+            typename NumSegmentsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Min(void *d_temp_storage,
       size_t &temp_storage_bytes,
@@ -579,9 +579,9 @@ struct DeviceSegmentedReduce
   {
     // Signed integer type for global offsets
     using OffsetT = detail::common_offset_value_t<
-		BeginOffsetIteratorT,
-	    EndOffsetIteratorT
-	>;
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT
+    >;
 
 
     // The input value type
@@ -612,7 +612,7 @@ struct DeviceSegmentedReduce
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-			typename NumSegmentsT>
+            typename NumSegmentsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t
   Min(void *d_temp_storage,
@@ -631,7 +631,7 @@ struct DeviceSegmentedReduce
                OutputIteratorT,
                BeginOffsetIteratorT,
                EndOffsetIteratorT,
-			   NumSegmentsT>(d_temp_storage,
+               NumSegmentsT>(d_temp_storage,
                                    temp_storage_bytes,
                                    d_in,
                                    d_out,
@@ -754,7 +754,7 @@ struct DeviceSegmentedReduce
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-			typename NumSegmentsT>
+            typename NumSegmentsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMin(void *d_temp_storage,
          size_t &temp_storage_bytes,
@@ -767,9 +767,9 @@ struct DeviceSegmentedReduce
   {
     // Signed integer type for global offsets
     using OffsetT = detail::common_offset_value_t<
-		BeginOffsetIteratorT,
-	    EndOffsetIteratorT
-	>;
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT
+    >;
 
 
     // The input type
@@ -820,7 +820,7 @@ struct DeviceSegmentedReduce
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-			typename NumSegmentsT>
+            typename NumSegmentsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMin(void *d_temp_storage,
@@ -839,7 +839,7 @@ struct DeviceSegmentedReduce
                   OutputIteratorT,
                   BeginOffsetIteratorT,
                   EndOffsetIteratorT,
-				  NumSegmentsT>(d_temp_storage,
+                  NumSegmentsT>(d_temp_storage,
                                 temp_storage_bytes,
                                 d_in,
                                 d_out,
@@ -956,7 +956,7 @@ struct DeviceSegmentedReduce
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-			typename NumSegmentsT>
+            typename NumSegmentsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Max(void *d_temp_storage,
       size_t &temp_storage_bytes,
@@ -969,9 +969,9 @@ struct DeviceSegmentedReduce
   {
     // Signed integer type for global offsets
     using OffsetT = detail::common_offset_value_t<
-		BeginOffsetIteratorT,
-	    EndOffsetIteratorT
-	>;
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT
+    >;
 
 
     // The input value type
@@ -1002,7 +1002,7 @@ struct DeviceSegmentedReduce
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-			typename NumSegmentsT>
+            typename NumSegmentsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t
   Max(void *d_temp_storage,
@@ -1021,7 +1021,7 @@ struct DeviceSegmentedReduce
                OutputIteratorT,
                BeginOffsetIteratorT,
                EndOffsetIteratorT,
-			   NumSegmentsT>(d_temp_storage,
+               NumSegmentsT>(d_temp_storage,
                              temp_storage_bytes,
                              d_in,
                              d_out,
@@ -1144,7 +1144,7 @@ struct DeviceSegmentedReduce
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-			typename NumSegmentsT>
+            typename NumSegmentsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMax(void *d_temp_storage,
          size_t &temp_storage_bytes,
@@ -1157,9 +1157,9 @@ struct DeviceSegmentedReduce
   {
     // Signed integer type for global offsets
     using OffsetT = detail::common_offset_value_t<
-		BeginOffsetIteratorT,
-	    EndOffsetIteratorT
-	>;
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT
+    >;
 
     // The input type
     using InputValueT = cub::detail::value_t<InputIteratorT>;
@@ -1209,7 +1209,7 @@ struct DeviceSegmentedReduce
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-			typename NumSegmentsT>
+            typename NumSegmentsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMax(void *d_temp_storage,
@@ -1228,7 +1228,7 @@ struct DeviceSegmentedReduce
                   OutputIteratorT,
                   BeginOffsetIteratorT,
                   EndOffsetIteratorT,
-				  NumSegmentsT>(d_temp_storage,
+                  NumSegmentsT>(d_temp_storage,
                                 temp_storage_bytes,
                                 d_in,
                                 d_out,
