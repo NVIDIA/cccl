@@ -30,9 +30,9 @@ Unifying these projects is the first step towards realizing that goal.
 
 This is a simple example demonstrating the use of CCCL functionality from Thrust, CUB, and libcudacxx.
 
-It shows how to use Thrust/CUB/libcudacxx to implement a simple parallel reduction kernel. Each thread block
-computes the sum of a subset of the array using `cub::BlockRecuce`. The sum of each block is then reduced 
-to a single value using an atomic add via `cuda::atomic_ref` from libcudacxx.
+It shows how to use Thrust/CUB/libcudacxx to implement a simple parallel reduction kernel. 
+Each thread block computes the sum of a subset of the array using `cub::BlockRecuce`. 
+The sum of each block is then reduced to a single value using an atomic add via `cuda::atomic_ref` from libcudacxx.
 
 It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
 
@@ -100,9 +100,10 @@ Generally speaking, because CCCL is a header-only library, users need only conce
 Anyone interested in using CCCL in their CUDA C++ application can get started by referring to the information below. 
 
 #### CUDA Toolkit 
-The easiest way to get started using CCCL is if you already have the [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit), then you already have the CCCL headers installed on your system.
-When you compile with `nvcc` you can simply include the desired headers in your code with no additional configuration required.
-If compiling with another compiler, you will need to add the include path (e.g., `/usr/local/cuda/include`) to the CCCL headers to your build system.
+The easiest way to get started using CCCL is via the [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) which includes the CCCL headers. 
+When you compile with `nvcc`, it automatically adds CCCL headers to your include path so you can simply `#include` any CCCL header in your code with no additional configuration required.
+
+If compiling with another compiler, you will need to update your build system's include search path to point to the CCCL headers in your CTK instal (e.g., `/usr/local/cuda/include`). 
 
 ```cpp
 #include <thrust/device_vector.h>
@@ -112,8 +113,8 @@ If compiling with another compiler, you will need to add the include path (e.g.,
 
 #### GitHub
 
-For users that want to stay on the cutting edge of CCCL development, we actively support and encourage users to use CCCL from GitHub. 
-We support using a newer version of CCCL with an older version of the CUDA Toolkit, but not the other way around.
+Users that want to stay on the cutting edge of CCCL development are encouraged to use CCCL from GitHub. 
+Using a newer version of CCCL with an older version of the CUDA Toolkit is supported, but not the other way around.
 For complete information on compatibility between CCCL and the CUDA Toolkit, see [our platform support](#platform-support).
 
 Everything in CCCL is header-only, so cloning and including it in a simple project is as easy as the following:
@@ -127,12 +128,13 @@ nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main
 
 For more complex projects, we recommend using CMake to integrate CCCL into your project.
 
-CCCL uses [CMake](https://cmake.org/) for all of our build and installation infrastructure, including our tests as well as targets for users to link against their own projects.
-As a result, we recommend anyone using CCCL from GitHub to use CMake to integrate CCCL into your project. 
+CCCL uses [CMake](https://cmake.org/) for all of our build and installation infrastructure, including tests as well as targets link against in other CMake projects.
+Therefore, CMake is the recommended way to integrate CCCL into another project. 
+
 For a complete example of how to do this using CMake Package Manager see [our example project](examples/example_project). 
 
-Other build systems should work, but we only test CMake.
-We welcome contributions that would simplify the process of integrating CCCL into other build systems.
+Other build systems should work, but only CMake is tested. 
+Contributions to simplify integrating CCCL into other build systems are welcome.
 
 ### Contributors
 
@@ -143,14 +145,13 @@ Contributor guide coming soon!
 **Objective:** This section describes where users can expect CCCL to compile and run successfully. 
 
 In general, CCCL should work everywhere the CUDA Toolkit is supported, however, the devil is in the details. 
-The sections below describe the details of our support for different versions of the CUDA Toolkit, host compilers, and C++ dialects.
-Furthermore, we describe our testing strategy to be confident that CCCL works everywhere it should. 
+The sections below describe the details of support and testing for different versions of the CUDA Toolkit, host compilers, and C++ dialects.
 
 ### CUDA Toolkit (CTK) Compatibility 
 
 **Summary:**
-- The latest version of CCCL is backwards compatible with the current and preceding CTK major version series
-- CCCL is never forwards compatible with any version of the CTK. Always use the same or newer than what is included with your CTK. 
+- The latest version of CCCL is backward compatible with the current and preceding CTK major version series
+- CCCL is never forward compatible with any version of the CTK. Always use the same or newer than what is included with your CTK. 
 - Minor version CCCL upgrades won't break existing code, but new features may not support all CTK versions
 
 The CCCL team encourages users to ["live at head"](https://www.youtube.com/watch?v=tISy7EJQPzI) and always use the newest version of CCCL from GitHub to take advantage of the latest improvements.
