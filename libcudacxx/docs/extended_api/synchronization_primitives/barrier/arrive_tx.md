@@ -64,6 +64,7 @@ __global__ void example_kernel() {
   if (threadIdx.x == 0) {
     init(&bar, blockDim.x);
   }
+  __syncthreads();
 
   auto token = cuda::device::arrive_tx(bar, 1, 0);
 
