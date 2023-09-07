@@ -569,44 +569,33 @@ inline barrier<thread_scope_block>::arrival_token arrive_tx(
     barrier<thread_scope_block>::arrival_token __token = {};
     NV_DISPATCH_TARGET(
         NV_PROVIDES_SM_90, (
-            // XXX: Consider simplifying the logic here. By doing the if else
-            // and trapping, we prevent debugging tools like memcheck/racecheck
+            // We do not check for the statespace of the barrier here. This is
+            // on purpose. This allows debugging tools like memcheck/racecheck
             // to detect that we are passing a pointer with the wrong state
-            // space to mbarrier.arrive. Perhaps it is better to just pass the
-            // pointer directly and let the error handling be done at the
-            // PTX/hardware level.
-            if (__isShared(barrier_native_handle(__b))) {
-                if (__arrive_count_update == 1) {
-                    asm volatile(
-                        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
-                        : "=l"(__token)
-                        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(barrier_native_handle(__b)))),
-                          "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
-                        : "memory");
-                } else {
-                    asm volatile(
-                        "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
-                        :
-                        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(barrier_native_handle(__b)))),
-                          "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
-                        : "memory");
-                    asm volatile(
-                        "mbarrier.arrive.release.cta.shared::cta.b64 %0, [%1], %2;"
-                        : "=l"(__token)
-                        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(barrier_native_handle(__b)))),
-                          "r"(static_cast<_CUDA_VSTD::uint32_t>(__arrive_count_update))
-                        : "memory");
-                }
-            } else if (__isClusterShared(barrier_native_handle(__b))) {
-                // The hardware does not return an arrival token when arriving
-                // on a remote cluster-shared barrier. Better to trap in this
-                // case.
-                __trap();
+            // space to mbarrier.arrive. If we checked for the state space here,
+            // and __trap() if wrong, then those tools would not be able to help
+            // us in release builds. In debug builds, the error would be caught
+            // by the asserts at the top of this function.
+            if (__arrive_count_update == 1) {
+                asm volatile(
+                    "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
+                    : "=l"(__token)
+                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(barrier_native_handle(__b)))),
+                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
+                    : "memory");
             } else {
-                // When arriving on non-shared barriers, e.g., a barrier in
-                // remote dsmem or global memory, then the hardware does not
-                // support returning an arrival token. Better to trap in this case.
-                __trap();
+                asm volatile(
+                    "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
+                    :
+                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(barrier_native_handle(__b)))),
+                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
+                    : "memory");
+                asm volatile(
+                    "mbarrier.arrive.release.cta.shared::cta.b64 %0, [%1], %2;"
+                    : "=l"(__token)
+                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(barrier_native_handle(__b)))),
+                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__arrive_count_update))
+                    : "memory");
             }
         ), NV_ANY_TARGET, (
             // On architectures pre-SM90 (and in host code), arriving with a
