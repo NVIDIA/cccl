@@ -468,6 +468,10 @@ struct AgentRle
 
             tile_aggregate = scan_op(tile_aggregate, temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[WARP]);
         }
+
+        // Ensure all threads have read warp aggregates before temp_storage is repurposed in the
+        // subsequent scatter stage
+        CTA_SYNC();
     }
 
 
