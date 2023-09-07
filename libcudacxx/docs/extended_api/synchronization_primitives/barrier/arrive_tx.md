@@ -55,10 +55,6 @@ To check if `cuda::device::arive_tx` is available, use the
 #include <cuda/barrier>
 #include <cuda/std/utility> // cuda::std::move
 
-#if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 900
-static_assert(false, "Insufficient CUDA Compute Capability: cuda::device::arrive_tx is not available.");
-#endif // __CUDA_MINIMUM_ARCH__
-
 #ifndef  __cccl_lib_local_barrier_arrive_tx
 static_assert(false, "Insufficient libcu++ version: cuda::device::arrive_tx is not yet available.");
 #endif // __cccl_lib_local_barrier_arrive_tx

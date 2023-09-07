@@ -607,8 +607,13 @@ inline barrier<thread_scope_block>::arrival_token arrive_tx(
             }
         ), NV_ANY_TARGET, (
             // On architectures pre-SM90 (and in host code), arriving with a
-            // transaction count update is not supported and we trap.
-            __trap();
+            // transaction count update is not supported.
+#if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 900
+            static_assert(
+                false,
+                "Insufficient CUDA Compute Capability: cuda::device::arrive_tx requires at least CC 9.0."
+            );
+#endif // __CUDA_MINIMUM_ARCH__
         )
     );
     return __token;
