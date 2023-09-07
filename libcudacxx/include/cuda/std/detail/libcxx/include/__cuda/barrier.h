@@ -560,10 +560,12 @@ inline barrier<thread_scope_block>::arrival_token arrive_tx(
     barrier<thread_scope_block> & __b,
     _CUDA_VSTD::ptrdiff_t __arrive_count_update,
     _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
-    _LIBCUDACXX_DEBUG_ASSERT(__arrive_count_update >= 0, "Arrival count update must be non-negative.");
+    _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+    _LIBCUDACXX_DEBUG_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");
     _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
     // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
     _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
+
     barrier<thread_scope_block>::arrival_token __token = {};
     NV_DISPATCH_TARGET(
         NV_PROVIDES_SM_90, (

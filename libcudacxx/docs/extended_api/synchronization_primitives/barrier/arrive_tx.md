@@ -22,16 +22,16 @@ transaction count.
 ## Preconditions
 
 * `__isShared(&bar) == true`
-* `0 <= arrive_count_update`
+* `1 <= arrive_count_update`
 * `0 <= transaction_count_update && transaction_count_update <= (1 << 20) - 1`
 
 
 ## Effects
 
-* This function constructs an arrival_token object associated with the phase synchronization
-  point for the current phase. Then, decrements the expected arrival count by
-  `arrive_count_update` and increments the expected transaction count by
-  `transaction_count_update`.
+* This function constructs an arrival_token object associated with the phase
+  synchronization point for the current phase. Then, decrements the expected
+  arrival count by `arrive_count_update` and increments the expected transaction
+  count by `transaction_count_update`.
 * This function executes atomically. The call to this function strongly
   happens-before the start of the phase completion step for the current phase.
 * The behavior is undefined if `arrive_count_update` is less than or equal to 0
@@ -43,7 +43,8 @@ This function can only be used under CUDA Compute Capability 9.0 (Hopper) or
 higher.
 
 To check if `cuda::device::arive_tx` is available, use the
-`__cccl_lib_local_barrier_arrive_tx` feature flag, as shown in the example code below.
+`__cccl_lib_local_barrier_arrive_tx` feature flag, as shown in the example code
+below.
 
 ## Return Value
 
