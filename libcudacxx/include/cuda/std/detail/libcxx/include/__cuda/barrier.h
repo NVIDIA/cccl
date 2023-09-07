@@ -178,6 +178,7 @@ public:
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
     arrival_token arrive(_CUDA_VSTD::ptrdiff_t __update = 1) {
         _LIBCUDACXX_DEBUG_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
+        _LIBCUDACXX_DEBUG_ASSERT(__expected_unit >= 0, "");
         arrival_token __token = {};
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_90, (
