@@ -49,6 +49,7 @@ __host__ __device__
 int fake_main(int, char**);
 
 int cuda_thread_count = 1;
+int cuda_cluster_size = 1;
 
 __global__
 void fake_main_kernel(int * ret)
@@ -83,6 +84,23 @@ int main(int argc, char** argv)
 
     int * cuda_ret = 0;
     CUDA_CALL(err, cudaMalloc(&cuda_ret, sizeof(int)));
+    {
+        cudaLaunchAttribute attribute[1];
+        attribute[0].id = cudaLaunchAttributeClusterDimension;
+        attribute[0].val.clusterDim.x = cuda_cluster_size; // Cluster size in X-dimension
+        attribute[0].val.clusterDim.y = 1;
+        attribute[0].val.clusterDim.z = 1;
+
+        cudaLaunchConfig_t config = {
+            dim3(cuda_cluster_size), // grid dim
+            dim3(cuda_thread_count), // block dim
+            0,                       // dynamic smem bytes
+            0,                       // stream
+            attribute,               // attributes
+            1,                       // number of attributes
+        };
+        CUDA_CALL(err, cudaLaunchKernelEx(&config, fake_main_kernel, cuda_ret));
+    }
 
     fake_main_kernel<<<1, cuda_thread_count>>>(cuda_ret);
     CUDA_CALL(err, cudaGetLastError());
