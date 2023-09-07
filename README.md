@@ -126,8 +126,6 @@ nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main
 
 ##### CMake Integration
 
-For more complex projects, we recommend using CMake to integrate CCCL into your project.
-
 CCCL uses [CMake](https://cmake.org/) for all build and installation infrastructure, including tests as well as targets to link against in other CMake projects.
 Therefore, CMake is the recommended way to integrate CCCL into another project. 
 
@@ -210,14 +208,14 @@ Note that some features may only support certain architectures/Compute Capabilit
 
 ### Testing Strategy
 
-Our testing strategy that balances the need to test as many configurations as possible with reasonable CI times. 
+CCCL's testing strategy strikes a balance between testing as many configurations as possible and maintaining reasonable CI times.
 
-For CUDA Toolkit versions, we test against the oldest and the newest version that we support. 
-For example, if the latest version of the CUDA Toolkit is 12.3, we test against 11.1 and 12.3.
-For each CUDA version, we build against all of the supported host compilers with all of the supported C++ dialects.
+For CUDA Toolkit versions, testing is done against both the oldest and the newest supported versions. 
+For instance, if the latest version of the CUDA Toolkit is 12.3, tests are conducted against 11.1 and 12.3. 
+For each CUDA version, builds are completed against all supported host compilers with all supported C++ dialects.
 
-Our testing strategy and matrix are constantly evolving. 
-The matrix defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file is our single source of truth and you can review it to see exactly what we test against.
+The testing strategy and matrix are constantly evolving. 
+The matrix defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file is the definitive source of truth.
 For more information about our CI pipeline, see [here](ci-overview.md).
 
 ## Versioning
@@ -226,7 +224,7 @@ For more information about our CI pipeline, see [here](ci-overview.md).
 
 **Summary**
 - The entirety of CCCL's API shares a common semantic version across all components
-- Only the most recently released version is supported and we do not backport fixes to prior releases
+- Only the most recently released version is supported and fixes are not backported to prior releases
 - API breaking changes and incrementing CCCL's major version will only coincide with a new major version release of the CUDA Toolkit 
 - Not all source breaking changes are considered breaking changes of the public API that warrant bumping the major version number
 - Do not rely on ABI stability of enities in the `cub::` or `thrust::` namespaces
@@ -241,9 +239,9 @@ Moving forward, CCCL will continue to be released under a single [semantic versi
 A Breaking Change is a change to **explicitly supported** functionality between released versions that would require a user to do work in order to upgrade to the newer version.
 
 In the limit, [_any_ change](https://www.hyrumslaw.com/) has the potential to break someone somewhere. 
-As a result, we do not consider all possible source breaking changes as Breaking Changes to the public API that warrant bumping the major semantic version. 
+As a result, not all possible source breaking changes are considered Breaking Changes to the public API that warrant bumping the major semantic version. 
 
-The sections below describe whatthe details of breaking changes to CCCL's API and ABI.
+The sections below describe the details of breaking changes to CCCL's API and ABI.
 
 ### Application Programming Interface (API)
 
@@ -261,7 +259,8 @@ Moreover, CCCL's public API does **not** include any of the following:
 - Any header file contained in a `detail/` directory or sub-directory thereof
 - The header files implicitly included by any header part of the public API
 
-In general, we strive not to break anything in the public API unless such changes benefits our users with better performance, easier-to-understand APIs, and/or more consistent APIs. 
+In general, the goal is to avoid breaking anything in the public API.
+Such changes are made only if they offer users better performance, easier-to-understand APIs, and/or more consistent APIs. 
 
 Any breaking change to the public API will require bumping CCCL's major version number. 
 In keeping with [CUDA Minor Version Compatibility](https://docs.nvidia.com/deploy/cuda-compatibility/#minor-version-compatibility), 
@@ -274,18 +273,17 @@ Anything not part of the public API may change at any time without warning.
 The entirety of CCCL's public API across all components shares a common semantic version of `MAJOR.MINOR.PATCH`.
 
 Only the most recently released version is supported.
-We do not backport features or bug fixes to previously released versions or branches. 
+As a rule, features and bug fixes are not backported to previously released version or branches. 
 
 For historical reasons, the library versions are encoded separately in each of Thrust/CUB/libcudacxx as follows:
 
-
-|                  | libcudacxx                              | Thrust              | CUB                | Incremented when? |
-|------------------|-----------------------------------------|---------------------|--------------------|--------------------------------------------------------|
-| Header           | `<cuda/std/version>`                      | `<thrust/version.h>`  | `<cub/version.h>`    | -                                                      |
-| Major Version    | `_LIBCUDACXX_CUDA_API_VERSION_MAJOR`     | `THRUST_MAJOR_VERSION` | `CUB_MAJOR_VERSION`  | Public API breaking changes (only at new CTK major release)       |
-| Minor Version    | `_LIBCUDACXX_CUDA_API_VERSION_MINOR`      | `THRUST_MINOR_VERSION` | `CUB_MINOR_VERSION`  | Non-breaking feature additions             |
-| Patch/Subminor Version | `_LIBCUDACXX_CUDA_API_VERSION_PATCH`      | `THRUST_SUBMINOR_VERSION` | `CUB_SUBMINOR_VERSION`  | Minor changes not covered by major/minor versions     |
-| Concatenated Version | `_LIBCUDACXX_CUDA_API_VERSION` (`MMMmmmppp`)         | `THRUST_VERSION` (`MMMmmmpp`)      | CUB_VERSION (`MMMmmmpp`)        | -                                                      |
+|                        | libcudacxx                                | Thrust                        | CUB                        | Incremented when?                                                  |
+|------------------------|-------------------------------------------|-------------------------------|----------------------------|--------------------------------------------------------------------|
+| Header                 | `<cuda/std/version>`                      | `<thrust/version.h>`          | `<cub/version.h>`          | -                                                                  |
+| Major Version          | `_LIBCUDACXX_CUDA_API_VERSION_MAJOR`      | `THRUST_MAJOR_VERSION`        | `CUB_MAJOR_VERSION`        | Public API breaking changes (only at new CTK major release)        |
+| Minor Version          | `_LIBCUDACXX_CUDA_API_VERSION_MINOR`      | `THRUST_MINOR_VERSION`        | `CUB_MINOR_VERSION`        | Non-breaking feature additions                                     |
+| Patch/Subminor Version | `_LIBCUDACXX_CUDA_API_VERSION_PATCH`      | `THRUST_SUBMINOR_VERSION`     | `CUB_SUBMINOR_VERSION`     | Minor changes not covered by major/minor versions                  |
+| Concatenated Version   | `_LIBCUDACXX_CUDA_API_VERSION (MMMmmmppp)`| `THRUST_VERSION (MMMmmmppp)`  | `CUB_VERSION (MMMmmmppp)`  | -                                                                  |
 
 ### Application Binary Interface (ABI)
 
@@ -325,14 +323,14 @@ To learn more about ABI and why it is important, see [What is ABI, and What Shou
 
 As mentioned above, not all possible source breaking changes constitute a Breaking Change that would require incrementing CCCL's API major version number. 
 
-We encourage our users to adhere to the following guidelines in order to minimize the risk of disruptions from accidentally depending on parts of CCCL that we do not consider part of the public API: 
+Users are encouraged to adhere to the following guidelines in order to minimize the risk of disruptions from accidentally depending on parts of CCCL that are not part of the public API: 
 
 - Do not add any declarations to the `thrust::`, `cub::`, `nv::`, or `cuda::` namespaces unless an exception is noted for a specific symbol, e.g., specializing a type trait.
-    - **Rationale**: This would cause symbol conflicts if we added a symbol with the same name. 
+    - **Rationale**: This would cause symbol conflicts if a symbol is added with the same name. 
 - Do not take the address of any API in the `thrust::`, `cub::`, `cuda::`, or `nv::` namespaces. 
-    - **Rationale**: This would prevent us from adding overloads of these APIs.
+    - **Rationale**: This would prevent adding overloads of these APIs.
 - Do not forward declare any API in the `thrust::`, `cub::`, `cuda::`, or `nv::` namespaces.
-    - **Rationale**: This would prevent us from adding overloads of these APIs.
+    - **Rationale**: This would prevent adding overloads of these APIs.
 - Do not directly reference any symbol prefixed with `_`, `__`, or with `detail` anywhere in its name including a `detail::` namespace or macro
      - **Rationale**: These symbols are for internal use only and may change at any time without warning. 
 - Include what you use. For every CCCL symbol that you use, directly `#include` the header file that declares that symbol. In other words, do not rely on headers implicitly included by other headers.
@@ -340,10 +338,9 @@ We encourage our users to adhere to the following guidelines in order to minimiz
 
 Portions of this section were inspired by [Abseil's Compatibility Guidelines](https://abseil.io/about/compatibility).
 
-
 ## Deprecation Policy
 
-We will do our best to notify users prior to making any breaking changes to the public API, ABI, or modifying the platforms and compilers we support.
+We will do our best to notify users prior to making any breaking changes to the public API, ABI, or modifying the supported platforms and compilers.
 
 As appropriate, deprecations will come in the form of programmatic warnings which can be disabled.
 
