@@ -35,9 +35,10 @@ env:
  # PVT = Project V2, PVTSSF = Project V2 Single Select Field, PVTIF = Project V2 Iteration Field
  PROJECT_ID: "PVT_kwDOABpemM4AEhOI"
  STATUS_FIELD_ID: "PVTSSF_lADOABpemM4AEhOIzgCmnYc"
- IN_PROGRESS_PROJECT_OPTION_ID: "47fc9ee4"
  WORKING_SPRINT_FIELD_ID: "PVTIF_lADOABpemM4AEhOIzgJlRho"
  START_SPRINT_FIELD_ID: "PVTIF_lADOABpemM4AEhOIzgJlRhU"
+ IN_PROGRESS_PROJECT_OPTION_ID: "47fc9ee4"
+ IN_REVIEW_PROJECT_OPTION_ID: "c6b49c6b"
 
 jobs:
   query_and_mutate_project_fields:
@@ -58,7 +59,7 @@ jobs:
           
           # If it is requesting changes, set PR to draft
           # We use the default token here since we're granting write access to the PR
-          elif [ ${{ github.event.pull_request.draft }} == true ]; then
+          elif [ ${{ github.event.pull_request.draft }} == false ]; then
             gh api graphql -f query='
               mutation {
                 convertPullRequestToDraft(input: {pullRequestId: "${{ env.PR_GLOBAL_ID }}"}) {
@@ -80,8 +81,24 @@ jobs:
       - name: Wait 1 Second
         id: sleep
         if: github.event_name == 'pull_request_target'
-        run: sleep 1
-        
+        run: sleep 1  # We sleep here to ensure the pr is added to the project before we query for it
+
+      - name: Select Status Field Value
+        id: select_status_field_value
+        if: github.event_name == 'pull_request_target'
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          # If it's not a draft and it's an opened trigger, the status should be "Ready for Review", otherwise "In Progress"
+          if [ ${{ github.event.pull_request.draft }} == false ] && [ ${{ github.event.action }} == "opened" ]; then
+            echo "PR is not a draft, setting status to 'In Review'"
+            echo "STATUS_OPTION_ID=$IN_REVIEW_PROJECT_OPTION_ID" >> $GITHUB_ENV
+          else
+            echo "PR is a draft, setting status to 'In Progress'"
+            echo "STATUS_OPTION_ID=$IN_PROGRESS_PROJECT_OPTION_ID" >> $GITHUB_ENV
+          fi
+          continue-on-error: true
+
       - name: Get PR Project ID
         id: get_pr_id
         if: github.event_name == 'pull_request_target'
@@ -134,7 +151,7 @@ jobs:
                             itemId: "${{ env.PR_ID }}"
                             fieldId: "${{ env.STATUS_FIELD_ID }}"
                         value: {
-                            singleSelectOptionId: "${{ env.IN_PROGRESS_PROJECT_OPTION_ID }}"
+                            singleSelectOptionId: "${{ env.STATUS_OPTION_ID }}"
                                 }
                             }
                         ) {
@@ -304,7 +321,7 @@ jobs:
                         itemId: \"$issue_id\"
                         fieldId: \"$STATUS_FIELD_ID\"
                     value: {
-                        singleSelectOptionId: \"$IN_PROGRESS_PROJECT_OPTION_ID\"
+                        singleSelectOptionId: \"$STATUS_OPTION_ID\"
                         }
                     }
                     ) {
