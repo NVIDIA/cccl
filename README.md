@@ -8,24 +8,23 @@ This repository unifies three essential CUDA C++ libraries into a single, conven
 - [CUB](cub) (former [repo](https://github.com/nvidia/cub))
 - [libcudacxx](libcudacxx) (former [repo](https://github.com/nvidia/libcudacxx))
 
-The goal of CCCL is to provide CUDA C++ developers with building blocks that make it easier to write safe and efficient code. Bringing these libraries together streamlines your development process and broadens your ability to leverage the power of CUDA C++.
-For more information about our decision to unify these projects, see our announcement here: (TODO)
+The goal of CCCL is to provide CUDA C++ developers with building blocks that make it easier to write safe and efficient code. 
+Bringing these libraries together streamlines your development process and broadens your ability to leverage the power of CUDA C++.
+For more information about the decision to unify these projects, see the announcement here: (TODO)
 
 ## Overview
 
-The concept for the CUDA C++ Core Libraries (CCCL) grew organically out of the Thrust, CUB, and libcudacxx projects that were developed independently over the years with a similar goal: to provide a high-quality, high-performance, and easy-to-use C++ abstractions for CUDA developers.
-Naturally, there was a lot of overlap among the three projects, and we realized that we could better serve the community by unifying them into a single repository.
+The concept for the CUDA C++ Core Libraries (CCCL) grew organically out of the Thrust, CUB, and libcudacxx projects that were developed independently over the years with a similar goal: to provide high-quality, high-performance, and easy-to-use C++ abstractions for CUDA developers.
+Naturally, there was a lot of overlap among the three projects, and it became clear the community would be better served by unifying them into a single repository.
 
 - **Thrust** is the C++ parallel algorithms library which inspired the introduction of parallel algorithms to the C++ Standard Library. Thrust's high-level interface greatly enhances programmer productivity while enabling performance portability between GPUs and multicore CPUs via configurable backends that allow using multiple parallel programming frameworks (such as CUDA, TBB, and OpenMP).
 
-- **CUB** is a lower-level, CUDA-specific library designed for speed-of-light parallel algorithms across all GPU architectures. In addition to device-wide algorithms, it provides *cooperative algorithms* like block-wide reduce and warp-wide scan, providing CUDA kernel developers with building blocks to create speed-of-light, custom kernels. 
+- **CUB** is a lower-level, CUDA-specific library designed for speed-of-light parallel algorithms across all GPU architectures. In addition to device-wide algorithms, it provides *cooperative algorithms* like block-wide reduction and warp-wide scan, providing CUDA kernel developers with building blocks to create speed-of-light, custom kernels. 
 
 - **libcudacxx** is the CUDA C++ Standard Library. It provides an implementation of the C++ Standard Library that works in both host and device code. Additionally, it provides abstractions for CUDA-specific hardware features like synchronization primitives, cache control, atomics, and more. 
 
-
-Bringing these libraries together enables us to better deliver the features you need as well as provide a more cohesive experience where everything “just works” out of the box.  
-Our long-term goal is to offer a single, unified, modern C++ library that merges and extends the functionality of our existing libraries and more. 
-We envision the CUDA C++ Core Libraries to fill a similar role that the Standard C++ Library fills for Standard C++ – equipping you with general-purpose, speed-of-light tools to focus on solving the problems you care about.
+The main goal of CCCL is to fill a similar role that the Standard C++ Library fills for Standard C++ – provide general-purpose, speed-of-light tools to CUDA C++ developers with general-purpose, speed-of-light tools to focus on solving the problems that matter.
+Unifying these projects is the first step towards realizing that goal. 
 
 ## Example
 
@@ -39,9 +38,9 @@ It then shows how the same reduction can be done using Thrust's `reduce` algorit
 
 ```cpp
 #include <thrust/device_vector.h>
-#include <cstdio>
 #include <cub/block/block_reduce.cuh>
 #include <cuda/atomic>
+#include <cstdio>
 
 constexpr int block_size = 256;
 
