@@ -527,9 +527,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
     > {
         template<typename _Group>
         _LIBCUDACXX_INLINE_VISIBILITY
-        static async_contract_fulfillment __synchronize(
-            _Group &&, _Arch, __alignment<1>,
-            pipeline<_Sco> &, _CUDA_VSTD::size_t, async_contract_fulfillment __acf
+        static async_contract_fulfillment __default(
+            _Arch, __alignment<1>, _Group &&,
+            _CUDA_VSTD::size_t, pipeline<_Sco> &, async_contract_fulfillment __acf
         ) {
             // synchronization performed explicitly using pipeline functions
             return __acf;

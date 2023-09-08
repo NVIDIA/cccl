@@ -297,19 +297,31 @@ inline async_contract_fulfillment __strided_memcpy(_CUDA_VSTD::size_t __rank, _C
     return async_contract_fulfillment::none;
 }
 
-template<typename _Arch, __tx_api _Tx, _CUDA_VSTD::size_t _Alignment, __space _OutSpace, __space _InSpace, __space _SyncSpace, typename = void>
+template<typename _Arch, __tx_api _Tx, _CUDA_VSTD::size_t _Alignment, __space _OutSpace, __space _InSpace, typename = void>
 struct __memcpy_async_default_aligned_impl {
     template<typename _Group, typename _Sync>
     _LIBCUDACXX_INLINE_VISIBILITY static async_contract_fulfillment __memcpy_async(
         _Arch,
         __alignment<_Alignment>,
-        _Group & __g,
+        _Group && __g,
         char *__out_ptr,
         const char *__in_ptr,
         _CUDA_VSTD::size_t __size,
         _Sync & __sync
     ) {
         return __strided_memcpy(__g.thread_rank(), __g.size(), __out_ptr, __in_ptr, __size, _Alignment);
+    }
+
+    template<typename _Group, typename _Sync>
+    _LIBCUDACXX_INLINE_VISIBILITY static async_contract_fulfillment __default_synchronize(
+        _Arch,
+        __alignment<_Alignment>,
+        _Group &&,
+        _CUDA_VSTD::size_t __size,
+        _Sync & __sync,
+        async_contract_fulfillment __acf
+    ) {
+        return __acf;
     }
 };
 
@@ -353,10 +365,10 @@ async_contract_fulfillment __cp_async_ca_shared_global(_CUDA_VSTD::size_t __rank
     return async_contract_fulfillment::async;
 }
 
-template<_CUDA_VSTD::size_t _ProvidedSM, _CUDA_VSTD::size_t _Alignment, __space _SyncSpace>
+template<_CUDA_VSTD::size_t _ProvidedSM, _CUDA_VSTD::size_t _Alignment>
 struct __memcpy_async_default_aligned_impl<
     __arch::__cuda<_ProvidedSM>, __tx_api::__no, _Alignment,
-    __space::__shared, __space::__global, _SyncSpace,
+    __space::__shared, __space::__global,
     _CUDA_VSTD::__enable_if_t<_Alignment >= 4>
 > {
     template<typename _Group, typename _Sync>
@@ -383,6 +395,19 @@ struct __memcpy_async_default_aligned_impl<
         _Sync & __sync
     ) {
         return __cp_async_ca_shared_global<_Alignment>(__g.thread_rank(), __g.size(), __out_ptr, __in_ptr, __size);
+    }
+
+    template<typename _Group, typename _Sync>
+    _LIBCUDACXX_INLINE_VISIBILITY static async_contract_fulfillment __default_synchronize(
+        __arch::__cuda<80>,
+        __alignment<4>,
+        _Group &&,
+        _CUDA_VSTD::size_t __size,
+        _Sync & __sync,
+        async_contract_fulfillment __acf
+    ) {
+        asm volatile ("cp.async.wait_all;" ::: "memory");
+        return __acf;
     }
 };
 
@@ -421,16 +446,16 @@ struct __proto_hooks {
     static const constexpr _CUDA_VSTD::size_t __min_interesting_alignment = 4;
 };
 
-template<__tx_api _Tx, typename _Arch, __space _OutSpace, __space _InSpace, __space _SyncSpace, typename = void>
+template<__tx_api _Tx, typename _Arch, __space _OutSpace, __space _InSpace, typename = void>
 struct __memcpy_async_hooks : __proto_hooks {
     using __unspecialized = void;
 };
 
-template<__tx_api _Tx, _CUDA_VSTD::size_t _ProvidedSM, __space _SyncSpace>
-struct __memcpy_async_hooks<_Tx, __arch::__cuda<_ProvidedSM>, __space::__shared, __space::__global, _SyncSpace, _CUDA_VSTD::__enable_if_t<_ProvidedSM >= 80>>
+template<__tx_api _Tx, _CUDA_VSTD::size_t _ProvidedSM>
+struct __memcpy_async_hooks<_Tx, __arch::__cuda<_ProvidedSM>, __space::__shared, __space::__global, _CUDA_VSTD::__enable_if_t<_ProvidedSM >= 80>>
     : __proto_hooks {
     template<_CUDA_VSTD::size_t _Alignment>
-    using __aligned = __memcpy_async_default_aligned_impl<__arch::__cuda<_ProvidedSM>, _Tx, _Alignment, __space::__shared, __space::__global, _SyncSpace>;
+    using __aligned = __memcpy_async_default_aligned_impl<__arch::__cuda<_ProvidedSM>, _Tx, _Alignment, __space::__shared, __space::__global>;
 };
 
 template<typename _Sync, __tx_api _Tx, typename _Arch, typename _Alignment, __space _OutSpace, __space _InSpace, __space _SyncSpace, typename = void>
@@ -453,18 +478,18 @@ struct __noop_sync_hooks {
     }
 };
 
-template<__tx_api _Tx, typename _Arch, typename _OutSpace, typename _InSpace, typename _SyncSpace, typename = void>
+template<__tx_api _Tx, typename _Arch, typename _OutSpace, typename _InSpace, typename = void>
 struct __are_memcpy_async_hooks_specialized : _CUDA_VSTD::true_type {
     template<typename _Fn>
     _LIBCUDACXX_INLINE_VISIBILITY
     static async_contract_fulfillment __invoke(_Fn && __f) {
-        return _CUDA_VSTD::forward<_Fn>(__f)(_OutSpace{}, _InSpace{}, _SyncSpace{});
+        return _CUDA_VSTD::forward<_Fn>(__f)(_OutSpace{}, _InSpace{});
     }
 };
 
-template<__tx_api _Tx, typename _Arch, typename _OutSpace, typename _InSpace, typename _SyncSpace>
-struct __are_memcpy_async_hooks_specialized<_Tx, _Arch, _OutSpace, _InSpace, _SyncSpace,
-    typename __memcpy_async_hooks<_Tx, _Arch, _OutSpace::value, _InSpace::value, _SyncSpace::value>::__unspecialized
+template<__tx_api _Tx, typename _Arch, typename _OutSpace, typename _InSpace>
+struct __are_memcpy_async_hooks_specialized<_Tx, _Arch, _OutSpace, _InSpace,
+    typename __memcpy_async_hooks<_Tx, _Arch, _OutSpace::value, _InSpace::value>::__unspecialized
 > : _CUDA_VSTD::false_type {
     template<typename _Fn>
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -490,12 +515,30 @@ _LIBCUDACXX_INLINE_VISIBILITY _Ret __dispatch_architecture(_Fn && __f)
 template<typename _Hooks>
 struct __memcpy_async_hooks_traits;
 
-template<__tx_api _Tx, typename _Arch, __space _OutSpace, __space _InSpace, __space _SyncSpace>
-struct __memcpy_async_hooks_traits<__memcpy_async_hooks<_Tx, _Arch, _OutSpace, _InSpace, _SyncSpace>> {
+template<__tx_api _Tx, typename _Arch, __space _OutSpace, __space _InSpace>
+struct __memcpy_async_hooks_traits<__memcpy_async_hooks<_Tx, _Arch, _OutSpace, _InSpace>> {
+    using __arch = _Arch;
     static const constexpr auto __tx = _Tx;
     static const constexpr auto __out_space = _OutSpace;
     static const constexpr auto __in_space = _InSpace;
-    static const constexpr auto __sync_space = _SyncSpace;
+};
+
+template<typename _SyncHooks, typename _Traits, typename _Alignment, typename _SyncObject, typename _Group, typename = void>
+struct __are_memcpy_async_sync_hooks_specialized : _CUDA_VSTD::false_type {
+    _LIBCUDACXX_INLINE_VISIBILITY
+    static async_contract_fulfillment __invoke(_Group &&, _SyncObject &, _CUDA_VSTD::size_t, async_contract_fulfillment) {
+        _LIBCUDACXX_UNREACHABLE();
+    }
+};
+
+template<typename _SyncHooks, typename _Traits, typename _Alignment, typename _SyncObject, typename _Group>
+struct __are_memcpy_async_sync_hooks_specialized<_SyncHooks, _Traits, _Alignment, _SyncObject, _Group,
+    _CUDA_VSTD::void_t<decltype(_SyncHooks::__synchronize(_CUDA_VSTD::declval<_Group>(), typename _Traits::__arch(), _Alignment(), _CUDA_VSTD::declval<_SyncObject>(), 0, async_contract_fulfillment::async))>
+> : _CUDA_VSTD::true_type {
+    _LIBCUDACXX_INLINE_VISIBILITY
+    static async_contract_fulfillment __invoke(_Group && __g, _SyncObject & __sync, _CUDA_VSTD::size_t __size, async_contract_fulfillment __acf) {
+        return _SyncHooks::__synchronize(typename _Traits::__arch(), _Alignment(), _CUDA_VSTD::forward<_Group>(__g), __size, __sync, __acf);
+    }
 };
 
 template<typename _Hooks, _CUDA_VSTD::size_t _NativeAlignment, typename _Arch, typename _Group, typename _SyncObject>
@@ -513,14 +556,24 @@ struct __memcpy_async_alignment_dispatcher_t {
              _Arch{}, _Alignment{}, __g, __out_ptr, __in_ptr, __size, __sync);
 
         using __traits = __memcpy_async_hooks_traits<_Hooks>;
-        using __sync_hooks = __memcpy_async_sync_hooks<_CUDA_VSTD::__remove_cvref_t<_SyncObject>,
-            __traits::__tx,
-            _Arch,
-            _Alignment,
-            __traits::__out_space,
-            __traits::__in_space,
-            __traits::__sync_space>;
-        return __sync_hooks::__synchronize(__g, _Arch{}, _Alignment{}, __sync, __size, __acf);
+        using __sync_t = _CUDA_VSTD::__remove_cvref_t<_SyncObject>;
+        auto __sync_ptr = &__sync;
+        _LIBCUDACXX_HANDLE_POINTER_SPACE(__sync_ptr,
+            using __sync_hooks = __memcpy_async_sync_hooks<__sync_t,
+                __traits::__tx,
+                _Arch,
+                _Alignment,
+                __traits::__out_space,
+                __traits::__in_space,
+                __sync_ptr_space_t::value>;
+            using __ashs = __are_memcpy_async_sync_hooks_specialized<__sync_hooks, __traits, _Alignment, __sync_t, _Group>;
+            if _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 (__ashs::value) {
+                return __ashs::__invoke(_CUDA_VSTD::forward<_Group>(__g), __size, __sync, __acf);
+            }
+        )
+
+        return _Hooks::template __aligned<_Alignment::value>::__default_synchronize(_Arch{}, _Alignment{},
+            _CUDA_VSTD::forward<_Group>(__g), __size, __sync, __acf);
     }
 };
 
@@ -538,14 +591,13 @@ struct __memcpy_async_space_dispatcher_t {
     _Size __size;
     _SyncObject & __sync;
 
-    template<typename _OutSpace, typename _InSpace, typename _SyncSpace>
+    template<typename _OutSpace, typename _InSpace>
     _LIBCUDACXX_INLINE_VISIBILITY
-    async_contract_fulfillment operator()(_OutSpace, _InSpace, _SyncSpace) {
+    async_contract_fulfillment operator()(_OutSpace, _InSpace) {
         using __hooks = __memcpy_async_hooks<_Tx,
             _Arch,
             _OutSpace::value,
-            _InSpace::value,
-            _SyncSpace::value>;
+            _InSpace::value>;
 
         auto __f = __memcpy_async_alignment_dispatcher<__hooks, _NativeAlignment, _Arch>(_CUDA_VSTD::forward<_Group>(__g), __out_ptr, __in_ptr, __size, __sync);
 
@@ -572,13 +624,12 @@ struct __memcpy_async_arch_dispatcher_t {
     async_contract_fulfillment operator()(_Arch) {
         auto __f = __memcpy_async_space_dispatcher<_Tx, _NativeAlignment, _Arch>(_CUDA_VSTD::forward<_Group>(__g), __out_ptr, __in_ptr, __size, __sync);
 
-        auto __sync_ptr = &__sync;
-        _LIBCUDACXX_HANDLE_POINTER_SPACE(__out_ptr, _LIBCUDACXX_HANDLE_POINTER_SPACE(__in_ptr, _LIBCUDACXX_HANDLE_POINTER_SPACE(__sync_ptr,
-            using __ahs = __are_memcpy_async_hooks_specialized<_Tx, _Arch, __out_ptr_space_t, __in_ptr_space_t, __sync_ptr_space_t>;
+        _LIBCUDACXX_HANDLE_POINTER_SPACE(__out_ptr, _LIBCUDACXX_HANDLE_POINTER_SPACE(__in_ptr,
+            using __ahs = __are_memcpy_async_hooks_specialized<_Tx, _Arch, __out_ptr_space_t, __in_ptr_space_t>;
             if _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 (__ahs::value) {
                 return __ahs::__invoke(__f);
             }
-        )))
+        ))
 
         // fallback to unspecialized implementation
         auto __alignment_bit_v = __proto_hooks::__compute_alignment_bit(__g, __out_ptr, __in_ptr, __size, __sync);
