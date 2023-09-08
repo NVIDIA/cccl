@@ -554,7 +554,11 @@ inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> 
 }
 
 
-#if defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__
+// Hide arrive_tx when CUDA architecture is insufficient. Note the
+// (!defined(__CUDA_MINIMUM_ARCH__)). This is required to make sure the function
+// does not get removed by cudafe, which does not define __CUDA_MINIMUM_ARCH__.
+#if (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
+
 template <typename _CF = _CUDA_VSTD::__empty_completion>
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
 typename barrier<thread_scope_block, _CF>::arrival_token arrive_tx(
