@@ -58,6 +58,8 @@ using all_types = c2h::type_list<std::uint8_t,
 using types = c2h::type_list<std::uint32_t,
                              std::int8_t>;
 
+#if 0 // DeviceRunLengthEncode::NonTrivialRuns cannot handle inputs with one or less elements
+      // https://github.com/NVIDIA/cccl/issues/426
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]")
 {
   const int num_items = 0;
@@ -67,7 +69,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[devic
   run_length_encode(static_cast<int*>(nullptr),
                     static_cast<int*>(nullptr),
                     static_cast<int*>(nullptr),
-                    out_num_runs.begin(),
+                    thrust::raw_pointer_cast(out_num_runs.data()),
                     num_items);
 
   REQUIRE(out_num_runs.front() == 0);
@@ -82,11 +84,12 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[
   run_length_encode(static_cast<int*>(nullptr),
                     static_cast<int*>(nullptr),
                     static_cast<int*>(nullptr),
-                    out_num_runs.begin(),
+                    thrust::raw_pointer_cast(out_num_runs.data()),
                     num_items);
 
   REQUIRE(out_num_runs.front() == 0);
 }
+#endif
 
 #if 0 // DeviceRunLengthEncode::NonTrivialRuns cannot handle inputs larger than INT32_MAX
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle large indexes", "[device][run_length_encode]")

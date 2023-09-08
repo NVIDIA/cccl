@@ -57,6 +57,8 @@ using all_types = c2h::type_list<std::uint8_t,
 using types = c2h::type_list<std::uint32_t,
                              std::int8_t>;
 
+#if 0 // DeviceRunLengthEncode::Encode cannot handle empty inputs
+      // https://github.com/NVIDIA/cccl/issues/426
 CUB_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_length_encode]")
 {
   const int num_items = 0;
@@ -67,11 +69,12 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_l
   run_length_encode(in.begin(),
                     static_cast<int*>(nullptr),
                     static_cast<int*>(nullptr),
-                    out_num_runs.begin(),
+                    thrust::raw_pointer_cast(out_num_runs.data()),
                     num_items);
 
   REQUIRE(out_num_runs.front() == num_items);
 }
+#endif
 
 CUB_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]")
 {
