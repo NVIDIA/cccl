@@ -554,6 +554,7 @@ inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> 
 }
 
 
+#if defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__
 template <typename _CF = _CUDA_VSTD::__empty_completion>
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
 typename barrier<thread_scope_block, _CF>::arrival_token arrive_tx(
@@ -573,7 +574,8 @@ typename barrier<thread_scope_block, _CF>::arrival_token arrive_tx(
     _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
 
     barrier<thread_scope_block>::arrival_token __token = {};
-    NV_DISPATCH_TARGET(
+    NV_IF_TARGET(
+        // On architectures pre-sm90, arrive_tx is not supported.
         NV_PROVIDES_SM_90, (
             // We do not check for the statespace of the barrier here. This is
             // on purpose. This allows debugging tools like memcheck/racecheck
@@ -603,20 +605,11 @@ typename barrier<thread_scope_block, _CF>::arrival_token arrive_tx(
                       "r"(static_cast<_CUDA_VSTD::uint32_t>(__arrive_count_update))
                     : "memory");
             }
-        ), NV_ANY_TARGET, (
-            // On architectures pre-SM90 (and in host code), arriving with a
-            // transaction count update is not supported.
-#if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 900
-            static_assert(
-                false,
-                "Insufficient CUDA Compute Capability: cuda::device::arrive_tx requires at least CC 9.0."
-            );
-#endif // __CUDA_MINIMUM_ARCH__
         )
     );
     return __token;
 }
-
+#endif // __CUDA_MINIMUM_ARCH__
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
