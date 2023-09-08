@@ -28,7 +28,7 @@
 
 /**
  * \file
- * Properties of a given CUDA device and the corresponding PTX bundle
+ * Utilities for device-accessible temporary storages.
  */
 
 #pragma once
@@ -38,6 +38,12 @@
 
 
 CUB_NAMESPACE_BEGIN
+
+/**
+ * \addtogroup UtilMgmt
+ * @{
+ */
+
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 /**
@@ -89,5 +95,7 @@ cudaError_t AliasTemporaries(
 }
 
 #endif  // DOXYGEN_SHOULD_SKIP_THIS
+
+/** @} */       // end group UtilMgmt
 
 CUB_NAMESPACE_END
