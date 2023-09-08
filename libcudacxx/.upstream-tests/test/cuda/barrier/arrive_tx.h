@@ -51,7 +51,7 @@ __device__
 void thread(Barrier& b, int arrives_per_thread)
 {
   constexpr int tx_count = 1;
-  auto tok = cuda::device::arrive_tx(b, arrives_per_thread, tx_count);
+  auto tok = cuda::device::barrier_arrive_tx(b, arrives_per_thread, tx_count);
   // Manually increase the transaction count of the barrier.
   mbarrier_complete_tx(b, tx_count);
 

@@ -41,7 +41,7 @@ int main(int, char**){
             __syncthreads();
 
             // Should fail due to CF:
-            auto token = cuda::device::arrive_tx(bar, 1, 0);
+            auto token = cuda::device::barrier_arrive_tx(bar, 1, 0);
     ));
     return 0;
 }

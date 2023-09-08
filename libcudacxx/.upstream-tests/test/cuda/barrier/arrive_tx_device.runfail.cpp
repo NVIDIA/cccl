@@ -33,7 +33,7 @@ int main(int, char**){
             __syncthreads();
 
             // Should fail because the barrier is in device memory.
-            auto token = cuda::device::arrive_tx(*bar_ptr, 1, 0);
+            auto token = cuda::device::barrier_arrive_tx(*bar_ptr, 1, 0);
     ));
     return 0;
 }

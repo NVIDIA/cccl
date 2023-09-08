@@ -40,7 +40,7 @@ int main(int, char**){
             remote_bar = cluster.map_shared_rank(&bar, cluster.block_rank() ^ 1);
 
             // Should fail because the barrier is in device memory.
-            auto token = cuda::device::arrive_tx(*remote_bar, 1, 0);
+            auto token = cuda::device::barrier_arrive_tx(*remote_bar, 1, 0);
     ));
     return 0;
 }

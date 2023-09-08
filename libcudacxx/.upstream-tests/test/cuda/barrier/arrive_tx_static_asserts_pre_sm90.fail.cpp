@@ -24,8 +24,8 @@ int main(int, char**){
             }
             __syncthreads();
 
-            // arrive_tx should fail with a static_assert for SM70 and SM80.
-            auto token = cuda::device::arrive_tx(bar, 1, 0);
+            // barrier_arrive_tx should fail on SM70 and SM80, because it is hidden.
+            auto token = cuda::device::barrier_arrive_tx(bar, 1, 0);
 
 #if defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__
             static_assert(false, "Fail manually for SM90 and up.");

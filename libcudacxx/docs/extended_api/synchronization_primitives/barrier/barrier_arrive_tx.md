@@ -3,14 +3,14 @@ grand_parent: Extended API
 parent: Barriers
 ---
 
-# `cuda::device::arrive_tx`
+# `cuda::device::barrier_arrive_tx`
 
 Defined in header `<cuda/barrier>`:
 
 ```cuda
 __device__
 cuda::barrier<cuda::thread_scope_block>::arrival_token
-cuda::device::arrive_tx(
+cuda::device::barrier_arrive_tx(
   cuda::barrier<cuda::thread_scope_block>& bar,
   ptrdiff_t arrive_count_update,
   ptrdiff_t transaction_count_update);
@@ -42,13 +42,13 @@ transaction count.
 This function can only be used under CUDA Compute Capability 9.0 (Hopper) or
 higher.
 
-To check if `cuda::device::arive_tx` is available, use the
+To check if `cuda::device::barrier_arrive_tx` is available, use the
 `__cccl_lib_local_barrier_arrive_tx` feature flag, as shown in the example code
 below.
 
 ## Return Value
 
-`cuda::device::arrive_tx` returns the constructed `arrival_token` object.
+`cuda::device::barrier_arrive_tx` returns the constructed `arrival_token` object.
 
 ## Example
 
@@ -67,13 +67,13 @@ __global__ void example_kernel() {
   }
   __syncthreads();
 
-  auto token = cuda::device::arrive_tx(bar, 1, 0);
+  auto token = cuda::device::barrier_arrive_tx(bar, 1, 0);
 
   bar.wait(cuda::std::move(token));
 }
 ```
 
-[See it on Godbolt](https://godbolt.org/z/nz47c14vz){: .btn }
+[See it on Godbolt](https://godbolt.org/z/1vxcGrT8j){: .btn }
 
 
 [`cuda::thread_scope`]: ./memory_model.md

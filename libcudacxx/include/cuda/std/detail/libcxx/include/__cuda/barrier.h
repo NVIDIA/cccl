@@ -561,14 +561,14 @@ inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> 
 
 template <typename _CF = _CUDA_VSTD::__empty_completion>
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
-typename barrier<thread_scope_block, _CF>::arrival_token arrive_tx(
+typename barrier<thread_scope_block, _CF>::arrival_token barrier_arrive_tx(
     barrier<thread_scope_block, _CF> & __b,
     _CUDA_VSTD::ptrdiff_t __arrive_count_update,
     _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
 
     // For ABI reasons, we add the _CF template parameter, but do not yet
     // support using it.
-    static_assert(std::is_same<_CF, _CUDA_VSTD::__empty_completion>::value, "arrive_tx does not support custom completion functions.");
+    static_assert(std::is_same<_CF, _CUDA_VSTD::__empty_completion>::value, "barrier_arrive_tx does not support custom completion functions.");
 
     _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
     _LIBCUDACXX_DEBUG_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");

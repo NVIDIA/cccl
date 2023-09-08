@@ -22,8 +22,8 @@ It has the same interface and semantics as [`cuda::std::barrier`], with the
 ## Barrier Operations
 
 | [`cuda::barrier::init`]                 | Initialize a `cuda::barrier`. `(friend function)`                       |
-| [`cuda::device::barrier_native_handle`] | Get the native handle to a `cuda::barrier`. `(function template)`       |
-| [`cuda::device::arrive_tx`]             | Arrive on a `cuda::barrier` with transaction count update. `(function)` |
+| [`cuda::device::barrier_native_handle`] | Get the native handle to a `cuda::barrier`. `(function)`       |
+| [`cuda::device::barrier_arrive_tx`]     | Arrive on a `cuda::barrier` with transaction count update. `(function template)` |
 
 ## NVCC `__shared__` Initialization Warnings
 
@@ -99,7 +99,7 @@ __global__ void example_kernel() {
 
 [`cuda::barrier::init`]: ./barrier/init.md
 [`cuda::device::barrier_native_handle`]: ./barrier/barrier_native_handle.md
-[`cuda::device::arrive_tx`]: ./barrier/arrive_tx.md
+[`cuda::device::barrier_arrive_tx`]: ./barrier/barrier_arrive_tx.md
 
 [`cuda::std::barrier`]: https://en.cppreference.com/w/cpp/thread/barrier
 
