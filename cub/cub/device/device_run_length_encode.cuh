@@ -224,7 +224,9 @@ struct DeviceRunLengthEncode
 
     using policy_t = detail::device_run_length_encode_policy_hub<accum_t, key_t>;
 
-    if (num_items < 1) {
+    if (num_items < 1)
+    {
+      *d_num_runs_out = 0;
       return cudaSuccess;
     }
 
@@ -402,7 +404,9 @@ struct DeviceRunLengthEncode
     using OffsetT    = int;      // Signed integer type for global offsets
     using EqualityOp = Equality; // Default == operator
 
-    if (num_items < 1) {
+    if (num_items <= 1)
+    {
+      *d_num_runs_out = 0;
       return cudaSuccess;
     }
 

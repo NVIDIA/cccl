@@ -60,16 +60,17 @@ using types = c2h::type_list<std::uint32_t,
 CUB_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_length_encode]")
 {
   const int num_items = 0;
-  thrust::device_vector<float> in(num_items);
-  thrust::device_vector<int> out_unique(num_items);
-  thrust::device_vector<int> out_counts(num_items);
-  thrust::device_vector<int> out_num_runs(num_items);
+  thrust::device_vector<int> in(num_items);
+  thrust::device_vector<int> out_num_runs(1, 42);
 
+  // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
   run_length_encode(in.begin(),
-                    out_unique.begin(),
-                    out_counts.begin(),
+                    static_cast<int*>(nullptr),
+                    static_cast<int*>(nullptr),
                     out_num_runs.begin(),
                     num_items);
+
+  REQUIRE(out_num_runs.front() == num_items);
 }
 
 CUB_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]")

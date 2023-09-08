@@ -31,6 +31,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/logical.h>
 #include <thrust/sequence.h>
 
 #include <algorithm>
@@ -60,24 +61,25 @@ using types = c2h::type_list<std::uint32_t,
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]")
 {
   const int num_items = 0;
-  thrust::device_vector<float> in(num_items);
+  thrust::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
-  run_length_encode(in.begin(),
+  run_length_encode(static_cast<int*>(nullptr),
                     static_cast<int*>(nullptr),
                     static_cast<int*>(nullptr),
-                    static_cast<int*>(nullptr),
+                    out_num_runs.begin(),
                     num_items);
+
+  REQUIRE(out_num_runs.front() == 0);
 }
 
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[device][run_length_encode]")
 {
   const int num_items = 1;
-  thrust::device_vector<int> in(num_items, 42);
-  thrust::device_vector<int> out_num_runs(1, -1);
+  thrust::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
-  run_length_encode(in.begin(),
+  run_length_encode(static_cast<int*>(nullptr),
                     static_cast<int*>(nullptr),
                     static_cast<int*>(nullptr),
                     out_num_runs.begin(),
@@ -165,27 +167,38 @@ bool validate_results(const thrust::device_vector<T>&     in,
                       const thrust::device_vector<Index>& out_num_runs,
                       const int num_items)
 {
-  for(cuda::std::size_t run = 0; run < static_cast<cuda::std::size_t>(out_num_runs.front()); ++run) {
-    const cuda::std::size_t first_index = static_cast<cuda::std::size_t>(out_offsets[run]);
-    const cuda::std::size_t final_index = first_index + static_cast<cuda::std::size_t>(out_lengths[run]);
+  const thrust::host_vector<T>&     h_in           = in;
+  const thrust::host_vector<Index>& h_out_offsets  = out_offsets;
+  const thrust::host_vector<Index>& h_out_lengths  = out_lengths;
+  const thrust::host_vector<Index>& h_out_num_runs = out_num_runs;
+
+  const cuda::std::size_t num_runs = static_cast<cuda::std::size_t>(h_out_num_runs.front());
+  for(cuda::std::size_t run = 0; run < num_runs; ++run) {
+    const cuda::std::size_t first_index = static_cast<cuda::std::size_t>(h_out_offsets[run]);
+    const cuda::std::size_t final_index = first_index + static_cast<cuda::std::size_t>(h_out_lengths[run]);
 
     // Ensure we started a new run
-    if (first_index > 0) {
-      if (in[first_index] == in[first_index - 1]) {
+    if (first_index > 0)
+    {
+      if (h_in[first_index] == h_in[first_index - 1])
+      {
         return false;
       }
     }
 
     // Ensure the run is valid
-    for (cuda::std::size_t running_index = first_index + 1; running_index < final_index; ++running_index) {
-      if (!(in[first_index] == in[running_index])) {
-        return false;
-      }
+    const auto first_elem = h_in[first_index];
+    const auto all_equal = [first_elem] (const T& elem) -> bool { return first_elem == elem; };
+    if (!std::all_of(h_in.begin() + first_index + 1, h_in.begin() + final_index, all_equal))
+    {
+      return false;
     }
 
     // Ensure the run is of maximal length
-    if (final_index < static_cast<cuda::std::size_t>(num_items)) {
-      if (in[first_index] == in[final_index]) {
+    if (final_index < static_cast<cuda::std::size_t>(num_items))
+    {
+      if (h_in[first_index] == h_in[final_index])
+      {
         return false;
       }
     }
