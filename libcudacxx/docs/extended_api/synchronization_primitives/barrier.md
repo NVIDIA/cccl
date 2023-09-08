@@ -61,6 +61,43 @@ Programs shall ensure that this transformation would not introduce errors, for
 Under CUDA Compute Capability 6 (Pascal) or prior, an object of type
   `cuda::barrier` or `cuda::std::barrier` may not be used.
 
+## Shared memory barriers with transaction count
+
+Starting with the Hopper architecture (CUDA Compute Capability 9), a
+`cuda::barrier` object located in shared memory supports a new count, called
+[tx-count](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tracking-asynchronous-operations-by-the-mbarrier-object),
+which is used for tracking the completion of asynchronous memory operations or
+transactions. The tx-count tracks the number of asynchronous transactions, in
+units specified by the asynchronous memory operation (typically bytes), that are
+outstanding and yet to be complete.
+
+The tx-count of `cuda::barrier` must be set to the total amount of asynchronous
+memory operations, in units as specified by the asynchronous operations, to be
+tracked by the current phase. This can be achieved with the
+`cuda::device::barrier_arrive_tx` function call. Upon completion of each of the
+asynchronous operations, the tx-count of the `cuda::barrier` will be updated and
+thus progress the `cuda::barrier` towards the completion of the current phase.
+This may complete the current phase.
+
+### Phase Completion of a `cuda::barrier` with tx-count support
+
+The requirements for completion of the current phase are described below. Upon
+completion of the current phase, the phase transitions to the subsequent phase
+as described below.
+
+**Current phase completion requirements**. A `cuda::barrier` with tx-count
+support completes the current phase when all of the following conditions are
+met:
+
+1. The count of the pending arrivals has reached zero.
+2. The tx-count has reached zero.
+
+**Phase transition**. When a `cuda::barrier` with tx-count support completes the
+current phase, the following actions are performed atomically:
+
+1. The `cuda::barrier` object transitions to the next phase.
+2. The pending arrival count is reinitialized to the expected arrival count.
+
 ## Implementation-Defined Behavior
 
 For each [`cuda::thread_scope`] `S` and `CompletionFunction` `F`, the value of
