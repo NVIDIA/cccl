@@ -97,7 +97,7 @@ jobs:
             echo "PR is a draft, setting status to 'In Progress'"
             echo "STATUS_OPTION_ID=$IN_PROGRESS_PROJECT_OPTION_ID" >> $GITHUB_ENV
           fi
-          continue-on-error: true
+        continue-on-error: true
 
       - name: Get PR Project ID
         id: get_pr_id
