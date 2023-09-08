@@ -562,9 +562,9 @@ struct __barrier_arrive_on_dispatcher_t {
 
         _LIBCUDACXX_HANDLE_POINTER_SPACE(__p,
             __memcpy_async_sync_hooks<
-                barrier<_Sco, _CompF>, __tx_api::__no, _Arch,
+                barrier<_Sco, _CompF>, __tx_api::__no, _Arch, __alignment<4>,
                 __space::__shared, __space::__global, __p_space_t::value
-            >::__synchronize(_Arch{}, __b,
+            >::__synchronize(__single_thread_group{}, _Arch{}, __alignment<4>{}, __b, 4,
                 __arch::__is_cuda_provides_sm<_Arch, 80>::value ? async_contract_fulfillment::async : async_contract_fulfillment::none);
         )
     }
@@ -582,27 +582,34 @@ void __barrier_cp_async_arrive_on(barrier<_Sco, _CompF> & __b) {
     __dispatch_architecture<void>(__barrier_arrive_on_dispatcher(__b));
 }
 
-template<thread_scope _Sco, typename _CompF, _CUDA_VSTD::size_t _ProvidedSM, __space _SyncSpace>
+template<thread_scope _Sco, typename _CompF, _CUDA_VSTD::size_t _ProvidedSM, typename _Alignment, __space _SyncSpace>
 struct __memcpy_async_sync_hooks<
-    barrier<_Sco, _CompF>, __tx_api::__no, __arch::__cuda<_ProvidedSM>,
+    barrier<_Sco, _CompF>, __tx_api::__no, __arch::__cuda<_ProvidedSM>, _Alignment,
     __space::__shared, __space::__global, _SyncSpace,
     _CUDA_VSTD::__enable_if_t<_ProvidedSM >= 80>
 > {
+    template<typename _Group, _CUDA_VSTD::size_t _AlignmentV>
     _LIBCUDACXX_DEVICE
-    static async_contract_fulfillment __synchronize(__arch::__cuda<90>, barrier<_Sco, _CompF> & __b, async_contract_fulfillment __acf) {
+    static async_contract_fulfillment __synchronize(
+        _Group && __g, __arch::__cuda<90>, __alignment<_AlignmentV> __a,
+        barrier<_Sco, _CompF> & __b, _CUDA_VSTD::size_t __size, async_contract_fulfillment __acf
+    ) {
         if (_SyncSpace == __space::__cluster && (_Sco == thread_scope_thread || _Sco == thread_scope_block)
             && _CUDA_VSTD::is_same<_CompF, _CUDA_VSTD::__empty_completion>::value
         ) {
             __trap();
         }
-        return __synchronize(__arch::__cuda<80>{}, __b, __acf);
+        return __synchronize(_CUDA_VSTD::forward<_Group>(__g), __arch::__cuda<80>{}, __a, __b, __size, __acf);
     }
 
-    template<thread_scope _Scope = _Sco, typename = _CUDA_VSTD::__enable_if_t<
+    template<typename _Group, thread_scope _Scope = _Sco, typename = _CUDA_VSTD::__enable_if_t<
         (_Scope == thread_scope_thread || _Scope == thread_scope_block) && (_SyncSpace == __space::__shared || _SyncSpace == __space::__cluster)
     >>
     _LIBCUDACXX_DEVICE
-    static async_contract_fulfillment __synchronize(__arch::__cuda<80>, barrier<_Sco> & __b, async_contract_fulfillment __acf) {
+    static async_contract_fulfillment __synchronize(
+        _Group &&, __arch::__cuda<80>, __alignment<4>,
+        barrier<_Sco> & __b, _CUDA_VSTD::size_t, async_contract_fulfillment __acf
+    ) {
         if (__acf == async_contract_fulfillment::async) {
             asm volatile ("cp.async.mbarrier.arrive.shared.b64 [%0];"
                 :: "l"(__cvta_generic_to_shared(&__b))
@@ -611,11 +618,12 @@ struct __memcpy_async_sync_hooks<
         return __acf;
     }
 
-    // This is a template so that it is always a worse match for a call than the more specialized overload above.
-    // This function is never called with more than 3 arguments, so _Empty is always an empty pack.
-    template<typename... _Empty>
+    template<typename _Group>
     _LIBCUDACXX_DEVICE
-    static async_contract_fulfillment __synchronize(__arch::__cuda<80>, barrier<_Sco, _CompF> &, async_contract_fulfillment __acf, _Empty...) {
+    static async_contract_fulfillment __synchronize(
+        _Group &&, __arch::__cuda<80>, __alignment<1>,
+        barrier<_Sco, _CompF> &, _CUDA_VSTD::size_t, async_contract_fulfillment __acf
+    ) {
         if (__acf == async_contract_fulfillment::async) {
             asm volatile ("cp.async.wait_all;" ::: "memory");
         }
@@ -625,9 +633,9 @@ struct __memcpy_async_sync_hooks<
 
 // When specializing above, make sure to exclude the patterns you are specializing for in the condition of the enable_if below.
 // TODO: when only C++20 is supported, rewrite these specializations with concepts.
-template<thread_scope _Scope, typename _CompF, typename _Arch, __space _OutSpace, __space _InSpace, __space _SyncSpace>
+template<thread_scope _Scope, typename _CompF, typename _Arch, typename _Alignment, __space _OutSpace, __space _InSpace, __space _SyncSpace>
 struct __memcpy_async_sync_hooks<
-    barrier<_Scope, _CompF>, __tx_api::__no, _Arch,
+    barrier<_Scope, _CompF>, __tx_api::__no, _Arch, _Alignment,
     _OutSpace, _InSpace, _SyncSpace,
     _CUDA_VSTD::__enable_if_t<
         !__arch::__is_cuda_provides_sm<_Arch, 80>::value
