@@ -46,6 +46,8 @@
 #include <cub/util_macro.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
+// for backward compatibility
+#include <cub/util_temporary_storage.cuh>
 
 #include <nv/target>
 
