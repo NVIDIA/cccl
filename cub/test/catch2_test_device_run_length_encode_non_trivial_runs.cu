@@ -252,3 +252,132 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][
   out_lengths.resize(out_num_runs.front());
   REQUIRE(validate_results(in, out_offsets, out_lengths, out_num_runs, num_items));
 }
+
+// Guard against #293
+template <bool TimeSlicing>
+struct device_rle_policy_hub
+{
+  static constexpr int threads = 96;
+  static constexpr int items = 15;
+
+  struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
+  {
+    using RleSweepPolicyT = cub::AgentRlePolicy<threads,
+                                                items,
+                                                cub::BLOCK_LOAD_DIRECT,
+                                                cub::LOAD_DEFAULT,
+                                                TimeSlicing,
+                                                cub::BLOCK_SCAN_WARP_SCANS>;
+  };
+
+  using MaxPolicy = Policy350;
+};
+
+struct CustomDeviceRunLengthEncode {
+  template <bool TimeSlicing,
+            typename InputIteratorT,
+            typename OffsetsOutputIteratorT,
+            typename LengthsOutputIteratorT,
+            typename NumRunsOutputIteratorT>
+  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  NonTrivialRuns(void *d_temp_storage,
+                 size_t &temp_storage_bytes,
+                 InputIteratorT d_in,
+                 OffsetsOutputIteratorT d_offsets_out,
+                 LengthsOutputIteratorT d_lengths_out,
+                 NumRunsOutputIteratorT d_num_runs_out,
+                 int num_items,
+                 cudaStream_t stream = 0)
+  {
+    using OffsetT    = int;           // Signed integer type for global offsets
+    using EqualityOp = cub::Equality; // Default == operator
+
+    return cub::DeviceRleDispatch<InputIteratorT,
+                                  OffsetsOutputIteratorT,
+                                  LengthsOutputIteratorT,
+                                  NumRunsOutputIteratorT,
+                                  EqualityOp,
+                                  OffsetT,
+                                  device_rle_policy_hub<TimeSlicing>
+                                 >::Dispatch(d_temp_storage,
+                                             temp_storage_bytes,
+                                             d_in,
+                                             d_offsets_out,
+                                             d_lengths_out,
+                                             d_num_runs_out,
+                                             EqualityOp(),
+                                             num_items,
+                                             stream);
+  }
+};
+
+DECLARE_CDP_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<true>, run_length_encode_293_true);
+DECLARE_CDP_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<false>, run_length_encode_293_false);
+
+using bool_types = c2h::type_list<std::true_type,
+                                  std::false_type>;
+
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns does not runs out of memory", "[device][run_length_encode]", bool_types)
+{
+  using type = typename c2h::get<0, TestType>;
+  using policy_hub_t = device_rle_policy_hub<type::value>;
+
+  constexpr int tile_size = policy_hub_t::threads * policy_hub_t::items;
+  constexpr int num_items = 2 * tile_size;
+  constexpr int magic_number = num_items + 1;
+
+  thrust::host_vector<int> h_keys(num_items);
+  thrust::sequence(h_keys.begin(), h_keys.begin() + tile_size);
+
+  int expected_non_trivial_runs = 0;
+  int value            = tile_size;
+  int large_group_size = 3;
+  for (int i = 0; i < tile_size; i++)
+  {
+    int j = 0;
+    for (; j < large_group_size && i < tile_size; ++j, ++i)
+    {
+      h_keys[tile_size + i] = value;
+    }
+    if (j == large_group_size)
+    {
+      ++expected_non_trivial_runs;
+    }
+    ++value;
+
+    if (i < tile_size)
+    {
+      h_keys[tile_size + i] = value;
+    }
+    ++value;
+  }
+
+  // in #293 we were writing before the output arrays. So add a sentinel element in front to check against OOB writes
+  thrust::device_vector<int> in = h_keys;
+  thrust::device_vector<int> out_offsets(num_items + 1, -1);
+  thrust::device_vector<int> out_lengths(num_items + 1, -1);
+  thrust::device_vector<int> out_num_runs(1, -1);
+  out_offsets.front() = magic_number;
+  out_lengths.front() = magic_number;
+
+  if (type::value)
+  {
+    run_length_encode_293_true(in.begin(),
+                               out_offsets.begin() + 1,
+                               out_lengths.begin() + 1,
+                               out_num_runs.begin(),
+                               num_items);
+  }
+  else
+  {
+    run_length_encode_293_false(in.begin(),
+                                out_offsets.begin() + 1,
+                                out_lengths.begin() + 1,
+                                out_num_runs.begin(),
+                                num_items);
+  }
+
+  REQUIRE(out_num_runs.front() == expected_non_trivial_runs);
+  REQUIRE(out_lengths.front()  == magic_number);
+  REQUIRE(out_offsets.front()  == magic_number);
+}
