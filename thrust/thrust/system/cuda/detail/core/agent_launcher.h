@@ -31,8 +31,6 @@
 #include <cub/detail/device_synchronize.cuh>
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#include <cub/util_namespace.cuh>
-
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/system/cuda/detail/core/util.h>
 #include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
@@ -46,7 +44,7 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub {
 namespace core {
-CUB_DETAIL_MAGIC_NS_BEGIN
+
 _LIBCUDACXX_DIAGNOSTIC_PUSH
 _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")
 _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")
@@ -1152,7 +1150,7 @@ _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")
   };
 
 _LIBCUDACXX_DIAGNOSTIC_POP
-CUB_DETAIL_MAGIC_NS_END
+
 } // namespace core
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
