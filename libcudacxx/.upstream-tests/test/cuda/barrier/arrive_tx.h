@@ -36,12 +36,12 @@ void mbarrier_complete_tx(
                 "r"(transaction_count)
               : "memory");
         } else {
-            // When arriving on non-shared barriers, we drop the transaction count
-            // update. The barriers do not keep track of transaction counts.
+          __trap();
         }
     ), NV_ANY_TARGET, (
       // On architectures pre-SM90 (and on host), we drop the transaction count
       // update. The barriers do not keep track of transaction counts.
+      __trap();
     )
   );
 }
