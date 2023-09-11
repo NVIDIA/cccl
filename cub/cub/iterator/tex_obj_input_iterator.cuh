@@ -37,7 +37,6 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_device.cuh>
 
 #include <nv/target>
 
