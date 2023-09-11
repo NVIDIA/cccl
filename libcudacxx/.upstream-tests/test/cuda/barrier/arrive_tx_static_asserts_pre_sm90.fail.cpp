@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 //
 // UNSUPPORTED: libcpp-has-no-threads
+// UNSUPPORTED: nvrtc
 // UNSUPPORTED: pre-sm-70
 
 // <cuda/barrier>
