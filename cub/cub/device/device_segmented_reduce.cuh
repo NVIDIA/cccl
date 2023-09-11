@@ -1211,13 +1211,13 @@ struct DeviceSegmentedReduce
                   OutputIteratorT,
                   BeginOffsetIteratorT,
                   EndOffsetIteratorT>(d_temp_storage,
-                                temp_storage_bytes,
-                                d_in,
-                                d_out,
-                                num_segments,
-                                d_begin_offsets,
-                                d_end_offsets,
-                                stream);
+                                      temp_storage_bytes,
+                                      d_in,
+                                      d_out,
+                                      num_segments,
+                                      d_begin_offsets,
+                                      d_end_offsets,
+                                      stream);
   }
 };
 
