@@ -203,7 +203,7 @@
  * This macro is defined by CUB and may not be overridden.
  */
 #define CUB_NAMESPACE_END                                                   \
-  _LIBCUDACXX_DIAGNOSTIC_PUSH                                               \
+  _LIBCUDACXX_DIAGNOSTIC_POP                                                \
   CUB_DETAIL_MAGIC_NS_END                                                   \
   } /* end namespace cub */                                                 \
   CUB_NS_POSTFIX
