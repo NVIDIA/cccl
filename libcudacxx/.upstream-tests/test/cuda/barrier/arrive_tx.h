@@ -58,16 +58,6 @@ void thread(Barrier& b, int arrives_per_thread)
   b.wait(cuda::std::move(tok));
 }
 
-struct CF {
-  __host__ __device__ CF() {}
-
-  __device__ void operator()() const {
-    // do nothing
-  }
-
-  int x = 1;
-};
-
 __device__
 void test()
 {
