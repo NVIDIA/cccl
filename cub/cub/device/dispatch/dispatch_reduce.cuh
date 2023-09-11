@@ -46,6 +46,7 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 

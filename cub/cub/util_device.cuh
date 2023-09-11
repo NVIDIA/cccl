@@ -28,7 +28,11 @@
 
 /**
  * \file
- * Properties of a given CUDA device and the corresponding PTX bundle
+ * Properties of a given CUDA device and the corresponding PTX bundle.
+ *
+ * \note
+ * This file contains __host__ only functions and utilities, and should not be
+ * included in code paths that could be online-compiled (ex: using NVRTC).
  */
 
 #pragma once
@@ -42,6 +46,8 @@
 #include <cub/util_macro.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
+// for backward compatibility
+#include <cub/util_temporary_storage.cuh>
 
 #include <nv/target>
 
@@ -58,55 +64,6 @@ CUB_NAMESPACE_BEGIN
  */
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-
-
-/**
- * \brief Alias temporaries to externally-allocated device storage (or simply return the amount of storage needed).
- */
-template <int ALLOCATIONS>
-__host__ __device__ __forceinline__
-cudaError_t AliasTemporaries(
-    void    *d_temp_storage,                    ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-    size_t& temp_storage_bytes,                 ///< [in,out] Size in bytes of \t d_temp_storage allocation
-    void*   (&allocations)[ALLOCATIONS],        ///< [in,out] Pointers to device allocations needed
-    size_t  (&allocation_sizes)[ALLOCATIONS])   ///< [in] Sizes in bytes of device allocations needed
-{
-    const int ALIGN_BYTES   = 256;
-    const int ALIGN_MASK    = ~(ALIGN_BYTES - 1);
-
-    // Compute exclusive prefix sum over allocation requests
-    size_t allocation_offsets[ALLOCATIONS];
-    size_t bytes_needed = 0;
-    for (int i = 0; i < ALLOCATIONS; ++i)
-    {
-        size_t allocation_bytes = (allocation_sizes[i] + ALIGN_BYTES - 1) & ALIGN_MASK;
-        allocation_offsets[i] = bytes_needed;
-        bytes_needed += allocation_bytes;
-    }
-    bytes_needed += ALIGN_BYTES - 1;
-
-    // Check if the caller is simply requesting the size of the storage allocation
-    if (!d_temp_storage)
-    {
-        temp_storage_bytes = bytes_needed;
-        return cudaSuccess;
-    }
-
-    // Check if enough storage provided
-    if (temp_storage_bytes < bytes_needed)
-    {
-        return CubDebug(cudaErrorInvalidValue);
-    }
-
-    // Alias
-    d_temp_storage = (void *) ((size_t(d_temp_storage) + ALIGN_BYTES - 1) & ALIGN_MASK);
-    for (int i = 0; i < ALLOCATIONS; ++i)
-    {
-        allocations[i] = static_cast<char*>(d_temp_storage) + allocation_offsets[i];
-    }
-
-    return cudaSuccess;
-}
 
 
 /**

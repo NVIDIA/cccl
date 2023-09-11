@@ -34,6 +34,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/config.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN

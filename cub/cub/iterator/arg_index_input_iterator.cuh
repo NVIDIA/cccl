@@ -39,7 +39,6 @@
 #include "../config.cuh"
 #include "../thread/thread_load.cuh"
 #include "../thread/thread_store.cuh"
-#include "../util_device.cuh"
 
 #include <thrust/version.h>
 
