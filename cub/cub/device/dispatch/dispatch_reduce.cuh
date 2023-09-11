@@ -363,7 +363,7 @@ __global__ void DeviceSegmentedReduceKernel(
     OutputIteratorT d_out,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    OffsetT /*num_segments*/,
+    int /*num_segments*/,
     ReductionOpT reduction_op,
     InitT init)
 {
@@ -1078,7 +1078,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
   OutputIteratorT d_out;
 
   /// The number of segments that comprise the sorting data
-  OffsetT num_segments;
+  int num_segments;
 
   /// Random-access input iterator to the sequence of beginning offsets of
   /// length `num_segments`, such that `d_begin_offsets[i]` is the first
@@ -1114,7 +1114,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
                           size_t &temp_storage_bytes,
                           InputIteratorT d_in,
                           OutputIteratorT d_out,
-                          OffsetT num_segments,
+                          int num_segments,
                           BeginOffsetIteratorT d_begin_offsets,
                           EndOffsetIteratorT d_end_offsets,
                           ReductionOpT reduction_op,
@@ -1140,7 +1140,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
                           size_t &temp_storage_bytes,
                           InputIteratorT d_in,
                           OutputIteratorT d_out,
-                          OffsetT num_segments,
+                          int num_segments,
                           BeginOffsetIteratorT d_begin_offsets,
                           EndOffsetIteratorT d_end_offsets,
                           ReductionOpT reduction_op,
@@ -1320,7 +1320,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
            size_t &temp_storage_bytes,
            InputIteratorT d_in,
            OutputIteratorT d_out,
-           OffsetT num_segments,
+           int num_segments,
            BeginOffsetIteratorT d_begin_offsets,
            EndOffsetIteratorT d_end_offsets,
            ReductionOpT reduction_op,
@@ -1374,7 +1374,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
            size_t &temp_storage_bytes,
            InputIteratorT d_in,
            OutputIteratorT d_out,
-           OffsetT num_segments,
+           int num_segments,
            BeginOffsetIteratorT d_begin_offsets,
            EndOffsetIteratorT d_end_offsets,
            ReductionOpT reduction_op,
