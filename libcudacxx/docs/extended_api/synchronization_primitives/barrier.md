@@ -63,13 +63,16 @@ Under CUDA Compute Capability 6 (Pascal) or prior, an object of type
 
 ## Shared memory barriers with transaction count
 
-Starting with the Hopper architecture (CUDA Compute Capability 9), a
-`cuda::barrier` object located in shared memory supports a new count, called
+In addition to the arrival count, a `cuda::barrier<thread_scope_block>` object
+located in shared memory supports a
 [tx-count](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tracking-asynchronous-operations-by-the-mbarrier-object),
-which is used for tracking the completion of asynchronous memory operations or
-transactions. The tx-count tracks the number of asynchronous transactions, in
+which is used for tracking the completion of some asynchronous memory operations or
+transactions.
+The tx-count tracks the number of asynchronous transactions, in
 units specified by the asynchronous memory operation (typically bytes), that are
 outstanding and yet to be complete.
+This capability is exposed, starting with the Hopper architecture (CUDA Compute
+Capability 9).
 
 The tx-count of `cuda::barrier` must be set to the total amount of asynchronous
 memory operations, in units as specified by the asynchronous operations, to be

@@ -22,7 +22,7 @@ transaction count.
 ## Preconditions
 
 * `__isShared(&bar) == true`
-* `1 <= arrive_count_update`
+* `1 <= arrive_count_update && transaction_count_update <= (1 << 20) - 1`
 * `0 <= transaction_count_update && transaction_count_update <= (1 << 20) - 1`
 
 
