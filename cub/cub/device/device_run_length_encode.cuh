@@ -224,7 +224,6 @@ struct DeviceRunLengthEncode
 
     using policy_t = detail::device_run_length_encode_policy_hub<accum_t, key_t>;
 
-
     return DispatchReduceByKey<InputIteratorT,
                                UniqueOutputIteratorT,
                                lengths_input_iterator_t,
