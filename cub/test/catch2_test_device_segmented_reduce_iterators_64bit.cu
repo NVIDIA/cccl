@@ -70,11 +70,6 @@ struct cmult {
     T mult;
 };
 
-template <typename T1,typename T2>
-struct assert_same_type {
-	static_assert(std::is_same<T1,T2>::value,"T1 must match T2");
-};
-
 CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit offsets",
          "[reduce][device]",
          iterator_type_list)
