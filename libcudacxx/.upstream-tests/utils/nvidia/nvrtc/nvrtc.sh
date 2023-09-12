@@ -128,6 +128,9 @@ trap finish EXIT
 thread_count=$(cat "${input}" | egrep 'cuda_thread_count = [0-9]+' | egrep -o '[0-9]+' || echo 1)
 shmem_size=$(cat "${input}" | egrep 'cuda_block_shmem_size = [0-9]+' | egrep -o '[0-9]+' || echo 0)
 
+# grep through test to see if running the NVRTC kernel is disabled.
+do_run_kernel=$(cat "${input}" | grep -q NVRTC_SKIP_KERNEL_RUN && echo "false" || echo "true")
+
 if [[ "${#gpu_archs[@]}" -eq 0 ]]
 then
     arch=""
@@ -142,6 +145,7 @@ else
     arch="compute_$(printf "%s\n" "${gpu_archs[@]}" | awk -F_ '{ print $2 }' | sort -un | head -n1)"
 fi
 
+echo "static const bool nvrtc_do_run_kernel = ${do_run_kernel};" >> ${tempfile}
 cat "${nvrtcdir}/head.cu.in" >> "${tempfile}"
 cat "${input}" >> "${tempfile}"
 cat "${nvrtcdir}/middle.cu.in" >> "${tempfile}"
@@ -158,8 +162,8 @@ then
 fi
 echo '        // END SCRIPT GENERATED OPTIONS' >> "${tempfile}"
 cat "${nvrtcdir}/tail.cu.in" >> "${tempfile}"
-echo '        '"${thread_count}, 1, 1," >> "${tempfile}"
-echo '        '"${shmem_size}," >> "${tempfile}"
+echo '            '"${thread_count}, 1, 1," >> "${tempfile}"
+echo '            '"${shmem_size}," >> "${tempfile}"
 cat "${nvrtcdir}/post_tail.cu.in" >> "${tempfile}"
 
 cat "${tempfile}" > ${logdir}/generated_file
