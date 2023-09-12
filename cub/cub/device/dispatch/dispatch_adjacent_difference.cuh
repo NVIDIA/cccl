@@ -221,10 +221,10 @@ struct DispatchAdjacentDifference : public SelectedPolicy
       void *allocations[1]            = {nullptr};
       std::size_t allocation_sizes[1] = {MayAlias * first_tile_previous_size};
 
-      if (CubDebug(error = AliasTemporaries(d_temp_storage,
-                                            temp_storage_bytes,
-                                            allocations,
-                                            allocation_sizes)))
+      error = CubDebug(
+        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -278,15 +278,16 @@ struct DispatchAdjacentDifference : public SelectedPolicy
                 num_tiles,
                 tile_size);
 
-        error = detail::DebugSyncStream(stream);
+        error = CubDebug(detail::DebugSyncStream(stream));
 
-        if (CubDebug(error))
+        if (cudaSuccess != error)
         {
           break;
         }
 
         // Check for failure to launch
-        if (CubDebug(error = cudaPeekAtLastError()))
+        error = CubDebug(cudaPeekAtLastError());
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -319,15 +320,16 @@ struct DispatchAdjacentDifference : public SelectedPolicy
               difference_op,
               num_items);
 
-      error = detail::DebugSyncStream(stream);
+      error = CubDebug(detail::DebugSyncStream(stream));
       
-      if (CubDebug(error))
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -352,7 +354,8 @@ struct DispatchAdjacentDifference : public SelectedPolicy
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -367,7 +370,8 @@ struct DispatchAdjacentDifference : public SelectedPolicy
                                           stream);
 
       // Dispatch to chained policy
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }
