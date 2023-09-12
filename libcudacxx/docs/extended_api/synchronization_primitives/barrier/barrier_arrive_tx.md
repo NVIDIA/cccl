@@ -34,8 +34,6 @@ transaction count.
   count by `transaction_count_update`.
 * This function executes atomically. The call to this function strongly
   happens-before the start of the phase completion step for the current phase.
-* The behavior is undefined if `arrive_count_update` is less than or equal to 0
-  or greater than the expected count for the current barrier phase.
 
 ## Notes
 
