@@ -224,21 +224,19 @@ CUtensorMap map_encode(T *tensor_ptr, std::initializer_list<int> gmem_dims, std:
     }
     // The stride is the number of bytes to traverse from the first element of one row to the next.
     // It must be a multiple of 16.
-    uint64_t stride[rank - 1]; // = {GMEM_WIDTH * sizeof(int)};
+    uint64_t stride[rank - 1];
     int base_stride = sizeof(T);
     for (int i = 0; i < rank - 1; ++i) {
         base_stride *= gmem_dims.begin()[i];
         stride[i] = base_stride;
     }
     // The box_size is the size of the shared memory buffer that is used as the
-    // destination of a TMA transfer.
-    uint32_t box_size[rank]; // = {SMEM_WIDTH, SMEM_HEIGHT};
-    for (int i = 0; i < rank; ++i) {
-        box_size[i] = smem_dims.begin()[i];
-    }
+    // destination of a TMA transfer. Casting from int -> uint32_t.
+    const uint32_t *box_size = reinterpret_cast<const uint32_t *>(smem_dims.begin());
+
     // The distance between elements in units of sizeof(element). A stride of 2
     // can be used to load only the real component of a complex-valued tensor, for instance.
-    uint32_t elem_stride[rank]; // = {1, 1};
+    uint32_t elem_stride[rank]; // = {1, .., 1};
     for (int i = 0; i < rank; ++i) {
         elem_stride[i] = 1;
     }
