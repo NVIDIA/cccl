@@ -17,7 +17,7 @@
 #pragma once
 
 #include <cub/util_namespace.cuh>
-#include <cub/util_device.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 
 CUB_NAMESPACE_BEGIN

@@ -106,4 +106,5 @@
 #include "util_device.cuh"
 #include "util_macro.cuh"
 #include "util_ptx.cuh"
+#include "util_temporary_storage.cuh"
 #include "util_type.cuh"

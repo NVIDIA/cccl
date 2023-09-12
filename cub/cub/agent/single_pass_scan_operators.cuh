@@ -41,8 +41,8 @@
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
-#include <cub/util_device.cuh>
 #include <cub/warp/warp_reduce.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 #include <nv/target>
 

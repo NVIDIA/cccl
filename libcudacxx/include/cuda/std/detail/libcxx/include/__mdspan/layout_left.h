@@ -50,6 +50,7 @@
 
 #include "../__assert"
 #include "../__mdspan/extents.h"
+#include "../__mdspan/layout_stride.h"
 #include "../__mdspan/macros.h"
 #include "../__type_traits/is_constructible.h"
 #include "../__type_traits/is_convertible.h"
