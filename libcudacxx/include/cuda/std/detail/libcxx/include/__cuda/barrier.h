@@ -584,25 +584,25 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
             // us in release builds. In debug builds, the error would be caught
             // by the asserts at the top of this function.
 
-            auto __bh = barrier_native_handle(__b);
+            auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
             if (__arrive_count_update == 1) {
                 asm (
                     "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
                     : "=l"(__token)
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bh))),
+                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
                       "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
                     : "memory");
             } else {
                 asm (
                     "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
                     :
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bh))),
+                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
                       "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
                     : "memory");
                 asm (
                     "mbarrier.arrive.release.cta.shared::cta.b64 %0, [%1], %2;"
                     : "=l"(__token)
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bh))),
+                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
                       "r"(static_cast<_CUDA_VSTD::uint32_t>(__arrive_count_update))
                     : "memory");
             }
