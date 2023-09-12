@@ -265,6 +265,21 @@ CUtensorMap map_encode(T *tensor_ptr, std::initializer_list<int> gmem_dims, std:
 
     return tensor_map;
 }
+
+template <typename T>
+void init_tensor_map(const T& gmem_tensor_symbol, std::initializer_list<int> gmem_dims, std::initializer_list<int> smem_dims) {
+    // Get pointer to gmem_tensor to create tensor map.
+    int * tensor_ptr = nullptr;
+    auto code = cudaGetSymbolAddress((void**)&tensor_ptr, gmem_tensor_symbol);
+    assert(code == cudaSuccess && "Could not get symbol address.");
+
+    // Create tensor map
+    CUtensorMap local_tensor_map = map_encode(tensor_ptr, gmem_dims, smem_dims);
+
+    // Copy it to device
+    code = cudaMemcpyToSymbol(global_fake_tensor_map, &local_tensor_map, sizeof(CUtensorMap));
+    assert(code == cudaSuccess && "Could not copy symbol to device.");
+}
 #endif  // ! TEST_COMPILER_NVRTC
 
 #endif // TEST_CP_ASYNC_BULK_TENSOR_GENERIC_H_

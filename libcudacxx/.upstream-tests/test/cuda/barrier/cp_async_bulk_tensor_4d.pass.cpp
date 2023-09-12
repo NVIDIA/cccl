@@ -49,18 +49,7 @@ int main(int, char**)
         NV_IS_HOST, (
             //Required by concurrent_agents_launch to know how many we're launching
             cuda_thread_count = 512;
-
-            // Get pointer to gmem_tensor to create tensor map.
-            int * tensor_ptr = nullptr;
-            auto code = cudaGetSymbolAddress((void**)&tensor_ptr, gmem_tensor);
-            assert(code == cudaSuccess && "Could not get symbol address.");
-
-            // Create tensor map
-            CUtensorMap local_tensor_map = map_encode(tensor_ptr, GMEM_DIMS, SMEM_DIMS);
-
-            // Copy it to device
-            code = cudaMemcpyToSymbol(global_fake_tensor_map, &local_tensor_map, sizeof(CUtensorMap));
-            assert(code == cudaSuccess && "Could not copy symbol to device.");
+            init_tensor_map(gmem_tensor, GMEM_DIMS, SMEM_DIMS);
         ),
         NV_IS_DEVICE, (
             for (auto smem_coord : TEST_SMEM_COORDS) {
