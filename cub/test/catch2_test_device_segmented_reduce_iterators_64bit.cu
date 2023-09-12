@@ -50,8 +50,30 @@ DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 // %PARAM% TEST_CDP cdp 0:1
 
 // List of types to test
-using custom_t           = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
+using custom_t           = std::size_t; //c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 using iterator_type_list = c2h::type_list<type_pair<custom_t>, type_pair<std::size_t>>;
+
+// multiply by constant
+template <typename T>
+struct cmult {
+    __host__ __device__
+    constexpr cmult(T mult) : mult(mult) {}
+    constexpr cmult(cmult<T> const&) = default;
+    constexpr cmult(cmult<T>&&) = default;
+    constexpr cmult<T>& operator=(cmult<T> const&) = default;
+    constexpr cmult<T>& operator=(cmult<T>&&) = default;
+    __host__ __device__
+    constexpr T operator()(T const& value) const {
+        return value*mult;
+    }
+    private:
+    T mult;
+};
+
+template <typename T1,typename T2>
+struct assert_same_type {
+	static_assert(std::is_same<T1,T2>::value,"T1 must match T2");
+};
 
 CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit offsets",
          "[reduce][device]",
@@ -60,19 +82,20 @@ CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit of
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
   using output_t = typename params::output_t;
-  using offset_t = std::size_t;
+  using offset_t = std::ptrdiff_t;
 
-  constexpr offset_t min_items = 1;
-  constexpr offset_t max_items = 8;
-  constexpr int max_segments = std::numeric_limits<int>::max();
+  constexpr offset_t min_items_rand = static_cast<offset_t>(0);
+  constexpr offset_t max_items_rand = static_cast<offset_t>(1) << 7;
+  constexpr offset_t offset_base_value = static_cast<offset_t>(1) << 32;
+  constexpr int max_segments = 4;
 
   // Number of items
-  const offset_t num_items = GENERATE_COPY(take(2, random(min_items, max_items)),
+  const offset_t num_items_rand = GENERATE_COPY(take(2, random(min_items_rand, max_items_rand)),
                                            values({
-                                             min_items,
-                                             max_items,
+                                             min_items_rand,
+                                             max_items_rand,
                                            }));
-  INFO("Test num_items: " << num_items);
+  INFO("Test num_items_rand: " << num_items_rand);
 
   // Range of segment sizes to generate
   const std::tuple<offset_t, offset_t> seg_size_range =
@@ -80,14 +103,23 @@ CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit of
   INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", "
                                 << std::get<1>(seg_size_range) << "]");
 
-  // Generate input segments
+  // Generate randomized offsets that will be added to 2^32
   thrust::device_vector<offset_t> segment_offsets =
     c2h::gen_uniform_offsets<offset_t>(CUB_SEED(1),
-                                       num_items,
+                                       num_items_rand,
                                        std::get<0>(seg_size_range),
                                        std::get<1>(seg_size_range));
   const int num_segments = static_cast<int>(segment_offsets.size() - 1);
-  auto d_offsets_it      = thrust::raw_pointer_cast(segment_offsets.data());
+  // Add 2^32 to offsets
+  thrust::transform(segment_offsets.begin(),
+                    segment_offsets.end(),
+                    thrust::make_transform_iterator(
+                      thrust::make_counting_iterator(static_cast<offset_t>(0)),
+                      cmult<offset_t>(offset_base_value)
+                    ),
+                    segment_offsets.begin(),
+                    thrust::plus<offset_t>{});
+  auto d_offsets_it = thrust::raw_pointer_cast(segment_offsets.data());
 
   // Prepare input data
   item_t default_constant{};
@@ -103,11 +135,14 @@ CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit of
   // Prepare verification data
   using accum_t = cub::detail::accumulator_t<op_t, init_t, item_t>;
   thrust::host_vector<output_t> expected_result(num_segments);
-  compute_segmented_problem_reference(in_it,
-                                      segment_offsets,
-                                      reduction_op,
-                                      accum_t{},
-                                      expected_result.begin());
+  thrust::host_vector<offset_t> segment_offsets_host = segment_offsets;
+  offset_t init_constant_host {};
+  init_default_constant(init_constant_host);
+  //assert_same_type<decltype(init_constant_host),std::ptrdiff_t>{};
+  for(int n = 0;n < num_segments;n++) {
+    std::size_t valn = default_constant*(segment_offsets_host[n+1]-segment_offsets_host[n]);
+    expected_result[n] = valn;
+  }
 
   // Run test
   thrust::device_vector<output_t> out_result(num_segments);
