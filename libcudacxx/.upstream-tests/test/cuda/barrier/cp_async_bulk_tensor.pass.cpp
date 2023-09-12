@@ -82,8 +82,8 @@ __device__ void test(int base_i, int base_j)
     // Check smem
     for (int i = 0; i < SMEM_HEIGHT; ++i) {
         for (int j = 0; j < SMEM_HEIGHT; ++j) {
-            int gmem_lin_idx = (base_i + i) * GMEM_WIDTH + base_j + j;
-            int smem_lin_idx = i * SMEM_WIDTH + j;
+            const int gmem_lin_idx = (base_i + i) * GMEM_WIDTH + base_j + j;
+            const int smem_lin_idx = i * SMEM_WIDTH + j;
 
             assert(smem_buffer[smem_lin_idx] == gmem_lin_idx);
         }
