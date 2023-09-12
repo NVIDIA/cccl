@@ -382,7 +382,11 @@ private:
     static _LIBCUDACXX_INLINE_VISIBILITY constexpr
     uint64_t __init(ptrdiff_t __count) noexcept
     {
+#if _LIBCUDACXX_STD_VER > 11
+        // This debug assert is not supported in C++11 due to resulting in a
+        // multi-statement constexpr function.
         _LIBCUDACXX_DEBUG_ASSERT(__count >= 0, "Count must be non-negative.");
+#endif // _LIBCUDACXX_STD_VER > 11
         return (((1u << 31) - __count) << 32)
               | ((1u << 31) - __count);
     }
