@@ -382,9 +382,7 @@ private:
     static _LIBCUDACXX_INLINE_VISIBILITY constexpr
     uint64_t __init(ptrdiff_t __count) noexcept
     {
-        // We would like to assert that __count >= 0 in debug mode, but this
-        // fails to compile due to constexpr.
-
+        _LIBCUDACXX_DEBUG_ASSERT(__count >= 0, "Count must be non-negative.");
         return (((1u << 31) - __count) << 32)
               | ((1u << 31) - __count);
     }
