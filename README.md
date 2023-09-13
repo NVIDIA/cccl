@@ -4,9 +4,9 @@ Welcome to the CUDA C++ Core Libraries (CCCL) where our mission is to make CUDA 
 
 This repository unifies three essential CUDA C++ libraries into a single, convenient repository: 
 
-- [Thrust](thrust) (former [repo](https://github.com/nvidia/thrust))
-- [CUB](cub) (former [repo](https://github.com/nvidia/cub))
-- [libcudacxx](libcudacxx) (former [repo](https://github.com/nvidia/libcudacxx))
+- [Thrust](thrust) ([former repo](https://github.com/nvidia/thrust))
+- [CUB](cub) ([former repo](https://github.com/nvidia/cub))
+- [libcudacxx](libcudacxx) ([former repo](https://github.com/nvidia/libcudacxx))
 
 The goal of CCCL is to provide CUDA C++ developers with building blocks that make it easier to write safe and efficient code. 
 Bringing these libraries together streamlines your development process and broadens your ability to leverage the power of CUDA C++.
@@ -23,7 +23,7 @@ Naturally, there was a lot of overlap among the three projects, and it became cl
 
 - **libcudacxx** is the CUDA C++ Standard Library. It provides an implementation of the C++ Standard Library that works in both host and device code. Additionally, it provides abstractions for CUDA-specific hardware features like synchronization primitives, cache control, atomics, and more. 
 
-The main goal of CCCL is to fill a similar role that the Standard C++ Library fills for Standard C++ – provide general-purpose, speed-of-light tools to CUDA C++ developers allowing them to focus on solving the problems that matter.
+The main goal of CCCL is to fill a similar role that the Standard C++ Library fills for Standard C++: provide general-purpose, speed-of-light tools to CUDA C++ developers allowing them to focus on solving the problems that matter.
 Unifying these projects is the first step towards realizing that goal. 
 
 ## Example
@@ -44,11 +44,11 @@ It then shows how the same reduction can be done using Thrust's `reduce` algorit
 
 constexpr int block_size = 256;
 
-__global__ void reduce(int const* data, int* result, std::size_t N) {
+__global__ void reduce(int const* data, int* result, int N) {
   using BlockReduce = cub::BlockReduce<int, block_size>;
   __shared__ typename BlockReduce::TempStorage temp_storage;
 
-  int index = threadIdx.x + blockIdx.x * blockDim.x;
+  int const index = threadIdx.x + blockIdx.x * blockDim.x;
   int sum = 0;
   if (index < N) {
     sum += data[index];
@@ -64,7 +64,7 @@ __global__ void reduce(int const* data, int* result, std::size_t N) {
 int main() {
 
   // Allocate and initialize input data
-  std::size_t N = 1000;
+  int const N = 1000;
   thrust::device_vector<int> data(N);
   thrust::fill(data.begin(), data.end(), 1);
 
@@ -72,19 +72,19 @@ int main() {
   thrust::device_vector<int> kernel_result(1);
 
   // Compute the sum reduction of `data` using a custom kernel
-  int num_blocks = (N + block_size - 1) / block_size;
+  int const num_blocks = (N + block_size - 1) / block_size;
   reduce<<<num_blocks, block_size>>>(thrust::raw_pointer_cast(data.data()),
                                      thrust::raw_pointer_cast(kernel_result.data()),
                                      N);
 
-  auto err = cudaDeviceSynchronize();
+  auto const err = cudaDeviceSynchronize();
   if (err != cudaSuccess) {
     std::cout << "Error: " << cudaGetErrorString(err) << std::endl;
     return -1;
   }
 
   // Compute the same sum reduction using Thrust
-  int thrust_result = thrust::reduce(thrust::device, data.begin(), data.end(), 0);
+  int const thrust_result = thrust::reduce(thrust::device, data.begin(), data.end(), 0);
 
   // Ensure the two solutions are identical
   std::printf("Custom kernel sum: %d\n", kernel_result[0]);
