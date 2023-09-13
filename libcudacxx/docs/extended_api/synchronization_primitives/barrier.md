@@ -17,14 +17,15 @@ class cuda::barrier;
 The class template `cuda::barrier` is an extended form of [`cuda::std::barrier`]
   that takes an additional [`cuda::thread_scope`] argument.
 If `!(scope == thread_block_scope && __isShared(this))`, then the semantics are
-the same as [`cuda::std::barrier`], with the following additional operations:
+the same as [`cuda::std::barrier`]; otherwise, see below. 
+The `cuda::barrier` class templates extends `cuda::std::barrier` with the following additional operations:
 
 | [`cuda::barrier::init`]                 | Initialize a `cuda::barrier`. `(friend function)`                       |
 | [`cuda::device::barrier_native_handle`] | Get the native handle to a `cuda::barrier`. `(function)`                |
-| [`cuda::device::barrier_arrive_tx`]     | Arrive on a `cuda::barrier` with transaction count update. `(function)` |
+| [`cuda::device::barrier_arrive_tx`]     | Arrive on a `cuda::barrier<cuda::thread_scope_block>` with transaction count update. `(function)` |
 
 
-Otherwise, i.e., if `scope == thread_scope_block && __isShared(this)`, then the
+If `scope == thread_scope_block && __isShared(this)`, then the
 semantics of [[thread.barrier.class]](http://eel.is/c++draft/thread.barrier.class) of ISO/IEC
 IS 14882 (the C++ Standard) are modified as follows:
 
