@@ -157,9 +157,12 @@ The sections below describe the details of support and testing for different ver
 - Minor version CCCL upgrades won't break existing code, but new features may not support all CTK versions
 
 CCCL users are encouraged to capitalize on the latest enhancements and ["live at head"](https://www.youtube.com/watch?v=tISy7EJQPzI) by always using the newest version of CCCL.
-For a seamless experience, you can upgrade CCCL independently of the entire CUDA Toolkit. This is possible because CCCL maintains backward compatibility with the latest patch release of every minor CTK release from both the current and previous major version series.
+For a seamless experience, you can upgrade CCCL independently of the entire CUDA Toolkit.
+This is possible because CCCL maintains backward compatibility with the latest patch release of every minor CTK release from both the current and previous major version series.
+In some exceptional cases, the minimum supported minor version of the CUDA Toolkit release may need to be newer than the oldest release within its major version series.
+For instance, CCCL requires a minimum supported version of 11.1 from the 11.x series due to an unavoidable compiler issue present in CTK 11.0.
 
-When a new major CTK is released, we drop support for the oldest version.
+When a new major CTK is released, we drop support for the oldest supported major version.
 
 | CCCL Version | Supports CUDA Toolkit Version                  |
 |--------------|------------------------------------------------|
@@ -287,7 +290,7 @@ For historical reasons, the library versions are encoded separately in each of T
 | Major Version          | `_LIBCUDACXX_CUDA_API_VERSION_MAJOR`      | `THRUST_MAJOR_VERSION`        | `CUB_MAJOR_VERSION`        | Public API breaking changes (only at new CTK major release)        |
 | Minor Version          | `_LIBCUDACXX_CUDA_API_VERSION_MINOR`      | `THRUST_MINOR_VERSION`        | `CUB_MINOR_VERSION`        | Non-breaking feature additions                                     |
 | Patch/Subminor Version | `_LIBCUDACXX_CUDA_API_VERSION_PATCH`      | `THRUST_SUBMINOR_VERSION`     | `CUB_SUBMINOR_VERSION`     | Minor changes not covered by major/minor versions                  |
-| Concatenated Version   | `_LIBCUDACXX_CUDA_API_VERSION (MMMmmmppp)`| `THRUST_VERSION (MMMmmmpp)`  | `CUB_VERSION (MMMmmmpp)`  | -                                                                  |
+| Concatenated Version   | `_LIBCUDACXX_CUDA_API_VERSION (MMMmmmppp)`| `THRUST_VERSION (MMMmmmpp)`   | `CUB_VERSION (MMMmmmpp)`   | -                                                                  |
 
 ### Application Binary Interface (ABI)
 
