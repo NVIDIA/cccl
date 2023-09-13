@@ -287,7 +287,7 @@ For historical reasons, the library versions are encoded separately in each of T
 | Major Version          | `_LIBCUDACXX_CUDA_API_VERSION_MAJOR`      | `THRUST_MAJOR_VERSION`        | `CUB_MAJOR_VERSION`        | Public API breaking changes (only at new CTK major release)        |
 | Minor Version          | `_LIBCUDACXX_CUDA_API_VERSION_MINOR`      | `THRUST_MINOR_VERSION`        | `CUB_MINOR_VERSION`        | Non-breaking feature additions                                     |
 | Patch/Subminor Version | `_LIBCUDACXX_CUDA_API_VERSION_PATCH`      | `THRUST_SUBMINOR_VERSION`     | `CUB_SUBMINOR_VERSION`     | Minor changes not covered by major/minor versions                  |
-| Concatenated Version   | `_LIBCUDACXX_CUDA_API_VERSION (MMMmmmppp)`| `THRUST_VERSION (MMMmmmppp)`  | `CUB_VERSION (MMMmmmppp)`  | -                                                                  |
+| Concatenated Version   | `_LIBCUDACXX_CUDA_API_VERSION (MMMmmmppp)`| `THRUST_VERSION (MMMmmmpp)`  | `CUB_VERSION (MMMmmmpp)`  | -                                                                  |
 
 ### Application Binary Interface (ABI)
 
