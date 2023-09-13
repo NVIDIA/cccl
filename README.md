@@ -23,7 +23,7 @@ Naturally, there was a lot of overlap among the three projects, and it became cl
 
 - **libcudacxx** is the CUDA C++ Standard Library. It provides an implementation of the C++ Standard Library that works in both host and device code. Additionally, it provides abstractions for CUDA-specific hardware features like synchronization primitives, cache control, atomics, and more.
 
-The main goal of CCCL is to fill a similar role that the Standard C++ Library fills for Standard C++: provide general-purpose, speed-of-light tools to CUDA C++ developers allowing them to focus on solving the problems that matter.
+The main goal of CCCL is to fill a similar role that the Standard C++ Library fills for Standard C++: provide general-purpose, speed-of-light tools to CUDA C++ developers, allowing them to focus on solving the problems that matter.
 Unifying these projects is the first step towards realizing that goal.
 
 ## Example
