@@ -10,6 +10,7 @@
 //===----------------------------------------------------------------------===//
 //
 // UNSUPPORTED: libcpp-has-no-threads
+// UNSUPPORTED: !nvrtc
 // NVRTC_SKIP_KERNEL_RUN // do compile, but do not run under nvrtc
 
 #include <cuda/std/cassert>
@@ -22,9 +23,7 @@ int main(int, char**)
   NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
           // Ensure that code fails at runtime when run under NVRTC.
-#ifdef _LIBCUDACXX_COMPILER_NVRTC
           assert(false);
-#endif
         )
     );
 
