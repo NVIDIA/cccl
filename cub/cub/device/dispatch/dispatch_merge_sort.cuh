@@ -570,7 +570,8 @@ struct DispatchMergeSort : SelectedPolicy
     {
       // Get device ordinal
       int device_ordinal = 0;
-      if (CubDebug(error = cudaGetDevice(&device_ordinal)))
+      error = CubDebug(cudaGetDevice(&device_ordinal));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -630,10 +631,11 @@ struct DispatchMergeSort : SelectedPolicy
       if (runtime_shmem_size_check_is_required)
       {
         int max_shmem = 0;
-        if (CubDebug(
-              error = cudaDeviceGetAttribute(&max_shmem,
-                                             cudaDevAttrMaxSharedMemoryPerBlock,
-                                             device_ordinal)))
+
+        error = CubDebug(
+          cudaDeviceGetAttribute(&max_shmem, cudaDevAttrMaxSharedMemoryPerBlock, device_ordinal));
+
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -656,10 +658,9 @@ struct DispatchMergeSort : SelectedPolicy
                                          temporary_values_storage_size,
                                          virtual_shared_memory_size};
 
-      if (CubDebug(error = AliasTemporaries(d_temp_storage,
-                                            temp_storage_bytes,
-                                            allocations,
-                                            allocation_sizes)))
+      error = CubDebug(
+        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -726,14 +727,15 @@ struct DispatchMergeSort : SelectedPolicy
 
       block_sort_launcher.launch();
 
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -789,14 +791,15 @@ struct DispatchMergeSort : SelectedPolicy
                 target_merged_tiles_number,
                 tile_size);
 
-        error = detail::DebugSyncStream(stream);
-        if (CubDebug(error))
+        error = CubDebug(detail::DebugSyncStream(stream));
+        if (cudaSuccess != error)
         {
           break;
         }
 
         // Check for failure to launch
-        if (CubDebug(error = cudaPeekAtLastError()))
+        error = CubDebug(cudaPeekAtLastError());
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -804,14 +807,15 @@ struct DispatchMergeSort : SelectedPolicy
         // Merge
         merge_launcher.launch(ping, target_merged_tiles_number);
 
-        error = detail::DebugSyncStream(stream);
-        if (CubDebug(error))
+        error = CubDebug(detail::DebugSyncStream(stream));
+        if (cudaSuccess != error)
         {
           break;
         }
 
         // Check for failure to launch
-        if (CubDebug(error = cudaPeekAtLastError()))
+        error = CubDebug(cudaPeekAtLastError());
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -840,7 +844,10 @@ struct DispatchMergeSort : SelectedPolicy
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+
+      error = CubDebug(PtxVersion(ptx_version));
+
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -858,7 +865,8 @@ struct DispatchMergeSort : SelectedPolicy
                                  ptx_version);
 
       // Dispatch to chained policy
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }

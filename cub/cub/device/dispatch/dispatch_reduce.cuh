@@ -676,14 +676,15 @@ struct DispatchReduce : SelectedPolicy
         .doit(single_tile_kernel, d_in, d_out, num_items, reduction_op, init);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -726,24 +727,25 @@ struct DispatchReduce : SelectedPolicy
     {
       // Get device ordinal
       int device_ordinal;
-      if (CubDebug(error = cudaGetDevice(&device_ordinal)))
+      error = CubDebug(cudaGetDevice(&device_ordinal));
+      if (cudaSuccess != error)
+      {
         break;
+      }
 
       // Get SM count
       int sm_count;
-      if (CubDebug(
-            error = cudaDeviceGetAttribute(&sm_count,
-                                           cudaDevAttrMultiProcessorCount,
-                                           device_ordinal)))
+      error =
+        CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Init regular kernel configuration
       KernelConfig reduce_config;
-      if (CubDebug(
-            error = reduce_config.Init<typename ActivePolicyT::ReducePolicy>(
-              reduce_kernel)))
+      error = CubDebug(reduce_config.Init<typename ActivePolicyT::ReducePolicy>(reduce_kernel));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -764,10 +766,9 @@ struct DispatchReduce : SelectedPolicy
 
       // Alias the temporary allocations from the single storage blob (or
       // compute the necessary size of the blob)
-      if (CubDebug(error = AliasTemporaries(d_temp_storage,
-                                            temp_storage_bytes,
-                                            allocations,
-                                            allocation_sizes)))
+      error = CubDebug(
+        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -810,14 +811,15 @@ struct DispatchReduce : SelectedPolicy
               reduction_op);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -845,14 +847,15 @@ struct DispatchReduce : SelectedPolicy
               init);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -956,7 +959,8 @@ struct DispatchReduce : SelectedPolicy
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -973,7 +977,8 @@ struct DispatchReduce : SelectedPolicy
                               ptx_version);
 
       // Dispatch to chained policy
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1199,10 +1204,9 @@ struct DispatchSegmentedReduce : SelectedPolicy
 
       // Init kernel configuration
       KernelConfig segmented_reduce_config;
-      if (CubDebug(
-            error = segmented_reduce_config
-                      .Init<typename ActivePolicyT::SegmentedReducePolicy>(
-                        segmented_reduce_kernel)))
+      error = CubDebug(segmented_reduce_config.Init<typename ActivePolicyT::SegmentedReducePolicy>(
+        segmented_reduce_kernel));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1234,14 +1238,15 @@ struct DispatchSegmentedReduce : SelectedPolicy
               init);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1341,7 +1346,8 @@ struct DispatchSegmentedReduce : SelectedPolicy
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1360,7 +1366,8 @@ struct DispatchSegmentedReduce : SelectedPolicy
                                        ptx_version);
 
       // Dispatch to chained policy
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }

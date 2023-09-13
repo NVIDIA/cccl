@@ -298,8 +298,11 @@ struct DeviceRleDispatch
     {
       // Get device ordinal
       int device_ordinal;
-      if (CubDebug(error = cudaGetDevice(&device_ordinal)))
+      error = CubDebug(cudaGetDevice(&device_ordinal));
+      if (cudaSuccess != error)
+      {
         break;
+      }
 
       // Number of input tiles
       int tile_size = block_threads * items_per_thread;
@@ -307,7 +310,8 @@ struct DeviceRleDispatch
 
       // Specify temporary storage allocation requirements
       size_t allocation_sizes[1];
-      if (CubDebug(error = ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0])))
+      error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
+      if (cudaSuccess != error)
       {
         break; // bytes needed for tile status descriptors
       }
@@ -315,9 +319,10 @@ struct DeviceRleDispatch
       // Compute allocation pointers into the single storage blob (or compute the necessary size of
       // the blob)
       void *allocations[1] = {};
-      if (CubDebug(
-            error =
-              AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+
+      error = CubDebug(
+        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      if (error != cudaSuccess)
       {
         break;
       }
@@ -330,7 +335,8 @@ struct DeviceRleDispatch
 
       // Construct the tile status interface
       ScanTileStateT tile_status;
-      if (CubDebug(error = tile_status.Init(num_tiles, allocations[0], allocation_sizes[0])))
+      error = CubDebug(tile_status.Init(num_tiles, allocations[0], allocation_sizes[0]));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -353,14 +359,15 @@ struct DeviceRleDispatch
         .doit(device_scan_init_kernel, tile_status, num_tiles, d_num_runs_out);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -373,17 +380,18 @@ struct DeviceRleDispatch
 
       // Get SM occupancy for device_rle_sweep_kernel
       int device_rle_kernel_sm_occupancy;
-      if (CubDebug(error = MaxSmOccupancy(device_rle_kernel_sm_occupancy, // out
-                                          device_rle_sweep_kernel,
-                                          block_threads)))
+      error = CubDebug(MaxSmOccupancy(device_rle_kernel_sm_occupancy, // out
+                                      device_rle_sweep_kernel,
+                                      block_threads));
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Get max x-dimension of grid
       int max_dim_x;
-      if (CubDebug(
-            error = cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
+      error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -423,14 +431,15 @@ struct DeviceRleDispatch
               num_tiles);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -506,7 +515,8 @@ struct DeviceRleDispatch
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -522,7 +532,8 @@ struct DeviceRleDispatch
                                  stream);
 
       // Dispatch
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }

@@ -704,6 +704,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "__iterator/ostreambuf_iterator.h"
 #include "__iterator/permutable.h"
 #include "__iterator/prev.h"
+#include "__iterator/projected.h"
 #include "__iterator/readable_traits.h"
 #include "__iterator/reverse_access.h"
 #include "__iterator/reverse_iterator.h"

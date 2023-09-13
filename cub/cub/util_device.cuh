@@ -305,9 +305,8 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
       (
         cudaFuncAttributes empty_kernel_attrs;
 
-        result = cudaFuncGetAttributes(&empty_kernel_attrs,
-                                       reinterpret_cast<void*>(empty_kernel));
-        CubDebug(result);
+        result = CubDebug(cudaFuncGetAttributes(&empty_kernel_attrs,
+                                                reinterpret_cast<void*>(empty_kernel)));
 
         ptx_version = empty_kernel_attrs.ptxVersion * 10;
       ),
@@ -412,8 +411,17 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
     do
     {
         int major = 0, minor = 0;
-        if (CubDebug(error = cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device))) break;
-        if (CubDebug(error = cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, device))) break;
+        error = CubDebug(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device));
+        if (cudaSuccess != error) 
+        {
+            break;
+        }
+
+        error = CubDebug(cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, device));
+        if (cudaSuccess != error)
+        {
+            break;
+        }
         sm_version = major * 100 + minor * 10;
     }
     while (0);
@@ -535,10 +543,15 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
     has_uva = false;
     cudaError_t error = cudaSuccess;
     int device = -1;
-    if (CubDebug(error = cudaGetDevice(&device)) != cudaSuccess) return error;
+    error = CubDebug(cudaGetDevice(&device));
+    if (cudaSuccess != error) 
+    {
+        return error;
+    }
+
     int uva = 0;
-    if (CubDebug(error = cudaDeviceGetAttribute(&uva, cudaDevAttrUnifiedAddressing, device))
-        != cudaSuccess)
+    error = CubDebug(cudaDeviceGetAttribute(&uva, cudaDevAttrUnifiedAddressing, device));
+    if (cudaSuccess != error)
     {
         return error;
     }
