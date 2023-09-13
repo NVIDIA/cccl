@@ -115,7 +115,7 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 #endif
 
 #ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
-#define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
+#define CUB_DETAIL_KERNEL_ATTRIBUTES static __global__ 
 #endif
 
 /** @} */       // end group UtilModule

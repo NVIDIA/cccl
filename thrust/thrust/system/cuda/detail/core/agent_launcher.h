@@ -35,8 +35,6 @@
 #include <thrust/system/cuda/detail/core/util.h>
 #include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 
-#include <cuda/std/detail/__config>
-
 #include <cassert>
 
 #include <nv/target>
@@ -45,12 +43,8 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub {
 namespace core {
 
-_LIBCUDACXX_DIAGNOSTIC_PUSH
-_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")
-_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")
-
 #ifndef THRUST_DETAIL_KERNEL_ATTRIBUTES
-#define THRUST_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
+#define THRUST_DETAIL_KERNEL_ATTRIBUTES static __global__
 #endif
 
 #if defined(__CUDA_ARCH__) || defined(_NVHPC_CUDA)
@@ -1148,8 +1142,6 @@ _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")
 
 
   };
-
-_LIBCUDACXX_DIAGNOSTIC_POP
 
 } // namespace core
 } // namespace cuda_cub

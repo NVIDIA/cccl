@@ -40,8 +40,6 @@
 // version.cuh.
 #include "version.cuh"
 
-#include <cuda/std/detail/__config>
-
 // Prior to 1.13.1, only the PREFIX/POSTFIX macros were used. Notify users
 // that they must now define the qualifier macro, too.
 #if (defined(CUB_NS_PREFIX) || defined(CUB_NS_POSTFIX)) && !defined(CUB_NS_QUALIFIER)
@@ -191,10 +189,7 @@
   CUB_NS_PREFIX                                                             \
   namespace cub                                                             \
   {                                                                         \
-  CUB_DETAIL_MAGIC_NS_BEGIN                                                 \
-  _LIBCUDACXX_DIAGNOSTIC_PUSH                                               \
-  _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")                        \
-  _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")                      
+  CUB_DETAIL_MAGIC_NS_BEGIN
 
 /**
  * \def CUB_NAMESPACE_END
@@ -203,7 +198,6 @@
  * This macro is defined by CUB and may not be overridden.
  */
 #define CUB_NAMESPACE_END                                                   \
-  _LIBCUDACXX_DIAGNOSTIC_POP                                                \
   CUB_DETAIL_MAGIC_NS_END                                                   \
   } /* end namespace cub */                                                 \
   CUB_NS_POSTFIX
