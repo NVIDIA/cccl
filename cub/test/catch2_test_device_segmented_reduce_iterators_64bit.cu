@@ -56,7 +56,7 @@ using iterator_type_list = c2h::type_list<type_pair<custom_t>, type_pair<std::si
 // multiply by constant
 template <typename T>
 class cmult {
-	public:
+    public:
     __host__ __device__
     constexpr cmult(T mult) : mult(mult) {}
     __host__ __device__
