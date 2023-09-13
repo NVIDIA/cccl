@@ -64,7 +64,7 @@ struct ChooseOffsetT
  */
 template <typename... Iter>
 struct common_iterator_value {
-    using type = typename std::common_type<cuda::std::__iter_value_type<Iter>...>::type;
+    using type = cuda::std::__common_type_t<cuda::std::__iter_value_type<Iter>...>;
 };
 template <typename... Iter>
 using common_iterator_value_t = typename common_iterator_value<Iter...>::type;
