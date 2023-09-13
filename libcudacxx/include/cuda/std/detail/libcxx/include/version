@@ -226,6 +226,7 @@ __cpp_lib_void_t                                        201411L <type_traits>
 // hardware supports it.
 #if (!defined(__CUDA_MINIMUM_ARCH__)) || (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__)
 # define __cccl_lib_local_barrier_arrive_tx
+# define __cccl_lib_experimental_ctk12_cp_async_exposure
 #endif
 
 // We unconditionally define `__cccl_lib_meow` so that there is only one place to set the value
