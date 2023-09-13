@@ -25,9 +25,8 @@ the same as [`cuda::std::barrier`], with the following additional operations:
 
 
 Otherwise, i.e., if `scope == thread_scope_block && __isShared(this)`, then the
-semantics are that of modify
-[[thread.barrier.class]](http://eel.is/c++draft/thread.barrier.class) of ISO/IEC
-IS 14882 (the C++ Standard) as follows:
+semantics of [[thread.barrier.class]](http://eel.is/c++draft/thread.barrier.class) of ISO/IEC
+IS 14882 (the C++ Standard) are modified as follows:
 
 > A barrier is a thread coordination mechanism whose lifetime consists of a sequence of barrier phases, where each phase allows at most an expected number of threads to block until the expected number of threads **and the expected number of transaction-based asynchronous operations** arrive at the barrier.
 > Each _barrier phase_ consists of the following steps:
