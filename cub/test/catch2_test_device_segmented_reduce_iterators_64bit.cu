@@ -60,8 +60,6 @@ struct cmult {
     constexpr cmult(T mult) : mult(mult) {}
     constexpr cmult(cmult<T> const&) = default;
     constexpr cmult(cmult<T>&&) = default;
-    constexpr cmult<T>& operator=(cmult<T> const&) = default;
-    constexpr cmult<T>& operator=(cmult<T>&&) = default;
     __host__ __device__
     constexpr T operator()(T const& value) const {
         return value*mult;
