@@ -701,7 +701,13 @@ struct ScanTileState<T, false>
             allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);     // bytes needed for inclusives
 
             // Compute allocation pointers into the single storage blob
-            if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))) break;
+            error = CubDebug(
+              AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+
+            if (cudaSuccess != error) 
+            {
+              break;
+            }
 
             // Alias the offsets
             d_tile_status       = reinterpret_cast<StatusWord*>(allocations[0]);

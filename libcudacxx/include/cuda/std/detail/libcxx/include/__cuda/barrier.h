@@ -67,18 +67,13 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     friend void init(barrier * __b, _CUDA_VSTD::ptrdiff_t __expected) {
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__expected >= 0);
-#endif
-
+        _LIBCUDACXX_DEBUG_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
         new (__b) barrier(__expected);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
     friend void init(barrier * __b, _CUDA_VSTD::ptrdiff_t __expected, _CompletionF __completion) {
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__expected >= 0);
-#endif
+        _LIBCUDACXX_DEBUG_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
         new (__b) barrier(__expected, __completion);
     }
 };
@@ -182,10 +177,7 @@ public:
 
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
     arrival_token arrive(_CUDA_VSTD::ptrdiff_t __update = 1) {
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__update >= 0);
-        _LIBCUDACXX_DEBUG_ASSERT(__expected_unit >=0);
-#endif
+        _LIBCUDACXX_DEBUG_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
         arrival_token __token = {};
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_90, (
@@ -560,6 +552,65 @@ _LIBCUDACXX_DEVICE
 inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> & b) {
     return reinterpret_cast<_CUDA_VSTD::uint64_t *>(&b.__barrier);
 }
+
+
+// Hide arrive_tx when CUDA architecture is insufficient. Note the
+// (!defined(__CUDA_MINIMUM_ARCH__)). This is required to make sure the function
+// does not get removed by cudafe, which does not define __CUDA_MINIMUM_ARCH__.
+#if (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
+
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
+barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
+    barrier<thread_scope_block> & __b,
+    _CUDA_VSTD::ptrdiff_t __arrive_count_update,
+    _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
+
+    _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+    _LIBCUDACXX_DEBUG_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");
+    _LIBCUDACXX_DEBUG_ASSERT(__arrive_count_update <= (1 << 20) - 1, "Arrival count update cannot exceed 2^20 - 1.");
+    _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
+    _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
+
+    barrier<thread_scope_block>::arrival_token __token = {};
+    NV_IF_TARGET(
+        // On architectures pre-sm90, arrive_tx is not supported.
+        NV_PROVIDES_SM_90, (
+            // We do not check for the statespace of the barrier here. This is
+            // on purpose. This allows debugging tools like memcheck/racecheck
+            // to detect that we are passing a pointer with the wrong state
+            // space to mbarrier.arrive. If we checked for the state space here,
+            // and __trap() if wrong, then those tools would not be able to help
+            // us in release builds. In debug builds, the error would be caught
+            // by the asserts at the top of this function.
+
+            auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+            if (__arrive_count_update == 1) {
+                asm (
+                    "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
+                    : "=l"(__token)
+                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
+                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
+                    : "memory");
+            } else {
+                asm (
+                    "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
+                    :
+                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
+                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
+                    : "memory");
+                asm (
+                    "mbarrier.arrive.release.cta.shared::cta.b64 %0, [%1], %2;"
+                    : "=l"(__token)
+                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
+                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__arrive_count_update))
+                    : "memory");
+            }
+        )
+    );
+    return __token;
+}
+#endif // __CUDA_MINIMUM_ARCH__
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 

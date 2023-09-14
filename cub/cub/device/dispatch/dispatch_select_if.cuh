@@ -338,7 +338,8 @@ struct DispatchSelectIf : SelectedPolicy
         {
             // Get device ordinal
             int device_ordinal;
-            if (CubDebug(error = cudaGetDevice(&device_ordinal))) 
+            error = CubDebug(cudaGetDevice(&device_ordinal));
+            if (cudaSuccess != error) 
             {
                 break;
             }
@@ -350,14 +351,17 @@ struct DispatchSelectIf : SelectedPolicy
             size_t  allocation_sizes[1];
 
             // bytes needed for tile status descriptors
-            if (CubDebug(error = ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]))) 
+            error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
+            if (cudaSuccess != error) 
             {
                 break;
             }
 
             // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
             void* allocations[1] = {};
-            if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))) 
+
+            error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+            if (cudaSuccess != error) 
             {
                 break;
             }
@@ -370,7 +374,8 @@ struct DispatchSelectIf : SelectedPolicy
 
             // Construct the tile status interface
             ScanTileStateT tile_status;
-            if (CubDebug(error = tile_status.Init(num_tiles, allocations[0], allocation_sizes[0]))) 
+            error = CubDebug(tile_status.Init(num_tiles, allocations[0], allocation_sizes[0]));
+            if (cudaSuccess != error) 
             {
                 break;
             }
@@ -391,14 +396,15 @@ struct DispatchSelectIf : SelectedPolicy
                 d_num_selected_out);
 
             // Check for failure to launch
-            if (CubDebug(error = cudaPeekAtLastError()))
+            error = CubDebug(cudaPeekAtLastError());
+            if (cudaSuccess != error)
             {
                 break;
             }
 
             // Sync the stream if specified to flush runtime errors
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -411,7 +417,8 @@ struct DispatchSelectIf : SelectedPolicy
 
             // Get max x-dimension of grid
             int max_dim_x;
-            if (CubDebug(error = cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal))) 
+            error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
+            if (cudaSuccess != error) 
             {
                 break;
             }
@@ -427,9 +434,10 @@ struct DispatchSelectIf : SelectedPolicy
             {
               // Get SM occupancy for select_if_kernel
               int range_select_sm_occupancy;
-              if (CubDebug(error = MaxSmOccupancy(range_select_sm_occupancy, // out
-                                                  select_if_kernel,
-                                                  block_threads)))
+              error = CubDebug(MaxSmOccupancy(range_select_sm_occupancy, // out
+                                              select_if_kernel,
+                                              block_threads));
+              if (cudaSuccess != error)
               {
                 break;
               }
@@ -461,14 +469,15 @@ struct DispatchSelectIf : SelectedPolicy
                 num_tiles);
 
             // Check for failure to launch
-            if (CubDebug(error = cudaPeekAtLastError()))
+            error = CubDebug(cudaPeekAtLastError());
+            if (cudaSuccess != error)
             {
                 break;
             }
 
             // Sync the stream if specified to flush runtime errors
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
