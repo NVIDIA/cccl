@@ -268,11 +268,10 @@ struct TestComplexComparisionOperators
   void operator()(void)
   {
     {
-      thrust::host_vector<T> data = unittest::random_samples<T>(2);
+      thrust::host_vector<T> data = unittest::random_samples<T>(1);
 
       const T a = data[0];
-      // avoid division with 0.0
-      const T b = (data[1] == data[0]) ? data[1] + static_cast<T>(2.0) : data[1];
+      const T b = data[0] + T(1.0);
 
       ASSERT_EQUAL(thrust::complex<T>(a, b) == thrust::complex<T>(a, b), true);
       ASSERT_EQUAL(thrust::complex<T>(a, T()) == a, true);
