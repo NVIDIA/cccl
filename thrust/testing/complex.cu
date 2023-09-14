@@ -1,12 +1,12 @@
-#include <unittest/assertions.h>
-#include <unittest/unittest.h>
-
 #include <thrust/complex.h>
 #include <thrust/detail/config.h>
 
 #include <complex>
 #include <iostream>
 #include <sstream>
+
+#include <unittest/assertions.h>
+#include <unittest/unittest.h>
 
 /*
    The following tests do not check for the numerical accuracy of the operations.
@@ -35,7 +35,7 @@ struct other_floating_point_type<double>
   using type = float;
 };
 
-template<typename T>
+template <typename T>
 using other_floating_point_type_t = typename other_floating_point_type<T>::type;
 
 } // anonymous namespace
@@ -154,9 +154,9 @@ struct TestComplexConstructionAndAssignmentWithPromoting
   void operator()(void)
   {
     using T0 = T;
-    typedef other_floating_point_type_t<T0>  T1;
+    using T1 = other_floating_point_type_t<T0>;
 
-    thrust::host_vector<T1> data = unittest::random_samples<T1>(2);
+    thrust::host_vector<T0> data = unittest::random_samples<T0>(2);
 
     const T0 real_T0 = data[0];
     const T0 imag_T0 = data[1];
@@ -172,15 +172,15 @@ struct TestComplexConstructionAndAssignmentWithPromoting
 
     {
       const thrust::complex<T0> construct_from_real(real_T1);
-      ASSERT_ALMOST_EQUAL(real_T1, construct_from_real.real());
-      ASSERT_EQUAL(T(), construct_from_real.imag());
+      ASSERT_ALMOST_EQUAL(real_T0, construct_from_real.real());
+      ASSERT_EQUAL(T0(), construct_from_real.imag());
     }
 
     {
       const thrust::complex<T1> expected(real_T1, imag_T1);
       thrust::complex<T0> construct_from_copy(expected);
-      ASSERT_ALMOST_EQUAL(expected.real(), construct_from_copy.real());
-      ASSERT_ALMOST_EQUAL(expected.imag(), construct_from_copy.imag());
+      ASSERT_ALMOST_EQUAL(real_T0, construct_from_copy.real());
+      ASSERT_ALMOST_EQUAL(imag_T0, construct_from_copy.imag());
     }
 
     {
@@ -271,6 +271,7 @@ struct TestComplexComparisionOperators
       thrust::host_vector<T> data = unittest::random_samples<T>(2);
 
       const T a = data[0];
+      // avoid division with 0.0
       const T b = (data[1] == data[0]) ? data[1] + static_cast<T>(2.0) : data[1];
 
       ASSERT_EQUAL(thrust::complex<T>(a, b) == thrust::complex<T>(a, b), true);
@@ -284,6 +285,9 @@ struct TestComplexComparisionOperators
       ASSERT_EQUAL(thrust::complex<T>(a, T()) != b, true);
       ASSERT_EQUAL(b != thrust::complex<T>(a, T()), true);
 
+      ASSERT_EQUAL(thrust::complex<T>(a, b) != a, true);
+      ASSERT_EQUAL(a != thrust::complex<T>(a, b), true);
+
       ASSERT_EQUAL(thrust::complex<T>(a, b) != std::complex<T>(b, a), true);
       ASSERT_EQUAL(std::complex<T>(a, b) != thrust::complex<T>(b, a), true);
     }
@@ -293,15 +297,17 @@ struct TestComplexComparisionOperators
     // not be true for all x.
     {
       using T0 = T;
-      typedef other_floating_point_type_t<T0> T1;
+      using T1 = other_floating_point_type_t<T0>;
 
       ASSERT_EQUAL(thrust::complex<T0>(1.0, 2.0) == thrust::complex<T1>(1.0, 2.0), true);
-      ASSERT_EQUAL(thrust::complex<T0>(1.0, T0()) == T1(1.0), true);
       ASSERT_EQUAL(thrust::complex<T0>(1.0, T0()) == T1(1.0), true);
       ASSERT_EQUAL(T1(1.0) == thrust::complex<T0>(1.0, 0.0), true);
 
       ASSERT_EQUAL(thrust::complex<T0>(1.0, 2.0) == std::complex<T1>(1.0, 2.0), true);
       ASSERT_EQUAL(std::complex<T0>(1.0, 2.0) == thrust::complex<T1>(1.0, 2.0), true);
+
+      ASSERT_EQUAL(thrust::complex<T0>(1.0, 2.0) != T1(1.0), true);
+      ASSERT_EQUAL(T1(1.0) != thrust::complex<T0>(1.0, 2.0), true);
     }
   }
 };
@@ -366,7 +372,7 @@ struct TestComplexMemberOperators
     // Testing arithmetic member operators with promoted types.
     {
       using T0 = T;
-      typedef other_floating_point_type_t<T0> T1;
+      using T1 = other_floating_point_type_t<T0>;
 
       thrust::host_vector<T0> data = unittest::random_samples<T0>(5);
 
@@ -479,7 +485,7 @@ struct TestComplexBinaryArithmetic
     // Testing binary arithmetic with promoted types.
     {
       using T0 = T;
-      typedef other_floating_point_type_t<T0> T1;
+      using T1 = other_floating_point_type_t<T0>;
 
       thrust::host_vector<T0> data = unittest::random_samples<T0>(5);
 
@@ -567,7 +573,7 @@ struct TestComplexPowerFunctions
     // Test power functions with promoted types.
     {
       using T0 = T;
-      typedef other_floating_point_type_t<T0> T1;
+      using T1 = other_floating_point_type_t<T0>;
 
       thrust::host_vector<T0> data = unittest::random_samples<T0>(4);
 
