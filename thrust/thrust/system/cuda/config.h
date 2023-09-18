@@ -42,65 +42,8 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_debug.cuh>
 
-#include <cub/detail/detect_cuda_runtime.cuh>
+#include <thrust/detail/config/detect_cuda_runtime.h>
 
-/**
- * \def THRUST_RUNTIME_FUNCTION
- *
- * Execution space for functions that can use the CUDA runtime API (`__host__`
- * when RDC is off, `__host__ __device__` when RDC is on).
- */
-#define THRUST_RUNTIME_FUNCTION CUB_RUNTIME_FUNCTION
-
-/**
- * \def THRUST_RDC_ENABLED
- *
- * Defined if RDC is enabled.
- */
-#ifdef CUB_RDC_ENABLED
-#define THRUST_RDC_ENABLED
-#endif
-
-/**
- * \def __THRUST_HAS_CUDART__
- *
- * Whether or not the active compiler pass is allowed to invoke device kernels
- * or methods from the CUDA runtime API.
- *
- * This macro should not be used in Thrust, as it depends on `__CUDA_ARCH__`
- * and is not compatible with `NV_IF_TARGET`. It is provided for legacy
- * purposes only.
- *
- * Replace any usages with `THRUST_RDC_ENABLED` and `NV_IF_TARGET`.
- */
-#ifdef CUB_RUNTIME_ENABLED
-#define __THRUST_HAS_CUDART__ 1
-#else
-#define __THRUST_HAS_CUDART__ 0
-#endif
-
-// These definitions were intended for internal use only and are now obsolete.
-// If you relied on them, consider porting your code to use the functionality
-// in libcu++'s <nv/target> header.
-//
-// For a temporary workaround, define THRUST_PROVIDE_LEGACY_ARCH_MACROS to make
-// them available again. These should be considered deprecated and will be
-// fully removed in a future version.
-#ifdef THRUST_PROVIDE_LEGACY_ARCH_MACROS
-#ifdef __CUDA_ARCH__
-#define THRUST_DEVICE_CODE
-#endif // __CUDA_ARCH__
-#endif // THRUST_PROVIDE_LEGACY_ARCH_MACROS
-
-#ifdef THRUST_AGENT_ENTRY_NOINLINE
-#define THRUST_AGENT_ENTRY_INLINE_ATTR __noinline__
-#else
-#define THRUST_AGENT_ENTRY_INLINE_ATTR __forceinline__
-#endif
-
-#define THRUST_DEVICE_FUNCTION __device__ __forceinline__
-#define THRUST_HOST_FUNCTION __host__     __forceinline__
-#define THRUST_FUNCTION __host__ __device__ __forceinline__
 #if 0
 #define THRUST_ARGS(...) __VA_ARGS__
 #define THRUST_STRIP_PARENS(X) X

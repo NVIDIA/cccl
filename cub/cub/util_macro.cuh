@@ -32,10 +32,11 @@
 
 #pragma once
 
+#include <cub/detail/detect_cuda_runtime.cuh>
+#include <cub/util_namespace.cuh>
+
 #include <cuda/std/detail/__config>
 #include <cuda/std/utility>
-
-#include "util_namespace.cuh"
 
 CUB_NAMESPACE_BEGIN
 
@@ -115,7 +116,11 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 #endif
 
 #ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
-#define CUB_DETAIL_KERNEL_ATTRIBUTES static __global__ 
+#if defined(CUB_RDC_ENABLED)
+#define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ 
+#else
+#define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ static 
+#endif
 #endif
 
 /** @} */       // end group UtilModule
