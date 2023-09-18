@@ -90,7 +90,7 @@
 
 // clang-format off
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  if !defined(THRUST_DETAIL_MAGIC_NS_NAME)
+#  if !defined(THRUST_DETAIL_ABI_NS_NAME)
 #    define THRUST_DETAIL_COUNT_N(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
                                   _14, _15, _16, _17, _18, _19, _20, N, ...)              \
                                   N
@@ -99,70 +99,70 @@
                                                    11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
 #    define THRUST_DETAIL_IDENTITY(N) N
 #    define THRUST_DETAIL_APPLY(MACRO, ...) THRUST_DETAIL_IDENTITY(MACRO(__VA_ARGS__))
-#    define THRUST_DETAIL_MAGIC_NS_NAME1(P1) \
+#    define THRUST_DETAIL_ABI_NS_NAME1(P1) \
         THRUST_##P1##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME2(P1, P2) \
+#    define THRUST_DETAIL_ABI_NS_NAME2(P1, P2) \
         THRUST_##P1##_##P2##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME3(P1, P2, P3) \
+#    define THRUST_DETAIL_ABI_NS_NAME3(P1, P2, P3) \
         THRUST_##P1##_##P2##_##P3##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME4(P1, P2, P3, P4) \
+#    define THRUST_DETAIL_ABI_NS_NAME4(P1, P2, P3, P4) \
         THRUST_##P1##_##P2##_##P3##_##P4##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME5(P1, P2, P3, P4, P5) \
+#    define THRUST_DETAIL_ABI_NS_NAME5(P1, P2, P3, P4, P5) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME6(P1, P2, P3, P4, P5, P6) \
+#    define THRUST_DETAIL_ABI_NS_NAME6(P1, P2, P3, P4, P5, P6) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME7(P1, P2, P3, P4, P5, P6, P7) \
+#    define THRUST_DETAIL_ABI_NS_NAME7(P1, P2, P3, P4, P5, P6, P7) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME8(P1, P2, P3, P4, P5, P6, P7, P8) \
+#    define THRUST_DETAIL_ABI_NS_NAME8(P1, P2, P3, P4, P5, P6, P7, P8) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME9(P1, P2, P3, P4, P5, P6, P7, P8, P9) \
+#    define THRUST_DETAIL_ABI_NS_NAME9(P1, P2, P3, P4, P5, P6, P7, P8, P9) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_##P9##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME10(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) \
+#    define THRUST_DETAIL_ABI_NS_NAME10(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_##P9##_##P10##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME11(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) \
+#    define THRUST_DETAIL_ABI_NS_NAME11(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_##P9##_##P10##_##P11##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME12(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) \
+#    define THRUST_DETAIL_ABI_NS_NAME12(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_##P9##_##P10##_##P11##_##P12##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME13(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13) \
+#    define THRUST_DETAIL_ABI_NS_NAME13(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_##P9##_##P10##_##P11##_##P12##_##P13##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME14(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14) \
+#    define THRUST_DETAIL_ABI_NS_NAME14(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_##P9##_##P10##_##P11##_##P12##_##P13##_##P14##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME15(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15) \
+#    define THRUST_DETAIL_ABI_NS_NAME15(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_##P9##_##P10##_##P11##_##P12##_##P13##_##P14##_##P15##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME16(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16) \
+#    define THRUST_DETAIL_ABI_NS_NAME16(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_##P9##_##P10##_##P11##_##P12##_##P13##_##P14##_##P15##_##P16##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME17(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17) \
+#    define THRUST_DETAIL_ABI_NS_NAME17(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_##P9##_##P10##_##P11##_##P12##_##P13##_##P14##_##P15##_##P16##_##P17##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME18(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18) \
+#    define THRUST_DETAIL_ABI_NS_NAME18(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_##P9##_##P10##_##P11##_##P12##_##P13##_##P14##_##P15##_##P16##_##P17##_##P18##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME19(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19) \
+#    define THRUST_DETAIL_ABI_NS_NAME19(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_##P9##_##P10##_##P11##_##P12##_##P13##_##P14##_##P15##_##P16##_##P17##_##P18##_##P19##_NS
-#    define THRUST_DETAIL_MAGIC_NS_NAME20(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19, P20) \
+#    define THRUST_DETAIL_ABI_NS_NAME20(P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19, P20) \
         THRUST_##P1##_##P2##_##P3##_##P4##_##P5##_##P6##_##P7##_##P8##_##P9##_##P10##_##P11##_##P12##_##P13##_##P14##_##P15##_##P16##_##P17##_##P18##_##P19##_##P20##_NS
-#    define THRUST_DETAIL_DISPATCH(N) THRUST_DETAIL_MAGIC_NS_NAME ## N
-#    define THRUST_DETAIL_MAGIC_NS_NAME(...) THRUST_DETAIL_IDENTITY(THRUST_DETAIL_APPLY(THRUST_DETAIL_DISPATCH, THRUST_DETAIL_COUNT(__VA_ARGS__))(__VA_ARGS__))
-#  endif // !defined(THRUST_DETAIL_MAGIC_NS_NAME)
+#    define THRUST_DETAIL_DISPATCH(N) THRUST_DETAIL_ABI_NS_NAME ## N
+#    define THRUST_DETAIL_ABI_NS_NAME(...) THRUST_DETAIL_IDENTITY(THRUST_DETAIL_APPLY(THRUST_DETAIL_DISPATCH, THRUST_DETAIL_COUNT(__VA_ARGS__))(__VA_ARGS__))
+#  endif // !defined(THRUST_DETAIL_ABI_NS_NAME)
 
-#  if defined(THRUST_DISABLE_NAMESPACE_MAGIC) || defined(THRUST_WRAPPED_NAMESPACE)
+#  if defined(THRUST_DISABLE_ABI_NAMESPACE) || defined(THRUST_WRAPPED_NAMESPACE)
 #    if !defined(THRUST_WRAPPED_NAMESPACE)
-#      if !defined(THRUST_IGNORE_NAMESPACE_MAGIC_ERROR)
-#        error "Disabling namespace magic is unsafe without wrapping namespace"
-#      endif // !defined(THRUST_IGNORE_NAMESPACE_MAGIC_ERROR)
+#      if !defined(THRUST_IGNORE_ABI_NAMESPACE_ERROR)
+#        error "Disabling ABI namespace is unsafe without wrapping namespace"
+#      endif // !defined(THRUST_IGNORE_ABI_NAMESPACE_ERROR)
 #    endif // !defined(THRUST_WRAPPED_NAMESPACE)
-#    define THRUST_DETAIL_MAGIC_NS_BEGIN
-#    define THRUST_DETAIL_MAGIC_NS_END
-#  else // not defined(THRUST_DISABLE_NAMESPACE_MAGIC)
+#    define THRUST_DETAIL_ABI_NS_BEGIN
+#    define THRUST_DETAIL_ABI_NS_END
+#  else // not defined(THRUST_DISABLE_ABI_NAMESPACE)
 #    if defined(_NVHPC_CUDA)
-#      define THRUST_DETAIL_MAGIC_NS_BEGIN inline namespace THRUST_DETAIL_MAGIC_NS_NAME(THRUST_VERSION, NV_TARGET_SM_INTEGER_LIST) {
-#      define THRUST_DETAIL_MAGIC_NS_END }
+#      define THRUST_DETAIL_ABI_NS_BEGIN inline namespace THRUST_DETAIL_ABI_NS_NAME(THRUST_VERSION, NV_TARGET_SM_INTEGER_LIST) {
+#      define THRUST_DETAIL_ABI_NS_END }
 #    else // not defined(_NVHPC_CUDA)
-#      define THRUST_DETAIL_MAGIC_NS_BEGIN inline namespace THRUST_DETAIL_MAGIC_NS_NAME(THRUST_VERSION, __CUDA_ARCH_LIST__) {
-#      define THRUST_DETAIL_MAGIC_NS_END }
+#      define THRUST_DETAIL_ABI_NS_BEGIN inline namespace THRUST_DETAIL_ABI_NS_NAME(THRUST_VERSION, __CUDA_ARCH_LIST__) {
+#      define THRUST_DETAIL_ABI_NS_END }
 #    endif // not defined(_NVHPC_CUDA)
-#  endif // not defined(THRUST_DISABLE_NAMESPACE_MAGIC)
+#  endif // not defined(THRUST_DISABLE_ABI_NAMESPACE)
 #else // THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_CUDA
-#  define THRUST_DETAIL_MAGIC_NS_BEGIN
-#  define THRUST_DETAIL_MAGIC_NS_END
+#  define THRUST_DETAIL_ABI_NS_BEGIN
+#  define THRUST_DETAIL_ABI_NS_END
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 // clang-format on
 
@@ -176,7 +176,7 @@
   THRUST_NS_PREFIX                                                             \
   namespace thrust                                                             \
   {                                                                            \
-  THRUST_DETAIL_MAGIC_NS_BEGIN
+  THRUST_DETAIL_ABI_NS_BEGIN
 
 /**
  * \def THRUST_NAMESPACE_END
@@ -185,7 +185,7 @@
  * This macro is defined by Thrust and may not be overridden.
  */
 #define THRUST_NAMESPACE_END                                                   \
-  THRUST_DETAIL_MAGIC_NS_END                                                   \
+  THRUST_DETAIL_ABI_NS_END                                                   \
   } /* end namespace thrust */                                                 \
   THRUST_NS_POSTFIX
 
