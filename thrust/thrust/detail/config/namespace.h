@@ -17,7 +17,6 @@
 #pragma once
 
 #include <thrust/detail/config/device_system.h>
-#include <thrust/detail/config/detect_cuda_runtime.h>
 #include <thrust/version.h>
 
 /**
