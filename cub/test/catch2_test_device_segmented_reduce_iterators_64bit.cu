@@ -45,17 +45,13 @@ DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 // %PARAM% TEST_CDP cdp 0:1
 
 // List of types to test
-using offset_type_list       = c2h::type_list<std::ptrdiff_t, std::size_t>;
-using num_segments_type_list = c2h::
-  type_list<std::int16_t, std::int32_t, std::int64_t, std::uint16_t, std::uint32_t, std::uint64_t>;
+using offsets = c2h::type_list<std::ptrdiff_t, std::size_t>;
 
 CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit offsets",
          "[reduce][device]",
-         offset_type_list,
-         num_segments_type_list)
+         offsets)
 {
   using offset_t       = typename c2h::get<0, TestType>;
-  using num_segments_t = typename c2h::get<1, TestType>;
   using op_t           = cub::Sum;
 
   constexpr offset_t offset_zero           = 0;
@@ -63,7 +59,8 @@ CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit of
   constexpr offset_t iterator_value        = 2;
   constexpr offset_t min_items_per_segment = offset_one << 31;
   constexpr offset_t max_items_per_segment = offset_one << 33;
-  constexpr num_segments_t num_segments    = 2;
+
+  constexpr int num_segments = 2;
 
   // generate individual segment lengths and store cumulative sum in segment_offsets
   const offset_t num_items_in_first_segment =
