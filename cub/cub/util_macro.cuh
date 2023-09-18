@@ -116,11 +116,11 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 #endif
 
 #ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
-#if defined(CUB_RDC_ENABLED)
-#define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ 
-#else
-#define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ static 
-#endif
+#  if defined(CUB_RDC_ENABLED)
+#    define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
+#  else
+#    define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ static 
+#  endif
 #endif
 
 /** @} */       // end group UtilModule
