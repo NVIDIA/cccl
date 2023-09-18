@@ -119,6 +119,10 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 #define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
 #endif
 
+/**
+ * @def CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
+ * If defined, the default suppression of kernel visibility attribute warning is disabled.
+ */
 #if !defined(CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
 _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")
 _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")                      
