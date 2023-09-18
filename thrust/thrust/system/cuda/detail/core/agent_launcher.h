@@ -45,18 +45,13 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub {
 namespace core {
 
-#if defined(THRUST_RDC_ENABLED)
-_LIBCUDACXX_DIAGNOSTIC_PUSH
+#if !defined(THRUST_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
 _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")
 _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")                      
 #endif
 
 #ifndef THRUST_DETAIL_KERNEL_ATTRIBUTES
-#  if defined(THRUST_RDC_ENABLED)
-#    define THRUST_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
-#  else
-#    define THRUST_DETAIL_KERNEL_ATTRIBUTES __global__ static 
-#  endif
+#define THRUST_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
 #endif
 
 #if defined(__CUDA_ARCH__) || defined(_NVHPC_CUDA)
@@ -1154,10 +1149,6 @@ _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")
 
 
   };
-
-#if defined(THRUST_RDC_ENABLED)
-_LIBCUDACXX_DIAGNOSTIC_POP
-#endif
 
 } // namespace core
 } // namespace cuda_cub

@@ -35,8 +35,6 @@
 
 #pragma once
 
-#include <cuda/std/detail/__config>
-
 // This is not used by this file; this is a hack so that we can detect the
 // CUB version from Thrust on older versions of CUB that did not have
 // version.cuh.
@@ -190,18 +188,6 @@
 #    define CUB_DETAIL_MAGIC_NS_END }
 #  endif // not defined(_NVHPC_CUDA)
 #endif // not defined(CUB_DISABLE_NAMESPACE_MAGIC)
-
-#if defined(CUB_RDC_ENABLED) 
-#  define CUB_DETAIL_SILENCE_KERNEL_WARNINGS_BEGIN                                                 \
-     _LIBCUDACXX_DIAGNOSTIC_PUSH                                                                   \
-     _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")                                            \
-     _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")                      
-#  define CUB_DETAIL_SILENCE_KERNEL_WARNINGS_END                                                   \
-#    _LIBCUDACXX_DIAGNOSTIC_POP
-#else
-#  define CUB_DETAIL_SILENCE_KERNEL_WARNINGS_BEGIN
-#  define CUB_DETAIL_SILENCE_KERNEL_WARNINGS_END
-#endif
 // clang-format on
 
 /**
@@ -214,8 +200,7 @@
   CUB_NS_PREFIX                                                             \
   namespace cub                                                             \
   {                                                                         \
-  CUB_DETAIL_MAGIC_NS_BEGIN                                                 \
-  CUB_DETAIL_SILENCE_KERNEL_WARNINGS_BEGIN
+  CUB_DETAIL_MAGIC_NS_BEGIN
 
 /**
  * \def CUB_NAMESPACE_END
@@ -224,7 +209,6 @@
  * This macro is defined by CUB and may not be overridden.
  */
 #define CUB_NAMESPACE_END                                                   \
-  CUB_DETAIL_SILENCE_KERNEL_WARNINGS_END                                    \
   CUB_DETAIL_MAGIC_NS_END                                                   \
   } /* end namespace cub */                                                 \
   CUB_NS_POSTFIX

@@ -116,11 +116,12 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 #endif
 
 #ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
-#  if defined(CUB_RDC_ENABLED)
-#    define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
-#  else
-#    define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ static 
-#  endif
+#define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
+#endif
+
+#if !defined(CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
+_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")
+_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")                      
 #endif
 
 /** @} */       // end group UtilModule
