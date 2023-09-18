@@ -59,3 +59,6 @@ endif()
 if (CCCL_ENABLE_EXAMPLES)
   add_subdirectory(examples)
 endif()
+
+# Must stay at the end of this file.
+include(cmake/CCCLHideThirdPartyOptions.cmake)

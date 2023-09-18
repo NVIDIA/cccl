@@ -523,7 +523,11 @@ The dispatch entry point is typically represented by a static member function th
         do {
           // Get PTX version
           int ptx_version = 0;
-          if (CubDebug(error = PtxVersion(ptx_version))) break;
+          error = CubDebug(PtxVersion(ptx_version));
+          if (cudaSuccess != error) 
+          {
+            break;
+          }
 
           // Create dispatch functor
           DispatchSegmentedReduce dispatch(

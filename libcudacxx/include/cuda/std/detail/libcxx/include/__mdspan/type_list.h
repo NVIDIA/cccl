@@ -49,6 +49,7 @@
 #endif // __cuda_std__
 
 #include "../__mdspan/macros.h"
+#include "../__utility/integer_sequence.h"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header

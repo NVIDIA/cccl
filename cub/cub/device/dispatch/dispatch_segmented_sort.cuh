@@ -599,14 +599,15 @@ DeviceSegmentedSortContinuation(
             d_end_offsets);
 
     // Check for failure to launch
-    if (CubDebug(error = cudaPeekAtLastError()))
+    error = CubDebug(cudaPeekAtLastError());
+    if (cudaSuccess != error)
     {
       return error;
     }
 
     // Sync the stream if specified to flush runtime errors
-    error = detail::DebugSyncStream(stream);
-    if (CubDebug(error))
+    error = CubDebug(detail::DebugSyncStream(stream));
+    if (cudaSuccess != error)
     {
       return error;
     }
@@ -657,14 +658,15 @@ DeviceSegmentedSortContinuation(
             d_end_offsets);
 
     // Check for failure to launch
-    if (CubDebug(error = cudaPeekAtLastError()))
+    error = CubDebug(cudaPeekAtLastError());
+    if (cudaSuccess != error)
     {
       return error;
     }
 
     // Sync the stream if specified to flush runtime errors
-    error = detail::DebugSyncStream(stream);
-    if (CubDebug(error))
+    error = CubDebug(detail::DebugSyncStream(stream));
+    if (cudaSuccess != error)
     {
       return error;
     }
@@ -734,7 +736,7 @@ DeviceSegmentedSortContinuationKernel(
       small_segments_indices,
       0); // always launching on the main stream (see motivation above)
 
-  CubDebug(error);
+  error = CubDebug(error);
 }
 #endif // CUB_RDC_ENABLED
 
@@ -1357,9 +1359,8 @@ struct DispatchSegmentedSort : SelectedPolicy
         break;
       }
 
-      if (CubDebug(
-            error = temporary_storage_layout.map_to_buffer(d_temp_storage,
-                                                           temp_storage_bytes)))
+      error = CubDebug(temporary_storage_layout.map_to_buffer(d_temp_storage, temp_storage_bytes));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1500,7 +1501,8 @@ struct DispatchSegmentedSort : SelectedPolicy
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1518,7 +1520,8 @@ struct DispatchSegmentedSort : SelectedPolicy
                                      stream);
 
       // Dispatch to chained policy
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1610,19 +1613,18 @@ private:
       THRUST_NS_QUALIFIER::make_reverse_iterator(
         large_and_medium_segments_indices.get() + num_segments);
 
-    error = cub::DevicePartition::If(
-      device_partition_temp_storage.get(),
-      three_way_partition_temp_storage_bytes,
-      THRUST_NS_QUALIFIER::counting_iterator<OffsetT>(0),
-      large_and_medium_segments_indices.get(),
-      small_segments_indices.get(),
-      medium_indices_iterator,
-      group_sizes.get(),
-      num_segments,
-      large_segments_selector,
-      small_segments_selector,
-      stream);
-    if (CubDebug(error))
+    error = CubDebug(cub::DevicePartition::If(device_partition_temp_storage.get(),
+                                              three_way_partition_temp_storage_bytes,
+                                              THRUST_NS_QUALIFIER::counting_iterator<OffsetT>(0),
+                                              large_and_medium_segments_indices.get(),
+                                              small_segments_indices.get(),
+                                              medium_indices_iterator,
+                                              group_sizes.get(),
+                                              num_segments,
+                                              large_segments_selector,
+                                              small_segments_selector,
+                                              stream));
+    if (cudaSuccess != error)
     {
       return error;
     }
@@ -1661,14 +1663,15 @@ private:
             group_sizes.get(),                                                 \
             large_and_medium_segments_indices.get(),                           \
             small_segments_indices.get());                                     \
+  error = CubDebug(error);                                                     \
                                                                                \
-  if (CubDebug(error))                                                         \
+  if (cudaSuccess != error)                                                    \
   {                                                                            \
     return error;                                                              \
   }                                                                            \
                                                                                \
-  error = detail::DebugSyncStream(stream);                                     \
-  if (CubDebug(error))                                                         \
+  error = CubDebug(detail::DebugSyncStream(stream));                           \
+  if (cudaSuccess != error)                                                    \
   {                                                                            \
     return error;                                                              \
   }
@@ -1681,18 +1684,20 @@ private:
       NV_IS_HOST,
       (
         unsigned int h_group_sizes[num_selected_groups];
-
-        if (CubDebug(error = cudaMemcpyAsync(h_group_sizes,
+        error = CubDebug(cudaMemcpyAsync(h_group_sizes,
                                              group_sizes.get(),
                                              num_selected_groups *
                                                sizeof(unsigned int),
                                              cudaMemcpyDeviceToHost,
-                                             stream)))
+                                             stream));
+
+        if (cudaSuccess != error)
         {
             return error;
         }
 
-        if (CubDebug(error = SyncStream(stream)))
+        error = CubDebug(SyncStream(stream));
+        if (cudaSuccess != error)
         {
           return error;
         }
@@ -1763,14 +1768,15 @@ private:
             d_end_offsets);
 
     // Check for failure to launch
-    if (CubDebug(error = cudaPeekAtLastError()))
+    error = CubDebug(cudaPeekAtLastError());
+    if (cudaSuccess != error)
     {
       return error;
     }
 
     // Sync the stream if specified to flush runtime errors
-    error = detail::DebugSyncStream(stream);
-    if (CubDebug(error))
+    error = CubDebug(detail::DebugSyncStream(stream));
+    if (cudaSuccess != error)
     {
       return error;
     }

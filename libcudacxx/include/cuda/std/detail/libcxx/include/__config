@@ -1482,6 +1482,8 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_END_NAMESPACE_CUDA  } }
 #define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE namespace cuda { namespace device { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE  } } }
+#define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL namespace cuda { namespace device { namespace experimental { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL  } } } }
 #endif
 
 // Inline namespaces are available in Clang/GCC/MSVC regardless of C++ dialect.

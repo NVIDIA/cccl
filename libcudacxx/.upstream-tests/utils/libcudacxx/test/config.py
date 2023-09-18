@@ -15,6 +15,7 @@ import re
 import shlex
 import shutil
 import sys
+import ctypes
 
 from libcudacxx.compiler import CXXCompiler
 from libcudacxx.test.target_info import make_target_info
@@ -111,6 +112,55 @@ class Configuration(object):
                     '--param=%s=%s' % (env_var, val, name, conf_val))
             return check_value(val, env_var)
         return check_value(conf_val, name)
+
+    def get_compute_capabilities(self):
+        deduced_compute_archs = []
+        libnames = ('libcuda.so', 'libcuda.dylib', 'nvcuda.dll', 'cuda.dll')
+        for libname in libnames:
+            try:
+                cuda = ctypes.CDLL(libname)
+            except OSError:
+                continue
+            else:
+                break
+        else:
+            raise OSError("could not load any of: " + ' '.join(libnames))
+
+        self.lit_config.note("compute_archs set to \"native\", computing available archs")
+        CUDA_SUCCESS = 0
+        nGpus    = ctypes.c_int()
+        cc_major = ctypes.c_int()
+        cc_minor = ctypes.c_int()
+
+        result   = ctypes.c_int()
+        device   = ctypes.c_int()
+        error_str = ctypes.c_char_p()
+
+        result = cuda.cuInit(0)
+        if result != CUDA_SUCCESS:
+            cuda.cuGetErrorString(result, ctypes.byref(error_str))
+            self.lit_config.note("cuInit failed with error code %d: %s" % (result, error_str.value.decode()))
+            return 'native'
+
+        result = cuda.cuDeviceGetCount(ctypes.byref(nGpus))
+        if result != CUDA_SUCCESS:
+            cuda.cuGetErrorString(result, ctypes.byref(error_str))
+            self.lit_config.note("cuDeviceGetCount failed with error code %d: %s" % (result, error_str.value.decode()))
+            return 'native'
+        self.lit_config.note("Found %d device(s)." % nGpus.value)
+        for i in range(nGpus.value):
+            result = cuda.cuDeviceGet(ctypes.byref(device), i)
+            if result != CUDA_SUCCESS:
+                cuda.cuGetErrorString(result, ctypes.byref(error_str))
+                self.lit_config.note("cuDeviceGet failed with error code %d: %s" % (result, error_str.value.decode()))
+                return 'native'
+            if cuda.cuDeviceComputeCapability(ctypes.byref(cc_major), ctypes.byref(cc_minor), device) == CUDA_SUCCESS:
+                self.lit_config.note("Deduced compute capability of device %d to: %d%d" % ( i + 1, cc_major.value, cc_minor.value))
+                deduced_compute_archs.append(cc_major.value * 10 + cc_minor.value)
+
+        self.lit_config.note("Deduced compute capabilities are: %s" % deduced_compute_archs)
+        deduced_comput_archs_str = ', '.join([str(element) for element in deduced_compute_archs])
+        return deduced_comput_archs_str
 
     def get_modules_enabled(self):
         return self.get_lit_bool('enable_modules',
@@ -588,6 +638,11 @@ class Configuration(object):
             pre_sm_70 = False
             pre_sm_80 = False
             pre_sm_90 = False
+
+            self.lit_config.note('Compute Archs: %s' % compute_archs)
+            if compute_archs == 'native':
+                compute_archs = self.get_compute_capabilities()
+
             compute_archs = set(sorted(re.split('\s|;|,', compute_archs)))
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual

@@ -38,6 +38,8 @@
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/config.cuh>
 #include <cub/detail/cpp_compatibility.cuh>
+#include <cub/util_device.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
@@ -313,25 +315,27 @@ struct dispatch_histogram
     {
       // Get device ordinal
       int device_ordinal;
-      if (CubDebug(error = cudaGetDevice(&device_ordinal)))
+      error = CubDebug(cudaGetDevice(&device_ordinal));
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Get SM count
       int sm_count;
-      if (CubDebug(error = cudaDeviceGetAttribute(&sm_count,
-                                                  cudaDevAttrMultiProcessorCount,
-                                                  device_ordinal)))
+      error =
+        CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
+
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Get SM occupancy for histogram_sweep_kernel
       int histogram_sweep_sm_occupancy;
-      if (CubDebug(error = MaxSmOccupancy(histogram_sweep_sm_occupancy,
-                                          histogram_sweep_kernel,
-                                          block_threads)))
+      error = CubDebug(
+        MaxSmOccupancy(histogram_sweep_sm_occupancy, histogram_sweep_kernel, block_threads));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -376,9 +380,9 @@ struct dispatch_histogram
 
       // Alias the temporary allocations from the single storage blob (or compute the
       // necessary size of the blob)
-      if (CubDebug(
-            error =
-              AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+      error = CubDebug(
+        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -502,14 +506,15 @@ struct dispatch_histogram
               tile_queue);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -956,7 +961,8 @@ public:
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1010,7 +1016,8 @@ public:
                    row_stride_samples,
                    stream);
 
-        if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+        error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -1043,7 +1050,8 @@ public:
                    row_stride_samples,
                    stream);
 
-        if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+        error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -1150,7 +1158,8 @@ public:
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1203,7 +1212,8 @@ public:
                  row_stride_samples,
                  stream);
 
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1311,7 +1321,8 @@ public:
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1328,10 +1339,10 @@ public:
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
       {
-        error = privatized_decode_op[channel].Init(num_output_levels[channel],
-                                                   upper_level[channel],
-                                                   lower_level[channel]);
-        if (CubDebug(error != cudaSuccess))
+        error = CubDebug(privatized_decode_op[channel].Init(num_output_levels[channel],
+                                                            upper_level[channel],
+                                                            lower_level[channel]));
+        if (error != cudaSuccess)
         {
           // Make sure to also return a reasonable value for `temp_storage_bytes` in case of
           // an overflow of the bin computation, in which case a subsequent algorithm
@@ -1378,7 +1389,8 @@ public:
                    row_stride_samples,
                    stream);
 
-        if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+        error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -1411,7 +1423,8 @@ public:
                    row_stride_samples,
                    stream);
 
-        if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+        error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -1523,7 +1536,8 @@ public:
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1579,7 +1593,8 @@ public:
                  row_stride_samples,
                  stream);
 
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }

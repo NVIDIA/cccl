@@ -414,8 +414,25 @@ template void init_key_segments(const thrust::device_vector<std::uint32_t> &segm
                                 std::int32_t *out,
                                 std::size_t element_size);
 template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+                                std::uint8_t *out,
+                                std::size_t element_size);
+template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+                                float *out,
+                                std::size_t element_size);
+template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
                                 custom_type_state_t *out,
                                 std::size_t element_size);
+#ifdef TEST_HALF_T
+template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+                                half_t *out,
+                                std::size_t element_size);
+#endif
+
+#ifdef TEST_BF_T
+template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+                                bfloat16_t *out,
+                                std::size_t element_size);
+#endif
 } // namespace detail
 
 template <typename T>

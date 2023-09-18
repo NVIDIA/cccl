@@ -1303,14 +1303,15 @@ struct DispatchRadixSort : SelectedPolicy
                 decomposer);
 
             // Check for failure to launch
-            if (CubDebug(error = cudaPeekAtLastError()))
+            error = CubDebug(cudaPeekAtLastError());
+            if (cudaSuccess != error)
             {
                 break;
             }
 
             // Sync the stream if specified to flush runtime errors
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -1373,14 +1374,15 @@ struct DispatchRadixSort : SelectedPolicy
                 decomposer);
 
             // Check for failure to launch
-            if (CubDebug(error = cudaPeekAtLastError()))
+            error = CubDebug(cudaPeekAtLastError());
+            if (cudaSuccess != error)
             {
                 break;
             }
 
             // Sync the stream if specified to flush runtime errors
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -1399,14 +1401,15 @@ struct DispatchRadixSort : SelectedPolicy
                 pass_spine_length);
 
             // Check for failure to launch
-            if (CubDebug(error = cudaPeekAtLastError()))
+            error = CubDebug(cudaPeekAtLastError());
+            if (cudaSuccess != error)
             {
                 break;
             }
 
             // Sync the stream if specified to flush runtime errors
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -1435,14 +1438,15 @@ struct DispatchRadixSort : SelectedPolicy
                 decomposer);
 
             // Check for failure to launch
-            if (CubDebug(error = cudaPeekAtLastError()))
+            error = CubDebug(cudaPeekAtLastError());
+            if (cudaSuccess != error)
             {
                 break;
             }
 
             // Sync the stream if specified to flush runtime errors
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -1498,9 +1502,23 @@ struct DispatchRadixSort : SelectedPolicy
                 radix_bits              = DownsweepPolicyT::RADIX_BITS;
                 radix_digits            = 1 << radix_bits;
 
-                if (CubDebug(error = upsweep_config.Init<UpsweepPolicyT>(upsweep_kernel))) break;
-                if (CubDebug(error = scan_config.Init<ScanPolicyT>(scan_kernel))) break;
-                if (CubDebug(error = downsweep_config.Init<DownsweepPolicyT>(downsweep_kernel))) break;
+                error = CubDebug(upsweep_config.Init<UpsweepPolicyT>(upsweep_kernel));
+                if (cudaSuccess != error) 
+                {
+                    break;
+                }
+
+                error = CubDebug(scan_config.Init<ScanPolicyT>(scan_kernel));
+                if (cudaSuccess != error) 
+                {
+                    break;
+                }
+
+                error = CubDebug(downsweep_config.Init<DownsweepPolicyT>(downsweep_kernel));
+                if (cudaSuccess != error) 
+                {
+                    break;
+                }
 
                 max_downsweep_grid_size = (downsweep_config.sm_occupancy * sm_count) * CUB_SUBSCRIPTION_FACTOR(0);
 
@@ -1572,24 +1590,49 @@ struct DispatchRadixSort : SelectedPolicy
 
         do {
             // initialization
-            if (CubDebug(error = cudaMemsetAsync(
-                   d_ctrs, 0, num_portions * num_passes * sizeof(AtomicOffsetT), stream))) break;
+            error = CubDebug(
+              cudaMemsetAsync(d_ctrs, 0, num_portions * num_passes * sizeof(AtomicOffsetT), stream));
+            if (cudaSuccess != error)
+            {
+                break;
+            }
 
             // compute num_passes histograms with RADIX_DIGITS bins each
-            if (CubDebug(error = cudaMemsetAsync
-                   (d_bins, 0, num_passes * RADIX_DIGITS * sizeof(OffsetT), stream))) break;
+            error = CubDebug(
+              cudaMemsetAsync(d_bins, 0, num_passes * RADIX_DIGITS * sizeof(OffsetT), stream));
+            if (cudaSuccess != error)
+            {
+                break;
+            }
             int device = -1;
             int num_sms = 0;
-            if (CubDebug(error = cudaGetDevice(&device))) break;
-            if (CubDebug(error = cudaDeviceGetAttribute(
-                   &num_sms, cudaDevAttrMultiProcessorCount, device))) break;
+
+            error = CubDebug(cudaGetDevice(&device));
+            if (cudaSuccess != error)
+            {
+                break;
+            }
+
+            error =
+              CubDebug(cudaDeviceGetAttribute(&num_sms, cudaDevAttrMultiProcessorCount, device));
+            if (cudaSuccess != error)
+            {
+                break;
+            }
 
             const int HISTO_BLOCK_THREADS = ActivePolicyT::HistogramPolicy::BLOCK_THREADS;
             int histo_blocks_per_sm = 1;
             auto histogram_kernel = DeviceRadixSortHistogramKernel<
                 MaxPolicyT, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
-            if (CubDebug(error = cudaOccupancyMaxActiveBlocksPerMultiprocessor(
-                &histo_blocks_per_sm, histogram_kernel, HISTO_BLOCK_THREADS, 0))) break;
+
+            error = CubDebug(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&histo_blocks_per_sm,
+                                                                           histogram_kernel,
+                                                                           HISTO_BLOCK_THREADS,
+                                                                           0));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
 
             // log histogram_kernel configuration
             #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
@@ -1605,13 +1648,14 @@ struct DispatchRadixSort : SelectedPolicy
               histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream
             ).doit(histogram_kernel,
                    d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer);
-            if (CubDebug(error))
+            error = CubDebug(error);
+            if (cudaSuccess != error)
             {
                 break;
             }
 
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -1630,13 +1674,14 @@ struct DispatchRadixSort : SelectedPolicy
                       num_passes, SCAN_BLOCK_THREADS, 0, stream
                       ).doit(DeviceRadixSortExclusiveSumKernel<MaxPolicyT, OffsetT>,
                             d_bins);
-            if (CubDebug(error))
+            error = CubDebug(error);
+            if (cudaSuccess != error)
             {
                 break;
             }
 
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -1657,14 +1702,21 @@ struct DispatchRadixSort : SelectedPolicy
                 for (OffsetT portion = 0; portion < num_portions; ++portion)
                 {
                     PortionOffsetT portion_num_items =
-                      static_cast<PortionOffsetT>(
-                        CUB_MIN(num_items - portion * PORTION_SIZE,
-                                static_cast<OffsetT>(PORTION_SIZE)));
-                    PortionOffsetT num_blocks =
-                        cub::DivideAndRoundUp(portion_num_items, ONESWEEP_TILE_ITEMS);
-                    if (CubDebug(error = cudaMemsetAsync(
-                           d_lookback, 0, num_blocks * RADIX_DIGITS * sizeof(AtomicOffsetT),
-                           stream))) break;
+                      static_cast<PortionOffsetT>(CUB_MIN(num_items - portion * PORTION_SIZE,
+                                                          static_cast<OffsetT>(PORTION_SIZE)));
+
+                    PortionOffsetT num_blocks = cub::DivideAndRoundUp(portion_num_items,
+                                                                      ONESWEEP_TILE_ITEMS);
+
+                    error =
+                      CubDebug(cudaMemsetAsync(d_lookback,
+                                               0,
+                                               num_blocks * RADIX_DIGITS * sizeof(AtomicOffsetT),
+                                               stream));
+                    if (cudaSuccess != error) 
+                    {
+                        break;
+                    }
 
                     // log onesweep_kernel configuration
                     #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
@@ -1691,13 +1743,14 @@ struct DispatchRadixSort : SelectedPolicy
                            d_values.Current() + portion * PORTION_SIZE,
                            portion_num_items, current_bit, num_bits,
                            decomposer);
-                    if (CubDebug(error))
+                    error = CubDebug(error);
+                    if (cudaSuccess != error)
                     {
                       break;
                     }
 
-                    error = detail::DebugSyncStream(stream);
-                    if (CubDebug(error))
+                    error = CubDebug(detail::DebugSyncStream(stream));
+                    if (cudaSuccess != error)
                     {
                       break;
                     }
@@ -1745,11 +1798,20 @@ struct DispatchRadixSort : SelectedPolicy
         {
             // Get device ordinal
             int device_ordinal;
-            if (CubDebug(error = cudaGetDevice(&device_ordinal))) break;
+            error = CubDebug(cudaGetDevice(&device_ordinal));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
 
             // Get SM count
             int sm_count;
-            if (CubDebug(error = cudaDeviceGetAttribute (&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal))) break;
+            error = CubDebug(
+              cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
 
             // Init regular and alternate-digit kernel configurations
             PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> pass_config, alt_pass_config;
@@ -1795,11 +1857,18 @@ struct DispatchRadixSort : SelectedPolicy
             };
 
             // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-            if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))) break;
+            error = CubDebug(
+              AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+            if (cudaSuccess != error)
+            {
+              break;
+            }
 
             // Return if the caller is simply requesting the size of the storage allocation
             if (d_temp_storage == NULL)
-                return cudaSuccess;
+            {
+              return cudaSuccess;
+            }
 
             // Pass planning.  Run passes of the alternate digit-size configuration until we have an even multiple of our preferred digit size
             int num_bits            = end_bit - begin_bit;
@@ -1821,20 +1890,37 @@ struct DispatchRadixSort : SelectedPolicy
 
             // Run first pass, consuming from the input's current buffers
             int current_bit = begin_bit;
-            if (CubDebug(error = InvokePass(
-                d_keys.Current(), d_keys_remaining_passes.Current(),
-                d_values.Current(), d_values_remaining_passes.Current(),
-                d_spine, spine_length, current_bit,
-                (current_bit < alt_end_bit) ? alt_pass_config : pass_config))) break;
+            error =
+              CubDebug(InvokePass(d_keys.Current(),
+                                  d_keys_remaining_passes.Current(),
+                                  d_values.Current(),
+                                  d_values_remaining_passes.Current(),
+                                  d_spine,
+                                  spine_length,
+                                  current_bit,
+                                  (current_bit < alt_end_bit) ? alt_pass_config : pass_config));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
 
             // Run remaining passes
             while (current_bit < end_bit)
             {
-                if (CubDebug(error = InvokePass(
-                    d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector],    d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
-                    d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector],  d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
-                    d_spine, spine_length, current_bit,
-                    (current_bit < alt_end_bit) ? alt_pass_config : pass_config))) break;;
+                error = CubDebug(InvokePass(
+                  d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
+                  d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
+                  d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
+                  d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
+                  d_spine,
+                  spine_length,
+                  current_bit,
+                  (current_bit < alt_end_bit) ? alt_pass_config : pass_config));
+
+                if (cudaSuccess != error) 
+                {
+                    break;
+                }
 
                 // Invert selectors
                 d_keys_remaining_passes.selector ^= 1;
@@ -1898,13 +1984,19 @@ struct DispatchRadixSort : SelectedPolicy
                 (long long)stream);
         #endif
         cudaError_t error = cudaSuccess;
-        error = cudaMemcpyAsync(d_keys.Alternate(), d_keys.Current(), num_items * sizeof(KeyT),
-                                cudaMemcpyDefault, stream);
-        if (CubDebug(error))
+
+        error = CubDebug(cudaMemcpyAsync(d_keys.Alternate(),
+                                         d_keys.Current(),
+                                         num_items * sizeof(KeyT),
+                                         cudaMemcpyDefault,
+                                         stream));
+        if (cudaSuccess != error)
         {
             return error;
         }
-        if (CubDebug(error = detail::DebugSyncStream(stream)))
+
+        error = CubDebug(detail::DebugSyncStream(stream));
+        if (cudaSuccess != error)
         {
             return error;
         }
@@ -1917,13 +2009,18 @@ struct DispatchRadixSort : SelectedPolicy
             _CubLog("Invoking async copy of %lld values on stream %lld\n",
                     (long long)num_items, (long long)stream);
             #endif
-            error = cudaMemcpyAsync(d_values.Alternate(), d_values.Current(),
-                                    num_items * sizeof(ValueT), cudaMemcpyDefault, stream);
-            if (CubDebug(error))
+            error = CubDebug(cudaMemcpyAsync(d_values.Alternate(),
+                                             d_values.Current(),
+                                             num_items * sizeof(ValueT),
+                                             cudaMemcpyDefault,
+                                             stream));
+            if (cudaSuccess != error)
             {
                 return error;
             }
-            if (CubDebug(error = detail::DebugSyncStream(stream)))
+
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
                 return error;
             }
@@ -2004,7 +2101,12 @@ struct DispatchRadixSort : SelectedPolicy
         do {
             // Get PTX version
             int ptx_version = 0;
-            if (CubDebug(error = PtxVersion(ptx_version))) break;
+
+            error = CubDebug(PtxVersion(ptx_version));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
 
             // Create dispatch functor
             DispatchRadixSort dispatch(d_temp_storage,
@@ -2020,8 +2122,11 @@ struct DispatchRadixSort : SelectedPolicy
                                        decomposer);
 
             // Dispatch to chained policy
-            if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch))) break;
-
+            error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+            if (cudaSuccess != error)
+            {
+                break;
+            }
         } while (0);
 
         return error;
@@ -2220,14 +2325,15 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
                 current_bit, pass_bits, decomposer);
 
             // Check for failure to launch
-            if (CubDebug(error = cudaPeekAtLastError()))
+            error = CubDebug(cudaPeekAtLastError());
+            if (cudaSuccess != error)
             {
                 break;
             }
 
             // Sync the stream if specified to flush runtime errors
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -2290,7 +2396,11 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
             };
 
             // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-            if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))) break;
+            error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
 
             // Return if the caller is simply requesting the size of the storage allocation
             if (d_temp_storage == NULL)
@@ -2320,20 +2430,32 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
             // Run first pass, consuming from the input's current buffers
             int current_bit = begin_bit;
 
-            if (CubDebug(error = InvokePass(
-                d_keys.Current(), d_keys_remaining_passes.Current(),
-                d_values.Current(), d_values_remaining_passes.Current(),
-                current_bit,
-                (current_bit < alt_end_bit) ? alt_pass_config : pass_config))) break;
+            error =
+              CubDebug(InvokePass(d_keys.Current(),
+                                  d_keys_remaining_passes.Current(),
+                                  d_values.Current(),
+                                  d_values_remaining_passes.Current(),
+                                  current_bit,
+                                  (current_bit < alt_end_bit) ? alt_pass_config : pass_config));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
 
             // Run remaining passes
             while (current_bit < end_bit)
             {
-                if (CubDebug(error = InvokePass(
-                    d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector],    d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
-                    d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector],  d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
-                    current_bit,
-                    (current_bit < alt_end_bit) ? alt_pass_config : pass_config))) break;
+                error = CubDebug(InvokePass(
+                  d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
+                  d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
+                  d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
+                  d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
+                  current_bit,
+                  (current_bit < alt_end_bit) ? alt_pass_config : pass_config));
+                if (cudaSuccess != error) 
+                {
+                    break;
+                }
 
                 // Invert selectors and update current bit
                 d_keys_remaining_passes.selector ^= 1;
@@ -2409,7 +2531,12 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
         do {
             // Get PTX version
             int ptx_version = 0;
-            if (CubDebug(error = PtxVersion(ptx_version))) break;
+
+            error = CubDebug(PtxVersion(ptx_version));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
 
             // Create dispatch functor
             DispatchSegmentedRadixSort dispatch(
@@ -2420,8 +2547,11 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
                 stream, ptx_version);
 
             // Dispatch to chained policy
-            if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch))) break;
-
+            error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
         } while (0);
 
         return error;
