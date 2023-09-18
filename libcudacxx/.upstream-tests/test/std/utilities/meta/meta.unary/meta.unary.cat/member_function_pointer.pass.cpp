@@ -80,7 +80,6 @@ int main(int, char**)
 
 
 // reference qualifiers on functions are a C++11 extension
-#if TEST_STD_VER >= 11
   // Noexcept qualifiers
   test_member_function_pointer<void (Class::*)() noexcept>();
   test_member_function_pointer<void (Class::*)(int) noexcept>();
@@ -221,7 +220,6 @@ int main(int, char**)
   test_member_function_pointer<void (Class::*)(...) const volatile && noexcept>();
   test_member_function_pointer<void (Class::*)(int,...) const volatile && noexcept>();
   test_member_function_pointer<void (Class::*)(int, char,...) const volatile && noexcept>();
-#endif
 
 //  LWG#2582
   static_assert(!cuda::std::is_member_function_pointer<incomplete_type>::value, "");

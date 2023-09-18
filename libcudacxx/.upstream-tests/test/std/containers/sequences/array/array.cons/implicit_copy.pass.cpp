@@ -19,15 +19,6 @@
 // Disable the missing braces warning for this reason.
 #include "disable_missing_braces_warning.h"
 
-// In C++03 the copy assignment operator is not deleted when the implicitly
-// generated operator would be ill-formed; like in the case of a struct with a
-// const member.
-#if TEST_STD_VER < 11
-#define TEST_NOT_COPY_ASSIGNABLE(T) ((void)0)
-#else
-#define TEST_NOT_COPY_ASSIGNABLE(T) static_assert(!cuda::std::is_copy_assignable<T>::value, "")
-#endif
-
 struct NoDefault {
   __host__ __device__ NoDefault(int) {}
 };
@@ -50,7 +41,7 @@ int main(int, char**) {
     C c2 = c;
     unused(c2);
     static_assert(cuda::std::is_copy_constructible<C>::value, "");
-    TEST_NOT_COPY_ASSIGNABLE(C);
+    static_assert(!cuda::std::is_copy_assignable<C>::value, "");
   }
   {
     typedef double T;
@@ -70,7 +61,7 @@ int main(int, char**) {
     C c2 = c;
     unused(c2);
     static_assert(cuda::std::is_copy_constructible<C>::value, "");
-    TEST_NOT_COPY_ASSIGNABLE(C);
+    static_assert(!cuda::std::is_copy_assignable<C>::value, "");
   }
   {
     typedef NoDefault T;
@@ -89,7 +80,7 @@ int main(int, char**) {
     C c2 = c;
     unused(c2);
     static_assert(cuda::std::is_copy_constructible<C>::value, "");
-    TEST_NOT_COPY_ASSIGNABLE(C);
+    static_assert(!cuda::std::is_copy_assignable<C>::value, "");
   }
 
 

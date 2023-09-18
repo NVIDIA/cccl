@@ -82,16 +82,12 @@ int main(int, char**)
     test_is_class<Abstract>();
     test_is_class<incomplete_type>();
 
-#if TEST_STD_VER >= 11
 // In C++03 we have an emulation of cuda::std::nullptr_t
     test_is_not_class<cuda::std::nullptr_t>();
-#endif
     test_is_not_class<void>();
     test_is_not_class<int>();
     test_is_not_class<int&>();
-#if TEST_STD_VER >= 11
     test_is_not_class<int&&>();
-#endif
     test_is_not_class<int*>();
     test_is_not_class<double>();
     test_is_not_class<const int*>();

@@ -95,7 +95,6 @@ int main(int, char**)
     test_is_nothrow_destructible<const int*>();
     test_is_nothrow_destructible<char[3]>();
 
-#if TEST_STD_VER >= 11
     // requires noexcept. These are all destructible.
     test_is_nothrow_destructible<PublicDestructor>();
     test_is_nothrow_destructible<VirtualPublicDestructor>();
@@ -104,7 +103,7 @@ int main(int, char**)
     test_is_nothrow_destructible<Abstract>();
     test_is_nothrow_destructible<Empty>();
     test_is_nothrow_destructible<Union>();
-#endif
+
     // requires access control
     test_is_not_nothrow_destructible<ProtectedDestructor>();
     test_is_not_nothrow_destructible<PrivateDestructor>();

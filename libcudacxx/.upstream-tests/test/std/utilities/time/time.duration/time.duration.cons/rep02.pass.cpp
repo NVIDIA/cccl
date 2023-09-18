@@ -24,10 +24,8 @@ int main(int, char**)
 {
     cuda::std::chrono::duration<double> d(5);
     assert(d.count() == 5);
-#if TEST_STD_VER >= 11
     constexpr cuda::std::chrono::duration<double> d2(5);
     static_assert(d2.count() == 5, "");
-#endif
 
   return 0;
 }

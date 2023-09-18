@@ -23,9 +23,7 @@ __host__ __device__
 void test() {
   static_assert(_LIBCUDACXX_ALIGNOF(T) == cuda::std::alignment_of<T>::value, "");
   static_assert(_LIBCUDACXX_ALIGNOF(T) == TEST_ALIGNOF(T), "");
-#if TEST_STD_VER >= 11
   static_assert(_LIBCUDACXX_ALIGNOF(T) == alignof(T), "");
-#endif
 #ifdef TEST_COMPILER_CLANG
   static_assert(_LIBCUDACXX_ALIGNOF(T) == _Alignof(T), "");
 #endif
