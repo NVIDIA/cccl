@@ -173,18 +173,10 @@
 #  define CUB_DETAIL_MAGIC_NS_END
 #else // not defined(CUB_DISABLE_NAMESPACE_MAGIC)
 #  if defined(_NVHPC_CUDA)
-#    if defined(CUB_RDC_ENABLED) 
-#      define CUB_DETAIL_MAGIC_NS_BEGIN inline namespace CUB_DETAIL_MAGIC_NS_NAME(CUB_VERSION, RDC, NV_TARGET_SM_INTEGER_LIST) {
-#    else // !defined(CUB_RDC_ENABLED)
-#      define CUB_DETAIL_MAGIC_NS_BEGIN inline namespace CUB_DETAIL_MAGIC_NS_NAME(CUB_VERSION, NV_TARGET_SM_INTEGER_LIST) {
-#    endif // !defined(CUB_RDC_ENABLED)
+#    define CUB_DETAIL_MAGIC_NS_BEGIN inline namespace CUB_DETAIL_MAGIC_NS_NAME(CUB_VERSION, NV_TARGET_SM_INTEGER_LIST) {
 #    define CUB_DETAIL_MAGIC_NS_END }
 #  else // not defined(_NVHPC_CUDA)
-#    if defined(CUB_RDC_ENABLED) 
-#      define CUB_DETAIL_MAGIC_NS_BEGIN inline namespace CUB_DETAIL_MAGIC_NS_NAME(CUB_VERSION, RDC, __CUDA_ARCH_LIST__) {
-#    else // !defined(CUB_RDC_ENABLED)
-#      define CUB_DETAIL_MAGIC_NS_BEGIN inline namespace CUB_DETAIL_MAGIC_NS_NAME(CUB_VERSION, __CUDA_ARCH_LIST__) {
-#    endif // !defined(CUB_RDC_ENABLED)
+#    define CUB_DETAIL_MAGIC_NS_BEGIN inline namespace CUB_DETAIL_MAGIC_NS_NAME(CUB_VERSION, __CUDA_ARCH_LIST__) {
 #    define CUB_DETAIL_MAGIC_NS_END }
 #  endif // not defined(_NVHPC_CUDA)
 #endif // not defined(CUB_DISABLE_NAMESPACE_MAGIC)

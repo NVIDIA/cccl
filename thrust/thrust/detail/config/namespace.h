@@ -153,18 +153,10 @@
 #    define THRUST_DETAIL_MAGIC_NS_END
 #  else // not defined(THRUST_DISABLE_NAMESPACE_MAGIC)
 #    if defined(_NVHPC_CUDA)
-#      if defined(THRUST_RDC_ENABLED) 
-#        define THRUST_DETAIL_MAGIC_NS_BEGIN inline namespace THRUST_DETAIL_MAGIC_NS_NAME(THRUST_VERSION, RDC, NV_TARGET_SM_INTEGER_LIST) {
-#      else 
-#        define THRUST_DETAIL_MAGIC_NS_BEGIN inline namespace THRUST_DETAIL_MAGIC_NS_NAME(THRUST_VERSION, NV_TARGET_SM_INTEGER_LIST) {
-#      endif
+#      define THRUST_DETAIL_MAGIC_NS_BEGIN inline namespace THRUST_DETAIL_MAGIC_NS_NAME(THRUST_VERSION, NV_TARGET_SM_INTEGER_LIST) {
 #      define THRUST_DETAIL_MAGIC_NS_END }
 #    else // not defined(_NVHPC_CUDA)
-#      if defined(THRUST_RDC_ENABLED) 
-#        define THRUST_DETAIL_MAGIC_NS_BEGIN inline namespace THRUST_DETAIL_MAGIC_NS_NAME(THRUST_VERSION, RDC, __CUDA_ARCH_LIST__) {
-#      else
-#        define THRUST_DETAIL_MAGIC_NS_BEGIN inline namespace THRUST_DETAIL_MAGIC_NS_NAME(THRUST_VERSION, __CUDA_ARCH_LIST__) {
-#      endif
+#      define THRUST_DETAIL_MAGIC_NS_BEGIN inline namespace THRUST_DETAIL_MAGIC_NS_NAME(THRUST_VERSION, __CUDA_ARCH_LIST__) {
 #      define THRUST_DETAIL_MAGIC_NS_END }
 #    endif // not defined(_NVHPC_CUDA)
 #  endif // not defined(THRUST_DISABLE_NAMESPACE_MAGIC)
