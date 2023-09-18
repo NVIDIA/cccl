@@ -163,7 +163,7 @@
 #endif // !defined(CUB_DETAIL_MAGIC_NS_NAME)
 
 // clang-format off
-#if defined(CUB_DISABLE_NAMESPACE_MAGIC)
+#if defined(CUB_DISABLE_NAMESPACE_MAGIC) || defined(CUB_WRAPPED_NAMESPACE)
 #  if !defined(CUB_WRAPPED_NAMESPACE)
 #    if !defined(CUB_IGNORE_NAMESPACE_MAGIC_ERROR)
 #      error "Disabling namespace magic is unsafe without wrapping namespace"

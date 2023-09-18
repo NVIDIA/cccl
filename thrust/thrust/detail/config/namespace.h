@@ -143,7 +143,7 @@
 #    define THRUST_DETAIL_MAGIC_NS_NAME(...) THRUST_DETAIL_IDENTITY(THRUST_DETAIL_APPLY(THRUST_DETAIL_DISPATCH, THRUST_DETAIL_COUNT(__VA_ARGS__))(__VA_ARGS__))
 #  endif // !defined(THRUST_DETAIL_MAGIC_NS_NAME)
 
-#  if defined(THRUST_DISABLE_NAMESPACE_MAGIC)
+#  if defined(THRUST_DISABLE_NAMESPACE_MAGIC) || defined(THRUST_WRAPPED_NAMESPACE)
 #    if !defined(THRUST_WRAPPED_NAMESPACE)
 #      if !defined(THRUST_IGNORE_NAMESPACE_MAGIC_ERROR)
 #        error "Disabling namespace magic is unsafe without wrapping namespace"
