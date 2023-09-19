@@ -619,6 +619,10 @@ _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
     ::cuda::barrier<::cuda::thread_scope_block> & __b) {
     static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
 
+    _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+    _LIBCUDACXX_DEBUG_ASSERT(__isShared(__dest), "dest must point to shared memory.");
+    _LIBCUDACXX_DEBUG_ASSERT(__isGlobal(__src), "src must point to global memory.");
+
     NV_DISPATCH_TARGET(
         NV_PROVIDES_SM_90, (
             auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
