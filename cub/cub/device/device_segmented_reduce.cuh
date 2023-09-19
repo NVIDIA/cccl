@@ -731,7 +731,9 @@ struct DeviceSegmentedReduce
                                                  cudaStream_t stream = 0)
   {
     // Integer type for global offsets
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    // Using common iterator value type is a breaking change, see:
+    // https://github.com/NVIDIA/cccl/pull/414#discussion_r1330632615
+    using OffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input type
     using InputValueT = cub::detail::value_t<InputIteratorT>;
@@ -1097,7 +1099,9 @@ struct DeviceSegmentedReduce
                                                  cudaStream_t stream = 0)
   {
     // Integer type for global offsets
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    // Using common iterator value type is a breaking change, see:
+    // https://github.com/NVIDIA/cccl/pull/414#discussion_r1330632615
+    using OffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input type
     using InputValueT = cub::detail::value_t<InputIteratorT>;
