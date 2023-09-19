@@ -24,27 +24,6 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/* --- Copy Constructor --- */
-
-template <typename T>
-template <typename U>
-__host__ __device__ complex<T>::complex(const ::cuda::std::complex<U> &rhs)
-    : ::cuda::std::complex<T>(rhs)
-{}
-
-/* --- Copy Assignment --- */
-
-template <typename T>
-template <typename U>
-__host__ __device__
-  typename detail::disable_if<detail::is_same<T, U>::value, thrust::complex<T>>::type &
-  complex<T>::operator=(const ::cuda::std::complex<U> &z)
-{
-  this->real(T(z.real()));
-  this->imag(T(z.imag()));
-  return *this;
-}
-
 /* --- Equality Operators --- */
 
 template <typename T0, typename T1>

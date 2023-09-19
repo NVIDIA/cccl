@@ -26,6 +26,7 @@
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/std/complex>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -48,24 +49,30 @@ THRUST_NAMESPACE_BEGIN
 template <class T>
 struct complex : public ::cuda::std::complex<T>
 {
-  using ::cuda::std::complex<T>::complex; // inherit constructors
+  using base = ::cuda::std::complex<T>; // inherit constructors
+  using base::base;
 
-  /*! Copy constructor for base class with promoted underlying type.
-   *
-   * This "overwrites" constructor where U == T, alternativley one could use
-   * enable_if on dummy parameter.
-   */
-  template <typename U>
-  __host__ __device__ complex(const ::cuda::std::complex<U> &rhs);
+  complex() = default;
 
-  /*! Copy assignment for base class with diffent underlying type. */
-  template <typename U>
-  __host__ __device__ typename detail::disable_if<detail::is_same<T, U>::value, complex>::type &
-  operator=(const ::cuda::std::complex<U> &z);
+  __host__ __device__ complex(const base& rhs) : base(rhs) {}
+  __host__ __device__ complex(base&& rhs) : base(::cuda::std::move(rhs)) {}
+
+  template<class U, ::cuda::std::__enable_if_t<detail::has_promoted_numerical_type<T, U>::value, int> = 0>
+  __host__ __device__ complex& operator=(const complex<U>& rhs) {
+    this->real(static_cast<T>(rhs.real()));
+    this->imag(static_cast<T>(rhs.imag()));
+    return *this;
+  }
+
+  template<class U, ::cuda::std::__enable_if_t<detail::has_promoted_numerical_type<T, U>::value, int> = 0>
+  __host__ __device__ complex& operator=(const U& rhs) {
+    this->operator=(static_cast<T>(rhs));
+    return *this;
+  }
 
   /*! Cast this \p complex to a <tt>std::complex</tt>
    */
-  __host__ operator std::complex<T>() const { return std::complex<T>(this->real(), this->imag()); }
+  __host__ operator ::std::complex<T>() const { return ::std::complex<T>(this->real(), this->imag()); }
 };
 
 // The following code enables operators between `complex` when the underlying type of the `complex`
@@ -305,103 +312,6 @@ __host__ __device__ typename detail::disable_if<
   detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
   complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
 operator-(const T0 &x, const complex<T1> &y);
-
-/* --- Multiplication Operator --- */
-
-/*! Multiplies two \p complex numbers.
- *
- *  The value types of the two \p complex types should be compatible and the
- *  type of the returned \p complex is the promoted type of the two arguments.
- *
- *  \param x The first \p complex.
- *  \param y The second \p complex.
- *
- *  \tparam \c T0 is convertible to \c T1.
- */
-template <typename T0, typename T1>
-__host__ __device__
-  typename detail::disable_if<detail::is_same<T0, T1>::value,
-                              complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-  operator*(const complex<T0> &x, const complex<T1> &y);
-
-/*! Multiplies a \p complex number by a scalar.
- *
- *  \param x The \p complex.
- *  \param y The scalar.
- *
- *  \tparam \c T0 is convertible to \c T1.
- */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-operator*(const complex<T0> &x, const T1 &y);
-
-/*! Multiplies a scalar by a \p complex number.
- *
- *  The value type of the \p complex should be compatible with the scalar and
- *  the type of the returned \p complex is the promoted type of the two arguments.
- *
- *  \param x The scalar.
- *  \param y The \p complex.
- *
- *  \tparam \c T0 is convertible to \c T1.
- */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-operator*(const T0 &x, const complex<T1> &y);
-
-/* --- Division Operator --- */
-
-/*! Divides two \p complex numbers.
- *
- *  The value types of the two \p complex types should be compatible and the
- *  type of the returned \p complex is the promoted type of the two arguments.
- *
- *  \param x The numerator (dividend).
- *  \param y The denomimator (divisor).
- *
- *  \tparam \c T0 is convertible to \c T1.
- */
-template <typename T0, typename T1>
-__host__ __device__
-  typename detail::disable_if<detail::is_same<T0, T1>::value,
-                              complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-  operator/(const complex<T0> &x, const complex<T1> &y);
-
-/*! Divides a \p complex number by a scalar.
- *
- *  The value type of the \p complex should be compatible with the scalar and
- *  the type of the returned \p complex is the promoted type of the two arguments.
- *
- *  \param x The complex numerator (dividend).
- *  \param y The scalar denomimator (divisor).
- *
- *  \tparam \c T0 is convertible to \c T1.
- */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-operator/(const complex<T0> &x, const T1 &y);
-
-/*! Divides a scalar by a \p complex number.
- *
- *  The value type of the \p complex should be compatible with the scalar and
- *  the type of the returned \p complex is the promoted type of the two arguments.
- *
- *  \param x The scalar numerator (dividend).
- *  \param y The complex denomimator (divisor).
- *
- *  \tparam \c T0 is convertible to \c T1.
- */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-operator/(const T0 &x, const complex<T1> &y);
 
 // The using declarations allows imports all necessary functions for thurst::complex.
 // However, they also lead to thrust::abs(1.0F) being valid code after include <thurst/complex.h>.

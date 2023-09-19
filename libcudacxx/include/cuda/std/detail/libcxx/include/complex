@@ -409,8 +409,10 @@ public:
         : __re_(__re), __im_(__im) {}
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit constexpr complex(const complex<double>& __c);
+#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit constexpr complex(const complex<long double>& __c);
+#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
 #if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
     template <class _Up>
@@ -504,8 +506,11 @@ public:
         : __re_(__re), __im_(__im) {}
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr complex(const complex<float>& __c);
+
+#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit constexpr complex(const complex<long double>& __c);
+#endif //_LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
 #if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
     template <class _Up>
@@ -587,20 +592,10 @@ public:
         }
 };
 
+#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 template<>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(long double)) complex<long double>
 {
-#ifndef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-public:
-    template <typename _Dummy = void>
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(long double __re = 0.0, long double __im = 0.0)
-        {static_assert(is_same<_Dummy, void>::value, "complex<long double> is not supported");}
-
-    template <typename _Tp, typename _Dummy = void>
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(const complex<_Tp> &__c)
-        {static_assert(is_same<_Dummy, void>::value, "complex<long double> is not supported");}
-
-#else
     long double __re_;
     long double __im_;
 public:
@@ -691,8 +686,8 @@ public:
             *this = *this / complex(__c.real(), __c.imag());
             return *this;
         }
-#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 };
+#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_MSVC_WARNING)
   // MSVC complains about narrowing conversions on these copy constructors regardless if they are used
@@ -1193,6 +1188,7 @@ arg(const complex<_Tp>& __c)
     return _CUDA_VSTD::atan2(__c.imag(), __c.real());
 }
 
+#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __enable_if_t<
@@ -1203,6 +1199,7 @@ arg(_Tp __re)
 {
     return _CUDA_VSTD::atan2l(0.L, __re);
 }
+#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
 template<class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
