@@ -1,6 +1,6 @@
 ---
 grand_parent: Extended API
-parent: Barriers
+parent: Asynchronous Operations
 ---
 
 # `cuda::device::memcpy_async_tx`
@@ -21,20 +21,35 @@ cuda::device::memcpy_async_tx(
 Copies `size` bytes from global memory `src` to shared memory `dest` and arrives
 on a shared memory barrier `bar`, updating its transaction count by `size`
 bytes.
+
+## Preconditions
+
+* `src`, `dest` are 16-byte aligned and `size` is a multiple of 16, i.e.,
+  `Alignment >= 16`.
+* `dest` points to shared memory
+* `src` points to global memory
+* `bar` is located in shared memory
+* If either `destination` or `source` is an invalid or null pointer, the
+    behavior is undefined (even if `count` is zero).
+* If the objects are [potentially-overlapping] the behavior is undefined.
+* If the objects are not of [_TriviallyCopyable_] type the program is
+    ill-formed, no diagnostic required.
+
  
 ## Notes
-
-The behavior is undefined if any of the following conditions hold: 
-- `bar` is not in `__shared__` memory;
-- `dest` is not 16-byte aligned
-- `src` is not 16-byte aligned
-- `size` is not a multiple of 16.
 
 This function can only be used under CUDA Compute Capability 9.0 (Hopper) or
 higher.
 
 There is no feature flag to check if `cuda::device::memcpy_async_tx` is
 available.
+
+**Comparison to `cuda::memcpy_async`**: `memcpy_async_tx` supports a subset of
+the operations of `memcpy_async`. It gives more control over the synchronization
+with a barrier than `memcpy_async`. `memcpy_async_tx` has no synchronous
+fallback mechanism, so it can be used to ensure that the newest hardware
+features are used. The drawback is that it does not work on older hardware
+(pre-CUDA Compute Capability 9.0, i.e., Hopper).
 
 ## Return Value
 
