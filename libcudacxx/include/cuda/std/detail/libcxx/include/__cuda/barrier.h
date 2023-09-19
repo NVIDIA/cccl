@@ -611,24 +611,25 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
     return __token;
 }
 
-template <typename T, _CUDA_VSTD::size_t Alignment>
+template <typename _Tp, _CUDA_VSTD::size_t _Alignment>
 _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
-    T* __dest,
-    const T* __src,
-    ::cuda::aligned_size_t<Alignment> __size,
+    _Tp* __dest,
+    const _Tp* __src,
+    ::cuda::aligned_size_t<_Alignment> __size,
     ::cuda::barrier<::cuda::thread_scope_block> & __b) {
-    static_assert(16 <= Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
+    static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
 
     NV_DISPATCH_TARGET(
         NV_PROVIDES_SM_90, (
-            if (__isShared(__dest) && __isGlobal(__src) && __isShared(barrier_native_handle(__b))) {
+            auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+            if (__isShared(__dest) && __isGlobal(__src)) {
                 asm volatile(
                     "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
                     :
                     : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
                       "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
                       "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
-                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(::cuda::device::barrier_native_handle(__b))))
+                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh))
                     : "memory");
 
             } else {
