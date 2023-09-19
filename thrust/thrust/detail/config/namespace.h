@@ -184,7 +184,7 @@
  * This macro is defined by Thrust and may not be overridden.
  */
 #define THRUST_NAMESPACE_END                                                   \
-  THRUST_DETAIL_ABI_NS_END                                                   \
+  THRUST_DETAIL_ABI_NS_END                                                     \
   } /* end namespace thrust */                                                 \
   THRUST_NS_POSTFIX
 

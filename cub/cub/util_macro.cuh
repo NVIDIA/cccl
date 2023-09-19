@@ -35,8 +35,8 @@
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/std/detail/__config>
 #include <cuda/std/utility>
+#include <cuda/std/version> // _LIBCUDACXX_HIDDEN, _LIBCUDACXX_{CLANG,GCC}_DIAGNOSTIC_IGNORED
 
 CUB_NAMESPACE_BEGIN
 

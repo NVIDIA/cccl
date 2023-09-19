@@ -30,10 +30,9 @@
 #include <thrust/system/cuda/detail/core/alignment.h>
 #include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/version> // _LIBCUDACXX_HIDDEN
 
 #include <cassert>
-
 
 THRUST_NAMESPACE_BEGIN
 
