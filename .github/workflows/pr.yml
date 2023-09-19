@@ -32,145 +32,98 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
-  get-devcontainer-version:
-    name: Get devcontainer version
+  compute-matrix:
+    name: Compute matrix 
     runs-on: ubuntu-latest
     outputs:
-      DEVCONTAINER_VERSION: ${{ steps.set-outputs.outputs.DEVCONTAINER_VERSION }}
+      DEVCONTAINER_VERSION: ${{steps.set-outputs.outputs.DEVCONTAINER_VERSION}}
+      NVCC_FULL_MATRIX: ${{steps.set-outputs.outputs.NVCC_FULL_MATRIX}}
+      CUDA_VERSIONS: ${{steps.set-outputs.outputs.CUDA_VERSIONS}}
+      HOST_COMPILERS: ${{steps.set-outputs.outputs.HOST_COMPILERS}}
+      PER_CUDA_COMPILER_MATRIX: ${{steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX}}
+      NVRTC_MATRIX: ${{steps.set-outputs.outputs.matrix}}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-      - name: Get devcontainer version
+      - name: Compute matrix outputs
         id: set-outputs
         run: |
-          DEVCONTAINER_VERSION=$(yq -o json ci/matrix.yaml | jq -r '.devcontainer_version')
-          echo "DEVCONTAINER_VERSION=$DEVCONTAINER_VERSION" | tee -a "$GITHUB_OUTPUT"
-
-  compute-nvcc-matrix:
-    name: Compute NVCC matrix
-    runs-on: ubuntu-latest
-    outputs:
-      FULL_MATRIX: ${{ steps.set-outputs.outputs.FULL_MATRIX }}
-      CUDA_VERSIONS: ${{ steps.set-outputs.outputs.CUDA_VERSIONS }}
-      HOST_COMPILERS: ${{ steps.set-outputs.outputs.HOST_COMPILERS }}
-      PER_CUDA_COMPILER_MATRIX: ${{ steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      - name: Get full nvcc matrix
-        id: compute-nvcc-matrix
-        uses: ./.github/actions/compute-matrix
-        with:
-          matrix_file: './ci/matrix.yaml'
-          matrix_query: '.pull_request.nvcc'
-      - name: Set outputs
-        id: set-outputs
-        run: |
-          FULL_MATRIX='${{steps.compute-nvcc-matrix.outputs.matrix}}'
-          echo "FULL_MATRIX=$FULL_MATRIX" | tee -a "$GITHUB_OUTPUT"
-          CUDA_VERSIONS=$(echo $FULL_MATRIX | jq -c '[.[] | .cuda] | unique')
-          echo "CUDA_VERSIONS=$CUDA_VERSIONS" | tee -a "$GITHUB_OUTPUT"
-          HOST_COMPILERS=$(echo $FULL_MATRIX | jq -c '[.[] | .compiler.name] | unique')
-          echo "HOST_COMPILERS=$HOST_COMPILERS" | tee -a "$GITHUB_OUTPUT"
-          PER_CUDA_COMPILER_MATRIX=$(echo $FULL_MATRIX | jq -c ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')
-          echo "PER_CUDA_COMPILER_MATRIX=$PER_CUDA_COMPILER_MATRIX" | tee -a "$GITHUB_OUTPUT"
-
-  compute-nvrtc-matrix:
-    name: Compute NVRTC matrix
-    runs-on: ubuntu-latest
-    outputs:
-      NVRTC_MATRIX: ${{ steps.set-outputs.outputs.NVRTC_MATRIX }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      - name: Get full nvrtc matrix
-        id: compute-nvrtc-matrix
-        uses: ./.github/actions/compute-matrix
-        with:
-          matrix_file: './ci/matrix.yaml'
-          matrix_query: '.pull_request.nvrtc'
-      - name: Set outputs
-        id: set-outputs
-        run: |
-          NVRTC_MATRIX='${{steps.compute-nvrtc-matrix.outputs.matrix}}'
-          echo "NVRTC_MATRIX=$NVRTC_MATRIX" | tee -a "$GITHUB_OUTPUT"
-
+          .github/actions/compute-matrix/compute-matrix.sh ci/matrix.yaml pull_request
+      
   nvrtc:
     name: NVRTC CUDA${{matrix.cuda}} C++${{matrix.std}}
+    needs: compute-matrix
     if: ${{ !contains(github.event.head_commit.message, 'skip-tests') }}
-    needs: [compute-nvrtc-matrix, get-devcontainer-version]
     uses: ./.github/workflows/run-as-coder.yml
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.compute-nvrtc-matrix.outputs.NVRTC_MATRIX) }}
+        include: ${{ fromJSON(needs.compute-matrix.outputs.NVRTC_MATRIX) }}
     with:
       name: NVRTC CUDA${{matrix.cuda}} C++${{matrix.std}}
       runner: linux-${{matrix.cpu}}-gpu-v100-latest-1
-      image: rapidsai/devcontainers:${{needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION}}-cpp-gcc12-cuda${{matrix.cuda}}-${{matrix.os}}
+      image: rapidsai/devcontainers:${{needs.compute-matrix.outputs.DEVCONTAINER_VERSION}}-cpp-gcc12-cuda${{matrix.cuda}}-${{matrix.os}}
       command: |
         ./ci/nvrtc_libcudacxx.sh g++ ${{matrix.std}} ${{matrix.gpu_build_archs}}
 
-
   thrust:
     name: Thrust CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
-    needs: [compute-nvcc-matrix, get-devcontainer-version]
+    needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
       matrix:
-        cuda_version: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.CUDA_VERSIONS) }}
-        compiler: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.HOST_COMPILERS) }}
+        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }}
+        compiler: ${{ fromJSON(needs.compute-matrix.outputs.HOST_COMPILERS) }}
     with:
-      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-nvcc-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
+      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       build_script: "./ci/build_thrust.sh"
       test_script: "./ci/test_thrust.sh"
-      devcontainer_version: ${{ needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION }}
+      devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
 
   cub:
     name: CUB CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
-    needs: [compute-nvcc-matrix, get-devcontainer-version]
+    needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
       matrix:
-        cuda_version: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.CUDA_VERSIONS) }}
-        compiler: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.HOST_COMPILERS) }}
+        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }}
+        compiler: ${{ fromJSON(needs.compute-matrix.outputs.HOST_COMPILERS) }}
     with:
-      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-nvcc-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
+      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       build_script: "./ci/build_cub.sh"
       test_script: "./ci/test_cub.sh"
-      devcontainer_version: ${{ needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION }}
+      devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
 
   libcudacxx:
     name: libcudacxx CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
-    needs: [compute-nvcc-matrix, get-devcontainer-version]
+    needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
       matrix:
-        cuda_version: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.CUDA_VERSIONS) }}
-        compiler: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.HOST_COMPILERS) }}
+        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }}
+        compiler: ${{ fromJSON(needs.compute-matrix.outputs.HOST_COMPILERS) }}
     with:
-      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-nvcc-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
+      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
       build_script: "./ci/build_libcudacxx.sh"
       test_script: "./ci/test_libcudacxx.sh"
-      devcontainer_version: ${{ needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION }}
+      devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
 
   examples:
     name: CCCL Examples
+    needs: compute-matrix
     if: ${{ !contains(github.event.head_commit.message, 'skip-tests') }}
-    needs: [compute-nvcc-matrix, get-devcontainer-version]
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.compute-nvcc-matrix.outputs.FULL_MATRIX) }}
+        include: ${{ fromJSON(needs.compute-matrix.outputs.NVCC_FULL_MATRIX) }}
     uses: ./.github/workflows/run-as-coder.yml
     with:
       name: CCCL Examples CUDA${{matrix.cuda}} ${{matrix.compiler.name}}${{matrix.compiler.version}}
       runner: linux-${{matrix.cpu}}-gpu-v100-latest-1
-      image: rapidsai/devcontainers:${{needs.get-devcontainer-version.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
+      image: rapidsai/devcontainers:${{needs.compute-matrix.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       command: |
         cmake -S . --preset=examples -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA} -DCMAKE_CUDA_COMPILER=nvcc
         ctest --preset=examples
