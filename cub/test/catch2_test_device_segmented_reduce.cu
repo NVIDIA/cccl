@@ -233,14 +233,13 @@ CUB_TEST("Device reduce works with all device interfaces",
 
   SECTION("argmax")
   {
-    using result_t = cub::KeyValuePair<offset_t, output_t>;
+    using result_t = cub::KeyValuePair<int, output_t>;
 
     // Prepare verification data
     thrust::host_vector<result_t> expected_result(num_segments);
     compute_segmented_argmax_reference(in_items, segment_offsets, expected_result.begin());
 
     // Run test
-    using result_t = cub::KeyValuePair<offset_t, output_t>;
     thrust::device_vector<result_t> out_result(num_segments);
     device_segmented_arg_max(d_in_it,
                              thrust::raw_pointer_cast(out_result.data()),
@@ -254,7 +253,7 @@ CUB_TEST("Device reduce works with all device interfaces",
 
   SECTION("argmin")
   {
-    using result_t = cub::KeyValuePair<offset_t, output_t>;
+    using result_t = cub::KeyValuePair<int, output_t>;
 
     // Prepare verification data
     thrust::host_vector<input_t> host_items(in_items);
