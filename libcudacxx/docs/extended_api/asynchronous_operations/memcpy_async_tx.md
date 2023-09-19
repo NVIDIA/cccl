@@ -73,11 +73,12 @@ __global__ void example_kernel() {
   if (threadIdx.x == 0) {
     init(&bar, blockDim.x);
   }
+  __syncthreads();
 
   barrier::arrival_token token;
   if (threadIdx.x == 0) {
     cuda::device::memcpy_async_tx(smem_x, gmem_x, cuda::aligned_size_t<16>(sizeof(smem_x)), bar);
-    token = cuda::device::arrive_tx(bar, 1, sizeof(smem_x));
+    token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_x));
   } else {
     auto token = bar.arrive(1);
   } 
@@ -88,7 +89,7 @@ __global__ void example_kernel() {
 }
 ```
 
-[See it on Godbolt](https://godbolt.org/z/nTv558sK7){: .btn }
+[See it on Godbolt](https://godbolt.org/z/oK7Tazszx){: .btn }
 
 
 [`cuda::thread_scope`]: ./memory_model.md
