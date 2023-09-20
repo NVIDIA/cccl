@@ -611,6 +611,7 @@ class Configuration(object):
         if self.is_windows:
             # FIXME: Can we remove this?
             self.cxx.compile_flags += ['-D_CRT_SECURE_NO_WARNINGS']
+            self.cxx.compile_flags += ['--use-local-env']
             # Required so that tests using min/max don't fail on Windows,
             # and so that those tests don't have to be changed to tolerate
             # this insanity.
@@ -751,7 +752,8 @@ class Configuration(object):
         if enable_32bit:
             self.cxx.flags += ['-m32']
         # Use verbose output for better errors
-        self.cxx.flags += ['-v']
+        if not self.cxx.use_ccache or self.cxx.type == 'msvc':
+            self.cxx.flags += ['-v']
         sysroot = self.get_lit_conf('sysroot')
         if sysroot:
             self.cxx.flags += ['--sysroot=' + sysroot]
@@ -970,6 +972,9 @@ class Configuration(object):
         nvcc_host_compiler = self.get_lit_conf('nvcc_host_compiler')
         if nvcc_host_compiler and self.cxx.type == 'nvcc':
             self.cxx.link_flags += ['-ccbin={0}'.format(nvcc_host_compiler)]
+
+        if self.is_windows:
+            self.cxx.link_flags += ['--use-local-env']
 
         # Configure library path
         self.configure_link_flags_cxx_library_path()
