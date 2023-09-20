@@ -26,4 +26,5 @@
 ******************************************************************************/
 
 #define CUB_CONFIG_MAIN
+#define CUB_EXCLUDE_CATCH2_HELPER_IMPL
 #include "catch2_main.cuh"

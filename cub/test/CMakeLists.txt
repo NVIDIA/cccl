@@ -1,3 +1,12 @@
+if(CMAKE_GENERATOR MATCHES "^Visual Studio")
+  if(CUB_ENABLE_RDC_TESTS)
+    if("${CMAKE_VERSION}" VERSION_LESS 3.27.5)
+      # https://gitlab.kitware.com/cmake/cmake/-/merge_requests/8794
+      message(WARNING "CMake 3.27.5 or newer is required to enable RDC tests in Visual Studio.")
+    endif()
+  endif()
+endif()
+
 if ("NVHPC" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
   # NVBugs 200770766
   set(CUB_SEPARATE_CATCH2 ON)
@@ -131,7 +140,7 @@ endfunction()
 # test_src: The source file that implements the test.
 # cub_target: The reference cub target with configuration information.
 #
-function(cub_add_test target_name_var test_name test_src cub_target)
+function(cub_add_test target_name_var test_name test_src cub_target cdp)
   cub_get_target_property(config_prefix ${cub_target} PREFIX)
 
   cub_is_catch2_test(is_catch2_test "${test_src}")
@@ -142,32 +151,20 @@ function(cub_add_test target_name_var test_name test_src cub_target)
 
   set(config_meta_target ${config_prefix}.tests)
 
-  if (is_catch2_test)
-    set(use_rdc_for_catch2_utils OFF)
-    if (CUB_ENABLE_RDC_TESTS OR CUB_FORCE_RDC)
-      set(use_rdc_for_catch2_utils ON)
-    endif()
+  if (${cdp})
+    set(cdp_val 1)
+  else()
+    set(cdp_val 0)
+  endif()
 
+  if (is_catch2_test)
     # Per config helper library:
-    set(config_c2h_target ${config_prefix}.test.catch2_helper)
+    set(config_c2h_target ${config_prefix}.test.catch2_helper.cdp_${cdp_val})
     if (NOT TARGET ${config_c2h_target})
       add_library(${config_c2h_target} STATIC c2h/generators.cu)
-      set_property(TARGET ${config_c2h_target}
-        PROPERTY POSITION_INDEPENDENT_CODE ON
-      )
-
-      if ("NVHPC" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
-        target_link_options(${config_c2h_target} PRIVATE "-cuda")
-        target_compile_options(${config_c2h_target} PRIVATE "-fPIC")
-      endif()
-
-      target_include_directories(${config_c2h_target}
-        PUBLIC "${CUB_SOURCE_DIR}/test"
-      )
-
+      target_include_directories(${config_c2h_target} PUBLIC "${CUB_SOURCE_DIR}/test")
       cub_clone_target_properties(${config_c2h_target} ${cub_target})
-      cub_configure_cuda_target(${config_c2h_target} RDC ${use_rdc_for_catch2_utils})
-
+      cub_configure_cuda_target(${config_c2h_target} RDC ${cdp_val})
       target_link_libraries(${config_c2h_target} PRIVATE ${cub_target})
       if (CUB_C2H_ENABLE_CURAND)
         target_link_libraries(${config_c2h_target} PRIVATE CUDA::curand)
@@ -189,18 +186,16 @@ function(cub_add_test target_name_var test_name test_src cub_target)
       add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
     else() # Not CUB_SEPARATE_CATCH2
       # Per config catch2 runner
-      set(config_c2run_target ${config_prefix}.catch2_test)
+      set(config_c2run_target ${config_prefix}.catch2_test.cdp_${cdp_val})
       if (NOT TARGET ${config_c2run_target})
-        add_executable(${config_c2run_target} catch2_runner.cpp)
+        add_executable(${config_c2run_target} catch2_runner.cpp catch2_runner_helper.cu)
         target_link_libraries(${config_c2run_target} PRIVATE
           ${cub_target}
           ${config_c2h_target}
           Metal
-          Catch2::Catch2
-          CUDA::cudart
-        )
+          Catch2::Catch2)
         cub_clone_target_properties(${config_c2run_target} ${cub_target})
-        cub_configure_cuda_target(${config_c2run_target} RDC ${use_rdc_for_catch2_utils})
+        cub_configure_cuda_target(${config_c2run_target} RDC ${cdp_val})
         add_dependencies(${config_meta_target} ${config_c2run_target})
         target_include_directories(${config_c2run_target} PRIVATE
           "${CUB_SOURCE_DIR}/test"
@@ -219,7 +214,13 @@ function(cub_add_test target_name_var test_name test_src cub_target)
       endif() # per config catch2 runner
 
       add_library(${test_target} OBJECT "${test_src}")
-      target_link_libraries(${config_c2run_target} PRIVATE ${test_target})
+
+      if(CMAKE_GENERATOR MATCHES "^Visual Studio")
+        target_link_libraries(${config_c2run_target} PRIVATE $<TARGET_OBJECTS:${test_target}>)
+      else()
+        target_link_libraries(${config_c2run_target} PRIVATE ${test_target})
+      endif()
+      
     endif() # CUB_SEPARATE_CATCH2
 
     if (CUB_IN_THRUST)
@@ -312,7 +313,7 @@ foreach (test_src IN LISTS test_srcs)
 
     if (num_variants EQUAL 0)
       # Only one version of this test.
-      cub_add_test(test_target ${test_name} "${test_src}" ${cub_target})
+      cub_add_test(test_target ${test_name} "${test_src}" ${cub_target} ${CUB_FORCE_RDC})
       cub_configure_cuda_target(${test_target} RDC ${CUB_FORCE_RDC})
     else() # has variants:
       # Meta target to build all parametrizations of the current test for the
@@ -346,15 +347,6 @@ foreach (test_src IN LISTS test_srcs)
           continue()
         endif()
 
-        cub_add_test(test_target
-          ${test_name}.${label}
-          "${test_src}"
-          ${cub_target}
-        )
-        add_dependencies(${variant_meta_target} ${test_target})
-        add_dependencies(${cub_variant_meta_target} ${test_target})
-        target_compile_definitions(${test_target} PRIVATE ${defs})
-
         # Enable RDC if the test either:
         # 1. Explicitly requests it (cdp_1 label)
         # 2. Does not have an explicit CDP variant (no cdp_0 or cdp_1) but
@@ -363,10 +355,20 @@ foreach (test_src IN LISTS test_srcs)
         # Tests that explicitly request no cdp (cdp_0 label) should never enable
         # RDC.
         if (explicit_cdp)
-          cub_configure_cuda_target(${test_target} RDC ${enable_cdp})
+          set(cdp_val ${enable_cdp})
         else()
-          cub_configure_cuda_target(${test_target} RDC ${CUB_FORCE_RDC})
+          set(cdp_val ${CUB_FORCE_RDC})
         endif()
+
+        cub_add_test(test_target
+          ${test_name}.${label}
+          "${test_src}"
+          ${cub_target}
+          ${cdp_val})
+        cub_configure_cuda_target(${test_target} RDC ${cdp_val})
+        add_dependencies(${variant_meta_target} ${test_target})
+        add_dependencies(${cub_variant_meta_target} ${test_target})
+        target_compile_definitions(${test_target} PRIVATE ${defs})
       endforeach() # Variant
     endif() # Has variants
   endforeach() # CUB targets
