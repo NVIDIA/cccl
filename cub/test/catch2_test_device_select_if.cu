@@ -38,7 +38,6 @@
 
 // Has to go after all cub headers. Otherwise, this test won't catch unused
 // variables in cub kernels.
-#include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
 
