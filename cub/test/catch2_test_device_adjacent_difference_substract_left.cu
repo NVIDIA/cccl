@@ -108,7 +108,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft works with iterators", "[device
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin());
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
   adjacent_difference_subtract_left(in.begin(),
                                     num_items);
@@ -127,7 +127,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with iterators", "[de
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin());
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
   adjacent_difference_subtract_left_copy(in.begin(),
                                          out.begin(),
@@ -146,7 +146,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft works with pointers", "[device]
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin());
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
   adjacent_difference_subtract_left(thrust::raw_pointer_cast(in.data()),
                                     num_items);
@@ -165,7 +165,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with pointers", "[dev
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin());
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
   adjacent_difference_subtract_left_copy(thrust::raw_pointer_cast(in.data()),
                                          thrust::raw_pointer_cast(out.data()),
@@ -174,9 +174,10 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with pointers", "[dev
   REQUIRE(reference == out);
 }
 
+template<class T>
 struct cust_diff {
-  template<class T>
-  __host__ __device__ constexpr T operator()(const T& lhs, const T& rhs) const noexcept {
+  template<class T2, cuda::std::__enable_if_t<cuda::std::is_same<T, T2>::value, int> = 0>
+  __host__ __device__ constexpr T2 operator()(const T2& lhs, const T2& rhs) const noexcept {
     return lhs - rhs;
   }
 
@@ -195,11 +196,11 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft works with custom difference", 
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), cust_diff{});
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), cust_diff<type>{});
 
   adjacent_difference_subtract_left(in.begin(),
                                     num_items,
-                                    cust_diff{});
+                                    cust_diff<type>{});
 
   REQUIRE(reference == in);
 }
@@ -215,12 +216,12 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with custom differenc
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), cust_diff{});
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), cust_diff<type>{});
 
   adjacent_difference_subtract_left_copy(in.begin(),
                                          out.begin(),
                                          num_items,
-                                         cust_diff{});
+                                         cust_diff<type>{});
 
   REQUIRE(reference == out);
 }
@@ -249,12 +250,12 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with a different outp
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), cust_diff{});
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), cust_diff<type>{});
 
   adjacent_difference_subtract_left_copy(in.begin(),
                                          out.begin(),
                                          num_items,
-                                         cust_diff{});
+                                         cust_diff<type>{});
 
   REQUIRE(reference == out);
 }
