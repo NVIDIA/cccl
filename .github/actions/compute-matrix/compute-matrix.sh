@@ -4,7 +4,7 @@ set -euo pipefail
 
 write_output() {
   local key="$1"
-  local value="$(echo "$2" | jq -c .)"
+  local value="$2"
   echo "$key=$value" | tee --append "${GITHUB_OUTPUT:-/dev/null}"
 }
 
