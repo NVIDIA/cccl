@@ -30,6 +30,11 @@ If(!(test-path -PathType container "../build")) {
 # The most recent build will always be symlinked to cccl/build/latest
 New-Item -ItemType Directory -Path "$BUILD_DIR" -Force
 
+# replace sccache binary to get it working with MSVC
+$script:path_to_sccache =(gcm sccache).Source
+Remove-Item $path_to_sccache -Force
+Invoke-WebRequest -Uri "https://github.com/robertmaynard/sccache/releases/download/nvcc_msvc_v1/sccache.exe" -OutFile $path_to_sccache
+
 $script:COMMON_CMAKE_OPTIONS= @(
     "-S .."
     "-B $BUILD_DIR"
