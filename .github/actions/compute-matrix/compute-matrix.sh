@@ -9,19 +9,19 @@ write_output() {
 }
 
 explode_std_versions() {
-  jq -r 'map(. as $o | {std: $o.std[]} + del($o.std))'
+  jq -cr 'map(. as $o | {std: $o.std[]} + del($o.std))'
 }
 
 extract_matrix() {
   local file="$1"
   local type="$2"
-  local matrix=$(yq -o=json "$file" | jq -r ".$type")
-  write_output "DEVCONTAINER_VERSION" "$(yq -o json "$file" | jq -r '.devcontainer_version')"
-  local nvcc_full_matrix="$(echo "$matrix" | jq -r '.nvcc' | explode_std_versions )"
+  local matrix=$(yq -o=json "$file" | jq -cr ".$type")
+  write_output "DEVCONTAINER_VERSION" "$(yq -o json "$file" | jq -cr '.devcontainer_version')"
+  local nvcc_full_matrix="$(echo "$matrix" | jq -cr '.nvcc' | explode_std_versions )"
   write_output "NVCC_FULL_MATRIX" "$nvcc_full_matrix"
-  write_output "CUDA_VERSIONS" "$(echo "$nvcc_full_matrix" | jq -r '[.[] | .cuda] | unique')"
-  write_output "HOST_COMPILERS" "$(echo "$nvcc_full_matrix" | jq -r '[.[] | .compiler.name] | unique')"
-  write_output "PER_CUDA_COMPILER_MATRIX" "$(echo "$nvcc_full_matrix" | jq -r ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')"
+  write_output "CUDA_VERSIONS" "$(echo "$nvcc_full_matrix" | jq -cr '[.[] | .cuda] | unique')"
+  write_output "HOST_COMPILERS" "$(echo "$nvcc_full_matrix" | jq -cr '[.[] | .compiler.name] | unique')"
+  write_output "PER_CUDA_COMPILER_MATRIX" "$(echo "$nvcc_full_matrix" | jq -cr ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')"
   write_output "NVRTC_MATRIX" "$(echo "$matrix" | jq '.nvrtc' | explode_std_versions)"
 }
 
