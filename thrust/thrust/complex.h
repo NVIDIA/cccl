@@ -49,23 +49,35 @@ THRUST_NAMESPACE_BEGIN
 template <class T>
 struct complex : public ::cuda::std::complex<T>
 {
-  using base = ::cuda::std::complex<T>; // inherit constructors
-  using base::base;
+  using base = ::cuda::std::complex<T>;
+  using base::base;         // inherit constructors
+  using base::operator=;    // inherit assignment operators
 
   complex() = default;
 
   __host__ __device__ complex(const base& rhs) : base(rhs) {}
   __host__ __device__ complex(base&& rhs) : base(::cuda::std::move(rhs)) {}
 
-  template<class U, ::cuda::std::__enable_if_t<detail::has_promoted_numerical_type<T, U>::value, int> = 0>
-  __host__ __device__ complex& operator=(const complex<U>& rhs) {
+  template <class U>
+  __host__ __device__
+    typename detail::enable_if<detail::and_<detail::has_promoted_numerical_type<T, U>,
+                                            detail::not_<detail::is_same<T, U>>>::value,
+                               complex>::type
+   &operator=(const complex<U> &rhs)
+  {
     this->real(static_cast<T>(rhs.real()));
     this->imag(static_cast<T>(rhs.imag()));
     return *this;
   }
 
-  template<class U, ::cuda::std::__enable_if_t<detail::has_promoted_numerical_type<T, U>::value, int> = 0>
-  __host__ __device__ complex& operator=(const U& rhs) {
+
+  template <class U>
+  __host__ __device__
+    typename detail::enable_if<detail::and_<detail::has_promoted_numerical_type<T, U>,
+                                            detail::not_<detail::is_same<T, U>>>::value,
+                               complex>::type
+  &operator=(const U &rhs)
+  {
     this->operator=(static_cast<T>(rhs));
     return *this;
   }
@@ -74,14 +86,6 @@ struct complex : public ::cuda::std::complex<T>
    */
   __host__ operator ::std::complex<T>() const { return ::std::complex<T>(this->real(), this->imag()); }
 };
-
-// The following code enables operators between `complex` when the underlying type of the `complex`
-// differ. Using enable_if ensures that these operators are only called, in the case
-// the types differ. In all other cases the operators from the base class ::cuda::std::complex
-// should be called.
-// This is done to avoid the construction of temporary objects which must be done in some of
-// the operators. Also it is avoided to call the implementation of the base class operator
-// in case the operator is trivially implementable, for the same reason.
 
 /* --- Equality Operators --- */
 
