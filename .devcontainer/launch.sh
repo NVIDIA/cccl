@@ -1,23 +1,28 @@
+#!/usr/bin/env bash
 
-#! /usr/bin/env bash
 
 launch_devcontainer() {
 
+    if [[ -z $1 ]] || [[ -z $2 ]]; then
+        echo "Usage: $0 [CUDA version] [Host compiler]"
+        echo "Example: $0 12.2 gcc12"
+        return 1
+    fi
+    set -euo pipefail
     # Ensure we're in the repo root
     cd "$( cd "$( dirname "$(realpath -m "${BASH_SOURCE[0]}")" )" && pwd )/..";
 
-    if [[ -z $1 ]] || [[ -z $2 ]]; then
-        echo "Usage: $0 [CUDA version] [Host compiler]"
-        echo "Example: $0 12.1 gcc12"
-        return 1
-    fi
 
     local cuda_version="$1"
     local host_compiler="$2"
     local workspace="$(basename "$(pwd)")";
     local tmpdir="$(mktemp -d)/${workspace}";
     local path="$(pwd)/.devcontainer/cuda${cuda_version}-${host_compiler}";
-
+    if [[ ! -f ${path}/devcontainer.json ]]; then
+        echo "Unknown CUDA [${cuda_version}] compiler [${host_compiler}] combination"
+        echo "Requested devcontainer ${path}/devcontainer.json does not exist"
+        return 1
+    fi
     mkdir -p "${tmpdir}";
     mkdir -p "${tmpdir}/.devcontainer";
     cp -arL "$path/devcontainer.json" "${tmpdir}/.devcontainer";

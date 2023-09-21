@@ -51,10 +51,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool tests() {
     // Test non-subtractable base iterator types
     static_assert( HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<int*> >::value, "");
     static_assert( HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<const int*> >::value, "");
-#if TEST_STD_VER >= 11
     static_assert(!HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<char*> >::value, "");
     static_assert(!HasMinus<cuda::std::reverse_iterator<bidirectional_iterator<int*> >, cuda::std::reverse_iterator<bidirectional_iterator<int*> > >::value, "");
-#endif
 
     return true;
 }

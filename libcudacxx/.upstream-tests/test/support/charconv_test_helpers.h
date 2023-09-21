@@ -17,10 +17,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER < 11
-#error This file requires C++11
-#endif
-
 using std::false_type;
 using std::true_type;
 

@@ -39,7 +39,6 @@
 // Has to go after all cub headers. Otherwise, this test won't catch unused
 // variables in cub kernels.
 #include "c2h/custom_type.cuh"
-#include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
 
@@ -98,9 +97,10 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input"
   REQUIRE(reference == in);
 }
 
+template<class T>
 struct ref_diff {
-  template<class T>
-  __host__ __device__ constexpr T operator()(const T& lhs, const T& rhs) const noexcept {
+  template<class T2, cuda::std::__enable_if_t<cuda::std::is_same<T, T2>::value, int> = 0>
+  __host__ __device__ constexpr T2 operator()(const T2& lhs, const T2& rhs) const noexcept {
     return rhs - lhs;
   }
 
@@ -128,7 +128,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight works with iterators", "[devic
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff{});
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff<type>{});
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 
@@ -149,7 +149,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with iterators", "[d
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff{});
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff<type>{});
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 
@@ -170,7 +170,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight works with pointers", "[device
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff{});
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff<type>{});
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 
@@ -191,7 +191,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with pointers", "[de
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff{});
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff<type>{});
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 
@@ -231,7 +231,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight works with custom difference",
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff{});
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff<type>{});
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 
@@ -253,7 +253,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with custom differen
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff{});
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff<type>{});
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 
@@ -289,7 +289,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with a different out
 
   thrust::host_vector<type> h_in = in;
   thrust::host_vector<type> reference(num_items);
-  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff{});
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff<type>{});
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 

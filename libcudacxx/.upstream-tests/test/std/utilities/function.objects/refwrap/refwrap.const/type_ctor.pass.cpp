@@ -53,14 +53,12 @@ int main(int, char**)
     static_assert((!cuda::std::is_constructible<Ref, int&&>::value), "");
     }
 
-#if TEST_STD_VER >= 11
     {
     using Ref = cuda::std::reference_wrapper<int>;
     static_assert((cuda::std::is_nothrow_constructible<Ref, int&>::value), "");
     static_assert((!cuda::std::is_nothrow_constructible<Ref, int>::value), "");
     static_assert((!cuda::std::is_nothrow_constructible<Ref, int&&>::value), "");
     }
-#endif
 
   return 0;
 }

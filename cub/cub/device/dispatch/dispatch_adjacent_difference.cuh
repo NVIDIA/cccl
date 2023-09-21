@@ -42,22 +42,14 @@
 
 CUB_NAMESPACE_BEGIN
 
-
-template <typename AgentDifferenceInitT,
-          typename InputIteratorT,
-          typename InputT,
-          typename OffsetT>
-void __global__ DeviceAdjacentDifferenceInitKernel(InputIteratorT first,
-                                                   InputT *result,
-                                                   OffsetT num_tiles,
-                                                   int items_per_tile)
+template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceInitKernel(InputIteratorT first,
+                                                                     InputT *result,
+                                                                     OffsetT num_tiles,
+                                                                     int items_per_tile)
 {
   const int tile_idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
-  AgentDifferenceInitT::Process(tile_idx,
-                                first,
-                                result,
-                                num_tiles,
-                                items_per_tile);
+  AgentDifferenceInitT::Process(tile_idx, first, result, num_tiles, items_per_tile);
 }
 
 template <typename ChainedPolicyT,
@@ -68,7 +60,7 @@ template <typename ChainedPolicyT,
           typename InputT,
           bool MayAlias,
           bool ReadLeft>
-void __global__
+CUB_DETAIL_KERNEL_ATTRIBUTES void
 DeviceAdjacentDifferenceDifferenceKernel(InputIteratorT input,
                                          InputT *first_tile_previous,
                                          OutputIteratorT result,

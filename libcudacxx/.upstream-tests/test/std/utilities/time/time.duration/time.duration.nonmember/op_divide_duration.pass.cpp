@@ -46,7 +46,6 @@ int main(int, char**)
     cuda::std::chrono::duration<double, cuda::std::ratio<3, 5> > s2(5);
     assert(s1 / s2 == truncate_fp(20./3));
     }
-#if TEST_STD_VER >= 11
     {
     constexpr cuda::std::chrono::nanoseconds ns1(15);
     constexpr cuda::std::chrono::nanoseconds ns2(5);
@@ -67,7 +66,6 @@ int main(int, char**)
     constexpr cuda::std::chrono::duration<double, cuda::std::ratio<3, 5> > s2(5);
     static_assert(s1 / s2 == 20./3, "");
     }
-#endif
 
   return 0;
 }

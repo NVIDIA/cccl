@@ -22,8 +22,6 @@
 #include "test_macros.h"
 #include "min_allocator.h"
 
-#if TEST_STD_VER >= 11
-
 template <class T>
 class Deleter
 {
@@ -90,67 +88,6 @@ public:
     void operator()(T* p) {delete [] p;}
 };
 
-#else // TEST_STD_VER < 11
-
-template <class T>
-class Deleter
-{
-    mutable int state_;
-
-public:
-    Deleter() : state_(0) {}
-    explicit Deleter(int s) : state_(s) {}
-
-    Deleter(Deleter const & other) : state_(other.state_) {
-        other.state_ = 0;
-    }
-    Deleter& operator=(Deleter const& other) {
-        state_ = other.state_;
-        other.state_ = 0;
-        return *this;
-    }
-
-    ~Deleter() {assert(state_ >= 0); state_ = -1;}
-
-    template <class U>
-        Deleter(Deleter<U> d,
-            typename std::enable_if<!std::is_same<U, T>::value>::type* = 0)
-            : state_(d.state()) {}
-
-public:
-    int state() const {return state_;}
-    void set_state(int i) {state_ = i;}
-
-    void operator()(T* p) {delete p;}
-};
-
-template <class T>
-class Deleter<T[]>
-{
-    mutable int state_;
-
-public:
-
-    Deleter(Deleter const& other) : state_(other.state_) {
-        other.state_ = 0;
-    }
-    Deleter& operator=(Deleter const& other) {
-        state_ = other.state_;
-        other.state_ = 0;
-        return *this;
-    }
-
-    Deleter() : state_(0) {}
-    explicit Deleter(int s) : state_(s) {}
-    ~Deleter() {assert(state_ >= 0); state_ = -1;}
-
-    int state() const {return state_;}
-    void set_state(int i) {state_ = i;}
-
-    void operator()(T* p) {delete [] p;}
-};
-
-#endif
 
 template <class T>
 void
@@ -366,12 +303,7 @@ public:
     void set_state(int i) {state_ = i;}
 
     void operator()(T* p) {assert(state_ >= 0); ++dealloc_count; delete p;}
-#if TEST_STD_VER >= 11
     test_deleter* operator&() const = delete;
-#else
-private:
-  test_deleter* operator&() const;
-#endif
 };
 
 template <class T>
@@ -382,8 +314,6 @@ swap(test_deleter<T>& x, test_deleter<T>& y)
     x = std::move(y);
     y = std::move(t);
 }
-
-#if TEST_STD_VER >= 11
 
 template <class T, size_t ID = 0>
 class PointerDeleter
@@ -439,7 +369,5 @@ private:
         PointerDeleter(const PointerDeleter<U, ID>&,
             typename std::enable_if<!std::is_same<U, T>::value>::type* = 0);
 };
-
-#endif // TEST_STD_VER >= 11
 
 #endif  // SUPPORT_DELETER_TYPES_H

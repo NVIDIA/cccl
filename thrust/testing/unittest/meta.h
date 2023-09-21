@@ -39,6 +39,9 @@ template<typename T, typename... Ts, unsigned int i>
   typedef typename get_type<type_list<Ts...>, i - 1>::type type;
 };
 
+template<typename T, unsigned int i>
+using get_type_t = typename get_type<T, i>::type;
+
 // this type and its specialization provides a way to
 // iterate over a type_list, and
 // applying a unary function to each type

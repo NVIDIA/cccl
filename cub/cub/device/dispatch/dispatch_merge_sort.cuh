@@ -38,7 +38,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-
 template <bool UseVShmem,
           typename ChainedPolicyT,
           typename KeyInputIteratorT,
@@ -49,17 +48,17 @@ template <bool UseVShmem,
           typename CompareOpT,
           typename KeyT,
           typename ValueT>
-void __global__ __launch_bounds__(ChainedPolicyT::ActivePolicy::MergeSortPolicy::BLOCK_THREADS)
-DeviceMergeSortBlockSortKernel(bool ping,
-                               KeyInputIteratorT keys_in,
-                               ValueInputIteratorT items_in,
-                               KeyIteratorT keys_out,
-                               ValueIteratorT items_out,
-                               OffsetT keys_count,
-                               KeyT *tmp_keys_out,
-                               ValueT *tmp_items_out,
-                               CompareOpT compare_op,
-                               char *vshmem)
+__launch_bounds__(ChainedPolicyT::ActivePolicy::MergeSortPolicy::BLOCK_THREADS)
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(bool ping,
+                                                                   KeyInputIteratorT keys_in,
+                                                                   ValueInputIteratorT items_in,
+                                                                   KeyIteratorT keys_out,
+                                                                   ValueIteratorT items_out,
+                                                                   OffsetT keys_count,
+                                                                   KeyT *tmp_keys_out,
+                                                                   ValueT *tmp_items_out,
+                                                                   CompareOpT compare_op,
+                                                                   char *vshmem)
 {
   extern __shared__ char shmem[];
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy::MergeSortPolicy;
@@ -95,19 +94,16 @@ DeviceMergeSortBlockSortKernel(bool ping,
   agent.Process();
 }
 
-template <typename KeyIteratorT,
-          typename OffsetT,
-          typename CompareOpT,
-          typename KeyT>
-__global__ void DeviceMergeSortPartitionKernel(bool ping,
-                                               KeyIteratorT keys_ping,
-                                               KeyT *keys_pong,
-                                               OffsetT keys_count,
-                                               OffsetT num_partitions,
-                                               OffsetT *merge_partitions,
-                                               CompareOpT compare_op,
-                                               OffsetT target_merged_tiles_number,
-                                               int items_per_tile)
+template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(bool ping,
+                                                                 KeyIteratorT keys_ping,
+                                                                 KeyT *keys_pong,
+                                                                 OffsetT keys_count,
+                                                                 OffsetT num_partitions,
+                                                                 OffsetT *merge_partitions,
+                                                                 CompareOpT compare_op,
+                                                                 OffsetT target_merged_tiles_number,
+                                                                 int items_per_tile)
 {
   OffsetT partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -136,17 +132,17 @@ template <bool UseVShmem,
           typename CompareOpT,
           typename KeyT,
           typename ValueT>
-void __global__ __launch_bounds__(ChainedPolicyT::ActivePolicy::MergeSortPolicy::BLOCK_THREADS)
-DeviceMergeSortMergeKernel(bool ping,
-                           KeyIteratorT keys_ping,
-                           ValueIteratorT items_ping,
-                           OffsetT keys_count,
-                           KeyT *keys_pong,
-                           ValueT *items_pong,
-                           CompareOpT compare_op,
-                           OffsetT *merge_partitions,
-                           OffsetT target_merged_tiles_number,
-                           char *vshmem)
+__launch_bounds__(ChainedPolicyT::ActivePolicy::MergeSortPolicy::BLOCK_THREADS)
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(bool ping,
+                                                               KeyIteratorT keys_ping,
+                                                               ValueIteratorT items_ping,
+                                                               OffsetT keys_count,
+                                                               KeyT *keys_pong,
+                                                               ValueT *items_pong,
+                                                               CompareOpT compare_op,
+                                                               OffsetT *merge_partitions,
+                                                               OffsetT target_merged_tiles_number,
+                                                               char *vshmem)
 {
   extern __shared__ char shmem[];
 

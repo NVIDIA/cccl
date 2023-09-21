@@ -33,9 +33,6 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <iterator>
-
 #include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_radix_sort_histogram.cuh>
 #include <cub/agent/agent_radix_sort_onesweep.cuh>
@@ -51,6 +48,9 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+
+#include <iterator>
+#include <stdio.h>
 
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation might be disabled or specified as part of an unsupported transformation ordering [-Wpass-failed=transform-warning]"
@@ -79,7 +79,7 @@ template <
 __launch_bounds__ (int((ALT_DIGIT_BITS) ?
     int(ChainedPolicyT::ActivePolicy::AltUpsweepPolicy::BLOCK_THREADS) :
     int(ChainedPolicyT::ActivePolicy::UpsweepPolicy::BLOCK_THREADS)))
-__global__ void DeviceRadixSortUpsweepKernel(
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
     const KeyT              *d_keys,                        ///< [in] Input keys buffer
     OffsetT                 *d_spine,                       ///< [out] Privatized (per block) digit histograms (striped, i.e., 0s counts from each block, then 1s counts from each block, etc.)
     OffsetT                 /*num_items*/,                  ///< [in] Total number of input data items
@@ -138,7 +138,7 @@ template <
     typename                ChainedPolicyT,                 ///< Chained tuning policy
     typename                OffsetT>                        ///< Signed integer type for global offsets
 __launch_bounds__ (int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 1)
-__global__ void RadixSortScanBinsKernel(
+CUB_DETAIL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(
     OffsetT                 *d_spine,                       ///< [in,out] Privatized (per block) digit histograms (striped, i.e., 0s counts from each block, then 1s counts from each block, etc.)
     int                     num_counts)                     ///< [in] Total number of bin-counts
 {
@@ -191,7 +191,7 @@ template <
 __launch_bounds__ (int((ALT_DIGIT_BITS) ?
     int(ChainedPolicyT::ActivePolicy::AltDownsweepPolicy::BLOCK_THREADS) :
     int(ChainedPolicyT::ActivePolicy::DownsweepPolicy::BLOCK_THREADS)))
-__global__ void DeviceRadixSortDownsweepKernel(
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
     const KeyT              *d_keys_in,                     ///< [in] Input keys buffer
     KeyT                    *d_keys_out,                    ///< [in] Output keys buffer
     const ValueT            *d_values_in,                   ///< [in] Input values buffer
@@ -255,7 +255,7 @@ template <
     typename                OffsetT,                        ///< Signed integer type for global offsets
     typename                DecomposerT = detail::identity_decomposer_t>
 __launch_bounds__ (int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS), 1)
-__global__ void DeviceRadixSortSingleTileKernel(
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
     const KeyT              *d_keys_in,                     ///< [in] Input keys buffer
     KeyT                    *d_keys_out,                    ///< [in] Output keys buffer
     const ValueT            *d_values_in,                   ///< [in] Input values buffer
@@ -380,7 +380,7 @@ template <
 __launch_bounds__ (int((ALT_DIGIT_BITS) ?
     ChainedPolicyT::ActivePolicy::AltSegmentedPolicy::BLOCK_THREADS :
     ChainedPolicyT::ActivePolicy::SegmentedPolicy::BLOCK_THREADS))
-__global__ void DeviceSegmentedRadixSortKernel(
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
     const KeyT              *d_keys_in,                     ///< [in] Input keys buffer
     KeyT                    *d_keys_out,                    ///< [in] Output keys buffer
     const ValueT            *d_values_in,                   ///< [in] Input values buffer
@@ -552,7 +552,7 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename OffsetT,
           typename DecomposerT = detail::identity_decomposer_t>
-__global__ __launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) 
+CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) 
 void DeviceRadixSortHistogramKernel(OffsetT *d_bins_out,
                                     const KeyT *d_keys_in,
                                     OffsetT num_items,
@@ -576,7 +576,7 @@ template <
     typename PortionOffsetT,
     typename AtomicOffsetT = PortionOffsetT,
     typename DecomposerT = detail::identity_decomposer_t>
-__global__ void __launch_bounds__(ChainedPolicyT::ActivePolicy::OnesweepPolicy::BLOCK_THREADS)
+CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy::OnesweepPolicy::BLOCK_THREADS)
 DeviceRadixSortOnesweepKernel
     (AtomicOffsetT* d_lookback, AtomicOffsetT* d_ctrs, OffsetT* d_bins_out,
      const OffsetT* d_bins_in, KeyT* d_keys_out, const KeyT* d_keys_in, ValueT* d_values_out,
@@ -600,7 +600,7 @@ DeviceRadixSortOnesweepKernel
 template <
     typename ChainedPolicyT,
     typename OffsetT>
-__global__ void DeviceRadixSortExclusiveSumKernel(OffsetT* d_bins)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_bins)
 {
     typedef typename ChainedPolicyT::ActivePolicy::ExclusiveSumPolicy ExclusiveSumPolicyT;
     const int RADIX_BITS = ExclusiveSumPolicyT::RADIX_BITS;

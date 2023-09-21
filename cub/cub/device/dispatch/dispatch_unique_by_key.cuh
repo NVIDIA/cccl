@@ -60,7 +60,7 @@ template <
     typename EqualityOpT,                           ///< Equality operator type
     typename OffsetT>                               ///< Signed integer type for global offsets
 __launch_bounds__ (int(ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT::BLOCK_THREADS))
-__global__ void DeviceUniqueByKeySweepKernel(
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
     KeyInputIteratorT       d_keys_in,              ///< [in] Pointer to the input sequence of keys
     ValueInputIteratorT     d_values_in,            ///< [in] Pointer to the input sequence of values
     KeyOutputIteratorT      d_keys_out,             ///< [out] Pointer to the output sequence of selected data items

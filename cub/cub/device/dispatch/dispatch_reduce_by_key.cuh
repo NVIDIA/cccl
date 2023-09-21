@@ -131,7 +131,8 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename OffsetT,
           typename AccumT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_THREADS)) __global__
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES
   void DeviceReduceByKeyKernel(KeysInputIteratorT d_keys_in,
                                UniqueOutputIteratorT d_unique_out,
                                ValuesInputIteratorT d_values_in,

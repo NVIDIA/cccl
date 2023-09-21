@@ -101,12 +101,10 @@ struct C
     void operator=(C&);  // not const
 };
 
-#if TEST_STD_VER >= 11
 struct Tuple {
     __host__ __device__
     Tuple(Empty&&) noexcept {}
 };
-#endif
 
 int main(int, char**)
 {
@@ -119,12 +117,10 @@ int main(int, char**)
     test_is_not_nothrow_constructible<A, int, double> ();
     test_is_not_nothrow_constructible<A> ();
     test_is_not_nothrow_constructible<C> ();
-#if TEST_STD_VER >= 11
     test_is_nothrow_constructible<Tuple &&, Empty> (); // See bug #19616.
 
     static_assert(!cuda::std::is_constructible<Tuple&, Empty>::value, "");
     test_is_not_nothrow_constructible<Tuple &, Empty> (); // See bug #19616.
-#endif
 
   return 0;
 }

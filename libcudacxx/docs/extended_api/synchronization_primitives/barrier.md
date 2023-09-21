@@ -16,14 +16,29 @@ class cuda::barrier;
 
 The class template `cuda::barrier` is an extended form of [`cuda::std::barrier`]
   that takes an additional [`cuda::thread_scope`] argument.
-It has the same interface and semantics as [`cuda::std::barrier`], with the
-  following additional operations.
-
-## Barrier Operations
+If `!(scope == thread_block_scope && __isShared(this))`, then the semantics are
+the same as [`cuda::std::barrier`]; otherwise, see below. 
+The `cuda::barrier` class templates extends `cuda::std::barrier` with the following additional operations:
 
 | [`cuda::barrier::init`]                 | Initialize a `cuda::barrier`. `(friend function)`                       |
 | [`cuda::device::barrier_native_handle`] | Get the native handle to a `cuda::barrier`. `(function)`                |
-| [`cuda::device::barrier_arrive_tx`]     | Arrive on a `cuda::barrier` with transaction count update. `(function)` |
+| [`cuda::device::barrier_arrive_tx`]     | Arrive on a `cuda::barrier<cuda::thread_scope_block>` with transaction count update. `(function)` |
+
+
+If `scope == thread_scope_block && __isShared(this)`, then the
+semantics of [[thread.barrier.class]](http://eel.is/c++draft/thread.barrier.class) of ISO/IEC
+IS 14882 (the C++ Standard) are modified as follows:
+
+> A barrier is a thread coordination mechanism whose lifetime consists of a sequence of barrier phases, where each phase allows at most an expected number of threads to block until the expected number of threads **and the expected number of transaction-based asynchronous operations** arrive at the barrier.
+> Each _barrier phase_ consists of the following steps:
+>
+> 1. The _expected count_ is decremented by each call to `arrive`,`arrive_and_drop`**, or `cuda::device::barrier_arrive_tx`**.
+> 2. **The _transaction count_ is incremented by each call to `cuda::device::barrier_arrive_tx` and decremented by the completion of transaction-based asynchronous operations such as `cuda::memcpy_async_tx`.**
+> 3. Exactly once after **both** the _expected count_ **and the _transaction count_** reach zero, a thread executes the _completion step_ during its call to `arrive`, `arrive_and_drop`, **`cuda::device::barrier_arrive_tx`**, or `wait`, except that it is implementation-defined whether the step executes if no thread calls `wait`.
+> 4. When the completion step finishes, the _expected count_  is reset to what was specified by the `expected` argument to the constructor, possibly adjusted by calls to `arrive_and_drop`, and the next phase starts.
+>
+> Concurrent invocations of the member functions of barrier **and the non-member barrier APIs in `cuda::device`**, other than its destructor, do not introduce data races. The member functions `arrive` and `arrive_and_drop`, **and the non-member function `cuda::device::barrier_arrive_tx`**, execute atomically.
+
 
 ## NVCC `__shared__` Initialization Warnings
 
@@ -81,20 +96,6 @@ tracked by the current phase. This can be achieved with the
 asynchronous operations, the tx-count of the `cuda::barrier` will be updated and
 thus progress the `cuda::barrier` towards the completion of the current phase.
 This may complete the current phase.
-
-### Phase Completion of a `cuda::barrier` with tx-count support
-
-Modify [[thread.barrier.class]](http://eel.is/c++draft/thread.barrier.class) as follows:
- 
-> A barrier is a thread coordination mechanism whose lifetime consists of a sequence of barrier phases, where each phase allows at most an expected number of threads to block until the expected number of threads **and the expected number of transaction-based asynchronous operations** arrive at the barrier.
-> Each _barrier phase_ consists of the following steps:
->
-> 1. The _expected count_ is decremented by each call to `arrive`,`arrive_and_drop`**, or `cuda::device::barrier_arrive_tx`**.
-> 2. **The _transaction count_ is incremented by each call to `cuda::device::barrier_arrive_tx` and decremented by the completion of transaction-based asynchronous operations such as `cuda::memcpy_async_tx`.**
-> 3. Exactly once after **both** the _expected count_ **and the _transaction count_** reach zero, a thread executes the _completion step_ during its call to `arrive`, `arrive_and_drop`, or `wait`, except that it is implementation-defined whether the step executes if no thread calls `wait`.
-> 4. When the completion step finishes, the _expected count_  is reset to what was specified by the `expected` argument to the constructor, possibly adjusted by calls to `arrive_and_drop`, **the _transaction count_ is reset to zero,** and the next phase starts.
->
-> Concurrent invocations of the member functions of barrier **and the non-member barrier APIs in `cuda::device`**, other than its destructor, do not introduce data races. The member functions `arrive` and `arrive_and_drop`, **and the non-member function `cuda::device::barrier_arrive_tx`**, execute atomically.
 
 ## Implementation-Defined Behavior
 
