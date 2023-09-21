@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: msvc-19.16 && nvcc-11.1
 
 // template<class I1, class I2, class R, class P1, class P2>
 // concept indirectly_comparable;

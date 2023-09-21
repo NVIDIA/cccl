@@ -1133,6 +1133,7 @@ constexpr auto get_iterator_concept() {
   } else {
     return cuda::std::input_iterator_tag{};
   }
+  _LIBCUDACXX_UNREACHABLE();
 }
 
 template<class Base, cuda::std::enable_if_t<cuda::std::input_iterator<Base>, int> = 0>
