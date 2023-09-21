@@ -6,7 +6,7 @@ This file contains instrutions on how to run all CUB benchmarks using CUB tuning
 .. code-block:: bash
 
     pip3 install --user fpzip pandas scipy
-    git clone git@github.com:senior-zero/cccl.git
+    git clone https://github.com/NVIDIA/cccl.git
     mkdir build; cd build
     cmake .. -DCCCL_ENABLE_THRUST=OFF\
              -DCCCL_ENABLE_LIBCUDACXX=OFF\
