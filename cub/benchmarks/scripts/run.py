@@ -26,6 +26,7 @@ class BaseRunner:
         for subbench in results:
           for point in results[subbench]:
             bench_name = "{}.{}-{}".format(bench.algorithm_name(), subbench, point)
+            bench_name = bench_name.replace(' ', '___')
             bench_name = "".join(c if c.isalnum() else "_" for c in bench_name)
             elapsed_time = results[subbench][point]
             if elapsed_time_look_good(elapsed_time):
