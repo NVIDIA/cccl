@@ -119,15 +119,15 @@ template <typename ChainedPolicyT,
           typename ScanTileStateT,
           typename EqualityOpT,
           typename OffsetT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREADS)) __global__
-  void DeviceRleSweepKernel(InputIteratorT d_in,
-                            OffsetsOutputIteratorT d_offsets_out,
-                            LengthsOutputIteratorT d_lengths_out,
-                            NumRunsOutputIteratorT d_num_runs_out,
-                            ScanTileStateT tile_status,
-                            EqualityOpT equality_op,
-                            OffsetT num_items,
-                            int num_tiles)
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(InputIteratorT d_in,
+                                                         OffsetsOutputIteratorT d_offsets_out,
+                                                         LengthsOutputIteratorT d_lengths_out,
+                                                         NumRunsOutputIteratorT d_num_runs_out,
+                                                         ScanTileStateT tile_status,
+                                                         EqualityOpT equality_op,
+                                                         OffsetT num_items,
+                                                         int num_tiles)
 {
   using AgentRlePolicyT = typename ChainedPolicyT::ActivePolicy::RleSweepPolicyT;
 

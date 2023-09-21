@@ -38,7 +38,8 @@
 // This is not used by this file; this is a hack so that we can detect the
 // CUB version from Thrust on older versions of CUB that did not have
 // version.cuh.
-#include "version.cuh"
+#include <cub/version.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
 
 // Prior to 1.13.1, only the PREFIX/POSTFIX macros were used. Notify users
 // that they must now define the qualifier macro, too.
@@ -161,23 +162,25 @@
 #define CUB_DETAIL_MAGIC_NS_NAME(...) CUB_DETAIL_IDENTITY(CUB_DETAIL_APPLY(CUB_DETAIL_DISPATCH, CUB_DETAIL_COUNT(__VA_ARGS__))(__VA_ARGS__))
 #endif // !defined(CUB_DETAIL_MAGIC_NS_NAME)
 
-#if defined(CUB_DISABLE_NAMESPACE_MAGIC)
-#if !defined(CUB_WRAPPED_NAMESPACE)
-#if !defined(CUB_IGNORE_NAMESPACE_MAGIC_ERROR)
-#error "Disabling namespace magic is unsafe without wrapping namespace"
-#endif // !defined(CUB_IGNORE_NAMESPACE_MAGIC_ERROR)
-#endif // !defined(CUB_WRAPPED_NAMESPACE)
-#define CUB_DETAIL_MAGIC_NS_BEGIN
-#define CUB_DETAIL_MAGIC_NS_END
+// clang-format off
+#if defined(CUB_DISABLE_NAMESPACE_MAGIC) || defined(CUB_WRAPPED_NAMESPACE)
+#  if !defined(CUB_WRAPPED_NAMESPACE)
+#    if !defined(CUB_IGNORE_NAMESPACE_MAGIC_ERROR)
+#      error "Disabling namespace magic is unsafe without wrapping namespace"
+#    endif // !defined(CUB_IGNORE_NAMESPACE_MAGIC_ERROR)
+#  endif // !defined(CUB_WRAPPED_NAMESPACE)
+#  define CUB_DETAIL_MAGIC_NS_BEGIN
+#  define CUB_DETAIL_MAGIC_NS_END
 #else // not defined(CUB_DISABLE_NAMESPACE_MAGIC)
-#if defined(_NVHPC_CUDA)
-#define CUB_DETAIL_MAGIC_NS_BEGIN inline namespace CUB_DETAIL_MAGIC_NS_NAME(CUB_VERSION, NV_TARGET_SM_INTEGER_LIST) {
-#define CUB_DETAIL_MAGIC_NS_END }
-#else // not defined(_NVHPC_CUDA)
-#define CUB_DETAIL_MAGIC_NS_BEGIN inline namespace CUB_DETAIL_MAGIC_NS_NAME(CUB_VERSION, __CUDA_ARCH_LIST__) {
-#define CUB_DETAIL_MAGIC_NS_END }
-#endif // not defined(_NVHPC_CUDA)
+#  if defined(_NVHPC_CUDA)
+#    define CUB_DETAIL_MAGIC_NS_BEGIN inline namespace CUB_DETAIL_MAGIC_NS_NAME(CUB_VERSION, NV_TARGET_SM_INTEGER_LIST) {
+#    define CUB_DETAIL_MAGIC_NS_END }
+#  else // not defined(_NVHPC_CUDA)
+#    define CUB_DETAIL_MAGIC_NS_BEGIN inline namespace CUB_DETAIL_MAGIC_NS_NAME(CUB_VERSION, __CUDA_ARCH_LIST__) {
+#    define CUB_DETAIL_MAGIC_NS_END }
+#  endif // not defined(_NVHPC_CUDA)
 #endif // not defined(CUB_DISABLE_NAMESPACE_MAGIC)
+// clang-format on
 
 /**
  * \def CUB_NAMESPACE_BEGIN
@@ -189,7 +192,7 @@
   CUB_NS_PREFIX                                                             \
   namespace cub                                                             \
   {                                                                         \
-  CUB_DETAIL_MAGIC_NS_BEGIN                                                        
+  CUB_DETAIL_MAGIC_NS_BEGIN
 
 /**
  * \def CUB_NAMESPACE_END
