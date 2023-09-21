@@ -18,7 +18,6 @@ class BaseRunner:
     self.estimator = cub.bench.MedianCenterEstimator()
 
   def __call__(self, algname, ct_workload_space, rt_values):
-    print("&&&& RUNNING bench")
     for ct_workload in ct_workload_space:
       bench = cub.bench.BaseBench(algname)
       if bench.build():
@@ -34,12 +33,13 @@ class BaseRunner:
       else:
         print("&&&& FAILED bench")
         sys.exit(-1)
-    print("&&&& PASSED bench")
 
 
 def main():
+  print("&&&& RUNNING bench")
   os.environ["CUDA_MODULE_LOADING"] = "EAGER"
   cub.bench.search(BaseRunner())
+  print("&&&& PASSED bench")
 
 
 if __name__ == "__main__":
