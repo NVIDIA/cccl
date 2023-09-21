@@ -1,5 +1,5 @@
 /******************************************************************************
-* Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
+* Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
@@ -27,45 +27,5 @@
 
 #pragma once
 
-#include <iostream>
-
-//! @file This file includes a custom Catch2 main function. When CMake is configured to build 
-//!       each test as a separate executable, this header is included into each test. On the other
-//!       hand, when all the tests are compiled into a single executable, this header is excluded
-//!       from the tests and included into catch2_runner.cpp
-
-#ifdef CUB_CONFIG_MAIN
-#define CATCH_CONFIG_RUNNER
-#endif
-
-#include <catch2/catch.hpp>
-
-#if defined(CUB_CONFIG_MAIN) 
-#include "catch2_runner_helper.h"
-
-#if !defined(CUB_EXCLUDE_CATCH2_HELPER_IMPL)
-#include "catch2_runner_helper.inl"
-#endif
-
-int main(int argc, char *argv[])
-{
-  Catch::Session session;
-
-  int device_id {};
-
-  // Build a new parser on top of Catch's
-  using namespace Catch::clara;
-  auto cli = session.cli()
-           | Opt(device_id, "device")["-d"]["--device"]("device id to use");
-  session.cli(cli);
-
-  int returnCode = session.applyCommandLine(argc, argv);
-  if(returnCode != 0)
-  {
-    return returnCode;
-  }
-
-  set_device(device_id);
-  return session.run(argc, argv);
-}
-#endif
+int device_guard(int device_id);
+void set_device(int device_id);

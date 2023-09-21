@@ -1,5 +1,5 @@
 /******************************************************************************
-* Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
+* Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
@@ -27,45 +27,32 @@
 
 #pragma once
 
+//! @file This file includes implementation of CUDA-specific utilities for custom Catch2 main 
+//!       When CMake is configured to include all the tests into a single executable, this file
+//!       is only included into catch2_runner_helper.cu. When CMake is configured to compile 
+//!       each test as a separate binary, this file is included into each test.
+
 #include <iostream>
 
-//! @file This file includes a custom Catch2 main function. When CMake is configured to build 
-//!       each test as a separate executable, this header is included into each test. On the other
-//!       hand, when all the tests are compiled into a single executable, this header is excluded
-//!       from the tests and included into catch2_runner.cpp
-
-#ifdef CUB_CONFIG_MAIN
-#define CATCH_CONFIG_RUNNER
-#endif
-
-#include <catch2/catch.hpp>
-
-#if defined(CUB_CONFIG_MAIN) 
-#include "catch2_runner_helper.h"
-
-#if !defined(CUB_EXCLUDE_CATCH2_HELPER_IMPL)
-#include "catch2_runner_helper.inl"
-#endif
-
-int main(int argc, char *argv[])
+int device_guard(int device_id)
 {
-  Catch::Session session;
-
-  int device_id {};
-
-  // Build a new parser on top of Catch's
-  using namespace Catch::clara;
-  auto cli = session.cli()
-           | Opt(device_id, "device")["-d"]["--device"]("device id to use");
-  session.cli(cli);
-
-  int returnCode = session.applyCommandLine(argc, argv);
-  if(returnCode != 0)
+  int device_count {};
+  if (cudaGetDeviceCount(&device_count) != cudaSuccess)
   {
-    return returnCode;
+    std::cerr << "Can't query devices number." << std::endl;
+    std::exit(-1);
   }
 
-  set_device(device_id);
-  return session.run(argc, argv);
+  if (device_id >= device_count || device_id < 0)
+  {
+    std::cerr << "Invalid device ID: " << device_id << std::endl;
+    std::exit(-1);
+  }
+
+  return device_id;
 }
-#endif
+
+void set_device(int device_id)
+{
+  cudaSetDevice(device_guard(device_id));
+}
