@@ -344,7 +344,7 @@ struct manual_object
 
     union data
     {
-        __host__ __device__ constexpr data() noexcept {};
+        __host__ __device__ constexpr data() noexcept : dummy() {};
         char dummy = {};
         T object;
     } data;
