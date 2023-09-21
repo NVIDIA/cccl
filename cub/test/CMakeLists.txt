@@ -3,6 +3,7 @@ if(CMAKE_GENERATOR MATCHES "^Visual Studio")
     if("${CMAKE_VERSION}" VERSION_LESS 3.27.5)
       # https://gitlab.kitware.com/cmake/cmake/-/merge_requests/8794
       message(WARNING "CMake 3.27.5 or newer is required to enable RDC tests in Visual Studio.")
+      cmake_minimum_required(VERSION 3.27.5)
     endif()
   endif()
 endif()
