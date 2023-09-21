@@ -95,16 +95,17 @@ struct accumulator_pack_base_t<OffsetT, typename cuda::std::enable_if<sizeof(Off
 template <class OffsetT>
 struct accumulator_pack_t : accumulator_pack_base_t<OffsetT>
 {
-  using typename accumulator_pack_base_t<OffsetT>::pack_t;
+  using base = accumulator_pack_base_t<OffsetT>;
+  using typename base::pack_t;
 
   __device__ static void subtract(pack_t &packed, OffsetT val)
   {
-    packed = pack(first(packed) - val, second(packed) - val);
+    packed =  base::pack( base::first(packed) - val,  base::second(packed) - val);
   }
 
   __device__ static OffsetT sum(pack_t &packed)
   {
-    return first(packed) + second(packed);
+    return  base::first(packed) +  base::second(packed);
   }
 
   __device__ static pack_t zero()
@@ -131,7 +132,7 @@ struct AgentThreeWayPartitionPolicy
   constexpr static CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
   constexpr static BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
 
-  struct detail 
+  struct detail
   {
     using delay_constructor_t = DelayConstructorT;
   };
