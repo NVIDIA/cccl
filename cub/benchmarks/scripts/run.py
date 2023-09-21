@@ -2,7 +2,15 @@
 
 import os
 import sys
+import math
 import cub.bench
+
+
+def elapsed_time_look_good(x):
+  if isinstance(x, float):
+    if math.isfinite(x):
+      return True
+  return False
 
 
 class BaseRunner:
@@ -19,7 +27,9 @@ class BaseRunner:
           for point in results[subbench]:
             bench_name = "{}.{}-{}".format(bench.algorithm_name(), subbench, point)
             bench_name = "".join(c if c.isalnum() else "_" for c in bench_name)
-            print("&&&& PERF {} {} -sec".format(bench_name, results[subbench][point]))
+            elapsed_time = results[subbench][point]
+            if elapsed_time_look_good(elapsed_time):
+              print("&&&& PERF {} {} -sec".format(bench_name, elapsed_time))
       else:
         print("&&&& FAILED bench")
         sys.exit(-1)
