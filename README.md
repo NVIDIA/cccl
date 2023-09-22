@@ -373,6 +373,7 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [cuDF](https://github.com/rapidsai/cudf) - Algorithms and file readers for ETL data analytics
 - [cuGraph](https://github.com/rapidsai/cugraph) - Algorithms for graph analytics
 - [cuML](https://github.com/rapidsai/cuml) - Machine learning algorithms and primitives
+- [CuPy](https://cupy.dev) - NumPy & SciPy for GPU
 - [cuSOLVER](https://developer.nvidia.com/cusolver) - Dense and sparse linear solvers
 - [cuSpatial](https://github.com/rapidsai/cuspatial) - Algorithms for geospatial operations
 - [GooFit](https://github.com/GooFit/GooFit) - Library for maximum-likelihood fits
