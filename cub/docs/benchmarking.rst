@@ -7,8 +7,7 @@ This file contains instrutions on how to run all CUB benchmarks using CUB tuning
 
     pip3 install --user fpzip pandas scipy
     git clone https://github.com/NVIDIA/cccl.git
-    mkdir build; cd build
-    cmake .. -DCCCL_ENABLE_THRUST=OFF\
+    cmake -B build -DCCCL_ENABLE_THRUST=OFF\
              -DCCCL_ENABLE_LIBCUDACXX=OFF\
              -DCCCL_ENABLE_CUB=ON\
              -DCUB_ENABLE_DIALECT_CPP11=OFF\
@@ -20,6 +19,7 @@ This file contains instrutions on how to run all CUB benchmarks using CUB tuning
              -DCUB_ENABLE_TUNING=YES\
              -DCMAKE_BUILD_TYPE=Release\
              -DCMAKE_CUDA_ARCHITECTURES="89;90"
+    cd build
     ../cub/benchmarks/scripts/run.py
 
 
