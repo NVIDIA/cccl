@@ -8,11 +8,18 @@
    - [Visual Studio Code](https://code.visualstudio.com/)
    - [Remote - Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 
+2. Click this link to automatically open VSCode and clone the CCCL repository:
+
+   [vscode://vscode.git/clone?url=https://github.com/nvidia/cccl.git](vscode://vscode.git/clone?url=https://github.com/nvidia/cccl.git)
+
+Alternatively:
+
 2. **Clone the Repository**:
    ```
    git clone https://github.com/nvidia/cccl.git
    ```
 3. **Open in VSCode**: Navigate to the cloned directory and open with VSCode.
+
 
 4. **Select and Launch Devcontainer**: Upon detecting a `.devcontainer` configuration, VSCode will prompt you to reopen the project inside the container. Choose your desired environment configuration and get coding!
 
@@ -42,35 +49,34 @@ All our Dev Container environments are fundamentally the same, with variations o
 This consistency ensures that all developers, whether part of the CCCL team or external contributors, operate within a standardized setting, minimizing potential discrepancies stemming from varied local setups.
 
 
-## What are Dev Containers?
+Certainly. Here's the updated "Using Docker Images Directly (Manual Approach)" section:
 
-[Dev Containers](https://containers.dev/), short for "Development Containers", make it easy to use a Docker container as a turn-key development environment for maintainers and new contributors alike.
-Dev Containers ensure a consistent environment for CI and developers eliminating the "it works on my machine" problem.
+---
 
-## Why are Dev Containers Useful?
+## Using Docker Images Directly (Manual Approach)
 
-- **Convenience**: Provides a complete development environment at the click of a button and eliminates the arduous task of setting up an environment with all the necesserary dependencies
-- **Consistency**: Every developer works in the same environment, eliminating configuration issues
-- **Isolation**: Dependencies and configurations are isolated from the host machine, keeping your machine clean.
-- **Portability**: Easily share and replicate development environments across teams and CI/CD processes.
-- **Flexibility**: Easily switch between different environments (like different host compilers and CUDA versions).
+While Visual Studio Code with Dev Containers provides a seamless development experience, some developers might prefer a direct Docker approach. We've made this easy with our `launch.sh` script.
 
-## Structure of `.devcontainer` in this Project
+Before using the script, you might want to explore the available configurations.
+The `.devcontainer` directory and its subdirectories house these configurations, with each subdirectory typically named as `cuda<CTK_VERSION>-<HOST-COMPILER>`.
 
-Our `.devcontainer` directory contains configurations for various development environments, primarily focused on different versions of CUDA and compilers:
+### Steps:
 
-- Subdirectories like `cuda11.1-gcc6`, `cuda11.1-gcc7`, etc., represent different environment setups.
-- `devcontainer.json` is the main configuration file that dictates how the development environment should be set up.
-- `launch.sh` and `make_devcontainers.sh` are utility scripts that assist in setting up and managing these environments.
+1. **Use the `launch.sh` Script**:
+   To initiate your desired development environment, run the `launch.sh` script with flags specifying your desired CUDA and compiler versions:
+   ```bash
+   launch.sh --cuda 12.2 --host gcc12 --docker
+   ```
 
-### How to Use Devcontainers in this Project
+   This script will pull the appropriate Docker image and run it, providing you with an interactive shell inside the container.
 
-1. Install [Visual Studio Code](https://code.visualstudio.com/).
-2. Install the [Remote - Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension.
-3. Open this project in VS Code.
-4. Press `F1` and select the "Remote-Containers: Open Folder in Container..." command.
-5. Choose the appropriate environment from the `.devcontainer` directory.
-6. Wait for the environment to build and start. Once done, you'll be inside the container with all dependencies installed.
+2. **Workspace Setup**:
+   The `launch.sh` script mounts the CCCL repository directory into the container by default, ensuring that your workspace inside the container mirrors your local setup.
 
-**Note**: Before switching between environments, it's recommended to close the current container to avoid conflicts.
+3. **Working Inside the Container**:
+   Inside the container, you have all the tools and configurations tailored for CCCL development.
+   You can build and run test, or perform any other development tasks as if you were in a local environment.
+
+4. **Exiting the Container**:
+   Once you're done, you can exit the container by simply typing `exit` in the interactive shell. The container will be removed upon exit, ensuring a clean state for your next session.
 
