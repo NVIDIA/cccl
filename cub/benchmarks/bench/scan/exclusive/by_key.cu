@@ -108,7 +108,7 @@ static void scan(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT
 
   thrust::device_vector<ValueT> in_vals(elements);
   thrust::device_vector<ValueT> out_vals(elements);
-  thrust::device_vector<KeyT> keys = gen_uniform_key_segments<KeyT>(seed_t{}, elements, 0, 5200);
+  thrust::device_vector<KeyT> keys = generate.uniform.key_segments(elements, 0, 5200);
 
   KeyT *d_keys       = thrust::raw_pointer_cast(keys.data());
   ValueT *d_in_vals  = thrust::raw_pointer_cast(in_vals.data());

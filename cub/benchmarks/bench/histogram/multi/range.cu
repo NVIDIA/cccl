@@ -87,11 +87,11 @@ static void range(nvbench::state &state, nvbench::type_list<SampleT, CounterT, O
   SampleT *d_levels_g = thrust::raw_pointer_cast(levels_g.data());
   SampleT *d_levels_b = thrust::raw_pointer_cast(levels_b.data());
 
-  thrust::device_vector<SampleT> input(elements * num_channels);
   thrust::device_vector<CounterT> hist_r(num_bins);
   thrust::device_vector<CounterT> hist_g(num_bins);
   thrust::device_vector<CounterT> hist_b(num_bins);
-  gen(seed_t{}, input, entropy, lower_level, upper_level);
+  thrust::device_vector<SampleT> input =
+    generate(elements * num_channels, entropy, lower_level, upper_level);
 
   SampleT *d_input        = thrust::raw_pointer_cast(input.data());
   CounterT *d_histogram_r = thrust::raw_pointer_cast(hist_r.data());

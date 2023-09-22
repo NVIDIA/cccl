@@ -77,11 +77,11 @@ static void even(nvbench::state &state, nvbench::type_list<SampleT, CounterT, Of
   const SampleT lower_level_b = lower_level_g;
   const SampleT upper_level_b = upper_level_g;
 
-  thrust::device_vector<SampleT> input(elements * num_channels);
   thrust::device_vector<CounterT> hist_r(num_bins);
   thrust::device_vector<CounterT> hist_g(num_bins);
   thrust::device_vector<CounterT> hist_b(num_bins);
-  gen(seed_t{}, input, entropy, lower_level_r, upper_level_r);
+  thrust::device_vector<SampleT> input =
+    generate(elements * num_channels, entropy, lower_level_r, upper_level_r);
 
   SampleT *d_input        = thrust::raw_pointer_cast(input.data());
   CounterT *d_histogram_r = thrust::raw_pointer_cast(hist_r.data());
