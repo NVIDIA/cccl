@@ -46,6 +46,7 @@ THRUST_NAMESPACE_BEGIN
  *  <tt>float</tt> or <tt>double</tt>. Others types are not supported.
  *
  */
+
 template <class T>
 struct complex : public ::cuda::std::complex<T>
 {
@@ -58,12 +59,10 @@ struct complex : public ::cuda::std::complex<T>
   __host__ __device__ complex(const base& rhs) : base(rhs) {}
   __host__ __device__ complex(base&& rhs) : base(::cuda::std::move(rhs)) {}
 
-  template <class U>
+  template <class U, typename = typename detail::enable_if<!detail::is_same<T, U>::value>::type,
+                     typename = typename detail::enable_if<detail::has_promoted_numerical_type<T, U>::value>::type>
   __host__ __device__
-    typename detail::enable_if<detail::and_<detail::has_promoted_numerical_type<T, U>,
-                                            detail::not_<detail::is_same<T, U>>>::value,
-                               complex>::type
-   &operator=(const complex<U> &rhs)
+   complex &operator=(const complex<U> &rhs)
   {
     this->real(static_cast<T>(rhs.real()));
     this->imag(static_cast<T>(rhs.imag()));
@@ -71,12 +70,10 @@ struct complex : public ::cuda::std::complex<T>
   }
 
 
-  template <class U>
+  template <class U, typename = typename detail::enable_if<!detail::is_same<T, U>::value>::type,
+                     typename = typename detail::enable_if<detail::has_promoted_numerical_type<T, U>::value>::type>
   __host__ __device__
-    typename detail::enable_if<detail::and_<detail::has_promoted_numerical_type<T, U>,
-                                            detail::not_<detail::is_same<T, U>>>::value,
-                               complex>::type
-  &operator=(const U &rhs)
+  complex &operator=(const U &rhs)
   {
     this->operator=(static_cast<T>(rhs));
     return *this;
