@@ -51,8 +51,6 @@ This consistency ensures that all developers, whether part of the CCCL team or e
 
 Certainly. Here's the updated "Using Docker Images Directly (Manual Approach)" section:
 
----
-
 ## Using Docker Images Directly (Manual Approach)
 
 While Visual Studio Code with Dev Containers provides a seamless development experience, some developers might prefer a direct Docker approach. We've made this easy with our `launch.sh` script.
@@ -80,3 +78,31 @@ The `.devcontainer` directory and its subdirectories house these configurations,
 4. **Exiting the Container**:
    Once you're done, you can exit the container by simply typing `exit` in the interactive shell. The container will be removed upon exit, ensuring a clean state for your next session.
 
+
+Alright, let me first examine the `.devcontainer` directory and the `ci/matrix.yaml` file to understand the role and functionality of the `make_devcontainers.sh` script. Once I have a grasp on its purpose and use, I'll suggest a section for the README that describes the script for maintainers.
+
+After analyzing the `.devcontainer` directory and the `ci/matrix.yaml` file, I've garnered insights into how the `make_devcontainers.sh` script operates. It appears that the script generates `devcontainer` configurations for various combinations of CUDA versions and host compilers, as dictated by the matrix defined in `matrix.yaml`. The generated configurations facilitate an easy development experience across multiple environments.
+
+Based on this understanding, here's a suggested section for the README to describe the `make_devcontainers.sh` script:
+
+
+## For Maintainers: The `make_devcontainers.sh` Script
+
+### Overview
+
+`make_devcontainers.sh` generates devcontainer configurations for the unique combinations of CUDA Toolkit (CTK) versions and host compilers in `ci/matrix.yaml`.
+
+
+### How It Works:
+
+1. Parses the matrix from `ci/matrix.yaml`.
+2. Use the top-level `.devcontainer/devcontainer.json` as a template. For each unique combination of CTK version and host compiler, generate a corresponding `devcontainer.json` configuration, adjusting only the base Docker image to match the desired environment.
+3. Place the generated configurations in the `.devcontainer` directory, organizing them into subdirectories following the naming convention `cuda<CTK_VERSION>-<COMPILER_VERSION>`.
+
+### Usage:
+
+```bash
+make_devcontainers.sh
+```
+
+**Note**: When adding or updating supported environments, modify `matrix.yaml` and then rerun this script to synchronize the `devcontainer` configurations.
