@@ -366,7 +366,7 @@ For a detailed overview of the CI pipeline, see [ci-overview.md](ci-overview.md)
 
 ## Projects Using CCCL
 
-Does your project use CCCL? Open a PR add your project to this list!
+Does your project use CCCL? [Open a PR to add your project to this list!](https://github.com/NVIDIA/cccl/edit/main/README.md)
 
 - [AmgX](https://github.com/NVIDIA/AMGX) - Multi-grid linear solver library
 - [ColossalAI](https://github.com/hpcaitech/ColossalAI) - Tools for writing distributed deep learning models
