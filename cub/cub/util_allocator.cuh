@@ -102,15 +102,15 @@ struct CachingDeviceAllocator
     //---------------------------------------------------------------------
 
     /// Out-of-bounds bin
-    static const unsigned int INVALID_BIN = (unsigned int) -1;
+    static constexpr unsigned int INVALID_BIN = (unsigned int) -1;
 
     /// Invalid size
-    static const size_t INVALID_SIZE = (size_t) -1;
+    static constexpr size_t INVALID_SIZE = (size_t) -1;
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
 
     /// Invalid device ordinal
-    static const int INVALID_DEVICE_ORDINAL = -1;
+    static constexpr int INVALID_DEVICE_ORDINAL = -1;
 
     //---------------------------------------------------------------------
     // Type definitions and helper types

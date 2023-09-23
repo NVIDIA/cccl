@@ -1562,8 +1562,8 @@ private:
   CUB_RUNTIME_FUNCTION __forceinline__
   int GetNumPasses(int radix_bits)
   {
-    const int byte_size  = 8;
-    const int num_bits   = sizeof(KeyT) * byte_size;
+    constexpr int byte_size = 8;
+    constexpr int num_bits = sizeof(KeyT) * byte_size;
     const int num_passes = DivideAndRoundUp(num_bits, radix_bits);
     return num_passes;
   }
@@ -1738,7 +1738,7 @@ private:
     cudaError_t error = cudaSuccess;
 
     const auto blocks_in_grid = static_cast<unsigned int>(num_segments);
-    const auto threads_in_block =
+    constexpr auto threads_in_block =
       static_cast<unsigned int>(LargeSegmentPolicyT::BLOCK_THREADS);
 
     // Log kernel configuration

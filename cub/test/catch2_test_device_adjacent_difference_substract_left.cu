@@ -61,7 +61,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft can run with empty input", "[de
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 0;
+  constexpr int num_items = 0;
   thrust::device_vector<type> in(num_items);
 
   adjacent_difference_subtract_left(in.begin(),
@@ -72,7 +72,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy can run with empty input", 
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 0;
+  constexpr int num_items = 0;
   thrust::device_vector<type> in(num_items);
   thrust::device_vector<type> out(num_items);
 
@@ -270,7 +270,7 @@ struct check_difference {
 
 CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with large indexes", "[device][adjacent_difference]")
 {
-  const cuda::std::size_t num_items = 1ll << 33;
+  constexpr cuda::std::size_t num_items = 1ll << 33;
   adjacent_difference_subtract_left_copy(thrust::counting_iterator<cuda::std::size_t>{0},
                                          thrust::discard_iterator<>{},
                                          num_items,

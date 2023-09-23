@@ -216,8 +216,8 @@ struct DispatchThreeWayPartitionIf
   {
     cudaError error = cudaSuccess;
 
-    const int block_threads = ActivePolicyT::ThreeWayPartitionPolicy::BLOCK_THREADS;
-    const int items_per_thread = ActivePolicyT::ThreeWayPartitionPolicy::ITEMS_PER_THREAD;
+    constexpr int block_threads = ActivePolicyT::ThreeWayPartitionPolicy::BLOCK_THREADS;
+    constexpr int items_per_thread = ActivePolicyT::ThreeWayPartitionPolicy::ITEMS_PER_THREAD;
 
     do
     {

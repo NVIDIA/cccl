@@ -297,7 +297,7 @@ struct index_to_custom_output_op
 
 CUB_TEST("Device scan works complex accumulator types", "[scan][device]")
 {
-  const int num_items = 2 * 1024 * 1024;
+  constexpr int num_items = 2 * 1024 * 1024;
 
   custom_accumulator_t init{};
 

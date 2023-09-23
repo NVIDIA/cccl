@@ -1468,13 +1468,13 @@ template <typename KeyT,
 struct EdgeTestDispatch
 {
   // Edge cases that needs to be tested
-  const int empty_short_circuit_segment_size = 0;
-  const int copy_short_circuit_segment_size = 1;
-  const int swap_short_circuit_segment_size = 2;
+  static constexpr int empty_short_circuit_segment_size = 0;
+  static constexpr int copy_short_circuit_segment_size = 1;
+  static constexpr int swap_short_circuit_segment_size = 2;
 
-  const int a_few = 2;
-  const int a_bunch_of = 42;
-  const int a_lot_of = 420;
+  static constexpr int a_few = 2;
+  static constexpr int a_bunch_of = 42;
+  static constexpr int a_lot_of = 420;
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
@@ -1484,18 +1484,18 @@ struct EdgeTestDispatch
          typename ActivePolicyT::SmallAndMediumSegmentedSortPolicyT;
        using LargeSegmentPolicyT = typename ActivePolicyT::LargeSegmentPolicy;
 
-       const int small_segment_max_segment_size =
+       constexpr int small_segment_max_segment_size =
          SmallAndMediumPolicyT::SmallPolicyT::ITEMS_PER_TILE;
 
-       const int items_per_small_segment =
+       constexpr int items_per_small_segment =
          SmallAndMediumPolicyT::SmallPolicyT::ITEMS_PER_THREAD;
 
-       const int medium_segment_max_segment_size =
+       constexpr int medium_segment_max_segment_size =
          SmallAndMediumPolicyT::MediumPolicyT::ITEMS_PER_TILE;
 
-       const int single_thread_segment_size = items_per_small_segment;
+       constexpr int single_thread_segment_size = items_per_small_segment;
 
-       const int large_cached_segment_max_segment_size =
+       constexpr int large_cached_segment_max_segment_size =
          LargeSegmentPolicyT::BLOCK_THREADS *
          LargeSegmentPolicyT::ITEMS_PER_THREAD;
 
@@ -1579,7 +1579,7 @@ Input<KeyT, ValueT> GenRandomInput(int max_items,
   thrust::host_vector<int> segment_sizes;
   segment_sizes.reserve(segments_num);
 
-  const int max_segment_size = 6000;
+  constexpr int max_segment_size = 6000;
 
   for (int segment_id = 0; segment_id < segments_num; segment_id++)
   {
@@ -1603,7 +1603,7 @@ template <typename KeyT,
 void RandomTest(int min_segments,
                 int max_segments)
 {
-  const int max_items = 10000000;
+  constexpr int max_items = 10000000;
 
   for (int iteration = 0; iteration < MAX_ITERATIONS; iteration++)
   {
@@ -1727,7 +1727,7 @@ void TestDeviceSideLaunch(Input<KeyT, ValueT> &input)
 template <typename KeyT>
 void TestDeviceSideLaunch(int min_segments, int max_segments)
 {
-  const int max_items = 10000000;
+  constexpr int max_items = 10000000;
 
   for (int iteration = 0; iteration < MAX_ITERATIONS; iteration++)
   {
@@ -1752,9 +1752,9 @@ void TestDeviceSideLaunch()
 
 void TestUnspecifiedRanges()
 {
-  const std::size_t num_items = 1024 * 1024;
-  const std::size_t max_segments = 42;
-  const std::size_t avg_segment_size = num_items / max_segments;
+  constexpr std::size_t num_items = 1024 * 1024;
+  constexpr std::size_t max_segments = 42;
+  constexpr std::size_t avg_segment_size = num_items / max_segments;
 
   for (int iteration = 0; iteration < MAX_ITERATIONS; iteration++)
   {

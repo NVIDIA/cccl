@@ -87,7 +87,7 @@ CUB_TEST("DevicePartition::If can run with empty input", "[device][partition_if]
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 0;
+  constexpr int num_items = 0;
   thrust::device_vector<type> in(num_items);
   thrust::device_vector<type> out(num_items);
 
