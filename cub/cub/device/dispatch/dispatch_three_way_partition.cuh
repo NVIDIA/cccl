@@ -166,7 +166,7 @@ struct DispatchThreeWayPartitionIf
   using AccumPackT = typename AccumPackHelperT::pack_t;
   using ScanTileStateT = cub::ScanTileState<AccumPackT>;
 
-  constexpr static int INIT_KERNEL_THREADS = 256;
+  static constexpr int INIT_KERNEL_THREADS = 256;
 
   void *d_temp_storage;
   std::size_t &temp_storage_bytes;

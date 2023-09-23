@@ -44,7 +44,7 @@ constexpr bool is_overwrite_ok = false;
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_hub_t
 {
-  constexpr static bool KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
+  static constexpr bool KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
 
   using DominantT = cub::detail::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 

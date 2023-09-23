@@ -81,7 +81,7 @@ struct UnwrapHalfAndBfloat16<bfloat16_t>
 };
 #endif
 
-constexpr static int MAX_ITERATIONS = 2;
+static constexpr int MAX_ITERATIONS = 2;
 
 
 class SizeGroupDescription

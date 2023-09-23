@@ -747,7 +747,7 @@ struct DeviceSegmentedSortPolicy
   using DominantT =
     cub::detail::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
-  constexpr static int KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
+  static constexpr int KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
 
   //----------------------------------------------------------------------------
   // Architecture-specific tuning policies
@@ -755,9 +755,9 @@ struct DeviceSegmentedSortPolicy
 
   struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
   {
-    constexpr static int BLOCK_THREADS = 128;
-    constexpr static int RADIX_BITS = sizeof(KeyT) > 1 ? 6 : 4;
-    constexpr static int PARTITIONING_THRESHOLD = 300;
+    static constexpr int BLOCK_THREADS = 128;
+    static constexpr int RADIX_BITS = sizeof(KeyT) > 1 ? 6 : 4;
+    static constexpr int PARTITIONING_THRESHOLD = 300;
 
     using LargeSegmentPolicy =
       AgentRadixSortDownsweepPolicy<BLOCK_THREADS,
@@ -769,10 +769,10 @@ struct DeviceSegmentedSortPolicy
                                     BLOCK_SCAN_WARP_SCANS,
                                     RADIX_BITS>;
 
-    constexpr static int ITEMS_PER_SMALL_THREAD =
+    static constexpr int ITEMS_PER_SMALL_THREAD =
       Nominal4BItemsToItems<DominantT>(5);
 
-    constexpr static int ITEMS_PER_MEDIUM_THREAD =
+    static constexpr int ITEMS_PER_MEDIUM_THREAD =
       Nominal4BItemsToItems<DominantT>(5);
 
     using SmallAndMediumSegmentedSortPolicyT =
@@ -795,9 +795,9 @@ struct DeviceSegmentedSortPolicy
 
   struct Policy500 : ChainedPolicy<500, Policy500, Policy350>
   {
-    constexpr static int BLOCK_THREADS = 256;
-    constexpr static int RADIX_BITS = sizeof(KeyT) > 1 ? 6 : 4;
-    constexpr static int PARTITIONING_THRESHOLD = 300;
+    static constexpr int BLOCK_THREADS = 256;
+    static constexpr int RADIX_BITS = sizeof(KeyT) > 1 ? 6 : 4;
+    static constexpr int PARTITIONING_THRESHOLD = 300;
 
     using LargeSegmentPolicy =
       AgentRadixSortDownsweepPolicy<BLOCK_THREADS,
@@ -809,10 +809,10 @@ struct DeviceSegmentedSortPolicy
                                     BLOCK_SCAN_RAKING_MEMOIZE,
                                     RADIX_BITS>;
 
-    constexpr static int ITEMS_PER_SMALL_THREAD =
+    static constexpr int ITEMS_PER_SMALL_THREAD =
       Nominal4BItemsToItems<DominantT>(7);
 
-    constexpr static int ITEMS_PER_MEDIUM_THREAD =
+    static constexpr int ITEMS_PER_MEDIUM_THREAD =
       Nominal4BItemsToItems<DominantT>(7);
 
     using SmallAndMediumSegmentedSortPolicyT =
@@ -835,9 +835,9 @@ struct DeviceSegmentedSortPolicy
 
   struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
   {
-    constexpr static int BLOCK_THREADS = 256;
-    constexpr static int RADIX_BITS = sizeof(KeyT) > 1 ? 6 : 4;
-    constexpr static int PARTITIONING_THRESHOLD = 500;
+    static constexpr int BLOCK_THREADS = 256;
+    static constexpr int RADIX_BITS = sizeof(KeyT) > 1 ? 6 : 4;
+    static constexpr int PARTITIONING_THRESHOLD = 500;
 
     using LargeSegmentPolicy =
       AgentRadixSortDownsweepPolicy<BLOCK_THREADS,
@@ -849,10 +849,10 @@ struct DeviceSegmentedSortPolicy
                                     BLOCK_SCAN_WARP_SCANS,
                                     RADIX_BITS>;
 
-    constexpr static int ITEMS_PER_SMALL_THREAD =
+    static constexpr int ITEMS_PER_SMALL_THREAD =
       Nominal4BItemsToItems<DominantT>(9);
 
-    constexpr static int ITEMS_PER_MEDIUM_THREAD =
+    static constexpr int ITEMS_PER_MEDIUM_THREAD =
       Nominal4BItemsToItems<DominantT>(9);
 
     using SmallAndMediumSegmentedSortPolicyT =
@@ -875,9 +875,9 @@ struct DeviceSegmentedSortPolicy
 
   struct Policy610 : ChainedPolicy<610, Policy610, Policy600>
   {
-    constexpr static int BLOCK_THREADS = 256;
-    constexpr static int RADIX_BITS = sizeof(KeyT) > 1 ? 6 : 4;
-    constexpr static int PARTITIONING_THRESHOLD = 500;
+    static constexpr int BLOCK_THREADS = 256;
+    static constexpr int RADIX_BITS = sizeof(KeyT) > 1 ? 6 : 4;
+    static constexpr int PARTITIONING_THRESHOLD = 500;
 
     using LargeSegmentPolicy =
       AgentRadixSortDownsweepPolicy<BLOCK_THREADS,
@@ -889,10 +889,10 @@ struct DeviceSegmentedSortPolicy
                                     BLOCK_SCAN_WARP_SCANS,
                                     RADIX_BITS>;
 
-    constexpr static int ITEMS_PER_SMALL_THREAD =
+    static constexpr int ITEMS_PER_SMALL_THREAD =
       Nominal4BItemsToItems<DominantT>(9);
 
-    constexpr static int ITEMS_PER_MEDIUM_THREAD =
+    static constexpr int ITEMS_PER_MEDIUM_THREAD =
       Nominal4BItemsToItems<DominantT>(9);
 
     using SmallAndMediumSegmentedSortPolicyT =
@@ -915,9 +915,9 @@ struct DeviceSegmentedSortPolicy
 
   struct Policy620 : ChainedPolicy<620, Policy620, Policy610>
   {
-    constexpr static int BLOCK_THREADS = 256;
-    constexpr static int RADIX_BITS = sizeof(KeyT) > 1 ? 5 : 4;
-    constexpr static int PARTITIONING_THRESHOLD = 500;
+    static constexpr int BLOCK_THREADS = 256;
+    static constexpr int RADIX_BITS = sizeof(KeyT) > 1 ? 5 : 4;
+    static constexpr int PARTITIONING_THRESHOLD = 500;
 
     using LargeSegmentPolicy =
       AgentRadixSortDownsweepPolicy<BLOCK_THREADS,
@@ -929,10 +929,10 @@ struct DeviceSegmentedSortPolicy
                                     BLOCK_SCAN_RAKING_MEMOIZE,
                                     RADIX_BITS>;
 
-    constexpr static int ITEMS_PER_SMALL_THREAD =
+    static constexpr int ITEMS_PER_SMALL_THREAD =
       Nominal4BItemsToItems<DominantT>(9);
 
-    constexpr static int ITEMS_PER_MEDIUM_THREAD =
+    static constexpr int ITEMS_PER_MEDIUM_THREAD =
       Nominal4BItemsToItems<DominantT>(9);
 
     using SmallAndMediumSegmentedSortPolicyT =
@@ -955,9 +955,9 @@ struct DeviceSegmentedSortPolicy
 
   struct Policy700 : ChainedPolicy<700, Policy700, Policy620>
   {
-    constexpr static int BLOCK_THREADS = 256;
-    constexpr static int RADIX_BITS = sizeof(KeyT) > 1 ? 6 : 4;
-    constexpr static int PARTITIONING_THRESHOLD = 500;
+    static constexpr int BLOCK_THREADS = 256;
+    static constexpr int RADIX_BITS = sizeof(KeyT) > 1 ? 6 : 4;
+    static constexpr int PARTITIONING_THRESHOLD = 500;
 
     using LargeSegmentPolicy =
       AgentRadixSortDownsweepPolicy<BLOCK_THREADS,
@@ -969,10 +969,10 @@ struct DeviceSegmentedSortPolicy
                                     BLOCK_SCAN_WARP_SCANS,
                                     RADIX_BITS>;
 
-    constexpr static int ITEMS_PER_SMALL_THREAD =
+    static constexpr int ITEMS_PER_SMALL_THREAD =
       Nominal4BItemsToItems<DominantT>(7);
 
-    constexpr static int ITEMS_PER_MEDIUM_THREAD =
+    static constexpr int ITEMS_PER_MEDIUM_THREAD =
       Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 11 : 7);
 
     using SmallAndMediumSegmentedSortPolicyT =
@@ -995,8 +995,8 @@ struct DeviceSegmentedSortPolicy
 
   struct Policy800 : ChainedPolicy<800, Policy800, Policy700>
   {
-    constexpr static int BLOCK_THREADS = 256;
-    constexpr static int PARTITIONING_THRESHOLD = 500;
+    static constexpr int BLOCK_THREADS = 256;
+    static constexpr int PARTITIONING_THRESHOLD = 500;
 
     using LargeSegmentPolicy =
       cub::AgentRadixSortDownsweepPolicy<BLOCK_THREADS,
@@ -1008,10 +1008,10 @@ struct DeviceSegmentedSortPolicy
                                          cub::BLOCK_SCAN_WARP_SCANS,
                                          (sizeof(KeyT) > 1) ? 6 : 4>;
 
-    constexpr static int ITEMS_PER_SMALL_THREAD =
+    static constexpr int ITEMS_PER_SMALL_THREAD =
       Nominal4BItemsToItems<DominantT>(9);
 
-    constexpr static int ITEMS_PER_MEDIUM_THREAD =
+    static constexpr int ITEMS_PER_MEDIUM_THREAD =
       Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 7 : 11);
 
     using SmallAndMediumSegmentedSortPolicyT =
@@ -1034,8 +1034,8 @@ struct DeviceSegmentedSortPolicy
 
   struct Policy860 : ChainedPolicy<860, Policy860, Policy800>
   {
-    constexpr static int BLOCK_THREADS = 256;
-    constexpr static int PARTITIONING_THRESHOLD = 500;
+    static constexpr int BLOCK_THREADS = 256;
+    static constexpr int PARTITIONING_THRESHOLD = 500;
 
     using LargeSegmentPolicy =
       cub::AgentRadixSortDownsweepPolicy<BLOCK_THREADS,
@@ -1047,12 +1047,12 @@ struct DeviceSegmentedSortPolicy
                                          cub::BLOCK_SCAN_WARP_SCANS,
                                          (sizeof(KeyT) > 1) ? 6 : 4>;
 
-    constexpr static bool LARGE_ITEMS = sizeof(DominantT) > 4;
+    static constexpr bool LARGE_ITEMS = sizeof(DominantT) > 4;
 
-    constexpr static int ITEMS_PER_SMALL_THREAD =
+    static constexpr int ITEMS_PER_SMALL_THREAD =
       Nominal4BItemsToItems<DominantT>(LARGE_ITEMS ? 7 : 9);
 
-    constexpr static int ITEMS_PER_MEDIUM_THREAD =
+    static constexpr int ITEMS_PER_MEDIUM_THREAD =
       Nominal4BItemsToItems<DominantT>(LARGE_ITEMS ? 9 : 7);
 
     using SmallAndMediumSegmentedSortPolicyT =
@@ -1137,7 +1137,7 @@ struct DispatchSegmentedSort : SelectedPolicy
   };
 
   // Partition selects large and small groups. The middle group is not selected.
-  constexpr static std::size_t num_selected_groups = 2;
+  static constexpr std::size_t num_selected_groups = 2;
 
   /**
    * Device-accessible allocation of temporary storage. When `nullptr`, the

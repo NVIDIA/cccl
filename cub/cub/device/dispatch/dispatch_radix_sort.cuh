@@ -701,7 +701,7 @@ struct DeviceRadixSortPolicy
     //------------------------------------------------------------------------------
 
     // Whether this is a keys-only (or key-value) sort
-    constexpr static bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+    static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
     // Dominant-sized key/value type
     using DominantT =
@@ -1179,7 +1179,7 @@ struct DispatchRadixSort : SelectedPolicy
     //------------------------------------------------------------------------------
 
     // Whether this is a keys-only (or key-value) sort
-    constexpr static bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+    static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
     //------------------------------------------------------------------------------
     // Problem state
@@ -2185,7 +2185,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
     //------------------------------------------------------------------------------
 
     // Whether this is a keys-only (or key-value) sort
-    constexpr static bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+    static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
     //------------------------------------------------------------------------------
     // Parameter members
