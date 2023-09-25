@@ -3,5 +3,5 @@
 
 enabled: true
 additional_trustees:
-- ahendriksen
-- gonzalobg
+  - ahendriksen
+  - gonzalobg
