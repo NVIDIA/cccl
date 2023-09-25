@@ -188,4 +188,4 @@ _LIBCUDACXX_DEVICE bool __cuda_fetch_min_weak_if_local(volatile _Type *__ptr, _T
   return __cuda_fetch_weak_if_local(__ptr, __val, __ret, __cuda_fetch_local_bop_min<_Type>);
 }
 
-#endif
+#endif  // __LIBCUDACXX_ATOMIC_CUDA_LOCAL_H
