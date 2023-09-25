@@ -62,6 +62,8 @@ We encourage external contributors to use them as they provide an effortless onr
 
 If Docker feels daunting, Dev Containers make it more intuitive. They manage Docker's intricacies, freeing you to code. No need for complex Docker commands or profound containerization knowledge. The `devcontainer.json` file dictates each environment, designating a base Docker image with the desired CUDA Toolkit (CTK) and host compiler version. This file might also detail extra configurations, tools, or settings for further refinement.
 
+Our containers are provided by images built from [`rapidsai/devcontainers`](https://github.com/rapidsai/devcontainers).
+
 ### Available Dev Container Configurations:
 
 A frequent challenge in CUDA development is managing different CUDA toolkit and compiler versions. Dev Containers address this by presenting environments tailored to numerous CTK and compiler combinations. By default, the CCCL team provides configurations for both the oldest and newest supported CUDA versions, with every supported host compiler for those CUDA versions.
