@@ -83,6 +83,8 @@ int main() {
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+#include "atomic_cuda_local.h"
 )XXX" << "\n\n";
 
     auto scopenametag = [&](auto scope) {
@@ -142,6 +144,7 @@ int main() {
             for(auto& cv: cv_qualifier) {
                 out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz/8 << ", int> = 0>\n";
                 out << "_LIBCUDACXX_DEVICE void __atomic_load_cuda(const " << cv << "_Type *__ptr, _Type *__ret, int __memorder, " << scopenametag(s.first) << ") {\n";
+		out << "    if (__cuda_load_weak_if_local(__ptr, __ret)) return;\n";
                 out << "    uint" << sz << "_t __tmp = 0;\n";
                 out << "    NV_DISPATCH_TARGET(\n";
                 out << "      NV_PROVIDES_SM_70, (\n";
@@ -178,6 +181,7 @@ int main() {
             for(auto& cv: cv_qualifier) {
                 out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz/8 << ", int> = 0>\n";
                 out << "_LIBCUDACXX_DEVICE void __atomic_store_cuda(" << cv << "_Type *__ptr, _Type *__val, int __memorder, " << scopenametag(s.first) << ") {\n";
+		out << "    if (__cuda_store_weak_if_local(__ptr, *__val)) return;\n";
                 out << "    uint" << sz << "_t __tmp = 0;\n";
                 out << "    memcpy(&__tmp, __val, " << sz/8 << ");\n";
                 out << "    NV_DISPATCH_TARGET(\n";
@@ -239,6 +243,8 @@ int main() {
                             if(rmw.first == "compare_exchange") {
                                 out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz/8 << ", int> = 0>\n";
                                 out << "_LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(" << cv << "_Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, " << scopenametag(s.first) << ") {\n";
+				out << "    bool __tmp_out;\n";
+				out << "    if (__cuda_compare_exchange_weak_if_local(__ptr, __expected, __desired, &__tmp_out)) return __tmp_out;\n";
                                 out << "    uint" << sz << "_t __tmp = 0, __old = 0, __old_tmp;\n";
                                 out << "    memcpy(&__tmp, __desired, " << sz/8 << ");\n";
                                 out << "    memcpy(&__old, __expected, " << sz/8 << ");\n";
@@ -277,7 +283,8 @@ int main() {
                                 if(rmw.first == "exchange") {
                                     out << ", int> = 0>\n";
                                     out << "_LIBCUDACXX_DEVICE void __atomic_exchange_cuda(" << cv << "_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, " << scopenametag(s.first) << ") {\n";
-                                    out << "    uint" << sz << "_t __tmp = 0;\n";
+				    out << "    if (__cuda_exchange_weak_if_local(__ptr, __val, __ret)) return;\n";
+				    out << "    uint" << sz << "_t __tmp = 0;\n";
                                     out << "    memcpy(&__tmp, __val, " << sz/8 << ");\n";
                                 }
                                 else {
@@ -295,6 +302,7 @@ int main() {
                                         out << ", int> = 0>\n";
                                     out << "_LIBCUDACXX_DEVICE _Type __atomic_" << rmw.first << "_cuda(" << cv << "_Type *__ptr, _Type __val, int __memorder, " << scopenametag(s.first) << ") {\n";
                                     out << "    _Type __ret;\n";
+				    out << "    if (__cuda_" << rmw.first << "_weak_if_local(__ptr, __val, &__ret)) return __ret;\n";
                                     if(type.first == "f" && sz == 32)
                                         out << "    float";
                                     else if(type.first == "f" && sz == 64)
@@ -352,6 +360,7 @@ int main() {
                 if(op == "sub")
                     out << "    __tmp = -__tmp;\n";
                 out << "    __tmp *= sizeof(_Type);\n";
+		out << "    if (__cuda_fetch_add_weak_if_local((uint64_t*)__ptr, __tmp, (uint64_t*)&__ret)) return __ret;\n";
                 out << "    NV_DISPATCH_TARGET(\n";
                 out << "      NV_PROVIDES_SM_70, (\n";
                 out << "        switch (__memorder) {\n";

@@ -7,6 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+#ifndef __LIBCUDACXX_ATOMIC_CUDA_H
+#define __LIBCUDACXX_ATOMIC_CUDA_H
 
 #if defined(__CUDA_MINIMUM_ARCH__) && ((!defined(_LIBCUDACXX_COMPILER_MSVC) && __CUDA_MINIMUM_ARCH__ < 600) || (defined(_LIBCUDACXX_COMPILER_MSVC) && __CUDA_MINIMUM_ARCH__ < 700))
 #  error "CUDA atomics are only supported for sm_60 and up on *nix and sm_70 and up on Windows."
@@ -398,25 +400,6 @@ template <typename _Tp, int _Sco>
 _LIBCUDACXX_HOST_DEVICE inline _Tp __cxx_atomic_exchange(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Tp __value, memory_order __order) {
     return __cxx_small_from_32<_Tp>(__cxx_atomic_exchange(&__a->__a_value, __cxx_small_to_32(__value), __order));
 }
-_LIBCUDACXX_HOST_DEVICE
-inline int __cuda_memcmp(void const * __lhs, void const * __rhs, size_t __count) {
-    NV_DISPATCH_TARGET(
-        NV_IS_DEVICE, (
-            auto __lhs_c = reinterpret_cast<unsigned char const *>(__lhs);
-            auto __rhs_c = reinterpret_cast<unsigned char const *>(__rhs);
-            while (__count--) {
-                auto const __lhs_v = *__lhs_c++;
-                auto const __rhs_v = *__rhs_c++;
-                if (__lhs_v < __rhs_v) { return -1; }
-                if (__lhs_v > __rhs_v) { return 1; }
-            }
-            return 0;
-        ),
-        NV_IS_HOST, (
-            return memcmp(__lhs, __rhs, __count);
-        )
-    )
-}
 
 template <typename _Tp, int _Sco>
 _LIBCUDACXX_HOST_DEVICE inline bool __cxx_atomic_compare_exchange_weak(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Tp* __expected, _Tp __value, memory_order __success, memory_order __failure) {
@@ -478,3 +461,5 @@ template <typename _Tp, typename _Delta, int _Sco>
 _LIBCUDACXX_HOST_DEVICE inline _Tp __cxx_atomic_fetch_min(__cxx_atomic_base_small_impl<_Tp, _Sco> volatile* __a, _Delta __val, memory_order __order) {
     return __cxx_small_from_32<_Tp>(__cxx_atomic_fetch_min(&__a->__a_value, __cxx_small_to_32(__val), __order));
 }
+
+#endif // __LIBCUDACXX_ATOMIC_CUDA_H
