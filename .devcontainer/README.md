@@ -44,11 +44,11 @@ git clone https://github.com/nvidia/cccl.git
 ```
 
 ### **Step 2: Launch Docker Container**
-Navigate to the cloned directory and use the `launch.sh` script:
+Navigate to the cloned directory and use the [`launch.sh`](./launch.sh) script:
 
 ```bash
 cd cccl
-./launch.sh --docker
+./.devcontainer/launch.sh --docker
 ```
 
 This script initiates a Docker container tailored for the specified CUDA and compiler versions. Inside, you'll get an interactive shell session with the `cccl` repository already mounted, allowing direct editing and testing.
