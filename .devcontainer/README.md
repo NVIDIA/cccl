@@ -65,9 +65,6 @@ A frequent challenge in CUDA development is managing different CUDA toolkit and 
 
 To see the configurations available, look through the [`.devcontainer` directory](.). Each environment resides in its folder, named in the format `cuda<CTK_VERSION>-<HOST-COMPILER>`, with the related `devcontainer.json` explaining its specs. All Dev Container environments are fundamentally identical, only differing in the CUDA Toolkit (CTK) and host compiler versions. This uniformity guarantees that all developers, either from the CCCL team or external contributors, work within a standardized environment, reducing discrepancies from diverse local setups.
 
-Certainly. Here's the revised section:
-
----
 
 ## Using Dev Containers with VSCode
 
@@ -148,8 +145,6 @@ The `.devcontainer` directory and its subdirectories house these configurations,
    After you're finished with your tasks, simply type `exit` in the interactive shell to leave. Upon exit, the container gets removed, assuring a pristine state for your next session.
 
    Certainly! Here's a minimal documentation for the script:
-
----
 
 ## `launch.sh`: Development Container Launcher Script
 
