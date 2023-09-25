@@ -11,7 +11,9 @@
 
 ### **Step 1: Clone the Repository**
 
-- **Easy Way**: Click <a href="vscode://vscode.git/clone?url=https://github.com/nvidia/cccl.git">here</a> to automatically clone and open in VSCode.
+- **Easy Way**: Click [here][1] to automatically clone and open in VSCode.
+
+[1]: vscode://vscode.git/clone?url=https://github.com/nvidia/cccl.git
 
 - **Manual Way**:
   ```bash
