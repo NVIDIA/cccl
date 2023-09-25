@@ -1,106 +1,162 @@
-
+> **Note**
+> Platform Note: The instructions in this README are tailored for Linux environments. If you're using Windows, please be patient as we're actively working on adding support and instructions for Windows development environments. Stay tuned!
 
 # CCCL Dev Containers
 
-## Quickstart
+## Quickstart: VSCode (Recommended)
 
-1. **Install Prerequisites**:
-   - [Visual Studio Code](https://code.visualstudio.com/)
-   - [Remote - Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+### **Prerequisites**:
+- [Visual Studio Code](https://code.visualstudio.com/)
+- [Remote - Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 
-2. Click this link to automatically open VSCode and clone the CCCL repository:
+### **Step 1: Clone the Repository**
 
-   [vscode://vscode.git/clone?url=https://github.com/nvidia/cccl.git](vscode://vscode.git/clone?url=https://github.com/nvidia/cccl.git)
+- **Easy Way**: Click [here](vscode://vscode.git/clone?url=https://github.com/nvidia/cccl.git) to automatically clone and open in VSCode.
 
-Alternatively:
+- **Manual Way**:
+  ```bash
+  git clone https://github.com/nvidia/cccl.git
+  ```
 
-2. **Clone the Repository**:
-   ```
-   git clone https://github.com/nvidia/cccl.git
-   ```
-3. **Open in VSCode**: Navigate to the cloned directory and open with VSCode.
+### **Step 2: Launch Development Environment in VSCode**
+
+- Open the cloned directory in VSCode.
+- A prompt will appear in the lower right corner suggesting to "Reopen in Container". Click it.
+- A list of devcontainers will be shown. These are named with a pattern `cuda<CTK_VERSION>-<HOST-COMPILER>`. Select the desired environment to start coding!
+
+## Quickstart: Docker (Manual Approach)
+
+### **Prerequisites**:
+- [Docker](https://docs.docker.com/desktop/install/linux-install/)
 
 
-4. **Select and Launch Devcontainer**: Upon detecting a `.devcontainer` configuration, VSCode will prompt you to reopen the project inside the container. Choose your desired environment configuration and get coding!
+### **Step 1: Clone the Repository**
+```bash
+git clone https://github.com/nvidia/cccl.git
+```
 
-For a deeper dive into dev containers, available configurations, and further benefits, continue reading below.
+### **Step 2: Launch Docker Container**
+Navigate to the cloned directory and use the `launch.sh` script:
+
+```bash
+cd cccl
+./launch.sh --docker
+```
+
+This script initiates a Docker container tailored for the specified CUDA and compiler versions. Inside, you'll get an interactive shell session with the `cccl` repository already mounted, allowing direct editing and testing.
+
+For a deeper dive into dev containers, configurations, and benefits, continue reading below.
 
 ## Overview
 
 The CUDA C++ Libraries (CCCL) team uses [Development Containers, or "Dev Containers"](https://code.visualstudio.com/docs/devcontainers/containers), to provide a consistent, reproducible, and isolated development environment shared for both local development and CI.
-We encourage external contributors to use them as well as they provide an effortless onramp to setting up your environment to make contributions.
-With just a few clicks in Visual Studio Code or a basic Docker command, you can immerse yourself in the same environment that the CCCL team relies on.
+We encourage external contributors to use them as they provide an effortless onramp to setting up your environment for contributions. With just a few actions in Visual Studio Code or a basic Docker command, you're ready in the same environment the CCCL team works in.
 
-If Docker seems unfamiliar or intimidating, Dev Containers make it approachable.
-They encapsulate Docker's complexities, letting you focus on coding. There's no need for intricate Docker commands or deep knowledge of containerization.
-Instead, the devcontainer.json file defines each environment, pointing to a base Docker image equipped with the desired CUDA Toolkit (CTK) and host compiler version.
-This file may also specify additional configurations, tools, or settings for further refinement.
+If Docker feels daunting, Dev Containers make it more intuitive. They manage Docker's intricacies, freeing you to code. No need for complex Docker commands or profound containerization knowledge. The `devcontainer.json` file dictates each environment, designating a base Docker image with the desired CUDA Toolkit (CTK) and host compiler version. This file might also detail extra configurations, tools, or settings for further refinement.
 
 ### Available Dev Container Configurations:
 
-Managing different versions of the CUDA toolkit and compilers is a common challenge in CUDA development.
-Dev Containers simplify this aspect by offering environments tailored to various CTK and compiler combinations.
-By default, the CCCL team provides configurations for both the oldest and newest supported CUDA versions, paired with all respective supported host compilers.
-This approach ensures a uniform development experience.
+A frequent challenge in CUDA development is managing different CUDA toolkit and compiler versions. Dev Containers address this by presenting environments tailored to numerous CTK and compiler combinations. By default, the CCCL team provides configurations for both the oldest and newest supported CUDA versions, with every supported host compiler for those CUDA versions.
 
-To explore the configurations we offer, browse the [`.devcontainer` directory](.).
-Each environment is encapsulated in a folder, with the associated `devcontainer.json` detailing its configuration.
-All our Dev Container environments are fundamentally the same, with variations only in the CUDA Toolkit (CTK) and host compiler versions.
-This consistency ensures that all developers, whether part of the CCCL team or external contributors, operate within a standardized setting, minimizing potential discrepancies stemming from varied local setups.
+To see the configurations available, look through the [`.devcontainer` directory](.). Each environment resides in its folder, named in the format `cuda<CTK_VERSION>-<HOST-COMPILER>`, with the related `devcontainer.json` explaining its specs. All Dev Container environments are fundamentally identical, only differing in the CUDA Toolkit (CTK) and host compiler versions. This uniformity guarantees that all developers, either from the CCCL team or external contributors, work within a standardized environment, reducing discrepancies from diverse local setups.
 
+Certainly. Here's the revised section:
 
-Certainly. Here's the updated "Using Docker Images Directly (Manual Approach)" section:
+---
+
+## Using Dev Containers with VSCode
+
+Using Development Containers in Visual Studio Code provides a seamless integration, allowing developers to work within a containerized environment directly from the editor. Here's a step-by-step guide, complemented by suggested screenshots, for those new to this setup.
+
+### **1. Open the Cloned Directory in VSCode**
+
+After you've cloned the repository, navigate to the directory in your file system and open it using Visual Studio Code.
+
+**Suggested Screenshot**: A visual showing the cloned directory opened in VSCode.
+
+### **2. Launching a Dev Container**
+
+There are multiple ways to launch a Dev Container in VSCode:
+
+**a. "Reopen in Container" Prompt**:
+If you have the "Remote - Containers" extension installed, a prompt will appear at the lower right corner suggesting to "Reopen in Container" once the directory is opened in VSCode.
+
+![Shows "Reopen in Container" prompt when opening the cccl directory in VScode.](./img/reopen_in_container.png)
+
+**b. Command Palette**:
+You can also use the Command Palette to start a Dev Container. Press `Ctrl+Shift+P` to open the Command Palette. Type "Remote-Containers: Reopen in Container" and select it.
+
+![Shows "Reopen in Container" in command pallete.](./img/open_in_container_manual.png)
+
+**d. Selecting a Devcontainer**:
+Upon choosing any of the above methods, you'll be presented with a list of available devcontainers. They're named following a pattern indicating their configurations, such as `cuda<CTK_VERSION>-<HOST-COMPILER>`. Select the desired environment from this list.
+
+![Shows list of available container environments.](./img/container_list.png)
+
+### **3. Initialization and Workspace Integration**
+
+When you select a Dev Container configuration, VSCode starts the Docker image, automatically pulling it if not already present. This may take a few minutes if it needs to download the container image.
+
+Post initialization, your local `cccl` repository is mounted into the container. This setup offers an integrated workspace where changes in VSCode directly reflect inside the container and vice-versa.
+
+### **4. GitHub Authentication**
+
+Shortly after starting, the Dev Container will prompt you to authenticate with GitHub. While optional, this authentication grants access to NVIDIA's distributed `sccache`, significantly accelerating builds. However, this feature is currently exclusive to NVIDIA employees who are members of the `NVIDIA` or `rapidsai` GitHub organizations.
+
+Follow the prompt, which will have you enter a one-time code at https://github.com/login/device. Follow the instructions on the GitHub web page and after succesfully authenticating, your GitHub account is used to authenticate access to the sccache distributed storage. Succesfully completing this process looks like the following:
+
+![Shows authentication with GitHub to access sccache bucket.](./img/github_auth.png)
+
+This step is entirely optional and will not impact any functionality other than not being able to read or write to the distributed sccache storage. `sccache` will still write a local cache to your filesystem that will still accelerate local rebuilds.
+
+If at any time you want to run this authentication process manually, you can do so by running the `devcontainer-utils-vault-s3-init` script inside the container.
+
+For more information about the sccache configuration and authentication, see the documentation at [`rapidsai/devcontainers`](https://github.com/rapidsai/devcontainers/blob/branch-23.10/USAGE.md#build-caching-with-sccache).
+
+### **5. Working Inside the Devcontainer**
+
+With the container launched, you're now in an environment tailored for CCCL development. Whether coding, running tests, or conducting other tasks, you'll benefit from the tailored tools and settings of this environment.
+
+For more information on building and running tests, see the [contributer guide](../CONTRIBUTING.md).
 
 ## Using Docker Images Directly (Manual Approach)
 
-While Visual Studio Code with Dev Containers provides a seamless development experience, some developers might prefer a direct Docker approach. We've made this easy with our `launch.sh` script.
+While Visual Studio Code with Dev Containers offers a smooth development experience, there might be developers who lean towards a direct Docker approach. For those, we've simplified the process with our `launch.sh` script.
 
 Before using the script, you might want to explore the available configurations.
 The `.devcontainer` directory and its subdirectories house these configurations, with each subdirectory typically named as `cuda<CTK_VERSION>-<HOST-COMPILER>`.
 
-### Steps:
+### **Steps**:
 
 1. **Use the `launch.sh` Script**:
    To initiate your desired development environment, run the `launch.sh` script with flags specifying your desired CUDA and compiler versions:
    ```bash
-   launch.sh --cuda 12.2 --host gcc12 --docker
+   ./launch.sh --cuda 12.2 --host gcc12 --docker
    ```
-
-   This script will pull the appropriate Docker image and run it, providing you with an interactive shell inside the container.
+   This command pulls the appropriate Docker image, runs it, and provides an interactive shell within the container.
 
 2. **Workspace Setup**:
-   The `launch.sh` script mounts the CCCL repository directory into the container by default, ensuring that your workspace inside the container mirrors your local setup.
+   The `launch.sh` script automatically mounts the CCCL repository directory into the container. This ensures you have a mirrored workspace inside the container, resembling your local setup.
 
 3. **Working Inside the Container**:
-   Inside the container, you have all the tools and configurations tailored for CCCL development.
-   You can build and run test, or perform any other development tasks as if you were in a local environment.
+   Inside the container, you are equipped with all tools and configurations designed for CCCL development. You can initiate builds, run tests, or perform any other development tasks as you would in a local setup.
 
 4. **Exiting the Container**:
-   Once you're done, you can exit the container by simply typing `exit` in the interactive shell. The container will be removed upon exit, ensuring a clean state for your next session.
-
-
-Alright, let me first examine the `.devcontainer` directory and the `ci/matrix.yaml` file to understand the role and functionality of the `make_devcontainers.sh` script. Once I have a grasp on its purpose and use, I'll suggest a section for the README that describes the script for maintainers.
-
-After analyzing the `.devcontainer` directory and the `ci/matrix.yaml` file, I've garnered insights into how the `make_devcontainers.sh` script operates. It appears that the script generates `devcontainer` configurations for various combinations of CUDA versions and host compilers, as dictated by the matrix defined in `matrix.yaml`. The generated configurations facilitate an easy development experience across multiple environments.
-
-Based on this understanding, here's a suggested section for the README to describe the `make_devcontainers.sh` script:
-
+   After you're finished with your tasks, simply type `exit` in the interactive shell to leave. Upon exit, the container gets removed, assuring a pristine state for your next session.
 
 ## For Maintainers: The `make_devcontainers.sh` Script
 
 ### Overview
 
-`make_devcontainers.sh` generates devcontainer configurations for the unique combinations of CUDA Toolkit (CTK) versions and host compilers in `ci/matrix.yaml`.
-
+[`make_devcontainers.sh`](./make_devcontainers.sh) generates devcontainer configurations for the unique combinations of CUDA Toolkit (CTK) versions and host compilers in [`ci/matrix.yaml`](../ci/matrix.yaml).
 
 ### How It Works:
 
 1. Parses the matrix from `ci/matrix.yaml`.
-2. Use the top-level `.devcontainer/devcontainer.json` as a template. For each unique combination of CTK version and host compiler, generate a corresponding `devcontainer.json` configuration, adjusting only the base Docker image to match the desired environment.
+2. Use the top-level [`.devcontainer/devcontainer.json`](./devcontainer.json) as a template. For each unique combination of CTK version and host compiler, generate a corresponding `devcontainer.json` configuration, adjusting only the base Docker image to match the desired environment.
 3. Place the generated configurations in the `.devcontainer` directory, organizing them into subdirectories following the naming convention `cuda<CTK_VERSION>-<COMPILER_VERSION>`.
 
 ### Usage:
-
 ```bash
 make_devcontainers.sh
 ```
