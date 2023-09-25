@@ -144,6 +144,58 @@ The `.devcontainer` directory and its subdirectories house these configurations,
 4. **Exiting the Container**:
    After you're finished with your tasks, simply type `exit` in the interactive shell to leave. Upon exit, the container gets removed, assuring a pristine state for your next session.
 
+   Certainly! Here's a minimal documentation for the script:
+
+---
+
+## `launch.sh`: Development Container Launcher Script
+
+### Overview
+
+This script provides a streamlined process to launch a development container environment tailored for CCCL development.
+The environment can be started either in Docker directly or within Visual Studio Code (VSCode) using its "Remote - Containers" feature.
+
+### Usage
+
+```bash
+./launch.sh [-c|--cuda <CUDA version>] [-H|--host <Host compiler>] [-d|--docker]
+```
+
+### Options
+
+- `-c, --cuda`: Specify the CUDA version for the environment. For example, `12.2`.
+- `-H, --host`: Specify the host compiler version for the environment. For example, `gcc12`.
+- `-d, --docker`: By default, the script assumes you want to launch the environment in VSCode. Use this option if you want to run the development environment in Docker directly.
+- `-h, --help`: Display the help message.
+
+### Examples
+
+1. Launch the default devcontainer in VSCode:
+   ```bash
+   ./launch.sh
+   ```
+
+2. Launch a specific CUDA version (`11.2`) with a specific host compiler (`gcc10`) in VSCode:
+   ```bash
+   ./launch.sh --cuda 11.1 --host gcc10
+   ```
+
+3. Launch the default devcontainer directly in Docker:
+   ```bash
+   ./launch.sh --docker
+   ```
+
+4. Launch a specific CUDA version (`11.2`) with a specific host compiler (`gcc10`) directly in Docker:
+   ```bash
+   ./launch.sh --cuda 11.2 --host gcc10 --docker
+   ```
+
+### Details
+
+The script primarily works by identifying the correct `devcontainer.json` configuration based on provided arguments, then either launches a Docker container or starts a VSCode environment using that configuration. The configurations are located in `.devcontainer` directory and subdirectories.
+
+The default behavior, when no options are provided, is to use the top-level `devcontainer.json` file in `.devcontainer` directory and launch the environment in VSCode.
+
 ## For Maintainers: The `make_devcontainers.sh` Script
 
 ### Overview
