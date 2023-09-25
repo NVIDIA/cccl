@@ -71,13 +71,11 @@ Certainly. Here's the revised section:
 
 ## Using Dev Containers with VSCode
 
-Using Development Containers in Visual Studio Code provides a seamless integration, allowing developers to work within a containerized environment directly from the editor. Here's a step-by-step guide, complemented by suggested screenshots, for those new to this setup.
+Using Development Containers in Visual Studio Code provides a seamless integration, allowing developers to work within a containerized environment directly from the editor.
 
 ### **1. Open the Cloned Directory in VSCode**
 
 After you've cloned the repository, navigate to the directory in your file system and open it using Visual Studio Code.
-
-**Suggested Screenshot**: A visual showing the cloned directory opened in VSCode.
 
 ### **2. Launching a Dev Container**
 
