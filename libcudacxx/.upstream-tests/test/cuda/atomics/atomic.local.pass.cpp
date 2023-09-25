@@ -109,7 +109,9 @@ template <typename T>
 int main(int arg, char ** argv)
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (
+    NV_IS_HOST, (    
+      cuda_thread_count = 64;
+    ),(
       tests<uint8_t>();
       tests<uint16_t>();
       tests<uint32_t>();
@@ -118,8 +120,6 @@ int main(int arg, char ** argv)
       tests<int16_t>();
       tests<int32_t>();
       tests<int64_t>();
-    ), (
-      cuda_thread_count = 64;
     )
   )
   return 0;
