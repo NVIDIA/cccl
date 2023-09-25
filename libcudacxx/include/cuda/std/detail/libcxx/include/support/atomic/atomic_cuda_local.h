@@ -115,7 +115,9 @@ _LIBCUDACXX_DEVICE void __cuda_fetch_local_bop_and(volatile _Type& __atom, _Type
 {
   __atom = __atom & __v;
 }
-template <class _Type> _LIBCUDACXX_DEVICE void __cuda_fetch_local_bop_or(volatile _Type& __atom, _Type const & __v) {
+template <class _Type> 
+_LIBCUDACXX_DEVICE void __cuda_fetch_local_bop_or(volatile _Type& __atom, _Type const & __v) 
+{
   __atom = __atom | __v;
 }
 template <class _Type> _LIBCUDACXX_DEVICE void __cuda_fetch_local_bop_xor(volatile _Type& __atom, _Type const & __v) {
