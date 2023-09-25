@@ -62,6 +62,13 @@ launch_docker() {
 }
 
 launch_vscode() {
+    # Since Visual Studio Code allows only one instance per `devcontainer.json`,
+    # this code prepares a unique temporary directory structure for each launch of a devcontainer.
+    # By doing so, it ensures that multiple instances of the same environment can be run
+    # simultaneously. The script replicates the `devcontainer.json` from the desired CUDA
+    # and compiler environment into this temporary directory, adjusting paths to ensure the
+    # correct workspace is loaded. A special URL is then generated to instruct VSCode to
+    # launch the development container using this temporary configuration.
     local workspace="$(basename "$(pwd)")"
     local tmpdir="$(mktemp -d)/${workspace}"
     mkdir -p "${tmpdir}"
