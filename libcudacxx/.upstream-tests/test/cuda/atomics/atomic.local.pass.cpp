@@ -8,9 +8,8 @@
 
 // UNSUPPORTED: windows && pre-sm-70
 
-#include <type_traits>
 #include <cuda/atomic>
-#include <iostream>
+#include <cuda/std/cassert>
 
 template <typename T>
 __device__ T store(T in) {
