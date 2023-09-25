@@ -1,11 +1,11 @@
-# CCCL - Continuous Integration (CI) Workflow 
-As a header-only C++ library, the code we write isn't compiled until a developer includes it in their project. 
+# CCCL - Continuous Integration (CI) Workflow
+As a header-only C++ library, the code we write isn't compiled until a developer includes it in their project.
 
-This means our code needs to be robust enough to compile and run across a variety of platforms, compilers, and configurations. 
-As such, maintaining extensive and thorough Continuous Integration (CI) coverage is crucial. 
+This means our code needs to be robust enough to compile and run across a variety of platforms, compilers, and configurations.
+As such, maintaining extensive and thorough Continuous Integration (CI) coverage is crucial.
 
-Our CI system needs to test various combinations of operating systems, CPU architectures, compilers, and C++ standards. 
-The number of configurations can be quite large and hence our CI system must be designed to handle this complexity. 
+Our CI system needs to test various combinations of operating systems, CPU architectures, compilers, and C++ standards.
+The number of configurations can be quite large and hence our CI system must be designed to handle this complexity.
 We use GitHub Actions for this purpose. It is flexible, powerful, and well-integrated with GitHub.
 
 This document will walk you through our CI workflow and guide you on how to interact with and troubleshoot it when needed.
@@ -29,31 +29,31 @@ graph LR
 This repository relies on a GitHub Actions-based Continuous Integration (CI) workflow. Here's what you need to know:
 
 - **Trigger:** The main workflow triggers on every push to the main branch or pull request (PR).
-- **Execution:** The workflow generates a matrix of build configurations, based on the settings in matrix.yml, and then dispatches separate build and test jobs for each configuration. 
+- **Execution:** The workflow generates a matrix of build configurations, based on the settings in matrix.yml, and then dispatches separate build and test jobs for each configuration.
 - **Failures:** If a job fails, you'll be notified through GitHub's interface. You can then check the logs for details.
 - **Recovery:** To handle job failures, pull the relevant container image and rerun the script locally to reproduce the issue.
 
 ### The Matrix
 
 The matrix defined in the [`matrix.yml`](ci/matrix.yaml) is the single source of truth for the environments we test our code against.
-It dictates the build configurations, such as CUDA version, operating system, CPU architecture, compiler, GPU architectures, and C++ standards. 
-It allows us to test our code against different combinations of these variables to ensure our code's compatibility and stability. 
+It dictates the build configurations, such as CUDA version, operating system, CPU architecture, compiler, GPU architectures, and C++ standards.
+It allows us to test our code against different combinations of these variables to ensure our code's compatibility and stability.
 
 ### Build and Test Jobs
-Our CI workflow primarily revolves around two major types of jobs: build jobs and test jobs. 
+Our CI workflow primarily revolves around two major types of jobs: build jobs and test jobs.
 
 #### Build
-Build jobs compile our unit tests and examples in various environments, mimicking the conditions in which our users might compile the code. 
+Build jobs compile our unit tests and examples in various environments, mimicking the conditions in which our users might compile the code.
 These jobs simply invoke a build script (e.g., `build_thrust.sh`) which contains all the necessary steps to compile the code.
 
-The advantage of this approach is two-fold. 
-First, it allows us to keep our CI configuration files clean and focused on the orchestration of jobs rather than the specifics of building the code. 
-Second, it greatly simplifies the process of reproducing build issues outside of CI. 
+The advantage of this approach is two-fold.
+First, it allows us to keep our CI configuration files clean and focused on the orchestration of jobs rather than the specifics of building the code.
+Second, it greatly simplifies the process of reproducing build issues outside of CI.
 Developers can run the build script locally, in their environment, and the build will behave in the same way it does in CI.
 
 #### Test
-After the build jobs have successfully compiled the test binaries, the test jobs run these binaries to execute our tests. 
-On first glance, you may notice that the test jobs are rebuilding all of the test binaries. 
+After the build jobs have successfully compiled the test binaries, the test jobs run these binaries to execute our tests.
+On first glance, you may notice that the test jobs are rebuilding all of the test binaries.
 However, we are relying on sccache to cache the build artifacts from the build jobs and reuse them in the test jobs.
 
 Similar to the build jobs, test jobs use a script (e.g., `test_thrust.sh`) to define the steps required to execute the tests.
@@ -68,21 +68,31 @@ The syntax of the build and test scripts is the same:
 ./ci/build_thrust.sh g++ 17 "70;80;86"
 ```
 
-In summary, the heart of our build and test jobs is the corresponding build or test script. 
-This design philosophy helps maintain a clear separation between CI orchestration and the specifics of building and testing. 
+In summary, the heart of our build and test jobs is the corresponding build or test script.
+This design philosophy helps maintain a clear separation between CI orchestration and the specifics of building and testing.
 Moreover, it paves the way for straightforward issue reproduction, thereby aiding developers in their debugging process.
 
 ## Lifecycle of a Pull Request
 
 From creation to merging, a pull request in this project follows these steps:
 
-1. Create a PR: Once you make a change, open a PR. 
-    - If you have write permission to the repository, CI workflow will automatically start.
-    - If you don't have write permission, the workflow will start once a maintainer comments on the PR with `/ok to test`. This comment is required for all subsequent workflow runs.
-2. Wait for results: GitHub Actions executes the defined CI workflow, running jobs based on the matrix configuration.
-3. Interpret results: Check the status of the workflow. If it passes, all tests have passed on all defined configurations, and your changes likely didn't break anything. 
-4. Handle failures: If any job fails, the logs will provide information on what went wrong. 
-5. Rerun jobs: If the failure seems unrelated to your changes (e.g., due to a temporary external issue), you can rerun the jobs.
+1. **Creating a PR**: Once you make a change, open a PR.
+  - If you have write permission to the repository, the CI workflow will automatically start.
+  - If you don't have write permission, the workflow will start once a maintainer comments on the PR with `/ok to test`. This comment is required for all subsequent workflow runs.
+  - If you want to skip the entire CI pipeline for a particular commit, include `[skip ci]` at the beginning of the commit message.
+  - To avoid running the "test" jobs, use `[skip-tests]` in the commit message. This is especially useful when avoiding lengthy GPU test jobs.
+
+2. **Understanding PR Pipelines**: Our CI employs a unique trigger mechanism for PRs using the [`copy-pr-bot`](https://docs.gha-runners.nvidia.com/apps/copy-pr-bot/).
+  - If you're a trusted contributor and your PR contains trusted changes, the bot will automatically copy your PR's code to a prefixed branch (e.g., `pull-request/123`) in the main repository, triggering the CI.
+  - For PRs from untrusted sources or those containing untrusted changes, the bot requests a review. Once the changes are approved, a maintainer can initiate the CI process with an `/ok to test` comment.
+
+3. **Wait for results**: GitHub Actions executes the defined CI workflow, running jobs based on the matrix configuration.
+
+4. **Interpret results**: Check the status of the workflow. If it passes, all tests have passed on all defined configurations, and your changes likely didn't break anything.
+
+5. **Handle failures**: If any job fails, the logs will provide information on what went wrong.
+
+6. **Rerun jobs**: If the failure seems unrelated to your changes (e.g., due to a temporary external issue), you can rerun the jobs.
 
 ## Troubleshooting Guide
 
