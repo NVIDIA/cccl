@@ -110,7 +110,9 @@ _LIBCUDACXX_DEVICE bool __cuda_fetch_weak_if_local(volatile _Type *__ptr, _Type 
   return true;
 }
 
-template <class _Type> _LIBCUDACXX_DEVICE void __cuda_fetch_local_bop_and(volatile _Type& __atom, _Type const & __v) {
+template <class _Type> 
+_LIBCUDACXX_DEVICE void __cuda_fetch_local_bop_and(volatile _Type& __atom, _Type const & __v) 
+{
   __atom = __atom & __v;
 }
 template <class _Type> _LIBCUDACXX_DEVICE void __cuda_fetch_local_bop_or(volatile _Type& __atom, _Type const & __v) {
