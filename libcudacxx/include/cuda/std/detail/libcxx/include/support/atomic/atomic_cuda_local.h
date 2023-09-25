@@ -41,9 +41,7 @@ inline int __cuda_memcmp(void const * __lhs, void const * __rhs, size_t __count)
 // uses inline PTX to bypass __isLocal.
 
 _LIBCUDACXX_DEVICE inline bool __cuda_is_local(const void* __ptr) {
-#if _LIBCUDACXX_CUDACC_VER_MAJOR >= 12 && _LIBCUDACXX_CUDACC_VER_MINOR >= 3
-  return __isLocal(__ptr);
-#else
+#if defined(_LIBCUDACXX_CUDACC_BELOW_12_3)
   int __tmp = 0;
   asm(
       "{\n\t"
@@ -54,6 +52,8 @@ _LIBCUDACXX_DEVICE inline bool __cuda_is_local(const void* __ptr) {
       : "=r"(__tmp)
       : "l"(__ptr));
   return __tmp == 1;
+#else
+  return __isLocal(__ptr);
 #endif
 }
 
