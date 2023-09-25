@@ -149,8 +149,6 @@ The `.devcontainer` directory and its subdirectories house these configurations,
 4. **Exiting the Container**:
    After you're finished with your tasks, simply type `exit` in the interactive shell to leave. Upon exit, the container gets removed, assuring a pristine state for your next session.
 
-   Certainly! Here's a minimal documentation for the script:
-
 ## `launch.sh`: Development Container Launcher Script
 
 ### Overview
