@@ -135,7 +135,9 @@ _LIBCUDACXX_DEVICE void __cuda_fetch_local_bop_sub(volatile _Type& __atom, _Type
 {
   __atom = __atom - __v;
 }
-template <class _Type> _LIBCUDACXX_DEVICE void __cuda_fetch_local_bop_max(volatile _Type& __atom, _Type const & __v) {
+template <class _Type> 
+_LIBCUDACXX_DEVICE void __cuda_fetch_local_bop_max(volatile _Type& __atom, _Type const & __v)
+{
   __atom = __atom < __v ? __v : __atom;
 }
 template <class _Type> _LIBCUDACXX_DEVICE void __cuda_fetch_local_bop_min(volatile _Type& __atom, _Type const & __v) {
