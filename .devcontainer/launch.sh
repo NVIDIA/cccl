@@ -12,78 +12,63 @@ print_help() {
     echo "  -h, --help       Display this help message and exit."
 }
 
-# Parse options using getopt
-OPTIONS=c:H:dh
-LONG_OPTIONS=cuda:,host:,docker,help
-PARSED_OPTIONS=$(getopt -n "$0" -o "${OPTIONS}" --long "${LONG_OPTIONS}" -- "$@")
+parse_options() {
+    local OPTIONS=c:H:dh
+    local LONG_OPTIONS=cuda:,host:,docker,help
+    local PARSED_OPTIONS=$(getopt -n "$0" -o "${OPTIONS}" --long "${LONG_OPTIONS}" -- "$@")
 
-# If the parsing failed, exit
-if [[ $? -ne 0 ]]; then
-    exit 1
-fi
-
-eval set -- "${PARSED_OPTIONS}"
-
-docker_mode=false
-
-while true; do
-    case "$1" in
-        -c|--cuda)
-            cuda_version="$2"
-            shift 2
-            ;;
-        -H|--host)
-            host_compiler="$2"
-            shift 2
-            ;;
-        -d|--docker)
-            docker_mode=true
-            shift
-            ;;
-        -h|--help)
-            print_help
-            exit 0
-            ;;
-        --)
-            shift
-            break
-            ;;
-        *)
-            echo "Invalid option: $1"
-            print_help
-            exit 1
-            ;;
-    esac
-done
-
-if [[ -z ${cuda_version} ]] && [[ -z ${host_compiler} ]]; then
-    # Use the top-level devcontainer
-    path=".devcontainer"
-else
-    path=".devcontainer/cuda${cuda_version}-${host_compiler}"
-    if [[ ! -f "${path}/devcontainer.json" ]]; then
-        echo "Unknown CUDA [${cuda_version}] compiler [${host_compiler}] combination"
-        echo "Requested devcontainer ${path}/devcontainer.json does not exist"
+    if [[ $? -ne 0 ]]; then
         exit 1
     fi
-fi
 
-if $docker_mode; then
-    # Extract Docker image and run it
+    eval set -- "${PARSED_OPTIONS}"
+
+    while true; do
+        case "$1" in
+            -c|--cuda)
+                cuda_version="$2"
+                shift 2
+                ;;
+            -H|--host)
+                host_compiler="$2"
+                shift 2
+                ;;
+            -d|--docker)
+                docker_mode=true
+                shift
+                ;;
+            -h|--help)
+                print_help
+                exit 0
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                echo "Invalid option: $1"
+                print_help
+                exit 1
+                ;;
+        esac
+    done
+}
+
+launch_docker() {
     DOCKER_IMAGE=$(grep "image" "${path}/devcontainer.json" | sed 's/.*: "\(.*\)",/\1/')
     echo "Found image: ${DOCKER_IMAGE}"
     docker pull ${DOCKER_IMAGE}
     docker run -it --rm -v $(pwd):/workspace ${DOCKER_IMAGE} /bin/bash
-else
-    # Launch devcontainer in Visual Studio Code
+}
+
+launch_vscode() {
     local workspace="$(basename "$(pwd)")"
     local tmpdir="$(mktemp -d)/${workspace}"
     mkdir -p "${tmpdir}"
     mkdir -p "${tmpdir}/.devcontainer"
     cp -arL "${path}/devcontainer.json" "${tmpdir}/.devcontainer"
     sed -i "s@\\${localWorkspaceFolder}@$(pwd)@g" "${tmpdir}/.devcontainer/devcontainer.json"
-    path="${tmpdir}"
-
+    local path="${tmpdir}"
     local hash="$(echo -n "${path}" | xxd -pu - | tr -d '[:space:]')"
     local url="vscode://vscode-remote/dev-container+${hash}/home/coder/cccl"
     echo "devcontainer URL: ${url}"
@@ -99,4 +84,29 @@ else
         code --new-window "${tmpdir}"
         exec "${launch}" "${url}" >/dev/null 2>&1
     fi
-fi
+}
+
+main() {
+    parse_options "$@"
+
+    # If no CTK/Host compiler are provided, just use the default environment
+    if [[ -z ${cuda_version} ]] && [[ -z ${host_compiler} ]]; then
+        path=".devcontainer"
+    else
+        path=".devcontainer/cuda${cuda_version}-${host_compiler}"
+        if [[ ! -f "${path}/devcontainer.json" ]]; then
+            echo "Unknown CUDA [${cuda_version}] compiler [${host_compiler}] combination"
+            echo "Requested devcontainer ${path}/devcontainer.json does not exist"
+            exit 1
+        fi
+    fi
+
+    if $docker_mode; then
+        launch_docker
+    else
+        launch_vscode
+    fi
+}
+
+main "$@"
+
