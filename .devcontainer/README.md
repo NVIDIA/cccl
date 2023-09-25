@@ -3,6 +3,9 @@
 
 # CCCL Dev Containers
 
+To ensure consistency and ease of setup, the CUDA C++ Libraries (CCCL) team uses [Development Containers](https://code.visualstudio.com/docs/devcontainers/containers).
+This guide offers information on setting up container in Visual Studio Code and manually with Docker.
+
 ## Quickstart: VSCode (Recommended)
 
 ### **Prerequisites**:
