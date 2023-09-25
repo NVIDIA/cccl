@@ -91,18 +91,18 @@ You can also use the Command Palette to start a Dev Container. Press `Ctrl+Shift
 
 ![Shows "Reopen in Container" in command pallete.](./img/open_in_container_manual.png)
 
-**d. Selecting a Devcontainer**:
+### **3. Selecting a Devcontainer**:
 Upon choosing any of the above methods, you'll be presented with a list of available devcontainers. They're named following a pattern indicating their configurations, such as `cuda<CTK_VERSION>-<HOST-COMPILER>`. Select the desired environment from this list.
 
 ![Shows list of available container environments.](./img/container_list.png)
 
-### **3. Initialization and Workspace Integration**
+### **4. Initialization and Workspace Integration**
 
 When you select a Dev Container configuration, VSCode starts the Docker image, automatically pulling it if not already present. This may take a few minutes if it needs to download the container image.
 
 Post initialization, your local `cccl` repository is mounted into the container. This setup offers an integrated workspace where changes in VSCode directly reflect inside the container and vice-versa.
 
-### **4. GitHub Authentication**
+### **5. GitHub Authentication**
 
 Shortly after starting, the Dev Container will prompt you to authenticate with GitHub. While optional, this authentication grants access to NVIDIA's distributed `sccache`, significantly accelerating builds. However, this feature is currently exclusive to NVIDIA employees who are members of the `NVIDIA` or `rapidsai` GitHub organizations.
 
@@ -116,7 +116,7 @@ If at any time you want to run this authentication process manually, you can do 
 
 For more information about the sccache configuration and authentication, see the documentation at [`rapidsai/devcontainers`](https://github.com/rapidsai/devcontainers/blob/branch-23.10/USAGE.md#build-caching-with-sccache).
 
-### **5. Working Inside the Devcontainer**
+### **6. Working Inside the Devcontainer**
 
 With the container launched, you're now in an environment tailored for CCCL development. Whether coding, running tests, or conducting other tasks, you'll benefit from the tailored tools and settings of this environment.
 
