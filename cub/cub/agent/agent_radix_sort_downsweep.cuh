@@ -76,10 +76,10 @@ struct AgentRadixSortDownsweepPolicy :
         RADIX_BITS              = _RADIX_BITS,              ///< The number of radix bits, i.e., log2(bins)
     };
 
-    static const BlockLoadAlgorithm  LOAD_ALGORITHM     = _LOAD_ALGORITHM;    ///< The BlockLoad algorithm to use
-    static const CacheLoadModifier   LOAD_MODIFIER      = _LOAD_MODIFIER;     ///< Cache load modifier for reading keys (and values)
-    static const RadixRankAlgorithm  RANK_ALGORITHM     = _RANK_ALGORITHM;    ///< The radix ranking algorithm to use
-    static const BlockScanAlgorithm  SCAN_ALGORITHM     = _SCAN_ALGORITHM;    ///< The BlockScan algorithm to use
+    static constexpr BlockLoadAlgorithm  LOAD_ALGORITHM     = _LOAD_ALGORITHM;    ///< The BlockLoad algorithm to use
+    static constexpr CacheLoadModifier   LOAD_MODIFIER      = _LOAD_MODIFIER;     ///< Cache load modifier for reading keys (and values)
+    static constexpr RadixRankAlgorithm  RANK_ALGORITHM     = _RANK_ALGORITHM;    ///< The radix ranking algorithm to use
+    static constexpr BlockScanAlgorithm  SCAN_ALGORITHM     = _SCAN_ALGORITHM;    ///< The BlockScan algorithm to use
 };
 
 
@@ -111,10 +111,10 @@ struct AgentRadixSortDownsweep
     using bit_ordered_type = typename traits::bit_ordered_type;
     using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
-    static const BlockLoadAlgorithm     LOAD_ALGORITHM  = AgentRadixSortDownsweepPolicy::LOAD_ALGORITHM;
-    static const CacheLoadModifier      LOAD_MODIFIER   = AgentRadixSortDownsweepPolicy::LOAD_MODIFIER;
-    static const RadixRankAlgorithm     RANK_ALGORITHM  = AgentRadixSortDownsweepPolicy::RANK_ALGORITHM;
-    static const BlockScanAlgorithm     SCAN_ALGORITHM  = AgentRadixSortDownsweepPolicy::SCAN_ALGORITHM;
+    static constexpr BlockLoadAlgorithm     LOAD_ALGORITHM  = AgentRadixSortDownsweepPolicy::LOAD_ALGORITHM;
+    static constexpr CacheLoadModifier      LOAD_MODIFIER   = AgentRadixSortDownsweepPolicy::LOAD_MODIFIER;
+    static constexpr RadixRankAlgorithm     RANK_ALGORITHM  = AgentRadixSortDownsweepPolicy::RANK_ALGORITHM;
+    static constexpr BlockScanAlgorithm     SCAN_ALGORITHM  = AgentRadixSortDownsweepPolicy::SCAN_ALGORITHM;
 
     enum
     {

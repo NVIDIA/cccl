@@ -124,8 +124,8 @@ template <cub::WarpStoreAlgorithm StoreAlgorithm,
           typename T>
 thrust::device_vector<T> compute_reference(int valid_items)
 {
-  const int tile_size        = LOGICAL_WARP_THREADS * ITEMS_PER_THREAD;
-  const int total_item_count = TOTAL_WARPS * tile_size;
+  constexpr int tile_size        = LOGICAL_WARP_THREADS * ITEMS_PER_THREAD;
+  constexpr int total_item_count = TOTAL_WARPS * tile_size;
   thrust::device_vector<T> d_input(total_item_count);
 
   CUB_IF_CONSTEXPR(StoreAlgorithm == cub::WarpStoreAlgorithm::WARP_STORE_STRIPED)
@@ -269,7 +269,7 @@ CUB_TEST("Warp store unguarded range works with pointer",
   using type   = typename params::type;
 
   thrust::device_vector<type> d_out(params::total_item_count, type{});
-  const int valid_items = params::tile_size;
+  constexpr int valid_items = params::tile_size;
   auto out              = thrust::raw_pointer_cast(d_out.data());
   warp_store<params::algorithm,
              params::logical_warp_threads,
@@ -297,7 +297,7 @@ CUB_TEST("Warp store unguarded range works with cache modified iterator",
   constexpr cub::CacheStoreModifier store_modifier = c2h::get<4, TestType>::value;
 
   thrust::device_vector<type> d_out(params::total_item_count, type{});
-  const int valid_items = params::tile_size;
+  constexpr int valid_items = params::tile_size;
   auto out =
     cub::CacheModifiedOutputIterator<store_modifier, type>(thrust::raw_pointer_cast(d_out.data()));
   warp_store<params::algorithm,

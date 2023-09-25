@@ -308,8 +308,8 @@ struct dispatch_histogram
   {
     cudaError error = cudaSuccess;
 
-    const int block_threads = ActivePolicyT::AgentHistogramPolicyT::BLOCK_THREADS;
-    const int pixels_per_thread = ActivePolicyT::AgentHistogramPolicyT::PIXELS_PER_THREAD;
+    constexpr int block_threads = ActivePolicyT::AgentHistogramPolicyT::BLOCK_THREADS;
+    constexpr int pixels_per_thread = ActivePolicyT::AgentHistogramPolicyT::PIXELS_PER_THREAD;
 
     do
     {
@@ -366,7 +366,7 @@ struct dispatch_histogram
       sweep_grid_dims.z = 1;
 
       // Temporary storage allocation requirements
-      const int NUM_ALLOCATIONS          = NUM_ACTIVE_CHANNELS + 1;
+      constexpr int NUM_ALLOCATIONS      = NUM_ACTIVE_CHANNELS + 1;
       void *allocations[NUM_ALLOCATIONS] = {};
       size_t allocation_sizes[NUM_ALLOCATIONS];
 
@@ -991,7 +991,7 @@ public:
       if (max_num_output_bins > MAX_PRIVATIZED_SMEM_BINS)
       {
         // Too many bins to keep in shared memory.
-        const int PRIVATIZED_SMEM_BINS = 0;
+        constexpr int PRIVATIZED_SMEM_BINS = 0;
 
         detail::dispatch_histogram<NUM_CHANNELS,
                                    NUM_ACTIVE_CHANNELS,
@@ -1025,7 +1025,7 @@ public:
       else
       {
         // Dispatch shared-privatized approach
-        const int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
+        constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
         detail::dispatch_histogram<NUM_CHANNELS,
                                    NUM_ACTIVE_CHANNELS,
@@ -1187,7 +1187,7 @@ public:
       }
       int max_num_output_bins = max_levels - 1;
 
-      const int PRIVATIZED_SMEM_BINS = 256;
+      constexpr int PRIVATIZED_SMEM_BINS = 256;
 
       detail::dispatch_histogram<NUM_CHANNELS,
                                  NUM_ACTIVE_CHANNELS,
@@ -1364,7 +1364,7 @@ public:
       if (max_num_output_bins > MAX_PRIVATIZED_SMEM_BINS)
       {
         // Dispatch shared-privatized approach
-        const int PRIVATIZED_SMEM_BINS = 0;
+        constexpr int PRIVATIZED_SMEM_BINS = 0;
 
         detail::dispatch_histogram<NUM_CHANNELS,
                                    NUM_ACTIVE_CHANNELS,
@@ -1398,7 +1398,7 @@ public:
       else
       {
         // Dispatch shared-privatized approach
-        const int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
+        constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
         detail::dispatch_histogram<NUM_CHANNELS,
                                    NUM_ACTIVE_CHANNELS,
@@ -1568,7 +1568,7 @@ public:
       }
       int max_num_output_bins = max_levels - 1;
 
-      const int PRIVATIZED_SMEM_BINS = 256;
+      constexpr int PRIVATIZED_SMEM_BINS = 256;
 
       detail::dispatch_histogram<NUM_CHANNELS,
                                  NUM_ACTIVE_CHANNELS,

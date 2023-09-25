@@ -60,7 +60,7 @@ using types = c2h::type_list<std::uint32_t, std::int8_t>;
       // https://github.com/NVIDIA/cccl/issues/426
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]")
 {
-  const int num_items = 0;
+  constexpr int num_items = 0;
   thrust::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
@@ -75,7 +75,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[devic
 
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[device][run_length_encode]")
 {
-  const int num_items = 1;
+  constexpr int num_items = 1;
   thrust::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
@@ -92,7 +92,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[
 #if 0 // DeviceRunLengthEncode::NonTrivialRuns cannot handle inputs larger than INT32_MAX
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle large indexes", "[device][run_length_encode]")
 {
-  const cuda::std::size_t num_items = 1ull << 33;
+  constexpr cuda::std::size_t num_items = 1ull << 33;
   thrust::device_vector<cuda::std::size_t> out_num_runs(1, -1);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
@@ -109,7 +109,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle large indexes", "[dev
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle different counting types",
          "[device][run_length_encode]")
 {
-  const int num_items = 1;
+  constexpr int num_items = 1;
   thrust::device_vector<int> in(num_items, 42);
   thrust::device_vector<int> out_num_runs(1, 42);
 
@@ -130,7 +130,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all unique",
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 10;
+  constexpr int num_items = 10;
   thrust::device_vector<int> out_num_runs(1, -1);
 
   run_length_encode(thrust::make_counting_iterator(type{}),
@@ -148,7 +148,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all equal",
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 10;
+  constexpr int num_items = 10;
   thrust::device_vector<type> in(num_items);
   thrust::device_vector<int> out_offsets(1, -1);
   thrust::device_vector<int> out_lengths(1, -1);

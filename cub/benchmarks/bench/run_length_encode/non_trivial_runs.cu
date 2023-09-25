@@ -97,7 +97,7 @@ static void rle(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   #endif
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  const std::size_t min_segment_size = 1;
+  constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
   thrust::device_vector<offset_t> num_runs_out(1);

@@ -523,14 +523,14 @@ void test_random()
   test_random<ValueT>(0, 1, 1.f);
   test_random<ValueT>(1, 0, 1.f);
 
-  const int dim_min = 1;
-  const int dim_max = 10000;
+  constexpr int dim_min = 1;
+  constexpr int dim_max = 10000;
 
-  const int max_num_elems = 100000;
+  constexpr int max_num_elems = 100000;
 
-  const float ratio_min  = 0.f;
-  const float ratio_max  = 1.1f; // a lil over to account for fp errors
-  const float ratio_step = 0.3334f;
+  constexpr float ratio_min  = 0.f;
+  constexpr float ratio_max  = 1.1f; // a lil over to account for fp errors
+  constexpr float ratio_step = 0.3334f;
 
   for (int rows = dim_min; rows < dim_max; rows <<= 1)
   {

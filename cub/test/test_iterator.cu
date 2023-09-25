@@ -332,9 +332,9 @@ void TestTexObj()
     // Test iterator manipulation in kernel
     //
 
-    const unsigned int TEST_VALUES          = 11000;
-    const unsigned int DUMMY_OFFSET         = 500;
-    const unsigned int DUMMY_TEST_VALUES    = TEST_VALUES - DUMMY_OFFSET;
+    constexpr unsigned int TEST_VALUES          = 11000;
+    constexpr unsigned int DUMMY_OFFSET         = 500;
+    constexpr unsigned int DUMMY_TEST_VALUES    = TEST_VALUES - DUMMY_OFFSET;
 
     T *h_data = new T[TEST_VALUES];
     for (unsigned int i = 0; i < TEST_VALUES; ++i)

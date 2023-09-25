@@ -560,7 +560,7 @@ __device__ __forceinline__ T ShuffleUp(
 
     typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
 
-    const int       WORDS           = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
+    constexpr int   WORDS           = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
  
     T               output;
     ShuffleWord     *output_alias   = reinterpret_cast<ShuffleWord *>(&output);
@@ -628,7 +628,7 @@ __device__ __forceinline__ T ShuffleDown(
 
     typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
 
-    const int       WORDS           = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
+    constexpr int   WORDS           = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
     T               output;
     ShuffleWord     *output_alias   = reinterpret_cast<ShuffleWord *>(&output);
@@ -698,7 +698,7 @@ __device__ __forceinline__ T ShuffleIndex(
 
     typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
 
-    const int       WORDS           = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
+    constexpr int   WORDS           = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
     T               output;
     ShuffleWord     *output_alias   = reinterpret_cast<ShuffleWord *>(&output);

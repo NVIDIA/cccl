@@ -603,10 +603,10 @@ template <
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_bins)
 {
     typedef typename ChainedPolicyT::ActivePolicy::ExclusiveSumPolicy ExclusiveSumPolicyT;
-    const int RADIX_BITS = ExclusiveSumPolicyT::RADIX_BITS;
-    const int RADIX_DIGITS = 1 << RADIX_BITS;
-    const int BLOCK_THREADS = ExclusiveSumPolicyT::BLOCK_THREADS;
-    const int BINS_PER_THREAD = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
+    constexpr int RADIX_BITS = ExclusiveSumPolicyT::RADIX_BITS;
+    constexpr int RADIX_DIGITS = 1 << RADIX_BITS;
+    constexpr int BLOCK_THREADS = ExclusiveSumPolicyT::BLOCK_THREADS;
+    constexpr int BINS_PER_THREAD = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
     typedef cub::BlockScan<OffsetT, BLOCK_THREADS> BlockScan;
     __shared__ typename BlockScan::TempStorage temp_storage;
 
@@ -701,7 +701,7 @@ struct DeviceRadixSortPolicy
     //------------------------------------------------------------------------------
 
     // Whether this is a keys-only (or key-value) sort
-    constexpr static bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+    static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
     // Dominant-sized key/value type
     using DominantT =
@@ -1179,7 +1179,7 @@ struct DispatchRadixSort : SelectedPolicy
     //------------------------------------------------------------------------------
 
     // Whether this is a keys-only (or key-value) sort
-    constexpr static bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+    static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
     //------------------------------------------------------------------------------
     // Problem state
@@ -1544,14 +1544,14 @@ struct DispatchRadixSort : SelectedPolicy
         typedef PortionOffsetT AtomicOffsetT;
 
         // compute temporary storage size
-        const int RADIX_BITS = ActivePolicyT::ONESWEEP_RADIX_BITS;
-        const int RADIX_DIGITS = 1 << RADIX_BITS;
-        const int ONESWEEP_ITEMS_PER_THREAD = ActivePolicyT::OnesweepPolicy::ITEMS_PER_THREAD;
-        const int ONESWEEP_BLOCK_THREADS = ActivePolicyT::OnesweepPolicy::BLOCK_THREADS;
-        const int ONESWEEP_TILE_ITEMS = ONESWEEP_ITEMS_PER_THREAD * ONESWEEP_BLOCK_THREADS;
+        constexpr int RADIX_BITS = ActivePolicyT::ONESWEEP_RADIX_BITS;
+        constexpr int RADIX_DIGITS = 1 << RADIX_BITS;
+        constexpr int ONESWEEP_ITEMS_PER_THREAD = ActivePolicyT::OnesweepPolicy::ITEMS_PER_THREAD;
+        constexpr int ONESWEEP_BLOCK_THREADS = ActivePolicyT::OnesweepPolicy::BLOCK_THREADS;
+        constexpr int ONESWEEP_TILE_ITEMS = ONESWEEP_ITEMS_PER_THREAD * ONESWEEP_BLOCK_THREADS;
         // portions handle inputs with >=2**30 elements, due to the way lookback works
         // for testing purposes, one portion is <= 2**28 elements
-        const PortionOffsetT PORTION_SIZE = ((1 << 28) - 1) / ONESWEEP_TILE_ITEMS * ONESWEEP_TILE_ITEMS;
+        constexpr PortionOffsetT PORTION_SIZE = ((1 << 28) - 1) / ONESWEEP_TILE_ITEMS * ONESWEEP_TILE_ITEMS;
         int num_passes = cub::DivideAndRoundUp(end_bit - begin_bit, RADIX_BITS);
         OffsetT num_portions = static_cast<OffsetT>(cub::DivideAndRoundUp(num_items, PORTION_SIZE));
         PortionOffsetT max_num_blocks = cub::DivideAndRoundUp(
@@ -1573,7 +1573,7 @@ struct DispatchRadixSort : SelectedPolicy
             // counters
             num_portions * num_passes * sizeof(AtomicOffsetT),
         };
-        const int NUM_ALLOCATIONS = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
+        constexpr int NUM_ALLOCATIONS = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
         void* allocations[NUM_ALLOCATIONS] = {};
         AliasTemporaries<NUM_ALLOCATIONS>(d_temp_storage, temp_storage_bytes,
                                           allocations, allocation_sizes);
@@ -1620,7 +1620,7 @@ struct DispatchRadixSort : SelectedPolicy
                 break;
             }
 
-            const int HISTO_BLOCK_THREADS = ActivePolicyT::HistogramPolicy::BLOCK_THREADS;
+            constexpr int HISTO_BLOCK_THREADS = ActivePolicyT::HistogramPolicy::BLOCK_THREADS;
             int histo_blocks_per_sm = 1;
             auto histogram_kernel = DeviceRadixSortHistogramKernel<
                 MaxPolicyT, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
@@ -1661,7 +1661,7 @@ struct DispatchRadixSort : SelectedPolicy
             }
 
             // exclusive sums to determine starts
-            const int SCAN_BLOCK_THREADS = ActivePolicyT::ExclusiveSumPolicy::BLOCK_THREADS;
+            constexpr int SCAN_BLOCK_THREADS = ActivePolicyT::ExclusiveSumPolicy::BLOCK_THREADS;
 
             // log exclusive_sum_kernel configuration
             #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
@@ -2185,7 +2185,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
     //------------------------------------------------------------------------------
 
     // Whether this is a keys-only (or key-value) sort
-    constexpr static bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+    static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
     //------------------------------------------------------------------------------
     // Parameter members
