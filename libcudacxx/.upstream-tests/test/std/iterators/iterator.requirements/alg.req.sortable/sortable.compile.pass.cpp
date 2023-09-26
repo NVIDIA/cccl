@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: msvc-19.16 && nvcc-11.1
 
 // template<class I, class R = ranges::less, class P = identity>
 //   concept sortable = see below;                            // since C++20
