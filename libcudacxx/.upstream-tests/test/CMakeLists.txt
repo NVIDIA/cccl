@@ -50,6 +50,18 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM")
     --compiler-options=-fno-fast-math")
 endif()
 
+if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+     " -Xclang -fcuda-allow-variadic-functions"
+     " -Xclang -Wno-unused-parameter"
+     " -Wno-unknown-cuda-version")
+
+  find_package(CUDAToolkit)
+
+  string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
+    " -L${CUDAToolkit_LIBRARY_DIR} -lcuda -lcudart")
+endif()
+
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
   set(LIBCUDACXX_TEST_COMPILER_FLAGS
     "${LIBCUDACXX_TEST_COMPILER_FLAGS} \

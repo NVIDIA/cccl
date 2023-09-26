@@ -16,6 +16,10 @@
 
 #include "concurrent_agents.h"
 
+#if defined(__clang__) && defined(__CUDA__)
+# include <new>
+#endif
+
 #ifdef _LIBCUDACXX_COMPILER_NVRTC
 #define LAMBDA [=]
 #else
