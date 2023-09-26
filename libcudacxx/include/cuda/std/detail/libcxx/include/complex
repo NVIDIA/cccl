@@ -235,9 +235,6 @@ template<class T> complex<T> tanh (const complex<T>&);
 #ifndef __cuda_std__
 #include <__config>
 #include <stdexcept>
-#if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION)
-#   include <sstream> // for _CUDA_VSTD::basic_ostringstream
-#endif
 #endif // __cuda_std__
 
 #include "__assert" // all public C++ headers provide the assertion handler
@@ -252,6 +249,11 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include "cstdint"
 #include "type_traits"
 #include "version"
+
+#if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION) \
+ && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#include <sstream> // for std::basic_ostringstream
+#endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION && !_LIBCUDACXX_COMPILER_NVRTC
 
 // Compatability helpers for thrust to convert between `std::complex` and `cuda::std::complex`
 #if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
@@ -407,8 +409,10 @@ public:
         : __re_(__re), __im_(__im) {}
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit constexpr complex(const complex<double>& __c);
+#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit constexpr complex(const complex<long double>& __c);
+#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
 #if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
     template <class _Up>
@@ -502,8 +506,11 @@ public:
         : __re_(__re), __im_(__im) {}
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr complex(const complex<float>& __c);
+
+#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit constexpr complex(const complex<long double>& __c);
+#endif //_LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
 #if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
     template <class _Up>
@@ -585,20 +592,10 @@ public:
         }
 };
 
+#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 template<>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(long double)) complex<long double>
 {
-#ifndef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-public:
-    template <typename _Dummy = void>
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(long double __re = 0.0, long double __im = 0.0)
-        {static_assert(is_same<_Dummy, void>::value, "complex<long double> is not supported");}
-
-    template <typename _Tp, typename _Dummy = void>
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(const complex<_Tp> &__c)
-        {static_assert(is_same<_Dummy, void>::value, "complex<long double> is not supported");}
-
-#else
     long double __re_;
     long double __im_;
 public:
@@ -689,8 +686,8 @@ public:
             *this = *this / complex(__c.real(), __c.imag());
             return *this;
         }
-#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 };
+#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_MSVC_WARNING)
   // MSVC complains about narrowing conversions on these copy constructors regardless if they are used
@@ -1191,6 +1188,7 @@ arg(const complex<_Tp>& __c)
     return _CUDA_VSTD::atan2(__c.imag(), __c.real());
 }
 
+#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __enable_if_t<
@@ -1201,6 +1199,7 @@ arg(_Tp __re)
 {
     return _CUDA_VSTD::atan2l(0.L, __re);
 }
+#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
 template<class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -1775,6 +1774,57 @@ operator<<(basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
     return __os << __s.str();
 }
 #endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION
+#else // ^^^ !__cuda_std__ ^^^ / vvv __cuda_std__
+#ifndef _LIBCUDACXX_COMPILER_NVRTC
+template<typename ValueType,class charT, class traits>
+::std::basic_ostream<charT, traits>& operator<<(::std::basic_ostream<charT, traits>& os, const complex<ValueType>& z)
+{
+  os << '(' << z.real() << ',' << z.imag() << ')';
+  return os;
+}
+
+template<typename ValueType, typename charT, class traits>
+::std::basic_istream<charT, traits>&
+operator>>(::std::basic_istream<charT, traits>& is, complex<ValueType>& z)
+{
+  ValueType re, im;
+
+  charT ch;
+  is >> ch;
+
+  if(ch == '(')
+    {
+      is >> re >> ch;
+      if (ch == ',')
+        {
+          is >> im >> ch;
+          if (ch == ')')
+	    {
+	      z = complex<ValueType>(re, im);
+	    }
+          else
+	    {
+	      is.setstate(::std::ios_base::failbit);
+	    }
+        }
+      else if (ch == ')')
+        {
+          z = re;
+        }
+      else
+        {
+          is.setstate(::std::ios_base::failbit);
+        }
+    }
+  else
+    {
+      is.putback(ch);
+      is >> re;
+      z = re;
+    }
+  return is;
+}
+#endif // _LIBCUDACXX_COMPILER_NVRTC
 #endif // __cuda_std__
 
 #if _LIBCUDACXX_STD_VER > 11 && defined(_LIBCUDACXX_HAS_STL_LITERALS)
