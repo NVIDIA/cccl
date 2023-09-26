@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   compute-matrix:
-    name: Compute matrix 
+    name: Compute matrix
     runs-on: ubuntu-latest
     outputs:
       DEVCONTAINER_VERSION: ${{steps.set-outputs.outputs.DEVCONTAINER_VERSION}}
@@ -49,7 +49,7 @@ jobs:
         id: set-outputs
         run: |
           .github/actions/compute-matrix/compute-matrix.sh ci/matrix.yaml pull_request
-      
+
   nvrtc:
     name: NVRTC CUDA${{matrix.cuda}} C++${{matrix.std}}
     needs: compute-matrix
@@ -110,6 +110,21 @@ jobs:
       build_script: "./ci/build_libcudacxx.sh"
       test_script: "./ci/test_libcudacxx.sh"
       devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
+
+  thrust-clang-cuda:
+    name: Thrust CTK${{matrix.cuda_version}} clang-cuda ${{matrix.compiler.version}}
+    need: compute-matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.compute-matrix.outputs.CLANG_CUDA_MATRIX) }}
+      uses: ./.github/workflows/run-as-coder.yml
+      with:
+        name: Thrust CTK${{matrix.cuda_version}} clang-cuda ${{matrix.compiler.version}}
+        runner: linux-${{matrix.cpu}}-cpu16
+        image: rapidsai/devcontainers:${{needs.compute-matrix.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrux.cuda}}-${{matrix.os}}
+        command: |
+          CMAKE_CUDA_COMPILER=${{matrix.compiler.exe}} ./ci/build_thrust.sh ${{matrix.compiler.exe}} ${{matrix.std}} ${{matrix.gpu_build_archs}}
 
   examples:
     name: CCCL Examples
