@@ -301,8 +301,8 @@ CUB_TEST("Device scan works complex accumulator types", "[scan][device]")
 
   custom_accumulator_t init{};
 
-  thrust::device_vector<custom_input_t> d_input(num_items, custom_input_t{1});
-  thrust::device_vector<custom_output_t> d_output{num_items, custom_output_t{nullptr, 0}};
+  thrust::device_vector<custom_input_t> d_input(static_cast<size_t>(num_items), custom_input_t{1});
+  thrust::device_vector<custom_output_t> d_output{static_cast<size_t>(num_items), custom_output_t{nullptr, 0}};
   thrust::device_vector<int> d_ok_count(1);
 
   auto index_it = thrust::make_counting_iterator(0);
