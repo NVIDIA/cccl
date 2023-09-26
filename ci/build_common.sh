@@ -12,7 +12,7 @@ CUDA_COMPILER=${CMAKE_CUDA_COMPILER:-nvcc}
 function usage {
     echo "Usage: $0 [OPTIONS] <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>"
     echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores."
-    echo "The CMAKE_CUDA_COMPILER environment variable can be used to control the CUDA compiler. The -nvcc flag takes precedence.
+    echo "The CMAKE_CUDA_COMPILER environment variable can be used to control the CUDA compiler. The -nvcc flag takes precedence."
     echo "Example: PARALLEL_LEVEL=8 $0 g++-8 14 \"70\" "
     echo "Example: $0 clang++-8 17 \"70;75;80-virtual\" "
     echo "Possible options: "
