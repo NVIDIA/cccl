@@ -122,7 +122,7 @@ jobs:
         include: ${{ fromJSON(needs.compute-matrix.outputs.CLANG_CUDA_MATRIX) }}
     uses: ./.github/workflows/run-as-coder.yml
     with:
-      name: Thrust CTK${{matrix.cuda}} clang-cuda ${{matrix.compiler.version}}
+      name: ${{matrix.lib}} CTK${{matrix.cuda}} clang-cuda ${{matrix.compiler.version}}
       runner: linux-${{matrix.cpu}}-cpu16
       image: rapidsai/devcontainers:${{needs.compute-matrix.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       command: |
