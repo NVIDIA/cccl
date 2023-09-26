@@ -573,7 +573,7 @@ struct DispatchMergeSort : SelectedPolicy
       }
 
       // Get shared memory size
-      const auto tile_size = MergePolicyT::ITEMS_PER_TILE;
+      constexpr auto tile_size = MergePolicyT::ITEMS_PER_TILE;
       const auto num_tiles = cub::DivideAndRoundUp(num_items, tile_size);
 
       /**
@@ -737,7 +737,7 @@ struct DispatchMergeSort : SelectedPolicy
       }
 
       const OffsetT num_partitions = num_tiles + 1;
-      const int threads_per_partition_block = 256;
+      constexpr int threads_per_partition_block = 256;
 
       const int partition_grid_size = static_cast<int>(
         cub::DivideAndRoundUp(num_partitions, threads_per_partition_block));

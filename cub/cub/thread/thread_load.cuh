@@ -334,7 +334,7 @@ __device__ __forceinline__ T ThreadLoadVolatilePointer(
 {
     typedef typename UnitWord<T>::VolatileWord VolatileWord;   // Word type for memcopying
 
-    const int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
+    constexpr int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
 
     T retval;
     VolatileWord *words = reinterpret_cast<VolatileWord*>(&retval);
@@ -370,7 +370,7 @@ __device__ __forceinline__ T ThreadLoad(
 {
     typedef typename UnitWord<T>::DeviceWord DeviceWord;
 
-    const int DEVICE_MULTIPLE = sizeof(T) / sizeof(DeviceWord);
+    constexpr int DEVICE_MULTIPLE = sizeof(T) / sizeof(DeviceWord);
 
     DeviceWord words[DEVICE_MULTIPLE];
 

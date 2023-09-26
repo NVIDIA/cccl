@@ -111,9 +111,9 @@ struct device_seg_sort_policy_hub
 
   struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
   {
-    constexpr static int BLOCK_THREADS          = TUNE_THREADS;
-    constexpr static int RADIX_BITS             = TUNE_RADIX_BITS ;
-    constexpr static int PARTITIONING_THRESHOLD = TUNE_PARTITIONING_THRESHOLD;
+    static constexpr int BLOCK_THREADS          = TUNE_THREADS;
+    static constexpr int RADIX_BITS             = TUNE_RADIX_BITS ;
+    static constexpr int PARTITIONING_THRESHOLD = TUNE_PARTITIONING_THRESHOLD;
 
     using LargeSegmentPolicy =
       cub::AgentRadixSortDownsweepPolicy<BLOCK_THREADS,
@@ -125,8 +125,8 @@ struct device_seg_sort_policy_hub
                                          cub::BLOCK_SCAN_WARP_SCANS,
                                          RADIX_BITS>;
 
-    constexpr static int ITEMS_PER_SMALL_THREAD = TUNE_S_ITEMS;
-    constexpr static int ITEMS_PER_MEDIUM_THREAD = TUNE_M_ITEMS;
+    static constexpr int ITEMS_PER_SMALL_THREAD = TUNE_S_ITEMS;
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = TUNE_M_ITEMS;
 
     using SmallAndMediumSegmentedSortPolicyT = cub::AgentSmallAndMediumSegmentedSortPolicy<
 

@@ -41,7 +41,7 @@ jobs:
       CUDA_VERSIONS: ${{steps.set-outputs.outputs.CUDA_VERSIONS}}
       HOST_COMPILERS: ${{steps.set-outputs.outputs.HOST_COMPILERS}}
       PER_CUDA_COMPILER_MATRIX: ${{steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX}}
-      NVRTC_MATRIX: ${{steps.set-outputs.outputs.matrix}}
+      NVRTC_MATRIX: ${{steps.set-outputs.outputs.NVRTC_MATRIX}}
       CLANG_CUDA_MATRIX: ${{steps.set-outputs.outputs.CLANG_CUDA_MATRIX}}
     steps:
       - name: Checkout repo
@@ -77,10 +77,10 @@ jobs:
   #      cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }}
   #      compiler: ${{ fromJSON(needs.compute-matrix.outputs.HOST_COMPILERS) }}
   #  with:
+  #    project_name: "thrust"
   #    per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
-  #    build_script: "./ci/build_thrust.sh"
-  #    test_script: "./ci/test_thrust.sh"
   #    devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
+  #    is_windows: ${{ contains(matrix.compiler, 'cl') }}
 
   #cub:
   #  name: CUB CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
@@ -92,10 +92,10 @@ jobs:
   #      cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }}
   #      compiler: ${{ fromJSON(needs.compute-matrix.outputs.HOST_COMPILERS) }}
   #  with:
+  #    project_name: "cub"
   #    per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
-  #    build_script: "./ci/build_cub.sh"
-  #    test_script: "./ci/test_cub.sh"
   #    devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
+  #    is_windows: ${{ contains(matrix.compiler, 'cl') }}
 
   #libcudacxx:
   #  name: libcudacxx CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
@@ -107,10 +107,10 @@ jobs:
   #      cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }}
   #      compiler: ${{ fromJSON(needs.compute-matrix.outputs.HOST_COMPILERS) }}
   #  with:
+  #    project_name: "libcudacxx"
   #    per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
-  #    build_script: "./ci/build_libcudacxx.sh"
-  #    test_script: "./ci/test_libcudacxx.sh"
   #    devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
+  #    is_windows: ${{ contains(matrix.compiler, 'cl') }}
 
   clang-cuda:
     name: ${{matrix.lib}} CTK${{matrix.cuda}} clang-cuda ${{matrix.compiler.version}}
@@ -131,19 +131,17 @@ jobs:
 #    name: CCCL Examples
 #    needs: compute-matrix
 #    if: ${{ !contains(github.event.head_commit.message, 'skip-tests') }}
+#    uses: ./.github/workflows/build-examples.yml
 #    strategy:
 #      fail-fast: false
 #      matrix:
-#        include: ${{ fromJSON(needs.compute-matrix.outputs.NVCC_FULL_MATRIX) }}
-#    uses: ./.github/workflows/run-as-coder.yml
+#        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }}
+#        compiler: ${{ fromJSON(needs.compute-matrix.outputs.HOST_COMPILERS) }}
 #    with:
-#      name: CCCL Examples CUDA${{matrix.cuda}} ${{matrix.compiler.name}}${{matrix.compiler.version}}
-#      runner: linux-${{matrix.cpu}}-gpu-v100-latest-1
-#      image: rapidsai/devcontainers:${{needs.compute-matrix.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
-#      command: |
-#        cmake -S . --preset=examples -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA} -DCMAKE_CUDA_COMPILER=nvcc
-#        ctest --preset=examples
-#
+#      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
+#      devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
+#      is_windows: ${{ contains(matrix.compiler, 'cl') }}
+
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
   ci:

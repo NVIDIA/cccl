@@ -66,7 +66,7 @@ struct AgentRadixSortUpsweepPolicy :
         RADIX_BITS          = _RADIX_BITS,          ///< The number of radix bits, i.e., log2(bins)
     };
 
-    static const CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;      ///< Cache load modifier for reading keys
+    static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;      ///< Cache load modifier for reading keys
 };
 
 
@@ -98,7 +98,7 @@ struct AgentRadixSortUpsweep
     // Integer type for packing DigitCounters into columns of shared memory banks
     typedef unsigned int PackedCounter;
 
-    static const CacheLoadModifier LOAD_MODIFIER = AgentRadixSortUpsweepPolicy::LOAD_MODIFIER;
+    static constexpr CacheLoadModifier LOAD_MODIFIER = AgentRadixSortUpsweepPolicy::LOAD_MODIFIER;
 
     enum
     {

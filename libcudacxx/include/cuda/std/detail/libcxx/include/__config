@@ -72,6 +72,9 @@
 #if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1108000
 #define _LIBCUDACXX_CUDACC_BELOW_11_8
 #endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1108000
+#if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1203000
+#define _LIBCUDACXX_CUDACC_BELOW_12_3
+#endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1203000
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #  define _LIBCUDACXX_HAS_PRAGMA_MSVC_WARNING
@@ -878,8 +881,16 @@ extern "C++" {
        _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
 #    define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(diagnostic pop))
 #  else // _LIBCUDACXX_CUDACC_BELOW_11_3
-#    define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
-#    define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)  _Pragma(_LIBCUDACXX_TOSTRING(diag_default _WARNING))
+#    if defined(_LIBCUDACXX_COMPILER_MSVC_2017) // MSVC 2017 has issues with restoring the warning
+#      define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) __pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
+#      define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)
+#    elif defined(_LIBCUDACXX_COMPILER_MSVC)
+#      define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) __pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
+#      define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)  __pragma(_LIBCUDACXX_TOSTRING(diag_default _WARNING))
+#    else // ^^^ MSVC ^^^ / vvv not MSVC
+#      define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
+#      define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)  _Pragma(_LIBCUDACXX_TOSTRING(diag_default _WARNING))
+#    endif // not MSVC
 #  endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
 #else // ^^^ _LIBCUDACXX_CUDACC ^^^ / vvv other compiler vvv
 #  define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING)

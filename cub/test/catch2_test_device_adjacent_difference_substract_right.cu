@@ -61,7 +61,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight can run with empty input", "[d
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 0;
+  constexpr int num_items = 0;
   thrust::device_vector<type> in(num_items);
 
   adjacent_difference_subtract_right(in.begin(),
@@ -72,7 +72,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy can run with empty input",
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 0;
+  constexpr int num_items = 0;
   thrust::device_vector<type> in(num_items);
   thrust::device_vector<type> out(num_items);
 
@@ -225,7 +225,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight works with custom difference",
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 5; //GENERATE_COPY(take(2, random(1, 1000000)));
+  constexpr int num_items = 5; //GENERATE_COPY(take(2, random(1, 1000000)));
   thrust::device_vector<type> in(num_items);
   c2h::gen(CUB_SEED(2), in);
 
@@ -312,7 +312,7 @@ struct check_difference {
 
 CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with large indexes", "[device][adjacent_difference]")
 {
-  const cuda::std::size_t num_items = 1ll << 33;
+  constexpr cuda::std::size_t num_items = 1ll << 33;
   adjacent_difference_subtract_right_copy(thrust::counting_iterator<cuda::std::size_t>{0},
                                           thrust::discard_iterator<>{},
                                           num_items,

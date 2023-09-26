@@ -696,7 +696,7 @@ public:
         for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
         {
             int bin_idx = (linear_tid * BINS_TRACKED_PER_THREAD) + track;
-            const int TILE_ITEMS = KEYS_PER_THREAD * BLOCK_THREADS;
+            constexpr int TILE_ITEMS = KEYS_PER_THREAD * BLOCK_THREADS;
 
             if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
             {
@@ -999,7 +999,7 @@ struct BlockRadixRankMatchEarlyCounts
             {
                 WARP_SYNC(WARP_MASK);
                 // TODO: handle RADIX_DIGITS % WARP_THREADS != 0 if it becomes necessary
-                const int WARP_BINS_PER_THREAD = RADIX_DIGITS / WARP_THREADS;
+                constexpr int WARP_BINS_PER_THREAD = RADIX_DIGITS / WARP_THREADS;
                 int bins[WARP_BINS_PER_THREAD];
                 #pragma unroll
                 for (int u = 0; u < WARP_BINS_PER_THREAD; ++u)

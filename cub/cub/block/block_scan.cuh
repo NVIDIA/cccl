@@ -213,7 +213,7 @@ private:
      * cannot be used with thread block sizes not a multiple of the
      * architectural warp size.
      */
-    static const BlockScanAlgorithm SAFE_ALGORITHM =
+    static constexpr BlockScanAlgorithm SAFE_ALGORITHM =
         ((ALGORITHM == BLOCK_SCAN_WARP_SCANS) && (BLOCK_THREADS % CUB_WARP_THREADS(0) != 0)) ?
             BLOCK_SCAN_RAKING :
             ALGORITHM;

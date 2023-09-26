@@ -74,12 +74,15 @@ struct clear_token
     }
 };
 
-using aw_aw_pw = performer_list<
+using aw_aw_pw1 = performer_list<
     barrier_parity_wait<false>,
     barrier_arrive_and_wait,
     barrier_arrive_and_wait,
     async_tester_fence,
     clear_token,
+>;
+
+using aw_aw_pw2 = performer_list<
     barrier_parity_wait<true>,
     barrier_arrive_and_wait,
     barrier_arrive_and_wait,
@@ -91,7 +94,11 @@ void kernel_invoker()
 {
     validate_not_movable<
         barrier_and_token<cuda::std::barrier<>>,
-        aw_aw_pw
+        aw_aw_pw1
+      >(2);
+    validate_not_movable<
+        barrier_and_token<cuda::std::barrier<>>,
+        aw_aw_pw2
       >(2);
 }
 

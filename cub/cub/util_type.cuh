@@ -964,7 +964,7 @@ private:
 public:
 
     /// Whether the functor BinaryOp has a third <tt>unsigned int</tt> index param
-    static const bool HAS_PARAM = sizeof(Test<BinaryOp>(NULL)) == sizeof(char);
+    static constexpr bool HAS_PARAM = sizeof(Test<BinaryOp>(NULL)) == sizeof(char);
 };
 
 
@@ -1000,7 +1000,7 @@ template <Category _CATEGORY, bool _PRIMITIVE, bool _NULL_TYPE, typename _Unsign
 struct BaseTraits
 {
     /// Category
-    static const Category CATEGORY      = _CATEGORY;
+    static constexpr Category CATEGORY      = _CATEGORY;
     enum
     {
         PRIMITIVE       = _PRIMITIVE,
@@ -1017,9 +1017,9 @@ struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
 {
     typedef _UnsignedBits       UnsignedBits;
 
-    static const Category       CATEGORY    = UNSIGNED_INTEGER;
-    static const UnsignedBits   LOWEST_KEY  = UnsignedBits(0);
-    static const UnsignedBits   MAX_KEY     = UnsignedBits(-1);
+    static constexpr Category       CATEGORY    = UNSIGNED_INTEGER;
+    static constexpr UnsignedBits   LOWEST_KEY  = UnsignedBits(0);
+    static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1);
 
     enum
     {
@@ -1064,10 +1064,10 @@ struct BaseTraits<SIGNED_INTEGER, true, false, _UnsignedBits, T>
 {
     typedef _UnsignedBits       UnsignedBits;
 
-    static const Category       CATEGORY    = SIGNED_INTEGER;
-    static const UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
-    static const UnsignedBits   LOWEST_KEY  = HIGH_BIT;
-    static const UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
+    static constexpr Category       CATEGORY    = SIGNED_INTEGER;
+    static constexpr UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
+    static constexpr UnsignedBits   LOWEST_KEY  = HIGH_BIT;
+    static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
 
     enum
     {
@@ -1165,10 +1165,10 @@ struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
 {
     typedef _UnsignedBits       UnsignedBits;
 
-    static const Category       CATEGORY    = FLOATING_POINT;
-    static const UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
-    static const UnsignedBits   LOWEST_KEY  = UnsignedBits(-1);
-    static const UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
+    static constexpr Category       CATEGORY    = FLOATING_POINT;
+    static constexpr UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
+    static constexpr UnsignedBits   LOWEST_KEY  = UnsignedBits(-1);
+    static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
 
     enum
     {
