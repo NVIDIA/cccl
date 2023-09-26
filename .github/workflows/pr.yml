@@ -154,5 +154,6 @@ jobs:
       - nvrtc
       - thrust
       - examples
+      - thrust-clang-cuda
     steps:
       - run: echo "CI success"
