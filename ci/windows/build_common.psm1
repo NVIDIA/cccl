@@ -85,7 +85,7 @@ function build {
 
     sccache_stats('Start')
 
-    cmake --build $script:BUILD_DIR --parallel $script:PARALLEL_LEVEL -- -v
+    cmake --build $script:BUILD_DIR --parallel $script:PARALLEL_LEVEL -v
     $test_result = $LastExitCode
 
     sccache_stats('Stop')

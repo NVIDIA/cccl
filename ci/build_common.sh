@@ -101,7 +101,7 @@ function configure(){
 function build(){
     local BUILD_NAME=$1
     source "./sccache_stats.sh" start
-    cmake --build $BUILD_DIR --parallel $PARALLEL_LEVEL -- -v
+    cmake --build $BUILD_DIR --parallel $PARALLEL_LEVEL -v
     echo "${BUILD_NAME} build complete"
     source "./sccache_stats.sh" end
 }
