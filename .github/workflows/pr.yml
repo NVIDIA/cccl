@@ -41,7 +41,7 @@ jobs:
       CUDA_VERSIONS: ${{steps.set-outputs.outputs.CUDA_VERSIONS}}
       HOST_COMPILERS: ${{steps.set-outputs.outputs.HOST_COMPILERS}}
       PER_CUDA_COMPILER_MATRIX: ${{steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX}}
-      NVRTC_MATRIX: ${{steps.set-outputs.outputs.matrix}}
+      NVRTC_MATRIX: ${{steps.set-outputs.outputs.NVRTC_MATRIX}}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
