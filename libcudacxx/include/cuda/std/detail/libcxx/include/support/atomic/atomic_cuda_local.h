@@ -45,9 +45,9 @@ _LIBCUDACXX_DEVICE inline bool __cuda_is_local(const void* __ptr) {
   int __tmp = 0;
   asm(
       "{\n\t"
-      "  .reg .pred %p;\n\t"
-      "  isspacep.local %p, %1;\n\t"
-      "  @%p mov.s32 %0, 1;\n\t"
+      "  .reg .pred p;\n\t"
+      "  isspacep.local p, %1;\n\t"
+      "  @p mov.s32 %0, 1;\n\t"
       "}\n\t"
       : "=r"(__tmp)
       : "l"(__ptr));
