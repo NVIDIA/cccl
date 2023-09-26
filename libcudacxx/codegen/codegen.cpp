@@ -144,7 +144,7 @@ int main() {
             for(auto& cv: cv_qualifier) {
                 out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz/8 << ", int> = 0>\n";
                 out << "_LIBCUDACXX_DEVICE void __atomic_load_cuda(const " << cv << "_Type *__ptr, _Type *__ret, int __memorder, " << scopenametag(s.first) << ") {\n";
-		out << "    if (__cuda_load_weak_if_local(__ptr, __ret)) return;\n";
+                out << "    if (__cuda_load_weak_if_local(__ptr, __ret)) return;\n";
                 out << "    uint" << sz << "_t __tmp = 0;\n";
                 out << "    NV_DISPATCH_TARGET(\n";
                 out << "      NV_PROVIDES_SM_70, (\n";
