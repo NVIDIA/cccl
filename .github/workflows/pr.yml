@@ -112,12 +112,13 @@ jobs:
   #    test_script: "./ci/test_libcudacxx.sh"
   #    devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
 
-  thrust-clang-cuda:
-    name: Thrust CTK${{matrix.cuda}} clang-cuda ${{matrix.compiler.version}}
+clang-cuda:
+    name: ${{matrix.lib}} CTK${{matrix.cuda}} clang-cuda ${{matrix.compiler.version}}
     needs: compute-matrix
     strategy:
       fail-fast: false
       matrix:
+        lib: [thrust, cub, libcudacxx]
         include: ${{ fromJSON(needs.compute-matrix.outputs.CLANG_CUDA_MATRIX) }}
     uses: ./.github/workflows/run-as-coder.yml
     with:
