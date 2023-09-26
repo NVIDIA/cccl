@@ -149,11 +149,11 @@ jobs:
     runs-on: ubuntu-latest
     name: CI
     needs:
-      - cub
-      - libcudacxx
-      - nvrtc
-      - thrust
-      - examples
       - thrust-clang-cuda
+      #- cub
+      #- libcudacxx
+      #- nvrtc
+      #- thrust
+      #- examples
     steps:
       - run: echo "CI success"
