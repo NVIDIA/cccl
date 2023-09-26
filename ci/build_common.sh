@@ -55,9 +55,7 @@ readonly CXX_STANDARD=$2
 
 # Replace spaces, commas and semicolons with semicolons for CMake list
 readonly GPU_ARCHS=$(echo $3 | tr ' ,' ';')
-
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
-readonly NVCC_VERSION=$($CUDA_COMPILER --version | grep release | awk '{print $6}' | cut -c2-)
 
 if [ -z ${DEVCONTAINER_NAME+x} ]; then
     BUILD_DIR=../build/local
@@ -84,7 +82,7 @@ COMMON_CMAKE_OPTIONS="
 echo "========================================"
 echo "Begin build"
 echo "pwd=$(pwd)"
-echo "NVCC_VERSION=$NVCC_VERSION"
+echo "CUDA_COMPILER=$CUDA_COMPILER"
 echo "HOST_COMPILER=$HOST_COMPILER"
 echo "CXX_STANDARD=$CXX_STANDARD"
 echo "GPU_ARCHS=$GPU_ARCHS"
