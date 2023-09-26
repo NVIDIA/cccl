@@ -112,7 +112,7 @@ jobs:
   #    test_script: "./ci/test_libcudacxx.sh"
   #    devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
 
-clang-cuda:
+  clang-cuda:
     name: ${{matrix.lib}} CTK${{matrix.cuda}} clang-cuda ${{matrix.compiler.version}}
     needs: compute-matrix
     strategy:
