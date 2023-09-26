@@ -12,9 +12,11 @@ version_compare() {
     fi
 }
 
+ENABLE_CUB_BENCHMARKS="false"
 if [[ "$CUDA_COMPILER" == *nvcc* ]]; then
     NVCC_VERSION=$($CUDA_COMPILER --version | grep release | awk '{print $6}' | cut -c2-)
     if [[ $(version_compare $NVCC_VERSION 11.5) == "true" ]]; then
+        ENABLE_CUB_BENCHMARKS="true"
         echo "nvcc version is $NVCC_VERSION. Building CUB benchmarks."
     else
         echo "nvcc version is $NVCC_VERSION. Not building CUB benchmarks because nvcc version is less than 11.5."
