@@ -1,8 +1,14 @@
-#include <nvrtc.h>
-#include <cuda.h>
-#include <stdio.h>
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
 
-#include <memory>
+#pragma once
 
 #define NVRTC_SAFE_CALL(x)                                        \
   do {                                                            \
@@ -32,42 +38,6 @@
     {                                                             \
       printf("\nCUDA ERROR: %s: %s\n",                            \
         cudaGetErrorName(err), cudaGetErrorString(err));          \
-      return err;                                                 \
+      exit(1);                                                    \
     }                                                             \
   } while(0)
-
-void list_devices()
-{
-    int device_count;
-    cudaGetDeviceCount(&device_count);
-    printf("CUDA devices found: %d\n", device_count);
-
-    int selected_device;
-    cudaGetDevice(&selected_device);
-
-    for (int dev = 0; dev < device_count; ++dev)
-    {
-        cudaDeviceProp device_prop;
-        cudaGetDeviceProperties(&device_prop, dev);
-
-        printf("Device %d: \"%s\", ", dev, device_prop.name);
-        if(dev == selected_device)
-            printf("Selected, ");
-        else
-            printf("Unused, ");
-
-        printf("SM%d%d, %zu [bytes]\n",
-            device_prop.major, device_prop.minor,
-            device_prop.totalGlobalMem);
-    }
-}
-
-const char * program = R"program(
-__host__ __device__ int fake_main(int argc, char ** argv);
-#define main fake_main
-
-// extern "C" to stop the name from being mangled
-extern "C" __global__ void main_kernel() {
-    fake_main(0, NULL);
-}
-
