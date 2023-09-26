@@ -118,7 +118,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        lib: [thrust, cub, libcudacxx]
         include: ${{ fromJSON(needs.compute-matrix.outputs.CLANG_CUDA_MATRIX) }}
     uses: ./.github/workflows/run-as-coder.yml
     with:
