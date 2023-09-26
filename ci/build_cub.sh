@@ -13,7 +13,9 @@ version_compare() {
 }
 
 ENABLE_CUB_BENCHMARKS="false"
+ENABLE_CUB_RDC="false"
 if [[ "$CUDA_COMPILER" == *nvcc* ]]; then
+    ENABLE_CUB_RDC="true"
     NVCC_VERSION=$($CUDA_COMPILER --version | grep release | awk '{print $6}' | cut -c2-)
     if [[ $(version_compare $NVCC_VERSION 11.5) == "true" ]]; then
         ENABLE_CUB_BENCHMARKS="true"
@@ -37,6 +39,7 @@ CMAKE_OPTIONS="
     -DTHRUST_IGNORE_DEPRECATED_CPP_DIALECT=ON \
     -DCUB_IGNORE_DEPRECATED_CPP_DIALECT=ON \
     -DCUB_ENABLE_BENCHMARKS="$ENABLE_CUB_BENCHMARKS"\
+    -DCUB_ENABLE_RDC_TESTS="$ENABLE_CUB_RDC" \
 "
 
 configure_and_build "CUB" "$CMAKE_OPTIONS"
