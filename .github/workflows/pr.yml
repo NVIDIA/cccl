@@ -151,7 +151,7 @@ clang-cuda:
     runs-on: ubuntu-latest
     name: CI
     needs:
-      - thrust-clang-cuda
+      - clang-cuda
       #- cub
       #- libcudacxx
       #- nvrtc
