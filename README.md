@@ -364,6 +364,13 @@ The deprecation period will depend on the impact of the change, but will usually
 
 For a detailed overview of the CI pipeline, see [ci-overview.md](ci-overview.md).
 
+## Related Projects
+
+Projects that are related to CCCL's mission to make CUDA C++ more delightful:
+- [cuCollections](https://github.com/NVIDIA/cuCollections) - GPU accelerated data structures like hash tables
+- [NVBench](https://github.com/NVIDIA/nvbench) - Benchmarking library tailored for CUDA applications
+- [stdexec](https://github.com/nvidia/stdexec) - Reference implementation for Senders asynchronous programming model 
+
 ## Projects Using CCCL
 
 Does your project use CCCL? [Open a PR to add your project to this list!](https://github.com/NVIDIA/cccl/edit/main/README.md)
