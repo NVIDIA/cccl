@@ -222,7 +222,7 @@ public:
                 int __inc = __popc(__active) * __update;
 
                 unsigned __laneid;
-                asm ("mov.u32 %0, %laneid;" : "=r"(__laneid));
+                asm ("mov.u32 %0, %%laneid;" : "=r"(__laneid));
                 int __leader = __ffs(__active) - 1;
                 // All threads in mask synchronize here, establishing cummulativity to the __leader:
                 __syncwarp(__mask);
