@@ -356,9 +356,9 @@ private:
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_80, (
                 asm volatile ("{"
-                    ".reg .pred %p;"
-                    "mbarrier.test_wait.parity.shared.b64 %p, [%1], %2;"
-                    "selp.u16 %0, 1, 0, %p;"
+                    ".reg .pred %%p;"
+                    "mbarrier.test_wait.parity.shared.b64 %%p, [%1], %2;"
+                    "selp.u16 %0, 1, 0, %%p;"
                     "}"
                     : "=h"(__ready)
                     : "r"(static_cast<uint32_t>(__cvta_generic_to_shared(&__barrier))),
