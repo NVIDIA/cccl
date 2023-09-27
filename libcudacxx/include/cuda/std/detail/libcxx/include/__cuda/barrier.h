@@ -52,6 +52,16 @@ enum async_contract_fulfillment
     async
 };
 
+// __completion_mechanism allows memcpy_async to report back what completion
+// mechanism it used. This is necessary to determine in which way to synchronize
+// the memcpy_async with a sync object (barrier or pipeline).
+enum class __completion_mechanism {
+    __sync                 = 0,
+    __mbarrier_complete_tx = 1,
+    __async_group          = 2,
+    __async_bulk_group     = 4,
+};
+
 template<thread_scope _Sco, class _CompletionF = _CUDA_VSTD::__empty_completion>
 class barrier : public _CUDA_VSTD::__barrier_base<_CompletionF, _Sco> {
 public:
@@ -668,175 +678,422 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool __unused(_Ty...) {return true;}
 template <typename _Ty>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool __unused(_Ty&) {return true;}
 
-template<_CUDA_VSTD::size_t _Alignment>
+// __is_local_smem_barrier returns true if barrier is (1) block-scoped and (2) located in shared memory.
+template<thread_scope _Sco, typename _CompF, bool _Is_mbarrier = (_Sco == thread_scope_block) && _CUDA_VSTD::is_same<_CompF, _CUDA_VSTD::__empty_completion>::value>
 _LIBCUDACXX_INLINE_VISIBILITY
-inline void __strided_memcpy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride = 1) {
-    if (__stride == 1) {
-        memcpy(__destination, __source, __total_size);
-    }
-    else {
-        for (_CUDA_VSTD::size_t __offset = __rank * _Alignment; __offset < __total_size; __offset += __stride * _Alignment) {
-            memcpy(__destination + __offset, __source + __offset, _Alignment);
-        }
-    }
+bool __is_local_smem_barrier(barrier<_Sco, _CompF> & __barrier) {
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            return _Is_mbarrier && __isShared(&__barrier);
+        ),
+        NV_ANY_TARGET, (
+            return false;
+        )
+    );
 }
 
-template<_CUDA_VSTD::size_t _Alignment, bool _Large = (_Alignment > 16)>
-struct __memcpy_async_impl {
-    _LIBCUDACXX_DEVICE static inline async_contract_fulfillment __copy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride) {
-        __strided_memcpy<_Alignment>(__destination, __source, __total_size, __rank, __stride);
-        return async_contract_fulfillment::none;
-    }
-};
+// __try_get_barrier_handle returns barrier handle of block-scoped barriers and a nullptr otherwise.
+template<thread_scope _Sco, typename _CompF>
+_LIBCUDACXX_INLINE_VISIBILITY
+_CUDA_VSTD::uint64_t * __try_get_barrier_handle(barrier<_Sco, _CompF> & __barrier) {
+    return nullptr;
+}
 
 template<>
-struct __memcpy_async_impl<4, false> {
-    _LIBCUDACXX_DEVICE static inline async_contract_fulfillment __copy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride) {
-        // Guard from host visibility when compiling in host only contexts
-        NV_IF_TARGET(
-            NV_IS_DEVICE, (
-                for (_CUDA_VSTD::size_t __offset = __rank * 4; __offset < __total_size; __offset += __stride * 4) {
-                    asm volatile ("cp.async.ca.shared.global [%0], [%1], 4, 4;"
-                        :: "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__destination + __offset))),
-                            "l"(__source + __offset)
-                        : "memory");
-                }
-            )
+_LIBCUDACXX_INLINE_VISIBILITY
+_CUDA_VSTD::uint64_t * __try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_completion>(barrier<::cuda::thread_scope_block> & __barrier) {
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            return ::cuda::device::barrier_native_handle(__barrier);
+        ),
+        NV_ANY_TARGET, (
+            return nullptr;
         )
+    );
+}
+
+struct __memcpy_completion_impl {
+    // This struct contains functions to delay the completion of a barrier phase
+    // or pipeline stage until a specific memcpy_async operation *initiated by
+    // this thread* has completed.
+
+    // The user is still responsible for arriving and waiting on (or otherwise
+    // synchronizing with) the barrier or pipeline barrier to see the results of
+    // copies from other threads participating in the synchronization object.
+
+    template<typename _Group>
+    _LIBCUDACXX_INLINE_VISIBILITY static
+    async_contract_fulfillment __delay(
+        __completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, barrier<::cuda::thread_scope_block> & __barrier) {
+        // In principle, this is the overload for shared memory barriers. However, a
+        // block-scope barrier may also be located in global memory. Therefore, we
+        // check if the barrier is a non-smem barrier and handle that separately.
+        if (! __is_local_smem_barrier(__barrier)) {
+            return __delay_non_smem_barrier(__cm, __group, __size, __barrier);
+        }
+
+        _CUDA_VSTD::uint64_t * __bh = __try_get_barrier_handle(__barrier);
+
+        if (__cm == __completion_mechanism::__async_group) {
+            NV_IF_TARGET(
+                // Pre-SM80, the async_group mechanism is not available.
+                NV_PROVIDES_SM_80, (
+                    // Non-Blocking: unbalance barrier by 1, barrier will be
+                    // rebalanced when all thread-local cp.async instructions
+                    // have completed writing to shared memory.
+                    asm volatile ("cp.async.mbarrier.arrive.shared.b64 [%0];"
+                                  :: "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bh)))
+                                  : "memory");
+                )
+            );
+            return async_contract_fulfillment::async;
+        } else if (__cm == __completion_mechanism::__mbarrier_complete_tx) {
+            NV_IF_TARGET(
+                // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
+                NV_PROVIDES_SM_90, (
+                    // Only perform the expect_tx operation with the leader thread
+                    if (__group.thread_rank() == 0) {
+                        ::cuda::device::barrier_expect_tx(__barrier, __size);
+                    }
+                )
+            );
+            return async_contract_fulfillment::async;
+        } else {
+            // sync: In this case, we do not need to do anything. The user will have
+            // to issue `bar.arrive_wait();` to see the effect of the transaction.
+            return async_contract_fulfillment::none;
+        }
+    }
+
+    template<typename _Group, thread_scope _Sco, typename _CompF>
+    _LIBCUDACXX_INLINE_VISIBILITY static
+    async_contract_fulfillment __delay(
+        __completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
+        return __delay_non_smem_barrier(__cm, __group, __size, __barrier);
+    }
+
+    template<typename _Group, thread_scope _Sco, typename _CompF>
+    _LIBCUDACXX_INLINE_VISIBILITY static
+    async_contract_fulfillment __delay_non_smem_barrier(
+        __completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
+        // Overload for non-smem barriers.
+        if (__cm == __completion_mechanism::__async_group) {
+            // Pre-SM80, the async_group mechanism is not available.
+            NV_IF_TARGET(NV_PROVIDES_SM_80, (
+                // Blocking: wait for all thread-local cp.async instructions to have
+                // completed writing to shared memory.
+                asm volatile ("cp.async.wait_all;" ::: "memory");
+            ));
         return async_contract_fulfillment::async;
-    }
-};
-
-template<>
-struct __memcpy_async_impl<8, false> {
-    _LIBCUDACXX_DEVICE static inline async_contract_fulfillment __copy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride) {
-        // Guard from host visibility when compiling in host only contexts
-        NV_IF_TARGET(
-            NV_IS_DEVICE, (
-                for (_CUDA_VSTD::size_t __offset = __rank * 8; __offset < __total_size; __offset += __stride * 8) {
-                    asm volatile ("cp.async.ca.shared.global [%0], [%1], 8, 8;"
-                        :: "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__destination + __offset))),
-                            "l"(__source + __offset)
-                        : "memory");
-                }
-            )
-        )
-        return async_contract_fulfillment::async;
-    }
-};
-
-template<>
-struct __memcpy_async_impl<16, false> {
-    _LIBCUDACXX_DEVICE static inline async_contract_fulfillment __copy(char * __destination, char const * __source, _CUDA_VSTD::size_t __total_size, _CUDA_VSTD::size_t __rank, _CUDA_VSTD::size_t __stride) {
-        // Guard from host visibility when compiling in host only contexts
-        NV_IF_TARGET(
-            NV_IS_DEVICE, (
-                for (_CUDA_VSTD::size_t __offset = __rank * 16; __offset < __total_size; __offset += __stride * 16) {
-                    asm volatile ("cp.async.cg.shared.global [%0], [%1], 16, 16;"
-                        :: "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__destination + __offset))),
-                            "l"(__source + __offset)
-                        : "memory");
-                }
-            )
-        )
-        return async_contract_fulfillment::async;
-    }
-};
-
-template<_CUDA_VSTD::size_t _Alignment>
-struct __memcpy_async_impl<_Alignment, true> : public __memcpy_async_impl<16, false> { };
-
-struct __memcpy_arrive_on_impl {
-    template<thread_scope _Sco, typename _CompF, bool _Is_mbarrier = (_Sco >= thread_scope_block) && _CUDA_VSTD::is_same<_CompF, _CUDA_VSTD::__empty_completion>::value>
-    _LIBCUDACXX_INLINE_VISIBILITY static inline void __arrive_on(barrier<_Sco, _CompF> & __barrier, async_contract_fulfillment __is_async) {
-          NV_DISPATCH_TARGET(
-              NV_PROVIDES_SM_90, (
-                  if (_Is_mbarrier && __isClusterShared(&__barrier) && !__isShared(&__barrier)) {
-                      __trap();
-                  }
-              )
-          )
-
-          NV_DISPATCH_TARGET(
-              NV_PROVIDES_SM_80, (
-                  if (__is_async == async_contract_fulfillment::async) {
-                      if (_Is_mbarrier && __isShared(&__barrier)) {
-                          asm volatile ("cp.async.mbarrier.arrive.shared.b64 [%0];"
-                              :: "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier)))
-                              : "memory");
-                      }
-                      else {
-                          asm volatile ("cp.async.wait_all;"
-                              ::: "memory");
-                      }
-                  }
-              )
-          )
+        } else if (__cm == __completion_mechanism::__mbarrier_complete_tx) {
+            // Non-smem barriers do not have an mbarrier_complete_tx mechanism..
+            // XXX: should be __builtin_unreachable() or an assert?
+            return async_contract_fulfillment::none;
+        } else {
+            // sync: In this case, we do not need to do anything.
+            return async_contract_fulfillment::none;
+        }
     }
 
-    template<thread_scope _Sco>
-    _LIBCUDACXX_INLINE_VISIBILITY static inline void __arrive_on(pipeline<_Sco> & __pipeline, async_contract_fulfillment __is_async) {
+    template<typename _Group, thread_scope _Sco>
+    _LIBCUDACXX_INLINE_VISIBILITY static
+    async_contract_fulfillment __delay(__completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, pipeline<_Sco> & __pipeline) {
         // pipeline does not sync on memcpy_async, defeat pipeline purpose otherwise
         __unused(__pipeline);
-        __unused(__is_async);
+        __unused(__size);
+        __unused(__group);
+
+        switch (__cm) {
+            case __completion_mechanism::__async_group:          return async_contract_fulfillment::async;
+            case __completion_mechanism::__async_bulk_group:     return async_contract_fulfillment::async;
+            case __completion_mechanism::__mbarrier_complete_tx: return async_contract_fulfillment::async;
+            default:                                             return async_contract_fulfillment::none;
+        }
     }
 };
 
-template<_CUDA_VSTD::size_t _Native_alignment, typename _Group, typename _Sync>
-_LIBCUDACXX_INLINE_VISIBILITY
-void inline __memcpy_async_sm_dispatch(
-        _Group const & __group, char * __destination, char const * __source,
-        _CUDA_VSTD::size_t __size, _Sync & __sync, async_contract_fulfillment & __is_async) {
-    // Broken out of __memcpy_async to avoid nesting dispatches
-    NV_DISPATCH_TARGET(
-        NV_PROVIDES_SM_80,
-            __is_async = __memcpy_async_impl<16>::__copy(__destination, __source, __size, __group.thread_rank(), __group.size());
-    )
+/***********************************************************************
+ * memcpy_async code:
+ *
+ * A call to cuda::memcpy_async(dest, src, size, barrier) can dispatch to any of
+ * these PTX instructions:
+ *
+ * 1. normal synchronous copy (fallback)
+ * 2. cp.async:      shared  <- global
+ * 3. cp.async.bulk: shared  <- global
+ * 4. TODO: cp.async.bulk: global  <- shared
+ * 5. TODO: cp.async.bulk: cluster <- shared
+ *
+ * Which of these options is chosen, depends on:
+ *
+ * 1. The alignment of dest, src, and size;
+ * 2. The direction of the copy
+ * 3. The current compute capability
+ * 4. The requested completion mechanism
+ *
+ * PTX has 3 asynchronous completion mechanisms:
+ *
+ * 1. Async group           - local to a thread. Used by cp.async
+ * 2. Bulk async group      - local to a thread. Used by cp.async.bulk (shared -> global)
+ * 3. mbarrier::complete_tx - shared memory barier. Used by cp.async.bulk (other directions)
+ *
+ * The code is organized as follows:
+ *
+ * 1. Asynchronous copy mechanisms that wrap the PTX instructions
+ *
+ * 2. Device memcpy_async implementation per copy direction (global to shared,
+ *    shared to global, etc). Dispatches to fastest mechanism based on requested
+ *    completion mechanism(s), pointer alignment, and architecture.
+ *
+ * 3. Host and device memcpy_async implementations. Host implementation is
+ *    basically a memcpy wrapper; device implementation dispatches based on the
+ *    direction of the copy.
+ *
+ * 4. __memcpy_async_barrier:
+ *    a) Sets the allowed completion mechanisms based on the barrier location
+ *    b) Calls the host or device memcpy_async implementation
+ *    c) If necessary, synchronizes with the barrier based on the returned
+ *    completion mechanism.
+ *
+ * 5. The public memcpy_async function overloads. Call into
+ *    __memcpy_async_barrier.
+ *
+ ***********************************************************************/
+
+/***********************************************************************
+ * Asynchronous copy mechanisms:
+ *
+ * 1. cp.async.bulk: shared  <- global
+ * 2. TODO: cp.async.bulk: cluster <- shared
+ * 3. TODO: cp.async.bulk: global  <- shared
+ * 4. cp.async:      shared  <- global
+ * 5. normal synchronous copy (fallback)
+ ***********************************************************************/
+
+#if (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
+template <typename _Group>
+inline __device__
+void __cp_async_bulk_shared_global(const _Group &__g, char * __dest, const char * __src, size_t __size, uint64_t *__bar_handle) {
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
+    if (__g.thread_rank() == 0) {
+        asm volatile(
+            "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
+            :
+            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+              "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+              "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
+              "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bar_handle)))
+            : "memory");
+    }
+}
+#endif // __CUDA_MINIMUM_ARCH__
+
+#if (defined(__CUDA_MINIMUM_ARCH__) && 800 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
+template <size_t _Copy_size>
+inline __device__
+void __cp_async_shared_global(char * __dest, const char * __src) {
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
+    static_assert(_Copy_size == 4 || _Copy_size == 8 || _Copy_size == 16, "cp.async.shared.global requires a copy size of 4, 8, or 16.");
+    asm volatile(
+        "cp.async.ca.shared.global [%0], [%1], %2, %2;"
+        :
+        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+          "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+          "n"(_Copy_size)
+        : "memory");
 }
 
-template<_CUDA_VSTD::size_t _Native_alignment, typename _Group, typename _Sync>
-_LIBCUDACXX_INLINE_VISIBILITY
-async_contract_fulfillment inline __memcpy_async(
-        _Group const & __group, char * __destination, char const * __source,
-        _CUDA_VSTD::size_t __size, _Sync & __sync) {
-    async_contract_fulfillment __is_async = async_contract_fulfillment::none;
-
-    NV_DISPATCH_TARGET(
-        NV_PROVIDES_SM_80,
-
-        if (__isShared(__destination) && __isGlobal(__source)) {
-            if (_Native_alignment < 4) {
-                auto __source_address = reinterpret_cast<_CUDA_VSTD::uintptr_t>(__source);
-                auto __destination_address = reinterpret_cast<_CUDA_VSTD::uintptr_t>(__destination);
-
-                // Lowest bit set will tell us what the common alignment of the three values is.
-                auto _Alignment = __ffs(__source_address | __destination_address | __size);
-
-                switch (_Alignment) {
-                    default:
-                        __memcpy_async_sm_dispatch<_Native_alignment>(__group, __destination, __source, __size, __sync, __is_async);
-                    case 4: __is_async = __memcpy_async_impl<8>::__copy(__destination, __source, __size, __group.thread_rank(), __group.size()); break;
-                    case 3: __is_async = __memcpy_async_impl<4>::__copy(__destination, __source, __size, __group.thread_rank(), __group.size()); break;
-                    case 2: // fallthrough
-                    case 1: __is_async = __memcpy_async_impl<1>::__copy(__destination, __source, __size, __group.thread_rank(), __group.size()); break;
-                }
-            }
-            else {
-                __is_async = __memcpy_async_impl<_Native_alignment>::__copy(__destination, __source, __size, __group.thread_rank(), __group.size());
-            }
-        }
-        else
-        {
-            __strided_memcpy<_Native_alignment>(__destination, __source, __size, __group.thread_rank(), __group.size());
-        }
-
-        __memcpy_arrive_on_impl::__arrive_on(__sync, __is_async);
-        , NV_ANY_TARGET,
-            __strided_memcpy<_Native_alignment>(__destination, __source, __size, __group.thread_rank(), __group.size());
-    )
-
-    return __is_async;
+template <>
+inline __device__
+void __cp_async_shared_global<16>(char * __dest, const char * __src) {
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
+    // When copying 16 bytes, it is possible to skip L1 cache (.cg).
+    asm volatile(
+        "cp.async.cg.shared.global [%0], [%1], %2, %2;"
+        :
+        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+          "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+          "n"(16)
+        : "memory");
 }
+
+template <size_t _Alignment, typename _Group>
+inline __device__
+void __cp_async_shared_global_impl(_Group __g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
+    static_assert(4 <= _Alignment, "cp.async requires at least 4-byte alignment");
+
+    // Maximal copy size is 16.
+    constexpr int __copy_size = (16 < _Alignment) ? 16 : _Alignment;
+    // We use an int offset here, because we are copying to shared memory,
+    // which is easily addressable using int.
+    const int __group_size = __g.size();
+    const int __group_rank = __g.thread_rank();
+    const int __stride = __group_size * __copy_size;
+    for (int __offset = __group_rank *  __copy_size; __offset < __size; __offset += __stride) {
+        __cp_async_shared_global<__copy_size>(__dest + __offset, __src + __offset);
+    }
+}
+#endif // __CUDA_MINIMUM_ARCH__
+
+template <size_t _Copy_size>
+struct __copy_chunk {
+    _ALIGNAS(_Copy_size) char data[_Copy_size];
+};
+
+template <size_t _Alignment, typename _Group>
+inline __host__ __device__
+void __cp_async_fallback(_Group __g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
+    // constexpr _CUDA_VSTD::size_t __copy_size = (16 < _Alignment) ? 16 : _Alignment;
+    constexpr _CUDA_VSTD::size_t __copy_size = 1;
+    using __chunk_t = __copy_chunk<__copy_size>;
+
+    // "Group"-strided loop over memory
+    const size_t __stride = __g.size() * __copy_size;
+
+    for (_CUDA_VSTD::size_t __offset = __g.thread_rank() * __copy_size; __offset < __size; __offset += __stride) {
+        __chunk_t tmp = *reinterpret_cast<const __chunk_t *>(__src + __offset);
+        *reinterpret_cast<__chunk_t *>(__dest + __offset) = tmp;
+    }
+}
+
+/***********************************************************************
+ * cuda::memcpy_async dispatch helper functions
+ *
+ * - __get_size_align struct to determine the alignment from a size type.
+ ***********************************************************************/
+
+// The __get_size_align struct provides a way to interrogate the guaranteed
+// "alignment" of a provided size. In this case, an n-byte aligned size means
+// that the size is a multiple of n.
+//
+// Use as follows:
+// static_assert(__get_size_align<size_t>::align == 1)
+// static_assert(__get_size_align<aligned_size_t<n>>::align == n)
+template< class... >
+using __custom_void_t = void;
+
+// Default impl: always returns 1.
+template <typename, typename = void>
+struct __get_size_align {
+    static constexpr int align = 1;
+};
+
+// aligned_size_t<n> overload: return n.
+template <typename T>
+struct __get_size_align<T, __custom_void_t<decltype(T::align)>> {
+    static constexpr int align = T::align;
+};
+
+/***********************************************************************
+ * cuda::memcpy_async dispatch
+ *
+ * The dispatch mechanism takes all the arguments and dispatches to the
+ * fastest asynchronous copy mechanism available.
+ *
+ * It returns a __completion_mechanism that indicates which completion mechanism
+ * was used by the copy mechanism. This value can be used by the sync object to
+ * further synchronize if necessary.
+ *
+ ***********************************************************************/
+
+template<_CUDA_VSTD::size_t _Align, typename _Group>
+inline __device__
+__completion_mechanism __dispatch_memcpy_async_any_to_any(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
+    __cp_async_fallback<_Align>(__group, __dest_char, __src_char, __size);
+    return __completion_mechanism::__sync;
+}
+
+template<_CUDA_VSTD::size_t _Align, typename _Group>
+inline __device__
+__completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (
+        const bool __can_use_complete_tx = __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
+        _LIBCUDACXX_DEBUG_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle), "Pass non-null bar_handle if and only if can_use_complete_tx.");
+        if _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 (16 <= _Align) {
+            if (__can_use_complete_tx && __isShared(__bar_handle)) {
+                __cp_async_bulk_shared_global(__group, __dest_char, __src_char, __size, __bar_handle);
+                return __completion_mechanism::__mbarrier_complete_tx;
+            }
+        }
+        // Fallthrough to SM 80..
+    ));
+
+    NV_IF_TARGET(NV_PROVIDES_SM_80, (
+        const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
+        if _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 (4 <= _Align) {
+            if (__can_use_async_group) {
+                __cp_async_shared_global_impl<_Align>(__group, __dest_char, __src_char, __size);
+                return __completion_mechanism::__async_group;
+            }
+        }
+        // Fallthrough..
+    ));
+
+    __cp_async_fallback<_Align>(__group, __dest_char, __src_char, __size);
+    return __completion_mechanism::__sync;
+}
+
+template<_CUDA_VSTD::size_t _Align, typename _Group>
+inline __device__
+__completion_mechanism __dispatch_memcpy_async_device(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
+    // Dispatch based on direction of the copy: global to shared, shared to
+    // global, etc.
+
+    // CUDA compilers < 12.3 may not propagate assumptions about the state space
+    // of pointers correctly. Therefore, we
+    // 1) put the code for each copy direction in a separate function, and
+    // 2) make sure none of the code paths can reach each other by "falling through".
+    //
+    // See nvbug 4074679 and also PR #478.
+    if (__isGlobal(__src_char) && __isShared(__dest_char)) {
+        return __dispatch_memcpy_async_global_to_shared<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
+    } else {
+        return __dispatch_memcpy_async_any_to_any<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
+    }
+}
+
+// __dispatch_memcpy_async is the internal entry point for dispatching to the correct memcpy_async implementation.
+template<typename _Group, typename _Tp, typename _Size>
+inline __host__ __device__
+__completion_mechanism __dispatch_memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, _CUDA_VSTD::uint32_t __allowed_completions, uint64_t* __bar_handle) {
+    // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
+    // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
+    // memcpy_async when compiling with GCC 4.8.
+    // FIXME: remove the #if once GCC 4.8 is no longer supported.
+#if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
+    static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
+#endif
+
+    // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
+    constexpr _CUDA_VSTD::size_t __size_align = __get_size_align<_Size>::align;
+    constexpr _CUDA_VSTD::size_t __align = (alignof(_Tp) < __size_align) ? __size_align : alignof(_Tp);
+
+    // Cast to char pointers. We don't need the type for alignment anymore and
+    // erasing the types reduces the number of instantiations of down-stream
+    // functions.
+    char * __dest_char = reinterpret_cast<char*>(__destination);
+    char const * __src_char = reinterpret_cast<char const *>(__source);
+
+    static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            return __dispatch_memcpy_async_device<__align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
+        ),
+        NV_IS_HOST, (
+            memcpy(__destination, __source, __size);
+            return __completion_mechanism::__sync;
+        )
+    );
+}
+
+template<typename _Group, typename _Tp, typename _Size>
+inline __host__ __device__
+__completion_mechanism __dispatch_memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, _CUDA_VSTD::uint32_t __allowed_completions) {
+    _LIBCUDACXX_DEBUG_ASSERT(! (__allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx)), "Cannot allow mbarrier_complete_tx completion mechanism when not passing a barrier. ");
+    return __dispatch_memcpy_async(__group, __destination, __source, __size, __allowed_completions, nullptr);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 struct __single_thread_group {
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -847,56 +1104,60 @@ struct __single_thread_group {
     constexpr _CUDA_VSTD::size_t thread_rank() const { return 0; };
 };
 
-template<typename _Group, class _Tp, thread_scope _Sco, typename _CompF>
+template<typename _Group, class _Tp, typename _Size, thread_scope _Sco, typename _CompF>
 _LIBCUDACXX_INLINE_VISIBILITY
-async_contract_fulfillment memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
-    // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
-    // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
-    // memcpy_async when compiling with GCC 4.8.
-    // FIXME: remove the #if once GCC 4.8 is no longer supported.
-#if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
-    static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
-#endif
+async_contract_fulfillment __memcpy_async_barrier(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, barrier<_Sco, _CompF> & __barrier) {
+    // 1. Determine which completion mechanisms can be used with the current
+    // barrier. A local shared memory barrier, i.e., block-scope barrier in local
+    // shared memory, supports the mbarrier_complete_tx mechanism in addition to
+    // the async group mechanism.
+    _CUDA_VSTD::uint32_t __allowed_completions = __is_local_smem_barrier(__barrier)
+        ? ( _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group) | _CUDA_VSTD::uint32_t(__completion_mechanism::__mbarrier_complete_tx))
+        : _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
 
-    return __memcpy_async<alignof(_Tp)>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
+    // 2. Issue actual copy instructions.
+    auto __bh = __try_get_barrier_handle(__barrier);
+    auto __cm =  __dispatch_memcpy_async(__single_thread_group{}, __destination, __source, __size, __allowed_completions, __bh);
+
+    // 3. Synchronize barrier with copy instructions.
+    return __memcpy_completion_impl::__delay(__cm, __group, __size, __barrier);
 }
 
-template<typename _Group, class _Tp, _CUDA_VSTD::size_t _Alignment, thread_scope _Sco, typename _CompF, _CUDA_VSTD::size_t _Larger_alignment = (alignof(_Tp) > _Alignment) ? alignof(_Tp) : _Alignment>
+template<typename _Group, class _Tp, _CUDA_VSTD::size_t _Alignment, thread_scope _Sco, typename _CompF>
 _LIBCUDACXX_INLINE_VISIBILITY
 async_contract_fulfillment memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, aligned_size_t<_Alignment> __size, barrier<_Sco, _CompF> & __barrier) {
-    // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
-    // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
-    // memcpy_async when compiling with GCC 4.8.
-    // FIXME: remove the #if once GCC 4.8 is no longer supported.
-#if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
-    static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
-#endif
-
-    return __memcpy_async<_Larger_alignment>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
+    return __memcpy_async_barrier(__group, __destination, __source, __size, __barrier);
 }
 
 template<class _Tp, typename _Size, thread_scope _Sco, typename _CompF>
 _LIBCUDACXX_INLINE_VISIBILITY
 async_contract_fulfillment memcpy_async(_Tp * __destination, _Tp const * __source, _Size __size, barrier<_Sco, _CompF> & __barrier) {
-    return memcpy_async(__single_thread_group{}, __destination, __source, __size, __barrier);
+    return __memcpy_async_barrier(__single_thread_group{}, __destination, __source, __size, __barrier);
+}
+
+template<typename _Group, class _Tp, thread_scope _Sco, typename _CompF>
+_LIBCUDACXX_INLINE_VISIBILITY
+async_contract_fulfillment memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
+
+    return __memcpy_async_barrier(__group, __destination, __source, __size, __barrier);
 }
 
 template<typename _Group, thread_scope _Sco, typename _CompF>
 _LIBCUDACXX_INLINE_VISIBILITY
 async_contract_fulfillment memcpy_async(_Group const & __group, void * __destination, void const * __source, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
-    return __memcpy_async<1>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
+    return __memcpy_async_barrier(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
 }
 
 template<typename _Group, _CUDA_VSTD::size_t _Alignment, thread_scope _Sco, typename _CompF>
 _LIBCUDACXX_INLINE_VISIBILITY
 async_contract_fulfillment memcpy_async(_Group const & __group, void * __destination, void const * __source, aligned_size_t<_Alignment> __size, barrier<_Sco, _CompF> & __barrier) {
-    return __memcpy_async<_Alignment>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
+    return __memcpy_async_barrier(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
 }
 
 template<typename _Size, thread_scope _Sco, typename _CompF>
 _LIBCUDACXX_INLINE_VISIBILITY
 async_contract_fulfillment memcpy_async(void * __destination, void const * __source, _Size __size, barrier<_Sco, _CompF> & __barrier) {
-    return memcpy_async(__single_thread_group{}, __destination, __source, __size, __barrier);
+    return __memcpy_async_barrier(__single_thread_group{}, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

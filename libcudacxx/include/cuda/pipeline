@@ -175,7 +175,7 @@ NV_IF_TARGET(NV_IS_DEVICE,
         void producer_commit()
         {
             barrier<_Scope> & __stage_barrier = __shared_state_get_stage(__head)->__produced;
-            __memcpy_arrive_on_impl::__arrive_on(__stage_barrier, async_contract_fulfillment::async);
+            __memcpy_completion_impl::__delay(__completion_mechanism::__async_group, __single_thread_group{}, 0, __stage_barrier);
             (void)__stage_barrier.arrive();
             if (++__head == __stages_count) {
                 __head = 0;
@@ -513,61 +513,69 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
     void pipeline_producer_commit(pipeline<thread_scope_thread> & __pipeline, barrier<_Scope> & __barrier)
     {
         (void)__pipeline;
-        NV_IF_TARGET(NV_PROVIDES_SM_80,
-            __memcpy_arrive_on_impl::__arrive_on(__barrier, async_contract_fulfillment::async);
-        )
+        NV_IF_TARGET(NV_PROVIDES_SM_80,(
+            __memcpy_completion_impl::__delay(__completion_mechanism::__async_group, __single_thread_group{}, 0, __barrier);
+        ));
+    }
+
+    template<typename _Group, class _Tp, typename _Size, thread_scope _Scope>
+    _LIBCUDACXX_INLINE_VISIBILITY
+    async_contract_fulfillment __memcpy_async_pipeline(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, pipeline<_Scope> & __pipeline) {
+        // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
+        // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
+        // memcpy_async when compiling with GCC 4.8.
+        // FIXME: remove the #if once GCC 4.8 is no longer supported.
+#if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
+        static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
+#endif
+
+        // 1. Set the completion mechanisms that can be used. Do not (yet) allow
+        // async_bulk_group completion. Do not allow mbarrier_complete_tx
+        // completion, even though it may be possible if the pipeline has stage
+        // barriers in shared memory.
+        _CUDA_VSTD::uint32_t __allowed_completions = _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
+
+        // 2. Issue actual copy instructions.
+        auto __cm =  __dispatch_memcpy_async(__single_thread_group{}, __destination, __source, __size, __allowed_completions);
+
+        // 3. No need to synchronize with copy instructions.
+        return __memcpy_completion_impl::__delay(__cm, __group, __size, __pipeline);
     }
 
     template<typename _Group, class _Type, thread_scope _Scope>
     _LIBCUDACXX_INLINE_VISIBILITY
     async_contract_fulfillment memcpy_async(_Group const & __group, _Type * __destination, _Type const * __source, std::size_t __size, pipeline<_Scope> & __pipeline) {
-        // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
-        // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
-        // memcpy_async when compiling with GCC 4.8.
-        // FIXME: remove the #if once GCC 4.8 is no longer supported.
-    #if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
-        static_assert(std::is_trivially_copyable<_Type>::value, "memcpy_async requires a trivially copyable type");
-    #endif
-
-        return __memcpy_async<alignof(_Type)>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
+        return __memcpy_async_pipeline(__group, __destination, __source, __size, __pipeline);
     }
 
     template<typename _Group, class _Type, std::size_t _Alignment, thread_scope _Scope, std::size_t _Larger_alignment = (alignof(_Type) > _Alignment) ? alignof(_Type) : _Alignment>
     _LIBCUDACXX_INLINE_VISIBILITY
     async_contract_fulfillment memcpy_async(_Group const & __group, _Type * __destination, _Type const * __source, aligned_size_t<_Alignment> __size, pipeline<_Scope> & __pipeline) {
-        // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
-        // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
-        // memcpy_async when compiling with GCC 4.8.
-        // FIXME: remove the #if once GCC 4.8 is no longer supported.
-    #if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
-        static_assert(std::is_trivially_copyable<_Type>::value, "memcpy_async requires a trivially copyable type");
-    #endif
-
-        return __memcpy_async<_Larger_alignment>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
+        return __memcpy_async_pipeline(__group, __destination, __source, __size, __pipeline);
     }
 
     template<class _Type, typename _Size, thread_scope _Scope>
     _LIBCUDACXX_INLINE_VISIBILITY
     async_contract_fulfillment memcpy_async(_Type * __destination, _Type const * __source, _Size __size, pipeline<_Scope> & __pipeline) {
-        return memcpy_async(__single_thread_group{}, __destination, __source, __size, __pipeline);
+        return __memcpy_async_pipeline(__single_thread_group{}, __destination, __source, __size, __pipeline);
     }
 
     template<typename _Group, thread_scope _Scope>
     _LIBCUDACXX_INLINE_VISIBILITY
     async_contract_fulfillment memcpy_async(_Group const & __group, void * __destination, void const * __source, std::size_t __size, pipeline<_Scope> & __pipeline) {
-        return __memcpy_async<1>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
+        return __memcpy_async_pipeline(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
     }
 
     template<typename _Group, std::size_t _Alignment, thread_scope _Scope>
     _LIBCUDACXX_INLINE_VISIBILITY
     async_contract_fulfillment memcpy_async(_Group const & __group, void * __destination, void const * __source, aligned_size_t<_Alignment> __size, pipeline<_Scope> & __pipeline) {
-        return __memcpy_async<_Alignment>(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline, std::false_type());
+        return __memcpy_async_pipeline(__group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
     }
 
     template<typename _Size, thread_scope _Scope>
     _LIBCUDACXX_INLINE_VISIBILITY
     async_contract_fulfillment memcpy_async(void * __destination, void const * __source, _Size __size, pipeline<_Scope> & __pipeline) {
-        return memcpy_async(__single_thread_group{}, __destination, __source, __size, __pipeline);
+        return __memcpy_async_pipeline(__single_thread_group{}, reinterpret_cast<char*>(__destination), reinterpret_cast<char const *>(__source), __size, __pipeline);
     }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
