@@ -92,6 +92,27 @@ See the [Dev Containers guide](.devcontainer/README.md) for instructions on how 
     ```bash
     git commit -m "Add a brief description of the change"
     ```
+### Developer Guides
+
+As CCCL evolves, we are in the process of unifying and consolidating our practices and guidelines across all components. However, due to the unique history and characteristics of each component, there are still aspects specific to each one. To aid your contributions and ensure you're aligned with each component's best practices, we offer detailed developer guides:
+
+#### CUB
+- [CUB Developer Guide](cub/docs/developer_overview.rst) - General overview of the design of CUB internals
+- [CUB Test Overview](cub/docs/test_overview.rst) - Overview of how to write CUB unit tets
+- [CUB Tuning Infrastructure](cub/docs/tuning.rst) - Overview of CUB's performance tuning infrastructure
+- [CUB Benchmarks](cub/docs/benchmarking.rst) - Overview of CUB's performance benchmarks
+
+#### Thrust
+
+Coming soon!
+
+#### libcudacxx
+
+Coming soon!
+
+
+
+These guides delve deeper into the specifics of each library and will be invaluable if you're looking to make substantial changes or additions.
 
 ## Building and Testing
 
