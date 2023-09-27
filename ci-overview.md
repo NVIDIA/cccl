@@ -1,122 +1,87 @@
-# CCCL - Continuous Integration (CI) Workflow
-As a header-only C++ library, the code we write isn't compiled until a developer includes it in their project.
+# Continuous Integration (CI) Overview for CCCL
 
-This means our code needs to be robust enough to compile and run across a variety of platforms, compilers, and configurations.
-As such, maintaining extensive and thorough Continuous Integration (CI) coverage is crucial.
+The Continuous Integration (CI) process for CCCL ensures code quality and compatibility across various environments. This document provides an in-depth overview of the CI setup and workflows, enabling contributors to understand, debug, and reproduce CI checks locally.
 
-Our CI system needs to test various combinations of operating systems, CPU architectures, compilers, and C++ standards.
-The number of configurations can be quite large and hence our CI system must be designed to handle this complexity.
-We use GitHub Actions for this purpose. It is flexible, powerful, and well-integrated with GitHub.
+## CI Environment and Configuration
 
-This document will walk you through our CI workflow and guide you on how to interact with and troubleshoot it when needed.
+### Development Containers
 
-## Workflow Overview
+Our CI jobs use the same Development Containers as described in the [dev container setup](.devcontainer/README.md). This ensures a consistent environment for both local development and CI testing. These containers provide a standardized, reproducible environment that has all the necessary dependencies installed.
 
-### TL;DR
+### Matrix Testing
+To ensure compatibility across various setups, CI tests are performed across a broad matrix of:
 
-```mermaid
-graph LR
-    A[Workflow Starts on Push to PR]
-    A --> B{Computes Matrix}
-    B --> C[For Each Matrix Configuration]
-    C --> D{Runs a Build Job}
-    D --> E[Build Job Completed]
-    E --> F{Runs a Test Job}
-    F --> G[Test Job Completed]
-    G --> H[CI Successful]
-```
+- CUDA versions
+- Compilers
+- GPU architectures
+- Operating systems
 
-This repository relies on a GitHub Actions-based Continuous Integration (CI) workflow. Here's what you need to know:
+The exact combinations of these environments are defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file.
 
-- **Trigger:** The main workflow triggers on every push to the main branch or pull request (PR).
-- **Execution:** The workflow generates a matrix of build configurations, based on the settings in matrix.yml, and then dispatches separate build and test jobs for each configuration.
-- **Failures:** If a job fails, you'll be notified through GitHub's interface. You can then check the logs for details.
-- **Recovery:** To handle job failures, pull the relevant container image and rerun the script locally to reproduce the issue.
+### Special CI Commands
 
-### The Matrix
+During your development, there might be scenarios where you want to control the execution of the CI pipeline based on the nature of your commits. For this, we've provided special commands that can be included in your commit messages to direct the CI:
 
-The matrix defined in the [`matrix.yml`](ci/matrix.yaml) is the single source of truth for the environments we test our code against.
-It dictates the build configurations, such as CUDA version, operating system, CPU architecture, compiler, GPU architectures, and C++ standards.
-It allows us to test our code against different combinations of these variables to ensure our code's compatibility and stability.
+- `[skip ci]`: By adding this command in your commit message, you signal the CI to completely skip running the pipeline for that commit. This can be handy for changes that are purely documentation-based or others that don't require CI validation.
 
-### Build and Test Jobs
-Our CI workflow primarily revolves around two major types of jobs: build jobs and test jobs.
+- `[skip-tests]`: Sometimes, you might want the CI to run but skip the GPU tests. Including this command ensures that other parts of the pipeline run, but the GPU tests are bypassed. This is useful for preliminary pushes or when working on parts of the codebase that don't touch GPU functionalities.
 
-#### Build
-Build jobs compile our unit tests and examples in various environments, mimicking the conditions in which our users might compile the code.
-These jobs simply invoke a build script (e.g., `build_thrust.sh`) which contains all the necessary steps to compile the code.
+Always ensure that you're using these commands judiciously. While they provide flexibility, they should be used appropriately to maintain the codebase's integrity and quality.
 
-The advantage of this approach is two-fold.
-First, it allows us to keep our CI configuration files clean and focused on the orchestration of jobs rather than the specifics of building the code.
-Second, it greatly simplifies the process of reproducing build issues outside of CI.
-Developers can run the build script locally, in their environment, and the build will behave in the same way it does in CI.
+### Accelerating Build Times with `sccache`
 
-#### Test
-After the build jobs have successfully compiled the test binaries, the test jobs run these binaries to execute our tests.
-On first glance, you may notice that the test jobs are rebuilding all of the test binaries.
-However, we are relying on sccache to cache the build artifacts from the build jobs and reuse them in the test jobs.
+To speed up compilation, our CI uses [`sccache`](https://github.com/mozilla/sccache), a distributed cache system that caches previously built compiler artifacts if the corresponding files haven't changed. This cache is also shared with the [Development Containers](.devcontainer/README.md). When building locally within a devcontainer, the cache is used, ensuring consistent and fast build times both locally and in CI. The shared nature of sccache provides a virtuous cycle: CI accelerates local builds by contributing to the cache, and in turn, local builds accelerate CI by populating the cache with more artifacts. This synergy ensures optimal build performance and reduces the time taken for iterative development and testing. To benefit from this shared cache, ensure you've set up [GitHub Authentication](.devcontainer/README.md#5-github-authentication) in your devcontainer.
 
-Similar to the build jobs, test jobs use a script (e.g., `test_thrust.sh`) to define the steps required to execute the tests.
-If a test fails in CI, developers can simply run the script in their local environment to reproduce the issue and debug it.
 
-The syntax of the build and test scripts is the same:
-```bash
-./ci/build_thrust.sh <host compiler> <c++ standard> <gpu architectures>
-./ci/test_thrust.sh <host compiler> <c++ standard> <gpu architectures>
+### Build and Test Scripts
 
-#examples
-./ci/build_thrust.sh g++ 17 "70;80;86"
-```
+CI jobs utilize the build and test scripts located in the `ci/` directory. This ensures uniformity in how the code is built and tested, regardless of where it's being executed. When you build or test locally, you're using the same scripts as the CI, minimizing discrepancies between local and CI environments. For more detailed instructions on how to use these scripts, please refer to the [CONTRIBUTING.md guide](CONTRIBUTING.md#building-and-testing).
 
-In summary, the heart of our build and test jobs is the corresponding build or test script.
-This design philosophy helps maintain a clear separation between CI orchestration and the specifics of building and testing.
-Moreover, it paves the way for straightforward issue reproduction, thereby aiding developers in their debugging process.
+### Reproducing CI Failures Locally
 
-## Lifecycle of a Pull Request
+If your pull request encounters a failure during CI testing, it's usually helpful to reproduce the issue locally to diagnose and fix it. Here's a step-by-step guide to ensure you recreate the exact environment and situation:
 
-From creation to merging, a pull request in this project follows these steps:
+1. **Get the Appropriate Development Container**:
 
-1. **Creating a PR**: Once you make a change, open a PR.
-  - If you have write permission to the repository, the CI workflow will automatically start.
-  - If you don't have write permission, the workflow will start once a maintainer comments on the PR with `/ok to test`. This comment is required for all subsequent workflow runs.
-  - If you want to skip the entire CI pipeline for a particular commit, include `[skip ci]` at the beginning of the commit message.
-  - To avoid running the "test" jobs, use `[skip-tests]` in the commit message. This is especially useful when avoiding lengthy GPU test jobs.
+    Our CI uses the same development containers as those you'd use for local development, ensuring a consistent environment. These containers come pre-configured with all the necessary tools, libraries, and settings.
 
-2. **Understanding PR Pipelines**: Our CI employs a unique trigger mechanism for PRs using the [`copy-pr-bot`](https://docs.gha-runners.nvidia.com/apps/copy-pr-bot/).
-  - If you're a trusted contributor and your PR contains trusted changes, the bot will automatically copy your PR's code to a prefixed branch (e.g., `pull-request/123`) in the main repository, triggering the CI.
-  - For PRs from untrusted sources or those containing untrusted changes, the bot requests a review. Once the changes are approved, a maintainer can initiate the CI process with an `/ok to test` comment.
+    If you aren't already doing so, make sure to use the devcontainers for local development. For details on setting up and launching the appropriate dev container, refer to the [Dev Containers guide](.devcontainer/README.md).
 
-3. **Wait for results**: GitHub Actions executes the defined CI workflow, running jobs based on the matrix configuration.
+    The CI logs will mention the exact environment used. Ensure you launch the corresponding container locally.
 
-4. **Interpret results**: Check the status of the workflow. If it passes, all tests have passed on all defined configurations, and your changes likely didn't break anything.
+2. **Run the Build/Test Script**:
 
-5. **Handle failures**: If any job fails, the logs will provide information on what went wrong.
+    Inside the container, navigate to the root of the `cccl` project. Use the scripts from the `ci/` directory to build and test the project, just as the CI does.
 
-6. **Rerun jobs**: If the failure seems unrelated to your changes (e.g., due to a temporary external issue), you can rerun the jobs.
+    Example:
+    ```bash
+    ./ci/build_cub.sh <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>
+    ./ci/test_cub.sh <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>
+    ```
 
-## Troubleshooting Guide
+    The CI logs provide exact instructions on the scripts and parameters used, making it straightforward to reproduce the exact CI steps locally.
 
-If a CI job fails, here's what you can do to troubleshoot:
+    Here is an example of a CI failure message that includes instructions. Note that the instructions may have changed. Refer to the latest failure log for the most up-to-date instructions.
+    ![Shows an example of a CI failure log with reproducer instructions](docs/images/repro_instructions.png).
 
-1. Check the logs: The logs provide detailed information on what went wrong during the execution. This is your starting point.
-2. Reproduce the issue locally: Pull the relevant container image and rerun the script that failed. This will allow you to dig into the issue in depth.
-3. Fix the issue: Once you've identified the problem, you can make appropriate changes to your code and rerun the CI jobs.
 
-### How to Reproduce a CI Failure Locally
+## CI Workflow Details
 
-When a build or test job fails, it will provide instructions on how to reproduce the failure locally using the exact same code and environment used in CI.
+### Triggering Mechanism and `copy-pr-bot`
 
-For example, here is a screenshot of the log of a failed build job:
+CCCL uses NVIDIA's self-hosted action runners to execute CI jobs. Due to security considerations, we use a unique approach to triggering PR workflows. Rather than triggering directly on pull request events, we utilize the [`copy-pr-bot` GitHub application](https://docs.gha-runners.nvidia.com/onboarding/). This bot streamlines the process of deeming code as trusted by copying it to a prefixed branch, ensuring that only safe and vetted code runs on our self-hosted runners.
 
-![Build Job Failure](docs/images/repro_instructions.png)
+If you're an external contributor, be aware that the CI won't start automatically. Instead, a repository member will first review your changes. After ensuring the changes meet the required criteria, they will use the `/ok to test` comment to initiate the CI process. This extra step ensures the security and integrity of our CI process.
 
-This provides instructions for both a command-line and a VSCode-based approach to reproduce the failure locally.
+## Troubleshooting CI Failures
 
-When interating on a fix, the vscode devcontainer approach is recommended as it provides a convenient, interactive environment to debug the issue.
+1. **Check the CI logs**: Always start by examining the detailed logs provided by the CI. They will provide specific error messages that can guide your troubleshooting process.
+2. **Reproduce Locally**: As previously mentioned, try to reproduce the issue in your local development environment. This allows for more rapid iteration and debugging.
+3. **Matrix Configuration**: If a specific combination of CUDA version, compiler, or GPU architecture is causing the failure, consult the `ci/matrix.yaml` to understand the testing combinations.
+4. **Seek Help**: If you're unable to resolve a CI failure, don't hesitate to ask. The NVIDIA team and community can provide insights or point out common pitfalls.
 
-## More Information
+## Conclusion
 
-You can refer to [GitHub Actions documentation](https://docs.github.com/en/actions) for a deeper understanding of the process and the [GitHub Actions workflows syntax](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions) to comprehend the workflow files' structure and syntax.
+Our CI pipeline is a living entity, continuously evolving to meet the needs of the project. While we strive to keep this documentation up-to-date, always refer to the actual code and scripts if you're in doubt.
 
-You're not in this alone - the community is here to help. If you're stuck, don't hesitate to raise an issue or ask for assistance. Open source thrives on collaboration and learning. Happy coding!
-
+Understanding the CI process is crucial for smooth contributions to CCCL. By ensuring your changes pass the CI checks and being able to debug any issues that arise, you streamline the contribution process, making it more efficient for both you and the maintainers. Always remember that the goal is to ensure that CCCL remains a high-quality, robust library that serves its community effectively.
