@@ -564,7 +564,7 @@ private:
 
 #if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 template<class _T1, class _T2>
-pair(_T1, _T2) -> pair<_T1, _T2>;
+_LIBCUDACXX_HOST_DEVICE pair(_T1, _T2) -> pair<_T1, _T2>;
 #endif // _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 
 // [pairs.spec], specialized algorithms
