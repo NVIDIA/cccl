@@ -23,7 +23,8 @@
 // This test checks that (1) and (2) see forward declarations
 // for (3).
 #include <cuda/std/type_traits>
-#include <cuda/std/algorithm>
+//#include <cuda/std/algorithm>
+#include <cuda/std/array>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
