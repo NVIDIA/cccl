@@ -45,10 +45,6 @@ jobs:
           app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
           private_key: ${{ secrets.CCCL_AUTH_APP_PEM }}
 
-      - name: Wait 1 Second
-        id: sleep
-        run: sleep 1
-
       - name: Get PR Project ID
         id: get_pr_id
         env:
