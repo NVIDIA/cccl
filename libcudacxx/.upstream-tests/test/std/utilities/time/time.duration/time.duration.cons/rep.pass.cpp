@@ -26,10 +26,8 @@ test(R r)
 {
     D d(r);
     assert(d.count() == r);
-#if TEST_STD_VER >= 11
     constexpr D d2(R(2));
     static_assert(d2.count() == 2, "");
-#endif
 }
 
 int main(int, char**)

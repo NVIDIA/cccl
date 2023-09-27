@@ -528,6 +528,7 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include "__functional/perfect_forward.h"
 #include "__functional/pointer_to_binary_function.h"
 #include "__functional/pointer_to_unary_function.h"
+#include "__functional/ranges_operations.h"
 #include "__functional/reference_wrapper.h"
 #include "__functional/unary_function.h"
 #include "__functional/unary_negate.h"

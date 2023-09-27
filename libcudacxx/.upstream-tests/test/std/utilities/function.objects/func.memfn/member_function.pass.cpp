@@ -76,9 +76,7 @@ int main(int, char**)
     test0(cuda::std::mem_fn(&A::test0));
     test1(cuda::std::mem_fn(&A::test1));
     test2(cuda::std::mem_fn(&A::test2));
-#if TEST_STD_VER >= 11
     static_assert((noexcept(cuda::std::mem_fn(&A::test0))), ""); // LWG#2489
-#endif
 
   return 0;
 }

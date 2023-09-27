@@ -21,9 +21,7 @@ int main(int, char**)
     static_assert(_5::value == 5, "");
     static_assert((cuda::std::is_same<_5::value_type, int>::value), "");
     static_assert((cuda::std::is_same<_5::type, _5>::value), "");
-#if TEST_STD_VER >= 11
     static_assert((_5() == 5), "");
-#endif
     assert(_5() == 5);
 
 

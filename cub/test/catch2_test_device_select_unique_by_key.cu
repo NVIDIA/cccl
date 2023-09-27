@@ -37,7 +37,6 @@
 
 // Has to go after all cub headers. Otherwise, this test won't catch unused
 // variables in cub kernels.
-#include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
 
@@ -96,7 +95,7 @@ CUB_TEST("DeviceSelect::UniqueByKey can run with empty input", "[device][select_
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 0;
+  constexpr int num_items = 0;
   thrust::device_vector<type> empty(num_items);
 
   // Needs to be device accessible

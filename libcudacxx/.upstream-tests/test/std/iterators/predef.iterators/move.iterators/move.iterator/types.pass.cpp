@@ -49,11 +49,7 @@ test()
     static_assert((cuda::std::is_same<typename R::difference_type, typename T::difference_type>::value), "");
     static_assert((cuda::std::is_same<typename R::pointer, It>::value), "");
     static_assert((cuda::std::is_same<typename R::value_type, typename T::value_type>::value), "");
-#if TEST_STD_VER >= 11
     static_assert((cuda::std::is_same<typename R::reference, typename R::value_type&&>::value), "");
-#else
-    static_assert((cuda::std::is_same<typename R::reference, typename T::reference>::value), "");
-#endif
     static_assert((cuda::std::is_same<typename R::iterator_category, typename T::iterator_category>::value), "");
 }
 
@@ -64,7 +60,6 @@ int main(int, char**)
     test<bidirectional_iterator<char*> >();
     test<random_access_iterator<char*> >();
     test<char*>();
-#if TEST_STD_VER >= 11
     {
         typedef DummyIt<int, int> T;
         typedef cuda::std::move_iterator<T> It;
@@ -92,7 +87,6 @@ int main(int, char**)
         typedef cuda::std::move_iterator<T> It;
         static_assert(cuda::std::is_same<It::reference, int&&>::value, "");
     }
-#endif
 
   return 0;
 }

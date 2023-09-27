@@ -23,13 +23,11 @@ struct TrackedValue {
         assert(t.state != State::DESTROYED  && "copying a destroyed object");
     }
 
-#if TEST_STD_VER >= 11
     TrackedValue(TrackedValue&& t) : state(State::CONSTRUCTED) {
         assert(t.state != State::MOVED_FROM && "double moving from an object");
         assert(t.state != State::DESTROYED  && "moving from a destroyed object");
         t.state = State::MOVED_FROM;
     }
-#endif
 
     TrackedValue& operator=(TrackedValue const& t) {
         assert(state != State::DESTROYED && "copy assigning into destroyed object");
@@ -39,7 +37,6 @@ struct TrackedValue {
         return *this;
     }
 
-#if TEST_STD_VER >= 11
     TrackedValue& operator=(TrackedValue&& t) {
         assert(state != State::DESTROYED && "move assigning into destroyed object");
         assert(t.state != State::MOVED_FROM && "double moving from an object");
@@ -48,7 +45,6 @@ struct TrackedValue {
         t.state = State::MOVED_FROM;
         return *this;
     }
-#endif
 
     ~TrackedValue() {
         assert(state != State::DESTROYED && "double-destroying an object");

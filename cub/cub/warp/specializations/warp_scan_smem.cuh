@@ -121,7 +121,7 @@ struct WarpScanSmem
         ScanOp                  scan_op,
         Int2Type<STEP>          /*step*/)
     {
-        const int OFFSET = 1 << STEP;
+        constexpr int OFFSET = 1 << STEP;
 
         // Share partial into buffer
         ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) partial);

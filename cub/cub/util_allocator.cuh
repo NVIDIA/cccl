@@ -102,15 +102,15 @@ struct CachingDeviceAllocator
     //---------------------------------------------------------------------
 
     /// Out-of-bounds bin
-    static const unsigned int INVALID_BIN = (unsigned int) -1;
+    static constexpr unsigned int INVALID_BIN = (unsigned int) -1;
 
     /// Invalid size
-    static const size_t INVALID_SIZE = (size_t) -1;
+    static constexpr size_t INVALID_SIZE = (size_t) -1;
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
 
     /// Invalid device ordinal
-    static const int INVALID_DEVICE_ORDINAL = -1;
+    static constexpr int INVALID_DEVICE_ORDINAL = -1;
 
     //---------------------------------------------------------------------
     // Type definitions and helper types
@@ -361,7 +361,12 @@ struct CachingDeviceAllocator
 
         if (device == INVALID_DEVICE_ORDINAL)
         {
-            if (CubDebug(error = cudaGetDevice(&entrypoint_device))) return error;
+            error = CubDebug(cudaGetDevice(&entrypoint_device));
+            if (cudaSuccess != error)
+            {
+                return error;
+            }
+
             device = entrypoint_device;
         }
 
@@ -447,12 +452,22 @@ struct CachingDeviceAllocator
             // Set runtime's current device to specified device (entrypoint may not be set)
             if (device != entrypoint_device)
             {
-                if (CubDebug(error = cudaGetDevice(&entrypoint_device))) return error;
-                if (CubDebug(error = cudaSetDevice(device))) return error;
+                error = CubDebug(cudaGetDevice(&entrypoint_device));
+                if (cudaSuccess != error) 
+                {
+                    return error;
+                }
+
+                error = CubDebug(cudaSetDevice(device));
+                if (cudaSuccess != error) 
+                {
+                    return error;
+                }
             }
 
             // Attempt to allocate
-            if (CubDebug(error = cudaMalloc(&search_key.d_ptr, search_key.bytes)) == cudaErrorMemoryAllocation)
+            error = CubDebug(cudaMalloc(&search_key.d_ptr, search_key.bytes));
+            if (error == cudaErrorMemoryAllocation)
             {
                 // The allocation attempt failed: free all cached blocks on device and retry
                 if (debug) _CubLog("\tDevice %d failed to allocate %lld bytes for stream %lld, retrying after freeing cached allocations",
@@ -475,8 +490,17 @@ struct CachingDeviceAllocator
                     // on the current device
 
                     // Free device memory and destroy stream event.
-                    if (CubDebug(error = cudaFree(block_itr->d_ptr))) break;
-                    if (CubDebug(error = cudaEventDestroy(block_itr->ready_event))) break;
+                    error = CubDebug(cudaFree(block_itr->d_ptr));
+                    if (cudaSuccess != error) 
+                    {
+                        break;
+                    }
+
+                    error = CubDebug(cudaEventDestroy(block_itr->ready_event));
+                    if (cudaSuccess != error) 
+                    {
+                        break;
+                    }
 
                     // Reduce balance and erase entry
                     cached_bytes[device].free -= block_itr->bytes;
@@ -494,12 +518,21 @@ struct CachingDeviceAllocator
                 if (error) return error;
 
                 // Try to allocate again
-                if (CubDebug(error = cudaMalloc(&search_key.d_ptr, search_key.bytes))) return error;
+                error = CubDebug(cudaMalloc(&search_key.d_ptr, search_key.bytes));
+                if (cudaSuccess != error) 
+                {
+                    return error;
+                }
             }
 
             // Create ready event
-            if (CubDebug(error = cudaEventCreateWithFlags(&search_key.ready_event, cudaEventDisableTiming)))
+            error =
+              CubDebug(cudaEventCreateWithFlags(&search_key.ready_event, cudaEventDisableTiming));
+
+            if (cudaSuccess != error)
+            {
                 return error;
+            }
 
             // Insert into live blocks
             mutex.lock();
@@ -513,7 +546,11 @@ struct CachingDeviceAllocator
             // Attempt to revert back to previous device if necessary
             if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device))
             {
-                if (CubDebug(error = cudaSetDevice(entrypoint_device))) return error;
+                error = CubDebug(cudaSetDevice(entrypoint_device));
+                if (cudaSuccess != error) 
+                {
+                    return error;
+                }
             }
         }
 
@@ -559,8 +596,11 @@ struct CachingDeviceAllocator
 
         if (device == INVALID_DEVICE_ORDINAL)
         {
-            if (CubDebug(error = cudaGetDevice(&entrypoint_device)))
+            error = CubDebug(cudaGetDevice(&entrypoint_device));
+            if (cudaSuccess != error)
+            {
                 return error;
+            }
             device = entrypoint_device;
         }
 
@@ -598,21 +638,43 @@ struct CachingDeviceAllocator
         // First set to specified device (entrypoint may not be set)
         if (device != entrypoint_device)
         {
-            if (CubDebug(error = cudaGetDevice(&entrypoint_device))) return error;
-            if (CubDebug(error = cudaSetDevice(device))) return error;
+            error = CubDebug(cudaGetDevice(&entrypoint_device));
+            if (cudaSuccess != error) 
+            {
+                return error;
+            }
+
+            error = CubDebug(cudaSetDevice(device));
+            if (cudaSuccess != error) 
+            {
+                return error;
+            }
         }
 
         if (recached)
         {
             // Insert the ready event in the associated stream (must have current device set properly)
-            if (CubDebug(error = cudaEventRecord(search_key.ready_event, search_key.associated_stream))) return error;
+            error = CubDebug(cudaEventRecord(search_key.ready_event, search_key.associated_stream));
+            if (cudaSuccess != error) 
+            {
+                return error;
+            }
         }
 
         if (!recached)
         {
             // Free the allocation from the runtime and cleanup the event.
-            if (CubDebug(error = cudaFree(d_ptr))) return error;
-            if (CubDebug(error = cudaEventDestroy(search_key.ready_event))) return error;
+            error = CubDebug(cudaFree(d_ptr));
+            if (cudaSuccess != error) 
+            {
+                return error;
+            }
+
+            error = CubDebug(cudaEventDestroy(search_key.ready_event));
+            if (cudaSuccess != error) 
+            {
+                return error;
+            }
 
             if (debug) _CubLog("\tDevice %d freed %lld bytes from associated stream %lld.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks (%lld bytes) outstanding.\n",
                 device, (long long) search_key.bytes, (long long) search_key.associated_stream, (long long) cached_blocks.size(), (long long) cached_bytes[device].free, (long long) live_blocks.size(), (long long) cached_bytes[device].live);
@@ -621,7 +683,11 @@ struct CachingDeviceAllocator
         // Reset device
         if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device))
         {
-            if (CubDebug(error = cudaSetDevice(entrypoint_device))) return error;
+            error = CubDebug(cudaSetDevice(entrypoint_device));
+            if (cudaSuccess != error) 
+            {
+                return error;
+            }
         }
 
         return error;
@@ -661,19 +727,36 @@ struct CachingDeviceAllocator
             // Get entry-point device ordinal if necessary
             if (entrypoint_device == INVALID_DEVICE_ORDINAL)
             {
-                if (CubDebug(error = cudaGetDevice(&entrypoint_device))) break;
+                error = CubDebug(cudaGetDevice(&entrypoint_device));
+                if (cudaSuccess != error) 
+                {
+                    break;
+                }
             }
 
             // Set current device ordinal if necessary
             if (begin->device != current_device)
             {
-                if (CubDebug(error = cudaSetDevice(begin->device))) break;
+                error = CubDebug(cudaSetDevice(begin->device));
+                if (cudaSuccess != error) 
+                {
+                    break;
+                }
                 current_device = begin->device;
             }
 
             // Free device memory
-            if (CubDebug(error = cudaFree(begin->d_ptr))) break;
-            if (CubDebug(error = cudaEventDestroy(begin->ready_event))) break;
+            error = CubDebug(cudaFree(begin->d_ptr));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
+
+            error = CubDebug(cudaEventDestroy(begin->ready_event));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
 
             // Reduce balance and erase entry
             const size_t block_bytes = begin->bytes;
@@ -690,7 +773,11 @@ struct CachingDeviceAllocator
         // Attempt to revert back to entry-point device if necessary
         if (entrypoint_device != INVALID_DEVICE_ORDINAL)
         {
-            if (CubDebug(error = cudaSetDevice(entrypoint_device))) return error;
+            error = CubDebug(cudaSetDevice(entrypoint_device));
+            if (cudaSuccess != error)
+            {
+                return error;
+            }
         }
 
         return error;

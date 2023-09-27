@@ -65,7 +65,7 @@ The syntax of the build and test scripts is the same:
 ./ci/test_thrust.sh <host compiler> <c++ standard> <gpu architectures>
 
 #examples
-./ci/build_thrust.sh g++ c++17 70;80;86
+./ci/build_thrust.sh g++ 17 "70;80;86"
 ```
 
 In summary, the heart of our build and test jobs is the corresponding build or test script. 

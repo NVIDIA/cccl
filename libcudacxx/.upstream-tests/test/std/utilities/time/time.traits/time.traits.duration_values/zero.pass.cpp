@@ -20,10 +20,8 @@ int main(int, char**)
 {
     assert(cuda::std::chrono::duration_values<int>::zero() == 0);
     assert(cuda::std::chrono::duration_values<Rep>::zero() == 0);
-#if TEST_STD_VER >= 11
     static_assert(cuda::std::chrono::duration_values<int>::zero() == 0, "");
     static_assert(cuda::std::chrono::duration_values<Rep>::zero() == 0, "");
-#endif
 
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::zero());
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::zero());

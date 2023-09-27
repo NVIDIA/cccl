@@ -95,16 +95,17 @@ struct accumulator_pack_base_t<OffsetT, typename cuda::std::enable_if<sizeof(Off
 template <class OffsetT>
 struct accumulator_pack_t : accumulator_pack_base_t<OffsetT>
 {
-  using typename accumulator_pack_base_t<OffsetT>::pack_t;
+  using base = accumulator_pack_base_t<OffsetT>;
+  using typename base::pack_t;
 
   __device__ static void subtract(pack_t &packed, OffsetT val)
   {
-    packed = pack(first(packed) - val, second(packed) - val);
+    packed =  base::pack( base::first(packed) - val,  base::second(packed) - val);
   }
 
   __device__ static OffsetT sum(pack_t &packed)
   {
-    return first(packed) + second(packed);
+    return  base::first(packed) +  base::second(packed);
   }
 
   __device__ static pack_t zero()
@@ -125,13 +126,13 @@ template <int _BLOCK_THREADS,
           class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentThreeWayPartitionPolicy
 {
-  constexpr static int BLOCK_THREADS                 = _BLOCK_THREADS;
-  constexpr static int ITEMS_PER_THREAD              = _ITEMS_PER_THREAD;
-  constexpr static BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-  constexpr static CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
-  constexpr static BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+  static constexpr int BLOCK_THREADS                 = _BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD              = _ITEMS_PER_THREAD;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+  static constexpr CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
 
-  struct detail 
+  struct detail
   {
     using delay_constructor_t = DelayConstructorT;
   };
@@ -171,9 +172,9 @@ struct AgentThreeWayPartition
   using ScanTileStateT = cub::ScanTileState<AccumPackT>;
 
   // Constants
-  constexpr static int BLOCK_THREADS = PolicyT::BLOCK_THREADS;
-  constexpr static int ITEMS_PER_THREAD = PolicyT::ITEMS_PER_THREAD;
-  constexpr static int TILE_ITEMS = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS = PolicyT::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = PolicyT::ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   using WrappedInputIteratorT = cub::detail::conditional_t<
     std::is_pointer<InputIteratorT>::value,

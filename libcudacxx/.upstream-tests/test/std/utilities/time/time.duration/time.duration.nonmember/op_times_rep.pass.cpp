@@ -34,7 +34,6 @@ int main(int, char**)
     ns = 6 * ns;
     assert(ns.count() == 90);
     }
-#if TEST_STD_VER >= 11
     {
     constexpr cuda::std::chrono::nanoseconds ns(3);
     constexpr cuda::std::chrono::nanoseconds ns2 = ns * 5;
@@ -42,7 +41,6 @@ int main(int, char**)
     constexpr cuda::std::chrono::nanoseconds ns3 = 6 * ns;
     static_assert(ns3.count() == 18, "");
     }
-#endif
 
   return 0;
 }

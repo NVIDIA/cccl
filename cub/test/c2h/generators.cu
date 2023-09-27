@@ -414,8 +414,25 @@ template void init_key_segments(const thrust::device_vector<std::uint32_t> &segm
                                 std::int32_t *out,
                                 std::size_t element_size);
 template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+                                std::uint8_t *out,
+                                std::size_t element_size);
+template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+                                float *out,
+                                std::size_t element_size);
+template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
                                 custom_type_state_t *out,
                                 std::size_t element_size);
+#ifdef TEST_HALF_T
+template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+                                half_t *out,
+                                std::size_t element_size);
+#endif
+
+#ifdef TEST_BF_T
+template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+                                bfloat16_t *out,
+                                std::size_t element_size);
+#endif
 } // namespace detail
 
 template <typename T>
@@ -435,10 +452,19 @@ gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_seg
   return segment_offsets;
 }
 
+template thrust::device_vector<int32_t> gen_uniform_offsets(seed_t seed,
+                                                             int32_t total_elements,
+                                                             int32_t min_segment_size,
+                                                             int32_t max_segment_size);
+
 template thrust::device_vector<uint32_t> gen_uniform_offsets(seed_t seed,
                                                              uint32_t total_elements,
                                                              uint32_t min_segment_size,
                                                              uint32_t max_segment_size);
+template thrust::device_vector<int64_t> gen_uniform_offsets(seed_t seed,
+                                                             int64_t total_elements,
+                                                             int64_t min_segment_size,
+                                                             int64_t max_segment_size);
 template thrust::device_vector<uint64_t> gen_uniform_offsets(seed_t seed,
                                                              uint64_t total_elements,
                                                              uint64_t min_segment_size,

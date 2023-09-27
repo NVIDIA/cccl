@@ -38,7 +38,6 @@
 // variables in cub kernels.
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
 
@@ -79,14 +78,17 @@ type_pair<custom_t>
 // clang-format on
 #endif
 
+using offsets = c2h::type_list<std::int32_t, std::uint32_t>;
+
 CUB_TEST("Device reduce works with all device interfaces",
          "[segmented][reduce][device]",
-         full_type_list)
+         full_type_list,
+         offsets)
 {
-  using params   = params_t<TestType>;
-  using item_t   = typename params::item_t;
-  using output_t = typename params::output_t;
-  using offset_t = uint32_t;
+  using type_pair_t = typename c2h::get<0, TestType>;
+  using input_t      = typename type_pair_t::input_t;
+  using output_t    = typename type_pair_t::output_t;
+  using offset_t    = typename c2h::get<1, TestType>;
 
   constexpr int min_items = 1;
   constexpr int max_items = 1000000;
@@ -116,7 +118,7 @@ CUB_TEST("Device reduce works with all device interfaces",
   auto d_offsets_it           = thrust::raw_pointer_cast(segment_offsets.data());
 
   // Generate input data
-  thrust::device_vector<item_t> in_items(num_items);
+  thrust::device_vector<input_t> in_items(num_items);
   c2h::gen(CUB_SEED(2), in_items);
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
@@ -128,7 +130,7 @@ CUB_TEST("Device reduce works with all device interfaces",
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
+    using accum_t = cub::detail::accumulator_t<op_t, output_t, input_t>;
     thrust::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(in_items,
                                         segment_offsets,
@@ -158,7 +160,7 @@ CUB_TEST("Device reduce works with all device interfaces",
   SECTION("sum")
   {
     using op_t    = cub::Sum;
-    using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
+    using accum_t = cub::detail::accumulator_t<op_t, output_t, input_t>;
 
     // Prepare verification data
     thrust::host_vector<output_t> expected_result(num_segments);
@@ -187,7 +189,7 @@ CUB_TEST("Device reduce works with all device interfaces",
     compute_segmented_problem_reference(in_items,
                                         segment_offsets,
                                         op_t{},
-                                        cub::NumericTraits<item_t>::Max(),
+                                        cub::NumericTraits<input_t>::Max(),
                                         expected_result.begin());
 
     // Run test
@@ -212,7 +214,7 @@ CUB_TEST("Device reduce works with all device interfaces",
     compute_segmented_problem_reference(in_items,
                                         segment_offsets,
                                         op_t{},
-                                        cub::NumericTraits<item_t>::Lowest(),
+                                        cub::NumericTraits<input_t>::Lowest(),
                                         expected_result.begin());
 
     // Run test
@@ -237,7 +239,6 @@ CUB_TEST("Device reduce works with all device interfaces",
     compute_segmented_argmax_reference(in_items, segment_offsets, expected_result.begin());
 
     // Run test
-    using result_t = cub::KeyValuePair<int, output_t>;
     thrust::device_vector<result_t> out_result(num_segments);
     device_segmented_arg_max(d_in_it,
                              thrust::raw_pointer_cast(out_result.data()),
@@ -254,7 +255,7 @@ CUB_TEST("Device reduce works with all device interfaces",
     using result_t = cub::KeyValuePair<int, output_t>;
 
     // Prepare verification data
-    thrust::host_vector<item_t> host_items(in_items);
+    thrust::host_vector<input_t> host_items(in_items);
     thrust::host_vector<result_t> expected_result(num_segments);
     compute_segmented_argmin_reference(in_items, segment_offsets, expected_result.begin());
 

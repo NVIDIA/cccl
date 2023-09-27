@@ -86,6 +86,8 @@ echo "NVCC_VERSION=$NVCC_VERSION"
 echo "CMAKE_BUILD_PARALLEL_LEVEL=$CMAKE_BUILD_PARALLEL_LEVEL"
 echo "CTEST_PARALLEL_LEVEL=$CTEST_PARALLEL_LEVEL"
 echo "CCCL_BUILD_INFIX=$CCCL_BUILD_INFIX"
+echo "Current commit is:"
+git log -1
 echo "========================================"
 
 function configure_preset()

@@ -103,10 +103,8 @@ int main(int, char**)
   test_is_not_function<Abstract*>();
   test_is_not_function<incomplete_type>();
 
-#if TEST_STD_VER >= 11
   test_is_function<void() noexcept>();
   test_is_function<void() const && noexcept>();
-#endif
 
   return 0;
 }

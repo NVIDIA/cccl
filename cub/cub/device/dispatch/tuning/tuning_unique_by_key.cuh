@@ -32,6 +32,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/config.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
@@ -700,7 +701,7 @@ struct DeviceUniqueByKeyPolicy
   // SM350
   struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
   {
-    const static int INPUT_SIZE = sizeof(KeyT);
+    static constexpr int INPUT_SIZE = sizeof(KeyT);
     enum
     {
       NOMINAL_4B_ITEMS_PER_THREAD = 9,
@@ -717,7 +718,7 @@ struct DeviceUniqueByKeyPolicy
 
   struct DefaultTuning 
   {
-    const static int INPUT_SIZE = sizeof(KeyT);
+    static constexpr int INPUT_SIZE = sizeof(KeyT);
     enum
     {
       NOMINAL_4B_ITEMS_PER_THREAD = 11,

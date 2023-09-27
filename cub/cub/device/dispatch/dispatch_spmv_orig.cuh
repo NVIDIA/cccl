@@ -64,37 +64,33 @@ CUB_NAMESPACE_BEGIN
 /**
  * Spmv search kernel. Identifies merge path starting coordinates for each tile.
  */
-template <
-    typename    AgentSpmvPolicyT,           ///< Parameterized SpmvPolicy tuning policy type
-    typename    ValueT,                     ///< Matrix and vector value type
-    typename    OffsetT>                    ///< Signed integer type for sequence offsets
-__global__ void DeviceSpmv1ColKernel(
-    SpmvParams<ValueT, OffsetT> spmv_params)                ///< [in] SpMV input parameter bundle
+template <typename AgentSpmvPolicyT, ///< Parameterized SpmvPolicy tuning policy type
+          typename ValueT,           ///< Matrix and vector value type
+          typename OffsetT>          ///< Signed integer type for sequence offsets
+CUB_DETAIL_KERNEL_ATTRIBUTES void
+DeviceSpmv1ColKernel(SpmvParams<ValueT, OffsetT> spmv_params) ///< [in] SpMV input parameter bundle
 {
-    typedef CacheModifiedInputIterator<
-            AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER,
-            ValueT,
-            OffsetT>
-        VectorValueIteratorT;
+  typedef CacheModifiedInputIterator<AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER, ValueT, OffsetT>
+    VectorValueIteratorT;
 
-    VectorValueIteratorT wrapped_vector_x(spmv_params.d_vector_x);
+  VectorValueIteratorT wrapped_vector_x(spmv_params.d_vector_x);
 
-    int row_idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-    if (row_idx < spmv_params.num_rows)
+  int row_idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+  if (row_idx < spmv_params.num_rows)
+  {
+    OffsetT end_nonzero_idx = spmv_params.d_row_end_offsets[row_idx];
+    OffsetT nonzero_idx     = spmv_params.d_row_end_offsets[row_idx - 1];
+
+    ValueT value = 0.0;
+    if (end_nonzero_idx != nonzero_idx)
     {
-        OffsetT     end_nonzero_idx = spmv_params.d_row_end_offsets[row_idx];
-        OffsetT     nonzero_idx = spmv_params.d_row_end_offsets[row_idx - 1];
-
-        ValueT value = 0.0;
-        if (end_nonzero_idx != nonzero_idx)
-        {
-            value = spmv_params.d_values[nonzero_idx] * wrapped_vector_x[spmv_params.d_column_indices[nonzero_idx]];
-        }
-
-        spmv_params.d_vector_y[row_idx] = value;
+      value = spmv_params.d_values[nonzero_idx] *
+              wrapped_vector_x[spmv_params.d_column_indices[nonzero_idx]];
     }
-}
 
+    spmv_params.d_vector_y[row_idx] = value;
+  }
+}
 
 /**
  * Spmv search kernel. Identifies merge path starting coordinates for each tile.
@@ -104,7 +100,7 @@ template <
     typename    OffsetT,                        ///< Signed integer type for sequence offsets
     typename    CoordinateT,                    ///< Merge path coordinate type
     typename    SpmvParamsT>                    ///< SpmvParams type
-__global__ void DeviceSpmvSearchKernel(
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvSearchKernel(
     int             num_merge_tiles,            ///< [in] Number of SpMV merge tiles (spmv grid size)
     CoordinateT*    d_tile_coordinates,         ///< [out] Pointer to the temporary array of tile starting coordinates
     SpmvParamsT     spmv_params)                ///< [in] SpMV input parameter bundle
@@ -158,7 +154,7 @@ template <
     bool            HAS_ALPHA,                  ///< Whether the input parameter Alpha is 1
     bool            HAS_BETA>                   ///< Whether the input parameter Beta is 0
 __launch_bounds__ (int(SpmvPolicyT::BLOCK_THREADS))
-__global__ void DeviceSpmvKernel(
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvKernel(
     SpmvParams<ValueT, OffsetT>     spmv_params,                ///< [in] SpMV input parameter bundle
     CoordinateT*                    d_tile_coordinates,         ///< [in] Pointer to the temporary array of tile starting coordinates
     KeyValuePair<OffsetT,ValueT>*   d_tile_carry_pairs,         ///< [out] Pointer to the temporary array carry-out dot product row-ids, one per block
@@ -191,7 +187,8 @@ __global__ void DeviceSpmvKernel(
 template <typename ValueT,  ///< Matrix and vector value type
           typename OffsetT, ///< Signed integer type for sequence offsets
           bool HAS_BETA>    ///< Whether the input parameter Beta is 0
-__global__ void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_params)
+CUB_DETAIL_KERNEL_ATTRIBUTES void
+DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_params)
 {
     const int row = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
 
@@ -218,7 +215,7 @@ template <
     typename    OffsetT,                        ///< Signed integer type for global offsets
     typename    ScanTileStateT>                 ///< Tile status interface type
 __launch_bounds__ (int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
-__global__ void DeviceSegmentFixupKernel(
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentFixupKernel(
     PairsInputIteratorT         d_pairs_in,         ///< [in] Pointer to the array carry-out dot product row-ids, one per spmv block
     AggregatesOutputIteratorT   d_aggregates_out,   ///< [in,out] Output value aggregates
     OffsetT                     num_items,          ///< [in] Total number of items to select from
@@ -533,7 +530,7 @@ struct DispatchSpmv
                     break;
                 }
 
-                const int threads_in_block = EMPTY_MATRIX_KERNEL_THREADS;
+                constexpr int threads_in_block = EMPTY_MATRIX_KERNEL_THREADS;
                 const int blocks_in_grid = cub::DivideAndRoundUp(spmv_params.num_rows,
                                                                  threads_in_block);
 

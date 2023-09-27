@@ -131,7 +131,8 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename OffsetT,
           typename AccumT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_THREADS)) __global__
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES
   void DeviceReduceByKeyKernel(KeysInputIteratorT d_keys_in,
                                UniqueOutputIteratorT d_unique_out,
                                ValuesInputIteratorT d_values_in,
@@ -287,15 +288,16 @@ struct DispatchReduceByKey
                                                           ReduceByKeyKernelT reduce_by_key_kernel)
   {
     using AgentReduceByKeyPolicyT = typename ActivePolicyT::ReduceByKeyPolicyT;
-    const int block_threads = AgentReduceByKeyPolicyT::BLOCK_THREADS;
-    const int items_per_thread = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
+    constexpr int block_threads = AgentReduceByKeyPolicyT::BLOCK_THREADS;
+    constexpr int items_per_thread = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
 
     cudaError error = cudaSuccess;
     do
     {
       // Get device ordinal
       int device_ordinal;
-      if (CubDebug(error = cudaGetDevice(&device_ordinal)))
+      error = CubDebug(cudaGetDevice(&device_ordinal));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -306,7 +308,8 @@ struct DispatchReduceByKey
 
       // Specify temporary storage allocation requirements
       size_t allocation_sizes[1];
-      if (CubDebug(error = ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0])))
+      error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
+      if (cudaSuccess != error)
       {
         break; // bytes needed for tile status descriptors
       }
@@ -314,9 +317,10 @@ struct DispatchReduceByKey
       // Compute allocation pointers into the single storage blob (or compute
       // the necessary size of the blob)
       void *allocations[1] = {};
-      if (CubDebug(
-            error =
-              AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+
+      error = CubDebug(
+        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -330,7 +334,8 @@ struct DispatchReduceByKey
 
       // Construct the tile status interface
       ScanTileStateT tile_state;
-      if (CubDebug(error = tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
+      error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0]));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -353,14 +358,15 @@ struct DispatchReduceByKey
         .doit(init_kernel, tile_state, num_tiles, d_num_runs_out);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -373,17 +379,18 @@ struct DispatchReduceByKey
 
       // Get SM occupancy for reduce_by_key_kernel
       int reduce_by_key_sm_occupancy;
-      if (CubDebug(error = MaxSmOccupancy(reduce_by_key_sm_occupancy,
-                                          reduce_by_key_kernel,
-                                          block_threads)))
+      error =
+        CubDebug(MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, block_threads));
+
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Get max x-dimension of grid
       int max_dim_x;
-      if (CubDebug(
-            error = cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
+      error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -422,14 +429,15 @@ struct DispatchReduceByKey
                 num_items);
 
         // Check for failure to launch
-        if (CubDebug(error = cudaPeekAtLastError()))
+        error = CubDebug(cudaPeekAtLastError());
+        if (cudaSuccess != error)
         {
           break;
         }
 
         // Sync the stream if specified to flush runtime errors
-        error = detail::DebugSyncStream(stream);
-        if (CubDebug(error))
+        error = CubDebug(detail::DebugSyncStream(stream));
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -517,7 +525,8 @@ struct DispatchReduceByKey
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -535,7 +544,8 @@ struct DispatchReduceByKey
                                    stream);
 
       // Dispatch
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }

@@ -29,6 +29,9 @@ function(thrust_build_compiler_targets)
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     append_option_if_available("/W4" cxx_compile_options)
 
+    # sccache cannot handle the -Fd option generationg pdb files
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+
     # Treat all warnings as errors. This is only supported on Release builds,
     # as `nv_exec_check_disable` doesn't seem to work with MSVC debug iterators
     # and spurious warnings are emitted.
@@ -139,6 +142,14 @@ function(thrust_build_compiler_targets)
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcudafe=--display_error_number>
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Wno-deprecated-gpu-targets>
   )
+
+  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    # Use the local env instead of rebuilding it all the time
+    target_compile_options(thrust.compiler_interface INTERFACE
+      # If using CUDA w/ NVCC...
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--use-local-env>
+    )
+  endif()
 
   # This is kept separate for Github issue #1174.
   add_library(thrust.promote_cudafe_warnings INTERFACE)

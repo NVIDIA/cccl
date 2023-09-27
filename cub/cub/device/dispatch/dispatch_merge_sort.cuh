@@ -38,7 +38,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-
 template <bool UseVShmem,
           typename ChainedPolicyT,
           typename KeyInputIteratorT,
@@ -49,17 +48,17 @@ template <bool UseVShmem,
           typename CompareOpT,
           typename KeyT,
           typename ValueT>
-void __global__ __launch_bounds__(ChainedPolicyT::ActivePolicy::MergeSortPolicy::BLOCK_THREADS)
-DeviceMergeSortBlockSortKernel(bool ping,
-                               KeyInputIteratorT keys_in,
-                               ValueInputIteratorT items_in,
-                               KeyIteratorT keys_out,
-                               ValueIteratorT items_out,
-                               OffsetT keys_count,
-                               KeyT *tmp_keys_out,
-                               ValueT *tmp_items_out,
-                               CompareOpT compare_op,
-                               char *vshmem)
+__launch_bounds__(ChainedPolicyT::ActivePolicy::MergeSortPolicy::BLOCK_THREADS)
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(bool ping,
+                                                                   KeyInputIteratorT keys_in,
+                                                                   ValueInputIteratorT items_in,
+                                                                   KeyIteratorT keys_out,
+                                                                   ValueIteratorT items_out,
+                                                                   OffsetT keys_count,
+                                                                   KeyT *tmp_keys_out,
+                                                                   ValueT *tmp_items_out,
+                                                                   CompareOpT compare_op,
+                                                                   char *vshmem)
 {
   extern __shared__ char shmem[];
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy::MergeSortPolicy;
@@ -95,19 +94,16 @@ DeviceMergeSortBlockSortKernel(bool ping,
   agent.Process();
 }
 
-template <typename KeyIteratorT,
-          typename OffsetT,
-          typename CompareOpT,
-          typename KeyT>
-__global__ void DeviceMergeSortPartitionKernel(bool ping,
-                                               KeyIteratorT keys_ping,
-                                               KeyT *keys_pong,
-                                               OffsetT keys_count,
-                                               OffsetT num_partitions,
-                                               OffsetT *merge_partitions,
-                                               CompareOpT compare_op,
-                                               OffsetT target_merged_tiles_number,
-                                               int items_per_tile)
+template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(bool ping,
+                                                                 KeyIteratorT keys_ping,
+                                                                 KeyT *keys_pong,
+                                                                 OffsetT keys_count,
+                                                                 OffsetT num_partitions,
+                                                                 OffsetT *merge_partitions,
+                                                                 CompareOpT compare_op,
+                                                                 OffsetT target_merged_tiles_number,
+                                                                 int items_per_tile)
 {
   OffsetT partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -136,17 +132,17 @@ template <bool UseVShmem,
           typename CompareOpT,
           typename KeyT,
           typename ValueT>
-void __global__ __launch_bounds__(ChainedPolicyT::ActivePolicy::MergeSortPolicy::BLOCK_THREADS)
-DeviceMergeSortMergeKernel(bool ping,
-                           KeyIteratorT keys_ping,
-                           ValueIteratorT items_ping,
-                           OffsetT keys_count,
-                           KeyT *keys_pong,
-                           ValueT *items_pong,
-                           CompareOpT compare_op,
-                           OffsetT *merge_partitions,
-                           OffsetT target_merged_tiles_number,
-                           char *vshmem)
+__launch_bounds__(ChainedPolicyT::ActivePolicy::MergeSortPolicy::BLOCK_THREADS)
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(bool ping,
+                                                               KeyIteratorT keys_ping,
+                                                               ValueIteratorT items_ping,
+                                                               OffsetT keys_count,
+                                                               KeyT *keys_pong,
+                                                               ValueT *items_pong,
+                                                               CompareOpT compare_op,
+                                                               OffsetT *merge_partitions,
+                                                               OffsetT target_merged_tiles_number,
+                                                               char *vshmem)
 {
   extern __shared__ char shmem[];
 
@@ -570,13 +566,14 @@ struct DispatchMergeSort : SelectedPolicy
     {
       // Get device ordinal
       int device_ordinal = 0;
-      if (CubDebug(error = cudaGetDevice(&device_ordinal)))
+      error = CubDebug(cudaGetDevice(&device_ordinal));
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Get shared memory size
-      const auto tile_size = MergePolicyT::ITEMS_PER_TILE;
+      constexpr auto tile_size = MergePolicyT::ITEMS_PER_TILE;
       const auto num_tiles = cub::DivideAndRoundUp(num_items, tile_size);
 
       /**
@@ -630,10 +627,11 @@ struct DispatchMergeSort : SelectedPolicy
       if (runtime_shmem_size_check_is_required)
       {
         int max_shmem = 0;
-        if (CubDebug(
-              error = cudaDeviceGetAttribute(&max_shmem,
-                                             cudaDevAttrMaxSharedMemoryPerBlock,
-                                             device_ordinal)))
+
+        error = CubDebug(
+          cudaDeviceGetAttribute(&max_shmem, cudaDevAttrMaxSharedMemoryPerBlock, device_ordinal));
+
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -656,10 +654,9 @@ struct DispatchMergeSort : SelectedPolicy
                                          temporary_values_storage_size,
                                          virtual_shared_memory_size};
 
-      if (CubDebug(error = AliasTemporaries(d_temp_storage,
-                                            temp_storage_bytes,
-                                            allocations,
-                                            allocation_sizes)))
+      error = CubDebug(
+        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -726,20 +723,21 @@ struct DispatchMergeSort : SelectedPolicy
 
       block_sort_launcher.launch();
 
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       const OffsetT num_partitions = num_tiles + 1;
-      const int threads_per_partition_block = 256;
+      constexpr int threads_per_partition_block = 256;
 
       const int partition_grid_size = static_cast<int>(
         cub::DivideAndRoundUp(num_partitions, threads_per_partition_block));
@@ -789,14 +787,15 @@ struct DispatchMergeSort : SelectedPolicy
                 target_merged_tiles_number,
                 tile_size);
 
-        error = detail::DebugSyncStream(stream);
-        if (CubDebug(error))
+        error = CubDebug(detail::DebugSyncStream(stream));
+        if (cudaSuccess != error)
         {
           break;
         }
 
         // Check for failure to launch
-        if (CubDebug(error = cudaPeekAtLastError()))
+        error = CubDebug(cudaPeekAtLastError());
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -804,14 +803,15 @@ struct DispatchMergeSort : SelectedPolicy
         // Merge
         merge_launcher.launch(ping, target_merged_tiles_number);
 
-        error = detail::DebugSyncStream(stream);
-        if (CubDebug(error))
+        error = CubDebug(detail::DebugSyncStream(stream));
+        if (cudaSuccess != error)
         {
           break;
         }
 
         // Check for failure to launch
-        if (CubDebug(error = cudaPeekAtLastError()))
+        error = CubDebug(cudaPeekAtLastError());
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -840,7 +840,10 @@ struct DispatchMergeSort : SelectedPolicy
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+
+      error = CubDebug(PtxVersion(ptx_version));
+
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -858,7 +861,8 @@ struct DispatchMergeSort : SelectedPolicy
                                  ptx_version);
 
       // Dispatch to chained policy
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }

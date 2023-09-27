@@ -97,9 +97,7 @@ template <class T>
 __host__ __device__
 void test_no_result()
 {
-#if TEST_STD_VER >= 11
     static_assert((!HasType<cuda::std::result_of<T> >::value), "");
-#endif
 #if TEST_STD_VER > 11
     test_invoke_no_result<T>::call();
 #endif
@@ -419,10 +417,8 @@ int main(int, char**)
 #if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
     test_result_of<PMD(cuda::std::unique_ptr<S>), char &>();
     test_result_of<PMD(cuda::std::unique_ptr<S const>), const char&>();
-#if TEST_STD_VER >= 11
     test_result_of<PMD(cuda::std::reference_wrapper<S>), char&>();
     test_result_of<PMD(cuda::std::reference_wrapper<S const>), const char&>();
-#endif
 #endif
     test_no_result<PMD(ND&)>();
     }

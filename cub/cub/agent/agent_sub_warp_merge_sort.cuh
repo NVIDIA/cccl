@@ -68,10 +68,10 @@ struct AgentSmallAndMediumSegmentedSortPolicy
   using SmallPolicyT                 = SmallPolicy;
   using MediumPolicyT                = MediumPolicy;
 
-  constexpr static int SEGMENTS_PER_MEDIUM_BLOCK = BLOCK_THREADS /
+  static constexpr int SEGMENTS_PER_MEDIUM_BLOCK = BLOCK_THREADS /
                                                    MediumPolicyT::WARP_THREADS;
 
-  constexpr static int SEGMENTS_PER_SMALL_BLOCK = BLOCK_THREADS /
+  static constexpr int SEGMENTS_PER_SMALL_BLOCK = BLOCK_THREADS /
                                                   SmallPolicyT::WARP_THREADS;
 };
 

@@ -60,7 +60,7 @@ template <
     typename EqualityOpT,                           ///< Equality operator type
     typename OffsetT>                               ///< Signed integer type for global offsets
 __launch_bounds__ (int(ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT::BLOCK_THREADS))
-__global__ void DeviceUniqueByKeySweepKernel(
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
     KeyInputIteratorT       d_keys_in,              ///< [in] Pointer to the input sequence of keys
     ValueInputIteratorT     d_values_in,            ///< [in] Pointer to the input sequence of values
     KeyOutputIteratorT      d_keys_out,             ///< [out] Pointer to the output sequence of selected data items
@@ -216,7 +216,11 @@ struct DispatchUniqueByKey : SelectedPolicy
         {
             // Get device ordinal
             int device_ordinal;
-            if (CubDebug(error = cudaGetDevice(&device_ordinal))) break;
+            error = CubDebug(cudaGetDevice(&device_ordinal));
+            if (cudaSuccess != error)
+            {
+              break;
+            }
 
             // Number of input tiles
             int tile_size = Policy::BLOCK_THREADS * Policy::ITEMS_PER_THREAD;
@@ -224,10 +228,11 @@ struct DispatchUniqueByKey : SelectedPolicy
 
             // Size of virtual shared memory
             int max_shmem = 0;
-            if (CubDebug(
-                error = cudaDeviceGetAttribute(&max_shmem,
-                                               cudaDevAttrMaxSharedMemoryPerBlock,
-                                               device_ordinal)))
+
+            error = CubDebug(cudaDeviceGetAttribute(&max_shmem,
+                                                    cudaDevAttrMaxSharedMemoryPerBlock,
+                                                    device_ordinal));
+            if (cudaSuccess != error)
             {
                 break;
             }
@@ -235,11 +240,24 @@ struct DispatchUniqueByKey : SelectedPolicy
 
             // Specify temporary storage allocation requirements
             size_t allocation_sizes[2] = {0, vshmem_size};
-            if (CubDebug(error = ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]))) break;    // bytes needed for tile status descriptors
+
+            // Bytes needed for tile status descriptors
+            error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
+            if (cudaSuccess != error)
+            {
+                break;
+            }
 
             // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
             void *allocations[2] = {NULL, NULL};
-            if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))) break;
+
+            error = CubDebug(
+              AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
+
             if (d_temp_storage == NULL)
             {
                 // Return if the caller is simply requesting the size of the storage allocation
@@ -248,7 +266,11 @@ struct DispatchUniqueByKey : SelectedPolicy
 
             // Construct the tile status interface
             ScanTileStateT tile_state;
-            if (CubDebug(error = tile_state.Init(num_tiles, allocations[0], allocation_sizes[0]))) break;
+            error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0]));
+            if (cudaSuccess != error)
+            {
+                break;
+            }
 
             // Log init_kernel configuration
             num_tiles = CUB_MAX(1, num_tiles);
@@ -264,11 +286,15 @@ struct DispatchUniqueByKey : SelectedPolicy
             ).doit(init_kernel, tile_state, num_tiles, d_num_selected_out);
 
             // Check for failure to launch
-            if (CubDebug(error = cudaPeekAtLastError())) break;
+            error = CubDebug(cudaPeekAtLastError());
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
 
             // Sync the stream if specified to flush runtime errors
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -278,7 +304,12 @@ struct DispatchUniqueByKey : SelectedPolicy
 
             // Get max x-dimension of grid
             int max_dim_x;
-            if (CubDebug(error = cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal))) break;
+            error =
+              CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
 
             // Get grid size for scanning tiles
             dim3 scan_grid_size;
@@ -291,9 +322,10 @@ struct DispatchUniqueByKey : SelectedPolicy
             {
               // Get SM occupancy for unique_by_key_kernel
               int scan_sm_occupancy;
-              if (CubDebug(error = MaxSmOccupancy(scan_sm_occupancy, // out
-                                                  scan_kernel,
-                                                  Policy::BLOCK_THREADS)))
+              error = CubDebug(MaxSmOccupancy(scan_sm_occupancy, // out
+                                              scan_kernel,
+                                              Policy::BLOCK_THREADS));
+              if (cudaSuccess != error)
               {
                 break;
               }
@@ -325,14 +357,15 @@ struct DispatchUniqueByKey : SelectedPolicy
                    num_tiles);
 
             // Check for failure to launch
-            if (CubDebug(error))
+            error = CubDebug(error);
+            if (cudaSuccess != error)
             {
               break;
             }
 
             // Sync the stream if specified to flush runtime errors
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -388,7 +421,11 @@ struct DispatchUniqueByKey : SelectedPolicy
         {
             // Get PTX version
             int ptx_version = 0;
-            if (CubDebug(error = PtxVersion(ptx_version))) break;
+            error = CubDebug(PtxVersion(ptx_version));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
 
             // Create dispatch functor
             DispatchUniqueByKey dispatch(
@@ -404,7 +441,11 @@ struct DispatchUniqueByKey : SelectedPolicy
                 stream);
 
             // Dispatch to chained policy
-            if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch))) break;
+            error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+            if (cudaSuccess != error) 
+            {
+                break;
+            }
         }
         while (0);
 

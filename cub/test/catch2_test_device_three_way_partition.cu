@@ -39,7 +39,6 @@
 
 // Has to go after all cub headers. Otherwise, this test won't catch unused
 // variables in cub kernels.
-#include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
 #include "cub/util_type.cuh"
@@ -100,7 +99,7 @@ CUB_TEST("Device three-way partition can handle empty problems", "[partition][de
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 0;
+  constexpr int num_items = 0;
 
   type *in{};
   type *d_first_part_out{};

@@ -59,7 +59,7 @@ namespace detail
      constexpr __host__ __device__ operator value_type() const noexcept { return value; }
      constexpr __host__ __device__ value_type operator()() const noexcept { return value; }
    };
- 
+
  /// typedef for true_type
  typedef integral_constant<bool, true>  true_type;
 
@@ -136,12 +136,12 @@ template<typename T> struct is_pod
  {};
 
 
-template <typename T> 
+template <typename T>
 struct has_trivial_constructor
-  : public integral_constant<bool, is_pod<T>::value || ::cuda::std::is_trivially_constructible<T>::value> 
+  : public integral_constant<bool, is_pod<T>::value || ::cuda::std::is_trivially_constructible<T>::value>
 {};
 
-template<typename T> 
+template<typename T>
 struct has_trivial_copy_constructor
   : public integral_constant<bool, is_pod<T>::value || ::cuda::std::is_trivially_copyable<T>::value>
 {};
@@ -304,7 +304,7 @@ template<typename From, typename To>
     typedef struct { char two_chars[2]; } no;
 
     static inline yes   test(To) { return yes(); }
-    static inline no    test(...) { return no(); } 
+    static inline no    test(...) { return no(); }
     static inline typename remove_reference<From>::type& from() { typename remove_reference<From>::type* ptr = 0; return *ptr; }
 
   public:
@@ -415,7 +415,7 @@ template <typename Boolean>
 
 template<bool B, class T, class F>
 struct conditional { typedef T type; };
- 
+
 template<class T, class F>
 struct conditional<false, T, F> { typedef F type; };
 
@@ -617,7 +617,7 @@ template<typename T1, typename T2>
   typedef struct { char array[2]; } no_type;
 
   template<typename T> static typename add_reference<T>::type declval();
-  
+
   template<size_t> struct helper { typedef void * type; };
 
   template<typename U1, typename U2> static yes_type test(typename helper<sizeof(declval<U1>() = declval<U2>())>::type);
@@ -651,17 +651,17 @@ template<typename T>
 
 template<typename T1, typename T2, typename Enable = void> struct promoted_numerical_type;
 
-template<typename T1, typename T2> 
+template<typename T1, typename T2>
   struct promoted_numerical_type<T1,T2,typename enable_if<and_
-  <typename is_floating_point<T1>::type,typename is_floating_point<T2>::type>
+  <typename is_floating_point<T1>::type, typename is_floating_point<T2>::type>
   ::value>::type>
   {
   typedef typename larger_type<T1,T2>::type type;
   };
 
-template<typename T1, typename T2> 
+template<typename T1, typename T2>
   struct promoted_numerical_type<T1,T2,typename enable_if<and_
-  <typename is_integral<T1>::type,typename is_floating_point<T2>::type>
+  <typename is_integral<T1>::type, typename is_floating_point<T2>::type>
   ::value>::type>
   {
   typedef T2 type;
@@ -674,6 +674,13 @@ template<typename T1, typename T2>
   {
   typedef T1 type;
   };
+
+template<typename T1, typename T2, typename = void>
+struct has_promoted_numerical_type : public false_type {};
+
+template<typename T1, typename T2>
+struct has_promoted_numerical_type<T1, T2, ::cuda::std::__void_t<typename promoted_numerical_type<T1, T2>::type>>
+  : public true_type {};
 
 template<typename T>
   struct is_empty_helper : public T
@@ -699,7 +706,7 @@ using invoke_result_t =
   ::cuda::std::invoke_result_t<Invokable, Args...>;
 #endif
 
-template <class F, class... Us> 
+template <class F, class... Us>
 struct invoke_result
 {
   using type = invoke_result_t<F, Us...>;

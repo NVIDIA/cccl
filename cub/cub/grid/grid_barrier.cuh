@@ -154,7 +154,7 @@ public:
         cudaError_t retval = cudaSuccess;
         if (d_sync)
         {
-            CubDebug(retval = cudaFree(d_sync));
+            retval = CubDebug(cudaFree(d_sync));
             d_sync = NULL;
         }
         sync_bytes = 0;
@@ -184,14 +184,27 @@ public:
             {
                 if (d_sync)
                 {
-                    if (CubDebug(retval = cudaFree(d_sync))) break;
+                    retval = CubDebug(cudaFree(d_sync));
+                    if (cudaSuccess != retval)
+                    {
+                      break;
+                    }
                 }
 
                 sync_bytes = new_sync_bytes;
 
                 // Allocate and initialize to zero
-                if (CubDebug(retval = cudaMalloc((void**) &d_sync, sync_bytes))) break;
-                if (CubDebug(retval = cudaMemset(d_sync, 0, new_sync_bytes))) break;
+                retval = CubDebug(cudaMalloc((void**) &d_sync, sync_bytes));
+                if (cudaSuccess != retval) 
+                {
+                    break;
+                }
+
+                retval = CubDebug(cudaMemset(d_sync, 0, new_sync_bytes));
+                if (cudaSuccess != retval) 
+                {
+                    break;
+                }
             }
         } while (0);
 

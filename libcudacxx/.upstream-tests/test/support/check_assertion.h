@@ -29,10 +29,6 @@
 # error "This header may only be used for libc++ tests"
 #endif
 
-#if TEST_STD_VER < 11
-# error "C++11 or greater is required to use this header"
-#endif
-
 struct AssertionInfoMatcher {
   static const int any_line = -1;
   static constexpr const char* any_file = "*";

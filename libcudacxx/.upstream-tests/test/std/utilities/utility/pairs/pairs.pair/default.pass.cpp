@@ -34,7 +34,6 @@ int main(int, char**)
         assert(p.first == 0.0f);
         assert(p.second == nullptr);
     }
-#if TEST_STD_VER >= 11
     {
         typedef cuda::std::pair<float, short*> P;
         constexpr P p;
@@ -53,7 +52,6 @@ int main(int, char**)
         struct Derived : Base { protected: Derived() = default; };
         static_assert(!cuda::std::is_default_constructible<cuda::std::pair<Derived, int> >::value, "");
     }
-#endif
 
   return 0;
 }

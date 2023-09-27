@@ -18,12 +18,6 @@
 #include <cuda/std/type_traits>
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 11 && defined(_LIBCUDACXX_VERSION)
-#define LIBCPP11_STATIC_ASSERT(...) static_assert(__VA_ARGS__)
-#else
-#define LIBCPP11_STATIC_ASSERT(...) ((void)0)
-#endif
-
 TEST_NV_DIAG_SUPPRESS(declared_but_not_referenced)
 
 struct A
@@ -34,9 +28,7 @@ struct A
     A(int, double);
     __host__ __device__
     A(int, long, double);
-#if TEST_STD_VER >= 11
 private:
-#endif
     __host__ __device__
     A(char);
 };
@@ -67,9 +59,7 @@ private:
 struct S {
    template <class T>
     __host__ __device__
-#if TEST_STD_VER >= 11
    explicit
-#endif
    operator T () const;
 };
 
@@ -79,13 +69,11 @@ struct ImplicitTo {
   operator To();
 };
 
-#if TEST_STD_VER >= 11
 template <class To>
 struct ExplicitTo {
     __host__ __device__
    explicit operator To ();
 };
-#endif
 
 
 template <class T>
@@ -96,7 +84,7 @@ void test_is_constructible()
 #ifndef TEST_COMPILER_MSVC
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
-    LIBCPP11_STATIC_ASSERT((cuda::std::__libcpp_is_constructible<T>::type::value), "");
+    static_assert((cuda::std::__libcpp_is_constructible<T>::type::value), "");
 #endif
 #if TEST_STD_VER > 11
     static_assert( cuda::std::is_constructible_v<T>, "");
@@ -111,7 +99,7 @@ void test_is_constructible()
 #ifndef TEST_COMPILER_MSVC
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
-    LIBCPP11_STATIC_ASSERT((cuda::std::__libcpp_is_constructible<T, A0>::type::value), "");
+    static_assert((cuda::std::__libcpp_is_constructible<T, A0>::type::value), "");
 #endif
 #if TEST_STD_VER > 11
     static_assert(( cuda::std::is_constructible_v<T, A0>), "");
@@ -126,7 +114,7 @@ void test_is_constructible()
 #ifndef TEST_COMPILER_MSVC
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
-    LIBCPP11_STATIC_ASSERT((cuda::std::__libcpp_is_constructible<T, A0, A1>::type::value), "");
+    static_assert((cuda::std::__libcpp_is_constructible<T, A0, A1>::type::value), "");
 #endif
 #if TEST_STD_VER > 11
     static_assert(( cuda::std::is_constructible_v<T, A0, A1>), "");
@@ -141,7 +129,7 @@ void test_is_constructible()
 #ifndef TEST_COMPILER_MSVC
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
-    LIBCPP11_STATIC_ASSERT((cuda::std::__libcpp_is_constructible<T, A0, A1, A2>::type::value), "");
+    static_assert((cuda::std::__libcpp_is_constructible<T, A0, A1, A2>::type::value), "");
 #endif
 #if TEST_STD_VER > 11
     static_assert(( cuda::std::is_constructible_v<T, A0, A1, A2>), "");
@@ -156,7 +144,7 @@ void test_is_not_constructible()
 #ifndef TEST_COMPILER_MSVC
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
-    LIBCPP11_STATIC_ASSERT((!cuda::std::__libcpp_is_constructible<T>::type::value), "");
+    static_assert((!cuda::std::__libcpp_is_constructible<T>::type::value), "");
 #endif
 #if TEST_STD_VER > 11
     static_assert((!cuda::std::is_constructible_v<T>), "");
@@ -172,14 +160,14 @@ void test_is_not_constructible()
  && !(defined(TEST_COMPILER_CLANG) && __clang_major__ >= 16)
     // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
     // use it, so waive it.
-    LIBCPP11_STATIC_ASSERT((!cuda::std::__libcpp_is_constructible<T, A0>::type::value), "");
+    static_assert((!cuda::std::__libcpp_is_constructible<T, A0>::type::value), "");
 #endif
 #if TEST_STD_VER > 11
     static_assert((!cuda::std::is_constructible_v<T, A0>), "");
 #endif
 }
 
-#if defined(TEST_CLANG_VER) && TEST_STD_VER >= 11
+#if defined(TEST_CLANG_VER)
 template <class T = int, class = decltype(static_cast<T&&>(cuda::std::declval<double&>()))>
 __host__ __device__
 constexpr bool  clang_disallows_valid_static_cast_test(int) { return false; };
@@ -205,11 +193,7 @@ int main(int, char**)
     test_is_constructible<int&, int&> ();
 
     test_is_not_constructible<A> ();
-#if TEST_STD_VER >= 11
     test_is_not_constructible<A, char> ();
-#else
-    test_is_constructible<A, char> ();
-#endif
     test_is_not_constructible<A, void> ();
     test_is_not_constructible<int, void()>();
     test_is_not_constructible<int, void(&)()>();
@@ -231,13 +215,10 @@ int main(int, char**)
 
     test_is_constructible<void(&)(), void(&)()>();
     test_is_constructible<void(&)(), void()>();
-#if TEST_STD_VER >= 11
     test_is_constructible<void(&&)(), void(&&)()>();
     test_is_constructible<void(&&)(), void()>();
     test_is_constructible<void(&&)(), void(&)()>();
-#endif
 
-#if TEST_STD_VER >= 11
     test_is_constructible<int const&, int>();
     test_is_constructible<int const&, int&&>();
 
@@ -375,7 +356,6 @@ int main(int, char**)
     test_is_not_constructible<void() &> ();
     test_is_not_constructible<void() &&> ();
 #endif
-#endif // TEST_STD_VER >= 11
 
   return 0;
 }
