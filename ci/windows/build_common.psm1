@@ -184,5 +184,5 @@ function sccache_stats {
     }
 }
 
-Export-ModuleMember -Function configure, build, configure_and_build, sccache_stats
+Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset, sccache_stats
 Export-ModuleMember -Variable BUILD_DIR
