@@ -821,8 +821,8 @@ struct __memcpy_completion_impl {
  * 1. normal synchronous copy (fallback)
  * 2. cp.async:      shared  <- global
  * 3. cp.async.bulk: shared  <- global
- * 4. TODO: cp.async.bulk: global  <- shared
- * 5. TODO: cp.async.bulk: cluster <- shared
+ * 4. cp.async.bulk: global  <- shared
+ * 5. cp.async.bulk: cluster <- shared
  *
  * Which of these options is chosen, depends on:
  *
@@ -864,8 +864,8 @@ struct __memcpy_completion_impl {
  * Asynchronous copy mechanisms:
  *
  * 1. cp.async.bulk: shared  <- global
- * 2. TODO: cp.async.bulk: cluster <- shared
- * 3. TODO: cp.async.bulk: global  <- shared
+ * 2. cp.async.bulk: cluster <- shared
+ * 3. cp.async.bulk: global  <- shared
  * 4. cp.async:      shared  <- global
  * 5. normal synchronous copy (fallback)
  ***********************************************************************/
@@ -883,6 +883,37 @@ void __cp_async_bulk_shared_global(const _Group &__g, char * __dest, const char 
               "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
               "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
               "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bar_handle)))
+            : "memory");
+    }
+}
+
+template <typename _Group>
+inline __device__
+void __cp_async_bulk_cluster_shared(const _Group &__g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size, _CUDA_VSTD::uint64_t *__bar_handle) {
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
+    if (__g.thread_rank() == 0) {
+        asm volatile(
+            "cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
+            :
+            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+              "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+              "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
+              "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bar_handle)))
+            : "memory");
+    }
+}
+
+template <typename _Group>
+inline __device__
+void __cp_async_bulk_global_shared(const _Group &__g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
+    if (__g.thread_rank() == 0) {
+        asm volatile(
+            "cp.async.bulk.global.shared::cluster.bulk_group [%0], [%1], %2;\n"
+            :
+            : "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__dest))),
+              "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__src))),
+              "r"(static_cast<_CUDA_VSTD::uint32_t>(__size))
             : "memory");
     }
 }
@@ -960,6 +991,9 @@ void __cp_async_fallback(_Group __g, char * __dest, const char * __src, _CUDA_VS
  * cuda::memcpy_async dispatch helper functions
  *
  * - __get_size_align struct to determine the alignment from a size type.
+ *
+ * - __cuda_is_remote_cluster function to determine if pointer points to remote
+ *   cluster shared memory.
  ***********************************************************************/
 
 // The __get_size_align struct provides a way to interrogate the guaranteed
@@ -984,6 +1018,32 @@ struct __get_size_align<T, __custom_void_t<decltype(T::align)>> {
     static constexpr int align = T::align;
 };
 
+
+_LIBCUDACXX_DEVICE inline
+bool __cuda_is_remote_cluster(const void * __ptr) {
+    // This function addresses three problems:
+    //
+    // 1. __isClusterShared returns true when ptr points to local shared memory,
+    //    i.e., it is not remote.
+    // 2. __isClusterShared cannot be used when compiling for any architecture
+    //    pre-SM90.
+    // 3. __isClusterShared is not defined when compiling with nvcc before
+    //   version 11.8.
+
+#ifdef _LIBCUDACXX_CUDACC_BELOW_11_8
+    return false;
+#else
+    NV_DISPATCH_TARGET(
+        NV_PROVIDES_SM_90, (
+            return __isClusterShared(__ptr) && (!__isShared(__ptr));
+        ),
+        NV_ANY_TARGET, (
+            return false;
+        )
+    );
+#endif // _LIBCUDACXX_CUDACC_BELOW_11_8
+}
+
 /***********************************************************************
  * cuda::memcpy_async dispatch
  *
@@ -999,6 +1059,47 @@ struct __get_size_align<T, __custom_void_t<decltype(T::align)>> {
 template<_CUDA_VSTD::size_t _Align, typename _Group>
 inline __device__
 __completion_mechanism __dispatch_memcpy_async_any_to_any(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
+    __cp_async_fallback<_Align>(__group, __dest_char, __src_char, __size);
+    return __completion_mechanism::__sync;
+}
+
+template<_CUDA_VSTD::size_t _Align, typename _Group>
+inline __device__
+__completion_mechanism __dispatch_memcpy_async_shared_to_global(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
+    NV_IF_TARGET(
+        NV_PROVIDES_SM_90, (
+            const bool __can_use_async_bulk_group = __allowed_completions & uint32_t(__completion_mechanism::__async_bulk_group);
+
+            if _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 (16 <= _Align) {
+                if (__can_use_async_bulk_group) {
+                    __cp_async_bulk_global_shared(__group, __dest_char, __src_char, __size);
+                    return __completion_mechanism::__async_bulk_group;
+                }
+            }
+            // Fallthrough..
+    ));
+
+    __cp_async_fallback<_Align>(__group, __dest_char, __src_char, __size);
+    return __completion_mechanism::__sync;
+}
+
+template<_CUDA_VSTD::size_t _Align, typename _Group>
+inline __device__
+__completion_mechanism __dispatch_memcpy_async_shared_to_cluster(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
+    NV_IF_TARGET(
+        NV_PROVIDES_SM_90, (
+            const bool __can_use_complete_tx = __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
+            _LIBCUDACXX_DEBUG_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle), "Pass non-null bar_handle if and only if can_use_complete_tx.");
+
+            if _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 (16 <= _Align) {
+                if (__can_use_complete_tx) {
+                    __cp_async_bulk_cluster_shared(__group, __dest_char, __src_char, __size, __bar_handle);
+                    return __completion_mechanism::__mbarrier_complete_tx;
+                }
+            }
+            // Fallthrough..
+    ));
+
     __cp_async_fallback<_Align>(__group, __dest_char, __src_char, __size);
     return __completion_mechanism::__sync;
 }
@@ -1047,6 +1148,10 @@ __completion_mechanism __dispatch_memcpy_async_device(_Group const & __group, ch
     // See nvbug 4074679 and also PR #478.
     if (__isGlobal(__src_char) && __isShared(__dest_char)) {
         return __dispatch_memcpy_async_global_to_shared<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
+    } else if (__isShared(__src_char) && __isGlobal(__dest_char)) {
+        return __dispatch_memcpy_async_shared_to_global<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
+    } else if (__isShared(__src_char) && __cuda_is_remote_cluster(__dest_char)) {
+        return __dispatch_memcpy_async_shared_to_cluster<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
     } else {
         return __dispatch_memcpy_async_any_to_any<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
     }
