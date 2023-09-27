@@ -4,11 +4,7 @@ Param(
     [Alias("cxx")]
     [ValidateNotNullOrEmpty()]
     [ValidateSet(11, 14, 17, 20)]
-    [int]$CXX_STANDARD = 17,
-    [Parameter(Mandatory = $true)]
-    [Alias("archs")]
-    [ValidateNotNullOrEmpty()]
-    [string]$GPU_ARCHS = "70"
+    [int]$CXX_STANDARD = 17
 )
 
 
@@ -17,11 +13,12 @@ Param(
 $script:HOST_COMPILER  = (Get-Command "cl").source -replace '\\','/'
 $script:PARALLEL_LEVEL = (Get-WmiObject -class Win32_processor).NumberOfLogicalProcessors
 
-If($null -eq $env:DEVCONTAINER_NAME) {
-    $script:BUILD_DIR="$PSScriptRoot/../../build/local"
-} else {
-    $script:BUILD_DIR="$PSScriptRoot/../../build/$DEVCONTAINER_NAME"
+if (-not $env:CCCL_BUILD_INFIX) {
+    $env:CCCL_BUILD_INFIX = ""
 }
+
+# Presets will be configured in this directory:
+$BUILD_DIR = "../build/$env:CCCL_BUILD_INFIX"
 
 If(!(test-path -PathType container "../build")) {
     New-Item -ItemType Directory -Path "../build"
@@ -35,78 +32,118 @@ $script:path_to_sccache =(gcm sccache).Source
 Remove-Item $path_to_sccache -Force
 Invoke-WebRequest -Uri "https://github.com/robertmaynard/sccache/releases/download/nvcc_msvc_v1/sccache.exe" -OutFile $path_to_sccache
 
-$script:COMMON_CMAKE_OPTIONS= @(
-    "-S .."
-    "-B $BUILD_DIR"
-    "-G Ninja"
-    "-DCMAKE_BUILD_TYPE=Release"
-    "-DCMAKE_CXX_STANDARD=$CXX_STANDARD"
-    "-DCMAKE_CUDA_STANDARD=$CXX_STANDARD"
-    "-DCMAKE_CXX_COMPILER=$HOST_COMPILER"
-    "-DCMAKE_CUDA_HOST_COMPILER=$HOST_COMPILER"
-    "-DCMAKE_CUDA_ARCHITECTURES=$GPU_ARCHS"
-    "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
-)
+# Prepare environment for CMake:
+$env:CMAKE_BUILD_PARALLEL_LEVEL = $PARALLEL_LEVEL
+$env:CTEST_PARALLEL_LEVEL = 1
+$env:CUDAHOSTCXX = $HOST_COMPILER.FullName
+$env:CXX = $HOST_COMPILER.FullName
 
 Write-Host "========================================"
 Write-Host "Begin build"
 Write-Host "pwd=$pwd"
-Write-Host "HOST_COMPILER=$HOST_COMPILER"
-Write-Host "CXX_STANDARD=$CXX_STANDARD"
-Write-Host "GPU_ARCHS=$GPU_ARCHS"
-Write-Host "PARALLEL_LEVEL=$PARALLEL_LEVEL"
 Write-Host "BUILD_DIR=$BUILD_DIR"
+Write-Host "CXX_STANDARD=$CXX_STANDARD"
+Write-Host "CXX=$env:CXX"
+Write-Host "CUDACXX=$env:CUDACXX"
+Write-Host "CUDAHOSTCXX=$env:CUDAHOSTCXX"
+Write-Host "NVCC_VERSION=$NVCC_VERSION"
+Write-Host "CMAKE_BUILD_PARALLEL_LEVEL=$env:CMAKE_BUILD_PARALLEL_LEVEL"
+Write-Host "CTEST_PARALLEL_LEVEL=$env:CTEST_PARALLEL_LEVEL"
+Write-Host "CCCL_BUILD_INFIX=$env:CCCL_BUILD_INFIX"
 Write-Host "Current commit is:"
 Write-Host "$(git log -1)"
 Write-Host "========================================"
 
-function configure {
-    Param(
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        $CMAKE_OPTIONS
-    )
-
-    $FULL_CMAKE_OPTIONS = $script:COMMON_CMAKE_OPTIONS + $CMAKE_OPTIONS
-    cmake $FULL_CMAKE_OPTIONS
-    $test_result = $LastExitCode
-
-    If ($test_result -ne 0) {
-        throw 'Step Failed'
-    }
-}
-
-function build {
-    Param(
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$BUILD_NAME
-    )
-
-    sccache_stats('Start')
-
-    cmake --build $script:BUILD_DIR --parallel $script:PARALLEL_LEVEL
-    $test_result = $LastExitCode
-
-    sccache_stats('Stop')
-    echo "${BUILD_NAME} build complete"
-    If ($test_result -ne 0) {
-         throw 'Step Failed'
-    }
-}
-
-function configure_and_build {
+function configure_preset {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]$BUILD_NAME,
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        $CMAKE_OPTIONS
+        [string]$PRESET,
+        [Parameter(Mandatory = $true)]
+        [string]$CMAKE_OPTIONS
     )
 
-    configure -CMAKE_OPTIONS $CMAKE_OPTIONS
-    build -BUILD_NAME $BUILD_NAME
+    $step = "$BUILD_NAME (configure)"
+
+    cmake --preset $PRESET $CMAKE_OPTIONS --log-level VERBOSE
+    $test_result = $LastExitCode
+
+    If ($test_result -ne 0) {
+        throw '$step Failed'
+    }
+
+    Write-Host "$step complete."
+}
+
+function build_preset {
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$BUILD_NAME,
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$PRESET
+    )
+
+    $step = "$BUILD_NAME (build)"
+
+    sccache_stats('Start')
+
+    cmake --build --preset $PRESET
+    $test_result = $LastExitCode
+
+    sccache_stats('Stop')
+
+    echo "$step complete"
+    
+    If ($test_result -ne 0) {
+         throw '$step Failed'
+    }
+}
+
+function test_preset {
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$BUILD_NAME,
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$PRESET
+    )
+
+    $step = "$BUILD_NAME (test)"
+
+    sccache_stats('Start')
+
+    ctest --preset $PRESET
+    $test_result = $LastExitCode
+
+    sccache_stats('Stop')
+
+    echo "$step complete"
+    
+    If ($test_result -ne 0) {
+         throw '$step Failed'
+    }
+}
+
+function configure_and_build_preset {
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$BUILD_NAME,
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$PRESET,
+        [Parameter(Mandatory = $true)]
+        [string]$CMAKE_OPTIONS
+    )
+
+    configure_preset "$BUILD_NAME" "$PRESET" "$CMAKE_OPTIONS"
+    build_preset "$BUILD_NAME" "$PRESET"
 }
 
 function sccache_stats {
