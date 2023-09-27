@@ -26,6 +26,9 @@
 #include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(3013) // a volatile function parameter is deprecated
+#ifdef TEST_COMPILER_CLANG_CUDA
+#pragma clang diagnostic ignored "-Wdeprecated-volatile"
+#endif // TEST_COMPILER_CLANG_CUDA
 
 struct wat
 {
