@@ -226,7 +226,7 @@ public:
                 int __leader = __ffs(__active) - 1;
                 // All threads in mask synchronize here, establishing cummulativity to the __leader:
                 __syncwarp(__mask);
-                if(__leader == __laneid)
+                if(__leader == static_cast<int>(__laneid))
                 {
                     __token = __barrier.arrive(__inc);
                 }
