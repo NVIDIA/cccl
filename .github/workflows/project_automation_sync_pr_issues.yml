@@ -99,13 +99,13 @@ jobs:
                     id
                     fieldValueByName(name: "Status") {
                       ... on ProjectV2ItemFieldSingleSelectValue {
-                        id
+                        optionId
                       }
                     }
                   }
                 }
               }' > status_field_data.json
-            status_option_id=$(jq -r '.data.node.fieldValueByName.id' status_field_data.json)
+            status_option_id=$(jq -r '.data.node.fieldValueByName.optionId' status_field_data.json)
             echo "STATUS_OPTION_ID=$status_option_id" >> $GITHUB_ENV
 
             # Query the PR's start sprint from the project
@@ -116,13 +116,13 @@ jobs:
                     id
                     fieldValueByName(name: "Start Sprint") {
                       ... on ProjectV2ItemFieldIterationValue {
-                        id
+                        optionId
                       }
                     }
                   }
                 }
               }' > start_sprint_data.json
-            start_sprint_option_id=$(jq -r '.data.node.fieldValueByName.id' start_sprint_data.json)
+            start_sprint_option_id=$(jq -r '.data.node.fieldValueByName.optionId' start_sprint_data.json)
             echo "START_SPRINT_OPTION_ID=$start_sprint_option_id" >> $GITHUB_ENV
 
             # Query the PR's working sprint from the project
@@ -133,13 +133,13 @@ jobs:
                     id
                     fieldValueByName(name: "Working Sprint") {
                       ... on ProjectV2ItemFieldIterationValue {
-                        id
+                        optionId
                       }
                     }
                   }
                 }
               }' > working_sprint_data.json
-            working_sprint_option_id=$(jq -r '.data.node.fieldValueByName.id' working_sprint_data.json)
+            working_sprint_option_id=$(jq -r '.data.node.fieldValueByName.optionId' working_sprint_data.json)
             echo "WORKING_SPRINT_OPTION_ID=$working_sprint_option_id" >> $GITHUB_ENV
 
         continue-on-error: true
