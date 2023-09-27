@@ -30,7 +30,7 @@ constexpr size_t stages_count = 2; // Pipeline with two stages
 // Simply copy shared memory to global out
 __device__ __forceinline__ void compute(int* global_out, int const* shared_in){
     auto block = cooperative_groups::this_thread_block();
-    for (int i = 0; i < block.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(block.size()); ++i) {
         global_out[i] = shared_in[i];
     }
 }
