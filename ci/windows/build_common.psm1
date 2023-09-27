@@ -63,6 +63,7 @@ function configure_preset {
         [ValidateNotNullOrEmpty()]
         [string]$PRESET,
         [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
         [string]$CMAKE_OPTIONS
     )
 
@@ -139,6 +140,7 @@ function configure_and_build_preset {
         [ValidateNotNullOrEmpty()]
         [string]$PRESET,
         [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
         [string]$CMAKE_OPTIONS
     )
 
