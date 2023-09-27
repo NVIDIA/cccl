@@ -140,7 +140,7 @@ Contributions to simplify integrating CCCL into other build systems are welcome.
 
 ### Contributors
 
-Contributor guide coming soon!
+Interested in contributing to making CCCL better? Check out our [Contributing Guide](CONTRIBUTING.md) for a comprehensive overview of everything you need to know to set up your development environment, make changes, run tests, and submit a PR.
 
 ## Platform Support
 
