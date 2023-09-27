@@ -610,6 +610,33 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
     );
     return __token;
 }
+
+_LIBCUDACXX_DEVICE inline
+void barrier_expect_tx(
+    barrier<thread_scope_block> & __b,
+    _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
+
+    _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+    _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
+    _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
+
+    // We do not check for the statespace of the barrier here. This is
+    // on purpose. This allows debugging tools like memcheck/racecheck
+    // to detect that we are passing a pointer with the wrong state
+    // space to mbarrier.arrive. If we checked for the state space here,
+    // and __trap() if wrong, then those tools would not be able to help
+    // us in release builds. In debug builds, the error would be caught
+    // by the asserts at the top of this function.
+
+    auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+    asm (
+        "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
+        :
+        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
+          "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
+        : "memory");
+}
 #endif // __CUDA_MINIMUM_ARCH__
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
