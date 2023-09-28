@@ -794,7 +794,7 @@ struct __memcpy_completion_impl {
                 // This completion mechanism should not be used with a shared
                 // memory barrier. Or at least, we do not currently envision
                 // bulk group to be used with shared memory barriers.
-                __trap();
+                _LIBCUDACXX_UNREACHABLE();
             case __completion_mechanism::__mbarrier_complete_tx:
                 // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
                 NV_IF_TARGET(NV_PROVIDES_SM_90, (
@@ -808,6 +808,9 @@ struct __memcpy_completion_impl {
                 // sync: In this case, we do not need to do anything. The user will have
                 // to issue `bar.arrive_wait();` to see the effect of the transaction.
                 return async_contract_fulfillment::none;
+            default:
+                // Get rid of "control reaches end of non-void function":
+                _LIBCUDACXX_UNREACHABLE();
         }
     }
 
@@ -835,14 +838,16 @@ struct __memcpy_completion_impl {
                 return async_contract_fulfillment::async;
             case __completion_mechanism::__mbarrier_complete_tx:
                 // Non-smem barriers do not have an mbarrier_complete_tx mechanism..
-                // XXX: should be __builtin_unreachable() or an assert?
-                return async_contract_fulfillment::none;
+                _LIBCUDACXX_UNREACHABLE();
             case __completion_mechanism::__async_bulk_group:
                 // This completion mechanism is currently not expected to be used with barriers.
-                __trap();
+                _LIBCUDACXX_UNREACHABLE();
             case  __completion_mechanism::__sync:
                 // sync: In this case, we do not need to do anything.
                 return async_contract_fulfillment::none;
+            default:
+                // Get rid of "control reaches end of non-void function":
+                _LIBCUDACXX_UNREACHABLE();
         }
     }
 
@@ -859,6 +864,9 @@ struct __memcpy_completion_impl {
             case __completion_mechanism::__async_bulk_group:     return async_contract_fulfillment::async;
             case __completion_mechanism::__mbarrier_complete_tx: return async_contract_fulfillment::async;
             case __completion_mechanism::__sync:                 return async_contract_fulfillment::none;
+            default:
+                // Get rid of "control reaches end of non-void function":
+                _LIBCUDACXX_UNREACHABLE();
         }
     }
 };
