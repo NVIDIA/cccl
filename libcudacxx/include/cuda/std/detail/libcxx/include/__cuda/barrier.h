@@ -979,7 +979,7 @@ void __cp_async_shared_global<16>(char * __dest, const char * __src) {
 
 template <size_t _Alignment, typename _Group>
 inline __device__
-void __cp_async_shared_global_impl(_Group __g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
+void __cp_async_shared_global_mechanism(_Group __g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
     static_assert(4 <= _Alignment, "cp.async requires at least 4-byte alignment");
 
     // Maximal copy size is 16.
@@ -1002,7 +1002,7 @@ struct __copy_chunk {
 
 template <size_t _Alignment, typename _Group>
 inline __host__ __device__
-void __cp_async_fallback(_Group __g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
+void __cp_async_fallback_mechanism(_Group __g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
     // Maximal copy size is 16 bytes
     constexpr _CUDA_VSTD::size_t __copy_size = (_Alignment > 16) ? 16 : _Alignment;
     using __chunk_t = __copy_chunk<__copy_size>;
@@ -1056,7 +1056,7 @@ struct __get_size_align<T, _CUDA_VSTD::__void_t<decltype(T::align)>> {
 template<_CUDA_VSTD::size_t _Align, typename _Group>
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
 __completion_mechanism __dispatch_memcpy_async_any_to_any(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
-    __cp_async_fallback<_Align>(__group, __dest_char, __src_char, __size);
+    __cp_async_fallback_mechanism<_Align>(__group, __dest_char, __src_char, __size);
     return __completion_mechanism::__sync;
 }
 
@@ -1079,14 +1079,14 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
         const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
         if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 4) {
             if (__can_use_async_group) {
-                __cp_async_shared_global_impl<_Align>(__group, __dest_char, __src_char, __size);
+                __cp_async_shared_global_mechanism<_Align>(__group, __dest_char, __src_char, __size);
                 return __completion_mechanism::__async_group;
             }
         }
         // Fallthrough..
     ));
 
-    __cp_async_fallback<_Align>(__group, __dest_char, __src_char, __size);
+    __cp_async_fallback_mechanism<_Align>(__group, __dest_char, __src_char, __size);
     return __completion_mechanism::__sync;
 }
 
