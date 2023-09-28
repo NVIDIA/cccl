@@ -777,33 +777,37 @@ struct __memcpy_completion_impl {
         }
 
         _CUDA_VSTD::uint64_t * __bh = __try_get_barrier_handle(__barrier);
-        if (__cm == __completion_mechanism::__async_group) {
-            NV_IF_TARGET(
+
+        switch (__cm) {
+            case  __completion_mechanism::__async_group:
                 // Pre-SM80, the async_group mechanism is not available.
-                NV_PROVIDES_SM_80, (
+                NV_IF_TARGET(NV_PROVIDES_SM_80, (
                     // Non-Blocking: unbalance barrier by 1, barrier will be
                     // rebalanced when all thread-local cp.async instructions
                     // have completed writing to shared memory.
                     asm volatile ("cp.async.mbarrier.arrive.shared.b64 [%0];"
                                   :: "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bh)))
                                   : "memory");
-                )
-            );
-            return async_contract_fulfillment::async;
-        } else if (__cm == __completion_mechanism::__mbarrier_complete_tx) {
-            // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
-            NV_IF_TARGET(NV_PROVIDES_SM_90, (
+                ));
+                return async_contract_fulfillment::async;
+            case __completion_mechanism::__async_bulk_group:
+                // This completion mechanism should not be used with a shared
+                // memory barrier. Or at least, we do not currently envision
+                // bulk group to be used with shared memory barriers.
+                __trap();
+            case __completion_mechanism::__mbarrier_complete_tx:
+                // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
+                NV_IF_TARGET(NV_PROVIDES_SM_90, (
                     // Only perform the expect_tx operation with the leader thread
                     if (__group.thread_rank() == 0) {
                         ::cuda::device::barrier_expect_tx(__barrier, __size);
                     }
-                )
-            );
-            return async_contract_fulfillment::async;
-        } else {
-            // sync: In this case, we do not need to do anything. The user will have
-            // to issue `bar.arrive_wait();` to see the effect of the transaction.
-            return async_contract_fulfillment::none;
+                ));
+                return async_contract_fulfillment::async;
+            case __completion_mechanism::__sync:
+                // sync: In this case, we do not need to do anything. The user will have
+                // to issue `bar.arrive_wait();` to see the effect of the transaction.
+                return async_contract_fulfillment::none;
         }
     }
 
@@ -819,21 +823,26 @@ struct __memcpy_completion_impl {
     async_contract_fulfillment __delay_non_smem_barrier(
         __completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
         // Overload for non-smem barriers.
-        if (__cm == __completion_mechanism::__async_group) {
-            // Pre-SM80, the async_group mechanism is not available.
-            NV_IF_TARGET(NV_PROVIDES_SM_80, (
-                // Blocking: wait for all thread-local cp.async instructions to have
-                // completed writing to shared memory.
-                asm volatile ("cp.async.wait_all;" ::: "memory");
-            ));
-        return async_contract_fulfillment::async;
-        } else if (__cm == __completion_mechanism::__mbarrier_complete_tx) {
-            // Non-smem barriers do not have an mbarrier_complete_tx mechanism..
-            // XXX: should be __builtin_unreachable() or an assert?
-            return async_contract_fulfillment::none;
-        } else {
-            // sync: In this case, we do not need to do anything.
-            return async_contract_fulfillment::none;
+
+        switch (__cm) {
+            case __completion_mechanism::__async_group:
+                // Pre-SM80, the async_group mechanism is not available.
+                NV_IF_TARGET(NV_PROVIDES_SM_80, (
+                    // Blocking: wait for all thread-local cp.async instructions to have
+                    // completed writing to shared memory.
+                    asm volatile ("cp.async.wait_all;" ::: "memory");
+                ));
+                return async_contract_fulfillment::async;
+            case __completion_mechanism::__mbarrier_complete_tx:
+                // Non-smem barriers do not have an mbarrier_complete_tx mechanism..
+                // XXX: should be __builtin_unreachable() or an assert?
+                return async_contract_fulfillment::none;
+            case __completion_mechanism::__async_bulk_group:
+                // This completion mechanism is currently not expected to be used with barriers.
+                __trap();
+            case  __completion_mechanism::__sync:
+                // sync: In this case, we do not need to do anything.
+                return async_contract_fulfillment::none;
         }
     }
 
@@ -849,7 +858,7 @@ struct __memcpy_completion_impl {
             case __completion_mechanism::__async_group:          return async_contract_fulfillment::async;
             case __completion_mechanism::__async_bulk_group:     return async_contract_fulfillment::async;
             case __completion_mechanism::__mbarrier_complete_tx: return async_contract_fulfillment::async;
-            default:                                             return async_contract_fulfillment::none;
+            case __completion_mechanism::__sync:                 return async_contract_fulfillment::none;
         }
     }
 };
