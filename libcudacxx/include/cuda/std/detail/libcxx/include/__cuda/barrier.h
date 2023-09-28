@@ -1002,8 +1002,8 @@ struct __copy_chunk {
 template <size_t _Alignment, typename _Group>
 inline __host__ __device__
 void __cp_async_fallback(_Group __g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
-    // constexpr _CUDA_VSTD::size_t __copy_size = (16 < _Alignment) ? 16 : _Alignment;
-    constexpr _CUDA_VSTD::size_t __copy_size = 1;
+    // Maximal copy size is 16 bytes
+    constexpr _CUDA_VSTD::size_t __copy_size = (_Alignment > 16) ? 16 : _Alignment;
     using __chunk_t = __copy_chunk<__copy_size>;
 
     // "Group"-strided loop over memory
