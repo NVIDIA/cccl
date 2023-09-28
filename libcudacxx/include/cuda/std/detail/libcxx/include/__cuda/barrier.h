@@ -1120,27 +1120,23 @@ __completion_mechanism __dispatch_memcpy_async(_Group const & __group, _Tp * __d
 #if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
     static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
 #endif
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
+        // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
+        constexpr _CUDA_VSTD::size_t __size_align = __get_size_align<_Size>::align;
+        constexpr _CUDA_VSTD::size_t __align = (alignof(_Tp) < __size_align) ? __size_align : alignof(_Tp);
 
-    // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
-    constexpr _CUDA_VSTD::size_t __size_align = __get_size_align<_Size>::align;
-    constexpr _CUDA_VSTD::size_t __align = (alignof(_Tp) < __size_align) ? __size_align : alignof(_Tp);
+        // Cast to char pointers. We don't need the type for alignment anymore and
+        // erasing the types reduces the number of instantiations of down-stream
+        // functions.
+        char * __dest_char = reinterpret_cast<char*>(__destination);
+        char const * __src_char = reinterpret_cast<char const *>(__source);
 
-    // Cast to char pointers. We don't need the type for alignment anymore and
-    // erasing the types reduces the number of instantiations of down-stream
-    // functions.
-    char * __dest_char = reinterpret_cast<char*>(__destination);
-    char const * __src_char = reinterpret_cast<char const *>(__source);
-
-    static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
-    NV_DISPATCH_TARGET(
-        NV_IS_DEVICE, (
-            return __dispatch_memcpy_async_device<__align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
-        ),
-        NV_IS_HOST, (
-            memcpy(__destination, __source, __size);
-            return __completion_mechanism::__sync;
-        )
-    );
+        return __dispatch_memcpy_async_device<__align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
+    ), (
+        // Host code path:
+        memcpy(__destination, __source, __size);
+        return __completion_mechanism::__sync;
+    ));
 }
 
 template<typename _Group, typename _Tp, typename _Size>
