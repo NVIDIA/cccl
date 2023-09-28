@@ -8,58 +8,56 @@
 
 // UNSUPPORTED: c++98, c++03, c++11
 
-// XFAIL: nvcc
-// FIXME: Triage and fix this.
-
 // type_traits
 
 // is_nothrow_invocable
 
 #include <cuda/std/type_traits>
-// NOTE: This header is not currently supported by libcu++.
+#ifdef _LIBCUDACXX_HAS_VECTOR
 #include <cuda/std/vector>
+#endif // _LIBCUDACXX_HAS_VECTOR
 
 #include "test_macros.h"
 
 struct Tag {};
 
 struct Implicit {
-  Implicit(int) noexcept {}
+  __host__ __device__ Implicit(int) noexcept {}
 };
 
 struct ThrowsImplicit {
-  ThrowsImplicit(int) {}
+  __host__ __device__ ThrowsImplicit(int) {}
 };
 
 struct Explicit {
-  explicit Explicit(int) noexcept {}
+  __host__ __device__ explicit Explicit(int) noexcept {}
 };
 
 template <bool IsNoexcept, class Ret, class... Args>
 struct CallObject {
-  Ret operator()(Args&&...) const noexcept(IsNoexcept);
+  __host__ __device__ Ret operator()(Args&&...) const noexcept(IsNoexcept);
 };
 
 struct Sink {
   template <class... Args>
-  void operator()(Args&&...) const noexcept {}
+  __host__ __device__ void operator()(Args&&...) const noexcept {}
 };
 
 template <class Fn, class... Args>
-constexpr bool throws_invocable() {
+__host__ __device__ constexpr bool throws_invocable() {
   return cuda::std::is_invocable<Fn, Args...>::value &&
          !cuda::std::is_nothrow_invocable<Fn, Args...>::value;
 }
 
 template <class Ret, class Fn, class... Args>
-constexpr bool throws_invocable_r() {
+__host__ __device__ constexpr bool throws_invocable_r() {
   return cuda::std::is_invocable_r<Ret, Fn, Args...>::value &&
          !cuda::std::is_nothrow_invocable_r<Ret, Fn, Args...>::value;
 }
 
 // FIXME(EricWF) Don't test the where noexcept is *not* part of the type system
 // once implementations have caught up.
-void test_noexcept_function_pointers() {
+__host__ __device__ void test_noexcept_function_pointers() {
   struct Dummy {
     void foo() noexcept {}
     static void bar() noexcept {}
@@ -106,12 +104,14 @@ int main(int, char**) {
     static_assert(!cuda::std::is_nothrow_invocable<const int&>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable<int&&>::value, "");
 
+#ifdef _LIBCUDACXX_HAS_VECTOR
     static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::vector<int> >::value,
                   "");
     static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::vector<int*> >::value,
                   "");
     static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::vector<int**> >::value,
                   "");
+#endif // _LIBCUDACXX_HAS_VECTOR
 
     static_assert(!cuda::std::is_nothrow_invocable<AbominableFunc>::value, "");
 
@@ -145,12 +145,14 @@ int main(int, char**) {
     static_assert(!cuda::std::is_nothrow_invocable_r<int, const int&>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable_r<int, int&&>::value, "");
 
+#ifdef _LIBCUDACXX_HAS_VECTOR
     static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::vector<int> >::value,
                   "");
     static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::vector<int*> >::value,
                   "");
     static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::vector<int**> >::value,
                   "");
+#endif // _LIBCUDACXX_HAS_VECTOR
     static_assert(!cuda::std::is_nothrow_invocable_r<void, AbominableFunc>::value,
                   "");
 

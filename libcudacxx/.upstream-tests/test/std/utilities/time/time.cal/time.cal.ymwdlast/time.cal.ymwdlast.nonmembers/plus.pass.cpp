@@ -53,7 +53,6 @@ int main(int, char**)
 {
     using year                    = cuda::std::chrono::year;
     using month                   = cuda::std::chrono::month;
-    using weekday                 = cuda::std::chrono::weekday;
     using weekday_last            = cuda::std::chrono::weekday_last;
     using year_month_weekday_last = cuda::std::chrono::year_month_weekday_last;
     using years                   = cuda::std::chrono::years;

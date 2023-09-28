@@ -24,11 +24,9 @@
 int main(int, char**)
 {
     using year                    = cuda::std::chrono::year;
-    using month                   = cuda::std::chrono::month;
     using year_month_weekday_last = cuda::std::chrono::year_month_weekday_last;
     using sys_days                = cuda::std::chrono::sys_days;
     using days                    = cuda::std::chrono::days;
-    using weekday                 = cuda::std::chrono::weekday;
     using weekday_last            = cuda::std::chrono::weekday_last;
 
     ASSERT_NOEXCEPT(                    static_cast<sys_days>(cuda::std::declval<const year_month_weekday_last>()));

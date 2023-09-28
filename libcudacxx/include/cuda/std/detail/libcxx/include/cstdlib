@@ -98,8 +98,9 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 #pragma GCC system_header
 #endif
 
-
-#ifdef __CUDA_ARCH__
+#if defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
+#  define _LIBCUDACXX_UNREACHABLE() __builtin_unreachable()
+#elif defined(__CUDA_ARCH__)
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_2)
 #  define _LIBCUDACXX_UNREACHABLE() __trap()
 #elif defined(_LIBCUDACXX_CUDACC_BELOW_11_3)

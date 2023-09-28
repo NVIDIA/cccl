@@ -97,7 +97,7 @@ struct device_shared_memory_provider {
 
     __device__
     T * get() {
-        __shared__ alignas(T) char buffer[shared_offset];
+        alignas(T) __shared__ char buffer[shared_offset];
         return reinterpret_cast<T *>(buffer + prefix_size);
     }
 };

@@ -19,11 +19,16 @@
 #define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/type_traits>
-// #include <cuda/std/memory>
-// #include <cuda/std/utility>
+#ifdef _LIBCUDACXX_HAS_MEMORY
+#include <cuda/std/memory>
+#endif // _LIBCUDACXX_HAS_MEMORY
+#include <cuda/std/utility>
 #include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(3013) // a volatile function parameter is deprecated
+#ifdef TEST_COMPILER_CLANG_CUDA
+#pragma clang diagnostic ignored "-Wdeprecated-volatile"
+#endif // TEST_COMPILER_CLANG_CUDA
 
 struct wat
 {
@@ -101,17 +106,17 @@ int main(int, char**)
     test_result_of_imp<PMD(FD volatile       ), char &&>();
     test_result_of_imp<PMD(FD const volatile ), char &&>();
 
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#if defined(_LIBCUDACXX_HAS_MEMORY)
     test_result_of_imp<PMD(cuda::std::unique_ptr<F>),        char &>();
     test_result_of_imp<PMD(cuda::std::unique_ptr<F const>),  const char &>();
     test_result_of_imp<PMD(cuda::std::unique_ptr<FD>),       char &>();
     test_result_of_imp<PMD(cuda::std::unique_ptr<FD const>), const char &>();
+#endif // _LIBCUDACXX_HAS_MEMORY
 
     test_result_of_imp<PMD(cuda::std::reference_wrapper<F>),        char &>();
     test_result_of_imp<PMD(cuda::std::reference_wrapper<F const>),  const char &>();
     test_result_of_imp<PMD(cuda::std::reference_wrapper<FD>),       char &>();
     test_result_of_imp<PMD(cuda::std::reference_wrapper<FD const>), const char &>();
-#endif
     }
     {
     test_result_of_imp<int (F::* (F       &)) ()                &, int> ();
@@ -176,12 +181,12 @@ int main(int, char**)
     test_result_of_imp<int (F::* (FD const volatile )) () const volatile &&, int> ();
     }
     {
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
     test_result_of_imp<int (F::* (cuda::std::reference_wrapper<F>))       (),       int>();
     test_result_of_imp<int (F::* (cuda::std::reference_wrapper<const F>)) () const, int>();
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of_imp<int (F::* (cuda::std::unique_ptr<F>       ))       (),       int>();
     test_result_of_imp<int (F::* (cuda::std::unique_ptr<const F> ))       () const, int>();
-#endif
+#endif // _LIBCUDACXX_HAS_MEMORY
     }
     test_result_of_imp<decltype(&wat::foo)(wat), void>();
 
