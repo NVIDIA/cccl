@@ -529,10 +529,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
         static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
 #endif
 
-        // 1. Set the completion mechanisms that can be used. Do not (yet) allow
-        // async_bulk_group completion. Do not allow mbarrier_complete_tx
-        // completion, even though it may be possible if the pipeline has stage
-        // barriers in shared memory.
+        // 1. Set the completion mechanisms that can be used.
+        //
+        //    Do not (yet) allow async_bulk_group completion. Do not allow
+        //    mbarrier_complete_tx completion, even though it may be possible if
+        //    the pipeline has stage barriers in shared memory.
         _CUDA_VSTD::uint32_t __allowed_completions = _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
 
         // 2. Issue actual copy instructions.
