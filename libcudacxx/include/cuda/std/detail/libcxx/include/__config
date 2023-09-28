@@ -466,6 +466,18 @@ extern "C++" {
 #  define _ALIGNAS(x) __attribute__((__aligned__(x)))
 #endif // !_LIBCUDACXX_COMPILER_MSVC && !__has_feature(cxx_alignas)
 
+// This is wrapped in __CUDA_ARCH__ to prevent error: "ignoring '#pragma unroll'
+// [-Werror=unknown-pragmas]"
+#if defined(__CUDA_ARCH__)
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#  define _LIBCUDACXX_PRAGMA_UNROLL(_N) __pragma(_LIBCUDACXX_TOSTRING(unroll _N))
+#else // ^^^ _LIBCUDACXX_COMPILER_MSVC ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC vvv
+#  define _LIBCUDACXX_PRAGMA_UNROLL(_N) _Pragma(_LIBCUDACXX_TOSTRING(unroll _N))
+#endif // !_LIBCUDACXX_COMPILER_MSVC
+#else // ^^^ _LIBCUDACXX_CUDACC ^^^ / vvv !_LIBCUDACXX_CUDACCvvv
+#  define _LIBCUDACXX_PRAGMA_UNROLL(_N)
+#endif // !__CUDA_ARCH__
+
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
 #define _LIBCUDACXX_ALWAYS_INLINE __forceinline
 #else

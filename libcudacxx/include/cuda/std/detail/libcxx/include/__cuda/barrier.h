@@ -1009,6 +1009,17 @@ void __cp_async_fallback_mechanism(_Group __g, char * __dest, const char * __src
 
     // "Group"-strided loop over memory
     const size_t __stride = __g.size() * __copy_size;
+
+    // An unroll factor of 64 ought to be enough for anybody. This unroll pragma
+    // is mainly intended to place an upper bound on loop unrolling. The number
+    // is more than high enough for the intended use case: an unroll factor of
+    // 64 allows moving 4 * 64 * 256 = 64kb in one unrolled loop with 256
+    // threads (copying ints). On the other hand, in the unfortunate case that
+    // we have to move 1024 bytes / thread with char width, then we prevent
+    // fully unrolling the loop to 1024 copy instructions. This prevents the
+    // compile times from increasing unreasonably, and also has neglibible
+    // impact on runtime performance.
+_LIBCUDACXX_PRAGMA_UNROLL(64)
     for (_CUDA_VSTD::size_t __offset = __g.thread_rank() * __copy_size; __offset < __size; __offset += __stride) {
         __chunk_t tmp = *reinterpret_cast<const __chunk_t *>(__src + __offset);
         *reinterpret_cast<__chunk_t *>(__dest + __offset) = tmp;
