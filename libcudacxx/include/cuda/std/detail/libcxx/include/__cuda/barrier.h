@@ -680,7 +680,6 @@ void barrier_expect_tx(
     // and __trap() if wrong, then those tools would not be able to help
     // us in release builds. In debug builds, the error would be caught
     // by the asserts at the top of this function.
-
     auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
     asm (
         "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
@@ -724,11 +723,10 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool __unused(_Ty&) {return true;}
 template<thread_scope _Sco, typename _CompF, bool _Is_mbarrier = (_Sco == thread_scope_block) && _CUDA_VSTD::is_same<_CompF, _CUDA_VSTD::__empty_completion>::value>
 _LIBCUDACXX_INLINE_VISIBILITY
 bool __is_local_smem_barrier(barrier<_Sco, _CompF> & __barrier) {
-    NV_DISPATCH_TARGET(
+    NV_IF_ELSE_TARGET(
         NV_IS_DEVICE, (
             return _Is_mbarrier && __isShared(&__barrier);
-        ),
-        NV_ANY_TARGET, (
+        ),(
             return false;
         )
     );
@@ -754,17 +752,17 @@ _CUDA_VSTD::uint64_t * __try_get_barrier_handle<::cuda::thread_scope_block, _CUD
     );
 }
 
-struct __memcpy_completion_impl {
-    // This struct contains functions to delay the completion of a barrier phase
-    // or pipeline stage until a specific memcpy_async operation *initiated by
-    // this thread* has completed.
+// This struct contains functions to delay the completion of a barrier phase
+// or pipeline stage until a specific memcpy_async operation *initiated by
+// this thread* has completed.
 
-    // The user is still responsible for arriving and waiting on (or otherwise
-    // synchronizing with) the barrier or pipeline barrier to see the results of
-    // copies from other threads participating in the synchronization object.
+// The user is still responsible for arriving and waiting on (or otherwise
+// synchronizing with) the barrier or pipeline barrier to see the results of
+// copies from other threads participating in the synchronization object.
+struct __memcpy_completion_impl {
 
     template<typename _Group>
-    _LIBCUDACXX_INLINE_VISIBILITY static
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY static
     async_contract_fulfillment __delay(
         __completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, barrier<::cuda::thread_scope_block> & __barrier) {
         // In principle, this is the overload for shared memory barriers. However, a
@@ -775,7 +773,6 @@ struct __memcpy_completion_impl {
         }
 
         _CUDA_VSTD::uint64_t * __bh = __try_get_barrier_handle(__barrier);
-
         if (__cm == __completion_mechanism::__async_group) {
             NV_IF_TARGET(
                 // Pre-SM80, the async_group mechanism is not available.
@@ -790,9 +787,8 @@ struct __memcpy_completion_impl {
             );
             return async_contract_fulfillment::async;
         } else if (__cm == __completion_mechanism::__mbarrier_complete_tx) {
-            NV_IF_TARGET(
-                // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
-                NV_PROVIDES_SM_90, (
+            // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
+            NV_IF_TARGET(NV_PROVIDES_SM_90, (
                     // Only perform the expect_tx operation with the leader thread
                     if (__group.thread_rank() == 0) {
                         ::cuda::device::barrier_expect_tx(__barrier, __size);
@@ -808,7 +804,7 @@ struct __memcpy_completion_impl {
     }
 
     template<typename _Group, thread_scope _Sco, typename _CompF>
-    _LIBCUDACXX_INLINE_VISIBILITY static
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY static
     async_contract_fulfillment __delay(
         __completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
         return __delay_non_smem_barrier(__cm, __group, __size, __barrier);
@@ -965,7 +961,7 @@ void __cp_async_shared_global_impl(_Group __g, char * __dest, const char * __src
     static_assert(4 <= _Alignment, "cp.async requires at least 4-byte alignment");
 
     // Maximal copy size is 16.
-    constexpr int __copy_size = (16 < _Alignment) ? 16 : _Alignment;
+    constexpr int __copy_size = (_Alignment > 16) ? 16 : _Alignment;
     // We use an int offset here, because we are copying to shared memory,
     // which is easily addressable using int.
     const int __group_size = __g.size();
@@ -991,7 +987,6 @@ void __cp_async_fallback(_Group __g, char * __dest, const char * __src, _CUDA_VS
 
     // "Group"-strided loop over memory
     const size_t __stride = __g.size() * __copy_size;
-
     for (_CUDA_VSTD::size_t __offset = __g.thread_rank() * __copy_size; __offset < __size; __offset += __stride) {
         __chunk_t tmp = *reinterpret_cast<const __chunk_t *>(__src + __offset);
         *reinterpret_cast<__chunk_t *>(__dest + __offset) = tmp;
@@ -1004,7 +999,7 @@ void __cp_async_fallback(_Group __g, char * __dest, const char * __src, _CUDA_VS
  * - __get_size_align struct to determine the alignment from a size type.
  ***********************************************************************/
 
-// The __get_size_align struct provides a way to interrogate the guaranteed
+// The __get_size_align struct provides a way to query the guaranteed
 // "alignment" of a provided size. In this case, an n-byte aligned size means
 // that the size is a multiple of n.
 //
@@ -1062,7 +1057,7 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
 
     NV_IF_TARGET(NV_PROVIDES_SM_80, (
         const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
-        if _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 (4 <= _Align) {
+        if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 4) {
             if (__can_use_async_group) {
                 __cp_async_shared_global_impl<_Align>(__group, __dest_char, __src_char, __size);
                 return __completion_mechanism::__async_group;
@@ -1081,7 +1076,7 @@ __completion_mechanism __dispatch_memcpy_async_device(_Group const & __group, ch
     // Dispatch based on direction of the copy: global to shared, shared to
     // global, etc.
 
-    // CUDA compilers < 12.3 may not propagate assumptions about the state space
+    // CUDA compilers <= 12.2 may not propagate assumptions about the state space
     // of pointers correctly. Therefore, we
     // 1) put the code for each copy direction in a separate function, and
     // 2) make sure none of the code paths can reach each other by "falling through".
