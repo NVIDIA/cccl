@@ -777,8 +777,6 @@ struct __memcpy_completion_impl {
             return __delay_non_smem_barrier(__cm, __group, __size, __barrier);
         }
 
-        _CUDA_VSTD::uint64_t * __bh = __try_get_barrier_handle(__barrier);
-
         switch (__cm) {
             case  __completion_mechanism::__async_group:
                 // Pre-SM80, the async_group mechanism is not available.
@@ -786,6 +784,8 @@ struct __memcpy_completion_impl {
                     // Non-Blocking: unbalance barrier by 1, barrier will be
                     // rebalanced when all thread-local cp.async instructions
                     // have completed writing to shared memory.
+                    _CUDA_VSTD::uint64_t * __bh = __try_get_barrier_handle(__barrier);
+
                     asm volatile ("cp.async.mbarrier.arrive.shared.b64 [%0];"
                                   :: "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bh)))
                                   : "memory");
