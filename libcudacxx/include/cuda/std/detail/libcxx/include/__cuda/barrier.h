@@ -1054,14 +1054,14 @@ struct __get_size_align<T, _CUDA_VSTD::__void_t<decltype(T::align)>> {
  ***********************************************************************/
 
 template<_CUDA_VSTD::size_t _Align, typename _Group>
-inline __device__
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
 __completion_mechanism __dispatch_memcpy_async_any_to_any(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
     __cp_async_fallback<_Align>(__group, __dest_char, __src_char, __size);
     return __completion_mechanism::__sync;
 }
 
 template<_CUDA_VSTD::size_t _Align, typename _Group>
-inline __device__
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
 __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (
         const bool __can_use_complete_tx = __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
@@ -1091,7 +1091,7 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
 }
 
 template<_CUDA_VSTD::size_t _Align, typename _Group>
-inline __device__
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
 __completion_mechanism __dispatch_memcpy_async_device(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
     // Dispatch based on direction of the copy: global to shared, shared to
     // global, etc.
@@ -1111,7 +1111,7 @@ __completion_mechanism __dispatch_memcpy_async_device(_Group const & __group, ch
 
 // __dispatch_memcpy_async is the internal entry point for dispatching to the correct memcpy_async implementation.
 template<typename _Group, typename _Tp, typename _Size>
-inline __host__ __device__
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
 __completion_mechanism __dispatch_memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, _CUDA_VSTD::uint32_t __allowed_completions, uint64_t* __bar_handle) {
     // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
     // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
@@ -1144,7 +1144,7 @@ __completion_mechanism __dispatch_memcpy_async(_Group const & __group, _Tp * __d
 }
 
 template<typename _Group, typename _Tp, typename _Size>
-inline __host__ __device__
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
 __completion_mechanism __dispatch_memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, _CUDA_VSTD::uint32_t __allowed_completions) {
     _LIBCUDACXX_DEBUG_ASSERT(! (__allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx)), "Cannot allow mbarrier_complete_tx completion mechanism when not passing a barrier. ");
     return __dispatch_memcpy_async(__group, __destination, __source, __size, __allowed_completions, nullptr);
