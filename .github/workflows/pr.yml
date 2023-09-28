@@ -149,10 +149,10 @@ jobs:
     name: CI
     needs:
       - clang-cuda
-      #- cub
-      #- libcudacxx
-      #- nvrtc
-      #- thrust
-      #- examples
+      - cub
+      - libcudacxx
+      - nvrtc
+      - thrust
+      - examples
     steps:
       - run: echo "CI success"
