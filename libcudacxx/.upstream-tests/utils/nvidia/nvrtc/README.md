@@ -19,8 +19,7 @@ The input file is processed to be compatible with NVRTC similarly to the `nvrtc.
 The resulting file is then compiled with NVRTC and stored as a fatbin. This is, in effect, a compilation pass for NVRTC.
 `.fail.cpp` tests will be analyzable by lit and should work properly.
 
-For execution, the fatbin file is provided to nvrtcc again, but will this time instead launch on GPU the precompiled
-test unit.
+For execution, the fatbin file is provided to nvrtcc again, but will instead launch the precompiled test unit on the GPU.
 
 ```mermaid
 flowchart TD;
