@@ -73,7 +73,7 @@ function configure_preset {
     $test_result = $LastExitCode
 
     If ($test_result -ne 0) {
-        throw '$step Failed'
+        throw "$step Failed"
     }
 
     Write-Host "$step complete."
@@ -99,9 +99,9 @@ function build_preset {
     sccache_stats('Stop')
 
     echo "$step complete"
-    
+
     If ($test_result -ne 0) {
-         throw '$step Failed'
+         throw "$step Failed"
     }
 }
 
@@ -125,9 +125,9 @@ function test_preset {
     sccache_stats('Stop')
 
     echo "$step complete"
-    
+
     If ($test_result -ne 0) {
-         throw '$step Failed'
+         throw "$step Failed"
     }
 }
 
