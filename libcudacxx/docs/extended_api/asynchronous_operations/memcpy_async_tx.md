@@ -18,16 +18,14 @@ cuda::device::memcpy_async_tx(
   cuda::barrier<cuda::thread_scope_block>& bar);
 ```
 
-Copies `size` bytes from global memory `src` to shared memory `dest` and arrives
-on a shared memory barrier `bar`, updating its transaction count by `size`
-bytes.
+Copies `size` bytes from global memory `src` to shared memory `dest` and decrements the transaction count of `bar` by `size` bytes.
 
 ## Preconditions
 
 * `src`, `dest` are 16-byte aligned and `size` is a multiple of 16, i.e.,
   `Alignment >= 16`.
-* `dest` points to shared memory
-* `src` points to global memory
+* `dest` points to a shared memory allocation that is at least `size` bytes wide.
+* `src` points to a global memory allocation that is at least `size` bytes wide.
 * `bar` is located in shared memory
 * If either `destination` or `source` is an invalid or null pointer, the
     behavior is undefined (even if `count` is zero).
@@ -46,9 +44,8 @@ available.
 
 **Comparison to `cuda::memcpy_async`**: `memcpy_async_tx` supports a subset of
 the operations of `memcpy_async`. It gives more control over the synchronization
-with a barrier than `memcpy_async`. `memcpy_async_tx` has no synchronous
-fallback mechanism, so it can be used to ensure that the newest hardware
-features are used. The drawback is that it does not work on older hardware
+with a barrier than `memcpy_async`. Currently, `memcpy_async_tx` has no synchronous
+fallback mechanism., i.e., it currently does not work on older hardware
 (pre-CUDA Compute Capability 9.0, i.e., Hopper).
 
 ## Return Value
