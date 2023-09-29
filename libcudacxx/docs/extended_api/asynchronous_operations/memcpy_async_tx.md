@@ -31,10 +31,10 @@ bytes.
 * `bar` is located in shared memory
 * If either `destination` or `source` is an invalid or null pointer, the
     behavior is undefined (even if `count` is zero).
-* If the objects are [potentially-overlapping] the behavior is undefined.
-* If the objects are not of [_TriviallyCopyable_] type the program is
-    ill-formed, no diagnostic required.
 
+## Requires
+
+* `is_trivially_copyable_v<T>` is true.
  
 ## Notes
 
@@ -80,7 +80,7 @@ __global__ void example_kernel() {
     cuda::device::memcpy_async_tx(smem_x, gmem_x, cuda::aligned_size_t<16>(sizeof(smem_x)), bar);
     token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_x));
   } else {
-    auto token = bar.arrive(1);
+    token = bar.arrive(1);
   } 
   bar.wait(cuda::std::move(token));
 
