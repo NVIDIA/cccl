@@ -617,6 +617,13 @@ _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
     const _Tp* __src,
     ::cuda::aligned_size_t<_Alignment> __size,
     ::cuda::barrier<::cuda::thread_scope_block> & __b) {
+    // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
+    // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
+    // memcpy_async when compiling with GCC 4.8.
+    // FIXME: remove the #if once GCC 4.8 is no longer supported.
+#if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
+    static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async_tx requires a trivially copyable type");
+#endif
     static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
 
     _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
@@ -635,7 +642,6 @@ _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
                       "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
                       "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh))
                     : "memory");
-
             } else {
                 // memcpy_async_tx only supports copying from global to shared
                 // or from shared to remote cluster dsmem. To copy to remote
