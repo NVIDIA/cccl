@@ -1181,7 +1181,8 @@ class Configuration(object):
                 addIfHostSupports('-Wall')
                 addIfHostSupports('-Wextra')
                 addIfHostSupports('-Werror')
-                addIfHostSupports('-Wno-literal-suffix') # GCC warning about reserved UDLs
+                if 'gcc' in self.config.available_features:
+                    addIfHostSupports('-Wno-literal-suffix') # GCC warning about reserved UDLs
                 addIfHostSupports('-Wno-user-defined-literals') # Clang warning about reserved UDLs
                 addIfHostSupports('-Wno-unused-parameter')
                 addIfHostSupports('-Wno-unused-local-typedefs') # GCC warning local typdefs
