@@ -213,8 +213,10 @@ int main(int, char**) {
     static_assert(cuda::std::is_nothrow_invocable_r<CantMove, Fn>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable_r<CantMove, Fn, int>::value, "");
 
+#ifndef _LIBCUDACXX_COMPILER_MSVC_2017
     static_assert(cuda::std::is_nothrow_invocable_r_v<CantMove, Fn>, "");
     static_assert(!cuda::std::is_nothrow_invocable_r_v<CantMove, Fn, int>, "");
+#endif // _LIBCUDACXX_COMPILER_MSVC_2017
   }
 #endif // TEST_STD_VER >= 17
   {
