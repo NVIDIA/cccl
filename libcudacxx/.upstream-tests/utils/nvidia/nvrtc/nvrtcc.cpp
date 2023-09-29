@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
 
     // Start by parsing arguments and building the configuration
     std::string c_arg{};
-    for (auto a = g_argv; a < g_argv+g_argc; a++) {
+    for (auto a = g_argv; a < g_argv + g_argc; a++) {
         // If the argument was greedy, we'll retry with an appended argument
         c_arg = (argState == GREEDY) ? c_arg + " " + *a : *a;
 
