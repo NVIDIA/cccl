@@ -12,7 +12,7 @@ lit ... $TEST_DIR
 
 ## How it works
 
-`nvrtcc` processes incoming arguments matching for flags that modify its behavior, and passing the rest to NVRTC.
+`nvrtcc` processes incoming arguments matching for flags that modify its behavior, and passes the rest to NVRTC.
 It will hopefully filter any that don't apply (gcc warnings and such).
 
 The input file is processed to be compatible with NVRTC similarly to the `nvrtc.sh` scripts during compilation.
