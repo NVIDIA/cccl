@@ -1,6 +1,8 @@
 > **Note**
 > The instructions in this README are specific to Linux development environments. Instructions for Windows is coming soon!
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/NVIDIA/cccl?quickstart=1&devcontainer_path=.devcontainer%2Fdevcontainer.json)
+
 # CCCL Dev Containers
 
 To ensure consistency and ease of setup, CCCL uses [Development Containers](https://code.visualstudio.com/docs/devcontainers/containers) for local development and for CI. This guide covers setup in Visual Studio Code and Docker.
@@ -76,6 +78,14 @@ For more information about the sccache configuration and authentication, see the
 CCCL provides environments for both the oldest and newest supported CUDA versions with all compatible host compilers.
 
 Look in the [`.devcontainer/`](.) directory to see the available configurations.The top-level [`devcontainer.json`](./devcontainer.json) serves as the default environment. All `devcontainer.json` files in the `cuda<CTK_VERSION>-<HOST-COMPILER>` sub-directories are derived from this top-level file, just with different base images to for the different CUDA and host compiler versions.
+
+## GitHub Codespaces
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/NVIDIA/cccl?quickstart=1&devcontainer_path=.devcontainer%2Fdevcontainer.json)
+
+Dev Containers integrate natively with [GitHub Codespaces](https://github.com/features/codespaces) that provide a VSCode development environment right in your browser running on a machine in the cloud. This provides a truly one-click, turnkey development environment with no other setup required.
+
+Click the badge above or [click here](https://codespaces.new/NVIDIA/cccl?quickstart=1&devcontainer_path=.devcontainer%2Fdevcontainer.json) to get started with CCCL's Dev Containers on Codespaces.
 
 ## For Maintainers: The `make_devcontainers.sh` Script
 
