@@ -17,7 +17,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdint>
-#include <cassert>
+#include <cuda/std/cassert>
 #include "test_macros.h"
 #include "controlled_allocators.h"
 #include "uses_alloc_types.h"
