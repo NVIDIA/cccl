@@ -69,6 +69,9 @@ function configure_preset {
 
     $step = "$BUILD_NAME (configure)"
 
+    # CMake must be invoked in the same directory as the presets file:
+    pushd ".."
+
     cmake --preset $PRESET $CMAKE_OPTIONS --log-level VERBOSE
     $test_result = $LastExitCode
 
@@ -76,6 +79,7 @@ function configure_preset {
         throw "$step Failed"
     }
 
+    popd
     Write-Host "$step complete."
 }
 
@@ -91,6 +95,9 @@ function build_preset {
 
     $step = "$BUILD_NAME (build)"
 
+    # CMake must be invoked in the same directory as the presets file:
+    pushd ".."
+
     sccache_stats('Start')
 
     cmake --build --preset $PRESET
@@ -103,6 +110,8 @@ function build_preset {
     If ($test_result -ne 0) {
          throw "$step Failed"
     }
+
+    popd
 }
 
 function test_preset {
@@ -117,6 +126,9 @@ function test_preset {
 
     $step = "$BUILD_NAME (test)"
 
+    # CTest must be invoked in the same directory as the presets file:
+    pushd ".."
+
     sccache_stats('Start')
 
     ctest --preset $PRESET
@@ -129,6 +141,8 @@ function test_preset {
     If ($test_result -ne 0) {
          throw "$step Failed"
     }
+
+    popd
 }
 
 function configure_and_build_preset {
