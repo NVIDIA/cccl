@@ -266,7 +266,7 @@ class Configuration(object):
         # Gather various compiler parameters.
         cxx = self.get_lit_conf('cxx_under_test')
         cxx_first_arg = self.get_lit_conf('cxx_first_arg')
-        nvrtc = self.get_lit_conf('is_nvrtc', False)
+        nvrtc = self.get_lit_bool('is_nvrtc', False)
 
         self.cxx_is_clang_cl = cxx is not None and \
                                os.path.basename(cxx) == 'clang-cl.exe'
@@ -298,76 +298,76 @@ class Configuration(object):
             self.cxx.compile_env = dict(os.environ)
         # If compiler is *not* NVRTCC
         else:
-          # If no specific cxx_under_test was given, attempt to infer it as
-          # clang++.
-          if cxx is None or self.cxx_is_clang_cl:
-              search_paths = self.config.environment['PATH']
-              if cxx is not None and os.path.isabs(cxx):
-                  search_paths = os.path.dirname(cxx)
-              clangxx = libcudacxx.util.which('clang++', search_paths)
-              if clangxx:
-                  cxx = clangxx
-                  self.lit_config.note(
-                      "inferred cxx_under_test as: %r" % cxx)
-              elif self.cxx_is_clang_cl:
-                  self.lit_config.fatal('Failed to find clang++ substitution for'
-                                        ' clang-cl')
-          if not cxx:
-              self.lit_config.fatal('must specify user parameter cxx_under_test '
-                                    '(e.g., --param=cxx_under_test=clang++)')
-          self.cxx = CXXCompiler(cxx, cxx_first_arg) if not self.cxx_is_clang_cl else \
-                    self._configure_clang_cl(cxx)
-          cxx_type = self.cxx.type
-          if cxx_type is not None:
-              assert self.cxx.version is not None
-              maj_v, min_v, patch_v = self.cxx.version
-              self.config.available_features.add(cxx_type)
-              self.config.available_features.add('%s-%s' % (cxx_type, maj_v))
-              self.config.available_features.add('%s-%s.%s' % (
-                  cxx_type, maj_v, min_v))
-              self.config.available_features.add('%s-%s.%s.%s' % (
-                  cxx_type, maj_v, min_v, patch_v))
-          self.lit_config.note("detected cxx.type as: {}".format(
-                              self.cxx.type))
-          self.lit_config.note("detected cxx.version as: {}".format(
-                              self.cxx.version))
-          self.lit_config.note("detected cxx.default_dialect as: {}".format(
-                              self.cxx.default_dialect))
-          self.cxx.compile_env = dict(os.environ)
-          # 'CCACHE_CPP2' prevents ccache from stripping comments while
-          # preprocessing. This is required to prevent stripping of '-verify'
-          # comments.
-          self.cxx.compile_env['CCACHE_CPP2'] = '1'
-
-          if self.cxx.type == 'nvcc':
-            nvcc_host_compiler = self.get_lit_conf('nvcc_host_compiler')
-            if len(nvcc_host_compiler.strip()) == 0:
-              if platform.system() == 'Darwin':
-                nvcc_host_compiler = 'clang'
-              elif platform.system() == 'Windows':
-                nvcc_host_compiler = 'cl.exe'
-              else:
-                nvcc_host_compiler = 'gcc'
-
-            self.host_cxx = CXXCompiler(nvcc_host_compiler, None)
-            self.host_cxx_type = self.host_cxx.type
-            if self.host_cxx_type is not None:
-                assert self.host_cxx.version is not None
-                maj_v, min_v, _ = self.host_cxx.version
-                self.config.available_features.add(self.host_cxx_type)
-                self.config.available_features.add('%s-%s' % (
-                    self.host_cxx_type, maj_v))
+            # If no specific cxx_under_test was given, attempt to infer it as
+            # clang++.
+            if cxx is None or self.cxx_is_clang_cl:
+                search_paths = self.config.environment['PATH']
+                if cxx is not None and os.path.isabs(cxx):
+                    search_paths = os.path.dirname(cxx)
+                clangxx = libcudacxx.util.which('clang++', search_paths)
+                if clangxx:
+                    cxx = clangxx
+                    self.lit_config.note(
+                        "inferred cxx_under_test as: %r" % cxx)
+                elif self.cxx_is_clang_cl:
+                    self.lit_config.fatal('Failed to find clang++ substitution for'
+                                          ' clang-cl')
+            if not cxx:
+                self.lit_config.fatal('must specify user parameter cxx_under_test '
+                                      '(e.g., --param=cxx_under_test=clang++)')
+            self.cxx = CXXCompiler(cxx, cxx_first_arg) if not self.cxx_is_clang_cl else \
+                       self._configure_clang_cl(cxx)
+            cxx_type = self.cxx.type
+            if cxx_type is not None:
+                assert self.cxx.version is not None
+                maj_v, min_v, patch_v = self.cxx.version
+                self.config.available_features.add(cxx_type)
+                self.config.available_features.add('%s-%s' % (cxx_type, maj_v))
                 self.config.available_features.add('%s-%s.%s' % (
-                    self.host_cxx_type, maj_v, min_v))
-            self.lit_config.note("detected host_cxx.type as: {}".format(
-                                self.host_cxx.type))
-            self.lit_config.note("detected host_cxx.version as: {}".format(
-                                self.host_cxx.version))
-            self.lit_config.note("detected host_cxx.default_dialect as: {}".format(
-                                self.host_cxx.default_dialect))
+                    cxx_type, maj_v, min_v))
+                self.config.available_features.add('%s-%s.%s.%s' % (
+                    cxx_type, maj_v, min_v, patch_v))
+            self.lit_config.note("detected cxx.type as: {}".format(
+                                 self.cxx.type))
+            self.lit_config.note("detected cxx.version as: {}".format(
+                                 self.cxx.version))
+            self.lit_config.note("detected cxx.default_dialect as: {}".format(
+                                 self.cxx.default_dialect))
+            self.cxx.compile_env = dict(os.environ)
+            # 'CCACHE_CPP2' prevents ccache from stripping comments while
+            # preprocessing. This is required to prevent stripping of '-verify'
+            # comments.
+            self.cxx.compile_env['CCACHE_CPP2'] = '1'
 
-          if 'icc' in self.config.available_features:
-              self.cxx.link_flags += ['-lirc']
+            if self.cxx.type == 'nvcc':
+                nvcc_host_compiler = self.get_lit_conf('nvcc_host_compiler')
+                if len(nvcc_host_compiler.strip()) == 0:
+                    if platform.system() == 'Darwin':
+                        nvcc_host_compiler = 'clang'
+                    elif platform.system() == 'Windows':
+                        nvcc_host_compiler = 'cl.exe'
+                    else:
+                        nvcc_host_compiler = 'gcc'
+
+                self.host_cxx = CXXCompiler(nvcc_host_compiler, None)
+                self.host_cxx_type = self.host_cxx.type
+                if self.host_cxx_type is not None:
+                    assert self.host_cxx.version is not None
+                    maj_v, min_v, _ = self.host_cxx.version
+                    self.config.available_features.add(self.host_cxx_type)
+                    self.config.available_features.add('%s-%s' % (
+                        self.host_cxx_type, maj_v))
+                    self.config.available_features.add('%s-%s.%s' % (
+                        self.host_cxx_type, maj_v, min_v))
+                self.lit_config.note("detected host_cxx.type as: {}".format(
+                                      self.host_cxx.type))
+                self.lit_config.note("detected host_cxx.version as: {}".format(
+                                      self.host_cxx.version))
+                self.lit_config.note("detected host_cxx.default_dialect as: {}".format(
+                                      self.host_cxx.default_dialect))
+
+            if 'icc' in self.config.available_features:
+                self.cxx.link_flags += ['-lirc']
 
     def _configure_clang_cl(self, clang_path):
         def _split_env_var(var):

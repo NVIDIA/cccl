@@ -80,66 +80,84 @@ class CXXCompiler(object):
     def _initTypeAndVersion(self):
         # Get compiler type and version
         try:
-          macros = self.dumpMacros()
-          compiler_type = None
-          major_ver = minor_ver = patchlevel = None
+            macros = self.dumpMacros()
+            compiler_type = None
+            major_ver = minor_ver = patchlevel = None
 
-          if '__NVCC__' in macros.keys():
-              compiler_type = 'nvcc'
-              major_ver = macros['__CUDACC_VER_MAJOR__']
-              minor_ver = macros['__CUDACC_VER_MINOR__']
-              patchlevel = macros['__CUDACC_VER_BUILD__']
-          elif '__NVCOMPILER' in macros.keys():
-              compiler_type = 'nvhpc'
-              # NVHPC, unfortunately, adds an extra space between the macro name
-              # and macro value in their macro dump mode.
-              major_ver = macros['__NVCOMPILER_MAJOR__'].strip()
-              minor_ver = macros['__NVCOMPILER_MINOR__'].strip()
-              patchlevel = macros['__NVCOMPILER_PATCHLEVEL__'].strip()
-          elif '__INTEL_COMPILER' in macros.keys():
-              compiler_type = 'icc'
-              major_ver = int(macros['__INTEL_COMPILER']) / 100
-              minor_ver = (int(macros['__INTEL_COMPILER']) % 100) / 10
-              patchlevel = int(macros['__INTEL_COMPILER']) % 10
-          elif '__clang__' in macros.keys():
-              compiler_type = 'clang'
-              # Treat Apple's LLVM fork differently.
-              if '__apple_build_version__' in macros.keys():
-                  compiler_type = 'apple-clang'
-              major_ver = macros['__clang_major__']
-              minor_ver = macros['__clang_minor__']
-              patchlevel = macros['__clang_patchlevel__']
-          elif '__GNUC__' in macros.keys():
-              compiler_type = 'gcc'
-              major_ver = macros['__GNUC__']
-              minor_ver = macros['__GNUC_MINOR__']
-              patchlevel = macros['__GNUC_PATCHLEVEL__']
+            if '__NVCC__' in macros.keys():
+                compiler_type = 'nvcc'
+                major_ver = macros['__CUDACC_VER_MAJOR__']
+                minor_ver = macros['__CUDACC_VER_MINOR__']
+                patchlevel = macros['__CUDACC_VER_BUILD__']
+            elif '__NVCOMPILER' in macros.keys():
+                compiler_type = 'nvhpc'
+                # NVHPC, unfortunately, adds an extra space between the macro name
+                # and macro value in their macro dump mode.
+                major_ver = macros['__NVCOMPILER_MAJOR__'].strip()
+                minor_ver = macros['__NVCOMPILER_MINOR__'].strip()
+                patchlevel = macros['__NVCOMPILER_PATCHLEVEL__'].strip()
+            elif '__INTEL_COMPILER' in macros.keys():
+                compiler_type = 'icc'
+                major_ver = int(macros['__INTEL_COMPILER']) / 100
+                minor_ver = (int(macros['__INTEL_COMPILER']) % 100) / 10
+                patchlevel = int(macros['__INTEL_COMPILER']) % 10
+            elif '__clang__' in macros.keys():
+                compiler_type = 'clang'
+                # Treat Apple's LLVM fork differently.
+                if '__apple_build_version__' in macros.keys():
+                    compiler_type = 'apple-clang'
+                major_ver = macros['__clang_major__']
+                minor_ver = macros['__clang_minor__']
+                patchlevel = macros['__clang_patchlevel__']
+            elif '__GNUC__' in macros.keys():
+                compiler_type = 'gcc'
+                major_ver = macros['__GNUC__']
+                minor_ver = macros['__GNUC_MINOR__']
+                patchlevel = macros['__GNUC_PATCHLEVEL__']
+            elif '_MSC_VER' in macros.keys():
+                compiler_type = "msvc"
+                major_ver  = int(int(macros['_MSC_FULL_VER']) / 10000000)
+                minor_ver  = int(int(macros['_MSC_FULL_VER']) / 100000 % 100)
+                patchlevel = int(int(macros['_MSC_FULL_VER']) % 100000)
 
-          if '__cplusplus' in macros.keys():
-            cplusplus = macros['__cplusplus']
-            if cplusplus[-1] == 'L':
-              cplusplus = cplusplus[:-1]
-            cpp_standard = int(cplusplus)
-
-            if cpp_standard <= 199711:
-              default_dialect = "c++03"
-            elif cpp_standard <= 201103:
-              default_dialect = "c++11"
-            elif cpp_standard <= 201402:
-              default_dialect = "c++14"
-            elif cpp_standard <= 201703:
-              default_dialect = "c++17"
+            if '__cplusplus' in macros.keys():
+                if '_MSVC_LANG' in macros.keys():
+                    msvc_lang = macros['_MSVC_LANG']
+                    if msvc_lang[-1] == 'L':
+                        msvc_lang = msvc_lang[:-1]
+                    msvc_lang = int(msvc_lang)
+                    if msvc_lang <= 201103:
+                        default_dialect = "c++11"
+                    elif msvc_lang <= 201402:
+                        default_dialect = "c++14"
+                    elif msvc_lang <= 201703:
+                        default_dialect = "c++17"
+                    elif msvc_lang > 201703:
+                        default_dialect = "c++20"
+                else:
+                    cplusplus = macros['__cplusplus']
+                    if cplusplus[-1] == 'L':
+                        cplusplus = cplusplus[:-1]
+                    cpp_standard = int(cplusplus)
+                    if cpp_standard <= 199711:
+                        default_dialect = "c++03"
+                    elif cpp_standard <= 201103:
+                        default_dialect = "c++11"
+                    elif cpp_standard <= 201402:
+                        default_dialect = "c++14"
+                    elif cpp_standard <= 201703:
+                        default_dialect = "c++17"
+                    else:
+                        default_dialect = "c++20"
             else:
-              default_dialect = "c++20"
-          else:
-            default_dialect = "c++03"
+                default_dialect = "c++03"
 
-          self.type = compiler_type
-          self.version = (major_ver, minor_ver, patchlevel)
-          self.default_dialect = default_dialect
+            self.type = compiler_type
+            self.version = (major_ver, minor_ver, patchlevel)
+            self.default_dialect = default_dialect
         except:
-          (self.type, self.version, self.default_dialect) = \
-              self.dumpVersion()
+            (self.type, self.version, self.default_dialect) = \
+                self.dumpVersion()
 
         if self.type == 'nvcc':
             # Treat C++ as CUDA when the compiler is NVCC.
@@ -148,9 +166,55 @@ class CXXCompiler(object):
             # Treat C++ as clang-cuda when the compiler is Clang.
             self.source_lang = 'cu'
 
-    def _basicCmd(self, source_files, out, mode=CM_Default, flags=[],
+    def _basicCmdCl(self, source_files, out, mode=CM_Default, flags=[],
                   input_is_cxx=False):
         cmd = []
+
+        if self.use_ccache \
+            and not mode == self.CM_Link \
+            and not mode == self.CM_PreProcess \
+            and not mode == self.CM_CheckCompileFlag:
+            cmd += [os.environ.get('CMAKE_CUDA_COMPILER_LAUNCHER')]
+
+        cmd += [self.path] + ([self.first_arg] if self.first_arg != '' else [])
+
+
+        if isinstance(source_files, list):
+            cmd += source_files
+        elif isinstance(source_files, str):
+            cmd += [source_files]
+        else:
+            raise TypeError('source_files must be a string or list')
+
+        if mode == self.CM_PreProcess or mode == self.CM_CheckCompileFlag:
+            cmd += ['/Zs', '/options:strict']
+        elif mode == self.CM_Compile:
+            cmd += ['/c']
+
+        cmd += self.flags
+        if self.use_verify:
+            cmd += self.verify_flags
+            assert mode in [self.CM_Default, self.CM_Compile]
+        if self.use_modules:
+            cmd += self.modules_flags
+        if mode != self.CM_Link:
+            cmd += self.compile_flags
+            if self.use_warnings:
+                cmd += self.warning_flags
+        if mode != self.CM_PreProcess and mode != self.CM_Compile and mode != self.CM_CheckCompileFlag:
+            cmd += self.link_flags
+        cmd += flags
+        if out is not None:
+            cmd += ["/link", "/out:\"{}\"".format(out)]
+        return cmd
+
+    def _basicCmd(self, source_files, out, mode=CM_Default, flags=[],
+                  input_is_cxx=False):
+        if self.path.startswith('cl'):
+            return self._basicCmdCl(source_files, out, mode, flags)
+
+        cmd = []
+
         if self.use_ccache \
             and not mode == self.CM_Link \
             and not mode == self.CM_PreProcess \
@@ -258,45 +322,58 @@ class CXXCompiler(object):
 
     def dumpVersion(self, flags=[], cwd=None):
         dumpversion_cpp = os.path.join(
-          os.path.dirname(os.path.abspath(__file__)), "dumpversion.cpp")
+            os.path.dirname(os.path.abspath(__file__)), "dumpversion.cpp")
         with_fn = lambda: libcudacxx.util.guardedTempFilename(suffix=".exe")
         with with_fn() as exe:
-          cmd, out, err, rc = self.compileLink([dumpversion_cpp], out=exe,
+            cmd, out, err, rc = self.compileLink([dumpversion_cpp], out=exe,
                                                flags=flags, cwd=cwd)
-          if rc != 0:
-            return ("unknown", (0, 0, 0), "c++03", False)
-          out, err, rc = libcudacxx.util.executeCommand(exe, env=self.compile_env,
+            if rc != 0:
+                return ("unknown", (0, 0, 0), "c++03")
+            out, err, rc = libcudacxx.util.executeCommand(exe, env=self.compile_env,
                                                     cwd=cwd)
-          version = None
-          try:
-            version = eval(out)
-          except:
-            pass
-          if not (isinstance(version, tuple) and 4 == len(version)):
-            version = ("unknown", (0, 0, 0), "c++03", False)
-        return version
+            version = None
+            try:
+                version = eval(out)
+            except:
+                pass
+
+            if not (isinstance(version, tuple) and 3 == len(version)):
+                version = ("unknown", (0, 0, 0), "c++03")
+            return version
 
     def dumpMacros(self, source_files=None, flags=[], cwd=None):
-        if (self.type == 'nvrtcc'):
-            return []
         if source_files is None:
-            source_files = os.devnull
-        flags = ['-dM'] + flags
-        cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
-        if rc != 0:
-            flags = ['-Xcompiler'] + flags
+            source_files = os.path.join(os.path.dirname(os.path.abspath(__file__)), "empty.cpp")
+
+        old_flags = flags
+        # Assume MSVC flags on Windows
+        if platform.system() == 'Windows':
+            flags = ['/Zc:preprocessor', '/PD'] + old_flags
+            cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
+            # Older MSVC does not support dumping macros
+            if err.find("D9002") > 0:
+                raise BaseException("Cannot be dumped on old MSVC")
+            if rc != 0:
+                flags = ['-Xcompiler', '/Zc:preprocessor', '-Xcompiler', '/PD'] + old_flags
+                cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
+                if err.find("D9002") > 0:
+                    raise BaseException("Cannot be dumped on old MSVC")
+        else:
+            flags = ['-dM'] + flags
             cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
             if rc != 0:
-                return cmd, out, err, rc
+                flags = ['-Xcompiler'] + flags
+                cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
+
+        if rc != 0:
+            raise BaseException("Macros failed to dump")
+
         parsed_macros = {}
         lines = [l.strip() for l in out.split('\n') if l.strip()]
         for l in lines:
             # NVHPC also outputs the file contents from -E -dM for some reason; handle that
             if not l.startswith('#define '):
-                if '__NVCOMPILER' not in parsed_macros.keys():
-                    assert False, "a line not starting with '#define' encountered in predefined macro dump"
-                else:
-                    continue
+                continue
             l = l[len('#define '):]
             macro, _, value = l.partition(' ')
             parsed_macros[macro] = value
