@@ -83,15 +83,12 @@ class CXXCompiler(object):
           macros = self.dumpMacros()
           compiler_type = None
           major_ver = minor_ver = patchlevel = None
-          self.is_nvrtc = False
 
           if '__NVCC__' in macros.keys():
               compiler_type = 'nvcc'
               major_ver = macros['__CUDACC_VER_MAJOR__']
               minor_ver = macros['__CUDACC_VER_MINOR__']
               patchlevel = macros['__CUDACC_VER_BUILD__']
-              if '__LIBCUDACXX_NVRTC_TEST__' in macros.keys():
-                self.is_nvrtc = True
           elif '__NVCOMPILER' in macros.keys():
               compiler_type = 'nvhpc'
               # NVHPC, unfortunately, adds an extra space between the macro name
@@ -141,7 +138,7 @@ class CXXCompiler(object):
           self.version = (major_ver, minor_ver, patchlevel)
           self.default_dialect = default_dialect
         except:
-          (self.type, self.version, self.default_dialect, self.is_nvrtc) = \
+          (self.type, self.version, self.default_dialect) = \
               self.dumpVersion()
 
         if self.type == 'nvcc':
@@ -280,6 +277,8 @@ class CXXCompiler(object):
         return version
 
     def dumpMacros(self, source_files=None, flags=[], cwd=None):
+        if (self.type == 'nvrtcc'):
+            return []
         if source_files is None:
             source_files = os.devnull
         flags = ['-dM'] + flags
@@ -373,7 +372,6 @@ class CXXCompiler(object):
             cmd.remove('-v')
         out, err, rc = libcudacxx.util.executeCommand(
             cmd, input=libcudacxx.util.to_bytes('#error\n'))
-
         assert rc != 0
         if flag in err:
             return False
