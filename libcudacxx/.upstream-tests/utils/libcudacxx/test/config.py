@@ -732,7 +732,7 @@ class Configuration(object):
                 cxx = self.cxx
                 success = True
 
-                if self.cxx.type == 'nvcc' or self.cxx.type == 'nvrtcc':
+                if self.cxx.type == 'nvcc':
                     # NVCC warns, but doesn't error, if the host compiler
                     # doesn't support the dialect. It's also possible that the
                     # host compiler supports the dialect, but NVCC doesn't.

@@ -3,5 +3,5 @@
 #include <unistd.h>
 
 static void platform_exec(char const* process, char ** args, size_t nargs) {
-    execvp(process, args)
+    execvp(process, args);
 }
