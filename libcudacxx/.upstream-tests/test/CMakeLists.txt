@@ -120,29 +120,30 @@ add_subdirectory(host_only)
 find_program(libcudacxx_LIT lit REQUIRED)
 
 if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
-  # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
-  # Only executed if explicitly requested.
-  add_custom_target(libcudacxx.test.lit.precompile
-    "${CMAKE_COMMAND}" -E env
-      "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-    "${libcudacxx_LIT}" -vv --no-progress-bar
-      "-Dexecutor=\"NoopExecutor()\"" # Don't run the compiled tests.
-      "${libcudacxx_SOURCE_DIR}/.upstream-tests/test"
-  )
+# Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
+# Only executed if explicitly requested.
+add_custom_target(libcudacxx.test.lit.precompile
+"${CMAKE_COMMAND}" -E env
+"LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
+"${libcudacxx_LIT}" -vv --no-progress-bar
+"-Dexecutor=\"NoopExecutor()\"" # Don't run the compiled tests.
+"${libcudacxx_SOURCE_DIR}/.upstream-tests/test"
+)
 endif()
 
 # Restricted to avoid oversubscribing the GPU:
 set(libcudacxx_LIT_PARALLEL_LEVEL 8 CACHE STRING
-  "Parallelism used to run libcudacxx's lit test suite."
+"Parallelism used to run libcudacxx's lit test suite."
 )
 
 add_test(NAME libcudacxx.test.lit COMMAND
-  "${CMAKE_COMMAND}" -E env
-    "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-  "${libcudacxx_LIT}" -vv --no-progress-bar
-    -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
-    "${libcudacxx_SOURCE_DIR}/.upstream-tests/test"
+"${CMAKE_COMMAND}" -E env
+"LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
+"${libcudacxx_LIT}" -vv --no-progress-bar
+-j "${libcudacxx_LIT_PARALLEL_LEVEL}"
+"${libcudacxx_SOURCE_DIR}/.upstream-tests/test"
 )
+
 set_tests_properties(libcudacxx.test.lit PROPERTIES
   TIMEOUT 3600
   RUN_SERIAL TRUE

@@ -1,4 +1,4 @@
-project(nvrtcc)
+project(libcudacxx.nvrtcc)
 
 enable_language(CUDA)
 find_package(CUDAToolkit REQUIRED)

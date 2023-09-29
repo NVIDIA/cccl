@@ -230,6 +230,11 @@
   ],
   "buildPresets": [
     {
+      "name": "libcudacxx-nvrtcc",
+      "hidden": false,
+      "targets": ["libcudacxx.nvrtcc"]
+    },
+    {
       "name": "libcudacxx-base",
       "hidden": true,
       "targets": ["libcudacxx.test.lit.precompile"]
