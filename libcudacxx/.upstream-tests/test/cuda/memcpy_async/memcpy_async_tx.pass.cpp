@@ -43,17 +43,26 @@ int main(int, char**)
                 init(&bar, blockDim.x);
             }
 
+            // Initialize gmem_x
+            for (int i = threadIdx.x; i < 2048; i += blockDim.x) {
+                gmem_x[i] = i;
+            }
+            __syncthreads();
+
             barrier_t::arrival_token token;
             if (threadIdx.x == 0) {
-                cuda::device::memcpy_async_tx(smem_x, gmem_x, cuda::aligned_size_t<16>(sizeof(smem_x)), bar);
+                auto fulfillment = cuda::device::memcpy_async_tx(smem_x, gmem_x, cuda::aligned_size_t<16>(sizeof(smem_x)), bar);
+                assert(fulfillment == cuda::async_contract_fulfillment::async);
                 token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_x));
             } else {
-                auto token = bar.arrive(1);
+                token = bar.arrive(1);
             }
             bar.wait(cuda::std::move(token));
 
-            // smem_x contains the contents of gmem_x[0], ..., gmem_x[1023]
-            smem_x[threadIdx.x] += 1;
+            // assert that smem_x contains the contents of gmem_x[0], ..., gmem_x[1023]
+            for (int i = threadIdx.x; i < 1024; i += blockDim.x) {
+                assert(smem_x[i] == i);
+            }
         )
     );
     return 0;
