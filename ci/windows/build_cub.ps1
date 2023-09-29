@@ -16,9 +16,9 @@ If($CURRENT_PATH -ne "ci") {
 Remove-Module -Name build_common
 Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD
 
-$PRESET = "thrust-$CXX_STANDARD"
+$PRESET = "cub-$CXX_STANDARD"
 
-configure_and_build_preset "Thrust" "$PRESET" "$CMAKE_OPTIONS"
+configure_and_build_preset "CUB" "$PRESET" "$CMAKE_OPTIONS"
 
 If($CURRENT_PATH -ne "ci") {
     popd
