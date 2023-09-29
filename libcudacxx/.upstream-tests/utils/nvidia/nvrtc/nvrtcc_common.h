@@ -80,7 +80,7 @@ static int parse_int_assignment(const std::string& input, std::string var, int d
         return def;
 
     std::string line(input.begin()+lineBegin, input.begin()+lineEnd);
-    std::regex varRegex("^" + var + ".*([0-9]+);?$");
+    std::regex varRegex("^" + var + ".*?([0-9]+).*?$");
     std::smatch match;
     std::regex_match(line, match, varRegex);
 
