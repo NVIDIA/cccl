@@ -68,9 +68,9 @@ struct AgentUniqueByKeyPolicy
         BLOCK_THREADS    = _BLOCK_THREADS,
         ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
     };
-    static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-    static const cub::CacheLoadModifier  LOAD_MODIFIER  = _LOAD_MODIFIER;
-    static const cub::BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+    static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+    static constexpr cub::CacheLoadModifier  LOAD_MODIFIER  = _LOAD_MODIFIER;
+    static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
 
     struct detail 
     {

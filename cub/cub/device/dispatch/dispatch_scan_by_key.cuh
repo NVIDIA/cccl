@@ -124,17 +124,17 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           typename AccumT,
           typename KeyT = cub::detail::value_t<KeysInputIteratorT>>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THREADS)) 
-__global__ void DeviceScanByKeyKernel(KeysInputIteratorT d_keys_in,
-                                      KeyT *d_keys_prev_in,
-                                      ValuesInputIteratorT d_values_in,
-                                      ValuesOutputIteratorT d_values_out,
-                                      ScanByKeyTileStateT tile_state,
-                                      int start_tile,
-                                      EqualityOp equality_op,
-                                      ScanOpT scan_op,
-                                      InitValueT init_value,
-                                      OffsetT num_items)
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(KeysInputIteratorT d_keys_in,
+                                                          KeyT *d_keys_prev_in,
+                                                          ValuesInputIteratorT d_values_in,
+                                                          ValuesOutputIteratorT d_values_out,
+                                                          ScanByKeyTileStateT tile_state,
+                                                          int start_tile,
+                                                          EqualityOp equality_op,
+                                                          ScanOpT scan_op,
+                                                          InitValueT init_value,
+                                                          OffsetT num_items)
 {
   using ScanByKeyPolicyT =
     typename ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT;
@@ -166,12 +166,12 @@ __global__ void DeviceScanByKeyKernel(KeysInputIteratorT d_keys_in,
 }
 
 template <typename ScanTileStateT, typename KeysInputIteratorT>
-__global__ void DeviceScanByKeyInitKernel(
-  ScanTileStateT tile_state,
-  KeysInputIteratorT d_keys_in,
-  cub::detail::value_t<KeysInputIteratorT> *d_keys_prev_in,
-  unsigned items_per_tile,
-  int num_tiles)
+CUB_DETAIL_KERNEL_ATTRIBUTES void
+DeviceScanByKeyInitKernel(ScanTileStateT tile_state,
+                          KeysInputIteratorT d_keys_in,
+                          cub::detail::value_t<KeysInputIteratorT> *d_keys_prev_in,
+                          unsigned items_per_tile,
+                          int num_tiles)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);

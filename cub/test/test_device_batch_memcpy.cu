@@ -658,7 +658,7 @@ int main(int argc, char **argv)
   using ByteOffsetT = uint32_t;
 
   // Total number of bytes that are targeted to be copied on each run
-  const BufferOffsetT target_copy_size = 64U << 20;
+  constexpr BufferOffsetT target_copy_size = 64U << 20;
 
   // The number of randomly
   constexpr std::size_t num_rnd_buffer_range_tests = 32;

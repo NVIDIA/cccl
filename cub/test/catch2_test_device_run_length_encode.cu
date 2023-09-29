@@ -39,7 +39,6 @@
 
 // Has to go after all cub headers. Otherwise, this test won't catch unused
 // variables in cub kernels.
-#include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
 
@@ -61,7 +60,7 @@ using types = c2h::type_list<std::uint32_t,
       // https://github.com/NVIDIA/cccl/issues/426
 CUB_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_length_encode]")
 {
-  const int num_items = 0;
+  constexpr int num_items = 0;
   thrust::device_vector<int> in(num_items);
   thrust::device_vector<int> out_num_runs(1, 42);
 
@@ -78,7 +77,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_l
 
 CUB_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]")
 {
-  const int num_items = 1;
+  constexpr int num_items = 1;
   thrust::device_vector<int> in(num_items, 42);
   thrust::device_vector<int> out_unique(num_items);
   thrust::device_vector<int> out_counts(num_items);
@@ -97,7 +96,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][
 
 CUB_TEST("DeviceRunLengthEncode::Encode can handle different counting types", "[device][run_length_encode]")
 {
-  const int num_items = 1;
+  constexpr int num_items = 1;
   thrust::device_vector<int>               in(num_items, 42);
   thrust::device_vector<int>               out_unique(num_items);
   thrust::device_vector<cuda::std::size_t> out_counts(num_items);
@@ -118,7 +117,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle all unique", "[device][run_le
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 10;
+  constexpr int num_items = 10;
   thrust::device_vector<type> out_unique(num_items);
   thrust::device_vector<int>  out_counts(num_items);
   thrust::device_vector<int>  out_num_runs(1);
@@ -143,7 +142,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle all equal", "[device][run_len
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 10;
+  constexpr int num_items = 10;
   thrust::device_vector<type> in(num_items, type{1});
   thrust::device_vector<type> out_unique(1);
   thrust::device_vector<int>  out_counts(1);
@@ -260,7 +259,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
 {
   using type = double;
 
-  const int num_items = 10;
+  constexpr int num_items = 10;
   thrust::device_vector<type> in(num_items);
   thrust::sequence(in.begin(), in.end(), 0.0);
   thrust::device_vector<type> out_unique(num_items);

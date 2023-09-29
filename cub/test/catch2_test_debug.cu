@@ -32,6 +32,7 @@ TEST_CASE("CubDebug resets last error", "[debug][utils]")
   cub::EmptyKernel<int><<<0, 0>>>();
   cudaError error = cudaPeekAtLastError();
 
+  REQUIRE( error != cudaSuccess );
   REQUIRE( CubDebug(cudaSuccess) != cudaSuccess );
   REQUIRE( CubDebug(cudaSuccess) == cudaSuccess );
 }

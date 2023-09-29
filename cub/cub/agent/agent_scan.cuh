@@ -90,10 +90,10 @@ template <int NOMINAL_BLOCK_THREADS_4B,
           typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
 struct AgentScanPolicy : ScalingType
 {
-  static const BlockLoadAlgorithm LOAD_ALGORITHM   = _LOAD_ALGORITHM;
-  static const CacheLoadModifier LOAD_MODIFIER     = _LOAD_MODIFIER;
-  static const BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
-  static const BlockScanAlgorithm SCAN_ALGORITHM   = _SCAN_ALGORITHM;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = _LOAD_ALGORITHM;
+  static constexpr CacheLoadModifier LOAD_MODIFIER     = _LOAD_MODIFIER;
+  static constexpr BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = _SCAN_ALGORITHM;
 
   struct detail 
   {

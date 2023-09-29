@@ -3,34 +3,40 @@ name: Dispatch build and test
 on:
   workflow_call:
     inputs:
+      project_name: {type: string, required: true}
       per_cuda_compiler_matrix: {type: string, required: true}
-      build_script: {type: string, required: false}
-      test_script: {type: string, required: false}
       devcontainer_version: {type: string, required: true}
+      is_windows: {type: boolean, required: true}
 
 jobs:
   # Using a matrix to dispatch to the build-and-test reusable workflow for each build configuration
   # ensures that the build/test steps can overlap across different configurations. For example,
   # the build step for CUDA 12.1 + gcc 9.3 can run at the same time as the test step for CUDA 11.0 + clang 11.
-  build_and_test:
-    name: ${{matrix.cpu}}
-    uses: ./.github/workflows/build-and-test.yml
+  build_and_test_linux:
+    name: build and test linux
+    if: ${{ !inputs.is_windows }}
+    uses: ./.github/workflows/build-and-test-linux.yml
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
     with:
-      cuda_version: ${{ matrix.cuda }}
-      compiler: ${{ matrix.compiler.name }}
-      compiler_exe: ${{ matrix.compiler.exe }}
-      compiler_version: ${{ matrix.compiler.version }}
-      std: ${{ matrix.std }}
-      gpu_build_archs: ${{ matrix.gpu_build_archs }}
       cpu: ${{ matrix.cpu }}
-      os: ${{ matrix.os }}
-      build_script: ${{ inputs.build_script }}
-      build_image: rapidsai/devcontainers:${{inputs.devcontainer_version}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
-      test_script: ${{ inputs.test_script }}
-      run_tests: ${{ contains(matrix.jobs, 'test') && !contains(github.event.head_commit.message, 'skip-tests') }}
-      test_image: rapidsai/devcontainers:${{inputs.devcontainer_version}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
+      test_name: ${{ matrix.cpu }}/${{matrix.compiler.name}}${{matrix.compiler.version}}/C++${{matrix.std}}
+      build_script: "./ci/build_${{ inputs.project_name }}.sh ${{matrix.compiler.exe}} ${{matrix.std}} ${{matrix.gpu_build_archs}}"
+      test_script:  "./ci/test_${{ inputs.project_name }}.sh  ${{matrix.compiler.exe}} ${{matrix.std}} ${{matrix.gpu_build_archs}}"
+      container_image: rapidsai/devcontainers:${{inputs.devcontainer_version}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
+      run_tests: ${{ contains(matrix.jobs, 'test') && !contains(github.event.head_commit.message, 'skip-tests') && matrix.os != 'windows-2022' }}
 
+  build_and_test_windows:
+    name: build and test windows
+    if: ${{ inputs.is_windows }}
+    uses: ./.github/workflows/build-and-test-windows.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
+    with:
+      test_name: ${{ matrix.cpu }}/${{matrix.compiler.name}}${{matrix.compiler.version}}/C++${{matrix.std}}
+      build_script: "./ci/windows/build_${{ inputs.project_name }}.ps1 ${{matrix.std}} ${{matrix.gpu_build_archs}}"
+      container_image: rapidsai/devcontainers:${{inputs.devcontainer_version}}-cuda${{matrix.cuda}}-${{matrix.compiler.name}}${{matrix.compiler.version}}-${{matrix.os}}

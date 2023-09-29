@@ -130,8 +130,8 @@ __global__ void sort_keys_bits()
        {42.4, 1ll << 60} // thread 1 keys
      }};
 
-  const int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  const int end_bit = sizeof(long long int) * 8 + 4; // 68
+  constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
@@ -228,8 +228,8 @@ __global__ void sort_keys_descending_bits()
        {24.2, 1ll << 61} // thread 1 keys
      }};
 
-  const int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  const int end_bit = sizeof(long long int) * 8 + 4; // 68
+  constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
@@ -343,8 +343,8 @@ __global__ void sort_pairs_bits()
     {{1},  // thread 0 values
      {0}}; // thread 1 values
 
-  const int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  const int end_bit = sizeof(long long int) * 8 + 4; // 68
+  constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
@@ -463,8 +463,8 @@ __global__ void sort_pairs_descending_bits()
     {{1},  // thread 0 values
      {0}}; // thread 1 values
 
-  const int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  const int end_bit = sizeof(long long int) * 8 + 4; // 68
+  constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
@@ -572,8 +572,8 @@ __global__ void sort_keys_blocked_to_striped_bits()
        {24.2, 1ll << 59}  
      }};
 
-  const int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  const int end_bit = sizeof(long long int) * 8 + 4; // 68
+  constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
@@ -696,8 +696,8 @@ __global__ void sort_pairs_blocked_to_striped_bits()
     {{3, 2},  // thread 0 values
      {1, 0}}; // thread 1 values
 
-  const int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  const int end_bit = sizeof(long long int) * 8 + 4; // 68
+  constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
@@ -815,8 +815,8 @@ __global__ void sort_keys_descending_blocked_to_striped_bits()
        {24.2, 1ll << 59}  
      }};
 
-  const int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  const int end_bit = sizeof(long long int) * 8 + 4; // 68
+  constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
@@ -941,8 +941,8 @@ __global__ void sort_pairs_descending_blocked_to_striped_bits()
     {{3, 2},  // thread 0 values
      {1, 0}}; // thread 1 values
 
-  const int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  const int end_bit = sizeof(long long int) * 8 + 4; // 68
+  constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //

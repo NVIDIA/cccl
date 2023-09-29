@@ -172,8 +172,8 @@ template <cub::WarpLoadAlgorithm LoadAlgorithm,
           typename T>
 thrust::device_vector<T> generate_input()
 {
-  const int tile_size = LOGICAL_WARP_THREADS * ITEMS_PER_THREAD;
-  const int num_items = TOTAL_WARPS * tile_size;
+  constexpr int tile_size = LOGICAL_WARP_THREADS * ITEMS_PER_THREAD;
+  constexpr int num_items = TOTAL_WARPS * tile_size;
 
   thrust::device_vector<T> d_input(num_items);
 
@@ -279,7 +279,7 @@ CUB_TEST("Warp load guarded range works with pointer",
                   thrust::raw_pointer_cast(d_error_counter.data()));
 
   const int num_errors           = d_error_counter[0];
-  const int expected_error_count = 0;
+  constexpr int expected_error_count = 0;
   REQUIRE(num_errors == expected_error_count);
 }
 
@@ -318,7 +318,7 @@ CUB_TEST("Warp load guarded range works with cache modified iterator",
                   thrust::raw_pointer_cast(d_error_counter.data()));
 
   const auto num_errors          = d_error_counter[0];
-  const int expected_error_count = 0;
+  constexpr int expected_error_count = 0;
   REQUIRE(num_errors == expected_error_count);
 }
 
@@ -349,7 +349,7 @@ CUB_TEST("Warp load unguarded range works with pointer",
                   thrust::raw_pointer_cast(d_error_counter.data()));
 
   const auto num_errors          = d_error_counter[0];
-  const int expected_error_count = 0;
+  constexpr int expected_error_count = 0;
   REQUIRE(num_errors == expected_error_count);
 }
 
@@ -382,6 +382,6 @@ CUB_TEST("Warp load unguarded range works with cache modified iterator",
             type>(in_it, delegate_t{}, thrust::raw_pointer_cast(d_error_counter.data()));
 
   const auto num_errors          = d_error_counter[0];
-  const int expected_error_count = 0;
+  constexpr int expected_error_count = 0;
   REQUIRE(num_errors == expected_error_count);
 }

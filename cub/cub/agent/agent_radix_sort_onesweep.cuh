@@ -82,9 +82,9 @@ struct AgentRadixSortOnesweepPolicy : ScalingType
         RANK_NUM_PARTS = _RANK_NUM_PARTS,
         RADIX_BITS = _RADIX_BITS,
     };
-    static const RadixRankAlgorithm RANK_ALGORITHM = _RANK_ALGORITHM;
-    static const BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
-    static const RadixSortStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
+    static constexpr RadixRankAlgorithm RANK_ALGORITHM = _RANK_ALGORITHM;
+    static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+    static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
 template <
@@ -128,11 +128,11 @@ struct AgentRadixSortOnesweep
 
     typedef PortionOffsetT AtomicOffsetT;
   
-    static const RadixRankAlgorithm RANK_ALGORITHM =
+    static constexpr RadixRankAlgorithm RANK_ALGORITHM =
                                     AgentRadixSortOnesweepPolicy::RANK_ALGORITHM;
-    static const BlockScanAlgorithm SCAN_ALGORITHM =
+    static constexpr BlockScanAlgorithm SCAN_ALGORITHM =
                                     AgentRadixSortOnesweepPolicy::SCAN_ALGORITHM;
-    static const RadixSortStoreAlgorithm STORE_ALGORITHM =
+    static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM =
                                     sizeof(bit_ordered_type) == sizeof(uint32_t) ?
                                     AgentRadixSortOnesweepPolicy::STORE_ALGORITHM :
                                     RADIX_SORT_STORE_DIRECT;
@@ -244,7 +244,7 @@ struct AgentRadixSortOnesweep
         AgentT& agent;
         int (&bins)[BINS_PER_THREAD];
         bit_ordered_type (&keys)[ITEMS_PER_THREAD];
-        static const bool EMPTY = false;
+        static constexpr bool EMPTY = false;
         __device__ __forceinline__ CountsCallback(
             AgentT& agent, int (&bins)[BINS_PER_THREAD], bit_ordered_type (&keys)[ITEMS_PER_THREAD])
             : agent(agent), bins(bins), keys(keys) {}
@@ -509,9 +509,9 @@ struct AgentRadixSortOnesweep
     __device__ __forceinline__ void ScatterKeysGlobalAligned()
     {
         // this only works with full tiles
-        const int ITEMS_PER_WARP = TILE_ITEMS / BLOCK_WARPS;
-        const int ALIGN = 8;
-        const auto CACHE_MODIFIER = STORE_CG;
+        constexpr int ITEMS_PER_WARP = TILE_ITEMS / BLOCK_WARPS;
+        constexpr int ALIGN = 8;
+        constexpr auto CACHE_MODIFIER = STORE_CG;
         
         int warp_start = warp * ITEMS_PER_WARP;
         int warp_end = (warp + 1) * ITEMS_PER_WARP;

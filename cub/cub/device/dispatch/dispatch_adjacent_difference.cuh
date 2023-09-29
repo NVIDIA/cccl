@@ -42,22 +42,14 @@
 
 CUB_NAMESPACE_BEGIN
 
-
-template <typename AgentDifferenceInitT,
-          typename InputIteratorT,
-          typename InputT,
-          typename OffsetT>
-void __global__ DeviceAdjacentDifferenceInitKernel(InputIteratorT first,
-                                                   InputT *result,
-                                                   OffsetT num_tiles,
-                                                   int items_per_tile)
+template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceInitKernel(InputIteratorT first,
+                                                                     InputT *result,
+                                                                     OffsetT num_tiles,
+                                                                     int items_per_tile)
 {
   const int tile_idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
-  AgentDifferenceInitT::Process(tile_idx,
-                                first,
-                                result,
-                                num_tiles,
-                                items_per_tile);
+  AgentDifferenceInitT::Process(tile_idx, first, result, num_tiles, items_per_tile);
 }
 
 template <typename ChainedPolicyT,
@@ -68,7 +60,7 @@ template <typename ChainedPolicyT,
           typename InputT,
           bool MayAlias,
           bool ReadLeft>
-void __global__
+CUB_DETAIL_KERNEL_ATTRIBUTES void
 DeviceAdjacentDifferenceDifferenceKernel(InputIteratorT input,
                                          InputT *first_tile_previous,
                                          OutputIteratorT result,
@@ -211,7 +203,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
 
     do
     {
-      const int tile_size = AdjacentDifferencePolicyT::ITEMS_PER_TILE;
+      constexpr int tile_size = AdjacentDifferencePolicyT::ITEMS_PER_TILE;
       const int num_tiles =
         static_cast<int>(DivideAndRoundUp(num_items, tile_size));
 
@@ -254,7 +246,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
         using AgentDifferenceInitT =
           AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadLeft>;
 
-        const int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
+        constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
         const int init_grid_size = DivideAndRoundUp(num_tiles, init_block_size);
 
         #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG

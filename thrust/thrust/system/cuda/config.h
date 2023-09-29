@@ -101,6 +101,7 @@
 #define THRUST_DEVICE_FUNCTION __device__ __forceinline__
 #define THRUST_HOST_FUNCTION __host__     __forceinline__
 #define THRUST_FUNCTION __host__ __device__ __forceinline__
+
 #if 0
 #define THRUST_ARGS(...) __VA_ARGS__
 #define THRUST_STRIP_PARENS(X) X

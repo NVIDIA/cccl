@@ -70,9 +70,10 @@ struct AgentBatchMemcpyLargeBuffersPolicy
 template <typename BufferOffsetScanTileStateT,
           typename BlockOffsetScanTileStateT,
           typename TileOffsetT>
-__global__ void InitTileStateKernel(BufferOffsetScanTileStateT buffer_offset_scan_tile_state,
-                                    BlockOffsetScanTileStateT block_offset_scan_tile_state,
-                                    TileOffsetT num_tiles)
+CUB_DETAIL_KERNEL_ATTRIBUTES void
+InitTileStateKernel(BufferOffsetScanTileStateT buffer_offset_scan_tile_state,
+                    BlockOffsetScanTileStateT block_offset_scan_tile_state,
+                    TileOffsetT num_tiles)
 {
   // Initialize tile status
   buffer_offset_scan_tile_state.InitializeStatus(num_tiles);
@@ -93,12 +94,13 @@ template <typename ChainedPolicyT,
           typename TileOffsetT,
           bool IsMemcpy>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLOCK_THREADS))
-  __global__ void MultiBlockBatchMemcpyKernel(InputBufferIt input_buffer_it,
-                                              OutputBufferIt output_buffer_it,
-                                              BufferSizeIteratorT buffer_sizes,
-                                              BufferTileOffsetItT buffer_tile_offsets,
-                                              TileT buffer_offset_tile,
-                                              TileOffsetT last_tile_offset)
+  CUB_DETAIL_KERNEL_ATTRIBUTES
+  void MultiBlockBatchMemcpyKernel(InputBufferIt input_buffer_it,
+                                   OutputBufferIt output_buffer_it,
+                                   BufferSizeIteratorT buffer_sizes,
+                                   BufferTileOffsetItT buffer_tile_offsets,
+                                   TileT buffer_offset_tile,
+                                   TileOffsetT last_tile_offset)
 {
   using StatusWord    = typename TileT::StatusWord;
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT;
@@ -219,16 +221,17 @@ template <typename ChainedPolicyT,
           typename BLevBlockOffsetTileState,
           bool IsMemcpy>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLOCK_THREADS))
-  __global__ void BatchMemcpyKernel(InputBufferIt input_buffer_it,
-                                    OutputBufferIt output_buffer_it,
-                                    BufferSizeIteratorT buffer_sizes,
-                                    BufferOffsetT num_buffers,
-                                    BlevBufferSrcsOutItT blev_buffer_srcs,
-                                    BlevBufferDstsOutItT blev_buffer_dsts,
-                                    BlevBufferSizesOutItT blev_buffer_sizes,
-                                    BlevBufferTileOffsetsOutItT blev_buffer_tile_offsets,
-                                    BLevBufferOffsetTileState blev_buffer_scan_state,
-                                    BLevBlockOffsetTileState blev_block_scan_state)
+  CUB_DETAIL_KERNEL_ATTRIBUTES
+  void BatchMemcpyKernel(InputBufferIt input_buffer_it,
+                         OutputBufferIt output_buffer_it,
+                         BufferSizeIteratorT buffer_sizes,
+                         BufferOffsetT num_buffers,
+                         BlevBufferSrcsOutItT blev_buffer_srcs,
+                         BlevBufferDstsOutItT blev_buffer_dsts,
+                         BlevBufferSizesOutItT blev_buffer_sizes,
+                         BlevBufferTileOffsetsOutItT blev_buffer_tile_offsets,
+                         BLevBufferOffsetTileState blev_buffer_scan_state,
+                         BLevBlockOffsetTileState blev_block_scan_state)
 {
   // Internal type used for storing a buffer's size
   using BufferSizeT = cub::detail::value_t<BufferSizeIteratorT>;

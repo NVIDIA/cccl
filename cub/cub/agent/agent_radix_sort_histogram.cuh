@@ -244,7 +244,7 @@ struct AgentRadixSortHistogram
     {
         // Within a portion, avoid overflowing (u)int32 counters.
         // Between portions, accumulate results in global memory.
-        const OffsetT MAX_PORTION_SIZE = 1 << 30;
+        constexpr OffsetT MAX_PORTION_SIZE = 1 << 30;
         OffsetT num_portions = cub::DivideAndRoundUp(num_items, MAX_PORTION_SIZE);
         for (OffsetT portion = 0; portion < num_portions; ++portion)
         {

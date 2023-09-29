@@ -41,7 +41,6 @@
 // variables in cub kernels.
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
 
@@ -298,12 +297,12 @@ struct index_to_custom_output_op
 
 CUB_TEST("Device scan works complex accumulator types", "[scan][device]")
 {
-  const int num_items = 2 * 1024 * 1024;
+  constexpr int num_items = 2 * 1024 * 1024;
 
   custom_accumulator_t init{};
 
-  thrust::device_vector<custom_input_t> d_input(num_items, custom_input_t{1});
-  thrust::device_vector<custom_output_t> d_output{num_items, custom_output_t{nullptr, 0}};
+  thrust::device_vector<custom_input_t> d_input(static_cast<size_t>(num_items), custom_input_t{1});
+  thrust::device_vector<custom_output_t> d_output{static_cast<size_t>(num_items), custom_output_t{nullptr, 0}};
   thrust::device_vector<int> d_ok_count(1);
 
   auto index_it = thrust::make_counting_iterator(0);

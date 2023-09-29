@@ -2,6 +2,11 @@
 # 3.21 is the minimum for the developer build.
 cmake_minimum_required(VERSION 3.15)
 
+# sccache cannot handle the -Fd option generationg pdb files
+if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  cmake_policy(SET CMP0141 NEW)
+endif()
+
 # Determine whether CCCL is the top-level project or included into
 # another project via add_subdirectory()
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")

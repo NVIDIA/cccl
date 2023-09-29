@@ -226,7 +226,7 @@ class WarpStore
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE,
                 "LOGICAL_WARP_THREADS must be a power of two");
 
-  constexpr static bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
 
 private:
   /// Store helper

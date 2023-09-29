@@ -331,7 +331,7 @@ CUB_VEC_OVERLOAD(double, double)
   template <>                                                                                      \
   struct NumericTraits<T>                                                                          \
   {                                                                                                \
-    static const Category CATEGORY = NOT_A_NUMBER;                                                 \
+    static constexpr Category CATEGORY = NOT_A_NUMBER;                                             \
     enum                                                                                           \
     {                                                                                              \
       PRIMITIVE = false,                                                                           \
@@ -358,7 +358,7 @@ CUB_VEC_OVERLOAD(double, double)
   template <>                                                                                      \
   struct NumericTraits<T>                                                                          \
   {                                                                                                \
-    static const Category CATEGORY = NOT_A_NUMBER;                                                 \
+    static constexpr Category CATEGORY = NOT_A_NUMBER;                                             \
     enum                                                                                           \
     {                                                                                              \
       PRIMITIVE = false,                                                                           \
@@ -385,7 +385,7 @@ CUB_VEC_OVERLOAD(double, double)
   template <>                                                                                      \
   struct NumericTraits<T>                                                                          \
   {                                                                                                \
-    static const Category CATEGORY = NOT_A_NUMBER;                                                 \
+    static constexpr Category CATEGORY = NOT_A_NUMBER;                                             \
     enum                                                                                           \
     {                                                                                              \
       PRIMITIVE = false,                                                                           \
@@ -416,7 +416,7 @@ CUB_VEC_OVERLOAD(double, double)
   template <>                                                                                      \
   struct NumericTraits<T>                                                                          \
   {                                                                                                \
-    static const Category CATEGORY = NOT_A_NUMBER;                                                 \
+    static constexpr Category CATEGORY = NOT_A_NUMBER;                                             \
     enum                                                                                           \
     {                                                                                              \
       PRIMITIVE = false,                                                                           \

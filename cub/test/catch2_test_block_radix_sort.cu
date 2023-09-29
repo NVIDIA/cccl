@@ -101,12 +101,12 @@ CUB_TEST("Block radix sort can sort keys",
   thrust::device_vector<type> d_input(params::tile_size);
   c2h::gen(CUB_SEED(2), d_input);
 
-  const int key_size  = static_cast<int>(sizeof(type) * 8);
+  constexpr int key_size = sizeof(type) * 8;
   const int begin_bit = GENERATE_COPY(take(2, random(0, key_size)));
   const int end_bit   = GENERATE_COPY(take(2, random(begin_bit, key_size)));
   const bool striped  = GENERATE_COPY(false, true);
 
-  const bool is_descending = false;
+  constexpr bool is_descending = false;
 
   block_radix_sort<params::items_per_thread,
                    params::threads_in_block,
@@ -146,12 +146,12 @@ CUB_TEST("Block radix sort can sort keys in descending order",
   thrust::device_vector<type> d_input(params::tile_size);
   c2h::gen(CUB_SEED(2), d_input);
 
-  const int key_size  = static_cast<int>(sizeof(type) * 8);
+  constexpr int key_size = sizeof(type) * 8;
   const int begin_bit = GENERATE_COPY(take(2, random(0, key_size)));
   const int end_bit   = GENERATE_COPY(take(2, random(begin_bit, key_size)));
   const bool striped  = GENERATE_COPY(false, true);
 
-  const bool is_descending = true;
+  constexpr bool is_descending = true;
 
   block_radix_sort<params::items_per_thread,
                    params::threads_in_block,
@@ -194,12 +194,12 @@ CUB_TEST("Block radix sort can sort pairs",
   c2h::gen(CUB_SEED(2), d_input_keys);
   c2h::gen(CUB_SEED(2), d_input_values);
 
-  const int key_size  = static_cast<int>(sizeof(key_type) * 8);
+  constexpr int key_size = sizeof(key_type) * 8;
   const int begin_bit = GENERATE_COPY(take(2, random(0, key_size)));
   const int end_bit   = GENERATE_COPY(take(2, random(begin_bit, key_size)));
   const bool striped  = GENERATE_COPY(false, true);
 
-  const bool is_descending = false;
+  constexpr bool is_descending = false;
 
   block_radix_sort<params::items_per_thread,
                    params::threads_in_block,
@@ -249,12 +249,12 @@ CUB_TEST("Block radix sort can sort pairs in descending order",
   c2h::gen(CUB_SEED(2), d_input_keys);
   c2h::gen(CUB_SEED(2), d_input_values);
 
-  const int key_size  = static_cast<int>(sizeof(key_type) * 8);
+  constexpr int key_size = sizeof(key_type) * 8;
   const int begin_bit = GENERATE_COPY(take(2, random(0, key_size)));
   const int end_bit   = GENERATE_COPY(take(2, random(begin_bit, key_size)));
   const bool striped  = GENERATE_COPY(false, true);
 
-  const bool is_descending = true;
+  constexpr bool is_descending = true;
 
   block_radix_sort<params::items_per_thread,
                    params::threads_in_block,
@@ -304,12 +304,12 @@ CUB_TEST("Block radix sort can sort mixed pairs",
   c2h::gen(CUB_SEED(2), d_input_keys);
   c2h::gen(CUB_SEED(2), d_input_values);
 
-  const int key_size  = static_cast<int>(sizeof(key_type) * 8);
+  constexpr int key_size = sizeof(key_type) * 8;
   const int begin_bit = GENERATE_COPY(take(2, random(0, key_size)));
   const int end_bit   = GENERATE_COPY(take(2, random(begin_bit, key_size)));
   const bool striped  = GENERATE_COPY(false, true);
 
-  const bool is_descending = false;
+  constexpr bool is_descending = false;
 
   block_radix_sort<params::items_per_thread,
                    params::threads_in_block,
@@ -359,12 +359,12 @@ CUB_TEST("Block radix sort can sort mixed pairs in descending order",
   c2h::gen(CUB_SEED(2), d_input_keys);
   c2h::gen(CUB_SEED(2), d_input_values);
 
-  const int key_size  = static_cast<int>(sizeof(key_type) * 8);
+  constexpr int key_size = sizeof(key_type) * 8;
   const int begin_bit = GENERATE_COPY(take(2, random(0, key_size)));
   const int end_bit   = GENERATE_COPY(take(2, random(begin_bit, key_size)));
   const bool striped  = GENERATE_COPY(false, true);
 
-  const bool is_descending = true;
+  constexpr bool is_descending = true;
 
   block_radix_sort<params::items_per_thread,
                    params::threads_in_block,

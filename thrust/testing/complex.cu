@@ -55,6 +55,18 @@ struct TestComplexSizeAndAlignment
 SimpleUnitTest<TestComplexSizeAndAlignment, FloatingPointTypes> TestComplexSizeAndAlignmentInstance;
 
 template <typename T>
+struct TestComplexTypeCheck
+{
+  void operator()()
+  {
+    THRUST_STATIC_ASSERT(thrust::is_complex<thrust::complex<T>>::value);
+    THRUST_STATIC_ASSERT(thrust::is_complex<std::complex<T>>::value);
+    THRUST_STATIC_ASSERT(thrust::is_complex<cuda::std::complex<T>>::value);
+  }
+};
+SimpleUnitTest<TestComplexTypeCheck, FloatingPointTypes> TestComplexTypeCheckInstance;
+
+template <typename T>
 struct TestComplexConstructionAndAssignment
 {
   void operator()(void)
