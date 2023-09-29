@@ -50,6 +50,11 @@ below.
 
 ## Example
 
+Below example shows only `cuda::device::barrier_arrive_tx`. A more extensive
+example can be found in the
+[`cuda::device::memcpy_async_tx`](../../../asynchronous_operations/memcpy_async_tx.md)
+documentation.
+
 ```cuda
 #include <cuda/barrier>
 #include <cuda/std/utility> // cuda::std::move
