@@ -16,37 +16,25 @@
 #include <stdio.h>
 
 #include <algorithm>
-#include <fstream>
 #include <memory>
 #include <string>
 #include <vector>
 
+// Arch configs are strings and bools determining architecture and ptx/sass compilation
 using ArchConfig = std::tuple<std::string, bool>;
-constexpr auto archString = [](const ArchConfig& a) {return std::get<0>(a);};
-constexpr auto isArchReal = [](const ArchConfig& a) {return std::get<1>(a);};
+constexpr auto archString = [](const ArchConfig& a) -> const auto& {return std::get<0>(a);};
+constexpr auto isArchReal = [](const ArchConfig& a) -> const auto& {return std::get<1>(a);};
+
+// Arch list is a set of unique pairs of strings and bools
+// e.x. { compute_arch, real_or_virtual }
+// { "sm_80", true } { "compute_80", false }
+using ArchList = std::set<ArchConfig>;
+ArchList buildList;
 
 using ArgList = std::vector<std::string>;
 
-const char * program = R"program(
-__host__ __device__ int fake_main(int argc, char ** argv);
-#define main fake_main
-
-// extern "C" to stop the name from being mangled
-extern "C" __global__ void main_kernel() {
-    fake_main(0, NULL);
-}
-)program";
-
 // Takes arguments for building a file and returns the path to the output file
-std::string nvrtc_build_prog(const std::string& input_file, const std::string& output_template, const ArchConfig& config, const ArgList& argList) {
-    std::ifstream istr(input_file);
-    std::string test_cu(
-        std::istreambuf_iterator<char>{istr},
-        std::istreambuf_iterator<char>{} );
-
-    // Prepend fakemain
-    test_cu = program + test_cu;
-
+std::string nvrtc_build_prog(const std::string& testCu, const std::string& outputTemplate, const ArchConfig& config, const ArgList& argList) {
     // Assemble arguments
     std::vector<const char*> optList;
 
@@ -57,18 +45,18 @@ std::string nvrtc_build_prog(const std::string& input_file, const std::string& o
 
     // Use the translated architecture
     std::string gpu_arch("--gpu-architecture=" + archString(config));
-    optList.emplace_back(gpu_arch.c_str());
+        optList.emplace_back(gpu_arch.c_str());
 
-    printf("NVRTC opt list:\r\n");
+    fprintf(stderr, "NVRTC opt list:\r\n");
     for (const auto& it: optList) {
-        printf("  %s\r\n", it);
+        fprintf(stderr, "  %s\r\n", it);
     }
 
-    printf ("Compiling program...\r\n");
+    fprintf(stderr, "Compiling program...\r\n");
     nvrtcProgram prog;
     NVRTC_SAFE_CALL(nvrtcCreateProgram(
         &prog,
-        test_cu.c_str(),
+        testCu.c_str(),
         "test.cu",
         0, NULL, NULL));
 
@@ -77,7 +65,7 @@ std::string nvrtc_build_prog(const std::string& input_file, const std::string& o
         optList.size(),
         optList.data());
 
-    printf ("Collecting logs...\r\n");
+    fprintf(stderr, "Collecting logs...\r\n");
     size_t log_size;
     NVRTC_SAFE_CALL(nvrtcGetProgramLogSize(prog, &log_size));
 
@@ -92,8 +80,8 @@ std::string nvrtc_build_prog(const std::string& input_file, const std::string& o
     }
 
     size_t codeSize;
-
     std::unique_ptr<char[]> code{nullptr};
+
     if (isArchReal(config)) {
         NVRTC_SAFE_CALL(nvrtcGetCUBINSize(prog, &codeSize));
         code = std::unique_ptr<char[]>{new char[codeSize]};
@@ -106,12 +94,10 @@ std::string nvrtc_build_prog(const std::string& input_file, const std::string& o
     }
     NVRTC_SAFE_CALL(nvrtcDestroyProgram(&prog));
 
-    std::string output_file = output_template + "." + archString(config) + ".gpu";
-    printf("Writing output to: %s\r\n", output_file.c_str());
+    std::string output_file = outputTemplate + "." + archString(config) + ".gpu";
+    fprintf(stderr, "Writing output to: %s\r\n", output_file.c_str());
 
-    std::ofstream ostr(output_file, std::ios::binary);
-    ostr.write(code.get(), codeSize);
-    ostr.close();
+    write_output_file(code.get(), codeSize, output_file);
 
     return output_file;
 }
