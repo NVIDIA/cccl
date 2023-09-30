@@ -16,7 +16,7 @@ If($CURRENT_PATH -ne "ci") {
 Remove-Module -Name build_common
 Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD
 
-$PRESET = "cub-$CXX_STANDARD"
+$PRESET = "cub-cpp$CXX_STANDARD"
 
 configure_and_build_preset "CUB" "$PRESET" "$CMAKE_OPTIONS"
 
