@@ -34,21 +34,21 @@ struct Tag {};
 struct DerFromTag : Tag {};
 
 struct Implicit {
-  Implicit(int) {}
+  __host__ __device__ Implicit(int) {}
 };
 
 struct Explicit {
-  explicit Explicit(int) {}
+  __host__ __device__ explicit Explicit(int) {}
 };
 
 struct NotCallableWithInt {
-  int operator()(int) = delete;
-  int operator()(Tag) { return 42; }
+  __host__ __device__ int operator()(int) = delete;
+  __host__ __device__ int operator()(Tag) { return 42; }
 };
 
 struct Sink {
   template <class ...Args>
-  void operator()(Args&&...) const {}
+  __host__ __device__ void operator()(Args&&...) const {}
 };
 
 int main(int, char**) {
