@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:23.10-cpp-llvm11-cuda12.2-ubuntu20.04",
+  "image": "rapidsai/devcontainers:23.12-cpp-llvm11-cuda12.2-ubuntu20.04",
   "hostRequirements": {
     "gpu": true
   },
@@ -33,7 +33,10 @@
     "vscode": {
       "extensions": [
         "llvm-vs-code-extensions.vscode-clangd"
-      ]
+      ],
+      "settings": {
+        "clangFormat.executable.default": "/usr/local/bin/clang-format"
+      }
     }
   },
   "name": "cuda12.2-llvm11"
