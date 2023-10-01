@@ -73,7 +73,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI unexpected(unexpected&&)      = default;
 
   _LIBCUDACXX_TEMPLATE(class _Error = _Err)
-    (requires (!_LIBCUDACXX_TRAIT(is_same, remove_cvref_t<_Error>, unexpected) &&
+    _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_same, remove_cvref_t<_Error>, unexpected) &&
                !_LIBCUDACXX_TRAIT(is_same, remove_cvref_t<_Error>, in_place_t) &&
                _LIBCUDACXX_TRAIT(is_constructible, _Err, _Error)))
   _LIBCUDACXX_INLINE_VISIBILITY
@@ -81,13 +81,13 @@ public:
     : __unex_(_CUDA_VSTD::forward<_Error>(__error)) {}
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, _Args...))
+    _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_constructible, _Err, _Args...))
   _LIBCUDACXX_INLINE_VISIBILITY
   constexpr explicit unexpected(in_place_t, _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
     : __unex_(_CUDA_VSTD::forward<_Args>(__args)...) {}
 
   _LIBCUDACXX_TEMPLATE(class _Up, class... _Args)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
+    _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
   _LIBCUDACXX_INLINE_VISIBILITY
   constexpr explicit unexpected(in_place_t, initializer_list<_Up> __il, _Args&&... __args) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, initializer_list<_Up>&, _Args...))
@@ -126,7 +126,7 @@ public:
   }
 
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
-    (requires _LIBCUDACXX_TRAIT(is_swappable, _Err2))
+    _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_swappable, _Err2))
   friend _LIBCUDACXX_INLINE_VISIBILITY constexpr
   void swap(unexpected& __lhs, unexpected& __rhs) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
   {

@@ -68,13 +68,14 @@ _LIBCUDACXX_CONCEPT _With_lvalue_reference = _LIBCUDACXX_FRAGMENT(__with_lvalue_
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __weakly_equality_comparable_with_,
-  requires(__make_const_lvalue_ref<_Tp> __t, __make_const_lvalue_ref<_Up> __u) //
-  (requires(_With_lvalue_reference<_Tp>),
-   requires(_With_lvalue_reference<_Up>),
-   requires(__boolean_testable<decltype(__t == __u)>),
-   requires(__boolean_testable<decltype(__t != __u)>),
-   requires(__boolean_testable<decltype(__u == __t)>),
-   requires(__boolean_testable<decltype(__u != __t)>)));
+  requires(__make_const_lvalue_ref<_Tp> __t, __make_const_lvalue_ref<_Up> __u)(
+    requires(_With_lvalue_reference<_Tp>),
+    requires(_With_lvalue_reference<_Up>),
+    requires(__boolean_testable<decltype(__t == __u)>),
+    requires(__boolean_testable<decltype(__t != __u)>),
+    requires(__boolean_testable<decltype(__u == __t)>),
+    requires(__boolean_testable<decltype(__u != __t)>)
+  ));
 
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT __weakly_equality_comparable_with =

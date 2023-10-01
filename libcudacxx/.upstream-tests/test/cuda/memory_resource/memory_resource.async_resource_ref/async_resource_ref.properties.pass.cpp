@@ -61,11 +61,11 @@ struct async_resource {
   int _val = 0;
 
   _LIBCUDACXX_TEMPLATE(class Property)
-    (requires (!cuda::property_with_value<Property>) && _CUDA_VSTD::_One_of<Property, Properties...>) //
+    _LIBCUDACXX_REQUIRES( (!cuda::property_with_value<Property>) && _CUDA_VSTD::_One_of<Property, Properties...>) //
   friend void get_property(const async_resource&, Property) noexcept {}
 
   _LIBCUDACXX_TEMPLATE(class Property)
-    (requires cuda::property_with_value<Property> && _CUDA_VSTD::_One_of<Property, Properties...>) //
+    _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property> && _CUDA_VSTD::_One_of<Property, Properties...>) //
   friend typename Property::value_type get_property(const async_resource& res, Property) noexcept {
     return res._val;
   }
@@ -88,25 +88,25 @@ static_assert(
     (2 * sizeof(void*)), "");
 
 _LIBCUDACXX_TEMPLATE(class Property, class Ref)
-  (requires (!cuda::property_with_value<Property>)) //
+  _LIBCUDACXX_REQUIRES( (!cuda::property_with_value<Property>)) //
     int InvokeIfWithValue(const Ref& ref) {
   return -1;
 }
 
 _LIBCUDACXX_TEMPLATE(class Property, class Ref)
-  (requires cuda::property_with_value<Property>) //
+  _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property>) //
     typename Property::value_type InvokeIfWithValue(const Ref& ref) {
   return get_property(ref, Property{});
 }
 
 _LIBCUDACXX_TEMPLATE(class Property, class Ref)
-  (requires cuda::property_with_value<Property>) //
+  _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property>) //
     int InvokeIfWithoutValue(const Ref& ref) {
   return -1;
 }
 
 _LIBCUDACXX_TEMPLATE(class Property, class Ref)
-  (requires (!cuda::property_with_value<Property>)) //
+  _LIBCUDACXX_REQUIRES( (!cuda::property_with_value<Property>)) //
     int InvokeIfWithoutValue(const Ref& ref) {
   get_property(ref, Property{});
   return 1;
