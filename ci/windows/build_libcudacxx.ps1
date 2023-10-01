@@ -16,8 +16,8 @@ If($CURRENT_PATH -ne "ci") {
 Remove-Module -Name build_common
 Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, $GPU_ARCHS
 
-PRESET="libcudacxx-cpp${CXX_STANDARD}"
-CMAKE_OPTIONS=""
+$PRESET = "libcudacxx-cpp${CXX_STANDARD}"
+$CMAKE_OPTIONS = ""
 
 configure_and_build_preset "libcudacxx" "$PRESET" "$CMAKE_OPTIONS"
 

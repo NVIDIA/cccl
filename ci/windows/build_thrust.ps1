@@ -17,6 +17,7 @@ Remove-Module -Name build_common
 Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD
 
 $PRESET = "thrust-cpp$CXX_STANDARD"
+$CMAKE_OPTIONS = ""
 
 configure_and_build_preset "Thrust" "$PRESET" "$CMAKE_OPTIONS"
 
