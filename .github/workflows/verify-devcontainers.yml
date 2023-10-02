@@ -1,0 +1,67 @@
+name: Verify devcontainers
+
+on:
+  push:
+    branches:
+      - "pull-request/[0-9]+"
+    paths:
+      - '.devcontainer/**'
+      - 'ci/matrix.yaml'
+  workflow_dispatch:
+
+jobs:
+  get-devcontainer-list:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.get-list.outputs.devcontainer_list }}
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v3
+    - name: Get list of devcontainer.json paths
+      id: get-list
+      run: |
+        devcontainer_list=$(find .devcontainer/ -name 'devcontainer.json' | jq -R -s -c 'split("\n")[:-1]')
+        echo "devcontainer_list=$paths" | tee --append "${GITHUB_OUTPUT}"
+
+  verify-devcontainers:
+    needs: get-devcontainer-dirs
+      runs-on: ubuntu-latest
+      strategy:
+        matrix:
+          devcontainer: ${{fromJson(needs.get-devcontainer-dirs.outputs.matrix)}}
+      steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install devcontainer-cli
+        run: npm install -g devcontainer-cli
+
+    #- name: Start dev container
+    #  run: devcontainer up --config .devcontainer/standalone/devcontainer.json --workspace-folder .
+
+    #- name: Run tests in dev container
+    #  run: devcontainer exec --config .devcontainer/standalone/devcontainer.json --workspace-folder . make test
+
+    #- name: Verify devcontainer.json files
+    #  run: |
+    #    # Navigate to the directory containing devcontainer configurations
+    #    cd .devcontainer
+    #    # For each devcontainer, try to create and run it using devcontainer-cli
+    #    for dir in $(ls -d */); do
+    #      cd $dir
+    #      devcontainer-cli up
+    #      # Assuming the container has NVIDIA utilities to verify CUDA version
+    #      CONTAINER_ID=$(docker ps -aqf "name=devcontainer_$(basename $dir)")
+    #      CONTAINER_CUDA_VERSION=$(docker exec $CONTAINER_ID nvcc --version | grep release | awk '{print $6}' | cut -c2-)
+    #      if [ -z "$CONTAINER_CUDA_VERSION" ]; then
+    #        echo "::error:: Failed to determine CUDA version for $dir"
+    #        exit 1
+    #      fi
+    #      echo "Verified $dir with CUDA version: $CONTAINER_CUDA_VERSION"
+    #      # Tear down the container
+    #      devcontainer-cli down
+    #      cd ..
+    #    done
