@@ -6,17 +6,21 @@
 # GitHub docs on using multiple devcontainer.json files:
 # https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/adding-a-dev-container-configuration/introduction-to-dev-containers#devcontainerjson
 
+set -euo pipefail
+
 # Ensure the script is being executed in its containing directory
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
 function usage {
-    echo "Usage: $0 [--clean] [-h/--help]"
+    echo "Usage: $0 [--clean] [-h/--help] [-v/--verbose]"
     echo "  --clean   Remove stale devcontainer subdirectories"
     echo "  -h, --help   Display this help message"
+    echo "  -v, --verbose  Enable verbose mode (set -x)"
     exit 1
 }
 
 CLEAN=false
+VERBOSE=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --clean)
@@ -25,12 +29,20 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             usage
             ;;
+        -v|--verbose)
+            VERBOSE=true
+            ;;
         *)
             usage
             ;;
     esac
     shift
 done
+
+# Enable verbose mode if requested
+if [ "$VERBOSE" = true ]; then
+    set -x
+fi
 
 # Read matrix.yaml and convert it to json
 matrix_json=$(yq -o json ../ci/matrix.yaml)

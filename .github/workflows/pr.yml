@@ -139,7 +139,7 @@ jobs:
         sudo chmod +x /usr/local/bin/yq
     - name: Run the script to generate devcontainer files
       run: |
-        ./.devcontainer/make_devcontainers.sh
+        ./.devcontainer/make_devcontainers.sh --verbose
     - name: Check for changes
       run: |
         if [[ $(git diff --stat) != '' ]]; then
