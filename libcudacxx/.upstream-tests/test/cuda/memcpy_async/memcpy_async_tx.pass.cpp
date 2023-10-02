@@ -14,8 +14,9 @@
 // <cuda/barrier>
 
 #include <cuda/barrier>
-#include <cuda/std/utility> // cuda::std::move
-#include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
+#include <cuda/std/utility>      // cuda::std::move
+#include "test_macros.h"         // TEST_NV_DIAG_SUPPRESS
+#include "cuda_space_selector.h" // shared_memory_selector
 
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
@@ -38,10 +39,9 @@ int main(int, char**)
         NV_IS_DEVICE, (
             using barrier_t = cuda::barrier<cuda::thread_scope_block>;
             __shared__ alignas(16) int smem_x[1024];
-            __shared__ barrier_t bar;
-            if (threadIdx.x == 0) {
-                init(&bar, blockDim.x);
-            }
+
+            shared_memory_selector<barrier_t, constructor_initializer> sel;
+            barrier_t* b = sel.construct(blockDim.x);
 
             // Initialize gmem_x
             for (int i = threadIdx.x; i < 2048; i += blockDim.x) {
@@ -51,13 +51,13 @@ int main(int, char**)
 
             barrier_t::arrival_token token;
             if (threadIdx.x == 0) {
-                auto fulfillment = cuda::device::memcpy_async_tx(smem_x, gmem_x, cuda::aligned_size_t<16>(sizeof(smem_x)), bar);
+                auto fulfillment = cuda::device::memcpy_async_tx(smem_x, gmem_x, cuda::aligned_size_t<16>(sizeof(smem_x)), *b);
                 assert(fulfillment == cuda::async_contract_fulfillment::async);
-                token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_x));
+                token = cuda::device::barrier_arrive_tx(*b, 1, sizeof(smem_x));
             } else {
-                token = bar.arrive(1);
+                token = b->arrive(1);
             }
-            bar.wait(cuda::std::move(token));
+            b->wait(cuda::std::move(token));
 
             // assert that smem_x contains the contents of gmem_x[0], ..., gmem_x[1023]
             for (int i = threadIdx.x; i < 1024; i += blockDim.x) {
