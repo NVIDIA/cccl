@@ -10,6 +10,10 @@ on:
       - 'ci/matrix.yaml'
   workflow_dispatch:
 
+defaults:
+run:
+  shell: bash -euo pipefail {0}
+
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
   cancel-in-progress: true
@@ -26,7 +30,7 @@ jobs:
       id: get-list
       run: |
         devcontainer_list=$(find .devcontainer/ -name 'devcontainer.json' | jq -R -s -c 'split("\n")[:-1]')
-        echo "devcontainer_list=$paths" | tee --append "${GITHUB_OUTPUT}"
+        echo "devcontainer_list=$devcontainer_list" | tee --append "${GITHUB_OUTPUT}"
 
   verify-devcontainers:
     needs: get-devcontainer-list
