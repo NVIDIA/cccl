@@ -143,6 +143,7 @@ jobs:
     - name: Check for changes
       run: |
         if [[ $(git diff --stat) != '' ]]; then
+          git diff
           echo "::error:: Dev Container files are out of date. Run the .devcontainer/make_devcontainers.sh script and commit the changes."
           exit 1
         fi
