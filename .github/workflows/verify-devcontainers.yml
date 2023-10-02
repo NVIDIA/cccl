@@ -11,8 +11,8 @@ on:
   workflow_dispatch:
 
 defaults:
-run:
-  shell: bash -euo pipefail {0}
+  run:
+    shell: bash -euo pipefail {0}
 
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
