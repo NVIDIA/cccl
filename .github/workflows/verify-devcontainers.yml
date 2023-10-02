@@ -10,6 +10,10 @@ on:
       - 'ci/matrix.yaml'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   get-devcontainer-list:
     runs-on: ubuntu-latest
