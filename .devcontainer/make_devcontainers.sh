@@ -39,13 +39,16 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+MATRIX_FILE="../ci/matrix.yaml"
+
 # Enable verbose mode if requested
 if [ "$VERBOSE" = true ]; then
     set -x
+    cat ${MATRIX_FILE}
 fi
 
 # Read matrix.yaml and convert it to json
-matrix_json=$(yq -o json ../ci/matrix.yaml)
+matrix_json=$(yq -o json ${MATRIX_FILE})
 
 # Exclude Windows environments
 matrix_json=$(echo "$matrix_json" | jq 'del(.pull_request.nvcc[] | select(.os | contains("windows")))')
