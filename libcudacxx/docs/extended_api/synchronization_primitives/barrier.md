@@ -92,7 +92,8 @@ Capability 9).
 The tx-count of `cuda::barrier` must be set to the total amount of asynchronous
 memory operations, in units as specified by the asynchronous operations, to be
 tracked by the current phase. This can be achieved with the
-`cuda::device::barrier_arrive_tx` function call. Upon completion of each of the
+[`cuda::device::barrier_arrive_tx`](./barrier/barrier_arrive_tx.md) function call.
+Upon completion of each of the
 asynchronous operations, the tx-count of the `cuda::barrier` will be updated and
 thus progress the `cuda::barrier` towards the completion of the current phase.
 This may complete the current phase.
