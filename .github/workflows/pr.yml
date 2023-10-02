@@ -125,6 +125,28 @@ jobs:
       devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
       is_windows: ${{ contains(matrix.compiler, 'cl') }}
 
+  verify-devcontainers:
+    name: Verify Dev Containers
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Setup jq and yq
+      run: |
+        sudo apt-get update
+        sudo apt-get install jq -y
+        sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+    - name: Run the script to generate devcontainer files
+      run: |
+        ./.devcontainer/make_devcontainers.sh
+    - name: Check for changes
+      run: |
+        if [[ $(git diff --stat) != '' ]]; then
+          echo "::error:: Dev Container files are out of date. Run the .devcontainer/make_devcontainers.sh script and commit the changes."
+          exit 1
+        fi
+
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
   ci:
