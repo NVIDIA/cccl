@@ -23,6 +23,8 @@
 #pragma GCC system_header
 #endif
 
+#include "../cstdlib"           // _LIBCUDACXX_UNREACHABLE
+
 #if defined(_LIBCUDACXX_COMPILER_NVRTC)
 #define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type *)0)->member))
 #else
@@ -630,31 +632,24 @@ _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
     _LIBCUDACXX_DEBUG_ASSERT(__isShared(__dest), "dest must point to shared memory.");
     _LIBCUDACXX_DEBUG_ASSERT(__isGlobal(__src), "src must point to global memory.");
 
-    NV_DISPATCH_TARGET(
-        NV_PROVIDES_SM_90, (
-            auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
-            if (__isShared(__dest) && __isGlobal(__src)) {
-                asm volatile(
-                    "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
-                    :
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
-                      "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
-                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
-                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh))
-                    : "memory");
-            } else {
-                // memcpy_async_tx only supports copying from global to shared
-                // or from shared to remote cluster dsmem. To copy to remote
-                // dsmem, we need to arrive on a cluster-scoped barrier, which
-                // is not yet implemented. So we trap in this case as well.
-                __trap();
-            }
-        ), NV_ANY_TARGET, (
-            // On architectures pre-SM90 (and in host code), arriving with a
-            // transaction count update is not supported and we trap.
-            __trap();
-        )
-    );
+    auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+    if (__isShared(__dest) && __isGlobal(__src)) {
+        asm volatile(
+            "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
+            :
+            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+              "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+              "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
+              "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh))
+            : "memory");
+    } else {
+        // memcpy_async_tx only supports copying from global to shared
+        // or from shared to remote cluster dsmem. To copy to remote
+        // dsmem, we need to arrive on a cluster-scoped barrier, which
+        // is not yet implemented. So we trap in this case as well.
+        _LIBCUDACXX_UNREACHABLE();
+    }
+
     return async_contract_fulfillment::async;
 }
 #endif // __CUDA_MINIMUM_ARCH__
