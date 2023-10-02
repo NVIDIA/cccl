@@ -146,6 +146,8 @@ jobs:
           git diff --minimal
           echo "::error:: Dev Container files are out of date. Run the .devcontainer/make_devcontainers.sh script and commit the changes."
           exit 1
+        else
+          echo "Dev Container files are up-to-date."
         fi
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
