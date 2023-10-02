@@ -112,7 +112,7 @@ function build_preset()
     source "./sccache_stats.sh" "start"
     pushd .. > /dev/null
 
-    cmake --build --preset=$PRESET
+    cmake --build --preset=$PRESET -v
     echo "$BUILD_NAME build complete."
 
     popd > /dev/null

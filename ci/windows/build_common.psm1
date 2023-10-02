@@ -100,7 +100,7 @@ function build_preset {
 
     sccache_stats('Start')
 
-    cmake --build --preset $PRESET
+    cmake --build --preset $PRESET -v
     $test_result = $LastExitCode
 
     sccache_stats('Stop')
