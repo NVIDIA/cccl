@@ -9,8 +9,34 @@
 # Ensure the script is being executed in its containing directory
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
+function usage {
+    echo "Usage: $0 [--clean] [-h/--help]"
+    echo "  --clean   Remove stale devcontainer subdirectories"
+    echo "  -h, --help   Display this help message"
+    exit 1
+}
+
+CLEAN=false
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --clean)
+            CLEAN=true
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            usage
+            ;;
+    esac
+    shift
+done
+
 # Read matrix.yaml and convert it to json
 matrix_json=$(yq -o json ../ci/matrix.yaml)
+
+# Exclude Windows environments
+matrix_json=$(echo "$matrix_json" | jq 'del(.pull_request.nvcc[] | select(.os | contains("windows")))')
 
 # Get the devcontainer image version and define image tag root
 DEVCONTAINER_VERSION=$(echo "$matrix_json" | jq -r '.devcontainer_version')
@@ -24,6 +50,9 @@ jq --arg version "$DEVCONTAINER_VERSION" '.version = $version' $base_devcontaine
 
 # Get unique combinations of cuda version, compiler name/version, and Ubuntu version
 combinations=$(echo "$matrix_json" | jq -c '[.pull_request.nvcc[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_version: .compiler.version, os: .os}] | unique | .[]')
+
+# Create an array to keep track of valid subdirectory names
+valid_subdirs=()
 
 # For each unique combination
 for combination in $combinations; do
@@ -43,4 +72,16 @@ for combination in $combinations; do
     jq --arg image "$image" --arg name "$name" '.image = $image | .name = $name | .containerEnv.DEVCONTAINER_NAME = $name' $base_devcontainer_file > "$devcontainer_file"
 
     echo "Created $devcontainer_file"
+    # Add the subdirectory name to the valid_subdirs array
+    valid_subdirs+=("$name")
 done
+
+# Clean up stale subdirectories and devcontainer.json files
+if [ "$CLEAN" = true ]; then
+    for subdir in ./*; do
+        if [ -d "$subdir" ] && [[ ! " ${valid_subdirs[@]} " =~ " ${subdir#./} " ]]; then
+            echo "Removing stale subdirectory: $subdir"
+            rm -r "$subdir"
+        fi
+    done
+fi
