@@ -1,3 +1,4 @@
+
 name: Verify devcontainers
 
 on:
@@ -13,7 +14,7 @@ jobs:
   get-devcontainer-list:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.get-list.outputs.devcontainer_list }}
+      devcontainer_list: ${{ steps.get-list.outputs.devcontainer_list }}
     steps:
     - name: Check out the code
       uses: actions/checkout@v3
@@ -24,20 +25,20 @@ jobs:
         echo "devcontainer_list=$paths" | tee --append "${GITHUB_OUTPUT}"
 
   verify-devcontainers:
-    needs: get-devcontainer-dirs
-      runs-on: ubuntu-latest
-      strategy:
-        matrix:
-          devcontainer: ${{fromJson(needs.get-devcontainer-dirs.outputs.matrix)}}
-      steps:
-      - name: Check out the code
-        uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - name: Install devcontainer-cli
-        run: npm install -g devcontainer-cli
+    needs: get-devcontainer-list
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        devcontainer: ${{fromJson(needs.get-devcontainer-list.outputs.devcontainer_list)}}
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    - name: Install devcontainer-cli
+      run: npm install -g devcontainer-cli
 
     #- name: Start dev container
     #  run: devcontainer up --config .devcontainer/standalone/devcontainer.json --workspace-folder .
