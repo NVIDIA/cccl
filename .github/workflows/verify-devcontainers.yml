@@ -49,12 +49,7 @@ jobs:
       run: npm install -g @devcontainers/cli
     - name: Bring up the devcontainer
       run: |
-        cd $(dirname ${{ matrix.devcontainer }})
-        devcontainer up
-    - name: Run command in devcontainer
-      run: |
-        cd $(dirname ${{ matrix.devcontainer }})
-        devcontainer exec "echo 'Hello World'"
+        devcontainer up --config ${{ matrix.devcontainer }} --workspace-folder .
 
     #- name: Start dev container
     #  run: devcontainer up --config .devcontainer/standalone/devcontainer.json --workspace-folder .
