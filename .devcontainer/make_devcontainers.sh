@@ -53,18 +53,27 @@ matrix_json=$(yq -o json ${MATRIX_FILE})
 # Exclude Windows environments
 matrix_json=$(echo "$matrix_json" | jq 'del(.pull_request.nvcc[] | select(.os | contains("windows")))')
 
+# Get unique combinations of cuda version, compiler name/version, and Ubuntu version
+combinations=$(echo "$matrix_json" | jq -c '[.pull_request.nvcc[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_version: .compiler.version, os: .os}] | unique | .[]')
+echo $combinations
+
 # Get the devcontainer image version and define image tag root
 DEVCONTAINER_VERSION=$(echo "$matrix_json" | jq -r '.devcontainer_version')
 IMAGE_ROOT="rapidsai/devcontainers:${DEVCONTAINER_VERSION}-cpp-"
 
-# The root devcontainer.json file is used as a template for all other devcontainer.json files
-# by replacing the `image:` field with the appropriate image name
-base_devcontainer_file="./devcontainer.json"
-# Update the top-level devcontainer.json with the new version
-jq --arg version "$DEVCONTAINER_VERSION" '.version = $version' $base_devcontainer_file > tmp_devcontainer.json && mv tmp_devcontainer.json $base_devcontainer_file
+# Use the latest CUDA/gcc as the default environment
+NEWEST_GCC_CUDA_ENTRY=$(echo "$combinations" | jq -rs '[.[] | select(.compiler_name == "gcc")] | sort_by((.cuda | tonumber), (.compiler_version | tonumber)) | .[-1]')
+DEFAULT_CUDA=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.cuda')
+DEFAULT_COMPILER=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.compiler_name + .compiler_version')
+DEFAULT_OS=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.os')
+DEFAULT_IMAGE="${IMAGE_ROOT}${DEFAULT_COMPILER}-cuda${DEFAULT_CUDA}-${DEFAULT_OS}"
 
-# Get unique combinations of cuda version, compiler name/version, and Ubuntu version
-combinations=$(echo "$matrix_json" | jq -c '[.pull_request.nvcc[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_version: .compiler.version, os: .os}] | unique | .[]')
+# The root devcontainer.json file is used as the default container as well as a template for all
+# other devcontainer.json files by replacing the `image:` field with the appropriate image name
+base_devcontainer_file="./devcontainer.json"
+
+# Update the image field in base devcontainer.json
+jq --arg image "$DEFAULT_IMAGE" '.image = $image' $base_devcontainer_file > "./temp_devcontainer.json" && mv "./temp_devcontainer.json" $base_devcontainer_file
 
 # Create an array to keep track of valid subdirectory names
 valid_subdirs=()
