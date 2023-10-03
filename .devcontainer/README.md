@@ -5,7 +5,7 @@
 
 # CCCL Dev Containers
 
-CCCL uses [Development Containers](https://code.visualstudio.com/docs/devcontainers/containers) to provide consistent and convenient development environments for both local development and for CI. This guide covers setup in Visual Studio Code and Docker.
+CCCL uses [Development Containers](https://containers.dev/) to provide consistent and convenient development environments for both local development and for CI. This guide covers setup in Visual Studio Code and Docker.
 
 ## Quickstart: VSCode (Recommended)
 
