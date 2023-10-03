@@ -66,7 +66,7 @@ Use the build scripts provided in the `ci/` directory to build tests for each co
 ```
 - **HOST_COMPILER**: The desired host compiler (e.g., `g++`, `clang++`).
 - **CXX_STANDARD**: The C++ standard version (e.g., `11`, `14`, `17`, `20`).
-- **GPU_ARCHS**: A semicolon-separated list of CUDA GPU architectures (e.g., `70;85;90`). This uses the same syntax as CMake's [CUDA_ARCHITECTURES](https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html#prop_tgt:CUDA_ARCHITECTURES):
+- **GPU_ARCHS**: A semicolon-separated list of CUDA GPU architectures (e.g., `"70;85;90"`). This uses the same syntax as CMake's [CUDA_ARCHITECTURES](https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html#prop_tgt:CUDA_ARCHITECTURES):
    - `70` - both PTX and SASS
    - `70-real` - SASS only
    - `70-virtual` - PTX only
