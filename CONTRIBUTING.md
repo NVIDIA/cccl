@@ -24,7 +24,7 @@ Thank you for your interest in contributing to the CUDA C++ Core Libraries (CCCL
 
 3. **Build and Test**:
 
-   Ensure changes don't break existing functionality by building and running tests. More details on building and testing are provided later in this guide.
+   Ensure changes don't break existing functionality by building and running tests.
 
    ```bash
    ./ci/build_[thrust|cub|libcudacxx].sh <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>
@@ -39,7 +39,7 @@ Thank you for your interest in contributing to the CUDA C++ Core Libraries (CCCL
 
 ### Developer Guides
 
-Each component within CCCL has unique practices due to its history and characteristics. For a smoother contribution experience and to align with the best practices for each component, refer to the following developer guides:
+For more information about design and development practices for each CCCL component, refer to the following developer guides:
 
 #### CUB
 - [CUB Developer Guide](cub/docs/developer_overview.rst) - General overview of the design of CUB internals
@@ -98,7 +98,7 @@ Use the test scripts provided in the `ci/` directory to run tests for each compo
 ## Continuous Integration (CI)
 
 CCCL's CI pipeline tests across various CUDA versions, compilers, and GPU architectures.
-For external contributors, the CI pipeline will not begin until a maintainer leaves a `/ok to test` comment. For members of the NVIDIA GitHub enterprise, the CI pipeline will begin immediately.
+For external contributors, the CI pipeline will not begin until a maintainer leaves an `/ok to test` comment. For members of the NVIDIA GitHub enterprise, the CI pipeline will begin immediately.
 For a detailed overview of CCCL's CI, see [ci-overview.md](ci-overview.md).
 
 ## Review Process
