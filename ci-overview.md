@@ -20,15 +20,18 @@ The exact combinations of these environments are defined in the [`ci/matrix.yaml
 
 ### Viewing CI Workflow Results
 
-The results of every job in the CI pipeline are summarized on the bottom of the PR page. Clicking on the "Details" link next to each run will provide more detailed information.
+The results of every job in the CI pipeline are summarized on the bottom of the PR page. Click the "Details" link next to each run to provide more detailed information.
 
 ![Summary of all CI jobs on PR page.](docs/images/pr-checks.png).
 
 ### Special CI Commands
 
-During development, there may be scenarios where controlling the execution of the CI pipeline based on the nature of commits is desired. Special commands are provided that can be included in commit messages to direct the CI pipeline execution:
+Special commands are provided that can be included in commit messages to direct the CI pipeline execution:
 
 - `[skip ci]`: Skips the entire CI pipeline. Useful for documentation changes or others that don't require CI validation.
+
+   - **Example:** `git commit -m "[skip ci] Update README."`
+
 - `[skip-tests]`: Skips CI jobs that execute tests, but runs all other jobs. Useful to avoid time-consuming tests when changes are unlikely to affect them.
 
 Use these commands judiciously. While they offer flexibility, they should be used appropriately to maintain the codebase's integrity and quality.
@@ -53,7 +56,7 @@ If a pull request encounters a failure during CI testing, it is usually helpful 
 
 2. **Run the Build/Test Script**:
 
-    CI jobs uses the build and test scripts found in the `ci/` directory. Use the same scripts locally to reproduce the issue.
+    CI jobs use the build and test scripts found in the `ci/` directory.
 
     Example:
     ```bash
