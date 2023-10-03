@@ -32,6 +32,7 @@ jobs:
     needs: get-devcontainer-list
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         devcontainer: ${{fromJson(needs.get-devcontainer-list.outputs.devcontainer_list)}}
     permissions:
@@ -76,7 +77,7 @@ jobs:
           elif [[ "$CXX" == "clang++" ]]; then
               # Extracts major version for clang++ output format
               actual_version=$(echo "$version_output" | head -n 1 | cut -d ' ' -f 3 | cut -d '.' -f 1)
-              expected_compiler="clang"
+              expected_compiler="llvm"
           else
               echo "::error:: Unexpected CXX value ($CXX)."
               exit 1
