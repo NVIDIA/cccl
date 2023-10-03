@@ -73,6 +73,7 @@ jobs:
             echo "::error:: CXX variable is not set."
             exit 1
           fi
+          $CXX --version
           version_output=$($CXX --version)
           if [[ "$CXX" == "g++" ]]; then
               # Extracts major version for g++ output format
