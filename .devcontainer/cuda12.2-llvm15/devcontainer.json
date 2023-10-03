@@ -14,7 +14,10 @@
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda12.2-llvm15"
+    "DEVCONTAINER_NAME": "cuda12.2-llvm15",
+    "CCCL_CUDA_VERSION": "12.2",
+    "CCCL_HOST_COMPILER": "llvm",
+    "CCCL_HOST_COMPILER_VERSION": "15"
   },
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
