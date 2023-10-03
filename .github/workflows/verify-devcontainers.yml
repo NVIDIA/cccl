@@ -99,32 +99,3 @@ jobs:
               echo "::error:: CXX ($CXX) version ($actual_version) does not match the expected compiler (${CCCL_HOST_COMPILER}) and version (${CCCL_HOST_COMPILER_VERSION})."
               exit 1
           fi
-
-
-
-    #- name: Start dev container
-    #  run: devcontainer up --config .devcontainer/standalone/devcontainer.json --workspace-folder .
-
-    #- name: Run tests in dev container
-    #  run: devcontainer exec --config .devcontainer/standalone/devcontainer.json --workspace-folder . make test
-
-    #- name: Verify devcontainer.json files
-    #  run: |
-    #    # Navigate to the directory containing devcontainer configurations
-    #    cd .devcontainer
-    #    # For each devcontainer, try to create and run it using devcontainer-cli
-    #    for dir in $(ls -d */); do
-    #      cd $dir
-    #      devcontainer-cli up
-    #      # Assuming the container has NVIDIA utilities to verify CUDA version
-    #      CONTAINER_ID=$(docker ps -aqf "name=devcontainer_$(basename $dir)")
-    #      CONTAINER_CUDA_VERSION=$(docker exec $CONTAINER_ID nvcc --version | grep release | awk '{print $6}' | cut -c2-)
-    #      if [ -z "$CONTAINER_CUDA_VERSION" ]; then
-    #        echo "::error:: Failed to determine CUDA version for $dir"
-    #        exit 1
-    #      fi
-    #      echo "Verified $dir with CUDA version: $CONTAINER_CUDA_VERSION"
-    #      # Tear down the container
-    #      devcontainer-cli down
-    #      cd ..
-    #    done
