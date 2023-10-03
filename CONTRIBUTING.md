@@ -103,7 +103,7 @@ For a detailed overview of CCCL's CI, see [ci-overview.md](ci-overview.md).
 
 ## Review Process
 
-Once submitted, maintainers will review the pull request. They might suggest changes or improvements. Constructive feedback is a part of the collaborative process, aimed at ensuring the highest quality code.
+Once submitted, maintainers will be automatically assigned to review the pull request. They might suggest changes or improvements. Constructive feedback is a part of the collaborative process, aimed at ensuring the highest quality code.
 
 For constructive feedback and effective communication during reviews, we recommend following [Conventional Comments](https://conventionalcomments.org/).
 
