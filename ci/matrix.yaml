@@ -51,3 +51,6 @@ pull_request:
     - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: {name: 'cl',   version: '14.36', exe: 'cl++'}, gpu_build_archs: '70', std: [14, 17, 20],     jobs: ['build']}
   nvrtc:
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', gpu_build_archs: '70', std: [11, 14, 17, 20]}
+  examples:
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '12', exe: 'g++'}}
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '16', exe: 'clang++'}}
