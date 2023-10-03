@@ -25,7 +25,9 @@ jobs:
     - name: Get list of devcontainer.json paths and names
       id: get-list
       run: |
-        devcontainers=$(find .devcontainer/ -name 'devcontainer.json' | jq -R -s -c 'split("\n")[:-1]' | jq -c 'map({path: ., name: (input_filename | split("/")[-2] )})')
+        devcontainers=$(find .devcontainer/ -name 'devcontainer.json' | while read -r devcontainer; do
+          jq --arg path "$devcontainer" '{path: $path, name: .name}' "$devcontainer"
+          done | jq -s .)
         echo "devcontainers=$devcontainers" | tee --append "${GITHUB_OUTPUT}"
 
   verify-devcontainers:
