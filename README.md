@@ -38,6 +38,8 @@ The sum of each block is then reduced to a single value using an atomic add via 
 
 It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
 
+[Try it live on Godbolt!](https://godbolt.org/z/x4G73af9a)
+
 ```cpp
 #include <thrust/device_vector.h>
 #include <cub/block/block_reduce.cuh>
