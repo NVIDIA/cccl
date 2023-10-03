@@ -30,7 +30,7 @@ jobs:
           echo "::error:: Dev Container files are out of date. Run the .devcontainer/make_devcontainers.sh script and commit the changes."
           exit 1
         else
-          echo "Dev Container files are up-to-date."
+          echo "::note::Dev Container files are up-to-date."
         fi
 
   get-devcontainer-list:
@@ -103,7 +103,7 @@ jobs:
               if [[ $version_output =~ clang\ version\ ([0-9]+) ]]; then
                   actual_version=${BASH_REMATCH[1]}
               else
-                  echo "Error: Unable to determine clang version."
+                  echo "::error:: Unable to determine clang version."
                   exit 1
               fi
               expected_compiler="llvm"
