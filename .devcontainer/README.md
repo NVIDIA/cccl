@@ -65,7 +65,7 @@ For more information about the sccache configuration and authentication, see the
     cd cccl
     ./.devcontainer/launch.sh --docker
     ```
-    This script starts an interactive shell inside the container with the local `cccl/` directory mirrored.
+    This script starts an interactive shell as the `coder` user inside the container with the local `cccl/` directory mirrored into `/home/coder/cccl`.
 
     For specific environments, use the `--cuda` and `--host` options:
     ```bassh
