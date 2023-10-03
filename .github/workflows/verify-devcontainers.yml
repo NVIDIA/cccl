@@ -7,10 +7,6 @@ defaults:
   run:
     shell: bash -euo pipefail {0}
 
-concurrency:
-  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
-  cancel-in-progress: true
-
 jobs:
   verify-make-devcontainers:
     name: Verify devcontainer files are up-to-date
