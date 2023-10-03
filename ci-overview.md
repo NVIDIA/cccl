@@ -75,7 +75,7 @@ If a pull request encounters a failure during CI testing, it is usually helpful 
 
 CCCL uses [NVIDIA's self-hosted action runners](https://docs.gha-runners.nvidia.com/runners/) for CI jobs. For security, PR workflows are triggered using the [`copy-pr-bot` GitHub application](https://docs.gha-runners.nvidia.com/onboarding/), which copies code to a prefixed branch to ensure only vetted code runs on the runners.
 
-The CI pipeline will not start automatically for external contributors. A repository member will first review the changes and initiate the CI pipeline with and `/ok to test` comment.
+The CI pipeline will not start automatically for external contributors. A repository member will first review the changes and initiate the CI pipeline with an `/ok to test` comment.
 
 ## Troubleshooting CI Failures
 
