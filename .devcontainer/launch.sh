@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
+# Ensure the script is being executed in the cccl/ root
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..";
+
 print_help() {
     echo "Usage: $0 [-c|--cuda <CUDA version>] [-H|--host <Host compiler>] [-d|--docker]"
     echo "Launch a development container. If no CUDA version or Host compiler are specified,"
@@ -58,7 +63,13 @@ launch_docker() {
     DOCKER_IMAGE=$(grep "image" "${path}/devcontainer.json" | sed 's/.*: "\(.*\)",/\1/')
     echo "Found image: ${DOCKER_IMAGE}"
     docker pull ${DOCKER_IMAGE}
-    docker run -it --rm -v $(pwd):/workspace ${DOCKER_IMAGE} /bin/bash
+    docker run   \
+        -it --rm \
+        --user coder \
+        --workdir /home/coder/cccl \
+        --mount type=bind,src="$(pwd)",dst='/home/coder/cccl' \
+        ${DOCKER_IMAGE} \
+        /bin/bash
 }
 
 launch_vscode() {
@@ -74,11 +85,10 @@ launch_vscode() {
     mkdir -p "${tmpdir}"
     mkdir -p "${tmpdir}/.devcontainer"
     cp -arL "${path}/devcontainer.json" "${tmpdir}/.devcontainer"
-    sed -i "s@\\${localWorkspaceFolder}@$(pwd)@g" "${tmpdir}/.devcontainer/devcontainer.json"
+    sed -i 's@\\${localWorkspaceFolder}@$(pwd)@g' "${tmpdir}/.devcontainer/devcontainer.json"
     local path="${tmpdir}"
     local hash="$(echo -n "${path}" | xxd -pu - | tr -d '[:space:]')"
     local url="vscode://vscode-remote/dev-container+${hash}/home/coder/cccl"
-    echo "devcontainer URL: ${url}"
 
     local launch=""
     if type open >/dev/null 2>&1; then
@@ -88,6 +98,7 @@ launch_vscode() {
     fi
 
     if [ -n "${launch}" ]; then
+        echo "Launching VSCode Dev Container URL: ${url}"
         code --new-window "${tmpdir}"
         exec "${launch}" "${url}" >/dev/null 2>&1
     fi
@@ -97,7 +108,7 @@ main() {
     parse_options "$@"
 
     # If no CTK/Host compiler are provided, just use the default environment
-    if [[ -z ${cuda_version} ]] && [[ -z ${host_compiler} ]]; then
+    if [[ -z ${cuda_version:-} ]] && [[ -z ${host_compiler:-} ]]; then
         path=".devcontainer"
     else
         path=".devcontainer/cuda${cuda_version}-${host_compiler}"
@@ -108,7 +119,7 @@ main() {
         fi
     fi
 
-    if $docker_mode; then
+    if ${docker_mode:-'false'}; then
         launch_docker
     else
         launch_vscode
