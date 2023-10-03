@@ -41,15 +41,27 @@ jobs:
     steps:
     - name: Check out the code
       uses: actions/checkout@v3
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
+      # devcontainer/ci doesn't supported nested devcontainer.json files, so we need to copy the devcontainer.json
+      # file to the top level .devcontainer/ directory
+    - name: Copy devcontainer.json to .devcontainer/
+      run: cp ${{ matrix.devcontainer }} .devcontainer/devcontainer.json
+      # We don't really need sccache configured, but we need the AWS credentials envvars to be set
+      # in order to avoid the devcontainer hanging waiting for GitHub authentication
+    - name: Configure credentials and environment variables for sccache
+      uses: ./.github/actions/configure_cccl_sccache
+    - name: Run in devcontainer
+      uses: devcontainers/ci@v0.3
       with:
-        node-version: '18'
-    - name: Install devcontainer-cli
-      run: npm install -g @devcontainers/cli
-    - name: Bring up the devcontainer
-      run: |
-        devcontainer up --config ${{ matrix.devcontainer }} --workspace-folder .
+        push: never
+        env: |
+          SCCACHE_REGION=${{ env.SCCACHE_REGION }}
+          AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }}
+          AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }}
+        runCmd: |
+          set -euo pipefail
+          echo "Hello world"
+
 
     #- name: Start dev container
     #  run: devcontainer up --config .devcontainer/standalone/devcontainer.json --workspace-folder .
