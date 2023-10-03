@@ -5,10 +5,6 @@ on:
   push:
     branches:
       - "pull-request/[0-9]+"
-    paths:
-      - '.devcontainer/**'
-      - 'ci/matrix.yaml'
-  workflow_dispatch:
 
 defaults:
   run:
