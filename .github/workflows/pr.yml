@@ -44,7 +44,7 @@ jobs:
       NVRTC_MATRIX: ${{steps.set-outputs.outputs.NVRTC_MATRIX}}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
       - name: Compute matrix outputs
         id: set-outputs
         run: |
