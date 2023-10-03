@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Setup jq and yq
       run: |
         sudo apt-get update
@@ -41,7 +41,7 @@ jobs:
       devcontainers: ${{ steps.get-list.outputs.devcontainers }}
     steps:
     - name: Check out the code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Get list of devcontainer.json paths and names
       id: get-list
       run: |
@@ -63,7 +63,7 @@ jobs:
       contents: read
     steps:
     - name: Check out the code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       # devcontainer/ci doesn't supported nested devcontainer.json files, so we need to copy the devcontainer.json
       # file to the top level .devcontainer/ directory
     - name: Copy devcontainer.json to .devcontainer/
