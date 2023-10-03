@@ -38,6 +38,8 @@ jobs:
     strategy:
       matrix:
         devcontainer: ${{fromJson(needs.get-devcontainer-list.outputs.devcontainer_list)}}
+    permissions:
+      id-token: write
     steps:
     - name: Check out the code
       uses: actions/checkout@v3
