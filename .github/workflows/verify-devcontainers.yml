@@ -70,12 +70,12 @@ jobs:
           fi
           version_output=$($CXX --version)
           if [[ "$CXX" == "g++" ]]; then
-              # Extracts version for g++ output format
-              actual_version=$(echo "$version_output" | head -n 1 | cut -d ' ' -f 4)
+              # Extracts major version for g++ output format
+              actual_version=$(echo "$version_output" | head -n 1 | cut -d ' ' -f 4 | cut -d '.' -f 1)
               expected_compiler="gcc"
           elif [[ "$CXX" == "clang++" ]]; then
-              # Extracts version for clang++ output format
-              actual_version=$(echo "$version_output" | head -n 1 | cut -d ' ' -f 3)
+              # Extracts major version for clang++ output format
+              actual_version=$(echo "$version_output" | head -n 1 | cut -d ' ' -f 3 | cut -d '.' -f 1)
               expected_compiler="clang"
           else
               echo "::error:: Unexpected CXX value ($CXX)."
