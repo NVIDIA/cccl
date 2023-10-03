@@ -64,7 +64,31 @@ jobs:
           AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }}
         runCmd: |
           set -euo pipefail
-          echo "Hello world"
+          if [[ -z "${CXX:-}" ]]; then
+            echo "::error:: CXX variable is not set."
+            exit 1
+          fi
+          version_output=$($CXX --version)
+          if [[ "$CXX" == "g++" ]]; then
+              # Extracts version for g++ output format
+              actual_version=$(echo "$version_output" | head -n 1 | cut -d ' ' -f 4)
+              expected_compiler="gcc"
+          elif [[ "$CXX" == "clang++" ]]; then
+              # Extracts version for clang++ output format
+              actual_version=$(echo "$version_output" | head -n 1 | cut -d ' ' -f 3)
+              expected_compiler="clang"
+          else
+              echo "::error:: Unexpected CXX value ($CXX)."
+              exit 1
+          fi
+
+          expected_version="${CCCL_HOST_COMPILER_VERSION}"
+
+          if [[ "$expected_compiler" != "${CCCL_HOST_COMPILER}" || "$actual_version" != "$expected_version" ]]; then
+              echo "::error:: CXX ($CXX) version ($actual_version) does not match the expected compiler (${CCCL_HOST_COMPILER}) and version (${CCCL_HOST_COMPILER_VERSION})."
+              exit 1
+          fi
+
 
 
     #- name: Start dev container
