@@ -107,7 +107,7 @@ Once submitted, maintainers will review the pull request. They might suggest cha
 
 For constructive feedback and effective communication during reviews, we recommend following [Conventional Comments](https://conventionalcomments.org/).
 
-Further recommended reading for sucessful PR reviews:
+Further recommended reading for successful PR reviews:
 - [How to Do Code Reviews Like a Human (Part One)](https://mtlynch.io/human-code-reviews-1/)
 - [How to Do Code Reviews Like a Human (Part Two)](https://mtlynch.io/human-code-reviews-2/)
 
