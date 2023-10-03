@@ -6,7 +6,7 @@ The Continuous Integration (CI) process for CCCL ensures code quality and compat
 
 ### Development Containers
 
-Our CI jobs use the same Development Containers as described in the [dev container setup](.devcontainer/README.md). This ensures a consistent environment for both local development and CI testing. These containers provide a standardized, reproducible environment that has all the necessary dependencies installed.
+CCCL's CI jobs use the same Development Containers as described in the [Dev Container setup](.devcontainer/README.md). Follow the instructions in that guide to set up a development container with the same environment as CI.
 
 ### Matrix Testing
 To ensure compatibility across various setups, CI tests are performed across a broad matrix of:
@@ -18,40 +18,42 @@ To ensure compatibility across various setups, CI tests are performed across a b
 
 The exact combinations of these environments are defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file.
 
+### Viewing CI Workflow Results
+
+The results of every job in the CI pipeline are summarized on the bottom of the PR page. Clicking on the "Details" link next to each run will provide more detailed information.
+
+![Summary of all CI jobs on PR page.](docs/images/pr-checks.png).
+
 ### Special CI Commands
 
-During your development, there might be scenarios where you want to control the execution of the CI pipeline based on the nature of your commits. For this, we've provided special commands that can be included in your commit messages to direct the CI:
+During development, there may be scenarios where controlling the execution of the CI pipeline based on the nature of commits is desired. Special commands are provided that can be included in commit messages to direct the CI pipeline execution:
 
-- `[skip ci]`: By adding this command in your commit message, you signal the CI to completely skip running the pipeline for that commit. This can be handy for changes that are purely documentation-based or others that don't require CI validation.
+- `[skip ci]`: Skips the entire CI pipeline. Useful for documentation changes or others that don't require CI validation.
+- `[skip-tests]`: Skips CI jobs that execute tests, but runs all other jobs. Useful to avoid time-consuming tests when changes are unlikely to affect them.
 
-- `[skip-tests]`: Sometimes, you might want the CI to run but skip the GPU tests. Including this command ensures that other parts of the pipeline run, but the GPU tests are bypassed. This is useful for preliminary pushes or when working on parts of the codebase that don't touch GPU functionalities.
-
-Always ensure that you're using these commands judiciously. While they provide flexibility, they should be used appropriately to maintain the codebase's integrity and quality.
+Use these commands judiciously. While they offer flexibility, they should be used appropriately to maintain the codebase's integrity and quality.
 
 ### Accelerating Build Times with `sccache`
 
-To speed up compilation, our CI uses [`sccache`](https://github.com/mozilla/sccache), a distributed cache system that caches previously built compiler artifacts if the corresponding files haven't changed. This cache is also shared with the [Development Containers](.devcontainer/README.md). When building locally within a devcontainer, the cache is used, ensuring consistent and fast build times both locally and in CI. The shared nature of sccache provides a virtuous cycle: CI accelerates local builds by contributing to the cache, and in turn, local builds accelerate CI by populating the cache with more artifacts. This synergy ensures optimal build performance and reduces the time taken for iterative development and testing. To benefit from this shared cache, ensure you've set up [GitHub Authentication](.devcontainer/README.md#5-github-authentication) in your devcontainer.
-
+CCCL's CI uses [`sccache`](https://github.com/mozilla/sccache) to cache compiler artifacts for files that haven't changed and dramatically accelerate build times. Local builds inside [CCCL's Dev Containers](.devcontainer/README.md) can share the same cache such that local builds and CI jobs mutually benefit from accelerated build times. Follow the [GitHub Authentication](.devcontainer/README.md#optional-authenticate-with-github-for-sccache) guide to enable this feature.
 
 ### Build and Test Scripts
 
-CI jobs utilize the build and test scripts located in the `ci/` directory. This ensures uniformity in how the code is built and tested, regardless of where it's being executed. When you build or test locally, you're using the same scripts as the CI, minimizing discrepancies between local and CI environments. For more detailed instructions on how to use these scripts, please refer to the [CONTRIBUTING.md guide](CONTRIBUTING.md#building-and-testing).
+CI jobs employ the build and test scripts in the `ci/` directory to build and run tests. These scripts provide a consistent entry point for building and testing in both local and CI environments. For more information on using these scripts, see the [CONTRIBUTING.md guide](CONTRIBUTING.md#building-and-testing).
 
 ### Reproducing CI Failures Locally
 
-If your pull request encounters a failure during CI testing, it's usually helpful to reproduce the issue locally to diagnose and fix it. Here's a step-by-step guide to ensure you recreate the exact environment and situation:
+If a pull request encounters a failure during CI testing, it is usually helpful to reproduce the issue locally to diagnose and fix it. Here is a step-by-step guide to recreate the exact environment and situation:
 
 1. **Get the Appropriate Development Container**:
 
-    Our CI uses the same development containers as those you'd use for local development, ensuring a consistent environment. These containers come pre-configured with all the necessary tools, libraries, and settings.
+    CI jobs use the same [development containers](.devcontainer/README) as those used for local development.
 
-    If you aren't already doing so, make sure to use the devcontainers for local development. For details on setting up and launching the appropriate dev container, refer to the [Dev Containers guide](.devcontainer/README.md).
-
-    The CI logs will mention the exact environment used. Ensure you launch the corresponding container locally.
+    In order to simplify reproducing an issue in CI, it is recommended to use the same container locally. The CI logs will mention the exact environment used.
 
 2. **Run the Build/Test Script**:
 
-    Inside the container, navigate to the root of the `cccl` project. Use the scripts from the `ci/` directory to build and test the project, just as the CI does.
+    CI jobs uses the build and test scripts found in the `ci/` directory. Use the same scripts locally to reproduce the issue.
 
     Example:
     ```bash
@@ -59,29 +61,21 @@ If your pull request encounters a failure during CI testing, it's usually helpfu
     ./ci/test_cub.sh <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>
     ```
 
-    The CI logs provide exact instructions on the scripts and parameters used, making it straightforward to reproduce the exact CI steps locally.
+    The CI logs provide exact instructions on the scripts and parameters used.
 
-    Here is an example of a CI failure message that includes instructions. Note that the instructions may have changed. Refer to the latest failure log for the most up-to-date instructions.
+    Here is an example of a CI failure message that includes instructions how to clone the exact same commit and run the relevant script in the appropriate container. Note that the instructions may have changed. Refer to the latest failure log for the most up-to-date instructions.
     ![Shows an example of a CI failure log with reproducer instructions](docs/images/repro_instructions.png).
-
 
 ## CI Workflow Details
 
 ### Triggering Mechanism and `copy-pr-bot`
 
-CCCL uses NVIDIA's self-hosted action runners to execute CI jobs. Due to security considerations, we use a unique approach to triggering PR workflows. Rather than triggering directly on pull request events, we utilize the [`copy-pr-bot` GitHub application](https://docs.gha-runners.nvidia.com/onboarding/). This bot streamlines the process of deeming code as trusted by copying it to a prefixed branch, ensuring that only safe and vetted code runs on our self-hosted runners.
+CCCL uses [NVIDIA's self-hosted action runners](https://docs.gha-runners.nvidia.com/runners/) for CI jobs. For security, PR workflows are triggered using the [`copy-pr-bot` GitHub application](https://docs.gha-runners.nvidia.com/onboarding/), which copies code to a prefixed branch to ensure only vetted code runs on the runners.
 
-If you're an external contributor, be aware that the CI won't start automatically. Instead, a repository member will first review your changes. After ensuring the changes meet the required criteria, they will use the `/ok to test` comment to initiate the CI process. This extra step ensures the security and integrity of our CI process.
+The CI pipeline will not start automatically for external contributors. A repository member will first review the changes and initiate the CI pipeline with and `/ok to test` comment.
 
 ## Troubleshooting CI Failures
 
-1. **Check the CI logs**: Always start by examining the detailed logs provided by the CI. They will provide specific error messages that can guide your troubleshooting process.
-2. **Reproduce Locally**: As previously mentioned, try to reproduce the issue in your local development environment. This allows for more rapid iteration and debugging.
-3. **Matrix Configuration**: If a specific combination of CUDA version, compiler, or GPU architecture is causing the failure, consult the `ci/matrix.yaml` to understand the testing combinations.
-4. **Seek Help**: If you're unable to resolve a CI failure, don't hesitate to ask. The NVIDIA team and community can provide insights or point out common pitfalls.
-
-## Conclusion
-
-Our CI pipeline is a living entity, continuously evolving to meet the needs of the project. While we strive to keep this documentation up-to-date, always refer to the actual code and scripts if you're in doubt.
-
-Understanding the CI process is crucial for smooth contributions to CCCL. By ensuring your changes pass the CI checks and being able to debug any issues that arise, you streamline the contribution process, making it more efficient for both you and the maintainers. Always remember that the goal is to ensure that CCCL remains a high-quality, robust library that serves its community effectively.
+1. **Review CI logs**: Examine CI logs for specific error messages (see [Viewing CI Workflow Results](#viewing-ci-workflow-results))
+2. **Reproduce Locally**: Try replicating the issue locally (see [Reproducing CI Failures Locally](#reproducing-ci-failures-locally))
+3. **Ask for Assistance**: If stuck, don't hesitate to reach out to the @NVIDIA/cccl team on an issue or PR, or ask a question by starting a [Discussion](https://github.com/NVIDIA/cccl/discussions).
