@@ -11,7 +11,7 @@ Thank you for your interest in contributing to the CUDA C++ Core Libraries (CCCL
 
 2. **Set up Development Environment**:
 
-   CCCL uses Development Containers to provide a consistent development environment for both local development and CI. Contributors are strongly encouraged to use these containers as they simplify environment setup. See the [Dev Containers guide](.devcontainer/REAMDE.md) for instructions on how to quickly get up and running using dev containers with or without VSCode.
+   CCCL uses Development Containers to provide a consistent development environment for both local development and CI. Contributors are strongly encouraged to use these containers as they simplify environment setup. See the [Dev Containers guide](.devcontainer/README.md) for instructions on how to quickly get up and running using dev containers with or without VSCode.
 
 ## Making Changes
 
