@@ -118,3 +118,19 @@ jobs:
               echo "::error:: CXX ($CXX) version ($actual_version) does not match the expected compiler (${CCCL_HOST_COMPILER}) and version (${CCCL_HOST_COMPILER_VERSION})."
               exit 1
           fi
+
+          # Check CUDA version from nvcc
+          cuda_version_output=$(nvcc --version)
+          # Extract the MAJOR.MINOR version from the output
+          if [[ $cuda_version_output =~ release\ ([0-9]+\.[0-9]+) ]]; then
+              actual_cuda_version=${BASH_REMATCH[1]}
+          else
+              echo "::error:: Unable to determine CUDA version from nvcc."
+              exit 1
+          fi
+
+          expected_cuda_version="${CCCL_CUDA_VERSION}"
+          if [[ "$actual_cuda_version" != "$expected_cuda_version" ]]; then
+              echo "::error:: CUDA version ($actual_cuda_version) does not match the expected CUDA version ($expected_cuda_version)."
+              exit 1
+          fi
