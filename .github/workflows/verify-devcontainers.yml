@@ -40,6 +40,7 @@ jobs:
         devcontainer: ${{fromJson(needs.get-devcontainer-list.outputs.devcontainer_list)}}
     permissions:
       id-token: write
+      contents: read
     steps:
     - name: Check out the code
       uses: actions/checkout@v3
