@@ -18,23 +18,24 @@ jobs:
   get-devcontainer-list:
     runs-on: ubuntu-latest
     outputs:
-      devcontainer_list: ${{ steps.get-list.outputs.devcontainer_list }}
+      devcontainer_info: ${{ steps.get-list.outputs.devcontainers }}
     steps:
     - name: Check out the code
       uses: actions/checkout@v3
-    - name: Get list of devcontainer.json paths
+    - name: Get list of devcontainer.json paths and names
       id: get-list
       run: |
-        devcontainer_list=$(find .devcontainer/ -name 'devcontainer.json' | jq -R -s -c 'split("\n")[:-1]')
-        echo "devcontainer_list=$devcontainer_list" | tee --append "${GITHUB_OUTPUT}"
+        devcontainers=$(find .devcontainer/ -name 'devcontainer.json' | jq -R -s -c 'split("\n")[:-1]' | jq -c 'map({path: ., name: (input_filename | split("/")[-2] )})')
+        echo "devcontainers=$devcontainers" | tee --append "${GITHUB_OUTPUT}"
 
   verify-devcontainers:
     needs: get-devcontainer-list
+    name: ${{matrix.devcontainer.name}}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        devcontainer: ${{fromJson(needs.get-devcontainer-list.outputs.devcontainer_list)}}
+        devcontainer: ${{fromJson(needs.get-devcontainer-list.outputs.devcontainers)}}
     permissions:
       id-token: write
       contents: read
@@ -45,7 +46,7 @@ jobs:
       # file to the top level .devcontainer/ directory
     - name: Copy devcontainer.json to .devcontainer/
       run: |
-        src="${{ matrix.devcontainer }}"
+        src="${{ matrix.devcontainer.path }}"
         dst=".devcontainer/devcontainer.json"
         if [[ "$src" != "$dst" ]]; then
           cp "$src" "$dst"
