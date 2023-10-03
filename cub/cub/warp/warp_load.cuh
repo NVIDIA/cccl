@@ -216,7 +216,7 @@ template <typename InputT,
           int LEGACY_PTX_ARCH         = 0>
 class WarpLoad
 {
-  constexpr static bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
 
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE,
                 "LOGICAL_WARP_THREADS must be a power of two");

@@ -45,7 +45,9 @@ static_assert(is_transparent<cuda::std::ranges::greater>);
 __host__ __device__ constexpr bool test() {
   auto fn = cuda::std::ranges::greater();
 
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
   assert(fn(MoveOnly(42), MoveOnly(41)));
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
   ForwardingTestObject a{};
   ForwardingTestObject b{};

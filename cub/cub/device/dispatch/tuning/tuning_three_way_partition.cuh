@@ -273,7 +273,7 @@ struct device_three_way_partition_policy_hub
 {
   struct DefaultTuning
   {
-    constexpr static int ITEMS_PER_THREAD = Nominal4BItemsToItems<InputT>(9);
+    static constexpr int ITEMS_PER_THREAD = Nominal4BItemsToItems<InputT>(9);
 
     using ThreeWayPartitionPolicy = cub::AgentThreeWayPartitionPolicy<256,
                                                                       ITEMS_PER_THREAD,

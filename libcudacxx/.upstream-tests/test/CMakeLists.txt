@@ -38,6 +38,11 @@ if (NOT MSVC)
      --compiler-options=-Wextra")
 endif()
 
+# sccache cannot handle the -Fd option generationg pdb files
+if (MSVC)
+  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+endif()
+
 # Intel OneAPI compiler has fast math enabled by default which breaks almost all floating point tests
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM")
   set(LIBCUDACXX_TEST_COMPILER_FLAGS

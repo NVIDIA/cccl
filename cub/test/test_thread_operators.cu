@@ -90,7 +90,7 @@ void TestEquality()
 {
   cub::Equality op{}; 
 
-  const int const_magic_val = 42;
+  constexpr int const_magic_val = 42;
   int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, const_magic_val), true);
@@ -105,7 +105,7 @@ void TestInequality()
 {
   cub::Inequality op{}; 
 
-  const int const_magic_val = 42;
+  constexpr int const_magic_val = 42;
   int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, const_magic_val), false);
@@ -121,7 +121,7 @@ void TestInequalityWrapper()
   cub::Equality wrapped_op{}; 
   cub::InequalityWrapper<cub::Equality> op{wrapped_op};
 
-  const int const_magic_val = 42;
+  constexpr int const_magic_val = 42;
   int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, const_magic_val), false);
@@ -161,7 +161,7 @@ void TestSum()
 {
   cub::Sum op{};
 
-  const int const_magic_val = 40;
+  constexpr int const_magic_val = 40;
   int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, 2), 42);
@@ -178,7 +178,7 @@ void TestDifference()
 {
   cub::Difference op{};
 
-  const int const_magic_val = 44;
+  constexpr int const_magic_val = 44;
   int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, 2), 42);
@@ -196,7 +196,7 @@ void TestDivision()
 {
   cub::Division op{};
 
-  const int const_magic_val = 44;
+  constexpr int const_magic_val = 44;
   int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, 2), 22);
@@ -214,7 +214,7 @@ void TestMax()
 {
   cub::Max op{};
 
-  const int const_magic_val = 42;
+  constexpr int const_magic_val = 42;
   int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, 2), 42);
@@ -231,7 +231,7 @@ void TestMin()
 {
   cub::Min op{};
 
-  const int const_magic_val = 42;
+  constexpr int const_magic_val = 42;
   int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, 2), 2);

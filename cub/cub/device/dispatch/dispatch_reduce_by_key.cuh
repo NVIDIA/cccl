@@ -288,8 +288,8 @@ struct DispatchReduceByKey
                                                           ReduceByKeyKernelT reduce_by_key_kernel)
   {
     using AgentReduceByKeyPolicyT = typename ActivePolicyT::ReduceByKeyPolicyT;
-    const int block_threads = AgentReduceByKeyPolicyT::BLOCK_THREADS;
-    const int items_per_thread = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
+    constexpr int block_threads = AgentReduceByKeyPolicyT::BLOCK_THREADS;
+    constexpr int items_per_thread = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
 
     cudaError error = cudaSuccess;
     do

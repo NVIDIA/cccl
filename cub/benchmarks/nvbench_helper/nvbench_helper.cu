@@ -86,8 +86,8 @@ double *generator_t::prepare_lognormal_random_generator(seed_t seed, std::size_t
 
   m_distribution.resize(num_segments);
 
-  const double mean = 3.0;
-  const double sigma = 1.2;
+  constexpr double mean = 3.0;
+  constexpr double sigma = 1.2;
   curandGenerateLogNormalDouble(m_gen, this->distribution(), num_segments, mean, sigma);
 
   return this->distribution();
@@ -214,7 +214,7 @@ thrust::device_vector<T> generator_t::power_law_segment_offsets(seed_t seed,
                     lognormal_transformer_t<T>{total_elements, sum});
 
   const int diff = total_elements - thrust::reduce(segment_sizes.begin(), segment_sizes.end());
-  const int block_size = 256;
+  constexpr int block_size = 256;
   const int grid_size  = (std::abs(diff) + block_size - 1) / block_size;
 
   T *d_segment_sizes = thrust::raw_pointer_cast(segment_sizes.data());
@@ -261,7 +261,7 @@ void generator_t::operator()(seed_t seed,
 
       const int number_of_steps = static_cast<int>(entropy);
       thrust::device_vector<T> tmp(data.size());
-      const int threads_in_block = 256;
+      constexpr int threads_in_block = 256;
       const int blocks_in_grid   = (data.size() + threads_in_block - 1) / threads_in_block;
 
       for (int i = 0; i < number_of_steps; i++, ++seed)
@@ -284,7 +284,7 @@ void generator_t::operator()(seed_t seed,
                              complex min,
                              complex max)
 {
-  const int threads_in_block = 256;
+  constexpr int threads_in_block = 256;
   const int blocks_in_grid   = (data.size() + threads_in_block - 1) / threads_in_block;
 
   switch (entropy)

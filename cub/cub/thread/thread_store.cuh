@@ -325,8 +325,8 @@ __device__ __forceinline__ void ThreadStoreVolatilePtr(
     typedef typename UnitWord<T>::VolatileWord  VolatileWord;
     typedef typename UnitWord<T>::ShuffleWord   ShuffleWord;
 
-    const int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
-    const int SHUFFLE_MULTIPLE  = sizeof(T) / sizeof(ShuffleWord);
+    constexpr int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
+    constexpr int SHUFFLE_MULTIPLE  = sizeof(T) / sizeof(ShuffleWord);
 
     VolatileWord words[VOLATILE_MULTIPLE];
 
@@ -368,8 +368,8 @@ __device__ __forceinline__ void ThreadStore(
     typedef typename UnitWord<T>::DeviceWord    DeviceWord;
     typedef typename UnitWord<T>::ShuffleWord   ShuffleWord;
 
-    const int DEVICE_MULTIPLE   = sizeof(T) / sizeof(DeviceWord);
-    const int SHUFFLE_MULTIPLE  = sizeof(T) / sizeof(ShuffleWord);
+    constexpr int DEVICE_MULTIPLE   = sizeof(T) / sizeof(DeviceWord);
+    constexpr int SHUFFLE_MULTIPLE  = sizeof(T) / sizeof(ShuffleWord);
 
     DeviceWord words[DEVICE_MULTIPLE];
 

@@ -28,6 +28,7 @@ static_assert( cuda::std::indirectly_movable_storable<NotAForwardIterator, NotAF
 static_assert( cuda::std::indirectly_swappable<NotAForwardIterator>);
 static_assert(!cuda::std::permutable<NotAForwardIterator>);
 
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
 struct NonCopyable {
   NonCopyable(const NonCopyable&) = delete;
   NonCopyable& operator=(const NonCopyable&) = delete;
@@ -39,6 +40,7 @@ static_assert( cuda::std::forward_iterator<NotIMS>);
 static_assert(!cuda::std::indirectly_movable_storable<NotIMS, NotIMS>);
 static_assert( cuda::std::indirectly_swappable<NotIMS>);
 static_assert(!cuda::std::permutable<NotIMS>);
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
 // Note: it is impossible for an iterator to satisfy `indirectly_movable_storable` but not `indirectly_swappable`:
 // `indirectly_swappable` requires both iterators to be `indirectly_readable` and for `ranges::iter_swap` to be

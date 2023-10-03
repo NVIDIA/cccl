@@ -51,15 +51,17 @@ DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 // List of types to test
 using custom_t           = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 using iterator_type_list = c2h::type_list<type_pair<custom_t>, type_pair<std::int64_t>>;
+using offsets            = c2h::type_list<std::int32_t, std::uint32_t>;
 
 CUB_TEST("Device segmented reduce works with fancy input iterators",
          "[reduce][device]",
-         iterator_type_list)
+         iterator_type_list,
+         offsets)
 {
-  using params   = params_t<TestType>;
-  using item_t   = typename params::item_t;
-  using output_t = typename params::output_t;
-  using offset_t = uint32_t;
+  using type_pair_t = typename c2h::get<0, TestType>;
+  using item_t      = typename type_pair_t::input_t;
+  using output_t    = typename type_pair_t::output_t;
+  using offset_t    = typename c2h::get<1, TestType>;
 
   constexpr int min_items = 1;
   constexpr int max_items = 1000000;
