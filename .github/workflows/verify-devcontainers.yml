@@ -46,7 +46,12 @@ jobs:
       # devcontainer/ci doesn't supported nested devcontainer.json files, so we need to copy the devcontainer.json
       # file to the top level .devcontainer/ directory
     - name: Copy devcontainer.json to .devcontainer/
-      run: cp ${{ matrix.devcontainer }} .devcontainer/devcontainer.json
+      run: |
+        src="${{ matrix.devcontainer }}"
+        dst=".devcontainer/devcontainer.json"
+        if [[ "$src" != "$dst" ]]; then
+          cp "$src" "$dst"
+        fi
       # We don't really need sccache configured, but we need the AWS credentials envvars to be set
       # in order to avoid the devcontainer hanging waiting for GitHub authentication
     - name: Configure credentials and environment variables for sccache
