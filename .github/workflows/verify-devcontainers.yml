@@ -81,7 +81,7 @@ jobs:
               expected_compiler="gcc"
           elif [[ "$CXX" == "clang++" ]]; then
               # Extracts major version for clang++ output format
-              if [[ $version_string =~ clang\ version\ ([0-9]+) ]]; then
+              if [[ $version_output =~ clang\ version\ ([0-9]+) ]]; then
                   actual_version=${BASH_REMATCH[1]}
               else
                   echo "Error: Unable to determine clang version."
