@@ -16,9 +16,10 @@ concurrency:
 
 jobs:
   get-devcontainer-list:
+    name: Get list of devcontainer.json files
     runs-on: ubuntu-latest
     outputs:
-      devcontainer_info: ${{ steps.get-list.outputs.devcontainers }}
+      devcontainers: ${{ steps.get-list.outputs.devcontainers }}
     steps:
     - name: Check out the code
       uses: actions/checkout@v3
