@@ -109,7 +109,6 @@ print_var_values \
     CXX \
     CUDACXX \
     CUDAHOSTCXX \
-    CUDAARCHS \
     NVCC_VERSION \
     CMAKE_BUILD_PARALLEL_LEVEL \
     CTEST_PARALLEL_LEVEL \
