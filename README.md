@@ -12,7 +12,7 @@ This repository unifies three essential CUDA C++ libraries into a single, conven
 
 The goal of CCCL is to provide CUDA C++ developers with building blocks that make it easier to write safe and efficient code.
 Bringing these libraries together streamlines your development process and broadens your ability to leverage the power of CUDA C++.
-For more information about the decision to unify these projects, see the announcement here: (TODO)
+For more information about the decision to unify these projects, see the [announcement here](https://github.com/NVIDIA/cccl/discussions/520).
 
 ## Overview
 
