@@ -25,3 +25,4 @@ jobs:
       command: |
         cmake -S . --preset=cccl -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA}
         ctest --preset=cccl
+        
