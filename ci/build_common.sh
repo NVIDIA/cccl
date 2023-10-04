@@ -6,51 +6,64 @@ set -eo pipefail
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
 # Script defaults
+HOST_COMPILER=${CXX:-g++} # $CXX if set, otherwise `g++`
+CXX_STANDARD=17
 CUDA_COMPILER=nvcc
+CUDA_ARCHS= # Empty, use presets by default.
 
 # Check if the correct number of arguments has been provided
 function usage {
-    echo "Usage: $0 [OPTIONS] <HOST_COMPILER> <CXX_STANDARD>"
+    echo "Usage: $0 [OPTIONS]"
+    echo
     echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores."
-    echo "Example: PARALLEL_LEVEL=8 $0 g++-8 14"
-    echo "Example: $0 clang++-8 17"
-    echo "Possible options: "
-    echo "  -nvcc: path/to/nvcc"
+    echo
+    echo "Options:"
     echo "  -v/--verbose: enable shell echo for debugging"
+    echo "  -nvcc: path/to/nvcc"
+    echo "  -cxx: Host compiler (Defaults to $CXX if set, otherwise g++)"
+    echo "  -std: C++ standard (Defaults to 17)"
+    echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
+    echo
+    echo "Examples:"
+    echo "  $ PARALLEL_LEVEL=8 $0"
+    echo "  $ PARALLEL_LEVEL=8 $0 -cxx g++-9"
+    echo "  $ $0 -cxx clang++-8"
+    echo "  $ $0 -cxx g++-8 --std 14 --arch 80-real -v --nvcc /usr/local/bin/nvcc"
     exit 1
 }
 
-# Check for extra options
-# While there are more than 2 arguments, parse switches/options
-while [ "$#" -gt 2 ]
-do
-  case "${1}" in
-  -h)     usage ;;
-  -help)  usage ;;
-  --help) usage ;;
-  --verbose)           VERBOSE=1; shift ;;
-  -v)                  VERBOSE=1; shift ;;
-  -nvcc)               CUDA_COMPILER="${2}"; shift 2;;
-  -disable-benchmarks) ENABLE_CUB_BENCHMARKS="false"; shift ;;
-  *) usage ;;
-  esac
+# Parse options
+while [ "$#" -gt 0 ]; do
+    case "${1}" in
+    -h) usage ;;
+    -help) usage ;;
+    --help) usage ;;
+    --verbose) VERBOSE=1; shift;;
+    -v) VERBOSE=1; shift;;
+    -cxx) HOST_COMPILER="${2}"; shift 2;;
+    -std) CXX_STANDARD="${2}"; shift 2;;
+    -nvcc) CUDA_COMPILER="${2}"; shift 2;;
+    -arch) CUDA_ARCHS="${2}"; shift 2;;
+    -disable-benchmarks) ENABLE_CUB_BENCHMARKS="false"; shift;;
+    *) usage ;;
+    esac
 done
+
+# Convert to full paths:
+HOST_COMPILER=$(which ${HOST_COMPILER})
+CUDA_COMPILER=$(which ${CUDA_COMPILER})
+
+GLOBAL_CMAKE_OPTIONS=""
+if [[ -n "${CUDA_ARCHS}" ]]; then
+    GLOBAL_CMAKE_OPTIONS+="-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS} "
+fi
 
 if [ $VERBOSE ]; then
     set -x
 fi
 
-if [ "$#" -ne 2 ]; then
-    echo "Invalid number of arguments"
-    usage
-fi
-
 # Begin processing unsets after option parsing
 set -u
-
-# Assign command line arguments to variables
-readonly HOST_COMPILER=$(which $1)
-readonly CXX_STANDARD=$2
 
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
 readonly NVCC_VERSION=$($CUDA_COMPILER --version | grep release | awk '{print $6}' | cut -c2-)
@@ -60,7 +73,7 @@ if [ -z ${CCCL_BUILD_INFIX+x} ]; then
 fi
 
 # Presets will be configured in this directory:
-BUILD_DIR=../build/${CCCL_BUILD_INFIX}
+BUILD_DIR=$(readlink -f "../build/${CCCL_BUILD_INFIX}")
 
 # The most recent build will always be symlinked to cccl/build/latest
 mkdir -p $BUILD_DIR
@@ -70,25 +83,45 @@ ln -sf $BUILD_DIR ../build/latest
 # Prepare environment for CMake:
 export CMAKE_BUILD_PARALLEL_LEVEL="${PARALLEL_LEVEL}"
 export CTEST_PARALLEL_LEVEL="1"
+export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"
-export CXX="${HOST_COMPILER}"
+
+# Print "ARG=${ARG}" for all args.
+function print_var_values() {
+    # Iterate through the arguments
+    for var_name in "$@"; do
+        if [ -z "$var_name" ]; then
+            echo "Usage: print_var_values <variable_name1> <variable_name2> ..."
+            return 1
+        fi
+
+        # Dereference the variable and print the result
+        echo "$var_name=${!var_name:-(undefined)}"
+    done
+}
 
 echo "========================================"
-echo "Begin build"
 echo "pwd=$(pwd)"
-echo "BUILD_DIR=$BUILD_DIR"
-echo "CXX_STANDARD=$CXX_STANDARD"
-echo "CXX=$CXX"
-echo "CUDACXX=$CUDACXX"
-echo "CUDAHOSTCXX=$CUDAHOSTCXX"
-echo "NVCC_VERSION=$NVCC_VERSION"
-echo "CMAKE_BUILD_PARALLEL_LEVEL=$CMAKE_BUILD_PARALLEL_LEVEL"
-echo "CTEST_PARALLEL_LEVEL=$CTEST_PARALLEL_LEVEL"
-echo "CCCL_BUILD_INFIX=$CCCL_BUILD_INFIX"
+print_var_values \
+    BUILD_DIR \
+    CXX_STANDARD \
+    CXX \
+    CUDACXX \
+    CUDAHOSTCXX \
+    CUDAARCHS \
+    NVCC_VERSION \
+    CMAKE_BUILD_PARALLEL_LEVEL \
+    CTEST_PARALLEL_LEVEL \
+    CCCL_BUILD_INFIX \
+    GLOBAL_CMAKE_OPTIONS
+echo "========================================"
+echo
+echo "========================================"
 echo "Current commit is:"
 git log -1
 echo "========================================"
+echo
 
 function configure_preset()
 {
@@ -98,7 +131,7 @@ function configure_preset()
 
     pushd .. > /dev/null
 
-    cmake --preset=$PRESET $CMAKE_OPTIONS --log-level=VERBOSE
+    cmake --preset=$PRESET --log-level=VERBOSE $GLOBAL_CMAKE_OPTIONS $CMAKE_OPTIONS
     echo "$BUILD_NAME configure complete."
 
     popd > /dev/null
