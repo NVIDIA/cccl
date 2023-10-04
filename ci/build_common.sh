@@ -73,12 +73,15 @@ if [ -z ${CCCL_BUILD_INFIX+x} ]; then
 fi
 
 # Presets will be configured in this directory:
-BUILD_DIR=$(readlink -f "../build/${CCCL_BUILD_INFIX}")
+BUILD_DIR="../build/${CCCL_BUILD_INFIX}"
 
 # The most recent build will always be symlinked to cccl/build/latest
 mkdir -p $BUILD_DIR
 rm -f ../build/latest
 ln -sf $BUILD_DIR ../build/latest
+
+# Now that BUILD_DIR exists, use readlink to canonicalize the path:
+BUILD_DIR=$(readlink -f "${BUILD_DIR}")
 
 # Prepare environment for CMake:
 export CMAKE_BUILD_PARALLEL_LEVEL="${PARALLEL_LEVEL}"
