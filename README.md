@@ -1,3 +1,5 @@
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/NVIDIA/cccl?quickstart=1&devcontainer_path=.devcontainer%2Fdevcontainer.json)
+
 # CUDA C++ Core Libraries (CCCL)
 
 Welcome to the CUDA C++ Core Libraries (CCCL) where our mission is to make CUDA C++ more delightful.
@@ -10,7 +12,7 @@ This repository unifies three essential CUDA C++ libraries into a single, conven
 
 The goal of CCCL is to provide CUDA C++ developers with building blocks that make it easier to write safe and efficient code.
 Bringing these libraries together streamlines your development process and broadens your ability to leverage the power of CUDA C++.
-For more information about the decision to unify these projects, see the announcement here: (TODO)
+For more information about the decision to unify these projects, see the [announcement here](https://github.com/NVIDIA/cccl/discussions/520).
 
 ## Overview
 
@@ -35,6 +37,8 @@ Each thread block computes the sum of a subset of the array using `cub::BlockRed
 The sum of each block is then reduced to a single value using an atomic add via `cuda::atomic_ref` from libcudacxx.
 
 It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
+
+[Try it live on Godbolt!](https://godbolt.org/z/x4G73af9a)
 
 ```cpp
 #include <thrust/device_vector.h>
@@ -140,7 +144,7 @@ Contributions to simplify integrating CCCL into other build systems are welcome.
 
 ### Contributors
 
-Contributor guide coming soon!
+Interested in contributing to making CCCL better? Check out our [Contributing Guide](CONTRIBUTING.md) for a comprehensive overview of everything you need to know to set up your development environment, make changes, run tests, and submit a PR.
 
 ## Platform Support
 
