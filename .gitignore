@@ -5,3 +5,4 @@
 .config
 _deps/catch2-src/
 compile_commands.json
+CMakeUserPresets.json
