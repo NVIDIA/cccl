@@ -23,8 +23,8 @@ jobs:
     with:
       cpu: ${{ matrix.cpu }}
       test_name: ${{matrix.compiler.name}}${{matrix.compiler.version}}/C++${{matrix.std}}
-      build_script: "./ci/build_${{ inputs.project_name }}.sh ${{matrix.compiler.exe}} ${{matrix.std}}"
-      test_script:  "./ci/test_${{ inputs.project_name }}.sh  ${{matrix.compiler.exe}} ${{matrix.std}}"
+      build_script: "./ci/build_${{ inputs.project_name }}.sh -cxx ${{matrix.compiler.exe}} -std ${{matrix.std}}"
+      test_script:  "./ci/test_${{ inputs.project_name }}.sh -cxx ${{matrix.compiler.exe}} -std ${{matrix.std}}"
       container_image: rapidsai/devcontainers:${{inputs.devcontainer_version}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       run_tests: ${{ contains(matrix.jobs, 'test') && !contains(github.event.head_commit.message, 'skip-tests') && matrix.os != 'windows-2022' }}
 
