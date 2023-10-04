@@ -17,9 +17,7 @@ Remove-Module -Name build_common
 Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD
 
 $PRESET = "cub-cpp$CXX_STANDARD"
-
-# Override the preset 60;70;80, since cuda::atomic can't be used on msvc+sm60:
-$CMAKE_OPTIONS = "-DCMAKE_CUDA_ARCHITECTURES=70;80"
+$CMAKE_OPTIONS = ""
 
 configure_and_build_preset "CUB" "$PRESET" "$CMAKE_OPTIONS"
 
