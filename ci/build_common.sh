@@ -8,7 +8,7 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 # Script defaults
 HOST_COMPILER=${CXX:-g++} # $CXX if set, otherwise `g++`
 CXX_STANDARD=17
-CUDA_COMPILER=nvcc
+CUDA_COMPILER=${CUDACXX:-nvcc} # $CUDACXX if set, otherwise `nvcc`
 CUDA_ARCHS= # Empty, use presets by default.
 
 # Check if the correct number of arguments has been provided
@@ -19,16 +19,16 @@ function usage {
     echo
     echo "Options:"
     echo "  -v/--verbose: enable shell echo for debugging"
-    echo "  -nvcc: path/to/nvcc"
+    echo "  -cuda: CUDA compiler (Defaults to $CUDACXX if set, otherwise nvcc)"
     echo "  -cxx: Host compiler (Defaults to $CXX if set, otherwise g++)"
-    echo "  -std: C++ standard (Defaults to 17)"
+    echo "  -std: CUDA/C++ standard (Defaults to 17)"
     echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
     echo
     echo "Examples:"
     echo "  $ PARALLEL_LEVEL=8 $0"
     echo "  $ PARALLEL_LEVEL=8 $0 -cxx g++-9"
     echo "  $ $0 -cxx clang++-8"
-    echo "  $ $0 -cxx g++-8 --std 14 --arch 80-real -v --nvcc /usr/local/bin/nvcc"
+    echo "  $ $0 -cxx g++-8 -std 14 -arch 80-real -v -cuda /usr/local/bin/nvcc"
     exit 1
 }
 
@@ -42,7 +42,7 @@ while [ "$#" -gt 0 ]; do
     -v) VERBOSE=1; shift;;
     -cxx) HOST_COMPILER="${2}"; shift 2;;
     -std) CXX_STANDARD="${2}"; shift 2;;
-    -nvcc) CUDA_COMPILER="${2}"; shift 2;;
+    -cuda) CUDA_COMPILER="${2}"; shift 2;;
     -arch) CUDA_ARCHS="${2}"; shift 2;;
     -disable-benchmarks) ENABLE_CUB_BENCHMARKS="false"; shift;;
     *) usage ;;
