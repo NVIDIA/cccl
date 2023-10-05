@@ -98,7 +98,7 @@
 #endif
 
 #define THRUST_COMPILER_DEPRECATION(REQ) \
-  THRUST_COMP_DEPR_IMPL(Thrust requires at least REQ. Define THRUST_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.)
+  THRUST_COMP_DEPR_IMPL(Thrust requires at least REQ. Define THRUST_IGNORE_DEPRECATED_COMPILER to suppress this message.)
 
 #define THRUST_COMPILER_DEPRECATION_SOFT(REQ, CUR) \
   THRUST_COMP_DEPR_IMPL(Thrust requires at least REQ. CUR is deprecated but still supported. CUR support will be removed in a future release. Define THRUST_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.)
