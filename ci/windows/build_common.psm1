@@ -7,11 +7,17 @@ Param(
     [int]$CXX_STANDARD = 17
 )
 
-
 # We need the full path to cl because otherwise cmake will replace CMAKE_CXX_COMPILER with the full path
 # and keep CMAKE_CUDA_HOST_COMPILER at "cl" which breaks our cmake script
 $script:HOST_COMPILER  = (Get-Command "cl").source -replace '\\','/'
 $script:PARALLEL_LEVEL = (Get-WmiObject -class Win32_processor).NumberOfLogicalProcessors
+
+# Extract the CL version for export to build scripts:
+$script:CL_VERSION_STRING = & cl.exe /?
+if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
+    $CL_VERSION = [version]$matches[1]
+    Write-Host "Detected cl.exe version: $CL_VERSION"
+}
 
 if (-not $env:CCCL_BUILD_INFIX) {
     $env:CCCL_BUILD_INFIX = ""
@@ -201,4 +207,4 @@ function sccache_stats {
 }
 
 Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset, sccache_stats
-Export-ModuleMember -Variable BUILD_DIR
+Export-ModuleMember -Variable BUILD_DIR, CL_VERSION
