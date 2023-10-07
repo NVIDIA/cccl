@@ -345,8 +345,11 @@ struct CommandLineArgs
 
 inline bool IsIntegrated()
 {
+  int device = 0;
+  CubDebugExit(cudaGetDevice(&device));
+
   cudaDeviceProp prop;
-  cudaGetDeviceProperties(&prop, cub::CurrentDevice());
+  CubDebugExit(cudaGetDeviceProperties(&prop, device));
   return prop.integrated;
 }
 
