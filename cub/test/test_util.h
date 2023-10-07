@@ -360,6 +360,15 @@ inline std::size_t TotalGlobalMem()
     return total_mem;
 }
 
+inline std::size_t FreeGlobalMem()
+{
+    int device = 0;
+    CubDebugExit(cudaGetDevice(&device));
+    std::size_t free_mem = 0, total_mem = 0;
+    CubDebugExit(cudaMemGetInfo(&free_mem, &total_mem));
+    return free_mem;
+}
+
 /******************************************************************************
  * Random bits generator
  ******************************************************************************/

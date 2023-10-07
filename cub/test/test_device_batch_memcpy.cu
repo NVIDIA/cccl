@@ -252,20 +252,42 @@ void RunTest(BufferOffsetT num_buffers,
     num_total_bytes += h_buffer_sizes[i];
   }
 
-  // Shuffle input buffer source-offsets
-  std::uint_fast32_t shuffle_seed = 320981U;
-  if (input_gen == TestDataGen::RANDOM)
-  {
-    h_buffer_src_offsets = GetShuffledBufferOffsets<BufferOffsetT, ByteOffsetT>(h_buffer_sizes,
-                                                                                shuffle_seed);
-    shuffle_seed += 42;
-  }
+  const bool is_integrated_gpu = IsIntegrated();
 
-  // Shuffle input buffer source-offsets
-  if (output_gen == TestDataGen::RANDOM)
   {
-    h_buffer_dst_offsets = GetShuffledBufferOffsets<BufferOffsetT, ByteOffsetT>(h_buffer_sizes,
-                                                                                shuffle_seed);
+    // Shuffle input buffer source-offsets
+    std::uint_fast32_t shuffle_seed = 320981U;
+
+    const std::size_t total_required_mem = 2 * sizeof(BufferOffsetT) * h_buffer_sizes.size()
+                                         + 2 * sizeof(ByteOffsetT) * h_buffer_sizes.size();
+
+    if (is_integrated_gpu && FreeGlobalMem() < total_required_mem)
+    {
+      std::cout
+        << "Skipping the test due to insufficient host memory\n"
+        << " - Required: " << total_required_mem << " B, available: " << FreeGlobalMem() << " B\n"
+        << " - Skipped test instance: "
+        << " -> Min. buffer size: " << min_buffer_size << ", max. buffer size: " << max_buffer_size
+        << ", num_buffers: " << num_buffers
+        << ", in_gen: " << ((input_gen == TestDataGen::RANDOM) ? "SHFL" : "CONSECUTIVE")
+        << ", out_gen: " << ((output_gen == TestDataGen::RANDOM) ? "SHFL" : "CONSECUTIVE")
+        << std::endl;
+      return;
+    }
+
+    if (input_gen == TestDataGen::RANDOM)
+    {
+      h_buffer_src_offsets = GetShuffledBufferOffsets<BufferOffsetT, ByteOffsetT>(h_buffer_sizes,
+                                                                                  shuffle_seed);
+      shuffle_seed += 42;
+    }
+
+    // Shuffle input buffer source-offsets
+    if (output_gen == TestDataGen::RANDOM)
+    {
+      h_buffer_dst_offsets = GetShuffledBufferOffsets<BufferOffsetT, ByteOffsetT>(h_buffer_sizes,
+                                                                                  shuffle_seed);
+    }
   }
 
   // Get temporary storage requirements
@@ -276,14 +298,24 @@ void RunTest(BufferOffsetT num_buffers,
                                           d_buffer_sizes,
                                           num_buffers));
 
-  // Check if there's sufficient device memory to run this test
-  std::size_t total_required_mem = num_total_bytes +                                 //
-                                   num_total_bytes +                                 //
-                                   (num_buffers * sizeof(d_buffer_src_offsets[0])) + //
-                                   (num_buffers * sizeof(d_buffer_dst_offsets[0])) + //
-                                   (num_buffers * sizeof(d_buffer_sizes[0])) +       //
-                                   temp_storage_bytes;                               //
-  if (TotalGlobalMem() < total_required_mem)
+  using RandomInitAliasT         = uint16_t;
+  std::size_t num_aliased_factor = sizeof(RandomInitAliasT) / sizeof(uint8_t);
+  std::size_t num_aliased_units  = CUB_QUOTIENT_CEILING(num_total_bytes, num_aliased_factor);
+
+  // Check if there's sufficient device memory to run this test. The total required memory 
+  // has to accoun for host allocations as well because on some systems (orin) the host and device 
+  // share the same memory.
+  const std::size_t total_required_cpu_mem = 2 * num_total_bytes +
+                                             num_aliased_units * num_aliased_factor;
+  const std::size_t total_required_gpu_mem = 2 * num_total_bytes +                             //
+                                             (num_buffers * sizeof(d_buffer_src_offsets[0])) + //
+                                             (num_buffers * sizeof(d_buffer_dst_offsets[0])) + //
+                                             (num_buffers * sizeof(d_buffer_sizes[0])) +       //
+                                             temp_storage_bytes;                               //
+
+  const std::size_t total_required_mem = total_required_cpu_mem * is_integrated_gpu +
+                                         total_required_gpu_mem;
+  if (FreeGlobalMem() < total_required_mem)
   {
     std::cout
       << "Skipping the test due to insufficient device memory\n"                                  //
@@ -292,7 +324,8 @@ void RunTest(BufferOffsetT num_buffers,
       << " -> Min. buffer size: " << min_buffer_size << ", max. buffer size: " << max_buffer_size //
       << ", num_buffers: " << num_buffers                                                         //
       << ", in_gen: " << ((input_gen == TestDataGen::RANDOM) ? "SHFL" : "CONSECUTIVE")            //
-      << ", out_gen: " << ((output_gen == TestDataGen::RANDOM) ? "SHFL" : "CONSECUTIVE");
+      << ", out_gen: " << ((output_gen == TestDataGen::RANDOM) ? "SHFL" : "CONSECUTIVE")
+      << std::endl;
     return;
   }
 
@@ -312,9 +345,6 @@ void RunTest(BufferOffsetT num_buffers,
   CubDebugExit(cudaMalloc(&d_temp_storage, temp_storage_bytes));
 
   // Populate the data source with random data
-  using RandomInitAliasT         = uint16_t;
-  std::size_t num_aliased_factor = sizeof(RandomInitAliasT) / sizeof(uint8_t);
-  std::size_t num_aliased_units  = CUB_QUOTIENT_CEILING(num_total_bytes, num_aliased_factor);
   std::unique_ptr<uint8_t[]> h_in(new uint8_t[num_aliased_units * num_aliased_factor]);
   std::unique_ptr<uint8_t[]> h_out(new uint8_t[num_total_bytes]);
   std::unique_ptr<uint8_t[]> h_gpu_results(new uint8_t[num_total_bytes]);
