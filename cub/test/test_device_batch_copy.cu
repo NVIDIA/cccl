@@ -241,8 +241,11 @@ void RunTest(RangeOffsetT num_ranges,
                                         d_range_sizes,
                                         num_ranges));
 
-  // Check if there's sufficient device memory to run this test
-  std::size_t total_required_mem = num_total_bytes +                         //
+  // Check if there's sufficient device memory to run this test. The total required memory 
+  // has to accoun for host allocations as well because on some systems (orin) the host and device 
+  // share the same memory.
+  std::size_t total_required_mem = 2 * num_total_bytes * IsIntegrated() +    //
+                                   num_total_bytes +                         //
                                    (num_ranges * sizeof(d_offsets[0])) +     //
                                    (num_ranges * sizeof(d_range_sizes[0])) + //
                                    temp_storage_bytes;                       //
@@ -254,7 +257,8 @@ void RunTest(RangeOffsetT num_ranges,
       << " - Skipped test instance: "                                                             //
       << " -> Min. range size: " << min_range_size << ", max. range size: " << max_range_size     //
       << ", num_ranges: " << num_ranges                                                           //
-      << ", out_gen: " << ((output_gen == TestDataGen::RANDOM) ? "SHFL" : "CONSECUTIVE");
+      << ", out_gen: " << ((output_gen == TestDataGen::RANDOM) ? "SHFL" : "CONSECUTIVE")
+      << std::endl;
     return;
   }
 

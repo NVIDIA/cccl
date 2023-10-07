@@ -343,8 +343,15 @@ struct CommandLineArgs
     }
 };
 
+inline bool IsIntegrated()
+{
+  cudaDeviceProp prop;
+  cudaGetDeviceProperties(&prop, cub::CurrentDevice());
+  return prop.integrated;
+}
+
 // Gets the amount of global memory of the current device.
-std::size_t TotalGlobalMem()
+inline std::size_t TotalGlobalMem()
 {
     int device = 0;
     CubDebugExit(cudaGetDevice(&device));
