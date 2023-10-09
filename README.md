@@ -2,15 +2,9 @@
 
 # CUDA C++ Core Libraries (CCCL)
 
-<table><tr>
-<th><b><a href="https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md">Contributor Guide</a></b></th>
-<th><b><a href="https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md">Dev Containers</a></b></th>
-<th><b><a href="https://discord.gg/hxXesbJx">Discord</a></b></th>
-<th><b><a href="https://godbolt.org/z/x4G73af9a">Godbolt</a></b></th>
-<th><b><a href="https://nvidia.github.io/libcudacxx/">libcudacxx Docs</a></b></th>
-<th><b><a href="https://nvidia.github.io/thrust/">Thrust Docs</a></b></th>
-<th><b><a href="https://nvlabs.github.io/cub/">CUB Docs</a></b></th>
-</tr></table>
+| **[Contributor Guide](https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md)** | **[Dev Containers](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md)** | **[Discord](https://discord.gg/hxXesbJx)** | **[Godbolt](https://godbolt.org/z/x4G73af9a)** | **[libcudacxx Docs](https://nvidia.github.io/libcudacxx/)** | **[Thrust Docs](https://nvidia.github.io/thrust/)** | **[CUB Docs](https://nvlabs.github.io/cub/)** |
+
+
 
 
 Welcome to the CUDA C++ Core Libraries (CCCL) where our mission is to make CUDA C++ more delightful.
