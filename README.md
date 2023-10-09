@@ -2,6 +2,17 @@
 
 # CUDA C++ Core Libraries (CCCL)
 
+<table><tr>
+<th><b><a href="https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md">Contributor Guide</a></b></th>
+<th><b><a href="https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md">Dev Containers</a></b></th>
+<th><b><a href="https://discord.gg/hxXesbJx">Discord</a></b></th>
+<th><b><a href="https://godbolt.org/z/x4G73af9a">Godbolt</a></b></th>
+<th><b><a href="https://nvidia.github.io/libcudacxx/">libcudacxx Docs</a></b></th>
+<th><b><a href="https://nvidia.github.io/thrust/">Thrust Docs</a></b></th>
+<th><b><a href="https://nvlabs.github.io/cub/">CUB Docs</a></b></th>
+</tr></table>
+
+
 Welcome to the CUDA C++ Core Libraries (CCCL) where our mission is to make CUDA C++ more delightful.
 
 This repository unifies three essential CUDA C++ libraries into a single, convenient repository:
