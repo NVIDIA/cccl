@@ -67,11 +67,9 @@ int main(int, char**)
     {
         test0(cuda::std::forward_as_tuple());
     }
-#if !defined(TEST_COMPILER_MSVC_2017)
     {
         test1a(cuda::std::forward_as_tuple(1));
     }
-#endif
     {
         int i = 2;
         test1b(cuda::std::forward_as_tuple(i));
