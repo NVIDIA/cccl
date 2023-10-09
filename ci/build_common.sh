@@ -19,8 +19,8 @@ function usage {
     echo
     echo "Options:"
     echo "  -v/--verbose: enable shell echo for debugging"
-    echo "  -cuda: CUDA compiler (Defaults to $CUDACXX if set, otherwise nvcc)"
-    echo "  -cxx: Host compiler (Defaults to $CXX if set, otherwise g++)"
+    echo "  -cuda: CUDA compiler (Defaults to \$CUDACXX if set, otherwise nvcc)"
+    echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise g++)"
     echo "  -std: CUDA/C++ standard (Defaults to 17)"
     echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
     echo
