@@ -23,7 +23,6 @@ defaults:
 on:
   push:
     branches:
-      - main
       - "pull-request/[0-9]+"
 
 # Only runs one instance of this workflow at a time for a given PR and cancels any in-progress runs when a new one starts.
