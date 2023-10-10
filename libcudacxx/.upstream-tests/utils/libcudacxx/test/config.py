@@ -1068,18 +1068,6 @@ class Configuration(object):
             self.cxx.link_flags += ['-lc++experimental']
         if self.link_shared:
             self.cxx.link_flags += ['-lc++']
-        # Device code does not have binary components, don't link libc++
-        # elif self.cxx.type != 'nvcc' and self.cxx.type != 'pgi':
-        #     cxx_library_root = self.get_lit_conf('cxx_library_root')
-        #     if cxx_library_root:
-        #         libname = self.make_static_lib_name('c++')
-        #         abs_path = os.path.join(cxx_library_root, libname)
-        #         assert os.path.exists(abs_path) and \
-        #                "static libc++ library does not exist"
-        #         self.cxx.link_flags += [abs_path]
-        #     else:
-        #         self.cxx.link_flags += ['-lc++']
-
     def configure_link_flags_abi_library(self):
         cxx_abi = self.get_lit_conf('cxx_abi', 'libcxxabi')
         if cxx_abi == 'libstdc++':
