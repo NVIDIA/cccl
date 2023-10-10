@@ -9,9 +9,7 @@
 
 #if defined(__need_wint_t) || defined(__need_mbstate_t)
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include_next <wchar.h>
 
@@ -107,9 +105,7 @@ size_t wcsrtombs(char* restrict dst, const wchar_t** restrict src, size_t len,
 
 #include <__config>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #ifdef __cplusplus
 #define __CORRECT_ISO_CPP_WCHAR_H_PROTO

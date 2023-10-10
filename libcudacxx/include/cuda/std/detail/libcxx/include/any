@@ -88,9 +88,7 @@ namespace std {
 #include <cstdlib>
 #include <version>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 namespace std {
 class _LIBCUDACXX_EXCEPTION_ABI _LIBCUDACXX_AVAILABILITY_BAD_ANY_CAST bad_any_cast : public bad_cast

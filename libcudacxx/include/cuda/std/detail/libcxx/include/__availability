@@ -15,9 +15,7 @@
 #include <__config>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 // Libc++ is shipped by various vendors. In particular, it is used as a system
 // library on macOS, iOS and other Apple platforms. In order for users to be

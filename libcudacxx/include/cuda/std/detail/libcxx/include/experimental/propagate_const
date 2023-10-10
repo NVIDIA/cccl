@@ -106,11 +106,7 @@
 
 */
 
-#include <experimental/__config>
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
-
+#include <experimental/__config>_CCCL_IMPLICIT_SYSTEM_HEADER
 #if _LIBCUDACXX_STD_VER > 11
 
 #include <type_traits>

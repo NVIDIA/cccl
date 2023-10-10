@@ -21,9 +21,7 @@
 #include "../__type_traits/remove_cv.h"
 #include "../__type_traits/type_list.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

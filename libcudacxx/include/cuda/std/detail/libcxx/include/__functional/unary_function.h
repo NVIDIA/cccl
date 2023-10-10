@@ -13,9 +13,7 @@
 #include <__config>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -40,6 +38,7 @@ template <class _Arg, class _Result> struct __unary_function_keep_layout_base {
 #if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 _LIBCUDACXX_DIAGNOSTIC_PUSH
 _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
+_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
 template <class _Arg, class _Result>
 using __unary_function = unary_function<_Arg, _Result>;
 _LIBCUDACXX_DIAGNOSTIC_POP

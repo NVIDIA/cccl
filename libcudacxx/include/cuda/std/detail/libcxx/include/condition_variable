@@ -110,9 +110,7 @@ public:
 #include <__mutex_base>
 #include <memory>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #ifndef _LIBCUDACXX_HAS_NO_THREADS
 

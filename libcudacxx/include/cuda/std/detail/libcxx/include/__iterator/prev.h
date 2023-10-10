@@ -20,9 +20,7 @@
 #include "../__iterator/iterator_traits.h"
 #include "../__type_traits/enable_if.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

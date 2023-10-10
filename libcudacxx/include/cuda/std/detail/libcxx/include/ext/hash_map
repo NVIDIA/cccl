@@ -216,9 +216,7 @@ template <class Key, class T, class Hash, class Pred, class Alloc>
 #endif
 #endif
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 namespace __gnu_cxx {
 

@@ -60,9 +60,7 @@ template <> struct char_traits<char8_t>;  // c++20
 #include "__assert" // all public C++ headers provide the assertion handler
 #include <__debug>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>

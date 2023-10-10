@@ -17,9 +17,7 @@
 
 #include "__availability"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 // Provide a default implementation of __libcpp_verbose_abort if we know that neither the built
 // library nor the user is providing one. Otherwise, just declare it and use the one from the

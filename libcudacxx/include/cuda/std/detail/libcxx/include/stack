@@ -90,9 +90,7 @@ template <class T, class Container>
 #include <__config>
 #include <deque>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

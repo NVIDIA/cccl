@@ -76,20 +76,38 @@
 #define _LIBCUDACXX_CUDACC_BELOW_12_3
 #endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1203000
 
-#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
 #  define _LIBCUDACXX_HAS_PRAGMA_MSVC_WARNING
 #  if !defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)
 #    define _LIBCUDACXX_USE_PRAGMA_MSVC_WARNING
-#  endif
+#  endif // !_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING
+#endif // _LIBCUDACXX_COMPILER_MSVC
+
+// allow disabling use as system header for testing
+#if defined(_CCCL_NO_SYSTEM_HEADER)
+#  define _CCCL_IMPLICIT_SYSTEM_HEADER
+#elif defined(_LIBCUDACXX_COMPILER_MSVC) \
+   && defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)
+#  define _CCCL_IMPLICIT_SYSTEM_HEADER
+#elif defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  define _CCCL_IMPLICIT_SYSTEM_HEADER
+#elif defined(_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER)
+#  define _CCCL_IMPLICIT_SYSTEM_HEADER
 #else
-#  if !defined(_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
-#    define _LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER
+#  if defined(_LIBCUDACXX_COMPILER_GCC)
+#    define _CCCL_IMPLICIT_SYSTEM_HEADER _Pragma("GCC system_header")
+#  elif defined(_LIBCUDACXX_COMPILER_CLANG)
+#    define _CCCL_IMPLICIT_SYSTEM_HEADER _Pragma("clang system_header")
+#  elif defined(_LIBCUDACXX_COMPILER_MSVC)
+#    define _CCCL_IMPLICIT_SYSTEM_HEADER __pragma(system_header)
+#  elif defined(_LIBCUDACXX_COMPILER_NVHPC)
+#    define _CCCL_IMPLICIT_SYSTEM_HEADER _Pragma("GCC system_header")
+#  else
+#    define _CCCL_IMPLICIT_SYSTEM_HEADER
 #  endif
 #endif
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #ifdef __cplusplus
 
@@ -2245,7 +2263,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #endif
 
 #if !defined(_LIBCUDACXX_DISABLE_EXEC_CHECK)
-#if defined(_LIBCUDACXX_CUDACC)                       \
+#if defined(_LIBCUDACXX_CUDACC)               \
  && !defined(_LIBCUDACXX_COMPILER_NVRTC)      \
  && !defined(_LIBCUDACXX_COMPILER_NVHPC_CUDA) \
  && !defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)

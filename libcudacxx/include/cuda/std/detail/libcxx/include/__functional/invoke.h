@@ -33,9 +33,7 @@
 #include "../__utility/declval.h"
 #include "../__utility/forward.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 // TODO: Disentangle the type traits and _CUDA_VSTD::invoke properly
 

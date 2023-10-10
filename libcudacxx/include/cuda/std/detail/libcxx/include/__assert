@@ -17,9 +17,7 @@
 
 #include "__verbose_abort"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 // This is for backwards compatibility with code that might have been enabling
 // assertions through the Debug mode previously.

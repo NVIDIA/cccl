@@ -162,9 +162,7 @@ template <class charT, class traits, class T>
 #include <version>
 #include <ostream>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>

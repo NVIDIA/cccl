@@ -18,9 +18,7 @@
 #include "../__type_traits/add_lvalue_reference.h"
 #include "../__type_traits/is_nothrow_assignable.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

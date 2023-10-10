@@ -15,9 +15,7 @@
 #error "<__cuda/semaphore> should only be included in from <cuda/std/semaphore>"
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 

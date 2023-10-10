@@ -12,9 +12,7 @@
 
 #include <__config>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #define _LIBCUDACXX_BEGIN_NAMESPACE_EXPERIMENTAL namespace std { namespace experimental {
 #define _LIBCUDACXX_END_NAMESPACE_EXPERIMENTAL  } }

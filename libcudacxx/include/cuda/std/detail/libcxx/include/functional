@@ -541,8 +541,6 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include "type_traits"
 #include "version"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #endif  // _LIBCUDACXX_FUNCTIONAL

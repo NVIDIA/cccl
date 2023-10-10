@@ -133,9 +133,7 @@ _LIBCUDACXX_PUSH_MACROS
 
 #include <__mutex_base>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
 #error <shared_mutex> is not supported on this single threaded system

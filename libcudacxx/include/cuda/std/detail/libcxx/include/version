@@ -215,9 +215,7 @@ __cpp_lib_void_t                                        201411L <type_traits>
 #endif
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 // We define certain feature test macros depending on availability. When
 // __CUDA_MINIMUM_ARCH__ is not available, we define the following features

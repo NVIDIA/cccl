@@ -41,9 +41,7 @@ Macros:
 
 #include <__pragma_push>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #ifndef __GNUC__
 #include_next <limits.h>

@@ -14,9 +14,7 @@
 #ifndef _LIBCUDACXX_BSD_LOCALE_DEFAULTS_H
 #define _LIBCUDACXX_BSD_LOCALE_DEFAULTS_H
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #define __libcpp_mb_cur_max_l(loc)                          MB_CUR_MAX_L(loc)
 #define __libcpp_btowc_l(ch, loc)                           btowc_l(ch, loc)

@@ -361,9 +361,7 @@ template <class T> unspecified2 end(const valarray<T>& v);
 // [valarray.syn]
 #include <initializer_list>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>

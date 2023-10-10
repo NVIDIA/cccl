@@ -31,9 +31,7 @@
 #include "../__utility/swap.h"
 #include "../cstdint"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #ifndef __cuda_std__
 

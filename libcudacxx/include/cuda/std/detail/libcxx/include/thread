@@ -96,9 +96,7 @@ void sleep_for(const chrono::duration<Rep, Period>& rel_time);
 #include <__threading_support>
 #include <__debug>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>

@@ -58,9 +58,7 @@ using binary_semaphore = counting_semaphore<1>;
 #include <__pragma_push>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
 # error <semaphore> is not supported on this single threaded system

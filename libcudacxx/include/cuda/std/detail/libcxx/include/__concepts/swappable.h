@@ -31,9 +31,7 @@
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
 _LIBCUDACXX_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored

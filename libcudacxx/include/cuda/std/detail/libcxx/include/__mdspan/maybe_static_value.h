@@ -54,9 +54,7 @@
 #include "../__mdspan/no_unique_address.h"
 #endif
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 // This is only needed for the non-standard-layout version of partially
 // static array.

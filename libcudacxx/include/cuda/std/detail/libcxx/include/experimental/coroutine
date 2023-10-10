@@ -53,9 +53,7 @@ template <class P> struct hash<coroutine_handle<P>>;
 #include <cstddef>
 #include <__debug>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #ifdef _LIBCUDACXX_HAS_NO_COROUTINES
 # if defined(_LIBCUDACXX_WARNING)

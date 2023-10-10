@@ -89,9 +89,7 @@ template <class E> void rethrow_if_nested(const E& e);
 #include <vcruntime_exception.h>
 #endif
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION  // purposefully not using versioning namespace
 

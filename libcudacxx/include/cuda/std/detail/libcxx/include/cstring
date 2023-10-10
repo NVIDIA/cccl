@@ -62,9 +62,7 @@ size_t strlen(const char* s);
 #include <__pragma_push>
 #endif //__simet__ <- a tribute to ogiroux
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

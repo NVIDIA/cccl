@@ -55,9 +55,7 @@
 #include "../__type_traits/remove_reference.h"
 #include "../__utility/declval.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #if _LIBCUDACXX_STD_VER > 11
 
