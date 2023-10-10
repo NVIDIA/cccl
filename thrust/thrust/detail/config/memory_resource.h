@@ -16,9 +16,12 @@
 
 #pragma once
 
+#include <thrust/detail/config/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cstddef>
 
-#include <thrust/detail/config.h>
 #include <thrust/detail/alignment.h>
 #include <thrust/detail/config/cpp_compatibility.h>
 

@@ -20,6 +20,10 @@
 
 #pragma once
 
+// Internal config header that is only included through thrust/detail/config/config.h
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // enumerate host compilers we know about
 #define THRUST_HOST_COMPILER_UNKNOWN 0
 #define THRUST_HOST_COMPILER_MSVC    1

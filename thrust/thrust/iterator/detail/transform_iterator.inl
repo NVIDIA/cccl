@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/result_of_adaptable_function.h>
 #include <thrust/iterator/iterator_adaptor.h>

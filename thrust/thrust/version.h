@@ -28,6 +28,10 @@
 
 #pragma once
 
+#include <thrust/detail/config/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 //  This is the only Thrust header that is guaranteed to
 //  change with every Thrust release.
 //

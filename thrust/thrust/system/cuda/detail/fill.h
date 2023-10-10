@@ -28,6 +28,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/system/cuda/detail/parallel_for.h>

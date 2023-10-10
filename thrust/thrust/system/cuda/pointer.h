@@ -21,6 +21,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <type_traits>
 #include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/detail/pointer.h>

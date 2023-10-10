@@ -22,6 +22,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/pair.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/function.h>

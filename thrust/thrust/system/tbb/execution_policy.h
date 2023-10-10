@@ -16,11 +16,13 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 /*! \file thrust/system/tbb/execution_policy.h
  *  \brief Execution policies for Thrust's TBB system.
  */
-
-#include <thrust/detail/config.h>
 
 // get the execution policies definitions first
 #include <thrust/system/tbb/detail/execution_policy.h>

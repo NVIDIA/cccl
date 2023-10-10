@@ -22,6 +22,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 //#include <thrust/system/detail/sequential/async/sort.h>
 
 //#define __THRUST_HOST_SYSTEM_ASYNC_SORT_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/async/sort.h>

@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/mr/memory_resource.h>
 
 THRUST_NAMESPACE_BEGIN

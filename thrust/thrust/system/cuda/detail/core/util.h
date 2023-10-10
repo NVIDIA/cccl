@@ -27,6 +27,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/system/cuda/config.h>
 #include <thrust/system/cuda/detail/util.h>
@@ -620,7 +622,7 @@ namespace core {
   inline int get_ptx_version()
   {
     int ptx_version = 0;
-    if (cub::PtxVersion(ptx_version) != cudaSuccess) 
+    if (cub::PtxVersion(ptx_version) != cudaSuccess)
     {
       // Failure might mean that there's no device found
       const int current_device = cub::CurrentDevice();
@@ -629,7 +631,7 @@ namespace core {
         cuda_cub::throw_on_error(cudaErrorNoDevice, "No GPU is available\n");
       }
 
-      // Any subsequent failure means the provided device binary does not match 
+      // Any subsequent failure means the provided device binary does not match
       // the generated function code
       int major = 0, minor = 0;
       cudaError_t attr_status;
@@ -643,7 +645,7 @@ namespace core {
       cuda_cub::throw_on_error(attr_status,
                               "get_ptx_version :"
                               "failed to get minor CUDA device compute capability version.");
-        
+
       // Index from which SM code has to start in the message below
       int code_offset = 37;
       char str[] = "This program was not compiled for SM     \n";

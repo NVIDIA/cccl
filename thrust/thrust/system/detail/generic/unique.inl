@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/detail/generic/unique.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/transform.h>
@@ -112,9 +114,9 @@ __host__ __device__
                  BinaryPredicate binary_pred)
 {
   thrust::detail::head_flags<ForwardIterator, BinaryPredicate> stencil(first, last, binary_pred);
-  
+
   using namespace thrust::placeholders;
-  
+
   return thrust::count_if(exec, stencil.begin(), stencil.end(), _1);
 } // end unique_copy()
 

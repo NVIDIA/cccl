@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // the purpose of this header is to check for the existence of macros
 // such as __host__ and __device__, which may already be defined by thrust
 // and to undefine them before entering cuda_runtime_api.h (which will redefine them)

@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/random/normal_distribution.h>
 #include <thrust/random/uniform_real_distribution.h>
 #include <thrust/detail/cstdint.h>

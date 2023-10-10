@@ -21,6 +21,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/cpp14_required.h>
 
 #if THRUST_CPP_DIALECT >= 2014
@@ -70,14 +72,14 @@ namespace unimplemented
 
 struct no_unique_eager_event_type_found {};
 
-inline __host__ 
+inline __host__
 no_unique_eager_event_type_found
 unique_eager_event_type(...) noexcept;
 
 struct no_unique_eager_future_type_found {};
 
 template <typename T>
-__host__ 
+__host__
 no_unique_eager_future_type_found
 unique_eager_future_type(...) noexcept;
 

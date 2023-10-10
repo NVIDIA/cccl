@@ -18,6 +18,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/static_assert.h>
 #include <thrust/system/detail/generic/merge.h>
 #include <thrust/merge.h>

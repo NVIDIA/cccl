@@ -16,6 +16,10 @@
 
 #pragma once
 
+// Internal config header that is only included through thrust/detail/config/config.h
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // reserve 0 for undefined
 #define THRUST_HOST_SYSTEM_CPP    1
 #define THRUST_HOST_SYSTEM_OMP    2

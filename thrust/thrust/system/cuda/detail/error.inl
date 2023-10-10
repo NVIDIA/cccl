@@ -19,6 +19,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/system/cuda/error.h>
 #include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 

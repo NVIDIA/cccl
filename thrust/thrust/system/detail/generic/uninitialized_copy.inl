@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/detail/generic/uninitialized_copy.h>
 #include <thrust/copy.h>
 #include <thrust/for_each.h>

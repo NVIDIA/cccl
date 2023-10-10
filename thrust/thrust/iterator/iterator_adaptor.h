@@ -33,6 +33,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/detail/use_default.h>
 #include <thrust/iterator/detail/iterator_adaptor_base.h>

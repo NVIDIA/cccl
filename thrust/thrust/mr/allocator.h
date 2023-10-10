@@ -14,16 +14,19 @@
  *  limitations under the License.
  */
 
-/*! \file 
+/*! \file
  *  \brief Allocator types usable with \ref Memory Resources.
  */
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <limits>
 
 #include <thrust/detail/config.h>
-#include <thrust/detail/config/exec_check_disable.h>
 #include <thrust/detail/config/memory_resource.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 

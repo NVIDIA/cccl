@@ -22,6 +22,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -1055,7 +1057,7 @@ template<typename ForwardIterator>
                  ForwardIterator last);
 
 
-/*! \p is_sorted returns \c true if the range <tt>[first, last)</tt> is sorted in ascending 
+/*! \p is_sorted returns \c true if the range <tt>[first, last)</tt> is sorted in ascending
  *  order accoring to a user-defined comparison operation, and \c false otherwise.
  *
  *  Specifically, this version of \p is_sorted returns \c false if for some iterator \c i in
@@ -1117,7 +1119,7 @@ __host__ __device__
                  Compare comp);
 
 
-/*! \p is_sorted returns \c true if the range <tt>[first, last)</tt> is sorted in ascending 
+/*! \p is_sorted returns \c true if the range <tt>[first, last)</tt> is sorted in ascending
  *  order accoring to a user-defined comparison operation, and \c false otherwise.
  *
  *  Specifically, this version of \p is_sorted returns \c false if for some iterator \c i in
@@ -1189,17 +1191,17 @@ template<typename ForwardIterator, typename Compare>
  *  The following code snippet demonstrates how to use \p is_sorted_until to find the first position
  *  in an array where the data becomes unsorted using the \p thrust::host execution policy for
  *  parallelization:
- *  
+ *
  *  \code
  *  #include <thrust/sort.h>
  *  #include <thrust/execution_policy.h>
  *
  *  ...
- *   
+ *
  *  int A[8] = {0, 1, 2, 3, 0, 1, 2, 3};
- *  
+ *
  *  int * B = thrust::is_sorted_until(thrust::host, A, A + 8);
- *  
+ *
  *  // B - A is 4
  *  // [A, B) is sorted
  *  \endcode
@@ -1230,16 +1232,16 @@ __host__ __device__
  *
  *  The following code snippet demonstrates how to use \p is_sorted_until to find the first position
  *  in an array where the data becomes unsorted:
- *  
+ *
  *  \code
  *  #include <thrust/sort.h>
  *
  *  ...
- *   
+ *
  *  int A[8] = {0, 1, 2, 3, 0, 1, 2, 3};
- *  
+ *
  *  int * B = thrust::is_sorted_until(A, A + 8);
- *  
+ *
  *  // B - A is 4
  *  // [A, B) is sorted
  *  \endcode
@@ -1282,12 +1284,12 @@ template<typename ForwardIterator>
  *  #include <thrust/execution_policy.h>
  *
  *  ...
- *   
+ *
  *  int A[8] = {3, 2, 1, 0, 3, 2, 1, 0};
- *  
+ *
  *  thrust::greater<int> comp;
  *  int * B = thrust::is_sorted_until(thrust::host, A, A + 8, comp);
- *  
+ *
  *  // B - A is 4
  *  // [A, B) is sorted in descending order
  *  \endcode
@@ -1327,12 +1329,12 @@ __host__ __device__
  *  #include <thrust/functional.h>
  *
  *  ...
- *   
+ *
  *  int A[8] = {3, 2, 1, 0, 3, 2, 1, 0};
- *  
+ *
  *  thrust::greater<int> comp;
  *  int * B = thrust::is_sorted_until(A, A + 8, comp);
- *  
+ *
  *  // B - A is 4
  *  // [A, B) is sorted in descending order
  *  \endcode

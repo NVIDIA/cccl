@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/omp/detail/remove.h>
 #include <thrust/system/detail/generic/remove.h>
 

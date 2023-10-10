@@ -6,6 +6,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/cpp11_required.h>
 
 #if THRUST_CPP_DIALECT >= 2011
@@ -245,7 +247,7 @@ private:
   allocator_type alloc_;
   std::size_t    count_;
 };
-  
+
 template <typename T, typename Allocator>
 using uninitialized_array_allocator_delete
   = array_allocator_delete<T, Allocator, true>;

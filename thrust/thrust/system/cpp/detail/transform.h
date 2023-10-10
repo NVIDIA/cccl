@@ -18,5 +18,7 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // cpp has no special transform
 

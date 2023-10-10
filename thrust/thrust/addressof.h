@@ -7,6 +7,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #if THRUST_CPP_DIALECT >= 2011
 #  include <thrust/detail/memory_wrapper.h>
 #endif
@@ -19,7 +21,7 @@ THRUST_NAMESPACE_BEGIN
  */
 template <typename T>
 __host__ __device__
-T* addressof(T& arg) 
+T* addressof(T& arg)
 {
   return reinterpret_cast<T*>(
     &const_cast<char&>(reinterpret_cast<const volatile char&>(arg))

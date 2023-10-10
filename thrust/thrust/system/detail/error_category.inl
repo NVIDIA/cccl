@@ -19,6 +19,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/system/error_code.h>
 #include <thrust/system/detail/errno.h>
 #include <thrust/functional.h>

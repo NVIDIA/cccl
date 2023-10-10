@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // the purpose of this header is to #include the temporary_buffer.h header
 // of the sequential, host, and device systems. It should be #included in any
 // code which uses adl to dispatch get_temporary_buffer or return_temporary_buffer

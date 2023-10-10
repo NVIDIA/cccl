@@ -19,6 +19,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // The rationale for the existence of these apparently redundant definitions is
 // to provide them portably and to avoid bringing in system headers which might
 // pollute the global namespace. These identifiers are in lowercase to avoid

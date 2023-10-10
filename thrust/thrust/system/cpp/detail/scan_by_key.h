@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // this system inherits the scan_by_key algorithms
 #include <thrust/system/detail/sequential/scan_by_key.h>
 

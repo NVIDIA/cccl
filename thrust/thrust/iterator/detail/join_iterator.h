@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/counting_iterator.h>

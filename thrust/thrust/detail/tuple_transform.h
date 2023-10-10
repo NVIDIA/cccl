@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/tuple.h>
 #include <thrust/detail/tuple_meta_transform.h>
 

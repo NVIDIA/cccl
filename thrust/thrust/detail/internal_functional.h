@@ -21,9 +21,12 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/tuple.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/detail/config.h>
 #include <thrust/detail/static_assert.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/tuple_of_iterator_references.h>

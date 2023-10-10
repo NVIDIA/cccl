@@ -28,6 +28,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/detail/transform.h>
 #include <thrust/iterator/permutation_iterator.h>

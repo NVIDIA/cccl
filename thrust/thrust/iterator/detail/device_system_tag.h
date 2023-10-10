@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // #include the device system's execution_policy header
 #define __THRUST_DEVICE_SYSTEM_TAG_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/detail/execution_policy.h>
 #include __THRUST_DEVICE_SYSTEM_TAG_HEADER

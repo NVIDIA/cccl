@@ -21,6 +21,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/detail/type_traits/has_member_function.h>
@@ -384,7 +386,7 @@ template<typename Alloc>
 
   template<typename T>
   inline __host__ __device__ static void construct(allocator_type &a, T *p);
-  
+
   template<typename T, typename Arg1>
   inline __host__ __device__ static void construct(allocator_type &a, T *p, const Arg1 &arg1);
 

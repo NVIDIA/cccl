@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/vector_base.h>
 #include <thrust/detail/copy.h>
 #include <thrust/detail/overlapped_copy.h>

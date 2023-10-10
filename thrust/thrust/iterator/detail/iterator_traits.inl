@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/iterator/iterator_categories.h>
 #include <thrust/iterator/detail/iterator_category_to_traversal.h>
 #include <thrust/detail/type_traits.h>

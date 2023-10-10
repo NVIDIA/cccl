@@ -21,6 +21,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/omp/memory_resource.h>
 #include <thrust/memory.h>
 #include <thrust/detail/type_traits.h>

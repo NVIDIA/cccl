@@ -23,6 +23,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/type_traits.h>
 #include <thrust/random/detail/xor_combine_engine_max.h>
 #include <thrust/random/detail/random_core_access.h>
@@ -92,7 +94,7 @@ template<typename Engine1, size_t s1,
       thrust::detail::identity_<typename base2_type::result_type>,
       thrust::detail::identity_<typename base1_type::result_type>
     >::type result_type;
-    
+
     /*! The size of the first shift used in the generation algorithm.
      */
     static const size_t shift1 = s1;
@@ -132,7 +134,7 @@ template<typename Engine1, size_t s1,
     xor_combine_engine(const base1_type &urng1, const base2_type &urng2);
 
     /*! This constructor initializes a new \p xor_combine_engine with a given seed.
-     *  
+     *
      *  \param s The seed used to intialize this \p xor_combine_engine's adapted base engines.
      */
     __host__ __device__

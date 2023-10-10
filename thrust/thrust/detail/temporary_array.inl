@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/temporary_array.h>
 #include <thrust/distance.h>
 #include <thrust/system/detail/generic/select_system.h>

@@ -16,8 +16,11 @@
 
 #pragma once
 
-#include <thrust/advance.h>
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
+#include <thrust/advance.h>
 #include <thrust/system/detail/generic/distance.h>
 #include <thrust/iterator/iterator_traits.h>
 

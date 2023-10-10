@@ -27,6 +27,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/cuda/detail/core/alignment.h>
 #include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 
@@ -127,7 +129,7 @@ namespace launcher {
                               shared_mem,
                               stream);
     }
-    #else 
+    #else
     template<class K, class... Args>
     cudaError_t __device__
     doit_device(K, Args const&... ) const

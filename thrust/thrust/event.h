@@ -20,6 +20,10 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/future.h>
 
 // TODO: Actually separate `<thrust/future.h>` into two headers.

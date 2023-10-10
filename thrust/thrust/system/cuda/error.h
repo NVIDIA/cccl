@@ -22,6 +22,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/type_traits.h>
 #include <thrust/system/error_code.h>
 #include <thrust/system/cuda/detail/guarded_driver_types.h>

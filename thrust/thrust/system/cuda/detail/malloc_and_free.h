@@ -16,9 +16,12 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 
-#include <thrust/detail/config.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/seq.h>

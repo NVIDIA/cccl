@@ -29,6 +29,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/version.h>
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/detail/any_system_tag.h>
@@ -66,7 +68,7 @@ struct tag : execution_policy<tag>
 template <class Derived>
 struct execution_policy : thrust::execution_policy<Derived>
 {
-  typedef tag tag_type; 
+  typedef tag tag_type;
   operator tag() const { return tag(); }
 };
 

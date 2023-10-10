@@ -22,6 +22,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/cuda/memory.h>
 #include <thrust/detail/vector_base.h>
 #include <vector>

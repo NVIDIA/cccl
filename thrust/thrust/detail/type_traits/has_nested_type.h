@@ -16,6 +16,10 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/type_traits.h>
 
 #define __THRUST_DEFINE_HAS_NESTED_TYPE(trait_name, nested_type_name) \

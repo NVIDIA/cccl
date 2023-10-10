@@ -28,6 +28,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/cpp14_required.h>
 
 #if THRUST_CPP_DIALECT >= 2014

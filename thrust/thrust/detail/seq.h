@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/allocator_aware_execution_policy.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 

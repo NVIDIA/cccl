@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/reduce.h>
 #include <thrust/system/detail/generic/reduce.h>
 #include <thrust/iterator/iterator_traits.h>

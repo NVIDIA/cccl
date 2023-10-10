@@ -16,6 +16,10 @@
 
 #pragma once
 
+// Internal config header that is only included through thrust/detail/config/config.h
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #ifndef THRUST_DEBUG
 #  ifndef NDEBUG
 #    if defined(DEBUG) || defined(_DEBUG)

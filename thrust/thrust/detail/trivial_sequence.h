@@ -25,6 +25,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/execution_policy.h>
@@ -64,7 +66,7 @@ struct _trivial_sequence<Iterator, DerivedPolicy, thrust::detail::false_type>
 {
     typedef typename thrust::iterator_value<Iterator>::type iterator_value;
     typedef typename thrust::detail::temporary_array<iterator_value, DerivedPolicy>::iterator iterator_type;
-    
+
     thrust::detail::temporary_array<iterator_value, DerivedPolicy> buffer;
 
     __host__ __device__

@@ -22,6 +22,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 //#include <thrust/system/detail/sequential/async/copy.h>
 
 //#define __THRUST_HOST_SYSTEM_ASYNC_COPY_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/async/copy.h>

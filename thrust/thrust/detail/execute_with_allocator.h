@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/execute_with_allocator_fwd.h>
 #include <thrust/pair.h>
 #include <thrust/detail/raw_pointer_cast.h>

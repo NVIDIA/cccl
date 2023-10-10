@@ -21,6 +21,10 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/config.cuh>
 #include <cub/detail/detect_cuda_runtime.cuh>
 

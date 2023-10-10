@@ -22,3 +22,4 @@
 #include <thrust/version.h>
 #include <thrust/detail/config/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER

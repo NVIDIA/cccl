@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/cpp11_required.h>
 
 #if THRUST_CPP_DIALECT >= 2011
@@ -96,7 +98,7 @@ public:
 
     std::tuple<remove_cvref_t<Dependencies>...>
     __host__
-    extract_dependencies() 
+    extract_dependencies()
     {
         return std::move(dependencies);
     }
@@ -184,7 +186,7 @@ public:
 
     std::tuple<remove_cvref_t<Dependencies>...>
     __host__
-    extract_dependencies() 
+    extract_dependencies()
     {
         return std::move(dependencies);
     }

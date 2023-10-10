@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/detail/any_assign.h>
@@ -58,7 +60,7 @@ template<typename System>
 
 
 } // end detail
-  
+
 THRUST_NAMESPACE_END
 
 

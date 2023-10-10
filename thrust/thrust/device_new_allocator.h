@@ -14,13 +14,15 @@
  *  limitations under the License.
  */
 
-/*! \file 
+/*! \file
  *  \brief An allocator which allocates storage with \p device_new.
  */
 
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 #include <thrust/device_new.h>
@@ -105,7 +107,7 @@ template<typename T>
      */
     __host__ __device__
     inline pointer address(reference r) { return &r; }
-    
+
     /*! Returns the address an allocated object.
      *  \return <tt>&r</tt>.
      */

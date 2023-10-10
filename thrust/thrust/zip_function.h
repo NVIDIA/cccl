@@ -8,6 +8,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/modern_gcc_required.h>
 

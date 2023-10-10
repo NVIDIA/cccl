@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // this system inherits unique_by_key
 #include <thrust/system/detail/sequential/unique_by_key.h>
 

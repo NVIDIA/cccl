@@ -23,6 +23,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/device_ptr.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/device_memory_resource.h>

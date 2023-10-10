@@ -20,7 +20,9 @@
 
 #pragma once
 
-#include <thrust/detail/config.h>
+// Internal config header that is only included through thrust/detail/config/config.h
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 // since nvcc defines __host__ and __device__ for us,
 // and only nvcc knows what to do with __host__ and __device__,

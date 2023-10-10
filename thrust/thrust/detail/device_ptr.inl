@@ -16,9 +16,12 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
-#include <thrust/detail/config.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 

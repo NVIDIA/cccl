@@ -18,6 +18,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -30,8 +32,8 @@ namespace generic
 
 
 template<typename ExecutionPolicy,
-         typename InputIterator, 
-         typename UnaryFunction, 
+         typename InputIterator,
+         typename UnaryFunction,
          typename OutputType,
          typename BinaryFunction>
 __host__ __device__

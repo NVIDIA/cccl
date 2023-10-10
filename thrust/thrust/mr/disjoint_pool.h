@@ -14,12 +14,16 @@
  *  limitations under the License.
  */
 
-/*! \file 
+/*! \file
  *  \brief A caching and pooling memory resource adaptor which uses separate upstream resources for memory allocation
  *      and bookkeeping.
  */
 
 #pragma once
+
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include <thrust/detail/algorithm_wrapper.h>
 #include <thrust/detail/config.h>

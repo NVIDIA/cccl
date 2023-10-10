@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/distance.h>
 #include <thrust/binary_search.h>
 #include <thrust/iterator/zip_iterator.h>

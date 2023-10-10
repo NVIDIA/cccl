@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-/*! \file 
+/*! \file
  *  \brief A reference to an object which resides in memory associated with the
  *  device system.
  */
@@ -22,6 +22,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/device_ptr.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/reference.h>

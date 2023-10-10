@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/omp/detail/unique.h>
 #include <thrust/system/detail/generic/unique.h>
 #include <thrust/pair.h>
@@ -73,7 +75,7 @@ template<typename DerivedPolicy,
 
 
 } // end namespace detail
-} // end namespace omp 
+} // end namespace omp
 } // end namespace system
 THRUST_NAMESPACE_END
 

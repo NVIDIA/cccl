@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/omp/detail/reduce.h>
 #include <thrust/system/omp/detail/default_decomposition.h>

@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // this system inherits for_each
 #include <thrust/system/detail/sequential/for_each.h>
 

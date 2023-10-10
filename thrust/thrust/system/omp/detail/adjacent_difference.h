@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/detail/generic/adjacent_difference.h>
 

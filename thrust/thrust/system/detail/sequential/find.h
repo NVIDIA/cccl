@@ -16,12 +16,14 @@
 
 
 /*! \file find.h
- *  \brief Sequential implementation of find_if. 
+ *  \brief Sequential implementation of find_if.
  */
 
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 

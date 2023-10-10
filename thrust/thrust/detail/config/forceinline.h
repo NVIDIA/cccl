@@ -20,7 +20,9 @@
 
 #pragma once
 
-#include <thrust/detail/config.h>
+// Internal config header that is only included through thrust/detail/config/config.h
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #if defined(__CUDACC__) || defined(_NVHPC_CUDA)
 
@@ -28,7 +30,7 @@
 
 #else
 
-// TODO add 
+// TODO add
 
 #define __thrust_forceinline__
 

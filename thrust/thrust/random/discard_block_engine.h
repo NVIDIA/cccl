@@ -24,7 +24,8 @@
 
 #include <thrust/detail/config.h>
 
-#include <thrust/detail/config.h>
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <iostream>
 #include <thrust/detail/cstdint.h>
 #include <thrust/random/detail/random_core_access.h>
@@ -71,7 +72,7 @@ namespace random
  *    return 0;
  *  }
  *  \endcode
- */         
+ */
 template<typename Engine, size_t p, size_t r>
   class discard_block_engine
 {
@@ -124,7 +125,7 @@ template<typename Engine, size_t p, size_t r>
     explicit discard_block_engine(const base_type &urng);
 
     /*! This constructor initializes a new \p discard_block_engine with a given seed.
-     *  
+     *
      *  \param s The seed used to intialize this \p discard_block_engine's adapted base engine.
      */
     __host__ __device__
@@ -145,7 +146,7 @@ template<typename Engine, size_t p, size_t r>
     void seed(result_type s);
 
     // generating functions
-    
+
     /*! This member function produces a new random value and updates this \p discard_block_engine's state.
      *  \return A new random number.
      */

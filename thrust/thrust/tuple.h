@@ -31,10 +31,12 @@
 
 #include <thrust/detail/config.h>
 
-#include <tuple>
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
+
+#include <tuple>
 
 THRUST_NAMESPACE_BEGIN
 

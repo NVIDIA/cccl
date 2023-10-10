@@ -28,6 +28,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <iterator>
 #include <thrust/detail/type_traits.h>

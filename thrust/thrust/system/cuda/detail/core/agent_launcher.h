@@ -28,6 +28,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/detail/device_synchronize.cuh>
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
@@ -50,10 +52,10 @@ namespace core {
  * If defined, the default suppression of kernel visibility attribute warning is disabled.
  */
 #if !defined(THRUST_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
-_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")
-_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")                      
+_CCCL_GCC_DIAGNOSTIC_IGNORED("-Wattributes")
+_CCCL_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")
 #if !defined(_LIBCUDACXX_COMPILER_NVHPC_CUDA)
-_LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(attribute_requires_external_linkage)
+_CCCL_NVHPC_DIAGNOSTIC_IGNORED(attribute_requires_external_linkage)
 #endif
 #endif
 
@@ -541,7 +543,7 @@ _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(attribute_requires_external_linkage)
     THRUST_RUNTIME_FUNCTION
     void print_info(K k) const
     {
-      #if THRUST_DEBUG_SYNC_FLAG 
+      #if THRUST_DEBUG_SYNC_FLAG
       cuda_optional<int> occ = max_sm_occupancy(k);
       const int ptx_version = core::get_ptx_version();
       if (count > 0)

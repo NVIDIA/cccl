@@ -23,6 +23,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/type_traits.h>
 #include <thrust/system/detail/errno.h>
 #include <iostream>
@@ -419,7 +421,7 @@ class error_condition
 
     // XXX replace below with this upon c++0x
     //explicit operator bool (void) const;
-    
+
     /*! \return <tt>value() != 0</tt>.
      */
     inline operator bool (void) const;

@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/merge.h>

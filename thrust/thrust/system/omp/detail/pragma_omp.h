@@ -29,6 +29,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC
 // MSVC ICEs when using the standard C++11 `_Pragma` operator with OpenMP
 // directives.

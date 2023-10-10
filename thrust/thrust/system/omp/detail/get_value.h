@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // this system inherits get_value
 #include <thrust/system/cpp/detail/get_value.h>
 

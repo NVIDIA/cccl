@@ -23,6 +23,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 THRUST_NAMESPACE_BEGIN
 
 // forward declaration of any_system_tag for any_conversion below

@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/cstdint.h>
 #include <thrust/system/detail/generic/scan_by_key.h>
 #include <thrust/functional.h>

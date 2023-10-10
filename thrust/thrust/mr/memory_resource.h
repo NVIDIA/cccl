@@ -22,6 +22,9 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/config/memory_resource.h>
 #ifdef THRUST_MR_STD_MR_HEADER
 #  include THRUST_MR_STD_MR_HEADER

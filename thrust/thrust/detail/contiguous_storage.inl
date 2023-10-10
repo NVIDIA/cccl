@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/contiguous_storage.h>
 #include <thrust/detail/swap.h>
 #include <thrust/detail/allocator/allocator_traits.h>

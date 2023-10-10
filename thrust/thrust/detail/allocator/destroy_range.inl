@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/allocator/destroy_range.h>
 #include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/detail/type_traits/pointer_traits.h>

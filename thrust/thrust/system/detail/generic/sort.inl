@@ -18,6 +18,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/detail/generic/sort.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
@@ -44,7 +46,7 @@ __host__ __device__
             RandomAccessIterator first,
             RandomAccessIterator last)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator>::type value_type; 
+  typedef typename thrust::iterator_value<RandomAccessIterator>::type value_type;
   thrust::sort(exec, first, last, thrust::less<value_type>());
 } // end sort()
 

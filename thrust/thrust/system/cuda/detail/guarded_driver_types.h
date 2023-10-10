@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // the purpose of this header is to #include <driver_types.h> without causing
 // warnings from redefinitions of __host__ and __device__.
 // carefully save their definitions and restore them

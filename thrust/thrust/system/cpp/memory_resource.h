@@ -21,6 +21,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/mr/new.h>
 #include <thrust/mr/fancy_pointer_resource.h>
 

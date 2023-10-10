@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/detail/generic/copy_if.h>
 #include <thrust/detail/copy_if.h>
 #include <thrust/iterator/iterator_traits.h>
@@ -58,7 +60,7 @@ OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
                        Predicate pred)
 {
   THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING(IndexType n = thrust::distance(first, last));
-  
+
   // compute {0,1} predicates
   thrust::detail::temporary_array<IndexType, DerivedPolicy> predicates(exec, n);
   thrust::transform(exec,
@@ -66,7 +68,7 @@ OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
                     stencil + n,
                     predicates.begin(),
                     thrust::detail::predicate_to_integral<Predicate,IndexType>(pred));
-  
+
   // scan {0,1} predicates
   thrust::detail::temporary_array<IndexType, DerivedPolicy> scatter_indices(exec, n);
   thrust::exclusive_scan(exec,
@@ -75,7 +77,7 @@ OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
                          scatter_indices.begin(),
                          static_cast<IndexType>(0),
                          thrust::plus<IndexType>());
-  
+
   // scatter the true elements
   thrust::scatter_if(exec,
                      first,
@@ -84,10 +86,10 @@ OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
                      predicates.begin(),
                      result,
                      thrust::identity<IndexType>());
-  
+
   // find the end of the new sequence
   IndexType output_size = scatter_indices[n - 1] + predicates[n - 1];
-  
+
   return result + output_size;
 }
 
@@ -128,17 +130,17 @@ __host__ __device__
                           Predicate pred)
 {
   typedef typename thrust::iterator_traits<InputIterator1>::difference_type difference_type;
-  
+
   // empty sequence
   if(first == last)
     return result;
-  
+
   difference_type n = thrust::distance(first, last);
-  
+
   // create an unsigned version of n (we know n is positive from the comparison above)
   // to avoid a warning in the compare below
   typename thrust::detail::make_unsigned<difference_type>::type unsigned_n(n);
-  
+
   // use 32-bit indices when possible (almost always)
   if(sizeof(difference_type) > sizeof(unsigned int) && unsigned_n > thrust::detail::integer_traits<unsigned int>::const_max)
   {

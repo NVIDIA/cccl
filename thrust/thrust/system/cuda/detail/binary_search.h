@@ -16,4 +16,8 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // this system has no special version of this algorithm

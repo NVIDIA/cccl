@@ -16,11 +16,13 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 /*! \file thrust/system/omp/execution_policy.h
  *  \brief Execution policies for Thrust's OpenMP system.
  */
-
-#include <thrust/detail/config.h>
 
 // get the execution policies definitions first
 #include <thrust/system/omp/detail/execution_policy.h>

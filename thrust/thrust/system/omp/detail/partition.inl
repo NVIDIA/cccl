@@ -22,6 +22,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/omp/detail/partition.h>
 #include <thrust/system/detail/generic/partition.h>
 

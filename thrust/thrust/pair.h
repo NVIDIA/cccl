@@ -22,6 +22,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN

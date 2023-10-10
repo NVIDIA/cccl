@@ -21,7 +21,7 @@
 
 /*
  * (C) Copyright David Abrahams 2003.
- * 
+ *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying NOTICE file for the complete license)
  *
@@ -31,6 +31,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/type_traits/void_t.h>
 
 #include <iterator>

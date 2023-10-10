@@ -24,6 +24,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // #include the device system's vector header
 #define __THRUST_DEVICE_SYSTEM_MEMORY_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/memory.h>
 #include __THRUST_DEVICE_SYSTEM_MEMORY_HEADER

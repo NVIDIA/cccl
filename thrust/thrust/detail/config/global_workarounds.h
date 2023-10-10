@@ -16,6 +16,10 @@
 
 #pragma once
 
+// Internal config header that is only included through thrust/detail/config/config.h
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/config/compiler.h>
 
 // XXX workaround gcc 4.8+'s complaints about unused local typedefs by silencing them globally

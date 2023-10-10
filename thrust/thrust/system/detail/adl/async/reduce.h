@@ -22,6 +22,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 //#include <thrust/system/detail/sequential/async/reduce.h>
 
 //#define __THRUST_HOST_SYSTEM_ASYNC_REDUCE_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/async/reduce.h>

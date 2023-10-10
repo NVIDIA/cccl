@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // don't attempt to #include this file without omp support
 #if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
 #include <omp.h>

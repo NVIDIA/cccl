@@ -16,6 +16,10 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // When a compiler uses Thrust as part of its implementation of Standard C++
 // algorithms, a cycle of included files may result when Thrust code tries to
 // use a standard algorithm.  Having a macro that is defined only when Thrust

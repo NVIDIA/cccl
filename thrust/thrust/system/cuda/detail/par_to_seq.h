@@ -28,6 +28,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/seq.h>
 #include <thrust/system/cuda/detail/par.h>
 

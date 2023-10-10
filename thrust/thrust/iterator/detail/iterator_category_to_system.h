@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/iterator/iterator_categories.h>
 #include <thrust/iterator/detail/iterator_traversal_tags.h>
 #include <thrust/iterator/detail/host_system_tag.h>
@@ -46,7 +48,7 @@ template<typename Category>
         >::value,
 
         detail::identity_<thrust::host_system_tag>,
-        
+
         // convertible to device iterator?
         eval_if<
           or_<

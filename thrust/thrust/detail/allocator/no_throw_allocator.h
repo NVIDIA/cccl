@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <nv/target>
 
 THRUST_NAMESPACE_BEGIN
@@ -29,7 +31,7 @@ template<typename BaseAllocator>
 {
   private:
     typedef BaseAllocator super_t;
-  
+
   public:
     inline __host__ __device__
     no_throw_allocator(const BaseAllocator &other = BaseAllocator())

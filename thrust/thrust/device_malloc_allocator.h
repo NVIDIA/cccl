@@ -14,13 +14,15 @@
  *  limitations under the License.
  */
 
-/*! \file 
+/*! \file
  *  \brief An allocator which allocates storage with \p device_malloc.
  */
 
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 #include <thrust/device_malloc.h>
@@ -34,7 +36,7 @@ THRUST_NAMESPACE_BEGIN
 template<typename> class device_ptr;
 template<typename T> device_ptr<T> device_malloc(const std::size_t n);
 
-/*! \addtogroup allocators Allocators 
+/*! \addtogroup allocators Allocators
  *  \ingroup memory_management
  *  \{
  */

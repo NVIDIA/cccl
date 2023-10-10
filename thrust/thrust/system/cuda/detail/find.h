@@ -28,6 +28,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/config.h>
 
@@ -111,10 +113,10 @@ find_if_n(execution_policy<Derived>& policy,
           Predicate                  predicate)
 {
   typedef typename thrust::tuple<bool,Size> result_type;
-  
+
   // empty sequence
   if(num_items == 0) return first;
-  
+
   // this implementation breaks up the sequence into separate intervals
   // in an attempt to early-out as soon as a value is found
   //
@@ -125,7 +127,7 @@ find_if_n(execution_policy<Derived>& policy,
   // TODO incorporate sizeof(InputType) into interval_threshold and round to multiple of 32
   const Size interval_threshold = 1 << 20;
   const Size interval_size = (thrust::min)(interval_threshold, num_items);
-  
+
   // force transform_iterator output to bool
   typedef transform_input_iterator_t<bool,
                                      InputIt,
@@ -165,7 +167,7 @@ find_if_n(execution_policy<Derived>& policy,
       return first + thrust::get<1>(result);
     }
   }
-  
+
   //nothing was found if we reach here...
   return first + num_items;
 }

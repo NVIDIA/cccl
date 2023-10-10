@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // this system inherits malloc & free
 #include <thrust/system/detail/sequential/malloc_and_free.h>
 

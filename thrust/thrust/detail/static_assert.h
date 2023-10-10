@@ -16,7 +16,7 @@
 
 /*
  * (C) Copyright John Maddock 2000.
- * 
+ *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying NOTICE file for the complete license)
  *
@@ -26,6 +26,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/preprocessor.h>
 
@@ -70,14 +72,14 @@ template <int x> struct static_assert_test {};
     >                                                                         \
       THRUST_PP_CAT2(thrust_static_assert_typedef_, __LINE__)                 \
       __attribute__((unused))                                                 \
-    /**/      
+    /**/
 #else
 #  define THRUST_STATIC_ASSERT(B)                                             \
     typedef THRUST_NS_QUALIFIER::detail::static_assert_test<                  \
       sizeof(THRUST_NS_QUALIFIER::detail::STATIC_ASSERTION_FAILURE<(bool)(B)>)\
     >                                                                         \
       THRUST_PP_CAT2(thrust_static_assert_typedef_, __LINE__)                 \
-    /**/      
+    /**/
 #endif
 
 #define THRUST_STATIC_ASSERT_MSG(B, msg) THRUST_STATIC_ASSERT(B)

@@ -22,6 +22,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 //#include <thrust/system/detail/sequential/async/for_each.h>
 
 //#define __THRUST_HOST_SYSTEM_ASYNC_FOR_EACH_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/async/for_each.h>

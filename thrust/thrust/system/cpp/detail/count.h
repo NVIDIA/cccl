@@ -18,5 +18,7 @@
 
 #include <thrust/detail/config.h>
 
-// this system has no special version of this algorithm 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
+// this system has no special version of this algorithm
 

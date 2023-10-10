@@ -18,12 +18,14 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
-{ 
+{
 
 namespace minimum_type_detail
 {
@@ -33,7 +35,7 @@ namespace minimum_type_detail
 // if T1 and T2 are unrelated.
 //
 template <typename T1, typename T2, bool GreaterEqual, bool LessEqual> struct minimum_type_impl {};
-  
+
 template <typename T1, typename T2>
 struct minimum_type_impl<T1,T2,true,false>
 {

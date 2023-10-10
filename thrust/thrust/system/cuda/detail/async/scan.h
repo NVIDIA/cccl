@@ -27,6 +27,10 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/cpp14_required.h>
 
 #include <thrust/system/cuda/detail/async/exclusive_scan.h>

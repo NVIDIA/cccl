@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/detail/type_traits.h>

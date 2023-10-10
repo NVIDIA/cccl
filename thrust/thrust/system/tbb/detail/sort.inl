@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/copy.h>
 #include <thrust/iterator/iterator_traits.h>

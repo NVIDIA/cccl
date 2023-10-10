@@ -22,6 +22,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // get the execution policies definitions first
 #include <thrust/system/cpp/detail/execution_policy.h>
 

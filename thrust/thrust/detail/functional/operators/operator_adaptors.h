@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/functional/argument.h>
 #include <thrust/detail/type_deduction.h>
 #include <thrust/tuple.h>

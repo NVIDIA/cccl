@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/device_new.h>
 #include <thrust/device_malloc.h>
 #include <thrust/uninitialized_fill.h>

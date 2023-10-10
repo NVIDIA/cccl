@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 

@@ -22,6 +22,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/mr/memory_resource.h>
 #include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 #include <thrust/system/cuda/pointer.h>

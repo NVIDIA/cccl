@@ -20,6 +20,10 @@
 
 #pragma once
 
+// Internal config header that is only included through thrust/detail/config/config.h
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #define THRUST_UNKNOWN 0
 #define THRUST_FALSE   0
 #define THRUST_TRUE    1

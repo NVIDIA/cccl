@@ -23,6 +23,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/advance.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
@@ -91,7 +93,7 @@ __host__ __device__
 ForwardIterator upper_bound(sequential::execution_policy<DerivedPolicy> &,
                             ForwardIterator first,
                             ForwardIterator last,
-                            const T& val, 
+                            const T& val,
                             StrictWeakOrdering comp)
 {
   // wrap comp
@@ -136,7 +138,7 @@ __host__ __device__
 bool binary_search(sequential::execution_policy<DerivedPolicy> &exec,
                    ForwardIterator first,
                    ForwardIterator last,
-                   const T& val, 
+                   const T& val,
                    StrictWeakOrdering comp)
 {
   ForwardIterator iter = sequential::lower_bound(exec, first, last, val, comp);

@@ -23,6 +23,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // #include this for size_t
 #include <cstddef>
 #include <thrust/device_ptr.h>

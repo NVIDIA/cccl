@@ -22,6 +22,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -35,7 +37,7 @@ namespace generic
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 __host__ __device__
-ForwardIterator lower_bound(thrust::execution_policy<DerivedPolicy> &exec, 
+ForwardIterator lower_bound(thrust::execution_policy<DerivedPolicy> &exec,
                             ForwardIterator begin,
                             ForwardIterator end,
                             const T& value);
@@ -45,7 +47,7 @@ __host__ __device__
 ForwardIterator lower_bound(thrust::execution_policy<DerivedPolicy> &exec,
                             ForwardIterator begin,
                             ForwardIterator end,
-                            const T& value, 
+                            const T& value,
                             StrictWeakOrdering comp);
 
 
@@ -58,10 +60,10 @@ ForwardIterator upper_bound(thrust::execution_policy<DerivedPolicy> &exec,
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
 __host__ __device__
-ForwardIterator upper_bound(thrust::execution_policy<DerivedPolicy> &exec, 
+ForwardIterator upper_bound(thrust::execution_policy<DerivedPolicy> &exec,
                             ForwardIterator begin,
                             ForwardIterator end,
-                            const T& value, 
+                            const T& value,
                             StrictWeakOrdering comp);
 
 
@@ -77,16 +79,16 @@ __host__ __device__
 bool binary_search(thrust::execution_policy<DerivedPolicy> &exec,
                    ForwardIterator begin,
                    ForwardIterator end,
-                   const T& value, 
+                   const T& value,
                    StrictWeakOrdering comp);
 
 
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
 __host__ __device__
 OutputIterator lower_bound(thrust::execution_policy<DerivedPolicy> &exec,
-                           ForwardIterator begin, 
+                           ForwardIterator begin,
                            ForwardIterator end,
-                           InputIterator values_begin, 
+                           InputIterator values_begin,
                            InputIterator values_end,
                            OutputIterator output);
 
@@ -94,9 +96,9 @@ OutputIterator lower_bound(thrust::execution_policy<DerivedPolicy> &exec,
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
 __host__ __device__
 OutputIterator lower_bound(thrust::execution_policy<DerivedPolicy> &exec,
-                           ForwardIterator begin, 
+                           ForwardIterator begin,
                            ForwardIterator end,
-                           InputIterator values_begin, 
+                           InputIterator values_begin,
                            InputIterator values_end,
                            OutputIterator output,
                            StrictWeakOrdering comp);
@@ -105,9 +107,9 @@ OutputIterator lower_bound(thrust::execution_policy<DerivedPolicy> &exec,
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
 __host__ __device__
 OutputIterator upper_bound(thrust::execution_policy<DerivedPolicy> &exec,
-                           ForwardIterator begin, 
+                           ForwardIterator begin,
                            ForwardIterator end,
-                           InputIterator values_begin, 
+                           InputIterator values_begin,
                            InputIterator values_end,
                            OutputIterator output);
 
@@ -115,9 +117,9 @@ OutputIterator upper_bound(thrust::execution_policy<DerivedPolicy> &exec,
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
 __host__ __device__
 OutputIterator upper_bound(thrust::execution_policy<DerivedPolicy> &exec,
-                           ForwardIterator begin, 
+                           ForwardIterator begin,
                            ForwardIterator end,
-                           InputIterator values_begin, 
+                           InputIterator values_begin,
                            InputIterator values_end,
                            OutputIterator output,
                            StrictWeakOrdering comp);
@@ -126,9 +128,9 @@ OutputIterator upper_bound(thrust::execution_policy<DerivedPolicy> &exec,
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
 __host__ __device__
 OutputIterator binary_search(thrust::execution_policy<DerivedPolicy> &exec,
-                             ForwardIterator begin, 
+                             ForwardIterator begin,
                              ForwardIterator end,
-                             InputIterator values_begin, 
+                             InputIterator values_begin,
                              InputIterator values_end,
                              OutputIterator output);
 
@@ -136,9 +138,9 @@ OutputIterator binary_search(thrust::execution_policy<DerivedPolicy> &exec,
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
 __host__ __device__
 OutputIterator binary_search(thrust::execution_policy<DerivedPolicy> &exec,
-                             ForwardIterator begin, 
+                             ForwardIterator begin,
                              ForwardIterator end,
-                             InputIterator values_begin, 
+                             InputIterator values_begin,
                              InputIterator values_end,
                              OutputIterator output,
                              StrictWeakOrdering comp);

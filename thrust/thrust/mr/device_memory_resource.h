@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // #include the device system's memory_resource header
 #define __THRUST_DEVICE_SYSTEM_MEMORY_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/memory_resource.h>
 #include __THRUST_DEVICE_SYSTEM_MEMORY_HEADER

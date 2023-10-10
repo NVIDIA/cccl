@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/functional/operators/arithmetic_operators.h>
 #include <thrust/detail/functional/operators/relational_operators.h>
 #include <thrust/detail/functional/operators/logical_operators.h>

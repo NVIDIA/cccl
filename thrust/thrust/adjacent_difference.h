@@ -22,6 +22,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -81,7 +83,7 @@ THRUST_NAMESPACE_BEGIN
 template<typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 __host__ __device__
 OutputIterator adjacent_difference(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                                   InputIterator first, InputIterator last, 
+                                   InputIterator first, InputIterator last,
                                    OutputIterator result);
 
 /*! \p adjacent_difference calculates the differences of adjacent elements in the
@@ -89,7 +91,7 @@ OutputIterator adjacent_difference(const thrust::detail::execution_policy_base<D
  *  <tt>\*result</tt>, and, for each iterator \p i in the range
  *  <tt>[first + 1, last)</tt>, <tt>binary_op(\*i, \*(i - 1))</tt> is assigned to
  *  <tt>\*(result + (i - first))</tt>.
- *  
+ *
  *  This version of \p adjacent_difference uses the binary function \p binary_op to
  *  calculate differences.
  *
@@ -183,7 +185,7 @@ OutputIterator adjacent_difference(const thrust::detail::execution_policy_base<D
  *  \see inclusive_scan
  */
 template <typename InputIterator, typename OutputIterator>
-OutputIterator adjacent_difference(InputIterator first, InputIterator last, 
+OutputIterator adjacent_difference(InputIterator first, InputIterator last,
                                    OutputIterator result);
 
 /*! \p adjacent_difference calculates the differences of adjacent elements in the
@@ -191,7 +193,7 @@ OutputIterator adjacent_difference(InputIterator first, InputIterator last,
  *  <tt>\*result</tt>, and, for each iterator \p i in the range
  *  <tt>[first + 1, last)</tt>, <tt>binary_op(\*i, \*(i - 1))</tt> is assigned to
  *  <tt>\*(result + (i - first))</tt>.
- *  
+ *
  *  This version of \p adjacent_difference uses the binary function \p binary_op to
  *  calculate differences.
  *

@@ -1,4 +1,3 @@
-#pragma once
 /*
  *  Copyright 2008-2016 NVIDIA Corporation
  *
@@ -14,8 +13,12 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+#pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/execution_policy.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
@@ -39,12 +42,12 @@ get_iterator_value(thrust::execution_policy<DerivedPolicy> &, Iterator it)
 // get_iterator_value specialization on pointer
 // ----------------------------------------------
 // we can't just dereference a pointer in the usual way, because
-// it may point to a location in the device memory. 
+// it may point to a location in the device memory.
 // we use get_value(exec,pointer*) function
 // to perform a dereferencing consistent with the execution policy
 template<typename DerivedPolicy, typename Pointer>
 __host__ __device__
-typename thrust::detail::pointer_traits<Pointer*>::element_type 
+typename thrust::detail::pointer_traits<Pointer*>::element_type
 get_iterator_value(thrust::execution_policy<DerivedPolicy> &exec, Pointer* ptr)
 {
   return get_value(derived_cast(exec),ptr);

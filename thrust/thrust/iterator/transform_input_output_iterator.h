@@ -22,6 +22,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/iterator/detail/transform_input_output_iterator.inl>
 
 THRUST_NAMESPACE_BEGIN
@@ -62,7 +64,7 @@ THRUST_NAMESPACE_BEGIN
  *    // Iterator that returns negated values and writes squared values
  *    auto iter = thrust::make_transform_input_output_iterator(v.begin(),
  *        thrust::negate<float>{}, thrust::square<float>{});
- * 
+ *
  *    // Iterator negates values when reading
  *    std::cout << iter[0] << " ";  // -1.0f;
  *    std::cout << iter[1] << " ";  // -2.0f;

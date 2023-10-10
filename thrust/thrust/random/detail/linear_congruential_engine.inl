@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/random/linear_congruential_engine.h>
 #include <thrust/random/detail/mod.h>
 #include <thrust/random/detail/random_core_access.h>

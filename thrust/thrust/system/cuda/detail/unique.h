@@ -28,6 +28,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
 #include <thrust/advance.h>
@@ -788,7 +790,7 @@ struct zip_adj_not_predicate {
   bool __host__ __device__ operator()(TupleType&& tuple) {
       return !binary_pred(thrust::get<0>(tuple), thrust::get<1>(tuple));
   }
-  
+
   BinaryPred binary_pred;
 };
 

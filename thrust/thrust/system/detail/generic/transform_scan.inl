@@ -18,6 +18,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/function_traits.h>
 #include <thrust/detail/type_traits/iterator/is_output_iterator.h>

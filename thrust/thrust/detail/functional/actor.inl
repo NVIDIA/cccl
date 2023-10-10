@@ -26,6 +26,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/functional/composite.h>
 #include <thrust/detail/functional/operators/assignment_operator.h>
 #include <thrust/functional.h>

@@ -20,6 +20,10 @@
 
 #pragma once
 
+#include <thrust/detail/config/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/config/compiler.h>
 
 // Deprecation warnings may be silenced by defining the following macros. These

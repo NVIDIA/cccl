@@ -28,6 +28,8 @@ j * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
 #include <thrust/detail/cstdint.h>

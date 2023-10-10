@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // this system inherits the set operations
 #include <thrust/system/detail/sequential/set_operations.h>
 

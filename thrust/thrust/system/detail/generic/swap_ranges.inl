@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/detail/generic/swap_ranges.h>
 #include <thrust/tuple.h>
 #include <thrust/iterator/zip_iterator.h>

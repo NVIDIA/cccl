@@ -16,6 +16,10 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/cstdint.h>
 #include <thrust/detail/preprocessor.h>
 #include <thrust/detail/integer_traits.h>

@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/detail/sequential/merge.h>
 #include <thrust/detail/copy.h>
 #include <thrust/iterator/iterator_traits.h>

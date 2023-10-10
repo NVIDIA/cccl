@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-/*! \file 
+/*! \file
  *  \brief A pointer to a variable which resides in memory associated with a
  *  system.
  */
@@ -22,6 +22,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/reference_forward_declaration.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>

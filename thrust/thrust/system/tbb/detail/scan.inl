@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/tbb/detail/scan.h>
 #include <thrust/distance.h>
 #include <thrust/advance.h>
@@ -53,16 +55,16 @@ struct inclusive_body
   inclusive_body(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType dummy)
     : input(input), output(output), binary_op(binary_op), sum(dummy), first_call(true)
   {}
-    
+
   inclusive_body(inclusive_body& b, ::tbb::split)
     : input(b.input), output(b.output), binary_op(b.binary_op), sum(b.sum), first_call(true)
   {}
 
-  template<typename Size> 
+  template<typename Size>
   void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::pre_scan_tag)
   {
     InputIterator iter = input + r.begin();
- 
+
     ValueType temp = *iter;
 
     ++iter;
@@ -74,11 +76,11 @@ struct inclusive_body
       sum = temp;
     else
       sum = binary_op(sum, temp);
-      
+
     first_call = false;
   }
-  
-  template<typename Size> 
+
+  template<typename Size>
   void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::final_scan_tag)
   {
     InputIterator  iter1 = input  + r.begin();
@@ -109,12 +111,12 @@ struct inclusive_body
     {
       sum = binary_op(b.sum, sum);
     }
-  } 
+  }
 
   void assign(inclusive_body& b)
   {
     sum = b.sum;
-  } 
+  }
 };
 
 
@@ -133,16 +135,16 @@ struct exclusive_body
   exclusive_body(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType init)
     : input(input), output(output), binary_op(binary_op), sum(init), first_call(true)
   {}
-    
+
   exclusive_body(exclusive_body& b, ::tbb::split)
     : input(b.input), output(b.output), binary_op(b.binary_op), sum(b.sum), first_call(true)
   {}
 
-  template<typename Size> 
+  template<typename Size>
   void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::pre_scan_tag)
   {
     InputIterator iter = input + r.begin();
- 
+
     ValueType temp = *iter;
 
     ++iter;
@@ -154,11 +156,11 @@ struct exclusive_body
       sum = temp;
     else
       sum = binary_op(sum, temp);
-      
+
     first_call = false;
   }
-  
-  template<typename Size> 
+
+  template<typename Size>
   void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::final_scan_tag)
   {
     InputIterator  iter1 = input  + r.begin();
@@ -170,7 +172,7 @@ struct exclusive_body
       *iter2 = sum;
       sum = temp;
     }
-    
+
     first_call = false;
   }
 
@@ -187,7 +189,7 @@ struct exclusive_body
   void assign(exclusive_body& b)
   {
     sum = b.sum;
-  } 
+  }
 };
 
 } // end scan_detail
@@ -250,7 +252,7 @@ template<typename InputIterator,
   thrust::advance(result, n);
 
   return result;
-} 
+}
 
 } // end namespace detail
 } // end namespace tbb

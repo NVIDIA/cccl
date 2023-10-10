@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // #include the host system's execution_policy header
 #define __THRUST_HOST_SYSTEM_TAG_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/execution_policy.h>
 #include __THRUST_HOST_SYSTEM_TAG_HEADER

@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/detail/sequential/stable_primitive_sort.h>
 #include <thrust/system/detail/sequential/stable_radix_sort.h>
 #include <thrust/functional.h>

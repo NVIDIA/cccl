@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/cpp/detail/execution_policy.h>
 #include <thrust/system/omp/memory.h>
 #include <thrust/system/cpp/memory.h>

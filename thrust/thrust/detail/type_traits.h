@@ -24,6 +24,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cuda/std/type_traits>
 
 #include <type_traits>

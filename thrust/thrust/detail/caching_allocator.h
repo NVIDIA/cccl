@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/disjoint_tls_pool.h>
 #include <thrust/mr/new.h>

@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // this system inherits binary_search
 #include <thrust/system/cpp/detail/binary_search.h>
 

@@ -28,6 +28,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/detail/copy_if.h>
 
@@ -35,7 +37,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub {
 
 // in-place
-  
+
 template <class Derived,
           class InputIt,
           class StencilIt,

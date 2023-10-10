@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/allocator/temporary_allocator.h>
 #include <thrust/detail/temporary_buffer.h>
 #include <thrust/system/detail/bad_alloc.h>

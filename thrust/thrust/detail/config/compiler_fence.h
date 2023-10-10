@@ -17,6 +17,9 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/preprocessor.h>
 
 // TODO: Enable this or remove this file once nvGRAPH/CUSP migrates off of it.

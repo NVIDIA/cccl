@@ -22,6 +22,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -162,7 +164,7 @@ OutputType inner_product(InputIterator1 first1, InputIterator1 last1,
  *          and \p BinaryFunction1's \c return_type is convertible to \p OutputType.
  *  \tparam BinaryFunction2 is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>,
  *          and \p BinaryFunction2's \c return_type is convertible to \p BinaryFunction1's \c second_argument_type.
- * 
+ *
  *  \code
  *  #include <thrust/inner_product.h>
  *  #include <thrust/execution_policy.h>
@@ -192,7 +194,7 @@ OutputType inner_product(const thrust::detail::execution_policy_base<DerivedPoli
                          InputIterator1 first1,
                          InputIterator1 last1,
                          InputIterator2 first2,
-                         OutputType init, 
+                         OutputType init,
                          BinaryFunction1 binary_op1,
                          BinaryFunction2 binary_op2);
 
@@ -227,7 +229,7 @@ OutputType inner_product(const thrust::detail::execution_policy_base<DerivedPoli
  *          and \p BinaryFunction1's \c return_type is convertible to \p OutputType.
  *  \tparam BinaryFunction2 is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>,
  *          and \p BinaryFunction2's \c return_type is convertible to \p BinaryFunction1's \c second_argument_type.
- * 
+ *
  *  \code
  *  #include <thrust/inner_product.h>
  *  ...
@@ -248,7 +250,7 @@ OutputType inner_product(const thrust::detail::execution_policy_base<DerivedPoli
 template<typename InputIterator1, typename InputIterator2, typename OutputType,
          typename BinaryFunction1, typename BinaryFunction2>
 OutputType inner_product(InputIterator1 first1, InputIterator1 last1,
-                         InputIterator2 first2, OutputType init, 
+                         InputIterator2 first2, OutputType init,
                          BinaryFunction1 binary_op1, BinaryFunction2 binary_op2);
 
 

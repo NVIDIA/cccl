@@ -9,6 +9,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/cpp14_required.h>
 
 #if THRUST_CPP_DIALECT >= 2014
@@ -361,7 +363,7 @@ try_acquire_stream(int device, unique_eager_future<X>& parent) noexcept;
 template <typename... Dependencies>
 __host__
 acquired_stream acquire_stream(int device, Dependencies&... deps) noexcept;
-  
+
 template <typename... Dependencies>
 __host__
 unique_eager_event
@@ -520,7 +522,7 @@ public:
 
   // Precondition: `true == valid_content()`.
   __host__
-  pointer data() 
+  pointer data()
   {
     if (!valid_content())
       throw thrust::event_error(event_errc::no_content);
@@ -530,7 +532,7 @@ public:
 
   // Precondition: `true == valid_content()`.
   __host__
-  const_pointer data() const 
+  const_pointer data() const
   {
     if (!valid_content())
       throw thrust::event_error(event_errc::no_content);
@@ -673,7 +675,7 @@ public:
   }
 
   THRUST_NODISCARD __host__ __device__
-  value_type extract() 
+  value_type extract()
   {
     return std::move(value_);
   }
@@ -1331,7 +1333,7 @@ make_dependent_future(ComputeContent&& cc, std::tuple<Dependencies...>&& deps)
   std::unique_ptr<async_signal_type> sig(
     new async_signal_type(std::move(as.stream), std::move(ka), std::move(cc))
   );
- 
+
   // Finally, we create the promise and future objects.
   weak_promise<X, XPointer> child_prom(device_id, sig->data());
   unique_eager_future<X> child_fut(device_id, std::move(sig));
@@ -1350,7 +1352,7 @@ unique_eager_event when_all(Events&&... evs)
 // TODO: Constrain to events, futures, and maybe streams (currently allows keep
 // alives).
 {
-  return detail::make_dependent_event(std::make_tuple(std::move(evs)...)); 
+  return detail::make_dependent_event(std::make_tuple(std::move(evs)...));
 }
 
 // ADL hook for transparent `.after` move support.

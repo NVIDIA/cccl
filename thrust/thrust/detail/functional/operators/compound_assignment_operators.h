@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/functional/actor.h>
 #include <thrust/detail/functional/composite.h>
 #include <thrust/detail/functional/operators/operator_adaptors.h>

@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // omp inherits transform
 #include <thrust/system/cpp/detail/transform.h>
 

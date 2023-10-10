@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/adl/malloc_and_free.h>

@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/function.h>
 #include <thrust/system/tbb/detail/copy_if.h>
 #include <thrust/iterator/iterator_traits.h>
@@ -66,13 +68,13 @@ struct body
         ++sum;
     }
   }
-  
+
   void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::final_scan_tag)
   {
     InputIterator1  iter1 = first   + r.begin();
     InputIterator2  iter2 = stencil + r.begin();
     OutputIterator  iter3 = result  + sum;
-      
+
     for (Size i = r.begin(); i != r.end(); ++i, ++iter1, ++iter2)
     {
       if (pred(*iter2))
@@ -87,12 +89,12 @@ struct body
   void reverse_join(body& b)
   {
     sum = b.sum + sum;
-  } 
+  }
 
   void assign(body& b)
   {
     sum = b.sum;
-  } 
+  }
 }; // end body
 
 } // end copy_if_detail
@@ -108,9 +110,9 @@ template<typename InputIterator1,
                          OutputIterator result,
                          Predicate pred)
 {
-  typedef typename thrust::iterator_difference<InputIterator1>::type Size; 
+  typedef typename thrust::iterator_difference<InputIterator1>::type Size;
   typedef typename copy_if_detail::body<InputIterator1,InputIterator2,OutputIterator,Predicate,Size> Body;
-  
+
   Size n = thrust::distance(first, last);
 
   if (n != 0)

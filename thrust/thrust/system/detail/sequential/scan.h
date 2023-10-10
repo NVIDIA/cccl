@@ -22,6 +22,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/detail/sequential/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/detail/type_traits.h>
@@ -111,7 +113,7 @@ __host__ __device__
   }
 
   return result;
-} 
+}
 
 
 } // end namespace sequential

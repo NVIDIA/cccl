@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/detail/internal_functional.h>
 #include <thrust/generate.h>
 #include <thrust/system/detail/generic/tag.h>

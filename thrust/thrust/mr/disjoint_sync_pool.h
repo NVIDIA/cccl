@@ -14,13 +14,15 @@
  *  limitations under the License.
  */
 
-/*! \file 
+/*! \file
  *  \brief A mutex-synchronized version of \p disjoint_unsynchronized_pool_resource.
  */
 
 #pragma once
 
 #include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/cpp11_required.h>
 
 #if THRUST_CPP_DIALECT >= 2011

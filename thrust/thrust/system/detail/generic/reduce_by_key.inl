@@ -18,6 +18,8 @@
 
 #include <thrust/detail/config.h>
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/detail/type_traits.h>
