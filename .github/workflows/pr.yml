@@ -127,6 +127,10 @@ jobs:
         cmake -S . --preset=examples -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA} -DCMAKE_CUDA_COMPILER=nvcc
         ctest --preset=examples
 
+  verify-devcontainers:
+    name: Verify Dev Containers
+    uses: ./.github/workflows/verify-devcontainers.yml
+
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
   ci:
@@ -138,5 +142,6 @@ jobs:
       - nvrtc
       - thrust
       - examples
+      - verify-devcontainers
     steps:
       - run: echo "CI success"
