@@ -32,6 +32,11 @@
 
 #pragma once
 
+// For `_CCCL_IMPLICIT_SYSTEM_HEADER`
+#include <cuda/std/detail/__config>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // enumerate host compilers we know about
 #define CUB_HOST_COMPILER_UNKNOWN 0
 #define CUB_HOST_COMPILER_MSVC 1

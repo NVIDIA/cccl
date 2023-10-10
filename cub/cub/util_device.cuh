@@ -37,14 +37,14 @@
 
 #pragma once
 
+#include "config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cuda/std/utility>
 
 #include <cub/detail/device_synchronize.cuh>
-#include <cub/util_arch.cuh>
-#include <cub/util_cpp_dialect.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_macro.cuh>
-#include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
@@ -412,7 +412,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
     {
         int major = 0, minor = 0;
         error = CubDebug(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device));
-        if (cudaSuccess != error) 
+        if (cudaSuccess != error)
         {
             break;
         }
@@ -544,7 +544,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
     cudaError_t error = cudaSuccess;
     int device = -1;
     error = CubDebug(cudaGetDevice(&device));
-    if (cudaSuccess != error) 
+    if (cudaSuccess != error)
     {
         return error;
     }

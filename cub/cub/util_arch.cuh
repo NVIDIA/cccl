@@ -33,9 +33,13 @@
 
 #pragma once
 
-#include <cub/util_cpp_dialect.cuh>
-#include <cub/util_namespace.cuh>
-#include <cub/util_macro.cuh>
+#include "config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
+#include "util_cpp_dialect.cuh"
+#include "util_namespace.cuh"
+#include "util_macro.cuh"
 
 // Legacy include; this functionality used to be defined in here.
 #include <cub/detail/detect_cuda_runtime.cuh>
@@ -44,7 +48,7 @@ CUB_NAMESPACE_BEGIN
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
 
-// \deprecated [Since 2.1.0] 
+// \deprecated [Since 2.1.0]
 #define CUB_USE_COOPERATIVE_GROUPS
 
 /// In device code, CUB_PTX_ARCH expands to the PTX version for which we are

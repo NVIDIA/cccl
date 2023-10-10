@@ -28,6 +28,9 @@
 #pragma once
 
 #include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include "../util_type.cuh"
 #include "../util_namespace.cuh"
 #include "../block/block_load.cuh"
@@ -159,7 +162,7 @@ struct AgentDifference
       }
       else
       {
-        InputT tile_prev_input = MayAlias 
+        InputT tile_prev_input = MayAlias
                                ? first_tile_previous[tile_idx]
                                : *(input_it + tile_base - 1);
 

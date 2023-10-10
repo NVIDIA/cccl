@@ -27,9 +27,12 @@
 
 #pragma once
 
+#include "../../../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/block/block_load.cuh>
-#include <cub/config.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 

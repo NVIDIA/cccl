@@ -29,8 +29,11 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/block/block_load.cuh>
-#include <cub/config.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>

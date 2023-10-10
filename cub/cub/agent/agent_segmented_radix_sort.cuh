@@ -27,10 +27,13 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/block/block_radix_sort.cuh>
-#include <cub/config.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
@@ -152,7 +155,7 @@ struct AgentSegmentedRadixSort
     // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
     // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
 
-    bit_ordered_type default_key_bits = IS_DESCENDING 
+    bit_ordered_type default_key_bits = IS_DESCENDING
                                       ? traits::min_raw_binary_key(decomposer)
                                       : traits::max_raw_binary_key(decomposer);
     KeyT oob_default = reinterpret_cast<KeyT &>(default_key_bits);

@@ -33,13 +33,16 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <iterator>
 
 #include "../util_type.cuh"
 #include "../block/block_reduce.cuh"
 #include "../block/block_scan.cuh"
 #include "../block/block_exchange.cuh"
-#include "../config.cuh"
 #include "../thread/thread_search.cuh"
 #include "../thread/thread_operators.cuh"
 #include "../iterator/cache_modified_input_iterator.cuh"

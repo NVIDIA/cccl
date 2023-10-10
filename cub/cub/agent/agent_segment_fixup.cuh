@@ -33,6 +33,10 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <iterator>
 
 #include "single_pass_scan_operators.cuh"
@@ -40,7 +44,6 @@
 #include "../block/block_store.cuh"
 #include "../block/block_scan.cuh"
 #include "../block/block_discontinuity.cuh"
-#include "../config.cuh"
 #include "../iterator/cache_modified_input_iterator.cuh"
 #include "../iterator/constant_input_iterator.cuh"
 
@@ -240,7 +243,7 @@ struct AgentSegmentFixup
         else
             BlockLoadPairs(temp_storage.load_pairs).Load(d_pairs_in + tile_offset, pairs);
 
-        // RLE 
+        // RLE
         #pragma unroll
         for (int ITEM = 1; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {

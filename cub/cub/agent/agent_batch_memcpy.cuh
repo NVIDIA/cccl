@@ -33,6 +33,10 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_exchange.cuh>
 #include <cub/block/block_load.cuh>

@@ -33,7 +33,10 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>

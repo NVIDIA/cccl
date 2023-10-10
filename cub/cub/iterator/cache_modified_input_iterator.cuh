@@ -33,10 +33,13 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <iterator>
 #include <iostream>
 
-#include "../config.cuh"
 #include "../thread/thread_load.cuh"
 #include "../thread/thread_store.cuh"
 

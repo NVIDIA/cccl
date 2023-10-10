@@ -32,6 +32,10 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -51,7 +55,7 @@ using invoke_result_t =
 
 /// The type of intermediate accumulator (according to P2322R6)
 template <typename Invokable, typename InitT, typename InputT>
-using accumulator_t = 
+using accumulator_t =
   typename ::cuda::std::decay<invoke_result_t<Invokable, InitT, InputT>>::type;
 
 } // namespace detail

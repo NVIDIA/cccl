@@ -33,9 +33,12 @@
 
 #pragma once
 
+#include "../../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/agent/agent_batch_memcpy.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
-#include <cub/config.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>

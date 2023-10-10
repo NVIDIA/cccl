@@ -33,12 +33,15 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <iterator>
 #include <type_traits>
 
 #include "../block/block_exchange.cuh"
 #include "../iterator/cache_modified_input_iterator.cuh"
-#include "../config.cuh"
 #include "../util_ptx.cuh"
 #include "../util_type.cuh"
 

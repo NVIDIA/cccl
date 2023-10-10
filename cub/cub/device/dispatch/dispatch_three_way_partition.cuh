@@ -27,8 +27,11 @@
 
 #pragma once
 
+#include "../../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/agent/agent_three_way_partition.cuh>
-#include <cub/config.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
 #include <cub/thread/thread_operators.cuh>

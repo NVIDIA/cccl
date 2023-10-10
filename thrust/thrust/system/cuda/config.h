@@ -26,10 +26,6 @@
  ******************************************************************************/
 #pragma once
 
-#include <thrust/detail/config.h>
-
-_CCCL_IMPLICIT_SYSTEM_HEADER
-
 
 #ifdef THRUST_DEBUG_SYNC
 #define THRUST_DEBUG_SYNC_FLAG true
@@ -37,6 +33,10 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #else
 #define THRUST_DEBUG_SYNC_FLAG false
 #endif
+
+#include <thrust/detail/config.h>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 // We don't directly include <cub/version.cuh> since it doesn't exist in
 // older releases. This header will always pull in version info:

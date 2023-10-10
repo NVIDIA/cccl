@@ -16,7 +16,9 @@
 
 #pragma once
 
-#include <cub/util_compiler.cuh>
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 /**
  * @def CUB_EXEC_CHECK_DISABLE

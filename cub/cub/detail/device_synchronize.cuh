@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/exec_check_disable.cuh>
-#include <cub/util_arch.cuh>
-#include <cub/util_namespace.cuh>
 
 #include <nv/target>
 

@@ -34,6 +34,10 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <stdio.h>
 #include <iterator>
 #include <limits>

@@ -38,7 +38,10 @@
 // This is not used by this file; this is a hack so that we can detect the
 // CUB version from Thrust on older versions of CUB that did not have
 // version.cuh.
-#include <cub/version.cuh>
+#include "version.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/detail/detect_cuda_runtime.cuh>
 
 // Prior to 1.13.1, only the PREFIX/POSTFIX macros were used. Notify users

@@ -27,12 +27,15 @@
 
 #pragma once
 
+#include "../../../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/agent/agent_scan_by_key.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/config.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -169,7 +172,7 @@ struct sm90_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_8, 
   using delay_constructor = detail::fixed_delay_constructor_t<488, 1070>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class KeyT>
 struct sm90_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_1, val_size::_16, primitive_accum::no>
 {
@@ -255,7 +258,7 @@ struct sm90_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_8, 
   using delay_constructor = detail::fixed_delay_constructor_t<352, 1170>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class KeyT>
 struct sm90_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_2, val_size::_16, primitive_accum::no>
 {
@@ -341,7 +344,7 @@ struct sm90_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_8, 
   using delay_constructor = detail::fixed_delay_constructor_t<556, 1195>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class KeyT>
 struct sm90_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_4, val_size::_16, primitive_accum::no>
 {
@@ -427,7 +430,7 @@ struct sm90_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_8, 
   using delay_constructor = detail::fixed_delay_constructor_t<600, 930>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class KeyT>
 struct sm90_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_8, val_size::_16, primitive_accum::no>
 {
@@ -513,7 +516,7 @@ struct sm90_tuning<KeyT, ValueT, primitive_op::yes, key_size::_16, val_size::_8,
   using delay_constructor = detail::fixed_delay_constructor_t<320, 1200>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class KeyT>
 struct sm90_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_16, val_size::_16, primitive_accum::no>
 {
@@ -627,7 +630,7 @@ struct sm80_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_8, 
   using delay_constructor = detail::fixed_delay_constructor_t<124, 1040>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class KeyT>
 struct sm80_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_1, val_size::_16, primitive_accum::no>
 {
@@ -713,7 +716,7 @@ struct sm80_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_8, 
   using delay_constructor = detail::fixed_delay_constructor_t<160, 695>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class KeyT>
 struct sm80_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_2, val_size::_16, primitive_accum::no>
 {
@@ -799,7 +802,7 @@ struct sm80_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_8, 
   using delay_constructor = detail::fixed_delay_constructor_t<888, 635>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class KeyT>
 struct sm80_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_4, val_size::_16, primitive_accum::no>
 {
@@ -885,7 +888,7 @@ struct sm80_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_8, 
   using delay_constructor = detail::no_delay_constructor_t<1160>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class KeyT>
 struct sm80_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_8, val_size::_16, primitive_accum::no>
 {
@@ -971,7 +974,7 @@ struct sm80_tuning<KeyT, ValueT, primitive_op::yes, key_size::_16, val_size::_8,
   using delay_constructor = detail::no_delay_constructor_t<1030>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class KeyT>
 struct sm80_tuning<KeyT, __int128_t, primitive_op::yes, key_size::_16, val_size::_16, primitive_accum::no>
 {

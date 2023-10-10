@@ -27,7 +27,10 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>

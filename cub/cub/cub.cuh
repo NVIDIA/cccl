@@ -36,6 +36,8 @@
 // Static configuration
 #include "config.cuh"
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 // Block
 #include "block/block_adjacent_difference.cuh"
 #include "block/block_discontinuity.cuh"
@@ -101,10 +103,8 @@
 
 // Util
 #include "util_allocator.cuh"
-#include "util_arch.cuh"
 #include "util_debug.cuh"
 #include "util_device.cuh"
-#include "util_macro.cuh"
 #include "util_ptx.cuh"
 #include "util_temporary_storage.cuh"
 #include "util_type.cuh"

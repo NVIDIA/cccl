@@ -35,6 +35,11 @@
 
 #pragma once
 
+// For `_CCCL_IMPLICIT_SYSTEM_HEADER`
+#include <cuda/std/detail/__config>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 /*! \def CUB_VERSION
  *  \brief The preprocessor macro \p CUB_VERSION encodes the version
  *         number of the CUB library.

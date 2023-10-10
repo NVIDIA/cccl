@@ -27,6 +27,10 @@
 
 #pragma once
 
+#include "../../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/agent/agent_segmented_radix_sort.cuh>
 #include <cub/agent/agent_sub_warp_merge_sort.cuh>
 #include <cub/block/block_load.cuh>

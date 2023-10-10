@@ -34,7 +34,10 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>
@@ -72,8 +75,8 @@ CUB_NAMESPACE_BEGIN
  * (`unsigned char`, `int`, `double`, etc.) as well as CUDA's `__half` and
  * `__nv_bfloat16` 16-bit floating-point types.
  *
- * @par Segments are not required to be contiguous. Any element of input(s) or 
- * output(s) outside the specified segments will not be accessed nor modified.  
+ * @par Segments are not required to be contiguous. Any element of input(s) or
+ * output(s) outside the specified segments will not be accessed nor modified.
  *
  * @par A simple example
  * @code
@@ -135,12 +138,12 @@ struct DeviceSegmentedSort
    *   guaranteed that the relative order of these two elements will be
    *   preserved by sort.
    * - The range `[d_keys_out, d_keys_out + num_items)` shall not overlap
-   *   `[d_keys_in, d_keys_in + num_items)`, 
+   *   `[d_keys_in, d_keys_in + num_items)`,
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys_in[i]`, `d_keys_out[i]` will not 
-   *   be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys_in[i]`, `d_keys_out[i]` will not
+   *   be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -309,12 +312,12 @@ struct DeviceSegmentedSort
    *   not guaranteed that the relative order of these two elements will be
    *   preserved by sort.
    * - The range `[d_keys_out, d_keys_out + num_items)` shall not overlap
-   *   `[d_keys_in, d_keys_in + num_items)`, 
+   *   `[d_keys_in, d_keys_in + num_items)`,
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys_in[i]`, `d_keys_out[i]` will not 
-   *   be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys_in[i]`, `d_keys_out[i]` will not
+   *   be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -490,13 +493,13 @@ struct DeviceSegmentedSort
    *   not guaranteed that the relative order of these two elements will be
    *   preserved by sort.
    * - Let `cur = d_keys.Current()` and `alt = d_keys.Alternate()`.
-   *   The range `[cur, cur + num_items)` shall not overlap 
+   *   The range `[cur, cur + num_items)` shall not overlap
    *   `[alt, alt + num_items)`. Both ranges shall not overlap
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys.Current()[i]`, 
-   *   `d_keys[i].Alternate()[i]` will not be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys.Current()[i]`,
+   *   `d_keys[i].Alternate()[i]` will not be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -671,13 +674,13 @@ struct DeviceSegmentedSort
    *   not guaranteed that the relative order of these two elements will be
    *   preserved by sort.
    * - Let `cur = d_keys.Current()` and `alt = d_keys.Alternate()`.
-   *   The range `[cur, cur + num_items)` shall not overlap 
+   *   The range `[cur, cur + num_items)` shall not overlap
    *   `[alt, alt + num_items)`. Both ranges shall not overlap
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys.Current()[i]`, 
-   *   `d_keys[i].Alternate()[i]` will not be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys.Current()[i]`,
+   *   `d_keys[i].Alternate()[i]` will not be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -846,12 +849,12 @@ struct DeviceSegmentedSort
    *   @p x < @p y nor @p y < @p x) then a postcondition of stable sort is that
    *   @p x still precedes @p y.
    * - The range `[d_keys_out, d_keys_out + num_items)` shall not overlap
-   *   `[d_keys_in, d_keys_in + num_items)`, 
+   *   `[d_keys_in, d_keys_in + num_items)`,
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys_in[i]`, `d_keys_out[i]` will not 
-   *   be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys_in[i]`, `d_keys_out[i]` will not
+   *   be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -1009,12 +1012,12 @@ struct DeviceSegmentedSort
    *   @p x < @p y nor @p y < @p x) then a postcondition of stable sort is that
    *   @p x still precedes @p y.
    * - The range `[d_keys_out, d_keys_out + num_items)` shall not overlap
-   *   `[d_keys_in, d_keys_in + num_items)`, 
+   *   `[d_keys_in, d_keys_in + num_items)`,
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys_in[i]`, `d_keys_out[i]` will not 
-   *   be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys_in[i]`, `d_keys_out[i]` will not
+   *   be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -1181,13 +1184,13 @@ struct DeviceSegmentedSort
    *   @p x < @p y nor @p y < @p x) then a postcondition of stable sort is that
    *   @p x still precedes @p y.
    * - Let `cur = d_keys.Current()` and `alt = d_keys.Alternate()`.
-   *   The range `[cur, cur + num_items)` shall not overlap 
+   *   The range `[cur, cur + num_items)` shall not overlap
    *   `[alt, alt + num_items)`. Both ranges shall not overlap
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys.Current()[i]`, 
-   *   `d_keys[i].Alternate()[i]` will not be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys.Current()[i]`,
+   *   `d_keys[i].Alternate()[i]` will not be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -1350,13 +1353,13 @@ struct DeviceSegmentedSort
    *   @p x < @p y nor @p y < @p x) then a postcondition of stable sort is that
    *   @p x still precedes @p y.
    * - Let `cur = d_keys.Current()` and `alt = d_keys.Alternate()`.
-   *   The range `[cur, cur + num_items)` shall not overlap 
+   *   The range `[cur, cur + num_items)` shall not overlap
    *   `[alt, alt + num_items)`. Both ranges shall not overlap
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys.Current()[i]`, 
-   *   `d_keys[i].Alternate()[i]` will not be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys.Current()[i]`,
+   *   `d_keys[i].Alternate()[i]` will not be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -1520,13 +1523,13 @@ struct DeviceSegmentedSort
    *   guaranteed that the relative order of these two elements will be
    *   preserved by sort.
    * - Let `in` be one of `{d_keys_in, d_values_in}` and `out` be any of
-   *   `{d_keys_out, d_values_out}`. The range `[out, out + num_items)` shall 
-   *   not overlap `[in, in + num_items)`, 
+   *   `{d_keys_out, d_values_out}`. The range `[out, out + num_items)` shall
+   *   not overlap `[in, in + num_items)`,
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys_in[i]`, `d_values_in[i]`, 
-   *   `d_keys_out[i]`, `d_values_out[i]` will not be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys_in[i]`, `d_values_in[i]`,
+   *   `d_keys_out[i]`, `d_values_out[i]` will not be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -1720,13 +1723,13 @@ struct DeviceSegmentedSort
    *   guaranteed that the relative order of these two elements will be
    *   preserved by sort.
    * - Let `in` be one of `{d_keys_in, d_values_in}` and `out` be any of
-   *   `{d_keys_out, d_values_out}`. The range `[out, out + num_items)` shall 
-   *   not overlap `[in, in + num_items)`, 
+   *   `{d_keys_out, d_values_out}`. The range `[out, out + num_items)` shall
+   *   not overlap `[in, in + num_items)`,
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys_in[i]`, `d_values_in[i]`, 
-   *   `d_keys_out[i]`, `d_values_out[i]` will not be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys_in[i]`, `d_values_in[i]`,
+   *   `d_keys_out[i]`, `d_values_out[i]` will not be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -1930,16 +1933,16 @@ struct DeviceSegmentedSort
    *   @p j are equivalent: neither one is less than the other. It is not
    *   guaranteed that the relative order of these two elements will be
    *   preserved by sort.
-   * - Let `cur` be one of `{d_keys.Current(), d_values.Current()}` and `alt` 
-   *   be any of `{d_keys.Alternate(), d_values.Alternate()}`. The range 
-   *   `[cur, cur + num_items)` shall not overlap 
+   * - Let `cur` be one of `{d_keys.Current(), d_values.Current()}` and `alt`
+   *   be any of `{d_keys.Alternate(), d_values.Alternate()}`. The range
+   *   `[cur, cur + num_items)` shall not overlap
    *   `[alt, alt + num_items)`. Both ranges shall not overlap
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys.Current()[i]`, 
-   *   `d_values.Current()[i]`, `d_keys.Alternate()[i]`, 
-   *   `d_values.Alternate()[i]` will not be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys.Current()[i]`,
+   *   `d_values.Current()[i]`, `d_keys.Alternate()[i]`,
+   *   `d_values.Alternate()[i]` will not be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -2131,16 +2134,16 @@ struct DeviceSegmentedSort
    *   @p i and @p j are equivalent: neither one is less than the other. It is
    *   not guaranteed that the relative order of these two elements will be
    *   preserved by sort.
-   * - Let `cur` be one of `{d_keys.Current(), d_values.Current()}` and `alt` 
-   *   be any of `{d_keys.Alternate(), d_values.Alternate()}`. The range 
-   *   `[cur, cur + num_items)` shall not overlap 
+   * - Let `cur` be one of `{d_keys.Current(), d_values.Current()}` and `alt`
+   *   be any of `{d_keys.Alternate(), d_values.Alternate()}`. The range
+   *   `[cur, cur + num_items)` shall not overlap
    *   `[alt, alt + num_items)`. Both ranges shall not overlap
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys.Current()[i]`, 
-   *   `d_values.Current()[i]`, `d_keys.Alternate()[i]`, 
-   *   `d_values.Alternate()[i]` will not be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys.Current()[i]`,
+   *   `d_values.Current()[i]`, `d_keys.Alternate()[i]`,
+   *   `d_values.Alternate()[i]` will not be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -2327,13 +2330,13 @@ struct DeviceSegmentedSort
    *   @p x < @p y nor @p y < @p x) then a postcondition of stable sort is that
    *   @p x still precedes @p y.
    * - Let `in` be one of `{d_keys_in, d_values_in}` and `out` be any of
-   *   `{d_keys_out, d_values_out}`. The range `[out, out + num_items)` shall 
-   *   not overlap `[in, in + num_items)`, 
+   *   `{d_keys_out, d_values_out}`. The range `[out, out + num_items)` shall
+   *   not overlap `[in, in + num_items)`,
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys_in[i]`, `d_values_in[i]`, 
-   *   `d_keys_out[i]`, `d_values_out[i]` will not be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys_in[i]`, `d_values_in[i]`,
+   *   `d_keys_out[i]`, `d_values_out[i]` will not be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -2520,13 +2523,13 @@ struct DeviceSegmentedSort
    *   @p x < @p y nor @p y < @p x) then a postcondition of stable sort is that
    *   @p x still precedes @p y.
    * - Let `in` be one of `{d_keys_in, d_values_in}` and `out` be any of
-   *   `{d_keys_out, d_values_out}`. The range `[out, out + num_items)` shall 
-   *   not overlap `[in, in + num_items)`, 
+   *   `{d_keys_out, d_values_out}`. The range `[out, out + num_items)` shall
+   *   not overlap `[in, in + num_items)`,
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys_in[i]`, `d_values_in[i]`, 
-   *   `d_keys_out[i]`, `d_values_out[i]` will not be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys_in[i]`, `d_values_in[i]`,
+   *   `d_keys_out[i]`, `d_values_out[i]` will not be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -2723,16 +2726,16 @@ struct DeviceSegmentedSort
    *   @p x precedes @p y, and if the two elements are equivalent (neither
    *   @p x < @p y nor @p y < @p x) then a postcondition of stable sort is that
    *   @p x still precedes @p y.
-   * - Let `cur` be one of `{d_keys.Current(), d_values.Current()}` and `alt` 
-   *   be any of `{d_keys.Alternate(), d_values.Alternate()}`. The range 
-   *   `[cur, cur + num_items)` shall not overlap 
+   * - Let `cur` be one of `{d_keys.Current(), d_values.Current()}` and `alt`
+   *   be any of `{d_keys.Alternate(), d_values.Alternate()}`. The range
+   *   `[cur, cur + num_items)` shall not overlap
    *   `[alt, alt + num_items)`. Both ranges shall not overlap
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys.Current()[i]`, 
-   *   `d_values.Current()[i]`, `d_keys.Alternate()[i]`, 
-   *   `d_values.Alternate()[i]` will not be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys.Current()[i]`,
+   *   `d_values.Current()[i]`, `d_keys.Alternate()[i]`,
+   *   `d_values.Alternate()[i]` will not be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments
@@ -2918,16 +2921,16 @@ struct DeviceSegmentedSort
    *   @p x precedes @p y, and if the two elements are equivalent (neither
    *   @p x < @p y nor @p y < @p x) then a postcondition of stable sort is that
    *   @p x still precedes @p y.
-   * - Let `cur` be one of `{d_keys.Current(), d_values.Current()}` and `alt` 
-   *   be any of `{d_keys.Alternate(), d_values.Alternate()}`. The range 
-   *   `[cur, cur + num_items)` shall not overlap 
+   * - Let `cur` be one of `{d_keys.Current(), d_values.Current()}` and `alt`
+   *   be any of `{d_keys.Alternate(), d_values.Alternate()}`. The range
+   *   `[cur, cur + num_items)` shall not overlap
    *   `[alt, alt + num_items)`. Both ranges shall not overlap
    *   `[d_begin_offsets, d_begin_offsets + num_segments)` nor
    *   `[d_end_offsets, d_end_offsets + num_segments)` in any way.
-   * - Segments are not required to be contiguous. For all index values `i` 
-   *   outside the specified segments `d_keys.Current()[i]`, 
-   *   `d_values.Current()[i]`, `d_keys.Alternate()[i]`, 
-   *   `d_values.Alternate()[i]` will not be accessed nor modified.   
+   * - Segments are not required to be contiguous. For all index values `i`
+   *   outside the specified segments `d_keys.Current()[i]`,
+   *   `d_values.Current()[i]`, `d_keys.Alternate()[i]`,
+   *   `d_values.Alternate()[i]` will not be accessed nor modified.
    *
    * @par Snippet
    * The code snippet below illustrates the batched sorting of three segments

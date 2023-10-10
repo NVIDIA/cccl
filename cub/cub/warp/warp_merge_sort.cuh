@@ -27,8 +27,11 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/block/block_merge_sort.cuh>
-#include <cub/config.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 

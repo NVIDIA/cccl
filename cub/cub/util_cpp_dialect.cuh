@@ -31,6 +31,10 @@
 
 #pragma once
 
+#include <cuda/std/detail/__config>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include "util_compiler.cuh"
 
 // Deprecation warnings may be silenced by defining the following macros. These

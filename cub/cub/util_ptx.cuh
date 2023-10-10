@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -34,14 +34,14 @@
 
 #pragma once
 
-#include "util_type.cuh"
-#include "util_arch.cuh"
-#include "util_namespace.cuh"
-#include "util_debug.cuh"
+#include "config.cuh"
 
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
+#include "util_debug.cuh"
+#include "util_type.cuh"
 
 CUB_NAMESPACE_BEGIN
-
 
 /**
  * \addtogroup UtilPtx
@@ -163,7 +163,7 @@ __device__ __forceinline__ unsigned int BFE(
     return (source >> bit_start) & MASK;
 }
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 /**
  * Bitfield-extract for 128-bit types.
  */
@@ -328,7 +328,7 @@ __device__  __forceinline__ int WARP_BALLOT(int predicate, unsigned int member_m
 /**
  * Warp synchronous shfl_up
  */
-__device__ __forceinline__ 
+__device__ __forceinline__
 unsigned int SHFL_UP_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
 {
     asm volatile("shfl.sync.up.b32 %0, %1, %2, %3, %4;"
@@ -339,7 +339,7 @@ unsigned int SHFL_UP_SYNC(unsigned int word, int src_offset, int flags, unsigned
 /**
  * Warp synchronous shfl_down
  */
-__device__ __forceinline__ 
+__device__ __forceinline__
 unsigned int SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
 {
     asm volatile("shfl.sync.down.b32 %0, %1, %2, %3, %4;"
@@ -350,7 +350,7 @@ unsigned int SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsign
 /**
  * Warp synchronous shfl_idx
  */
-__device__ __forceinline__ 
+__device__ __forceinline__
 unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, int flags, unsigned int member_mask)
 {
     asm volatile("shfl.sync.idx.b32 %0, %1, %2, %3, %4;"
@@ -361,7 +361,7 @@ unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, int flags, unsigned 
 /**
  * Warp synchronous shfl_idx
  */
-__device__ __forceinline__ 
+__device__ __forceinline__
 unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, unsigned int member_mask)
 {
     return __shfl_sync(member_mask, word, src_lane);
@@ -395,7 +395,7 @@ __device__ __forceinline__ float FFMA_RZ(float a, float b, float c)
  */
 __device__ __forceinline__ void ThreadExit() {
     asm volatile("exit;");
-}    
+}
 
 
 /**
@@ -561,7 +561,7 @@ __device__ __forceinline__ T ShuffleUp(
     typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
 
     constexpr int   WORDS           = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
- 
+
     T               output;
     ShuffleWord     *output_alias   = reinterpret_cast<ShuffleWord *>(&output);
     ShuffleWord     *input_alias    = reinterpret_cast<ShuffleWord *>(&input);
@@ -728,26 +728,26 @@ __device__ __forceinline__ T ShuffleIndex(
 
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
-namespace detail 
+namespace detail
 {
 
-/** 
- * Implementation detail for `MatchAny`. It provides specializations for full and partial warps. 
- * For partial warps, inactive threads must be masked out. This is done in the partial warp 
- * specialization below. 
+/**
+ * Implementation detail for `MatchAny`. It provides specializations for full and partial warps.
+ * For partial warps, inactive threads must be masked out. This is done in the partial warp
+ * specialization below.
  * Usage:
  * ```
- * // returns a mask of threads with the same 4 least-significant bits of `label` 
+ * // returns a mask of threads with the same 4 least-significant bits of `label`
  * // in a warp with 16 active threads
- * warp_matcher_t<4, 16>::match_any(label); 
+ * warp_matcher_t<4, 16>::match_any(label);
  *
- * // returns a mask of threads with the same 4 least-significant bits of `label` 
+ * // returns a mask of threads with the same 4 least-significant bits of `label`
  * // in a warp with 32 active threads (no extra work is done)
- * warp_matcher_t<4, 32>::match_any(label); 
+ * warp_matcher_t<4, 32>::match_any(label);
  * ```
  */
 template <int LABEL_BITS, int WARP_ACTIVE_THREADS>
-struct warp_matcher_t 
+struct warp_matcher_t
 {
 
   static __device__ unsigned int match_any(unsigned int label)
@@ -758,7 +758,7 @@ struct warp_matcher_t
 };
 
 template <int LABEL_BITS>
-struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS> 
+struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS>
 {
 
   // match.any.sync.b32 is slower when matching a few bits

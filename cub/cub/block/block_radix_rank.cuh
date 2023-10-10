@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -33,13 +33,16 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <stdint.h>
 
 #include "../thread/thread_reduce.cuh"
 #include "../thread/thread_scan.cuh"
 #include "../block/block_scan.cuh"
 #include "../block/radix_rank_sort_operations.cuh"
-#include "../config.cuh"
 #include "../util_ptx.cuh"
 #include "../util_type.cuh"
 
@@ -102,7 +105,7 @@ struct warp_in_block_matcher_t
 {
   static __device__ std::uint32_t match_any(std::uint32_t label, std::uint32_t warp_id)
   {
-    if (warp_id == static_cast<std::uint32_t>(PartialWarpId)) 
+    if (warp_id == static_cast<std::uint32_t>(PartialWarpId))
     {
       return MatchAny<Bits, PartialWarpThreads>(label);
     }
@@ -155,7 +158,7 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
  *   constexpr int block_threads = 2;
  *   constexpr int radix_bits = 5;
  *
- *   // Specialize BlockRadixRank for a 1D block of 2 threads 
+ *   // Specialize BlockRadixRank for a 1D block of 2 threads
  *   using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits>;
  *   using storage_t = typename block_radix_rank::TempStorage;
  *
@@ -172,7 +175,7 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
  *
  *   ...
  * \endcode
- * Suppose the set of input `keys` across the block of threads is `{ [16,10], [9,11] }`.  
+ * Suppose the set of input `keys` across the block of threads is `{ [16,10], [9,11] }`.
  * The corresponding output `ranks` in those threads will be `{ [3,1], [0,2] }`.
  *
  * \par Re-using dynamically allocating shared memory
@@ -758,8 +761,8 @@ public:
             // Mask of peers who have same digit as me
             uint32_t peer_mask =
               detail::warp_in_block_matcher_t<
-                RADIX_BITS, 
-                PARTIAL_WARP_THREADS, 
+                RADIX_BITS,
+                PARTIAL_WARP_THREADS,
                 WARPS - 1>::match_any(digit, warp_id);
 
             // Pointer to smem digit counter for this key
@@ -918,7 +921,7 @@ struct BlockRadixRankMatchEarlyCounts
     // types
     typedef cub::BlockScan<int, BLOCK_THREADS, INNER_SCAN_ALGORITHM> BlockScan;
 
-    
+
 
     // temporary storage
     struct TempStorage
@@ -981,7 +984,7 @@ struct BlockRadixRankMatchEarlyCounts
                 for (int bin = lane; bin < RADIX_DIGITS; bin += WARP_THREADS)
                 {
                     match_masks[bin] = 0;
-                }                    
+                }
             }
             WARP_SYNC(WARP_MASK);
 
@@ -992,7 +995,7 @@ struct BlockRadixRankMatchEarlyCounts
             {
                 atomicAdd(&warp_histograms[Digit(keys[u])][part], 1);
             }
-            
+
             // sum different parts;
             // no extra work is necessary if NUM_PARTS == 1
             if (NUM_PARTS > 1)
@@ -1025,7 +1028,7 @@ struct BlockRadixRankMatchEarlyCounts
         {
             // sum up warp-private histograms
             #pragma unroll
-            for (int u = 0; u < BINS_PER_THREAD; ++u) 
+            for (int u = 0; u < BINS_PER_THREAD; ++u)
             {
                 bins[u] = 0;
                 int bin = ThreadBin(u);
@@ -1127,12 +1130,12 @@ struct BlockRadixRankMatchEarlyCounts
             int (&exclusive_digit_prefix)[BINS_PER_THREAD])
         {
             ComputeHistogramsWarp(keys);
-            
+
             CTA_SYNC();
             int bins[BINS_PER_THREAD];
             ComputeOffsetsWarpUpsweep(bins);
             callback(bins);
-            
+
             BlockScan(s.prefix_tmp).ExclusiveSum(bins, exclusive_digit_prefix);
 
             ComputeOffsetsWarpDownsweep(exclusive_digit_prefix);
@@ -1164,7 +1167,7 @@ struct BlockRadixRankMatchEarlyCounts
     {
         BlockRadixRankMatchInternal<UnsignedBits, KEYS_PER_THREAD, DigitExtractorT, CountsCallback>
             internal(temp_storage, digit_extractor, callback);
-        internal.RankKeys(keys, ranks, exclusive_digit_prefix);        
+        internal.RankKeys(keys, ranks, exclusive_digit_prefix);
     }
 
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
@@ -1193,13 +1196,13 @@ struct BlockRadixRankMatchEarlyCounts
 
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
-namespace detail 
+namespace detail
 {
 
-// `BlockRadixRank` doesn't conform to the typical pattern, not exposing the algorithm 
-// template parameter. Other algorithms don't provide the same template parameters, not allowing 
-// multi-dimensional thread block specializations. 
-// 
+// `BlockRadixRank` doesn't conform to the typical pattern, not exposing the algorithm
+// template parameter. Other algorithms don't provide the same template parameters, not allowing
+// multi-dimensional thread block specializations.
+//
 // TODO(senior-zero) for 3.0:
 // - Put existing implementations into the detail namespace
 // - Support multi-dimensional thread blocks in the rest of implementations

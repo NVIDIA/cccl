@@ -33,6 +33,11 @@
 
 #pragma once
 
+// We cannot use `cub/config.cuh` here due to circular dependencies
+#include <cuda/std/detail/__config>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cuda_runtime_api.h>
 
 #ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:

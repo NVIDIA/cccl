@@ -28,6 +28,9 @@
 #pragma once
 
 #include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include "../util_ptx.cuh"
 #include "../util_type.cuh"
 

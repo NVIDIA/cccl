@@ -33,7 +33,10 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_exchange_shfl.cuh>

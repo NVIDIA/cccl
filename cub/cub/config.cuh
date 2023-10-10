@@ -32,6 +32,11 @@
 
 #pragma once
 
+// For `_CCCL_IMPLICIT_SYSTEM_HEADER`
+#include <cuda/std/detail/__config>
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include "util_arch.cuh"
 #include "util_compiler.cuh"
 #include "util_cpp_dialect.cuh"

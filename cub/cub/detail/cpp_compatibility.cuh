@@ -17,7 +17,9 @@
 
 #pragma once
 
-#include <cub/util_cpp_dialect.cuh>
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #if CUB_CPP_DIALECT >= 2017 && __cpp_if_constexpr
 #  define CUB_IF_CONSTEXPR if constexpr

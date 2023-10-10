@@ -29,8 +29,11 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/block/block_store.cuh>
-#include <cub/config.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_exchange.cuh>

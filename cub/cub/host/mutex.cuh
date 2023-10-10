@@ -33,9 +33,12 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <mutex>
 
-#include <cub/config.cuh>
 #include <cub/util_deprecated.cuh>
 
 
@@ -43,8 +46,8 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * Wraps std::mutex 
- * @deprecated [Since CUB 2.1.0] The `cub::Mutex` is deprecated and will be removed 
+ * Wraps std::mutex
+ * @deprecated [Since CUB 2.1.0] The `cub::Mutex` is deprecated and will be removed
  *             in a future release. Use `std::mutex` instead.
  */
 struct CUB_DEPRECATED Mutex

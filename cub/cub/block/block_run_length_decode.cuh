@@ -28,6 +28,9 @@
 #pragma once
 
 #include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include "../thread/thread_search.cuh"
 #include "../util_math.cuh"
 #include "../util_namespace.cuh"

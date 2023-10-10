@@ -33,7 +33,10 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/iterator/tex_obj_input_iterator.cuh>
 
 #include <cstddef>

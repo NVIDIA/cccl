@@ -32,10 +32,11 @@
 
 #pragma once
 
-#include <type_traits>
+#include "config.cuh"
 
-#include "util_namespace.cuh"
-#include "util_macro.cuh"
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
+#include <type_traits>
 
 CUB_NAMESPACE_BEGIN
 

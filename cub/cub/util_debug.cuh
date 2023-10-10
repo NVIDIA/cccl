@@ -36,8 +36,9 @@
 
 #pragma once
 
-#include <cub/util_namespace.cuh>
-#include <cub/util_arch.cuh>
+#include "config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include <nv/target>
 
@@ -58,8 +59,8 @@ CUB_NAMESPACE_BEGIN
 /**
  * @def CUB_DEBUG_SYNC
  *
- * Causes synchronization of the stream after every kernel launch to check 
- * for errors. Also causes kernel launch configurations to be printed to the 
+ * Causes synchronization of the stream after every kernel launch to check
+ * for errors. Also causes kernel launch configurations to be printed to the
  * console.
  */
 #define CUB_DEBUG_SYNC
@@ -67,7 +68,7 @@ CUB_NAMESPACE_BEGIN
 /**
  * @def CUB_DEBUG_HOST_ASSERTIONS
  *
- * Extends `CUB_DEBUG_SYNC` effects by checking host-side precondition 
+ * Extends `CUB_DEBUG_SYNC` effects by checking host-side precondition
  * assertions.
  */
 #define CUB_DEBUG_HOST_ASSERTIONS
@@ -75,7 +76,7 @@ CUB_NAMESPACE_BEGIN
 /**
  * @def CUB_DEBUG_DEVICE_ASSERTIONS
  *
- * Extends `CUB_DEBUG_HOST_ASSERTIONS` effects by checking device-side 
+ * Extends `CUB_DEBUG_HOST_ASSERTIONS` effects by checking device-side
  * precondition assertions.
  */
 #define CUB_DEBUG_DEVICE_ASSERTIONS
@@ -83,14 +84,14 @@ CUB_NAMESPACE_BEGIN
 /**
  * @def CUB_DEBUG_ALL
  *
- * Causes host and device-side precondition assertions to be checked. Apart 
- * from that, causes synchronization of the stream after every kernel launch to 
- * check for errors. Also causes kernel launch configurations to be printed to 
+ * Causes host and device-side precondition assertions to be checked. Apart
+ * from that, causes synchronization of the stream after every kernel launch to
+ * check for errors. Also causes kernel launch configurations to be printed to
  * the console.
  */
 #define CUB_DEBUG_ALL
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS 
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 /**
  * \addtogroup UtilMgmt
@@ -132,7 +133,7 @@ CUB_NAMESPACE_BEGIN
 
 // All
 #ifdef CUB_DEBUG_ALL
-#define CUB_DETAIL_DEBUG_LEVEL CUB_DETAIL_DEBUG_LEVEL_ALL 
+#define CUB_DETAIL_DEBUG_LEVEL CUB_DETAIL_DEBUG_LEVEL_ALL
 #endif
 
 // Default case, no extra debugging:
@@ -196,11 +197,11 @@ cudaError_t Debug(cudaError_t error, const char *filename, int line)
   cudaError_t last_error = cudaSuccess;
 
   NV_IF_TARGET(
-    NV_IS_HOST, 
+    NV_IS_HOST,
     (last_error = cudaGetLastError();),
     (CUB_TEMP_DEVICE_CODE;)
   );
-  
+
   #undef CUB_TEMP_DEVICE_CODE
   // clang-format on
 

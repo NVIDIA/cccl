@@ -34,7 +34,10 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_scan_shfl.cuh>

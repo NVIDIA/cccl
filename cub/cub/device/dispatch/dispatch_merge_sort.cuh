@@ -27,6 +27,10 @@
 
 #pragma once
 
+#include "../../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/agent/agent_merge_sort.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>

@@ -38,7 +38,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/cuda/error.h>
 
 #include <cub/detail/device_synchronize.cuh>
-#include <cub/util_arch.cuh>
+#include <cub/config.cuh>
 #include <cub/util_device.cuh>
 
 #include <nv/target>

@@ -27,7 +27,10 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include <cub/device/dispatch/dispatch_merge_sort.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>

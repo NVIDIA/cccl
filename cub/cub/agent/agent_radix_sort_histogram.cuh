@@ -34,9 +34,12 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+_CCCL_IMPLICIT_SYSTEM_HEADER
+
 #include "../block/block_load.cuh"
 #include "../block/radix_rank_sort_operations.cuh"
-#include "../config.cuh"
 #include "../thread/thread_reduce.cuh"
 #include "../util_math.cuh"
 #include "../util_type.cuh"
@@ -120,7 +123,7 @@ struct AgentRadixSortHistogram
     // thread fields
     // shared memory storage
     _TempStorage& s;
-  
+
     // bins for the histogram
     OffsetT* d_bins_out;
 
@@ -175,7 +178,7 @@ struct AgentRadixSortHistogram
     }
 
     __device__ __forceinline__
-    void LoadTileKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])    
+    void LoadTileKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
     {
         // tile_offset < num_items always, hence the line below works
         bool full_tile = num_items - tile_offset >= TILE_ITEMS;
@@ -264,7 +267,7 @@ struct AgentRadixSortHistogram
                 AccumulateSharedHistograms(tile_offset, keys);
             }
             CTA_SYNC();
-            
+
             // Accumulate the result in global memory.
             AccumulateGlobalHistograms();
             CTA_SYNC();
