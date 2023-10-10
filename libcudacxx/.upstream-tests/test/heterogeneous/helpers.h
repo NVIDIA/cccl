@@ -345,18 +345,16 @@ struct manual_object
 
     union data
     {
-        __host__ __device__
-        data() {}
-
-        __host__ __device__
-        ~data() {}
-
+        __host__ __device__ constexpr data() noexcept : dummy() {};
+        char dummy = {};
         T object;
     } data;
+
+    constexpr manual_object() noexcept {}
 };
 
 template<typename T>
-__managed__ manual_object<T> managed_variable;
+__managed__ manual_object<T> managed_variable{};
 #endif
 
 template<typename T, std::size_t N, typename ...Args>

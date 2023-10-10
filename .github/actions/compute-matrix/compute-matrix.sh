@@ -29,6 +29,7 @@ extract_matrix() {
   write_output "NVRTC_MATRIX" "$(echo "$matrix" | jq '.nvrtc' | explode_std_versions)"
   local clang_cuda_matrix="$(echo "$matrix" | jq -cr '.["clang-cuda"]' | explode_std_versions | explode_libs)"
   write_output "CLANG_CUDA_MATRIX" "$clang_cuda_matrix"
+  write_output "EXAMPLES_MATRIX" "$(echo "$matrix" | jq -cr '.examples' )"
 }
 
 main() {

@@ -53,3 +53,9 @@ pull_request:
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', gpu_build_archs: '70', std: [11, 14, 17, 20]}
   clang-cuda:
     - {lib: ['thrust', 'cub', 'libcudacxx'], cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '16', exe: 'clang++'}, gpu_build_archs: '70', std: [17, 20]}
+  examples:
+    # Strategy: Oldest CUDA + Oldest Host compiler && Newest CUDA + Newest Host Compiler
+    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'gcc', version: '6', exe: 'g++'}}
+    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9', exe: 'clang++'}}
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'gcc', version: '12', exe: 'g++'}}
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '16', exe: 'clang++'}}
