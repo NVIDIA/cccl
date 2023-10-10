@@ -191,6 +191,9 @@ void TestIdentityFunctional(void)
 DECLARE_VECTOR_UNITTEST(TestIdentityFunctional);
 
 template <class Vector>
+#if defined(TEST_COMPILER_GCC) && TEST_STD_VER == 20 && __GNUC__ >= 12
+__attribute__((optimize("no-tree-vectorize")))
+#endif // defined(TEST_COMPILER_GCC) && TEST_STD_VER == 20 && __GNUC__ >= 12
 void TestProject1stFunctional(void)
 {
     typedef typename Vector::value_type T;
@@ -211,6 +214,9 @@ void TestProject1stFunctional(void)
 DECLARE_VECTOR_UNITTEST(TestProject1stFunctional);
 
 template <class Vector>
+#if defined(TEST_COMPILER_GCC) && TEST_STD_VER == 20 && __GNUC__ >= 12
+__attribute__((optimize("no-tree-vectorize")))
+#endif // defined(TEST_COMPILER_GCC) && TEST_STD_VER == 20 && __GNUC__ >= 12
 void TestProject2ndFunctional(void)
 {
     typedef typename Vector::value_type T;

@@ -22,7 +22,7 @@ jobs:
         include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
     with:
       cpu: ${{ matrix.cpu }}
-      test_name: ${{matrix.cpu}}/${{matrix.compiler.name}}${{matrix.compiler.version}}/C++${{matrix.std}}
+      test_name: ${{ matrix.cpu }}/${{matrix.compiler.name}}${{matrix.compiler.version}}/C++${{matrix.std}}
       build_script: "./ci/build_${{ inputs.project_name }}.sh ${{matrix.compiler.exe}} ${{matrix.std}} ${{matrix.gpu_build_archs}}"
       test_script:  "./ci/test_${{ inputs.project_name }}.sh  ${{matrix.compiler.exe}} ${{matrix.std}} ${{matrix.gpu_build_archs}}"
       container_image: rapidsai/devcontainers:${{inputs.devcontainer_version}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
@@ -37,6 +37,6 @@ jobs:
       matrix:
         include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
     with:
-      test_name: ${{matrix.cpu}}/${{matrix.compiler.name}}${{matrix.compiler.version}}/C++${{matrix.std}}
+      test_name: ${{ matrix.cpu }}/${{matrix.compiler.name}}${{matrix.compiler.version}}/C++${{matrix.std}}
       build_script: "./ci/windows/build_${{ inputs.project_name }}.ps1 ${{matrix.std}} ${{matrix.gpu_build_archs}}"
       container_image: rapidsai/devcontainers:${{inputs.devcontainer_version}}-cuda${{matrix.cuda}}-${{matrix.compiler.name}}${{matrix.compiler.version}}-${{matrix.os}}
