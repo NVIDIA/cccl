@@ -320,25 +320,28 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with large indexes",
 }
 
 struct invocation_counter {
-  cuda::atomic_ref<cuda::std::size_t, cuda::thread_scope_device> counts_;
 
-  __host__ explicit invocation_counter(cuda::std::size_t* counts) : counts_(*counts) {}
+  __host__ explicit invocation_counter(unsigned long long* addr) : counts_(addr) {}
 
   template<class T>
   __device__ T operator()(const T& lhs, const T& rhs) const noexcept {
-    ++counts_;
+    // Use legacy atomics to support testing on older archs:
+    atomicAdd(counts_, 1ull);
     return lhs - rhs;
   }
+
+private:
+  unsigned long long *counts_;
 };
 
 CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy uses right number of invocations", "[device][adjacent_difference]")
 {
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<cuda::std::size_t> counts(1, 0);
+  thrust::device_vector<unsigned long long> counts(1, 0);
   adjacent_difference_subtract_right_copy(thrust::counting_iterator<cuda::std::size_t>{0},
                                           thrust::discard_iterator<>(),
                                           num_items,
                                           invocation_counter{thrust::raw_pointer_cast(counts.data())});
 
-  REQUIRE(counts.front() == num_items - 1);
+  REQUIRE(counts.front() == static_cast<unsigned long long>(num_items - 1));
 }
