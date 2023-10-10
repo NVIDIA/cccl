@@ -10,12 +10,22 @@
 #include <nvbench/nvbench.cuh>
 #include <cuda/std/span>
 
-using complex = cuda::std::complex<float>;
+#if defined(_MSC_VER)
+#define NVBENCH_HELPER_HAS_I128 0
+#else
+#define NVBENCH_HELPER_HAS_I128 1
+#endif
+
+#if NVBENCH_HELPER_HAS_I128
 using int128_t = __int128_t;
 using uint128_t = __uint128_t;
 
 NVBENCH_DECLARE_TYPE_STRINGS(int128_t, "I128", "int128_t");
 NVBENCH_DECLARE_TYPE_STRINGS(uint128_t, "U128", "uint128_t");
+#endif
+
+using complex = cuda::std::complex<float>;
+
 NVBENCH_DECLARE_TYPE_STRINGS(complex, "C64", "complex");
 
 namespace detail 
@@ -50,7 +60,9 @@ using fundamental_types = nvbench::type_list<int8_t,
                                              int16_t,
                                              int32_t,
                                              int64_t,
+#if NVBENCH_HELPER_HAS_I128
                                              int128_t,
+#endif
                                              float,
                                              double>;
                                              
@@ -58,7 +70,9 @@ using all_types = nvbench::type_list<int8_t,
                                      int16_t,
                                      int32_t,
                                      int64_t,
+#if NVBENCH_HELPER_HAS_I128
                                      int128_t,
+#endif
                                      float,
                                      double,
                                      complex>;

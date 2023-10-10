@@ -156,7 +156,15 @@ using key_types = all_types;
 #ifdef TUNE_ValueT
 using value_types = nvbench::type_list<TUNE_ValueT>;
 #else // !defined(TUNE_ValueT)
-using value_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, int128_t>;
+using value_types = nvbench::type_list<int8_t,
+                                       int16_t,
+                                       int32_t,
+                                       int64_t
+#if NVBENCH_HELPER_HAS_I128
+                                       ,
+                                       int128_t
+#endif
+                                       >;
 #endif // TUNE_ValueT
 
 NVBENCH_BENCH_TYPES(pairs, NVBENCH_TYPE_AXES(key_types, value_types, offset_types))

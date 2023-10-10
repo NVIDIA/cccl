@@ -831,7 +831,10 @@ void gen_power_law_segment_offsets_device(seed_t seed,
   generator_t{}.power_law_segment_offsets<T>(executor::device, seed, segment_offsets, elements);
 }
 
-void do_not_optimize(const void *ptr) { asm volatile("" : : "r"(ptr) : "memory"); }
+void do_not_optimize(const void *ptr) 
+{ 
+  (void)ptr;
+}
 
 } // namespace detail
 
@@ -882,13 +885,16 @@ INSTANTIATE(uint8_t);
 INSTANTIATE(uint16_t);
 INSTANTIATE(uint32_t);
 INSTANTIATE(uint64_t);
-INSTANTIATE(uint128_t);
 
 INSTANTIATE(int8_t);
 INSTANTIATE(int16_t);
 INSTANTIATE(int32_t);
 INSTANTIATE(int64_t);
+
+#if NVBENCH_HELPER_HAS_I128
 INSTANTIATE(int128_t);
+INSTANTIATE(uint128_t);
+#endif
 
 INSTANTIATE(float);
 INSTANTIATE(double);

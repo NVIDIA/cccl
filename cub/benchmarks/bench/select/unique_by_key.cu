@@ -169,7 +169,15 @@ using some_offset_types = nvbench::type_list<nvbench::int32_t>;
 #ifdef TUNE_KeyT
 using key_types = nvbench::type_list<TUNE_KeyT>;
 #else // !defined(TUNE_KeyT)
-using key_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, int128_t>;
+using key_types = nvbench::type_list<int8_t,
+                                     int16_t,
+                                     int32_t,
+                                     int64_t
+#if NVBENCH_HELPER_HAS_I128
+                                     ,
+                                     int128_t
+#endif
+                                     >;
 #endif // TUNE_KeyT
 
 #ifdef TUNE_ValueT
