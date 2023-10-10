@@ -32,10 +32,10 @@ else() # NOT LIBCUDACXX_TEST_WITH_NVRTC
   set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_CUDA_COMPILER}")
 endif()
 
-if (NOT MSVC)
+if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   set(LIBCUDACXX_WARNING_LEVEL
     "--compiler-options=-Wall \
-     --compiler-options=-Wextra")
+    --compiler-options=-Wextra")
 endif()
 
 # sccache cannot handle the -Fd option generationg pdb files
