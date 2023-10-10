@@ -36,7 +36,6 @@
 
 // Has to go after all cub headers. Otherwise, this test won't catch unused
 // variables in cub kernels.
-#include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
 
@@ -87,7 +86,7 @@ CUB_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flag
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 0;
+  constexpr int num_items = 0;
   thrust::device_vector<type> in(num_items);
   thrust::device_vector<type> out(num_items);
   thrust::device_vector<int> flags(num_items);

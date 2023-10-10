@@ -202,7 +202,8 @@ class SubBenchResult:
 
         self.states = []
         for state in bench["states"]:
-            self.states.append(SubBenchState(state, axes_names, axes_values))
+            if not state["is_skipped"]:
+                self.states.append(SubBenchState(state, axes_names, axes_values))
 
     def __repr__(self):
         return str(self.__dict__)
@@ -607,7 +608,7 @@ class Bench:
 
         return definitions
 
-    def do_run(self, ct_point, rt_values, timeout):
+    def do_run(self, ct_point, rt_values, timeout, is_search=True):
         logger = Logger()
 
         try:
@@ -625,13 +626,14 @@ class Bench:
             cmd.append('--jsonbin')
             cmd.append(result_path)
 
-            # Allow noise because we rely on min samples
-            cmd.append("--max-noise")
-            cmd.append("100")
+            if is_search:
+                # Allow noise because we rely on min samples
+                cmd.append("--max-noise")
+                cmd.append("100")
 
-            # Need at least 70 samples
-            cmd.append("--min-samples")
-            cmd.append("70")
+                # Need at least 70 samples
+                cmd.append("--min-samples")
+                cmd.append("70")
 
             # NVBench is currently broken for multiple GPUs, use `CUDA_VISIBLE_DEVICES`
             cmd.append("-d")
@@ -672,7 +674,7 @@ class Bench:
         
         return self.axes_values(sub_space, False)
 
-    def run(self, ct_workload_point, rt_values, estimator):
+    def run(self, ct_workload_point, rt_values, estimator, is_search=True):
         logger = Logger()
         bench_cache = BenchCache()
         runs_cache = RunsCache()
@@ -689,7 +691,7 @@ class Bench:
                 raise Exception("Base bench return code = " + code)
             timeout = elapsed * 50
 
-        result = self.do_run(ct_workload_point, rt_values, timeout)
+        result = self.do_run(ct_workload_point, rt_values, timeout, is_search)
         runs_cache.push_run(self, result.code, result.elapsed)
         return bench_cache.push_bench_centers(self, result, estimator)
     

@@ -97,7 +97,7 @@ static void select(nvbench::state &state, nvbench::type_list<KeyT, ValueT, Offse
   #endif
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  const std::size_t min_segment_size = 1;
+  constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
   thrust::device_vector<OffsetT> num_runs_out(1);

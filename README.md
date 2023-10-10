@@ -1,4 +1,11 @@
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/NVIDIA/cccl?quickstart=1&devcontainer_path=.devcontainer%2Fdevcontainer.json)
+
 # CUDA C++ Core Libraries (CCCL)
+
+| **[Contributor Guide](https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md)** | **[Dev Containers](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md)** | **[Discord](https://discord.gg/nvidiadeveloper)** | **[Godbolt](https://godbolt.org/z/x4G73af9a)** | **[libcudacxx Docs](https://nvidia.github.io/libcudacxx/)** | **[Thrust Docs](https://nvidia.github.io/thrust/)** | **[CUB Docs](https://nvlabs.github.io/cub/)** |
+
+
+
 
 Welcome to the CUDA C++ Core Libraries (CCCL) where our mission is to make CUDA C++ more delightful.
 
@@ -10,7 +17,7 @@ This repository unifies three essential CUDA C++ libraries into a single, conven
 
 The goal of CCCL is to provide CUDA C++ developers with building blocks that make it easier to write safe and efficient code.
 Bringing these libraries together streamlines your development process and broadens your ability to leverage the power of CUDA C++.
-For more information about the decision to unify these projects, see the announcement here: (TODO)
+For more information about the decision to unify these projects, see the [announcement here](https://github.com/NVIDIA/cccl/discussions/520).
 
 ## Overview
 
@@ -35,6 +42,8 @@ Each thread block computes the sum of a subset of the array using `cub::BlockRed
 The sum of each block is then reduced to a single value using an atomic add via `cuda::atomic_ref` from libcudacxx.
 
 It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
+
+[Try it live on Godbolt!](https://godbolt.org/z/x4G73af9a)
 
 ```cpp
 #include <thrust/device_vector.h>
@@ -140,7 +149,7 @@ Contributions to simplify integrating CCCL into other build systems are welcome.
 
 ### Contributors
 
-Contributor guide coming soon!
+Interested in contributing to making CCCL better? Check out our [Contributing Guide](CONTRIBUTING.md) for a comprehensive overview of everything you need to know to set up your development environment, make changes, run tests, and submit a PR.
 
 ## Platform Support
 
@@ -363,3 +372,39 @@ The deprecation period will depend on the impact of the change, but will usually
 ## CI Pipeline Overview
 
 For a detailed overview of the CI pipeline, see [ci-overview.md](ci-overview.md).
+
+## Related Projects
+
+Projects that are related to CCCL's mission to make CUDA C++ more delightful:
+- [cuCollections](https://github.com/NVIDIA/cuCollections) - GPU accelerated data structures like hash tables
+- [NVBench](https://github.com/NVIDIA/nvbench) - Benchmarking library tailored for CUDA applications
+- [stdexec](https://github.com/nvidia/stdexec) - Reference implementation for Senders asynchronous programming model 
+
+## Projects Using CCCL
+
+Does your project use CCCL? [Open a PR to add your project to this list!](https://github.com/NVIDIA/cccl/edit/main/README.md)
+
+- [AmgX](https://github.com/NVIDIA/AMGX) - Multi-grid linear solver library
+- [ColossalAI](https://github.com/hpcaitech/ColossalAI) - Tools for writing distributed deep learning models
+- [cuDF](https://github.com/rapidsai/cudf) - Algorithms and file readers for ETL data analytics
+- [cuGraph](https://github.com/rapidsai/cugraph) - Algorithms for graph analytics
+- [cuML](https://github.com/rapidsai/cuml) - Machine learning algorithms and primitives
+- [CuPy](https://cupy.dev) - NumPy & SciPy for GPU
+- [cuSOLVER](https://developer.nvidia.com/cusolver) - Dense and sparse linear solvers
+- [cuSpatial](https://github.com/rapidsai/cuspatial) - Algorithms for geospatial operations
+- [GooFit](https://github.com/GooFit/GooFit) - Library for maximum-likelihood fits
+- [HeavyDB](https://github.com/heavyai/heavydb) - SQL database engine
+- [HOOMD](https://github.com/glotzerlab/hoomd-blue) - Monte Carlo and molecular dynamics simulations
+- [HugeCTR](https://github.com/NVIDIA-Merlin/HugeCTR) - GPU-accelerated recommender framework
+- [Hydra](https://github.com/MultithreadCorner/Hydra) - High-energy Physics Data Analysis
+- [Hypre](https://github.com/hypre-space/hypre) - Multigrid linear solvers
+- [LightSeq](https://github.com/bytedance/lightseq) - Training and inference for sequence processing and generation
+- [PyTorch](https://github.com/pytorch/pytorch) - Tensor and neural network computations
+- [Qiskit](https://github.com/Qiskit/qiskit-aer) - High performance simulator for quantum circuits
+- [QUDA](https://github.com/lattice/quda) - Lattice quantum chromodynamics (QCD) computations
+- [RAFT](https://github.com/rapidsai/raft) - Algorithms and primitives for machine learning
+- [TensorFlow](https://github.com/tensorflow/tensorflow) - End-to-end platform for machine learning
+- [TensorRT](https://github.com/NVIDIA/TensorRT) - Deep leaning inference
+- [tsne-cuda](https://github.com/CannyLab/tsne-cuda) - Stochastic Neighborhood Embedding library
+- [Visualization Toolkit (VTK)](https://gitlab.kitware.com/vtk/vtk) - Rendering and visualization library
+- [XGBoost](https://github.com/dmlc/xgboost) - Gradient boosting machine learning algorithms

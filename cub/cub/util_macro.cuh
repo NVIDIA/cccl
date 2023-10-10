@@ -32,9 +32,11 @@
 
 #pragma once
 
-#include <cuda/std/utility>
+#include <cub/detail/detect_cuda_runtime.cuh>
+#include <cub/util_namespace.cuh>
 
-#include "util_namespace.cuh"
+#include <cuda/std/utility>
+#include <cuda/std/version> // _LIBCUDACXX_HIDDEN, _LIBCUDACXX_{CLANG,GCC}_DIAGNOSTIC_IGNORED
 
 CUB_NAMESPACE_BEGIN
 
@@ -111,6 +113,19 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 
     /// Static assert
     #define CUB_STATIC_ASSERT(cond, msg) typedef int CUB_CAT(cub_static_assert, __LINE__)[(cond) ? 1 : -1]
+#endif
+
+#ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
+#define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
+#endif
+
+/**
+ * @def CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
+ * If defined, the default suppression of kernel visibility attribute warning is disabled.
+ */
+#if !defined(CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
+_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")
+_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")                      
 #endif
 
 /** @} */       // end group UtilModule

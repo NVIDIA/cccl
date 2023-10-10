@@ -182,7 +182,7 @@ private:
                                                             DecomposerT decomposer,
                                                             cudaStream_t stream)
   {
-    const int begin_bit = 0;
+    constexpr int begin_bit = 0;
     const int end_bit   = detail::radix::traits_t<KeyT>::default_end_bit(decomposer);
 
     return DeviceRadixSort::custom_radix_sort<IsDescending>(::cuda::std::true_type{},

@@ -131,7 +131,8 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename OffsetT,
           typename AccumT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_THREADS)) __global__
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES
   void DeviceReduceByKeyKernel(KeysInputIteratorT d_keys_in,
                                UniqueOutputIteratorT d_unique_out,
                                ValuesInputIteratorT d_values_in,
@@ -287,8 +288,8 @@ struct DispatchReduceByKey
                                                           ReduceByKeyKernelT reduce_by_key_kernel)
   {
     using AgentReduceByKeyPolicyT = typename ActivePolicyT::ReduceByKeyPolicyT;
-    const int block_threads = AgentReduceByKeyPolicyT::BLOCK_THREADS;
-    const int items_per_thread = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
+    constexpr int block_threads = AgentReduceByKeyPolicyT::BLOCK_THREADS;
+    constexpr int items_per_thread = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
 
     cudaError error = cudaSuccess;
     do

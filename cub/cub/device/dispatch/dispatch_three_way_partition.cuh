@@ -59,7 +59,8 @@ template <typename ChainedPolicyT,
           typename SelectFirstPartOp,
           typename SelectSecondPartOp,
           typename OffsetT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLOCK_THREADS)) __global__
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES
   void DeviceThreeWayPartitionKernel(InputIteratorT d_in,
                                      FirstOutputIteratorT d_first_part_out,
                                      SecondOutputIteratorT d_second_part_out,
@@ -122,9 +123,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
  *   (i.e., length of @p d_selected_out)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-__global__ void DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state,
-                                                  int num_tiles,
-                                                  NumSelectedIteratorT d_num_selected_out)
+CUB_DETAIL_KERNEL_ATTRIBUTES void
+DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state,
+                                  int num_tiles,
+                                  NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
@@ -164,7 +166,7 @@ struct DispatchThreeWayPartitionIf
   using AccumPackT = typename AccumPackHelperT::pack_t;
   using ScanTileStateT = cub::ScanTileState<AccumPackT>;
 
-  constexpr static int INIT_KERNEL_THREADS = 256;
+  static constexpr int INIT_KERNEL_THREADS = 256;
 
   void *d_temp_storage;
   std::size_t &temp_storage_bytes;
@@ -214,8 +216,8 @@ struct DispatchThreeWayPartitionIf
   {
     cudaError error = cudaSuccess;
 
-    const int block_threads = ActivePolicyT::ThreeWayPartitionPolicy::BLOCK_THREADS;
-    const int items_per_thread = ActivePolicyT::ThreeWayPartitionPolicy::ITEMS_PER_THREAD;
+    constexpr int block_threads = ActivePolicyT::ThreeWayPartitionPolicy::BLOCK_THREADS;
+    constexpr int items_per_thread = ActivePolicyT::ThreeWayPartitionPolicy::ITEMS_PER_THREAD;
 
     do
     {

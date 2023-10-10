@@ -477,9 +477,9 @@ void RandomBits(
     int begin_bit = 0,
     int end_bit = sizeof(K) * 8)
 {
-    const int NUM_BYTES = sizeof(K);
-    const int WORD_BYTES = sizeof(unsigned int);
-    const int NUM_WORDS = (NUM_BYTES + WORD_BYTES - 1) / WORD_BYTES;
+    constexpr int NUM_BYTES = sizeof(K);
+    constexpr int WORD_BYTES = sizeof(unsigned int);
+    constexpr int NUM_WORDS = (NUM_BYTES + WORD_BYTES - 1) / WORD_BYTES;
 
     unsigned int word_buff[NUM_WORDS];
 
@@ -734,7 +734,7 @@ static std::ostream& operator<<(std::ostream& os, __uint128_t val)
   constexpr int max_digits = 40;
   char buffer[max_digits] = {};
   char* digit = buffer + max_digits;
-  const char* ascii = "0123456789";
+  static constexpr char ascii[] = "0123456789";
 
   do 
   {
@@ -948,7 +948,7 @@ CUB_NAMESPACE_BEGIN
 template<>
 struct NumericTraits<TestFoo>
 {
-    static const Category CATEGORY = NOT_A_NUMBER;
+    static constexpr Category CATEGORY = NOT_A_NUMBER;
     enum {
         PRIMITIVE       = false,
         NULL_TYPE       = false,
@@ -1064,7 +1064,7 @@ CUB_NAMESPACE_BEGIN
 template<>
 struct NumericTraits<TestBar>
 {
-    static const Category CATEGORY = NOT_A_NUMBER;
+    static constexpr Category CATEGORY = NOT_A_NUMBER;
     enum {
         PRIMITIVE       = false,
         NULL_TYPE       = false,

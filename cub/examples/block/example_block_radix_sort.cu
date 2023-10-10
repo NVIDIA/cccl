@@ -173,7 +173,7 @@ template <
     int         ITEMS_PER_THREAD>
 void Test()
 {
-    const int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
+    constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
 
     // Allocate host arrays
     Key *h_in               = new Key[TILE_SIZE * g_grid_size];

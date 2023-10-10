@@ -66,6 +66,7 @@ set(files
   __functional/perfect_forward.h
   __functional/pointer_to_binary_function.h
   __functional/pointer_to_unary_function.h
+  __functional/ranges_operations.h
   __functional/reference_wrapper.h
   __functional/unary_function.h
   __functional/unary_negate.h
@@ -90,13 +91,16 @@ set(files
   __iterator/front_insert_iterator.h
   __iterator/insert_iterator.h
   __iterator/incrementable_traits.h
+  __iterator/indirectly_comparable.h
   __iterator/istream_iterator.h
   __iterator/istreambuf_iterator.h
   __iterator/iter_move.h
   __iterator/iter_swap.h
   __iterator/iterator.h
   __iterator/iterator_traits.h
+  __iterator/mergeable.h
   __iterator/move_iterator.h
+  __iterator/move_sentinel.h
   __iterator/next.h
   __iterator/ostream_iterator.h
   __iterator/ostreambuf_iterator.h
@@ -107,6 +111,8 @@ set(files
   __iterator/reverse_access.h
   __iterator/reverse_iterator.h
   __iterator/size.h
+  __iterator/sortable.h
+  __iterator/unreachable_sentinel.h
   __iterator/wrap_iter.h
   __libcpp_version
   __locale
