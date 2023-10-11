@@ -1,6 +1,7 @@
 set(files
   __assert
   __algorithm/comp.h
+  __algorithm/half_positive.h
   __algorithm/swap_ranges.h
   __availability
   __bit_reference
