@@ -27,8 +27,8 @@ Thank you for your interest in contributing to the CUDA C++ Core Libraries (CCCL
    Ensure changes don't break existing functionality by building and running tests.
 
    ```bash
-   ./ci/build_[thrust|cub|libcudacxx].sh <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>
-   ./ci/test_[thrust|cub|libcudacxx].sh  <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>
+   ./ci/build_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
+   ./ci/test_[thrust|cub|libcudacxx].sh  -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
    ```
    For more details on building and testing, refer to the [Building and Testing](#building-and-testing) section below.
 
@@ -62,8 +62,8 @@ CCCL components are header-only libraries. This means there isn't a traditional 
 Use the build scripts provided in the `ci/` directory to build tests for each component. Building tests does not require a GPU.
 
 ```bash
-   ci/build_[thrust|cub|libcudacxx].sh <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>
-```
+   ci/build_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
+
 - **HOST_COMPILER**: The desired host compiler (e.g., `g++`, `clang++`).
 - **CXX_STANDARD**: The C++ standard version (e.g., `11`, `14`, `17`, `20`).
 - **GPU_ARCHS**: A semicolon-separated list of CUDA GPU architectures (e.g., `"70;85;90"`). This uses the same syntax as CMake's [CUDA_ARCHITECTURES](https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html#prop_tgt:CUDA_ARCHITECTURES):
@@ -73,7 +73,7 @@ Use the build scripts provided in the `ci/` directory to build tests for each co
 
 **Example:**
 ```bash
-./ci/build_cub.sh g++ 14 "70;75;80-virtual"
+./ci/build_cub.sh -cxx g++ -std 14 -arch "70;75;80-virtual"
 ```
 
 ### Testing
@@ -81,12 +81,12 @@ Use the build scripts provided in the `ci/` directory to build tests for each co
 Use the test scripts provided in the `ci/` directory to run tests for each component. These take the same arguments as the build scripts and will automatically build the tests if they haven't already been built. Running tests requires a GPU.
 
 ```bash
-   ci/test_[thrust|cub|libcudacxx].sh <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>
+   ci/test_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
 ```
 
 **Example:**
 ```bash
-./ci/test_cub.sh g++ 14 "70;75;80-virtual"
+./ci/test_cub.sh -cxx g++ -std 14 -arch "70;75;80-virtual"
 ```
 
 ## Creating a Pull Request
