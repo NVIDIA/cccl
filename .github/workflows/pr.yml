@@ -125,7 +125,7 @@ jobs:
       runner: linux-${{matrix.cpu}}-cpu16
       image: rapidsai/devcontainers:${{needs.compute-matrix.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       command: |
-        CMAKE_CUDA_COMPILER="${{matrix.compiler.exe}}" ./ci/build_${{matrix.lib}}.sh ${{matrix.compiler.exe}} ${{matrix.std}} ${{matrix.gpu_build_archs}}
+        ./ci/build_${{matrix.lib}}.sh -cxx "${{matrix.compiler.exe}}" -std "${{matrix.std}}"
 
   cccl-infra:
     name: CCCL Infrastructure
