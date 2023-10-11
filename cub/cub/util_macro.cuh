@@ -40,10 +40,8 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/utility>
-#include <cuda/std/version> // _LIBCUDACXX_HIDDEN, _LIBCUDACXX_{CLANG,GCC}_DIAGNOSTIC_IGNORED
 
 CUB_NAMESPACE_BEGIN
-
 
 /**
  * \addtogroup UtilModule
@@ -120,7 +118,7 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 #endif
 
 #ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
-#define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
+#define CUB_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
 #endif
 
 /**
@@ -128,12 +126,12 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
  * If defined, the default suppression of kernel visibility attribute warning is disabled.
  */
 #if !defined(CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
-_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")
-_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")
-#if !defined(_LIBCUDACXX_COMPILER_NVHPC_CUDA)
-_LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(attribute_requires_external_linkage)
-#endif
-#endif
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
+#if !defined(_CCCL_CUDA_COMPILER_NVHPC)
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
+#endif // !_CCCL_CUDA_COMPILER_NVHPC
+#endif // !CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
 
 /** @} */       // end group UtilModule
 

@@ -32,8 +32,6 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/system/cuda/detail/core/alignment.h>
 #include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 
-#include <cuda/std/version> // _LIBCUDACXX_HIDDEN
-
 #include <cassert>
 
 THRUST_NAMESPACE_BEGIN
@@ -41,7 +39,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub {
 namespace launcher {
 
-  struct _LIBCUDACXX_HIDDEN triple_chevron
+  struct _CCCL_ATTRIBUTE_HIDDEN triple_chevron
   {
     typedef size_t Size;
     dim3 const grid;
