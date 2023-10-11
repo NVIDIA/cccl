@@ -15,6 +15,7 @@ set(files
   __algorithm/for_each_n.h
   __algorithm/for_each.h
   __algorithm/half_positive.h
+  __algorithm/mismatch.h
   __algorithm/none_of.h
   __algorithm/swap_ranges.h
   __availability
