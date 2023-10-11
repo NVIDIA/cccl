@@ -640,6 +640,7 @@ template <class BidirectionalIterator, class Compare>
 #include <memory>
 #endif // __cuda_std__
 
+#include "__algorithm/comp_ref_type.h"
 #include "__algorithm/comp.h"
 #include "__algorithm/half_positive.h"
 #include "__algorithm/swap_ranges.h"
@@ -700,67 +701,6 @@ public:
     bool operator()(const _T1& __x, const _T2& __y) {return __p_(__y, __x);}
 };
 
-#ifdef _LIBCUDACXX_DEBUG
-
-template <class _Compare>
-struct __debug_less
-{
-    _Compare &__comp_;
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-    __debug_less(_Compare& __c) : __comp_(__c) {}
-
-    template <class _Tp, class _Up>
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-    bool operator()(const _Tp& __x,  const _Up& __y)
-    {
-        bool __r = __comp_(__x, __y);
-        if (__r)
-            __do_compare_assert(0, __y, __x);
-        return __r;
-    }
-
-    template <class _Tp, class _Up>
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-    bool operator()(_Tp& __x,  _Up& __y)
-    {
-        bool __r = __comp_(__x, __y);
-        if (__r)
-            __do_compare_assert(0, __y, __x);
-        return __r;
-    }
-
-    template <class _LHS, class _RHS>
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-    inline _LIBCUDACXX_INLINE_VISIBILITY
-    decltype((void)_CUDA_VSTD::declval<_Compare&>()(
-        _CUDA_VSTD::declval<_LHS &>(), _CUDA_VSTD::declval<_RHS &>()))
-    __do_compare_assert(int, _LHS & __l, _RHS & __r) {
-        _LIBCUDACXX_ASSERT(!__comp_(__l, __r),
-            "Comparator does not induce a strict weak ordering");
-    }
-
-    template <class _LHS, class _RHS>
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-    inline _LIBCUDACXX_INLINE_VISIBILITY
-    void __do_compare_assert(long, _LHS &, _RHS &) {}
-};
-
-#endif // _LIBCUDACXX_DEBUG
-
-#endif // __cuda_std__
-
-template <class _Comp>
-struct __comp_ref_type {
-  // Pass the comparator by lvalue reference. Or in debug mode, using a
-  // debugging wrapper that stores a reference.
-#ifndef _LIBCUDACXX_DEBUG
-  typedef __add_lvalue_reference_t<_Comp> type;
-#else
-  typedef __debug_less<_Comp> type;
-#endif
-};
-
-#ifndef __cuda_std__
 // all_of
 
 template <class _InputIterator, class _Predicate>
@@ -4039,7 +3979,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     _CUDA_VSTD::__sort<_Comp_ref>(__first, __last, _Comp_ref(__comp));
 }
 
@@ -4243,7 +4183,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 pair<_ForwardIterator, _ForwardIterator>
 equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     return __equal_range<_Comp_ref>(__first, __last, __value_, __comp);
 }
 
@@ -4274,7 +4214,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 bool
 binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     return __binary_search<_Comp_ref>(__first, __last, __value_, __comp);
 }
 
@@ -4320,7 +4260,7 @@ _OutputIterator
 merge(_InputIterator1 __first1, _InputIterator1 __last1,
       _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     return _CUDA_VSTD::__merge<_Comp_ref>(__first1, __last1, __first2, __last2, __result, __comp);
 }
 
@@ -4499,7 +4439,7 @@ inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _
     difference_type __buf_size = _CUDA_VSTD::min(__len1, __len2);
     pair<value_type*, ptrdiff_t> __buf = _CUDA_VSTD::get_temporary_buffer<value_type>(__buf_size);
     unique_ptr<value_type, __return_temporary_buffer> __h(__buf.first);
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     return _CUDA_VSTD::__inplace_merge<_Comp_ref>(__first, __middle, __last, __comp, __len1, __len2,
                                             __buf.first, __buf.second);
 }
@@ -4708,7 +4648,7 @@ stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compar
         __buf = _CUDA_VSTD::get_temporary_buffer<value_type>(__len);
         __h.reset(__buf.first);
     }
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     __stable_sort<_Comp_ref>(__first, __last, __comp, __len, __buf.first, __buf.second);
 }
 
@@ -4813,7 +4753,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     __sift_up<_Comp_ref>(__first, __last, __comp, __last - __first);
 }
 
@@ -4901,7 +4841,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     __pop_heap<_Comp_ref>(__first, __last, __comp, __last - __first);
 }
 
@@ -4937,7 +4877,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 make_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     __make_heap<_Comp_ref>(__first, __last, __comp);
 }
 
@@ -4966,7 +4906,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     __sort_heap<_Comp_ref>(__first, __last, __comp);
 }
 
@@ -5005,7 +4945,7 @@ void
 partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last,
              _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     __partial_sort<_Comp_ref>(__first, __middle, __last, __comp);
 }
 
@@ -5050,7 +4990,7 @@ _RandomAccessIterator
 partial_sort_copy(_InputIterator __first, _InputIterator __last,
                   _RandomAccessIterator __result_first, _RandomAccessIterator __result_last, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     return __partial_sort_copy<_Comp_ref>(__first, __last, __result_first, __result_last, __comp);
 }
 
@@ -5259,7 +5199,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomAccessIterator __last, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     __nth_element<_Comp_ref>(__first, __nth, __last, __comp);
 }
 
@@ -5296,7 +5236,7 @@ bool
 includes(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2,
          _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     return __includes<_Comp_ref>(__first1, __last1, __first2, __last2, __comp);
 }
 
@@ -5345,7 +5285,7 @@ _OutputIterator
 set_union(_InputIterator1 __first1, _InputIterator1 __last1,
           _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     return __set_union<_Comp_ref>(__first1, __last1, __first2, __last2, __result, __comp);
 }
 
@@ -5392,7 +5332,7 @@ _OutputIterator
 set_intersection(_InputIterator1 __first1, _InputIterator1 __last1,
                  _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     return __set_intersection<_Comp_ref>(__first1, __last1, __first2, __last2, __result, __comp);
 }
 
@@ -5441,7 +5381,7 @@ _OutputIterator
 set_difference(_InputIterator1 __first1, _InputIterator1 __last1,
                _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     return __set_difference<_Comp_ref>(__first1, __last1, __first2, __last2, __result, __comp);
 }
 
@@ -5495,7 +5435,7 @@ _OutputIterator
 set_symmetric_difference(_InputIterator1 __first1, _InputIterator1 __last1,
                          _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     return __set_symmetric_difference<_Comp_ref>(__first1, __last1, __first2, __last2, __result, __comp);
 }
 
@@ -5536,8 +5476,8 @@ bool
 lexicographical_compare(_InputIterator1 __first1, _InputIterator1 __last1,
                         _InputIterator2 __first2, _InputIterator2 __last2, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
-    return __lexicographical_compare<_Comp_ref>(__first1, __last1, __first2, __last2, __comp);
+    using _Comp_ref = __comp_ref_type<_Compare>;
+    return __lexicographical_compare<__comp_ref_type<_Compare>>(__first1, __last1, __first2, __last2, __comp);
 }
 
 template <class _InputIterator1, class _InputIterator2>
@@ -5586,7 +5526,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
 next_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     return __next_permutation<_Comp_ref>(__first, __last, __comp);
 }
 
@@ -5634,7 +5574,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
 prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
 {
-    typedef typename __comp_ref_type<_Compare>::type _Comp_ref;
+    using _Comp_ref = __comp_ref_type<_Compare>;
     return __prev_permutation<_Comp_ref>(__first, __last, __comp);
 }
 
