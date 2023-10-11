@@ -55,7 +55,7 @@ CUB_NAMESPACE_BEGIN
  *   operation could be noncommutative, there are two sets of methods.
  *   Methods named SubtractLeft subtract left element `i - 1` of input sequence
  *   from current element `i`. Methods named SubtractRight subtract the right one `i + 1`
- *   from current element `i`:
+ *   from the current element `i`:
  *   @par
  *   @code
  *   int values[4]; // [1, 2, 3, 4]
