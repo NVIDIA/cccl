@@ -645,6 +645,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/any_of.h"
 #include "__algorithm/comp_ref_type.h"
 #include "__algorithm/comp.h"
+#include "__algorithm/count.h"
 #include "__algorithm/find_end.h"
 #include "__algorithm/find_first_of.h"
 #include "__algorithm/find_if_not.h"
@@ -711,21 +712,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _T1& __x, const _T2& __y) {return __p_(__y, __x);}
 };
-
-// count
-
-template <class _InputIterator, class _Tp>
-_LIBCUDACXX_NODISCARD_EXT inline
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-typename iterator_traits<_InputIterator>::difference_type
-count(_InputIterator __first, _InputIterator __last, const _Tp& __value_)
-{
-    typename iterator_traits<_InputIterator>::difference_type __r(0);
-    for (; __first != __last; ++__first)
-        if (*__first == __value_)
-            ++__r;
-    return __r;
-}
 
 // count_if
 
