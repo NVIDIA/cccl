@@ -645,6 +645,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/comp_ref_type.h"
 #include "__algorithm/comp.h"
 #include "__algorithm/half_positive.h"
+#include "__algorithm/none_of.h"
 #include "__algorithm/swap_ranges.h"
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__debug"
@@ -702,20 +703,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _T1& __x, const _T2& __y) {return __p_(__y, __x);}
 };
-
-// none_of
-
-template <class _InputIterator, class _Predicate>
-_LIBCUDACXX_NODISCARD_EXT inline
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-bool
-none_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
-{
-    for (; __first != __last; ++__first)
-        if (__pred(*__first))
-            return false;
-    return true;
-}
 
 // for_each
 
