@@ -19,6 +19,7 @@ set(files
   __algorithm/is_permutation.h
   __algorithm/mismatch.h
   __algorithm/none_of.h
+  __algorithm/search.h
   __algorithm/swap_ranges.h
   __availability
   __bit_reference
