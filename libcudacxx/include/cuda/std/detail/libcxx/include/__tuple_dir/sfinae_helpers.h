@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TUPLE_SFINAE_HELPERS_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #include "../__fwd/tuple.h"
@@ -31,33 +31,35 @@
 #include "../cstddef"
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
+#  pragma GCC system_header
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <bool ..._Preds>
+template <bool... _Preds>
 struct __all_dummy;
 
-template <bool ..._Pred>
-using __all = _IsSame<__all_dummy<_Pred...>, __all_dummy<((void)_Pred, true)...>>;
+template <bool... _Pred>
+using __all = _IsSame<__all_dummy<_Pred...>, __all_dummy<((void) _Pred, true)...>>;
 
-struct __tuple_sfinae_base {
+struct __tuple_sfinae_base
+{
   template <class, class>
-  struct __test_size : false_type {};
+  struct __test_size : false_type
+  {};
 
-  template <class ..._Tp, class ..._Up>
-  struct __test_size<__tuple_types<_Tp...>, __tuple_types<_Up...>>
-    : _BoolConstant<sizeof...(_Tp) == sizeof...(_Up)> {};
+  template <class... _Tp, class... _Up>
+  struct __test_size<__tuple_types<_Tp...>, __tuple_types<_Up...>> : _BoolConstant<sizeof...(_Tp) == sizeof...(_Up)>
+  {};
 
-  template <template <class, class...> class,
-            class _Tp, class _Up, bool = __test_size<_Tp, _Up>::value>
-  struct __test : false_type {};
+  template <template <class, class...> class, class _Tp, class _Up, bool = __test_size<_Tp, _Up>::value>
+  struct __test : false_type
+  {};
 
-  template <template <class, class...> class _Trait,
-            class ..._LArgs, class ..._RArgs>
+  template <template <class, class...> class _Trait, class... _LArgs, class... _RArgs>
   struct __test<_Trait, __tuple_types<_LArgs...>, __tuple_types<_RArgs...>, true>
-      : __all<_Trait<_LArgs, _RArgs>::value...> {};
+      : __all<_Trait<_LArgs, _RArgs>::value...>
+  {};
 
   template <class _FromArgs, class _ToArgs>
   using __constructible = __test<is_constructible, _ToArgs, _FromArgs>;
@@ -70,136 +72,133 @@ struct __tuple_sfinae_base {
 // __tuple_convertible
 
 template <class _Tp, class _Up, bool = __tuple_like<__libcpp_remove_reference_t<_Tp>>::value,
-                                bool = __tuple_like<_Up>::value>
-struct __tuple_convertible
-    : public false_type {};
+    bool = __tuple_like<_Up>::value>
+struct __tuple_convertible : public false_type
+{};
 
 template <class _Tp, class _Up>
 struct __tuple_convertible<_Tp, _Up, true, true>
-    : public __tuple_sfinae_base::__convertible<
-      typename __make_tuple_types<_Tp>::type
-    , typename __make_tuple_types<_Up>::type
-    >
+    : public __tuple_sfinae_base::__convertible<__make_tuple_types_t<_Tp>, __make_tuple_types_t<_Up>>
 {};
 
 // __tuple_constructible
 
 template <class _Tp, class _Up, bool = __tuple_like<__libcpp_remove_reference_t<_Tp>>::value,
-                                bool = __tuple_like<_Up>::value>
-struct __tuple_constructible
-    : public false_type {};
+    bool = __tuple_like<_Up>::value>
+struct __tuple_constructible : public false_type
+{};
 
 template <class _Tp, class _Up>
 struct __tuple_constructible<_Tp, _Up, true, true>
-    : public __tuple_sfinae_base::__constructible<
-      typename __make_tuple_types<_Tp>::type
-    , typename __make_tuple_types<_Up>::type
-    >
+    : public __tuple_sfinae_base::__constructible<__make_tuple_types_t<_Tp>, __make_tuple_types_t<_Up>>
 {};
 
 // __tuple_assignable
 
 template <class _Tp, class _Up, bool = __tuple_like<__libcpp_remove_reference_t<_Tp>>::value,
-                                bool = __tuple_like<_Up>::value>
-struct __tuple_assignable
-    : public false_type {};
+    bool = __tuple_like<_Up>::value>
+struct __tuple_assignable : public false_type
+{};
 
 template <class _Tp, class _Up>
 struct __tuple_assignable<_Tp, _Up, true, true>
-    : public __tuple_sfinae_base::__assignable<
-      typename __make_tuple_types<_Tp>::type
-    , typename __make_tuple_types<_Up&>::type
-    >
+    : public __tuple_sfinae_base::__assignable<__make_tuple_types_t<_Tp>, __make_tuple_types_t<_Up&>>
 {};
 
-
-template <size_t _Ip, class ..._Tp>
+template <size_t _Ip, class... _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, tuple<_Tp...> >
 {
-    typedef _LIBCUDACXX_NODEBUG_TYPE typename tuple_element<_Ip, __tuple_types<_Tp...> >::type type;
+  typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, __tuple_types<_Tp...>> type;
 };
 
 template <bool _IsTuple, class _SizeTrait, size_t _Expected>
-struct __tuple_like_with_size_imp : false_type {};
+struct __tuple_like_with_size_imp : false_type
+{};
 
 template <class _SizeTrait, size_t _Expected>
-struct __tuple_like_with_size_imp<true, _SizeTrait, _Expected>
-    : integral_constant<bool, _SizeTrait::value == _Expected> {};
+struct __tuple_like_with_size_imp<true, _SizeTrait, _Expected> : integral_constant<bool, _SizeTrait::value == _Expected>
+{};
 
-template <class _Tuple, size_t _ExpectedSize,
-          class _RawTuple = __remove_cvref_t<_Tuple>>
-using __tuple_like_with_size _LIBCUDACXX_NODEBUG_TYPE = __tuple_like_with_size_imp<
-                                   __tuple_like<_RawTuple>::value,
-                                   tuple_size<_RawTuple>, _ExpectedSize
-                              >;
+template <class _Tuple, size_t _ExpectedSize, class _RawTuple = __remove_cvref_t<_Tuple>>
+using __tuple_like_with_size _LIBCUDACXX_NODEBUG_TYPE =
+    __tuple_like_with_size_imp< __tuple_like<_RawTuple>::value, tuple_size<_RawTuple>, _ExpectedSize >;
 
-struct _LIBCUDACXX_TYPE_VIS __check_tuple_constructor_fail {
-    template <int&...>
-    using __enable_explicit_default = false_type;
-    template <int&...>
-    using __enable_implicit_default = false_type;
-    template <class ...>
-    using __enable_explicit = false_type;
-    template <class ...>
-    using __enable_implicit = false_type;
-    template <class ...>
-    using __enable_assign = false_type;
+struct _LIBCUDACXX_TYPE_VIS __check_tuple_constructor_fail
+{
+  template <int&...>
+  using __enable_explicit_default = false_type;
+  template <int&...>
+  using __enable_implicit_default = false_type;
+  template <class...>
+  using __enable_explicit = false_type;
+  template <class...>
+  using __enable_implicit = false_type;
+  template <class...>
+  using __enable_assign = false_type;
 };
 
 #if _LIBCUDACXX_STD_VER > 11
 
 template <bool _CanCopy, bool _CanMove>
-struct __sfinae_ctor_base {};
+struct __sfinae_ctor_base
+{};
 template <>
-struct __sfinae_ctor_base<false, false> {
-  __sfinae_ctor_base() = default;
-  __sfinae_ctor_base(__sfinae_ctor_base const&) = delete;
-  __sfinae_ctor_base(__sfinae_ctor_base &&) = delete;
+struct __sfinae_ctor_base<false, false>
+{
+  __sfinae_ctor_base()                                     = default;
+  __sfinae_ctor_base(__sfinae_ctor_base const&)            = delete;
+  __sfinae_ctor_base(__sfinae_ctor_base&&)                 = delete;
   __sfinae_ctor_base& operator=(__sfinae_ctor_base const&) = default;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base&&) = default;
+  __sfinae_ctor_base& operator=(__sfinae_ctor_base&&)      = default;
 };
 template <>
-struct __sfinae_ctor_base<true, false> {
-  __sfinae_ctor_base() = default;
-  __sfinae_ctor_base(__sfinae_ctor_base const&) = default;
-  __sfinae_ctor_base(__sfinae_ctor_base &&) = delete;
+struct __sfinae_ctor_base<true, false>
+{
+  __sfinae_ctor_base()                                     = default;
+  __sfinae_ctor_base(__sfinae_ctor_base const&)            = default;
+  __sfinae_ctor_base(__sfinae_ctor_base&&)                 = delete;
   __sfinae_ctor_base& operator=(__sfinae_ctor_base const&) = default;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base&&) = default;
+  __sfinae_ctor_base& operator=(__sfinae_ctor_base&&)      = default;
 };
 template <>
-struct __sfinae_ctor_base<false, true> {
-  __sfinae_ctor_base() = default;
-  __sfinae_ctor_base(__sfinae_ctor_base const&) = delete;
-  __sfinae_ctor_base(__sfinae_ctor_base &&) = default;
+struct __sfinae_ctor_base<false, true>
+{
+  __sfinae_ctor_base()                                     = default;
+  __sfinae_ctor_base(__sfinae_ctor_base const&)            = delete;
+  __sfinae_ctor_base(__sfinae_ctor_base&&)                 = default;
   __sfinae_ctor_base& operator=(__sfinae_ctor_base const&) = default;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base&&) = default;
+  __sfinae_ctor_base& operator=(__sfinae_ctor_base&&)      = default;
 };
 
 template <bool _CanCopy, bool _CanMove>
-struct __sfinae_assign_base {};
+struct __sfinae_assign_base
+{};
 template <>
-struct __sfinae_assign_base<false, false> {
-  __sfinae_assign_base() = default;
-  __sfinae_assign_base(__sfinae_assign_base const&) = default;
-  __sfinae_assign_base(__sfinae_assign_base &&) = default;
+struct __sfinae_assign_base<false, false>
+{
+  __sfinae_assign_base()                                       = default;
+  __sfinae_assign_base(__sfinae_assign_base const&)            = default;
+  __sfinae_assign_base(__sfinae_assign_base&&)                 = default;
   __sfinae_assign_base& operator=(__sfinae_assign_base const&) = delete;
-  __sfinae_assign_base& operator=(__sfinae_assign_base&&) = delete;
+  __sfinae_assign_base& operator=(__sfinae_assign_base&&)      = delete;
 };
 template <>
-struct __sfinae_assign_base<true, false> {
-  __sfinae_assign_base() = default;
-  __sfinae_assign_base(__sfinae_assign_base const&) = default;
-  __sfinae_assign_base(__sfinae_assign_base &&) = default;
+struct __sfinae_assign_base<true, false>
+{
+  __sfinae_assign_base()                                       = default;
+  __sfinae_assign_base(__sfinae_assign_base const&)            = default;
+  __sfinae_assign_base(__sfinae_assign_base&&)                 = default;
   __sfinae_assign_base& operator=(__sfinae_assign_base const&) = default;
-  __sfinae_assign_base& operator=(__sfinae_assign_base&&) = delete;
+  __sfinae_assign_base& operator=(__sfinae_assign_base&&)      = delete;
 };
 template <>
-struct __sfinae_assign_base<false, true> {
-  __sfinae_assign_base() = default;
-  __sfinae_assign_base(__sfinae_assign_base const&) = default;
-  __sfinae_assign_base(__sfinae_assign_base &&) = default;
+struct __sfinae_assign_base<false, true>
+{
+  __sfinae_assign_base()                                       = default;
+  __sfinae_assign_base(__sfinae_assign_base const&)            = default;
+  __sfinae_assign_base(__sfinae_assign_base&&)                 = default;
   __sfinae_assign_base& operator=(__sfinae_assign_base const&) = delete;
-  __sfinae_assign_base& operator=(__sfinae_assign_base&&) = default;
+  __sfinae_assign_base& operator=(__sfinae_assign_base&&)      = default;
 };
 #endif // _LIBCUDACXX_STD_VER > 11
 

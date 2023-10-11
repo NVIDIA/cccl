@@ -37,12 +37,10 @@ int main(int, char**)
         assert(*p == 3);
     }
     */
-#if !defined(TEST_COMPILER_MSVC_2017)
     {
         cuda::std::tuple<MoveOnly> t(3);
         MoveOnly _m = cuda::std::get<0>(cuda::std::move(t));
         assert(_m.get() == 3);
     }
-#endif
   return 0;
 }

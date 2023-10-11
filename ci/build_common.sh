@@ -89,7 +89,7 @@ echo "GPU_ARCHS=$GPU_ARCHS"
 echo "PARALLEL_LEVEL=$PARALLEL_LEVEL"
 echo "BUILD_DIR=$BUILD_DIR"
 echo "Current commit is:"
-git log -1
+git log -1 || "Not a repository"
 echo "========================================"
 
 function configure(){
