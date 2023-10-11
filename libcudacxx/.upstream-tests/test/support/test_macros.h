@@ -86,6 +86,10 @@
 // compiler.
 # define TEST_COMPILER_NVCC
 # define TEST_COMPILER_EDG
+#elif defined(_NVHPC_CUDA)
+#  define TEST_COMPILER_NVHPC_CUDA
+#elif defined(__CUDA__) && defined(_LIBCUDACXX_COMPILER_CLANG)
+#  define TEST_COMPILER_CLANG_CUDA
 #endif
 
 #if defined(__apple_build_version__)
@@ -398,7 +402,9 @@ constexpr bool unused(T &&) {return true;}
 // Define a helper macro to properly suppress warnings
 #define _TEST_TOSTRING2(x) #x
 #define _TEST_TOSTRING(x) _TEST_TOSTRING2(x)
-#if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+#if defined(TEST_COMPILER_CLANG_CUDA)
+# define TEST_NV_DIAG_SUPPRESS(WARNING)
+#elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
 #if defined (TEST_COMPILER_MSVC)
 # define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
 #else // ^^^ MSVC ^^^ / vvv not MSVC vvv

@@ -6,12 +6,13 @@ set -eo pipefail
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
 # Script defaults
-CUDA_COMPILER=nvcc
+CUDA_COMPILER=${CMAKE_CUDA_COMPILER:-nvcc}
 
 # Check if the correct number of arguments has been provided
 function usage {
     echo "Usage: $0 [OPTIONS] <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>"
     echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores."
+    echo "The CMAKE_CUDA_COMPILER environment variable can be used to control the CUDA compiler. The -nvcc flag takes precedence."
     echo "Example: PARALLEL_LEVEL=8 $0 g++-8 14 \"70\" "
     echo "Example: $0 clang++-8 17 \"70;75;80-virtual\" "
     echo "Possible options: "
@@ -54,9 +55,7 @@ readonly CXX_STANDARD=$2
 
 # Replace spaces, commas and semicolons with semicolons for CMake list
 readonly GPU_ARCHS=$(echo $3 | tr ' ,' ';')
-
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
-readonly NVCC_VERSION=$($CUDA_COMPILER --version | grep release | awk '{print $6}' | cut -c2-)
 
 if [ -z ${DEVCONTAINER_NAME+x} ]; then
     BUILD_DIR=../build/local
@@ -83,7 +82,7 @@ COMMON_CMAKE_OPTIONS="
 echo "========================================"
 echo "Begin build"
 echo "pwd=$(pwd)"
-echo "NVCC_VERSION=$NVCC_VERSION"
+echo "CUDA_COMPILER=$CUDA_COMPILER"
 echo "HOST_COMPILER=$HOST_COMPILER"
 echo "CXX_STANDARD=$CXX_STANDARD"
 echo "GPU_ARCHS=$GPU_ARCHS"

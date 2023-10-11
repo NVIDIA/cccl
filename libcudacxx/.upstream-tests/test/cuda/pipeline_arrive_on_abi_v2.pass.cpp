@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: pre-sm-70
+// UNSUPPORTED: clang && (!nvcc)
 
 #define _LIBCUDACXX_CUDA_ABI_VERSION 2
 
