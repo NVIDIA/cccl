@@ -33,19 +33,21 @@ function usage {
 }
 
 # Parse options
-while [ "$#" -gt 0 ]; do
-    case "${1}" in
-    -h) usage ;;
-    -help) usage ;;
-    --help) usage ;;
-    --verbose) VERBOSE=1; shift;;
-    -v) VERBOSE=1; shift;;
-    -cxx) HOST_COMPILER="${2}"; shift 2;;
-    -std) CXX_STANDARD="${2}"; shift 2;;
-    -cuda) CUDA_COMPILER="${2}"; shift 2;;
-    -arch) CUDA_ARCHS="${2}"; shift 2;;
-    -disable-benchmarks) ENABLE_CUB_BENCHMARKS="false"; shift;;
-    *) usage ;;
+
+# Copy the args into a temporary array, since we will modify them and
+# the parent script may still need them.
+args=("$@")
+echo "Args: ${args[@]}"
+while [ "${#args[@]}" -ne 0 ]; do
+    case "${args[0]}" in
+    -v | --verbose) VERBOSE=1; args=("${args[0]:1}");;
+    -cxx)  HOST_COMPILER="${args[1]}"; args=("${args[@]:2}");;
+    -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
+    -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
+    -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
+    -disable-benchmarks) ENABLE_CUB_BENCHMARKS="false"; args=("${args[@]:1}");;
+    -h | -help | --help) usage ;;
+    *) echo "Unrecognized option: ${args[0]}"; usage ;;
     esac
 done
 
@@ -89,6 +91,8 @@ export CTEST_PARALLEL_LEVEL="1"
 export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"
+
+export CXX_STANDARD
 
 # Print "ARG=${ARG}" for all args.
 function print_var_values() {
