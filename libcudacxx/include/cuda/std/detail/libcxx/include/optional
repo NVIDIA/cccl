@@ -1148,7 +1148,7 @@ public:
 
 #if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 template<class _Tp>
-    optional(_Tp) -> optional<_Tp>;
+_LIBCUDACXX_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
 #endif
 
 // Comparisons between optionals

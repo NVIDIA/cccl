@@ -16,22 +16,15 @@
 // UNSUPPORTED: c++98, c++03, c++11, c++14, c++17
 // UNSUPPORTED: clang-3.3, clang-3.4, clang-3.5, clang-3.6, clang-3.7, clang-3.8
 
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#include <cuda/std/vector>
+#include <cuda/std/array>
 #include <cuda/std/iterator>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    cuda::std::vector<int> c;
+    cuda::std::array<int, 4> c;
     cuda::std::empty(c);  // expected-error {{ignoring return value of function declared with 'nodiscard' attribute}}
 
   return 0;
 }
-#else
-int main(int, char**)
-{
-  return 0;
-}
-#endif

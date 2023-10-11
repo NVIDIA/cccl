@@ -218,7 +218,7 @@
       }
     },
     {
-      "name": "cccl",
+      "name": "cccl-infra",
       "displayName": "CCCL Infrastructure",
       "inherits": "base",
       "cacheVariables": {
@@ -287,8 +287,8 @@
       "configurePreset": "thrust-cpp20"
     },
     {
-      "name": "cccl",
-      "configurePreset": "cccl"
+      "name": "cccl-infra",
+      "configurePreset": "cccl-infra"
     }
   ],
   "testPresets": [
@@ -473,8 +473,8 @@
       "inherits": "base"
     },
     {
-      "name": "cccl",
-      "configurePreset": "cccl",
+      "name": "cccl-infra",
+      "configurePreset": "cccl-infra",
       "inherits": "base"
     }
   ]

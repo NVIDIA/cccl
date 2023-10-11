@@ -47,7 +47,7 @@ struct storage
     __host__ __device__
     friend bool operator==(const storage & lhs, const T & rhs) {
         for (cuda::std::size_t i = 0; i < size; ++i) {
-            if (lhs.data[i] != rhs + i) {
+            if (lhs.data[i] != static_cast<T>(rhs + i)) {
                 return false;
             }
         }

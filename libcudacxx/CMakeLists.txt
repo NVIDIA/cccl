@@ -1,4 +1,5 @@
 # 3.15 is the minimum for including the project with add_subdirectory.
+# 3.18 for C++17 + CUDA and clang-cuda support.
 # 3.21 is the minimum for the developer build.
 cmake_minimum_required(VERSION 3.15)
 

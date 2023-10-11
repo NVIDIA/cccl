@@ -30,7 +30,6 @@ int main(int, char**)
         T t1;
         swap(t0, t1);
     }
-#if !defined(TEST_COMPILER_MSVC_2017)
     {
         typedef cuda::std::tuple<MoveOnly> T;
         T t0(MoveOnly(0));
@@ -61,6 +60,5 @@ int main(int, char**)
         assert(cuda::std::get<1>(t1) == 1);
         assert(cuda::std::get<2>(t1) == 2);
     }
-#endif
   return 0;
 }

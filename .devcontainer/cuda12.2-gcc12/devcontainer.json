@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:23.08-cpp-gcc12-cuda12.2-ubuntu22.04",
+  "image": "rapidsai/devcontainers:23.10-cpp-gcc12-cuda12.2-ubuntu22.04",
   "hostRequirements": {
     "gpu": true
   },
@@ -15,6 +15,9 @@
     "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda12.2-gcc12",
+    "CCCL_CUDA_VERSION": "12.2",
+    "CCCL_HOST_COMPILER": "gcc",
+    "CCCL_HOST_COMPILER_VERSION": "12",
     "CCCL_BUILD_INFIX": "cuda12.2-gcc12"
   },
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",

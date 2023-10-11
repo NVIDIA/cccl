@@ -68,7 +68,6 @@ fi
 set -u
 
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
-readonly NVCC_VERSION=$($CUDA_COMPILER --version | grep release | awk '{print $6}' | cut -c2-)
 
 if [ -z ${CCCL_BUILD_INFIX+x} ]; then
     CCCL_BUILD_INFIX=""
@@ -125,7 +124,7 @@ echo "========================================"
 echo
 echo "========================================"
 echo "Current commit is:"
-git log -1
+git log -1 || "Not a repository"
 echo "========================================"
 echo
 

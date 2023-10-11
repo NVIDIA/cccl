@@ -39,12 +39,12 @@ jobs:
         uses: ./cccl/.github/actions/configure_cccl_sccache
       - name: Run command
         shell: su coder {0}
-        run: | 
+        run: |
             set -exo pipefail
             cd ~/cccl
             eval "${{inputs.command}}" || exit_code=$?
             if [ ! -z "$exit_code" ]; then
-                echo "::error::Error! To checkout the corresponding code and reproduce locally, run the following commands:" 
+                echo "::error::Error! To checkout the corresponding code and reproduce locally, run the following commands:"
                 echo "git clone --branch $GITHUB_REF_NAME --single-branch --recurse-submodules https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
                 echo "docker run --rm -it --gpus all --pull=always --volume \$PWD:/repo --workdir /repo ${{ inputs.image }} ${{inputs.command}}"
                 exit $exit_code
