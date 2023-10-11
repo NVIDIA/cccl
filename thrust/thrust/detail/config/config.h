@@ -21,7 +21,7 @@
 #pragma once
 
 // Include libcu++ config to get _CCCL_IMPLICIT_SYSTEM_HEADER
-#include <cuda/std/detail/__config>
+#include <cuda/__cccl_config>
 
 _CCCL_IMPLICIT_SYSTEM_HEADER
 
