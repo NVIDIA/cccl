@@ -1,5 +1,6 @@
 set(files
   __assert
+  __algorithm/adjacent_find.h
   __algorithm/all_of.h
   __algorithm/any_of.h
   __algorithm/comp_ref_type.h
