@@ -54,8 +54,8 @@ CUB_NAMESPACE_BEGIN
  *   the elements partitioned across a CUDA thread block. Because the binary
  *   operation could be noncommutative, there are two sets of methods.
  *   Methods named SubtractLeft subtract left element `i - 1` of input sequence
- *   from current element `i`. Methods named SubtractRight subtract current
- *   element `i` from the right one `i + 1`:
+ *   from current element `i`. Methods named SubtractRight subtract the right one `i + 1`
+ *   from current element `i`:
  *   @par
  *   @code
  *   int values[4]; // [1, 2, 3, 4]
@@ -64,9 +64,9 @@ CUB_NAMESPACE_BEGIN
  *   int subtract_right_result[4]; <-- [ -1, -1, -1,  4 ]
  *   @endcode
  * - For SubtractLeft, if the left element is out of bounds, the
- *   output value is assigned to `input[0]` without modification.
- * - For SubtractRight, if the right element is out of bounds, the output value
- *   is assigned to the current input value without modification.
+ *   input value is assigned to `output[0]` without modification.
+ * - For SubtractRight, if the right element is out of bounds, the input value
+ *   is assigned to the current output value without modification.
  * - The following example under the examples/block folder illustrates usage of
  *   dynamically shared memory with BlockReduce and how to re-purpose
  *   the same memory region:
@@ -99,7 +99,7 @@ CUB_NAMESPACE_BEGIN
  *     using BlockAdjacentDifferenceT =
  *        cub::BlockAdjacentDifference<int, 128>;
  *
- *     // Allocate shared memory for BlockDiscontinuity
+ *     // Allocate shared memory for BlockAdjacentDifference
  *     __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
  *
  *     // Obtain a segment of consecutive items that are blocked across threads
@@ -110,8 +110,8 @@ CUB_NAMESPACE_BEGIN
  *     int result[4];
  *
  *     BlockAdjacentDifferenceT(temp_storage).SubtractLeft(
- *         result,
  *         thread_data,
+ *         result,
  *         CustomDifference());
  *
  * @endcode
@@ -257,7 +257,7 @@ private:
 
 public:
 
-    /// \smemstorage{BlockDiscontinuity}
+    /// \smemstorage{BlockAdjacentDifference}
     struct TempStorage : Uninitialized<_TempStorage> {};
 
 
@@ -325,7 +325,7 @@ public:
      *     using BlockAdjacentDifferenceT =
      *        cub::BlockAdjacentDifference<int, 128>;
      *
-     *     // Allocate shared memory for BlockDiscontinuity
+     *     // Allocate shared memory for BlockAdjacentDifference
      *     __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
      *
      *     // Obtain a segment of consecutive items that are blocked across threads
@@ -417,7 +417,7 @@ public:
      *     using BlockAdjacentDifferenceT =
      *        cub::BlockAdjacentDifference<int, 128>;
      *
-     *     // Allocate shared memory for BlockDiscontinuity
+     *     // Allocate shared memory for BlockAdjacentDifference
      *     __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
      *
      *     // Obtain a segment of consecutive items that are blocked across threads
@@ -521,7 +521,7 @@ public:
      *   using BlockAdjacentDifferenceT =
      *      cub::BlockAdjacentDifference<int, 128>;
      *
-     *   // Allocate shared memory for BlockDiscontinuity
+     *   // Allocate shared memory for BlockAdjacentDifference
      *   __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
      *
      *   // Obtain a segment of consecutive items that are blocked across threads
@@ -639,7 +639,7 @@ public:
      *   using BlockAdjacentDifferenceT =
      *      cub::BlockAdjacentDifference<int, 128>;
      *
-     *   // Allocate shared memory for BlockDiscontinuity
+     *   // Allocate shared memory for BlockAdjacentDifference
      *   __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
      *
      *   // Obtain a segment of consecutive items that are blocked across threads
@@ -776,7 +776,7 @@ public:
      *     using BlockAdjacentDifferenceT =
      *        cub::BlockAdjacentDifference<int, 128>;
      *
-     *     // Allocate shared memory for BlockDiscontinuity
+     *     // Allocate shared memory for BlockAdjacentDifference
      *     __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
      *
      *     // Obtain a segment of consecutive items that are blocked across threads
@@ -794,7 +794,7 @@ public:
      * Suppose the set of input `thread_data` across the block of threads is
      * `{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }`.
      * The corresponding output `result` in those threads will be
-     * `{ ..., [-1,2,1,0], [0,0,0,-1], [-1,0,0,0], [-1,3,-3,4] }`.
+     * `{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,0,0], [-1,3,-3,4] }`.
      *
      * @param[out] output
      *   Calling thread's adjacent difference result
@@ -869,14 +869,14 @@ public:
      *     using BlockAdjacentDifferenceT =
      *        cub::BlockAdjacentDifference<int, 128>;
      *
-     *     // Allocate shared memory for BlockDiscontinuity
+     *     // Allocate shared memory for BlockAdjacentDifference
      *     __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
      *
      *     // Obtain a segment of consecutive items that are blocked across threads
      *     int thread_data[4];
      *     ...
      *
-     *     // The first item in the nest tile:
+     *     // The first item in the next tile:
      *     int tile_successor_item = ...;
      *
      *     // Collectively compute adjacent_difference
@@ -892,7 +892,7 @@ public:
      * `{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }`,
      * and that `tile_successor_item` is `3`. The corresponding output `result`
      * in those threads will be
-     * `{ ..., [-1,2,1,0], [0,0,0,-1], [-1,0,0,0], [-1,3,-3,1] }`.
+     * `{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,0,0], [-1,3,-3,1] }`.
      *
      * @param[out] output
      *   Calling thread's adjacent difference result
@@ -971,7 +971,7 @@ public:
      *     using BlockAdjacentDifferenceT =
      *        cub::BlockAdjacentDifference<int, 128>;
      *
-     *     // Allocate shared memory for BlockDiscontinuity
+     *     // Allocate shared memory for BlockAdjacentDifference
      *     __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
      *
      *     // Obtain a segment of consecutive items that are blocked across threads
@@ -991,7 +991,7 @@ public:
      * `{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }`.
      * and that `valid_items` is `507`. The corresponding output `result` in
      * those threads will be
-     * `{ ..., [-1,2,1,0], [0,0,0,-1], [-1,0,3,3], [3,4,1,4] }`.
+     * `{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,3,3], [3,4,1,4] }`.
      *
      * @param[out] output
      *   Calling thread's adjacent difference result
