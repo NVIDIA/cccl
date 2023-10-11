@@ -27,7 +27,7 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Random-access iterator types
  */
 
@@ -48,37 +48,37 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 CUB_NAMESPACE_BEGIN
 
 /**
- * \addtogroup UtilIterator
+ * @addtogroup UtilIterator
  * @{
  */
 
 /**
- * \brief A random-access input wrapper for dereferencing array values through texture cache.
+ * @brief A random-access input wrapper for dereferencing array values through texture cache.
  *
- * \deprecated [Since 1.13.0] The CUDA texture management APIs used by
+ * @deprecated [Since 1.13.0] The CUDA texture management APIs used by
  * TexRefInputIterator are deprecated. Use cub::TexObjInputIterator instead.
  *
- * \par Overview
+ * @par Overview
  * - TexRefInputIterator wraps a native device pointer of type <tt>ValueType*</tt>. References
  *   to elements are to be loaded through texture cache.
  * - Can be used to load any data type from memory through texture cache.
  * - Can be manipulated and exchanged within and between host and device
  *   functions, can only be constructed within host functions, and can only be
  *   dereferenced within device functions.
- * - The \p UNIQUE_ID template parameter is used to statically name the underlying texture
+ * - The @p UNIQUE_ID template parameter is used to statically name the underlying texture
  *   reference.  Only one TexRefInputIterator instance can be bound at any given time for a
- *   specific combination of (1) data type \p T, (2) \p UNIQUE_ID, (3) host
+ *   specific combination of (1) data type @p T, (2) @p UNIQUE_ID, (3) host
  *   thread, and (4) compilation .o unit.
  * - With regard to nested/dynamic parallelism, TexRefInputIterator iterators may only be
  *   created by the host thread and used by a top-level kernel (i.e. the one which is launched
  *   from the host).
  * - Compatible with Thrust API v1.7 or newer.
  *
- * \par Snippet
- * The code snippet below illustrates the use of \p TexRefInputIterator to
+ * @par Snippet
+ * The code snippet below illustrates the use of @p TexRefInputIterator to
  * dereference a device array of doubles through texture cache.
- * \par
- * \code
+ * @par
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/iterator/tex_ref_input_iterator.cuh>
  *
  * // Declare, allocate, and initialize a device array
@@ -98,11 +98,16 @@ CUB_NAMESPACE_BEGIN
  * ...
  * itr.UnbindTexture();
  *
- * \endcode
+ * @endcode
  *
- * \tparam T                    The value type of this iterator
- * \tparam UNIQUE_ID            A globally-unique identifier (within the compilation unit) to name the underlying texture reference
- * \tparam OffsetT              The difference type of this iterator (Default: \p ptrdiff_t)
+ * @tparam T                    
+ *   The value type of this iterator
+ *
+ * @tparam UNIQUE_ID            
+ *   A globally-unique identifier (within the compilation unit) to name the underlying texture reference
+ *
+ * @tparam OffsetT              
+ *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <
     typename    T,

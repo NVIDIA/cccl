@@ -27,8 +27,9 @@
  ******************************************************************************/
 
 /**
- * \file
- * The cub::BlockReduce class provides [<em>collective</em>](index.html#sec0) methods for computing a parallel reduction of items partitioned across a CUDA thread block.
+ * @file
+ * The cub::BlockReduce class provides [<em>collective</em>](index.html#sec0) methods for computing
+ * a parallel reduction of items partitioned across a CUDA thread block.
  */
 
 #pragma once
@@ -64,11 +65,11 @@ enum BlockReduceAlgorithm
 {
 
     /**
-     * \par Overview
+     * @par Overview
      * An efficient "raking" reduction algorithm that only supports commutative
      * reduction operators (true for most operations, e.g., addition).
      *
-     * \par
+     * @par
      * Execution is comprised of three phases:
      * -# Upsweep sequential reduction in registers (if threads contribute more
      *    than one input each).  Threads in warps other than the first warp place
@@ -77,11 +78,11 @@ enum BlockReduceAlgorithm
      *    warp continue to accumulate by raking across segments of shared partial reductions
      * -# A warp-synchronous Kogge-Stone style reduction within the raking warp.
      *
-     * \par
-     * \image html block_reduce.png
+     * @par
+     * @image html block_reduce.png
      * <div class="centercaption">\p BLOCK_REDUCE_RAKING data flow for a hypothetical 16-thread thread block and 4-thread raking warp.</div>
      *
-     * \par Performance Considerations
+     * @par Performance Considerations
      * - This variant performs less communication than BLOCK_REDUCE_RAKING_NON_COMMUTATIVE
      *   and is preferable when the reduction operator is commutative.  This variant
      *   applies fewer reduction operators  than BLOCK_REDUCE_WARP_REDUCTIONS, and can provide higher overall
@@ -93,12 +94,12 @@ enum BlockReduceAlgorithm
 
 
     /**
-     * \par Overview
+     * @par Overview
      * An efficient "raking" reduction algorithm that supports commutative
      * (e.g., addition) and non-commutative (e.g., string concatenation) reduction
      * operators. \blocked.
      *
-     * \par
+     * @par
      * Execution is comprised of three phases:
      * -# Upsweep sequential reduction in registers (if threads contribute more
      *    than one input each).  Each thread then places the partial reduction
@@ -107,11 +108,11 @@ enum BlockReduceAlgorithm
      *    single warp rake across segments of shared partial reductions.
      * -# A warp-synchronous Kogge-Stone style reduction within the raking warp.
      *
-     * \par
-     * \image html block_reduce.png
+     * @par
+     * @image html block_reduce.png
      * <div class="centercaption">\p BLOCK_REDUCE_RAKING data flow for a hypothetical 16-thread thread block and 4-thread raking warp.</div>
      *
-     * \par Performance Considerations
+     * @par Performance Considerations
      * - This variant performs more communication than BLOCK_REDUCE_RAKING
      *   and is only preferable when the reduction operator is non-commutative.  This variant
      *   applies fewer reduction operators than BLOCK_REDUCE_WARP_REDUCTIONS, and can provide higher overall
@@ -123,12 +124,12 @@ enum BlockReduceAlgorithm
 
 
     /**
-     * \par Overview
+     * @par Overview
      * A quick "tiled warp-reductions" reduction algorithm that supports commutative
      * (e.g., addition) and non-commutative (e.g., string concatenation) reduction
      * operators.
      *
-     * \par
+     * @par
      * Execution is comprised of four phases:
      * -# Upsweep sequential reduction in registers (if threads contribute more
      *    than one input each).  Each thread then places the partial reduction
@@ -138,11 +139,11 @@ enum BlockReduceAlgorithm
      * -# A propagation phase where the warp reduction outputs in each warp are
      *    updated with the aggregate from each preceding warp.
      *
-     * \par
-     * \image html block_scan_warpscans.png
+     * @par
+     * @image html block_scan_warpscans.png
      * <div class="centercaption">\p BLOCK_REDUCE_WARP_REDUCTIONS data flow for a hypothetical 16-thread thread block and 4-thread raking warp.</div>
      *
-     * \par Performance Considerations
+     * @par Performance Considerations
      * - This variant applies more reduction operators than BLOCK_REDUCE_RAKING
      *   or BLOCK_REDUCE_RAKING_NON_COMMUTATIVE, which may result in lower overall
      *   throughput across the GPU.  However turn-around latency may be lower and
@@ -157,43 +158,67 @@ enum BlockReduceAlgorithm
  ******************************************************************************/
 
 /**
- * \brief The BlockReduce class provides [<em>collective</em>](index.html#sec0) methods for computing a parallel reduction of items partitioned across a CUDA thread block. ![](reduce_logo.png)
- * \ingroup BlockModule
+ * @brief The BlockReduce class provides [<em>collective</em>](index.html#sec0)
+ *        methods for computing a parallel reduction of items partitioned across
+ *        a CUDA thread block. ![](reduce_logo.png)
  *
- * \tparam T                Data type being reduced
- * \tparam BLOCK_DIM_X      The thread block length in threads along the X dimension
- * \tparam ALGORITHM        <b>[optional]</b> cub::BlockReduceAlgorithm enumerator specifying the underlying algorithm to use (default: cub::BLOCK_REDUCE_WARP_REDUCTIONS)
- * \tparam BLOCK_DIM_Y      <b>[optional]</b> The thread block length in threads along the Y dimension (default: 1)
- * \tparam BLOCK_DIM_Z      <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
- * \tparam LEGACY_PTX_ARCH  <b>[optional]</b> Unused.
+ * @ingroup BlockModule
  *
- * \par Overview
- * - A <a href="http://en.wikipedia.org/wiki/Reduce_(higher-order_function)"><em>reduction</em></a> (or <em>fold</em>)
- *   uses a binary combining operator to compute a single aggregate from a list of input elements.
- * - \rowmajor
- * - BlockReduce can be optionally specialized by algorithm to accommodate different latency/throughput workload profiles:
- *   -# <b>cub::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY</b>.  An efficient "raking" reduction algorithm that only supports commutative reduction operators. [More...](\ref cub::BlockReduceAlgorithm)
- *   -# <b>cub::BLOCK_REDUCE_RAKING</b>.  An efficient "raking" reduction algorithm that supports commutative and non-commutative reduction operators. [More...](\ref cub::BlockReduceAlgorithm)
- *   -# <b>cub::BLOCK_REDUCE_WARP_REDUCTIONS</b>.  A quick "tiled warp-reductions" reduction algorithm that supports commutative and non-commutative reduction operators. [More...](\ref cub::BlockReduceAlgorithm)
+ * @tparam T
+ *   Data type being reduced
  *
- * \par Performance Considerations
- * - \granularity
+ * @tparam BLOCK_DIM_X
+ *   The thread block length in threads along the X dimension
+ *
+ * @tparam ALGORITHM
+ *   <b>[optional]</b> cub::BlockReduceAlgorithm enumerator specifying
+ *   the underlying algorithm to use (default: cub::BLOCK_REDUCE_WARP_REDUCTIONS)
+ *
+ * @tparam BLOCK_DIM_Y
+ *   <b>[optional]</b> The thread block length in threads along the Y dimension (default: 1)
+ *
+ * @tparam BLOCK_DIM_Z
+ *   <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
+ *
+ * @tparam LEGACY_PTX_ARCH
+ *   <b>[optional]</b> Unused.
+ *
+ * @par Overview
+ * - A <a href="http://en.wikipedia.org/wiki/Reduce_(higher-order_function)"><em>reduction</em></a>
+ * (or <em>fold</em>) uses a binary combining operator to compute a single aggregate from a list of
+ * input elements.
+ * - @rowmajor
+ * - BlockReduce can be optionally specialized by algorithm to accommodate different
+ *   latency/throughput workload profiles:
+ *   -# <b>cub::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY</b>.
+ *      An efficient "raking" reduction algorithm that only
+ *      supports commutative reduction operators.
+ *      [More...](\ref cub::BlockReduceAlgorithm)
+ *   -# <b>cub::BLOCK_REDUCE_RAKING</b>.
+ *      An efficient "raking" reduction algorithm that supports commutative and
+ *      non-commutative reduction operators. [More...](\ref cub::BlockReduceAlgorithm)
+ *   -# <b>cub::BLOCK_REDUCE_WARP_REDUCTIONS</b>.
+ *      A quick "tiled warp-reductions" reduction algorithm that supports commutative and
+ *      non-commutative reduction operators. [More...](\ref cub::BlockReduceAlgorithm)
+ *
+ * @par Performance Considerations
+ * - @granularity
  * - Very efficient (only one synchronization barrier).
  * - Incurs zero bank conflicts for most types
  * - Computation is slightly more efficient (i.e., having lower instruction overhead) for:
  *   - Summation (<b><em>vs.</em></b> generic reduction)
- *   - \p BLOCK_THREADS is a multiple of the architecture's warp size
+ *   - @p BLOCK_THREADS is a multiple of the architecture's warp size
  *   - Every thread has a valid input (i.e., full <b><em>vs.</em></b> partial-tiles)
  * - See cub::BlockReduceAlgorithm for performance details regarding algorithmic alternatives
  *
- * \par A Simple Example
- * \blockcollective{BlockReduce}
- * \par
+ * @par A Simple Example
+ * @blockcollective{BlockReduce}
+ * @par
  * The code snippet below illustrates a sum reduction of 512 integer items that
  * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
  * where each thread owns 4 consecutive items.
- * \par
- * \code
+ * @par
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
  *
  * __global__ void ExampleKernel(...)
@@ -211,9 +236,9 @@ enum BlockReduceAlgorithm
  *     // Compute the block-wide sum for thread0
  *     int aggregate = BlockReduce(temp_storage).Sum(thread_data);
  *
- * \endcode
+ * @endcode
  *
- * \par Re-using dynamically allocating shared memory
+ * @par Re-using dynamically allocating shared memory
  * The following example under the examples/block folder illustrates usage of
  * dynamically shared memory with BlockReduce and how to re-purpose
  * the same memory region:
@@ -282,17 +307,17 @@ private:
 
 public:
 
-    /// \smemstorage{BlockReduce}
+    /// @smemstorage{BlockReduce}
     struct TempStorage : Uninitialized<_TempStorage> {};
 
 
     /******************************************************************//**
-     * \name Collective constructors
+     * @name Collective constructors
      *********************************************************************/
     //@{
 
     /**
-     * \brief Collective constructor using a private static allocation of shared memory as temporary storage.
+     * @brief Collective constructor using a private static allocation of shared memory as temporary storage.
      */
     __device__ __forceinline__ BlockReduce()
     :
@@ -300,38 +325,38 @@ public:
         linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
 
-
     /**
-     * \brief Collective constructor using the specified memory allocation as temporary storage.
+     * @brief Collective constructor using the specified memory allocation as temporary storage.
+     *
+     * @param[in] temp_storage
+     *   Reference to memory allocation having layout type TempStorage
      */
-    __device__ __forceinline__ BlockReduce(
-        TempStorage &temp_storage)             ///< [in] Reference to memory allocation having layout type TempStorage
-    :
-        temp_storage(temp_storage.Alias()),
-        linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+    __device__ __forceinline__ BlockReduce(TempStorage &temp_storage)
+        : temp_storage(temp_storage.Alias())
+        , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
 
 
     //@}  end member group
     /******************************************************************//**
-     * \name Generic reductions
+     * @name Generic reductions
      *********************************************************************/
     //@{
 
-
     /**
-     * \brief Computes a block-wide reduction for thread<sub>0</sub> using the specified binary reduction functor.  Each thread contributes one input element.
+     * @brief Computes a block-wide reduction for thread<sub>0</sub> using the specified binary
+     *        reduction functor. Each thread contributes one input element.
      *
-     * \par
+     * @par
      * - The return value is undefined in threads other than thread<sub>0</sub>.
-     * - \rowmajor
-     * - \smemreuse
+     * - @rowmajor
+     * - @smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates a max reduction of 128 integer items that
      * are partitioned across 128 threads.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
      *
      * __global__ void ExampleKernel(...)
@@ -349,33 +374,39 @@ public:
      *     // Compute the block-wide max for thread0
      *     int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max());
      *
-     * \endcode
+     * @endcode
      *
-     * \tparam ReductionOp          <b>[inferred]</b> Binary reduction functor  type having member <tt>T operator()(const T &a, const T &b)</tt>
+     * @tparam ReductionOp
+     *   <b>[inferred]</b> Binary reduction functor type having member
+     *   <tt>T operator()(const T &a, const T &b)</tt>
+     *
+     * @param[in] input
+     *   Calling thread's input
+     *
+     * @param[in] reduction_op
+     *   Binary reduction functor
      */
     template <typename ReductionOp>
-    __device__ __forceinline__ T Reduce(
-        T               input,                      ///< [in] Calling thread's input
-        ReductionOp     reduction_op)               ///< [in] Binary reduction functor
+    __device__ __forceinline__ T Reduce(T input, ReductionOp reduction_op)
     {
         return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
     }
 
-
     /**
-     * \brief Computes a block-wide reduction for thread<sub>0</sub> using the specified binary reduction functor.  Each thread contributes an array of consecutive input elements.
+     * @brief Computes a block-wide reduction for thread<sub>0</sub> using the specified binary
+     *        reduction functor. Each thread contributes an array of consecutive input elements.
      *
-     * \par
+     * @par
      * - The return value is undefined in threads other than thread<sub>0</sub>.
-     * - \granularity
-     * - \smemreuse
+     * - @granularity
+     * - @smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates a max reduction of 512 integer items that
      * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
      * where each thread owns 4 consecutive items.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
      *
      * __global__ void ExampleKernel(...)
@@ -393,37 +424,43 @@ public:
      *     // Compute the block-wide max for thread0
      *     int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max());
      *
-     * \endcode
+     * @endcode
      *
-     * \tparam ITEMS_PER_THREAD     <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
-     * \tparam ReductionOp          <b>[inferred]</b> Binary reduction functor  type having member <tt>T operator()(const T &a, const T &b)</tt>
+     * @tparam ITEMS_PER_THREAD
+     *   <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
+     *
+     * @tparam ReductionOp
+     *   <b>[inferred]</b> Binary reduction functor type having member
+     *   <tt>T operator()(const T &a, const T &b)</tt>
+     *
+     * @param[in] inputs
+     *   Calling thread's input segment
+     *
+     * @param[in] reduction_op
+     *   Binary reduction functor
      */
-    template <
-        int ITEMS_PER_THREAD,
-        typename ReductionOp>
-    __device__ __forceinline__ T Reduce(
-        T               (&inputs)[ITEMS_PER_THREAD],    ///< [in] Calling thread's input segment
-        ReductionOp     reduction_op)                   ///< [in] Binary reduction functor
+    template <int ITEMS_PER_THREAD, typename ReductionOp>
+    __device__ __forceinline__ T Reduce(T (&inputs)[ITEMS_PER_THREAD], ReductionOp reduction_op)
     {
         // Reduce partials
         T partial = internal::ThreadReduce(inputs, reduction_op);
         return Reduce(partial, reduction_op);
     }
 
-
     /**
-     * \brief Computes a block-wide reduction for thread<sub>0</sub> using the specified binary reduction functor.  The first \p num_valid threads each contribute one input element.
+     * @brief Computes a block-wide reduction for thread<sub>0</sub> using the specified binary
+     *        reduction functor. The first @p num_valid threads each contribute one input element.
      *
-     * \par
+     * @par
      * - The return value is undefined in threads other than thread<sub>0</sub>.
-     * - \rowmajor
-     * - \smemreuse
+     * - @rowmajor
+     * - @smemreuse
      *
-     * \par Snippet
-     * The code snippet below illustrates a max reduction of a partially-full tile of integer items that
-     * are partitioned across 128 threads.
-     * \par
-     * \code
+     * @par Snippet
+     * The code snippet below illustrates a max reduction of a partially-full tile of integer items
+     * that are partitioned across 128 threads.
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
      *
      * __global__ void ExampleKernel(int num_valid, ...)
@@ -441,15 +478,23 @@ public:
      *     // Compute the block-wide max for thread0
      *     int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max(), num_valid);
      *
-     * \endcode
+     * @endcode
      *
-     * \tparam ReductionOp          <b>[inferred]</b> Binary reduction functor  type having member <tt>T operator()(const T &a, const T &b)</tt>
+     * @tparam ReductionOp
+     *   <b>[inferred]</b> Binary reduction functor type having member
+     *   <tt>T operator()(const T &a, const T &b)</tt>
+     *
+     * @param[in] input
+     *   Calling thread's input
+     *
+     * @param[in] reduction_op
+     *   Binary reduction functor
+     *
+     * @param[in] num_valid
+     *   Number of threads containing valid elements (may be less than BLOCK_THREADS)
      */
     template <typename ReductionOp>
-    __device__ __forceinline__ T Reduce(
-        T                   input,                  ///< [in] Calling thread's input
-        ReductionOp         reduction_op,           ///< [in] Binary reduction functor
-        int                 num_valid)              ///< [in] Number of threads containing valid elements (may be less than BLOCK_THREADS)
+    __device__ __forceinline__ T Reduce(T input, ReductionOp reduction_op, int num_valid)
     {
         // Determine if we skip bounds checking
         if (num_valid >= BLOCK_THREADS)
@@ -465,24 +510,24 @@ public:
 
     //@}  end member group
     /******************************************************************//**
-     * \name Summation reductions
+     * @name Summation reductions
      *********************************************************************/
     //@{
 
-
     /**
-     * \brief Computes a block-wide reduction for thread<sub>0</sub> using addition (+) as the reduction operator.  Each thread contributes one input element.
+     * @brief Computes a block-wide reduction for thread<sub>0</sub> using addition (+)
+     *        as the reduction operator.  Each thread contributes one input element.
      *
-     * \par
+     * @par
      * - The return value is undefined in threads other than thread<sub>0</sub>.
-     * - \rowmajor
-     * - \smemreuse
+     * - @rowmajor
+     * - @smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates a sum reduction of 128 integer items that
      * are partitioned across 128 threads.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
      *
      * __global__ void ExampleKernel(...)
@@ -500,29 +545,32 @@ public:
      *     // Compute the block-wide sum for thread0
      *     int aggregate = BlockReduce(temp_storage).Sum(thread_data);
      *
-     * \endcode
+     * @endcode
      *
+     * @param[in] input
+     *   Calling thread's input
      */
-    __device__ __forceinline__ T Sum(
-        T   input)                      ///< [in] Calling thread's input
+    __device__ __forceinline__ T Sum(T input)
     {
         return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
     }
 
     /**
-     * \brief Computes a block-wide reduction for thread<sub>0</sub> using addition (+) as the reduction operator.  Each thread contributes an array of consecutive input elements.
+     * @brief Computes a block-wide reduction for thread<sub>0</sub> using addition (+)
+     *        as the reduction operator.  Each thread contributes an array of consecutive input
+     *        elements.
      *
-     * \par
+     * @par
      * - The return value is undefined in threads other than thread<sub>0</sub>.
-     * - \granularity
-     * - \smemreuse
+     * - @granularity
+     * - @smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates a sum reduction of 512 integer items that
      * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
      * where each thread owns 4 consecutive items.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
      *
      * __global__ void ExampleKernel(...)
@@ -540,33 +588,37 @@ public:
      *     // Compute the block-wide sum for thread0
      *     int aggregate = BlockReduce(temp_storage).Sum(thread_data);
      *
-     * \endcode
+     * @endcode
      *
-     * \tparam ITEMS_PER_THREAD     <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
+     * @tparam ITEMS_PER_THREAD
+     *   <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
+     *
+     * @param[in] inputs
+     *   Calling thread's input segment
      */
     template <int ITEMS_PER_THREAD>
-    __device__ __forceinline__ T Sum(
-        T   (&inputs)[ITEMS_PER_THREAD])    ///< [in] Calling thread's input segment
+    __device__ __forceinline__ T Sum(T (&inputs)[ITEMS_PER_THREAD])
     {
         // Reduce partials
         T partial = internal::ThreadReduce(inputs, cub::Sum());
         return Sum(partial);
     }
 
-
     /**
-     * \brief Computes a block-wide reduction for thread<sub>0</sub> using addition (+) as the reduction operator.  The first \p num_valid threads each contribute one input element.
+     * @brief Computes a block-wide reduction for thread<sub>0</sub> using addition (+)
+     *        as the reduction operator. The first @p num_valid threads each contribute one input
+     *        element.
      *
-     * \par
+     * @par
      * - The return value is undefined in threads other than thread<sub>0</sub>.
-     * - \rowmajor
-     * - \smemreuse
+     * - @rowmajor
+     * - @smemreuse
      *
-     * \par Snippet
-     * The code snippet below illustrates a sum reduction of a partially-full tile of integer items that
-     * are partitioned across 128 threads.
-     * \par
-     * \code
+     * @par Snippet
+     * The code snippet below illustrates a sum reduction of a partially-full tile of integer items
+     * that are partitioned across 128 threads.
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
      *
      * __global__ void ExampleKernel(int num_valid, ...)
@@ -585,12 +637,15 @@ public:
      *     // Compute the block-wide sum for thread0
      *     int aggregate = BlockReduce(temp_storage).Sum(thread_data, num_valid);
      *
-     * \endcode
+     * @endcode
      *
+     * @param[in] input
+     *   Calling thread's input
+     *
+     * @param[in] num_valid
+     *   Number of threads containing valid elements (may be less than BLOCK_THREADS)
      */
-    __device__ __forceinline__ T Sum(
-        T   input,                  ///< [in] Calling thread's input
-        int num_valid)              ///< [in] Number of threads containing valid elements (may be less than BLOCK_THREADS)
+    __device__ __forceinline__ T Sum(T input, int num_valid)
     {
         // Determine if we skip bounds checking
         if (num_valid >= BLOCK_THREADS)
@@ -608,7 +663,7 @@ public:
 };
 
 /**
- * \example example_block_reduce.cu
+ * @example example_block_reduce.cu
  */
 
 CUB_NAMESPACE_END

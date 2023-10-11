@@ -27,7 +27,7 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Thread utilities for sequential search
  */
 
@@ -91,19 +91,21 @@ __host__ __device__ __forceinline__ void MergePathSearch(
     path_coordinate.y = diagonal - split_min;
 }
 
-
-
 /**
- * \brief Returns the offset of the first value within \p input which does not compare less than \p val
+ * @brief Returns the offset of the first value within @p input which does not compare
+ *        less than @p val
+ *
+ * @param[in] input
+ *   Input sequence
+ *
+ * @param[in] num_items
+ *   Input sequence length
+ *
+ * @param[in] val
+ *   Search key
  */
-template <
-    typename InputIteratorT,
-    typename OffsetT,
-    typename T>
-__device__ __forceinline__ OffsetT LowerBound(
-    InputIteratorT      input,              ///< [in] Input sequence
-    OffsetT             num_items,          ///< [in] Input sequence length
-    T                   val)                ///< [in] Search key
+template <typename InputIteratorT, typename OffsetT, typename T>
+__device__ __forceinline__ OffsetT LowerBound(InputIteratorT input, OffsetT num_items, T val)
 {
     OffsetT retval = 0;
     while (num_items > 0)
@@ -123,18 +125,21 @@ __device__ __forceinline__ OffsetT LowerBound(
     return retval;
 }
 
-
 /**
- * \brief Returns the offset of the first value within \p input which compares greater than \p val
+ * @brief Returns the offset of the first value within @p input which compares
+ *        greater than @p val
+ *
+ * @param[in] input
+ *   Input sequence
+ *
+ * @param[in] num_items
+ *   Input sequence length
+ *
+ * @param[in] val
+ *   Search key
  */
-template <
-    typename InputIteratorT,
-    typename OffsetT,
-    typename T>
-__device__ __forceinline__ OffsetT UpperBound(
-    InputIteratorT      input,              ///< [in] Input sequence
-    OffsetT             num_items,          ///< [in] Input sequence length
-    T                   val)                ///< [in] Search key
+template <typename InputIteratorT, typename OffsetT, typename T>
+__device__ __forceinline__ OffsetT UpperBound(InputIteratorT input, OffsetT num_items, T val)
 {
     OffsetT retval = 0;
     while (num_items > 0)
@@ -156,13 +161,18 @@ __device__ __forceinline__ OffsetT UpperBound(
 
 
 #if defined(__CUDA_FP16_TYPES_EXIST__)
-template <
-    typename InputIteratorT,
-    typename OffsetT>
-__device__ __forceinline__ OffsetT UpperBound(
-    InputIteratorT      input,              ///< [in] Input sequence
-    OffsetT             num_items,          ///< [in] Input sequence length
-    __half              val)                ///< [in] Search key
+/**
+ * @param[in] input
+ *   Input sequence
+ *
+ * @param[in] num_items
+ *   Input sequence length
+ *
+ * @param[in] val
+ *   Search key
+ */
+template <typename InputIteratorT, typename OffsetT>
+__device__ __forceinline__ OffsetT UpperBound(InputIteratorT input, OffsetT num_items, __half val)
 {
     OffsetT retval = 0;
     while (num_items > 0)

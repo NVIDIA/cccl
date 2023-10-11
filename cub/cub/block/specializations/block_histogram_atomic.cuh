@@ -27,8 +27,9 @@
  ******************************************************************************/
 
 /**
- * \file
- * The cub::BlockHistogramAtomic class provides atomic-based methods for constructing block-wide histograms from data samples partitioned across a CUDA thread block.
+ * @file
+ * The cub::BlockHistogramAtomic class provides atomic-based methods for constructing block-wide
+ * histograms from data samples partitioned across a CUDA thread block.
  */
 
 #pragma once
@@ -43,9 +44,9 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 CUB_NAMESPACE_BEGIN
 
-
 /**
- * \brief The BlockHistogramAtomic class provides atomic-based methods for constructing block-wide histograms from data samples partitioned across a CUDA thread block.
+ * @brief The BlockHistogramAtomic class provides atomic-based methods for constructing block-wide
+ *        histograms from data samples partitioned across a CUDA thread block.
  */
 template <int BINS>
 struct BlockHistogramAtomic
@@ -59,24 +60,26 @@ struct BlockHistogramAtomic
         TempStorage &temp_storage)
     {}
 
-
-    /// Composite data onto an existing histogram
-    template <
-        typename            T,
-        typename            CounterT,
-        int                 ITEMS_PER_THREAD>
-    __device__ __forceinline__ void Composite(
-        T                   (&items)[ITEMS_PER_THREAD],     ///< [in] Calling thread's input values to histogram
-        CounterT             histogram[BINS])                 ///< [out] Reference to shared/device-accessible memory histogram
+    /**
+     * @brief Composite data onto an existing histogram
+     *
+     * @param[in] items
+     *   Calling thread's input values to histogram
+     *
+     * @param[out] histogram
+     *   Reference to shared/device-accessible memory histogram
+     */
+    template <typename T, typename CounterT, int ITEMS_PER_THREAD>
+    __device__ __forceinline__ void Composite(T (&items)[ITEMS_PER_THREAD],
+                                              CounterT histogram[BINS])
     {
-        // Update histogram
-        #pragma unroll
-        for (int i = 0; i < ITEMS_PER_THREAD; ++i)
-        {
-              atomicAdd(histogram + items[i], 1);
-        }
+      // Update histogram
+      #pragma unroll
+      for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+      {
+        atomicAdd(histogram + items[i], 1);
+      }
     }
-
 };
 
 CUB_NAMESPACE_END

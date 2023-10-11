@@ -27,7 +27,7 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Thread utilities for sequential prefix scan over statically-sized array types
  */
 
@@ -50,26 +50,32 @@ namespace internal {
 
 
 /**
- * \addtogroup UtilModule
+ * @addtogroup UtilModule
  * @{
  */
 
 /**
- * \name Sequential prefix scan over statically-sized array types
+ * @name Sequential prefix scan over statically-sized array types
  * @{
  */
 
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ScanOp>
-__device__ __forceinline__ T ThreadScanExclusive(
-    T                   inclusive,
-    T                   exclusive,
-    T                   *input,                 ///< [in] Input array
-    T                   *output,                ///< [out] Output array (may be aliased to \p input)
-    ScanOp              scan_op,                ///< [in] Binary scan operator
-    Int2Type<LENGTH>    /*length*/)
+/**
+ * @param[in] input 
+ *   Input array
+ *
+ * @param[out] output 
+ *   Output array (may be aliased to @p input)
+ *
+ * @param[in] scan_op 
+ *   Binary scan operator
+ */
+template <int LENGTH, typename T, typename ScanOp>
+__device__ __forceinline__ T ThreadScanExclusive(T inclusive,
+                                                 T exclusive,
+                                                 T *input,
+                                                 T *output,
+                                                 ScanOp scan_op,
+                                                 Int2Type<LENGTH> /*length*/)
 {
     #pragma unroll
     for (int i = 0; i < LENGTH; ++i)
@@ -82,25 +88,40 @@ __device__ __forceinline__ T ThreadScanExclusive(
     return inclusive;
 }
 
-
-
 /**
- * \brief Perform a sequential exclusive prefix scan over \p LENGTH elements of the \p input array, seeded with the specified \p prefix.  The aggregate is returned.
+ * @brief Perform a sequential exclusive prefix scan over @p LENGTH elements of
+ *        the @p input array, seeded with the specified @p prefix. The aggregate is returned.
  *
- * \tparam LENGTH     LengthT of \p input and \p output arrays
- * \tparam T          <b>[inferred]</b> The data type to be scanned.
- * \tparam ScanOp     <b>[inferred]</b> Binary scan operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * @tparam LENGTH
+ *   LengthT of @p input and @p output arrays
+ *
+ * @tparam T
+ *   <b>[inferred]</b> The data type to be scanned.
+ *
+ * @tparam ScanOp
+ *   <b>[inferred]</b> Binary scan operator type having member
+ *   <tt>T operator()(const T &a, const T &b)</tt>
+ *
+ * @param[in] input
+ *   Input array
+ *
+ * @param[out] output
+ *   Output array (may be aliased to @p input)
+ *
+ * @param[in] scan_op
+ *   Binary scan operator
+ *
+ * @param[in] prefix
+ *   Prefix to seed scan with
+ *
+ * @param[in] apply_prefix
+ *   Whether or not the calling thread should apply its prefix.
+ *   If not, the first output element is undefined.
+ *   (Handy for preventing thread-0 from applying a prefix.)
  */
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ScanOp>
-__device__ __forceinline__ T ThreadScanExclusive(
-    T           *input,                 ///< [in] Input array
-    T           *output,                ///< [out] Output array (may be aliased to \p input)
-    ScanOp      scan_op,                ///< [in] Binary scan operator
-    T           prefix,                 ///< [in] Prefix to seed scan with
-    bool        apply_prefix = true)    ///< [in] Whether or not the calling thread should apply its prefix.  If not, the first output element is undefined.  (Handy for preventing thread-0 from applying a prefix.)
+template <int LENGTH, typename T, typename ScanOp>
+__device__ __forceinline__ T
+ThreadScanExclusive(T *input, T *output, ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
     T inclusive = input[0];
     if (apply_prefix)
@@ -113,46 +134,59 @@ __device__ __forceinline__ T ThreadScanExclusive(
     return ThreadScanExclusive(inclusive, exclusive, input + 1, output + 1, scan_op, Int2Type<LENGTH - 1>());
 }
 
-
 /**
- * \brief Perform a sequential exclusive prefix scan over the statically-sized \p input array, seeded with the specified \p prefix.  The aggregate is returned.
+ * @brief Perform a sequential exclusive prefix scan over the statically-sized
+ *        @p input array, seeded with the specified @p prefix. The aggregate is returned.
  *
- * \tparam LENGTH     <b>[inferred]</b> LengthT of \p input and \p output arrays
- * \tparam T          <b>[inferred]</b> The data type to be scanned.
- * \tparam ScanOp     <b>[inferred]</b> Binary scan operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * @tparam LENGTH
+ *   <b>[inferred]</b> LengthT of @p input and @p output arrays
+ *
+ * @tparam T
+ *   <b>[inferred]</b> The data type to be scanned.
+ *
+ * @tparam ScanOp
+ *   <b>[inferred]</b> Binary scan operator type having member
+ *   <tt>T operator()(const T &a, const T &b)</tt>
+ *
+ * @param[in] input
+ *   Input array
+ *
+ * @param[out] output
+ *   Output array (may be aliased to @p input)
+ *
+ * @param[in] scan_op
+ *   Binary scan operator
+ *
+ * @param[in] prefix
+ *   Prefix to seed scan with
+ *
+ * @param[in] apply_prefix
+ *   Whether or not the calling thread should apply its prefix.
+ *   (Handy for preventing thread-0 from applying a prefix.)
  */
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ScanOp>
-__device__ __forceinline__ T ThreadScanExclusive(
-    T           (&input)[LENGTH],       ///< [in] Input array
-    T           (&output)[LENGTH],      ///< [out] Output array (may be aliased to \p input)
-    ScanOp      scan_op,                ///< [in] Binary scan operator
-    T           prefix,                 ///< [in] Prefix to seed scan with
-    bool        apply_prefix = true)    ///< [in] Whether or not the calling thread should apply its prefix.  (Handy for preventing thread-0 from applying a prefix.)
+template <int LENGTH, typename T, typename ScanOp>
+__device__ __forceinline__ T ThreadScanExclusive(T (&input)[LENGTH],
+                                                 T (&output)[LENGTH],
+                                                 ScanOp scan_op,
+                                                 T prefix,
+                                                 bool apply_prefix = true)
 {
-    return ThreadScanExclusive<LENGTH>((T*) input, (T*) output, scan_op, prefix, apply_prefix);
+    return ThreadScanExclusive<LENGTH>((T *)input, (T *)output, scan_op, prefix, apply_prefix);
 }
 
-
-
-
-
-
-
-
-
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ScanOp>
-__device__ __forceinline__ T ThreadScanInclusive(
-    T                   inclusive,
-    T                   *input,                 ///< [in] Input array
-    T                   *output,                ///< [out] Output array (may be aliased to \p input)
-    ScanOp              scan_op,                ///< [in] Binary scan operator
-    Int2Type<LENGTH>    /*length*/)
+/**
+ * @param[in] input
+ *   Input array
+ *
+ * @param[out] output
+ *   Output array (may be aliased to @p input)
+ *
+ * @param[in] scan_op
+ *   Binary scan operator
+ */
+template <int LENGTH, typename T, typename ScanOp>
+__device__ __forceinline__ T
+ThreadScanInclusive(T inclusive, T *input, T *output, ScanOp scan_op, Int2Type<LENGTH> /*length*/)
 {
     #pragma unroll
     for (int i = 0; i < LENGTH; ++i)
@@ -164,22 +198,31 @@ __device__ __forceinline__ T ThreadScanInclusive(
     return inclusive;
 }
 
-
 /**
- * \brief Perform a sequential inclusive prefix scan over \p LENGTH elements of the \p input array.  The aggregate is returned.
+ * @brief Perform a sequential inclusive prefix scan over
+ *        @p LENGTH elements of the @p input array. The aggregate is returned.
  *
- * \tparam LENGTH     LengthT of \p input and \p output arrays
- * \tparam T          <b>[inferred]</b> The data type to be scanned.
- * \tparam ScanOp     <b>[inferred]</b> Binary scan operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * @tparam LENGTH
+ *   LengthT of @p input and @p output arrays
+ *
+ * @tparam T
+ *   <b>[inferred]</b> The data type to be scanned.
+ *
+ * @tparam ScanOp
+ *   <b>[inferred]</b> Binary scan operator type having member
+ *   <tt>T operator()(const T &a, const T &b)</tt>
+ *
+ * @param[in] input
+ *   Input array
+ *
+ * @param[out] output
+ *   Output array (may be aliased to @p input)
+ *
+ * @param[in] scan_op
+ *   Binary scan operator
  */
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ScanOp>
-__device__ __forceinline__ T ThreadScanInclusive(
-    T           *input,                 ///< [in] Input array
-    T           *output,                ///< [out] Output array (may be aliased to \p input)
-    ScanOp      scan_op)                ///< [in] Binary scan operator
+template <int LENGTH, typename T, typename ScanOp>
+__device__ __forceinline__ T ThreadScanInclusive(T *input, T *output, ScanOp scan_op)
 {
     T inclusive = input[0];
     output[0] = inclusive;
@@ -188,44 +231,71 @@ __device__ __forceinline__ T ThreadScanInclusive(
     return ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, Int2Type<LENGTH - 1>());
 }
 
-
 /**
- * \brief Perform a sequential inclusive prefix scan over the statically-sized \p input array.  The aggregate is returned.
+ * @brief Perform a sequential inclusive prefix scan over the
+ *        statically-sized @p input array. The aggregate is returned.
  *
- * \tparam LENGTH     <b>[inferred]</b> LengthT of \p input and \p output arrays
- * \tparam T          <b>[inferred]</b> The data type to be scanned.
- * \tparam ScanOp     <b>[inferred]</b> Binary scan operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * @tparam LENGTH
+ *   <b>[inferred]</b> LengthT of @p input and @p output arrays
+ *
+ * @tparam T
+ *   <b>[inferred]</b> The data type to be scanned.
+ *
+ * @tparam ScanOp
+ *   <b>[inferred]</b> Binary scan operator type having member
+ *   <tt>T operator()(const T &a, const T &b)</tt>
+ *
+ * @param[in] input
+ *   Input array
+ *
+ * @param[out] output
+ *   Output array (may be aliased to @p input)
+ *
+ * @param[in] scan_op
+ *   Binary scan operator
  */
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ScanOp>
-__device__ __forceinline__ T ThreadScanInclusive(
-    T           (&input)[LENGTH],       ///< [in] Input array
-    T           (&output)[LENGTH],      ///< [out] Output array (may be aliased to \p input)
-    ScanOp      scan_op)                ///< [in] Binary scan operator
+template <int LENGTH, typename T, typename ScanOp>
+__device__ __forceinline__ T ThreadScanInclusive(T (&input)[LENGTH],
+                                                 T (&output)[LENGTH],
+                                                 ScanOp scan_op)
 {
     return ThreadScanInclusive<LENGTH>((T*) input, (T*) output, scan_op);
 }
 
-
 /**
- * \brief Perform a sequential inclusive prefix scan over \p LENGTH elements of the \p input array, seeded with the specified \p prefix.  The aggregate is returned.
+ * @brief Perform a sequential inclusive prefix scan over
+ *        @p LENGTH elements of the @p input array, seeded with the
+ *        specified @p prefix. The aggregate is returned.
  *
- * \tparam LENGTH     LengthT of \p input and \p output arrays
- * \tparam T          <b>[inferred]</b> The data type to be scanned.
- * \tparam ScanOp     <b>[inferred]</b> Binary scan operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * @tparam LENGTH
+ *   LengthT of @p input and @p output arrays
+ *
+ * @tparam T
+ *   <b>[inferred]</b> The data type to be scanned.
+ *
+ * @tparam ScanOp
+ *   <b>[inferred]</b> Binary scan operator type having member
+ *   <tt>T operator()(const T &a, const T &b)</tt>
+ *
+ * @param[in] input
+ *   Input array
+ *
+ * @param[out] output
+ *   Output array (may be aliased to @p input)
+ *
+ * @param[in] scan_op
+ *   Binary scan operator
+ *
+ * @param[in] prefix
+ *   Prefix to seed scan with
+ *
+ * @param[in] apply_prefix
+ *   Whether or not the calling thread should apply its prefix.
+ *   (Handy for preventing thread-0 from applying a prefix.)
  */
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ScanOp>
-__device__ __forceinline__ T ThreadScanInclusive(
-    T           *input,                 ///< [in] Input array
-    T           *output,                ///< [out] Output array (may be aliased to \p input)
-    ScanOp      scan_op,                ///< [in] Binary scan operator
-    T           prefix,                 ///< [in] Prefix to seed scan with
-    bool        apply_prefix = true)    ///< [in] Whether or not the calling thread should apply its prefix.  (Handy for preventing thread-0 from applying a prefix.)
+template <int LENGTH, typename T, typename ScanOp>
+__device__ __forceinline__ T
+ThreadScanInclusive(T *input, T *output, ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
     T inclusive = input[0];
     if (apply_prefix)
@@ -238,24 +308,43 @@ __device__ __forceinline__ T ThreadScanInclusive(
     return ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, Int2Type<LENGTH - 1>());
 }
 
-
 /**
- * \brief Perform a sequential inclusive prefix scan over the statically-sized \p input array, seeded with the specified \p prefix.  The aggregate is returned.
+ * @brief Perform a sequential inclusive prefix scan over the
+ *        statically-sized @p input array, seeded with the specified @p prefix.
+ *        The aggregate is returned.
  *
- * \tparam LENGTH     <b>[inferred]</b> LengthT of \p input and \p output arrays
- * \tparam T          <b>[inferred]</b> The data type to be scanned.
- * \tparam ScanOp     <b>[inferred]</b> Binary scan operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * @tparam LENGTH
+ *   <b>[inferred]</b> LengthT of @p input and @p output arrays
+ *
+ * @tparam T
+ *   <b>[inferred]</b> The data type to be scanned.
+ *
+ * @tparam ScanOp
+ *   <b>[inferred]</b> Binary scan operator type having member
+ *   <tt>T operator()(const T &a, const T &b)</tt>
+ *
+ * @param[in] input
+ *   Input array
+ *
+ * @param[out] output
+ *   Output array (may be aliased to @p input)
+ *
+ * @param[in] scan_op
+ *   Binary scan operator
+ *
+ * @param[in] prefix
+ *   Prefix to seed scan with
+ *
+ * @param[in] apply_prefix
+ *   Whether or not the calling thread should apply its prefix.
+ *   (Handy for preventing thread-0 from applying a prefix.)
  */
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ScanOp>
-__device__ __forceinline__ T ThreadScanInclusive(
-    T           (&input)[LENGTH],       ///< [in] Input array
-    T           (&output)[LENGTH],      ///< [out] Output array (may be aliased to \p input)
-    ScanOp      scan_op,                ///< [in] Binary scan operator
-    T           prefix,                 ///< [in] Prefix to seed scan with
-    bool        apply_prefix = true)    ///< [in] Whether or not the calling thread should apply its prefix.  (Handy for preventing thread-0 from applying a prefix.)
+template <int LENGTH, typename T, typename ScanOp>
+__device__ __forceinline__ T ThreadScanInclusive(T (&input)[LENGTH],
+                                                 T (&output)[LENGTH],
+                                                 ScanOp scan_op,
+                                                 T prefix,
+                                                 bool apply_prefix = true)
 {
     return ThreadScanInclusive<LENGTH>((T*) input, (T*) output, scan_op, prefix, apply_prefix);
 }

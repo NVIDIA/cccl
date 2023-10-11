@@ -27,7 +27,7 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Thread utilities for reading memory using PTX cache modifiers.
  */
 
@@ -49,7 +49,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 CUB_NAMESPACE_BEGIN
 
 /**
- * \addtogroup UtilIo
+ * @addtogroup UtilIo
  * @{
  */
 
@@ -58,30 +58,30 @@ CUB_NAMESPACE_BEGIN
 //-----------------------------------------------------------------------------
 
 /**
- * \brief Enumeration of cache modifiers for memory load operations.
+ * @brief Enumeration of cache modifiers for memory load operations.
  */
 enum CacheLoadModifier
 {
-    LOAD_DEFAULT,       ///< Default (no modifier)
-    LOAD_CA,            ///< Cache at all levels
-    LOAD_CG,            ///< Cache at global level
-    LOAD_CS,            ///< Cache streaming (likely to be accessed once)
-    LOAD_CV,            ///< Cache as volatile (including cached system lines)
-    LOAD_LDG,           ///< Cache as texture
-    LOAD_VOLATILE,      ///< Volatile (any memory space)
+  LOAD_DEFAULT,  ///< Default (no modifier)
+  LOAD_CA,       ///< Cache at all levels
+  LOAD_CG,       ///< Cache at global level
+  LOAD_CS,       ///< Cache streaming (likely to be accessed once)
+  LOAD_CV,       ///< Cache as volatile (including cached system lines)
+  LOAD_LDG,      ///< Cache as texture
+  LOAD_VOLATILE, ///< Volatile (any memory space)
 };
 
-
 /**
- * \name Thread I/O (cache modified)
+ * @name Thread I/O (cache modified)
  * @{
  */
 
 /**
- * \brief Thread utility for reading memory using cub::CacheLoadModifier cache modifiers.  Can be used to load any data type.
+ * @brief Thread utility for reading memory using cub::CacheLoadModifier cache modifiers.  
+ *        Can be used to load any data type.
  *
- * \par Example
- * \code
+ * @par Example
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/thread/thread_load.cuh>
  *
  * // 32-bit load using cache-global modifier:
@@ -102,8 +102,11 @@ enum CacheLoadModifier
  * TestFoo val = cub::ThreadLoad<cub::LOAD_CS>(d_in + threadIdx.x);
  * \endcode
  *
- * \tparam MODIFIER             <b>[inferred]</b> CacheLoadModifier enumeration
- * \tparam InputIteratorT       <b>[inferred]</b> Input iterator type \iterator
+ * @tparam MODIFIER             
+ *   <b>[inferred]</b> CacheLoadModifier enumeration
+ *
+ * @tparam InputIteratorT       
+ *   <b>[inferred]</b> Input iterator type \iterator
  */
 template <CacheLoadModifier MODIFIER,
           typename InputIteratorT>
@@ -339,7 +342,8 @@ __device__ __forceinline__ T ThreadLoadVolatilePointer(
     T                       *ptr,
     Int2Type<false>         /*is_primitive*/)
 {
-    typedef typename UnitWord<T>::VolatileWord VolatileWord;   // Word type for memcopying
+    // Word type for memcopying
+    typedef typename UnitWord<T>::VolatileWord VolatileWord;   
 
     constexpr int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
 
