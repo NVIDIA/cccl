@@ -641,6 +641,7 @@ template <class BidirectionalIterator, class Compare>
 #endif // __cuda_std__
 
 #include "__algorithm/comp.h"
+#include "__algorithm/half_positive.h"
 #include "__algorithm/swap_ranges.h"
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__debug"
@@ -698,32 +699,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _T1& __x, const _T2& __y) {return __p_(__y, __x);}
 };
-
-// Perform division by two quickly for positive integers (llvm.org/PR39129)
-
-template <typename _Integral>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr
-__enable_if_t
-<
-    is_integral<_Integral>::value,
-    _Integral
->
-__half_positive(_Integral __value)
-{
-    return static_cast<_Integral>(static_cast<__make_unsigned_t<_Integral>>(__value) / 2);
-}
-
-template <typename _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr
-__enable_if_t
-<
-    !is_integral<_Tp>::value,
-    _Tp
->
-__half_positive(_Tp __value)
-{
-    return __value / 2;
-}
 
 #ifdef _LIBCUDACXX_DEBUG
 
