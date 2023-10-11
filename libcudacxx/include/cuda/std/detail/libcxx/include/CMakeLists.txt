@@ -5,6 +5,7 @@ set(files
   __algorithm/comp_ref_type.h
   __algorithm/comp.h
   __algorithm/half_positive.h
+  __algorithm/none_of.h
   __algorithm/swap_ranges.h
   __availability
   __bit_reference
