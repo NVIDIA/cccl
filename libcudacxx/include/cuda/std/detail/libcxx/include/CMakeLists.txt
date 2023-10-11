@@ -1,6 +1,7 @@
 set(files
   __assert
   __algorithm/all_of.h
+  __algorithm/any_of.h
   __algorithm/comp_ref_type.h
   __algorithm/comp.h
   __algorithm/half_positive.h
