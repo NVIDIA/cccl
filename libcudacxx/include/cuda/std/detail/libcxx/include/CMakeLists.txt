@@ -4,6 +4,7 @@ set(files
   __algorithm/any_of.h
   __algorithm/comp_ref_type.h
   __algorithm/comp.h
+  __algorithm/find.h
   __algorithm/for_each_n.h
   __algorithm/for_each.h
   __algorithm/half_positive.h
