@@ -31,8 +31,6 @@
 #include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>
 
-#include <cuda/std/atomic>
-
 #include <algorithm>
 #include <numeric>
 
