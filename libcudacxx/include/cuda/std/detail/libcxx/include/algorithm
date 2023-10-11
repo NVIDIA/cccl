@@ -644,6 +644,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/any_of.h"
 #include "__algorithm/comp_ref_type.h"
 #include "__algorithm/comp.h"
+#include "__algorithm/for_each.h"
 #include "__algorithm/half_positive.h"
 #include "__algorithm/none_of.h"
 #include "__algorithm/swap_ranges.h"
@@ -703,18 +704,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _T1& __x, const _T2& __y) {return __p_(__y, __x);}
 };
-
-// for_each
-
-template <class _InputIterator, class _Function>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_Function
-for_each(_InputIterator __first, _InputIterator __last, _Function __f)
-{
-    for (; __first != __last; ++__first)
-        __f(*__first);
-    return __f;
-}
 
 #if _LIBCUDACXX_STD_VER > 14
 // for_each_n
