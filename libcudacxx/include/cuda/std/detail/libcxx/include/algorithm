@@ -640,6 +640,7 @@ template <class BidirectionalIterator, class Compare>
 #include <memory>
 #endif // __cuda_std__
 
+#include "__algorithm/comp.h"
 #include "__algorithm/swap_ranges.h"
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__debug"
@@ -675,76 +676,6 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-// I'd like to replace these with _CUDA_VSTD::equal_to<void>, but can't because:
-//   * That only works with C++14 and later, and
-//   * We haven't included <functional> here.
-template <class _T1, class _T2 = _T1>
-struct __equal_to
-{
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool operator()(const _T1& __x, const _T1& __y) const {return __x == __y;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool operator()(const _T1& __x, const _T2& __y) const {return __x == __y;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool operator()(const _T2& __x, const _T1& __y) const {return __x == __y;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool operator()(const _T2& __x, const _T2& __y) const {return __x == __y;}
-};
-
-template <class _T1>
-struct __equal_to<_T1, _T1>
-{
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    bool operator()(const _T1& __x, const _T1& __y) const {return __x == __y;}
-};
-
-template <class _T1>
-struct __equal_to<const _T1, _T1>
-{
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    bool operator()(const _T1& __x, const _T1& __y) const {return __x == __y;}
-};
-
-template <class _T1>
-struct __equal_to<_T1, const _T1>
-{
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    bool operator()(const _T1& __x, const _T1& __y) const {return __x == __y;}
-};
-
-template <class _T1, class _T2 = _T1>
-struct __less
-{
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    bool operator()(const _T1& __x, const _T1& __y) const {return __x < __y;}
-
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    bool operator()(const _T1& __x, const _T2& __y) const {return __x < __y;}
-
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    bool operator()(const _T2& __x, const _T1& __y) const {return __x < __y;}
-
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    bool operator()(const _T2& __x, const _T2& __y) const {return __x < __y;}
-};
-
-template <class _T1>
-struct __less<_T1, _T1>
-{
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    bool operator()(const _T1& __x, const _T1& __y) const {return __x < __y;}
-};
-
-template <class _T1>
-struct __less<const _T1, _T1>
-{
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    bool operator()(const _T1& __x, const _T1& __y) const {return __x < __y;}
-};
-
-template <class _T1>
-struct __less<_T1, const _T1>
-{
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-    bool operator()(const _T1& __x, const _T1& __y) const {return __x < __y;}
-};
 
 #ifndef __cuda_std__
 
@@ -1120,7 +1051,7 @@ find_end(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 {
     typedef typename iterator_traits<_ForwardIterator1>::value_type __v1;
     typedef typename iterator_traits<_ForwardIterator2>::value_type __v2;
-    return _CUDA_VSTD::find_end(__first1, __last1, __first2, __last2, __equal_to<__v1, __v2>());
+    return _CUDA_VSTD::find_end(__first1, __last1, __first2, __last2, __equal_to{});
 }
 
 // find_first_of
@@ -1158,7 +1089,7 @@ find_first_of(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 {
     typedef typename iterator_traits<_ForwardIterator1>::value_type __v1;
     typedef typename iterator_traits<_ForwardIterator2>::value_type __v2;
-    return _CUDA_VSTD::__find_first_of_ce(__first1, __last1, __first2, __last2, __equal_to<__v1, __v2>());
+    return _CUDA_VSTD::__find_first_of_ce(__first1, __last1, __first2, __last2, __equal_to{});
 }
 
 // adjacent_find
@@ -1188,8 +1119,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 _ForwardIterator
 adjacent_find(_ForwardIterator __first, _ForwardIterator __last)
 {
-    typedef typename iterator_traits<_ForwardIterator>::value_type __v;
-    return _CUDA_VSTD::adjacent_find(__first, __last, __equal_to<__v>());
+    return _CUDA_VSTD::adjacent_find(__first, __last, __equal_to{});
 }
 
 // count
@@ -1245,7 +1175,7 @@ mismatch(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __fi
 {
     typedef typename iterator_traits<_InputIterator1>::value_type __v1;
     typedef typename iterator_traits<_InputIterator2>::value_type __v2;
-    return _CUDA_VSTD::mismatch(__first1, __last1, __first2, __equal_to<__v1, __v2>());
+    return _CUDA_VSTD::mismatch(__first1, __last1, __first2, __equal_to{});
 }
 
 #if _LIBCUDACXX_STD_VER > 11
@@ -1272,7 +1202,7 @@ mismatch(_InputIterator1 __first1, _InputIterator1 __last1,
 {
     typedef typename iterator_traits<_InputIterator1>::value_type __v1;
     typedef typename iterator_traits<_InputIterator2>::value_type __v2;
-    return _CUDA_VSTD::mismatch(__first1, __last1, __first2, __last2, __equal_to<__v1, __v2>());
+    return _CUDA_VSTD::mismatch(__first1, __last1, __first2, __last2, __equal_to{});
 }
 #endif
 
@@ -1299,7 +1229,7 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first
 {
     typedef typename iterator_traits<_InputIterator1>::value_type __v1;
     typedef typename iterator_traits<_InputIterator2>::value_type __v2;
-    return _CUDA_VSTD::equal(__first1, __last1, __first2, __equal_to<__v1, __v2>());
+    return _CUDA_VSTD::equal(__first1, __last1, __first2, __equal_to{});
 }
 
 #if _LIBCUDACXX_STD_VER > 11
@@ -1352,7 +1282,7 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1,
 {
     typedef typename iterator_traits<_InputIterator1>::value_type __v1;
     typedef typename iterator_traits<_InputIterator2>::value_type __v2;
-    return _CUDA_VSTD::__equal(__first1, __last1, __first2, __last2, __equal_to<__v1, __v2>(),
+    return _CUDA_VSTD::__equal(__first1, __last1, __first2, __last2, __equal_to{},
         typename iterator_traits<_InputIterator1>::iterator_category(),
         typename iterator_traits<_InputIterator2>::iterator_category());
 }
@@ -1417,7 +1347,7 @@ is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 {
     typedef typename iterator_traits<_ForwardIterator1>::value_type __v1;
     typedef typename iterator_traits<_ForwardIterator2>::value_type __v2;
-    return _CUDA_VSTD::is_permutation(__first1, __last1, __first2, __equal_to<__v1, __v2>());
+    return _CUDA_VSTD::is_permutation(__first1, __last1, __first2, __equal_to{});
 }
 
 #if _LIBCUDACXX_STD_VER > 11
@@ -1514,7 +1444,7 @@ is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
     typedef typename iterator_traits<_ForwardIterator1>::value_type __v1;
     typedef typename iterator_traits<_ForwardIterator2>::value_type __v2;
     return _CUDA_VSTD::__is_permutation(__first1, __last1, __first2, __last2,
-        __equal_to<__v1, __v2>(),
+        __equal_to{},
         typename iterator_traits<_ForwardIterator1>::iterator_category(),
         typename iterator_traits<_ForwardIterator2>::iterator_category());
 }
@@ -1546,7 +1476,7 @@ search(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 {
     typedef typename iterator_traits<_ForwardIterator1>::value_type __v1;
     typedef typename iterator_traits<_ForwardIterator2>::value_type __v2;
-    return _CUDA_VSTD::search(__first1, __last1, __first2, __last2, __equal_to<__v1, __v2>());
+    return _CUDA_VSTD::search(__first1, __last1, __first2, __last2, __equal_to{});
 }
 
 
@@ -1656,9 +1586,8 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 _ForwardIterator
 search_n(_ForwardIterator __first, _ForwardIterator __last, _Size __count, const _Tp& __value_)
 {
-    typedef typename iterator_traits<_ForwardIterator>::value_type __v;
     return _CUDA_VSTD::search_n(__first, __last, __convert_to_integral(__count),
-                           __value_, __equal_to<__v, _Tp>());
+                           __value_, __equal_to{});
 }
 
 // copy
@@ -2205,8 +2134,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 _ForwardIterator
 unique(_ForwardIterator __first, _ForwardIterator __last)
 {
-    typedef typename iterator_traits<_ForwardIterator>::value_type __v;
-    return _CUDA_VSTD::unique(__first, __last, __equal_to<__v>());
+    return _CUDA_VSTD::unique(__first, __last, __equal_to{});
 }
 
 // unique_copy
@@ -2292,8 +2220,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 _OutputIterator
 unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
-    typedef typename iterator_traits<_InputIterator>::value_type __v;
-    return _CUDA_VSTD::unique_copy(__first, __last, __result, __equal_to<__v>());
+    return _CUDA_VSTD::unique_copy(__first, __last, __result, __equal_to{});
 }
 
 // reverse
@@ -2555,8 +2482,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _ForwardIterator
 min_element(_ForwardIterator __first, _ForwardIterator __last)
 {
-    return _CUDA_VSTD::min_element(__first, __last,
-              __less<typename iterator_traits<_ForwardIterator>::value_type>());
+    return _CUDA_VSTD::min_element(__first, __last, __less{});
 }
 
 // min
@@ -2576,7 +2502,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 const _Tp&
 min(const _Tp& __a, const _Tp& __b)
 {
-    return _CUDA_VSTD::min(__a, __b, __less<_Tp>());
+    return _CUDA_VSTD::min(__a, __b, __less{});
 }
 
 template<class _Tp, class _Compare>
@@ -2594,7 +2520,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _Tp
 min(::std::initializer_list<_Tp> __t)
 {
-    return *_CUDA_VSTD::min_element(__t.begin(), __t.end(), __less<_Tp>());
+    return *_CUDA_VSTD::min_element(__t.begin(), __t.end(), __less{});
 }
 
 // max_element
@@ -2624,8 +2550,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _ForwardIterator
 max_element(_ForwardIterator __first, _ForwardIterator __last)
 {
-    return _CUDA_VSTD::max_element(__first, __last,
-              __less<typename iterator_traits<_ForwardIterator>::value_type>());
+    return _CUDA_VSTD::max_element(__first, __last, __less{});
 }
 
 // max
@@ -2645,7 +2570,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 const _Tp&
 max(const _Tp& __a, const _Tp& __b)
 {
-    return _CUDA_VSTD::max(__a, __b, __less<_Tp>());
+    return _CUDA_VSTD::max(__a, __b, __less{});
 }
 
 template<class _Tp, class _Compare>
@@ -2663,7 +2588,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _Tp
 max(::std::initializer_list<_Tp> __t)
 {
-    return *_CUDA_VSTD::max_element(__t.begin(), __t.end(), __less<_Tp>());
+    return *_CUDA_VSTD::max_element(__t.begin(), __t.end(), __less{});
 }
 
 #if _LIBCUDACXX_STD_VER > 14
@@ -2685,7 +2610,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr
 const _Tp&
 clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi)
 {
-    return _CUDA_VSTD::clamp(__v, __lo, __hi, __less<_Tp>());
+    return _CUDA_VSTD::clamp(__v, __lo, __hi, __less{});
 }
 #endif
 
@@ -2748,8 +2673,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 std::pair<_ForwardIterator, _ForwardIterator>
 minmax_element(_ForwardIterator __first, _ForwardIterator __last)
 {
-    return _CUDA_VSTD::minmax_element(__first, __last,
-              __less<typename iterator_traits<_ForwardIterator>::value_type>());
+    return _CUDA_VSTD::minmax_element(__first, __last, __less{});
 }
 
 // minmax
@@ -2770,7 +2694,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 pair<const _Tp&, const _Tp&>
 minmax(const _Tp& __a, const _Tp& __b)
 {
-    return _CUDA_VSTD::minmax(__a, __b, __less<_Tp>());
+    return _CUDA_VSTD::minmax(__a, __b, __less{});
 }
 
 template<class _Tp, class _Compare>
@@ -2817,7 +2741,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 pair<_Tp, _Tp>
 minmax(::std::initializer_list<_Tp> __t)
 {
-    return _CUDA_VSTD::minmax(__t, __less<_Tp>());
+    return _CUDA_VSTD::minmax(__t, __less{});
 }
 
 #ifndef __cuda_std__
@@ -3668,7 +3592,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 _ForwardIterator
 is_sorted_until(_ForwardIterator __first, _ForwardIterator __last)
 {
-    return _CUDA_VSTD::is_sorted_until(__first, __last, __less<typename iterator_traits<_ForwardIterator>::value_type>());
+    return _CUDA_VSTD::is_sorted_until(__first, __last, __less{});
 }
 
 // is_sorted
@@ -3688,7 +3612,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 bool
 is_sorted(_ForwardIterator __first, _ForwardIterator __last)
 {
-    return _CUDA_VSTD::is_sorted(__first, __last, __less<typename iterator_traits<_ForwardIterator>::value_type>());
+    return _CUDA_VSTD::is_sorted(__first, __last, __less{});
 }
 
 // sort
@@ -4149,7 +4073,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-    _CUDA_VSTD::sort(__first, __last, __less<typename iterator_traits<_RandomAccessIterator>::value_type>());
+    _CUDA_VSTD::sort(__first, __last, __less{});
 }
 
 template <class _Tp>
@@ -4157,7 +4081,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 sort(_Tp** __first, _Tp** __last)
 {
-    _CUDA_VSTD::sort((size_t*)__first, (size_t*)__last, __less<size_t>());
+    _CUDA_VSTD::sort((size_t*)__first, (size_t*)__last, __less{}());
 }
 
 template <class _Tp>
@@ -4177,39 +4101,39 @@ sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last, _Compare __comp)
     _CUDA_VSTD::sort<_Tp*, _Comp_ref>(__first.base(), __last.base(), __comp);
 }
 
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<char>&, char*>(char*, char*, __less<char>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<wchar_t>&, wchar_t*>(wchar_t*, wchar_t*, __less<wchar_t>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<signed char>&, signed char*>(signed char*, signed char*, __less<signed char>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<unsigned char>&, unsigned char*>(unsigned char*, unsigned char*, __less<unsigned char>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<short>&, short*>(short*, short*, __less<short>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<unsigned short>&, unsigned short*>(unsigned short*, unsigned short*, __less<unsigned short>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<int>&, int*>(int*, int*, __less<int>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<unsigned>&, unsigned*>(unsigned*, unsigned*, __less<unsigned>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<long>&, long*>(long*, long*, __less<long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<unsigned long>&, unsigned long*>(unsigned long*, unsigned long*, __less<unsigned long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<long long>&, long long*>(long long*, long long*, __less<long long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<unsigned long long>&, unsigned long long*>(unsigned long long*, unsigned long long*, __less<unsigned long long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<float>&, float*>(float*, float*, __less<float>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<double>&, double*>(double*, double*, __less<double>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<long double>&, long double*>(long double*, long double*, __less<long double>&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less{}&))
 
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<char>&, char*>(char*, char*, __less<char>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<wchar_t>&, wchar_t*>(wchar_t*, wchar_t*, __less<wchar_t>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<signed char>&, signed char*>(signed char*, signed char*, __less<signed char>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<unsigned char>&, unsigned char*>(unsigned char*, unsigned char*, __less<unsigned char>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<short>&, short*>(short*, short*, __less<short>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<unsigned short>&, unsigned short*>(unsigned short*, unsigned short*, __less<unsigned short>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<int>&, int*>(int*, int*, __less<int>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<unsigned>&, unsigned*>(unsigned*, unsigned*, __less<unsigned>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<long>&, long*>(long*, long*, __less<long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<unsigned long>&, unsigned long*>(unsigned long*, unsigned long*, __less<unsigned long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<long long>&, long long*>(long long*, long long*, __less<long long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<unsigned long long>&, unsigned long long*>(unsigned long long*, unsigned long long*, __less<unsigned long long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<float>&, float*>(float*, float*, __less<float>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<double>&, double*>(double*, double*, __less<double>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<long double>&, long double*>(long double*, long double*, __less<long double>&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less{}&))
 
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS unsigned __sort5<__less<long double>&, long double*>(long double*, long double*, long double*, long double*, long double*, __less<long double>&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS unsigned __sort5<__less{}&))
 
 // lower_bound
 
@@ -4253,7 +4177,7 @@ _ForwardIterator
 lower_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
     return _CUDA_VSTD::lower_bound(__first, __last, __value_,
-                             __less<typename iterator_traits<_ForwardIterator>::value_type, _Tp>());
+                             __less{}());
 }
 
 // upper_bound
@@ -4298,7 +4222,7 @@ _ForwardIterator
 upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
     return _CUDA_VSTD::upper_bound(__first, __last, __value_,
-                             __less<_Tp, typename iterator_traits<_ForwardIterator>::value_type>());
+                             __less{}());
 }
 
 // equal_range
@@ -4355,7 +4279,7 @@ pair<_ForwardIterator, _ForwardIterator>
 equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
     return _CUDA_VSTD::equal_range(__first, __last, __value_,
-                             __less<typename iterator_traits<_ForwardIterator>::value_type, _Tp>());
+                             __less{}());
 }
 
 // binary_search
@@ -4386,7 +4310,7 @@ bool
 binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
     return _CUDA_VSTD::binary_search(__first, __last, __value_,
-                             __less<typename iterator_traits<_ForwardIterator>::value_type, _Tp>());
+                             __less{}());
 }
 
 // merge
@@ -4433,7 +4357,7 @@ merge(_InputIterator1 __first1, _InputIterator1 __last1,
 {
     typedef typename iterator_traits<_InputIterator1>::value_type __v1;
     typedef typename iterator_traits<_InputIterator2>::value_type __v2;
-    return _CUDA_VSTD::merge(__first1, __last1, __first2, __last2, __result, __less<__v1, __v2>());
+    return _CUDA_VSTD::merge(__first1, __last1, __first2, __last2, __result, __less{}());
 }
 
 // inplace_merge
@@ -4611,7 +4535,7 @@ void
 inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last)
 {
     _CUDA_VSTD::inplace_merge(__first, __middle, __last,
-                        __less<typename iterator_traits<_BidirectionalIterator>::value_type>());
+                        __less{}());
 }
 
 // stable_sort
@@ -4818,7 +4742,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-    _CUDA_VSTD::stable_sort(__first, __last, __less<typename iterator_traits<_RandomAccessIterator>::value_type>());
+    _CUDA_VSTD::stable_sort(__first, __last, __less{});
 }
 
 // is_heap_until
@@ -4856,7 +4780,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 _RandomAccessIterator
 is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-    return _CUDA_VSTD::is_heap_until(__first, __last, __less<typename iterator_traits<_RandomAccessIterator>::value_type>());
+    return _CUDA_VSTD::is_heap_until(__first, __last, __less{});
 }
 
 // is_heap
@@ -4876,7 +4800,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 bool
 is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-    return _CUDA_VSTD::is_heap(__first, __last, __less<typename iterator_traits<_RandomAccessIterator>::value_type>());
+    return _CUDA_VSTD::is_heap(__first, __last, __less{});
 }
 
 // push_heap
@@ -4923,7 +4847,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-    _CUDA_VSTD::push_heap(__first, __last, __less<typename iterator_traits<_RandomAccessIterator>::value_type>());
+    _CUDA_VSTD::push_heap(__first, __last, __less{});
 }
 
 // pop_heap
@@ -5011,7 +4935,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-    _CUDA_VSTD::pop_heap(__first, __last, __less<typename iterator_traits<_RandomAccessIterator>::value_type>());
+    _CUDA_VSTD::pop_heap(__first, __last, __less{});
 }
 
 // make_heap
@@ -5047,7 +4971,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 make_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-    _CUDA_VSTD::make_heap(__first, __last, __less<typename iterator_traits<_RandomAccessIterator>::value_type>());
+    _CUDA_VSTD::make_heap(__first, __last, __less{});
 }
 
 // sort_heap
@@ -5076,7 +5000,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-    _CUDA_VSTD::sort_heap(__first, __last, __less<typename iterator_traits<_RandomAccessIterator>::value_type>());
+    _CUDA_VSTD::sort_heap(__first, __last, __less{});
 }
 
 // partial_sort
@@ -5116,7 +5040,7 @@ void
 partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last)
 {
     _CUDA_VSTD::partial_sort(__first, __middle, __last,
-                       __less<typename iterator_traits<_RandomAccessIterator>::value_type>());
+                       __less{});
 }
 
 // partial_sort_copy
@@ -5162,7 +5086,7 @@ partial_sort_copy(_InputIterator __first, _InputIterator __last,
                   _RandomAccessIterator __result_first, _RandomAccessIterator __result_last)
 {
     return _CUDA_VSTD::partial_sort_copy(__first, __last, __result_first, __result_last,
-                                   __less<typename iterator_traits<_RandomAccessIterator>::value_type>());
+                                   __less{});
 }
 
 // nth_element
@@ -5369,7 +5293,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomAccessIterator __last)
 {
-    _CUDA_VSTD::nth_element(__first, __nth, __last, __less<typename iterator_traits<_RandomAccessIterator>::value_type>());
+    _CUDA_VSTD::nth_element(__first, __nth, __last, __less{});
 }
 
 // includes
@@ -5408,7 +5332,7 @@ bool
 includes(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2)
 {
     return _CUDA_VSTD::includes(__first1, __last1, __first2, __last2,
-                          __less<typename iterator_traits<_InputIterator1>::value_type,
+                          __less{}::value_type,
                                  typename iterator_traits<_InputIterator2>::value_type>());
 }
 
@@ -5457,7 +5381,7 @@ set_union(_InputIterator1 __first1, _InputIterator1 __last1,
           _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result)
 {
     return _CUDA_VSTD::set_union(__first1, __last1, __first2, __last2, __result,
-                          __less<typename iterator_traits<_InputIterator1>::value_type,
+                          __less{}::value_type,
                                  typename iterator_traits<_InputIterator2>::value_type>());
 }
 
@@ -5504,7 +5428,7 @@ set_intersection(_InputIterator1 __first1, _InputIterator1 __last1,
                  _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result)
 {
     return _CUDA_VSTD::set_intersection(__first1, __last1, __first2, __last2, __result,
-                                  __less<typename iterator_traits<_InputIterator1>::value_type,
+                                  __less{}::value_type,
                                          typename iterator_traits<_InputIterator2>::value_type>());
 }
 
@@ -5553,7 +5477,7 @@ set_difference(_InputIterator1 __first1, _InputIterator1 __last1,
                _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result)
 {
     return _CUDA_VSTD::set_difference(__first1, __last1, __first2, __last2, __result,
-                                __less<typename iterator_traits<_InputIterator1>::value_type,
+                                __less{}::value_type,
                                        typename iterator_traits<_InputIterator2>::value_type>());
 }
 
@@ -5607,7 +5531,7 @@ set_symmetric_difference(_InputIterator1 __first1, _InputIterator1 __last1,
                          _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result)
 {
     return _CUDA_VSTD::set_symmetric_difference(__first1, __last1, __first2, __last2, __result,
-                                          __less<typename iterator_traits<_InputIterator1>::value_type,
+                                          __less{}::value_type,
                                                  typename iterator_traits<_InputIterator2>::value_type>());
 }
 
@@ -5648,9 +5572,7 @@ bool
 lexicographical_compare(_InputIterator1 __first1, _InputIterator1 __last1,
                         _InputIterator2 __first2, _InputIterator2 __last2)
 {
-    return _CUDA_VSTD::lexicographical_compare(__first1, __last1, __first2, __last2,
-                                         __less<typename iterator_traits<_InputIterator1>::value_type,
-                                                typename iterator_traits<_InputIterator2>::value_type>());
+    return _CUDA_VSTD::lexicographical_compare(__first1, __last1, __first2, __last2, __less{});
 }
 
 #ifndef __cuda_std__
@@ -5699,7 +5621,7 @@ bool
 next_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
     return _CUDA_VSTD::next_permutation(__first, __last,
-                                  __less<typename iterator_traits<_BidirectionalIterator>::value_type>());
+                                  __less{}());
 }
 
 // prev_permutation
@@ -5747,7 +5669,7 @@ bool
 prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
     return _CUDA_VSTD::prev_permutation(__first, __last,
-                                  __less<typename iterator_traits<_BidirectionalIterator>::value_type>());
+                                  __less{}());
 }
 
 #endif
