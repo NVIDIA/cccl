@@ -40,6 +40,11 @@ template<
     using super_t = thrust::tuple<Ts...>;
     using super_t::super_t;
 
+    inline __host__ __device__
+    tuple_of_iterator_references()
+      : super_t()
+    {}
+
     // allow implicit construction from tuple<refs>
     inline __host__ __device__
     tuple_of_iterator_references(const super_t& other)
