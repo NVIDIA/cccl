@@ -22,7 +22,6 @@ AllowShortLambdasOnASingleLine: Empty
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterReturnType: None
 AlwaysBreakTemplateDeclarations: Yes
-AlwaysBreakAfterDefinitionReturnType: All
 AttributeMacros: [
                   'CUB_RUNTIME_FUNCTION',
                   'CUB_DETAIL_KERNEL_ATTRIBUTES',
