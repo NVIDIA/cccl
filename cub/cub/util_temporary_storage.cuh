@@ -57,8 +57,8 @@ cudaError_t AliasTemporaries(
     void*   (&allocations)[ALLOCATIONS],        ///< [in,out] Pointers to device allocations needed
     size_t  (&allocation_sizes)[ALLOCATIONS])   ///< [in] Sizes in bytes of device allocations needed
 {
-    const int ALIGN_BYTES   = 256;
-    const int ALIGN_MASK    = ~(ALIGN_BYTES - 1);
+    constexpr int ALIGN_BYTES   = 256;
+    constexpr int ALIGN_MASK    = ~(ALIGN_BYTES - 1);
 
     // Compute exclusive prefix sum over allocation requests
     size_t allocation_offsets[ALLOCATIONS];

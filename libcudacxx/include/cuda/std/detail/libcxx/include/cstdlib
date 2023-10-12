@@ -98,29 +98,25 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 #pragma GCC system_header
 #endif
 
+#if defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
+#  define _LIBCUDACXX_UNREACHABLE() __builtin_unreachable()
+#elif defined(__CUDA_ARCH__)
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_2)
-#ifdef __CUDA_ARCH__
 #  define _LIBCUDACXX_UNREACHABLE() __trap()
-#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
-#  define _LIBCUDACXX_UNREACHABLE() __builtin_unreachable()
-#endif // !__CUDA_ARCH__
 #elif defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
-#ifdef __CUDA_ARCH__
 #  define _LIBCUDACXX_UNREACHABLE() __builtin_assume(false)
-#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
+#else
 #  define _LIBCUDACXX_UNREACHABLE() __builtin_unreachable()
-#endif // !__CUDA_ARCH__
-#elif defined(_LIBCUDACXX_COMPILER_MSVC)
+#endif // CUDACC above 11.4
+#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
 #  define _LIBCUDACXX_UNREACHABLE() __assume(false)
 #elif defined(_LIBCUDACXX_COMPILER_GCC) || __has_builtin(__builtin_unreachable)
 #  define _LIBCUDACXX_UNREACHABLE() __builtin_unreachable()
 #else // Other compilers
-#ifdef __CUDA_ARCH__
-#  define _LIBCUDACXX_UNREACHABLE() __trap()
-#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
 #  define _LIBCUDACXX_UNREACHABLE() ::abort()
-#endif // !__CUDA_ARCH__
 #endif // Other compilers
+#endif // !__CUDA_ARCH__
 
 #ifdef _LIBCUDACXX_COMPILER_NVHPC
 #define _LIBCUDACXX_UNREACHABLE_AFTER_SWITCH()

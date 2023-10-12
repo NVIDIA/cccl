@@ -84,8 +84,8 @@ struct AgentHistogramPolicy
 
     static constexpr int VEC_SIZE = _VEC_SIZE;                      ///< Vector size for samples loading (1, 2, 4)
 
-    static const BlockLoadAlgorithm     LOAD_ALGORITHM          = _LOAD_ALGORITHM;          ///< The BlockLoad algorithm to use
-    static const CacheLoadModifier      LOAD_MODIFIER           = _LOAD_MODIFIER;           ///< Cache load modifier for reading input elements
+    static constexpr BlockLoadAlgorithm     LOAD_ALGORITHM          = _LOAD_ALGORITHM;          ///< The BlockLoad algorithm to use
+    static constexpr CacheLoadModifier      LOAD_MODIFIER           = _LOAD_MODIFIER;           ///< Cache load modifier for reading input elements
 };
 
 
@@ -145,7 +145,7 @@ struct AgentHistogram
     };
 
     /// Cache load modifier for reading input elements
-    static const CacheLoadModifier LOAD_MODIFIER = AgentHistogramPolicyT::LOAD_MODIFIER;
+    static constexpr CacheLoadModifier LOAD_MODIFIER = AgentHistogramPolicyT::LOAD_MODIFIER;
 
 
     /// Input iterator wrapper type (for applying cache modifier)

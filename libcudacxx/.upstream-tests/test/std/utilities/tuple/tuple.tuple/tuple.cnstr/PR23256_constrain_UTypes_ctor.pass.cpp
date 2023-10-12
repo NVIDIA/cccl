@@ -9,7 +9,7 @@
 
 
 // UNSUPPORTED: c++98, c++03
-// XFAIL: msvc
+// UNSUPPORTED: msvc
 
 // <cuda/std/tuple>
 

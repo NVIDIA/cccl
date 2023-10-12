@@ -438,7 +438,7 @@ struct digit_f
   template <class T>
   __host__ __device__ void operator()(T &src)
   {
-    const std::uint32_t src_size = sizeof(T) * 8;
+    constexpr std::uint32_t src_size = sizeof(T) * 8;
 
     if (src_bit_start >= src_size)
     {

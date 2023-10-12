@@ -202,7 +202,8 @@ class SubBenchResult:
 
         self.states = []
         for state in bench["states"]:
-            self.states.append(SubBenchState(state, axes_names, axes_values))
+            if not state["is_skipped"]:
+                self.states.append(SubBenchState(state, axes_names, axes_values))
 
     def __repr__(self):
         return str(self.__dict__)

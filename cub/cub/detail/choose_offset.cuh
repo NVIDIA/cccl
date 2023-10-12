@@ -29,8 +29,10 @@
 
 #include <cub/config.cuh>
 
+#include <cuda/std/iterator>
+#include <cuda/std/type_traits>
+
 #include <cstdint>
-#include <type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -45,18 +47,28 @@ template <typename NumItemsT>
 struct ChooseOffsetT
 {
   // NumItemsT must be an integral type (but not bool).
-  static_assert(
-    std::is_integral<NumItemsT>::value &&
-      !std::is_same<typename std::remove_cv<NumItemsT>::type, bool>::value,
-    "NumItemsT must be an integral type, but not bool");
+  static_assert(std::is_integral<NumItemsT>::value &&
+                  !std::is_same<typename std::remove_cv<NumItemsT>::type, bool>::value,
+                "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using Type = typename std::conditional<sizeof(NumItemsT) <= 4,
-                                         std::uint32_t,
-                                         unsigned long long>::type;
+  using Type =
+    typename std::conditional<sizeof(NumItemsT) <= 4, std::uint32_t, unsigned long long>::type;
 };
+
+/**
+ * common_iterator_value sets member type to the common_type of
+ * value_type for all argument types. used to get OffsetT in
+ * DeviceSegmentedReduce.
+ */
+template <typename... Iter>
+struct common_iterator_value
+{
+  using type = ::cuda::std::__common_type_t<::cuda::std::__iter_value_type<Iter>...>;
+};
+template <typename... Iter>
+using common_iterator_value_t = typename common_iterator_value<Iter...>::type;
 
 } // namespace detail
 
 CUB_NAMESPACE_END
-

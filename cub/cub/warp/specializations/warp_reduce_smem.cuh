@@ -133,7 +133,7 @@ struct WarpReduceSmem
         ReductionOp         reduction_op,           ///< [in] Reduction operator
         Int2Type<STEP>      /*step*/)
     {
-        const int OFFSET = 1 << STEP;
+        constexpr int OFFSET = 1 << STEP;
 
         // Share input through buffer
         ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);

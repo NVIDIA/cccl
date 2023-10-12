@@ -14,8 +14,9 @@ import libcudacxx.util
 class CXXCompiler(object):
     CM_Default = 0
     CM_PreProcess = 1
-    CM_Compile = 2
-    CM_Link = 3
+    CM_CheckCompileFlag = 2
+    CM_Compile = 3
+    CM_Link = 4
 
     def __init__(self, path, first_arg,
                  flags=None, compile_flags=None, link_flags=None,
@@ -146,13 +147,17 @@ class CXXCompiler(object):
         if self.type == 'nvcc':
             # Treat C++ as CUDA when the compiler is NVCC.
             self.source_lang = 'cu'
+        elif self.type == 'clang':
+            # Treat C++ as clang-cuda when the compiler is Clang.
+            self.source_lang = 'cu'
 
     def _basicCmd(self, source_files, out, mode=CM_Default, flags=[],
                   input_is_cxx=False):
         cmd = []
         if self.use_ccache \
-                and not mode == self.CM_Link \
-                and not mode == self.CM_PreProcess:
+            and not mode == self.CM_Link \
+            and not mode == self.CM_PreProcess \
+            and not mode == self.CM_CheckCompileFlag:
             cmd += [os.environ.get('CMAKE_CUDA_COMPILER_LAUNCHER')]
         cmd += [self.path] + ([self.first_arg] if self.first_arg != '' else [])
         if out is not None:
@@ -167,7 +172,8 @@ class CXXCompiler(object):
             raise TypeError('source_files must be a string or list')
         if mode == self.CM_PreProcess:
             cmd += ['-E']
-        elif mode == self.CM_Compile:
+        elif mode == self.CM_Compile \
+          or mode == self.CM_CheckCompileFlag:
             cmd += ['-c']
         cmd += self.flags
         if self.use_verify:
@@ -179,7 +185,9 @@ class CXXCompiler(object):
             cmd += self.compile_flags
             if self.use_warnings:
                 cmd += self.warning_flags
-        if mode != self.CM_PreProcess and mode != self.CM_Compile:
+        if mode != self.CM_PreProcess   \
+            and mode != self.CM_Compile \
+            and mode != self.CM_CheckCompileFlag:
             cmd += self.link_flags
         cmd += flags
         return cmd
@@ -189,9 +197,8 @@ class CXXCompiler(object):
                              mode=self.CM_PreProcess,
                              input_is_cxx=True)
 
-    def compileCmd(self, source_files, out=None, flags=[]):
-        return self._basicCmd(source_files, out, flags=flags,
-                             mode=self.CM_Compile,
+    def compileCmd(self, source_files, out=None, flags=[], mode = CM_Compile):
+        return self._basicCmd(source_files, out, flags=flags, mode=mode,
                              input_is_cxx=True) + ['-c']
 
     def linkCmd(self, source_files, out=None, flags=[]):
@@ -207,8 +214,14 @@ class CXXCompiler(object):
                                                   cwd=cwd)
         return cmd, out, err, rc
 
+    def checkCompileFlag(self, source_files, out=None, flags=[], cwd=None):
+        cmd = self.compileCmd(source_files, out, flags, self.CM_CheckCompileFlag)
+        out, err, rc = libcudacxx.util.executeCommand(cmd, env=self.compile_env,
+                                                  cwd=cwd)
+        return cmd, out, err, rc
+
     def compile(self, source_files, out=None, flags=[], cwd=None):
-        cmd = self.compileCmd(source_files, out, flags)
+        cmd = self.compileCmd(source_files, out, flags, self.CM_Compile)
         out, err, rc = libcudacxx.util.executeCommand(cmd, env=self.compile_env,
                                                   cwd=cwd)
         return cmd, out, err, rc
@@ -307,8 +320,7 @@ class CXXCompiler(object):
         if self.type is not None and self.type != 'nvcc' and self.type != 'msvc':
             flags += ['-Werror', '-fsyntax-only']
         empty_cpp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "empty.cpp")
-        cmd, out, err, rc = self.compile(empty_cpp, out=os.devnull,
-                                         flags=flags)
+        cmd, out, err, rc = self.checkCompileFlag(empty_cpp, out=os.devnull, flags=flags)
         if out.find('flag is not supported with the configured host compiler') != -1:
             return False
         if err.find('flag is not supported with the configured host compiler') != -1:

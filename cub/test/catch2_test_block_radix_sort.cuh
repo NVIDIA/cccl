@@ -123,8 +123,6 @@ void block_radix_sort(
     int end_bit,
     bool striped)
 {
-  cudaDeviceSetSharedMemConfig(ShmemConfig);
-
   kernel<InputIteratorT,
          OutputIteratorT,
          ActionT,
@@ -239,8 +237,6 @@ void block_radix_sort(
     int end_bit,
     bool striped)
 {
-  cudaDeviceSetSharedMemConfig(ShmemConfig);
-
   kernel<InputKeyIteratorT,
          InputValueIteratorT,
          OutputKeyIteratorT,

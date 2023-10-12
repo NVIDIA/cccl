@@ -109,7 +109,7 @@ template <template <typename> class... Policies>
 struct NumericTraits<c2h::custom_type_t<Policies...>>
 {
   using custom_t                 = c2h::custom_type_t<Policies...>;
-  static const Category CATEGORY = NOT_A_NUMBER;
+  static constexpr Category CATEGORY = NOT_A_NUMBER;
   enum
   {
     PRIMITIVE = false,

@@ -291,8 +291,8 @@ struct DeviceRleDispatch
   {
     cudaError error = cudaSuccess;
 
-    const int block_threads = ActivePolicyT::RleSweepPolicyT::BLOCK_THREADS;
-    const int items_per_thread = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
+    constexpr int block_threads = ActivePolicyT::RleSweepPolicyT::BLOCK_THREADS;
+    constexpr int items_per_thread = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
 
     do
     {

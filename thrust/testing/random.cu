@@ -739,6 +739,7 @@ void TestRanlux48Unequal(void)
 DECLARE_UNITTEST(TestRanlux48Unequal);
 
 
+THRUST_DISABLE_MSVC_WARNING_BEGIN(4305) // truncation warning
 template<typename Distribution, typename Validator>
   void ValidateDistributionCharacteristic(void)
 {
@@ -766,29 +767,23 @@ template<typename Distribution, typename Validator>
     // test Distribution with same range as engine
 
     // test host
-    THRUST_DISABLE_MSVC_WARNING_BEGIN(4305)
     thrust::generate(h.begin(), h.end(), Validator(
         Distribution(Engine::min, Engine::max)
     ));
-    THRUST_DISABLE_MSVC_WARNING_END(4305)
 
     ASSERT_EQUAL(true, h[0]);
 
     // test device
-    THRUST_DISABLE_MSVC_WARNING_BEGIN(4305)
     thrust::generate(d.begin(), d.end(), Validator(
         Distribution(Engine::min, Engine::max)
     ));
-    THRUST_DISABLE_MSVC_WARNING_END(4305)
 
     ASSERT_EQUAL(true, d[0]);
 
     // test Distribution with smaller range than engine
 
     // test host
-    THRUST_DISABLE_MSVC_WARNING_BEGIN(4305) // Truncation warning.
     typename Distribution::result_type engine_range = Engine::max - Engine::min;
-    THRUST_DISABLE_MSVC_WARNING_END(4305)
     thrust::generate(h.begin(), h.end(), Validator(Distribution(engine_range/3, (2 * engine_range)/3)));
 
     ASSERT_EQUAL(true, h[0]);
@@ -812,6 +807,7 @@ template<typename Distribution, typename Validator>
 
   ASSERT_EQUAL(true, d[0]);
 }
+THRUST_DISABLE_MSVC_WARNING_END(4305)
 
 
 template<typename Distribution>
@@ -836,7 +832,7 @@ void TestUniformIntDistributionMin(void)
 {
   typedef thrust::random::uniform_int_distribution<int>          int_dist;
   typedef thrust::random::uniform_int_distribution<unsigned int> uint_dist;
-  
+
   ValidateDistributionCharacteristic<int_dist,  ValidateDistributionMin<int_dist,  thrust::minstd_rand> >();
   ValidateDistributionCharacteristic<uint_dist, ValidateDistributionMin<uint_dist, thrust::minstd_rand> >();
 }
@@ -847,7 +843,7 @@ void TestUniformIntDistributionMax(void)
 {
   typedef thrust::random::uniform_int_distribution<int>          int_dist;
   typedef thrust::random::uniform_int_distribution<unsigned int> uint_dist;
-  
+
   ValidateDistributionCharacteristic<int_dist,  ValidateDistributionMax<int_dist,  thrust::minstd_rand> >();
   ValidateDistributionCharacteristic<uint_dist, ValidateDistributionMax<uint_dist, thrust::minstd_rand> >();
 }
@@ -869,7 +865,7 @@ void TestUniformRealDistributionMin(void)
 {
   typedef thrust::random::uniform_real_distribution<float>  float_dist;
   typedef thrust::random::uniform_real_distribution<double> double_dist;
-  
+
   ValidateDistributionCharacteristic<float_dist,  ValidateDistributionMin<float_dist,  thrust::minstd_rand> >();
   ValidateDistributionCharacteristic<double_dist, ValidateDistributionMin<double_dist, thrust::minstd_rand> >();
 }
@@ -880,7 +876,7 @@ void TestUniformRealDistributionMax(void)
 {
   typedef thrust::random::uniform_real_distribution<float>  float_dist;
   typedef thrust::random::uniform_real_distribution<double> double_dist;
-  
+
   ValidateDistributionCharacteristic<float_dist,  ValidateDistributionMax<float_dist,  thrust::minstd_rand> >();
   ValidateDistributionCharacteristic<double_dist, ValidateDistributionMax<double_dist, thrust::minstd_rand> >();
 }
@@ -902,7 +898,7 @@ void TestNormalDistributionMin(void)
 {
   typedef thrust::random::normal_distribution<float>  float_dist;
   typedef thrust::random::normal_distribution<double> double_dist;
-  
+
   ValidateDistributionCharacteristic<float_dist,  ValidateDistributionMin<float_dist,  thrust::minstd_rand> >();
   ValidateDistributionCharacteristic<double_dist, ValidateDistributionMin<double_dist, thrust::minstd_rand> >();
 }
@@ -913,7 +909,7 @@ void TestNormalDistributionMax(void)
 {
   typedef thrust::random::normal_distribution<float>  float_dist;
   typedef thrust::random::normal_distribution<double> double_dist;
-  
+
   ValidateDistributionCharacteristic<float_dist,  ValidateDistributionMax<float_dist,  thrust::minstd_rand> >();
   ValidateDistributionCharacteristic<double_dist, ValidateDistributionMax<double_dist, thrust::minstd_rand> >();
 }

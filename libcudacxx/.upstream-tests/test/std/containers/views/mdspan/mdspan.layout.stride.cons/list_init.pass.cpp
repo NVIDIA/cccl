@@ -31,11 +31,6 @@ int main(int, char**)
 {
     // From a span
     {
-        typedef int    data_t ;
-        typedef size_t index_t;
-
-        using my_ext = typename cuda::std::extents<size_t,dyn>;
-
         cuda::std::array<int,2> a{1, 128};
         cuda::std::span <int,2> s(a.data(), 2);
         cuda::std::layout_stride::mapping<cuda::std::extents<size_t,dyn, dyn>> m{cuda::std::dextents<size_t,2>{16, 32}, s};
@@ -45,9 +40,6 @@ int main(int, char**)
 
     // TEST(TestLayoutStrideListInitialization, test_list_initialization)
     {
-        typedef int    data_t ;
-        typedef size_t index_t;
-
         cuda::std::layout_stride::mapping<cuda::std::extents<size_t,dyn, dyn>> m{cuda::std::dextents<size_t,2>{16, 32}, cuda::std::array<int,2>{1, 128}};
 
         CHECK_MAPPING(m);
@@ -55,7 +47,6 @@ int main(int, char**)
 
     // From another mapping
     {
-        typedef int    data_t ;
         typedef size_t index_t;
 
         cuda::std::layout_stride::mapping<cuda::std::extents<index_t,dyn, dyn>> m0{cuda::std::dextents<index_t,2>{16, 32}, cuda::std::array<int,2>{1, 128}};

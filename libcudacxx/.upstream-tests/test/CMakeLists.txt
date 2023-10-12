@@ -32,10 +32,15 @@ else() # NOT LIBCUDACXX_TEST_WITH_NVRTC
   set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_CUDA_COMPILER}")
 endif()
 
-if (NOT MSVC)
+if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   set(LIBCUDACXX_WARNING_LEVEL
     "--compiler-options=-Wall \
-     --compiler-options=-Wextra")
+    --compiler-options=-Wextra")
+endif()
+
+# sccache cannot handle the -Fd option generationg pdb files
+if (MSVC)
+  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 endif()
 
 # Intel OneAPI compiler has fast math enabled by default which breaks almost all floating point tests
@@ -43,6 +48,18 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM")
   set(LIBCUDACXX_TEST_COMPILER_FLAGS
     "${LIBCUDACXX_TEST_COMPILER_FLAGS} \
     --compiler-options=-fno-fast-math")
+endif()
+
+if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+     " -Xclang -fcuda-allow-variadic-functions"
+     " -Xclang -Wno-unused-parameter"
+     " -Wno-unknown-cuda-version")
+
+  find_package(CUDAToolkit)
+
+  string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
+    " -L${CUDAToolkit_LIBRARY_DIR} -lcuda -lcudart")
 endif()
 
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
@@ -60,6 +77,14 @@ if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
   set(LIBCUDACXX_TEST_LINKER_FLAGS
     "${LIBCUDACXX_TEST_LINKER_FLAGS} \
     -stdpar")
+endif()
+
+if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
+  set(LIBCUDACXX_TEST_COMPILER_FLAGS
+    "${LIBCUDACXX_TEST_COMPILER_FLAGS} \
+    ${LIBCUDACXX_FORCE_INCLUDE} \
+    -I${libcudacxx_SOURCE_DIR}/include \
+    ${LIBCUDACXX_WARNING_LEVEL}")
 endif()
 
 set(LIBCUDACXX_COMPUTE_ARCHS_STRING

@@ -49,7 +49,7 @@ __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_sta
   __shared__ temp_storage_t temp_storage;
 
   scan_op_t scan_op{};
-  const unsigned int threads_in_warp = 32;
+  constexpr unsigned int threads_in_warp = 32;
   const unsigned int tid             = threadIdx.x;
 
   // Construct prefix op
@@ -107,13 +107,13 @@ void decoupled_look_back_example(int blocks_in_grid)
   // Initialize temporary storage
   scan_tile_state_t tile_status;
   tile_status.Init(blocks_in_grid, d_temp_storage, temp_storage_bytes);
-  const unsigned int threads_in_init_block = 256;
+  constexpr unsigned int threads_in_init_block = 256;
   const unsigned int blocks_in_init_grid   = cub::DivideAndRoundUp(blocks_in_grid,
                                                                  threads_in_init_block);
   init_kernel<<<blocks_in_init_grid, threads_in_init_block>>>(tile_status, blocks_in_grid);
 
   // Launch decoupled look-back
-  const unsigned int threads_in_block = 256;
+  constexpr unsigned int threads_in_block = 256;
   decoupled_look_back_kernel<<<blocks_in_grid, threads_in_block>>>(tile_status);
 
   // Wait for kernel to finish

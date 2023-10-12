@@ -554,19 +554,19 @@ auto as_writable_bytes(span<_Tp, _Extent> __s) noexcept
 
 //  Deduction guides
 template<class _Tp, size_t _Sz>
-    span(_Tp (&)[_Sz]) -> span<_Tp, _Sz>;
+_LIBCUDACXX_HOST_DEVICE span(_Tp (&)[_Sz]) -> span<_Tp, _Sz>;
 
 template<class _Tp, size_t _Sz>
-    span(array<_Tp, _Sz>&) -> span<_Tp, _Sz>;
+_LIBCUDACXX_HOST_DEVICE span(array<_Tp, _Sz>&) -> span<_Tp, _Sz>;
 
 template<class _Tp, size_t _Sz>
-    span(const array<_Tp, _Sz>&) -> span<const _Tp, _Sz>;
+_LIBCUDACXX_HOST_DEVICE span(const array<_Tp, _Sz>&) -> span<const _Tp, _Sz>;
 
 template<class _Container>
-    span(_Container&) -> span<typename _Container::value_type>;
+_LIBCUDACXX_HOST_DEVICE span(_Container&) -> span<typename _Container::value_type>;
 
 template<class _Container>
-    span(const _Container&) -> span<const typename _Container::value_type>;
+_LIBCUDACXX_HOST_DEVICE span(const _Container&) -> span<const typename _Container::value_type>;
 
 #endif // _LIBCUDACXX_STD_VER > 14
 

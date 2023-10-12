@@ -56,7 +56,7 @@ __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_sta
   __shared__ temp_storage_t temp_storage;
 
   scan_op_t scan_op{};
-  const unsigned int threads_in_warp = 32;
+  constexpr unsigned int threads_in_warp = 32;
   const unsigned int tid             = threadIdx.x;
 
   // Construct prefix op
@@ -130,7 +130,7 @@ CUB_TEST("Decoupled look-back works with various message types",
   using message_t         = typename c2h::get<0, TestType>;
   using scan_tile_state_t = cub::ScanTileState<message_t>;
 
-  const int max_tiles = 1024 * 1024;
+  constexpr int max_tiles = 1024 * 1024;
   const int num_tiles = GENERATE_COPY(take(10, random(1, max_tiles)));
 
   thrust::device_vector<message_t> tile_data(num_tiles);
@@ -152,14 +152,14 @@ CUB_TEST("Decoupled look-back works with various message types",
   cudaError_t status = tile_status.Init(num_tiles, d_temp_storage, temp_storage_bytes);
   REQUIRE(status == cudaSuccess);
 
-  const unsigned int threads_in_init_block = 256;
+  constexpr unsigned int threads_in_init_block = 256;
   const unsigned int blocks_in_init_grid = cub::DivideAndRoundUp(num_tiles, threads_in_init_block);
   init_kernel<<<blocks_in_init_grid, threads_in_init_block>>>(tile_status, num_tiles);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
   // Launch decoupled look-back
-  const unsigned int threads_in_block = 256;
+  constexpr unsigned int threads_in_block = 256;
   decoupled_look_back_kernel<<<num_tiles, threads_in_block>>>(tile_status, d_tile_data);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());

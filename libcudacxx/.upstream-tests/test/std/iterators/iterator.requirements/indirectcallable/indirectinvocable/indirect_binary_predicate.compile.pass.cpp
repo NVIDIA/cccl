@@ -33,6 +33,10 @@ struct GoodPredicate {
 // Should work when all constraints are satisfied
 static_assert(cuda::std::indirect_binary_predicate<GoodPredicate<It1, It2>, It1, It2>);
 static_assert(cuda::std::indirect_binary_predicate<bool(*)(int, float), int*, float*>);
+
+#ifdef TEST_COMPILER_CLANG_CUDA
+#pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
+#endif // TEST_COMPILER_CLANG_CUDA
 #ifndef __CUDA_ARCH__
 auto lambda = [](int i, long j) { return i == j; };
 static_assert(cuda::std::indirect_binary_predicate<decltype(lambda), int*, int*>);

@@ -1079,7 +1079,7 @@ void Test(
     // Key alias type
     using KeyAliasT = typename UnwrapHalfAndBfloat16<KeyT>::Type;
 
-    const bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+    constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
     printf("%s %s cub::DeviceRadixSort %zd items, %d segments, "
            "%d-byte keys (%s) %d-byte values (%s), %d-byte num_items (%s), "
@@ -1309,7 +1309,7 @@ void TestBackend(KeyT                *h_keys,
   constexpr auto SegmentedNoOverwrite    = CDP_SEGMENTED_NO_OVERWRITE;
 #endif // TEST_CDP
 
-  const bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+  constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
   // A conservative check assuming overwrite is allowed.
   if (!HasEnoughMemory<KeyT, ValueT>(static_cast<std::size_t>(num_items), true))
@@ -1754,7 +1754,7 @@ void TestGen(
     if (WITH_PRE_SORTED)
     {
         // Presorting is only used for testing large input arrays.
-        const std::size_t large_num_items = std::size_t(4350000007ull);
+        constexpr std::size_t large_num_items = std::size_t(4350000007ull);
 
         // A conservative check for memory, as we don't know ValueT or whether
         // the overwrite is allowed until later.
@@ -1803,7 +1803,7 @@ void Test(
     int         begin_bit,
     int         end_bit)
 {
-    const bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+    constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
     std::unique_ptr<KeyT[]> h_keys(new KeyT[num_items]);
 
@@ -1853,9 +1853,9 @@ void Test(
 #if TEST_VALUE_TYPE == 0
 void TestUnspecifiedRanges()
 {
-  const std::size_t num_items = 1024 * 1024;
-  const std::size_t max_segments = 42;
-  const std::size_t avg_segment_size = num_items / max_segments;
+  constexpr std::size_t num_items = 1024 * 1024;
+  constexpr std::size_t max_segments = 42;
+  constexpr std::size_t avg_segment_size = num_items / max_segments;
 
   for (int iteration = 0; iteration < 4; iteration++)
   {
@@ -2038,7 +2038,7 @@ struct bit_selector
 template <class BeginBitT, class EndBitT, class... Ts>
 void device_radix_sort_keys_allows_implicit_conversions_for_bits_helper(BeginBitT begin_bit, EndBitT end_bit, Ts... args)
 {
-  const int num_items = 0;
+  constexpr int num_items = 0;
 
   {
     std::size_t temp_storage_bytes = 0;
@@ -2092,7 +2092,7 @@ void device_radix_sort_pairs_allows_implicit_conversions_for_bits_helper(BeginBi
                                                                          EndBitT end_bit,
                                                                          Ts... args)
 {
-  const int num_items = 0;
+  constexpr int num_items = 0;
 
   {
     std::size_t temp_storage_bytes = 0;

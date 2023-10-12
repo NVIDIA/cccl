@@ -1491,10 +1491,10 @@ void TestIntegerBinCalcs()
   constexpr int num_bins = num_levels - 1;
 
   int h_histogram[num_bins]{};
-  const int h_histogram_ref[num_bins]{1, 5, 0, 2, 1, 0, 0};
-  const int h_samples[]{2, 6, 7, 2, 3, 0, 2, 2, 6, 999};
-  const int lower_level = 0;
-  const int upper_level = 12;
+  constexpr int h_histogram_ref[num_bins]{1, 5, 0, 2, 1, 0, 0};
+  constexpr int h_samples[]{2, 6, 7, 2, 3, 0, 2, 2, 6, 999};
+  constexpr int lower_level = 0;
+  constexpr int upper_level = 12;
 
   constexpr int num_samples = sizeof(h_samples) / sizeof(h_samples[0]);
 

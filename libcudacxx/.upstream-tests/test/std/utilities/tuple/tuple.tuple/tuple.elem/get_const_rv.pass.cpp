@@ -65,7 +65,6 @@ int main(int, char**)
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(p))), "");
     }
 
-#if !defined(TEST_COMPILER_MSVC_2017)
     {
     int x = 42;
     int const y = 43;
@@ -75,7 +74,6 @@ int main(int, char**)
     static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<1>(cuda::std::move(p)))>::value, "");
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(p))), "");
     }
-#endif
 
 #if TEST_STD_VER > 11
     {

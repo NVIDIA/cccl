@@ -48,7 +48,7 @@ class WarpExchangeShfl
                 "WARP_EXCHANGE_SHUFFLE currently only works when ITEMS_PER_THREAD == "
                 "LOGICAL_WARP_THREADS");
 
-  constexpr static bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
 
   // concrete recursion class
   template <typename OutputT, int IDX, int SIZE> 

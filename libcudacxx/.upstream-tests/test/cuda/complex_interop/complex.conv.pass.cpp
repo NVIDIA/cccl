@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: msvc
+
 #include <nv/target>
 
 #include <complex>

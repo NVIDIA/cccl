@@ -358,7 +358,7 @@ struct object_with_non_trivial_ctor
 
 void nontrivial_constructor_test()
 {
-  const int num_buffers = 3;
+  constexpr int num_buffers = 3;
   thrust::device_vector<object_with_non_trivial_ctor> a(num_buffers,
                                                         object_with_non_trivial_ctor(99));
   thrust::device_vector<object_with_non_trivial_ctor> b(num_buffers);
@@ -426,7 +426,7 @@ int main(int argc, char **argv)
   using ByteOffsetT = uint32_t;
 
   // Total number of bytes that are targeted to be copied on each run
-  const RangeOffsetT target_copy_size = 64U << 20;
+  constexpr RangeOffsetT target_copy_size = 64U << 20;
 
   // The number of randomly
   constexpr std::size_t num_rnd_range_tests = 32;

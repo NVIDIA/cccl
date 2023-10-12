@@ -530,7 +530,7 @@ struct DispatchSpmv
                     break;
                 }
 
-                const int threads_in_block = EMPTY_MATRIX_KERNEL_THREADS;
+                constexpr int threads_in_block = EMPTY_MATRIX_KERNEL_THREADS;
                 const int blocks_in_grid = cub::DivideAndRoundUp(spmv_params.num_rows,
                                                                  threads_in_block);
 

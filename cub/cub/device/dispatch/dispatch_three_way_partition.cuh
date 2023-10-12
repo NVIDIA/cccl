@@ -166,7 +166,7 @@ struct DispatchThreeWayPartitionIf
   using AccumPackT = typename AccumPackHelperT::pack_t;
   using ScanTileStateT = cub::ScanTileState<AccumPackT>;
 
-  constexpr static int INIT_KERNEL_THREADS = 256;
+  static constexpr int INIT_KERNEL_THREADS = 256;
 
   void *d_temp_storage;
   std::size_t &temp_storage_bytes;
@@ -216,8 +216,8 @@ struct DispatchThreeWayPartitionIf
   {
     cudaError error = cudaSuccess;
 
-    const int block_threads = ActivePolicyT::ThreeWayPartitionPolicy::BLOCK_THREADS;
-    const int items_per_thread = ActivePolicyT::ThreeWayPartitionPolicy::ITEMS_PER_THREAD;
+    constexpr int block_threads = ActivePolicyT::ThreeWayPartitionPolicy::BLOCK_THREADS;
+    constexpr int items_per_thread = ActivePolicyT::ThreeWayPartitionPolicy::ITEMS_PER_THREAD;
 
     do
     {

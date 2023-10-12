@@ -93,7 +93,7 @@ struct AgentReduceByKeyPolicy
   static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
 
   ///< The BlockScan algorithm to use
-  static constexpr const BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
 
   struct detail 
   {
