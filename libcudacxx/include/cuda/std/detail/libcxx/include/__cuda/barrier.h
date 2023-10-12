@@ -224,11 +224,11 @@ public:
                 int __inc = __popc(__active) * __update;
 
                 unsigned __laneid;
-                asm ("mov.u32 %0, %laneid;" : "=r"(__laneid));
+                asm ("mov.u32 %0, %%laneid;" : "=r"(__laneid));
                 int __leader = __ffs(__active) - 1;
                 // All threads in mask synchronize here, establishing cummulativity to the __leader:
                 __syncwarp(__mask);
-                if(__leader == __laneid)
+                if(__leader == static_cast<int>(__laneid))
                 {
                     __token = __barrier.arrive(__inc);
                 }
@@ -358,9 +358,9 @@ private:
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_80, (
                 asm volatile ("{"
-                    ".reg .pred %p;"
-                    "mbarrier.test_wait.parity.shared.b64 %p, [%1], %2;"
-                    "selp.u16 %0, 1, 0, %p;"
+                    ".reg .pred %%p;"
+                    "mbarrier.test_wait.parity.shared.b64 %%p, [%1], %2;"
+                    "selp.u16 %0, 1, 0, %%p;"
                     "}"
                     : "=h"(__ready)
                     : "r"(static_cast<uint32_t>(__cvta_generic_to_shared(&__barrier))),

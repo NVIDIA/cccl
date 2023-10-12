@@ -75,7 +75,6 @@ int main(int, char**)
         assert(cuda::std::get<1>(t1) == int('a'));
         assert(cuda::std::get<2>(t1).id_ == 2);
     }
-#if !defined(TEST_COMPILER_MSVC_2017)
     {
         // Test that tuple evaluates correctly applies an lvalue reference
         // before evaluating is_assignable (ie 'is_assignable<int&, int&>')
@@ -88,6 +87,5 @@ int main(int, char**)
         assert(cuda::std::get<0>(t) == 43);
         assert(&cuda::std::get<0>(t) == &x);
     }
-#endif
   return 0;
 }

@@ -421,41 +421,41 @@ __MDSPAN_TEMPLATE_REQUIRES(
   /* requires */ __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(is_integral, _SizeTypes) /* && ... */) &&
   (sizeof...(_SizeTypes) > 0)
 )
-explicit mdspan(_ElementType*, _SizeTypes...)
+_LIBCUDACXX_HOST_DEVICE explicit mdspan(_ElementType*, _SizeTypes...)
   -> mdspan<_ElementType, dextents<size_t, sizeof...(_SizeTypes)>>;
 
 __MDSPAN_TEMPLATE_REQUIRES(
   class _Pointer,
   (_LIBCUDACXX_TRAIT(is_pointer, _CUDA_VSTD::remove_reference_t<_Pointer>))
 )
-mdspan(_Pointer&&) -> mdspan<_CUDA_VSTD::remove_pointer_t<_CUDA_VSTD::remove_reference_t<_Pointer>>, extents<size_t>>;
+_LIBCUDACXX_HOST_DEVICE  mdspan(_Pointer&&) -> mdspan<_CUDA_VSTD::remove_pointer_t<_CUDA_VSTD::remove_reference_t<_Pointer>>, extents<size_t>>;
 __MDSPAN_TEMPLATE_REQUIRES(
   class _CArray,
   (_LIBCUDACXX_TRAIT(is_array, _CArray) && (rank_v<_CArray> == 1))
 )
-mdspan(_CArray&) -> mdspan<_CUDA_VSTD::remove_all_extents_t<_CArray>, extents<size_t, _CUDA_VSTD::extent_v<_CArray,0>>>;
+_LIBCUDACXX_HOST_DEVICE mdspan(_CArray&) -> mdspan<_CUDA_VSTD::remove_all_extents_t<_CArray>, extents<size_t, _CUDA_VSTD::extent_v<_CArray,0>>>;
 
 template <class _ElementType, class _SizeType, size_t _Np>
-mdspan(_ElementType*, const _CUDA_VSTD::array<_SizeType, _Np>&)
+_LIBCUDACXX_HOST_DEVICE mdspan(_ElementType*, const _CUDA_VSTD::array<_SizeType, _Np>&)
   -> mdspan<_ElementType, dextents<size_t, _Np>>;
 
 template <class _ElementType, class _SizeType, size_t _Np>
-mdspan(_ElementType*, _CUDA_VSTD::span<_SizeType, _Np>)
+_LIBCUDACXX_HOST_DEVICE mdspan(_ElementType*, _CUDA_VSTD::span<_SizeType, _Np>)
   -> mdspan<_ElementType, dextents<size_t, _Np>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
 // seems to throw off automatic deduction guides.
 template <class _ElementType, class _SizeType, size_t... _ExtentsPack>
-mdspan(_ElementType*, const extents<_SizeType, _ExtentsPack...>&)
+_LIBCUDACXX_HOST_DEVICE mdspan(_ElementType*, const extents<_SizeType, _ExtentsPack...>&)
   -> mdspan<_ElementType, extents<_SizeType, _ExtentsPack...>>;
 
 template <class _ElementType, class _MappingType>
-mdspan(_ElementType*, const _MappingType&)
+_LIBCUDACXX_HOST_DEVICE mdspan(_ElementType*, const _MappingType&)
   -> mdspan<_ElementType, typename _MappingType::extents_type, typename _MappingType::layout_type>;
 
 template <class _MappingType, class _AccessorType>
-mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+_LIBCUDACXX_HOST_DEVICE mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> mdspan<typename _AccessorType::element_type, typename _MappingType::extents_type, typename _MappingType::layout_type, _AccessorType>;
 #endif
 

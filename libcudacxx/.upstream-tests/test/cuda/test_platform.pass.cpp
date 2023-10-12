@@ -21,11 +21,13 @@
 #  define TEST_NVCC
 #elif defined(__NVCOMPILER)
 #  define TEST_NVCXX
+#elif defined(__CUDA__)
+#  define TEST_CLANG_CUDA
 #else
 #  define TEST_HOST
 #endif
 
-#if defined(TEST_NVCC)
+#if defined(TEST_NVCC) || defined(TEST_CLANG_CUDA)
 
 __host__ __device__ void test() {
 #if defined(__CUDA_ARCH__)

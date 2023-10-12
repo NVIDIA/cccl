@@ -132,7 +132,7 @@ __enable_if_t
 >
 __mu(_Ti& __ti, tuple<_Uj...>& __uj)
 {
-    typedef typename __make_tuple_indices<sizeof...(_Uj)>::type __indices;
+    typedef __make_tuple_indices_t<sizeof...(_Uj)> __indices;
     return _CUDA_VSTD::__mu_expand(__ti, __uj, __indices());
 }
 
@@ -142,7 +142,7 @@ struct __mu_return2 {};
 template <class _Ti, class _Uj>
 struct __mu_return2<true, _Ti, _Uj>
 {
-    typedef typename tuple_element<is_placeholder<_Ti>::value - 1, _Uj>::type type;
+  typedef __tuple_element_t<is_placeholder<_Ti>::value - 1, _Uj> type;
 };
 
 template <class _Ti, class _Uj>
@@ -154,8 +154,8 @@ __enable_if_t
 >
 __mu(_Ti&, _Uj& __uj)
 {
-    const size_t _Indx = is_placeholder<_Ti>::value - 1;
-    return _CUDA_VSTD::forward<typename tuple_element<_Indx, _Uj>::type>(_CUDA_VSTD::get<_Indx>(__uj));
+  const size_t _Indx = is_placeholder<_Ti>::value - 1;
+  return _CUDA_VSTD::forward<__tuple_element_t<_Indx, _Uj>>(_CUDA_VSTD::get<_Indx>(__uj));
 }
 
 template <class _Ti, class _Uj>
@@ -197,8 +197,7 @@ struct __mu_return_impl<_Ti, false, true, false, tuple<_Uj...> >
 template <class _Ti, class _TupleUj>
 struct __mu_return_impl<_Ti, false, false, true, _TupleUj>
 {
-    typedef typename tuple_element<is_placeholder<_Ti>::value - 1,
-                                   _TupleUj>::type&& type;
+  typedef __tuple_element_t<is_placeholder<_Ti>::value - 1, _TupleUj>&& type;
 };
 
 template <class _Ti, class _TupleUj>
@@ -298,7 +297,7 @@ private:
     _Fd __f_;
     _Td __bound_args_;
 
-    typedef typename __make_tuple_indices<sizeof...(_BoundArgs)>::type __indices;
+    typedef __make_tuple_indices_t<sizeof...(_BoundArgs)> __indices;
 public:
     template <class _Gp, class ..._BA,
               class = __enable_if_t
