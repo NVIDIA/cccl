@@ -60,11 +60,14 @@ namespace detail
      constexpr __host__ __device__ value_type operator()() const noexcept { return value; }
    };
 
- /// typedef for true_type
+ /// typedef for true_type, delete when no longer needed?
  typedef integral_constant<bool, true>  true_type;
 
- /// typedef for true_type
+ /// typedef for true_type, delete when no longer needed?
  typedef integral_constant<bool, false> false_type;
+
+ using true_types = cuda::std::true_type; // avoid friction with rest of codebase
+ using false_types = cuda::std::false_type; // better name
 
 //template<typename T> struct is_integral : public std::tr1::is_integral<T> {};
 template<typename T> struct is_integral                           : public false_type {};
@@ -238,16 +241,7 @@ template<typename T>
 }; // end remove_reference
 
 template<typename T1, typename T2>
-  struct is_same
-    : public false_type
-{
-}; // end is_same
-
-template<typename T>
-  struct is_same<T,T>
-    : public true_type
-{
-}; // end is_same
+using is_same = cuda::std::is_same<T1, T2>;
 
 template<typename T1, typename T2>
   struct lazy_is_same

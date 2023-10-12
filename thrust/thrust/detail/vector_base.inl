@@ -1273,7 +1273,7 @@ namespace detail
 template <typename InputIterator1, typename InputIterator2>
 bool vector_equal(InputIterator1 first1, InputIterator1 last1,
                   InputIterator2 first2,
-                  thrust::detail::true_type)
+                  thrust::detail::true_types)
 {
   return thrust::equal(first1, last1, first2);
 }
@@ -1282,7 +1282,7 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1,
 template <typename InputIterator1, typename InputIterator2>
 bool vector_equal(InputIterator1 first1, InputIterator1 last1,
                   InputIterator2 first2,
-                  thrust::detail::false_type)
+                  thrust::detail::false_types)
 {
   typename thrust::iterator_difference<InputIterator1>::type n = thrust::distance(first1,last1);
 
@@ -1299,6 +1299,7 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1,
 
   return thrust::equal(rng1.begin(), rng1.end(), rng2.begin());
 }
+
 
 template <typename InputIterator1, typename InputIterator2>
 bool vector_equal(InputIterator1 first1, InputIterator1 last1,
