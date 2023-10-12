@@ -394,8 +394,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
 template<class _Tp, class... _Args,
          class = __enable_if_t<(is_same_v<_Tp, _Args> && ...), void>
          >
-array(_Tp, _Args...)
-  -> array<_Tp, 1 + sizeof...(_Args)>;
+_LIBCUDACXX_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
 #endif
 
 template <class _Tp, size_t _Size>

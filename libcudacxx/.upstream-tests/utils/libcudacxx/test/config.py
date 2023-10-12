@@ -628,12 +628,17 @@ class Configuration(object):
             self.config.available_features.add("nvrtc")
         if self.cxx.type == 'nvcc':
             self.cxx.compile_flags += ['--extended-lambda']
+        real_arch_format = '-gencode=arch=compute_{0},code=sm_{0}'
+        virt_arch_format = '-gencode=arch=compute_{0},code=compute_{0}'
+        if self.cxx.type == 'clang':
+            real_arch_format = '--cuda-gpu-arch=sm_{0}'
+            virt_arch_format = '--cuda-gpu-arch=compute_{0}'
         pre_sm_32 = True
         pre_sm_60 = True
         pre_sm_70 = True
         pre_sm_80 = True
         pre_sm_90 = True
-        if compute_archs and self.cxx.type == 'nvcc':
+        if compute_archs and (self.cxx.type == 'nvcc' or self.cxx.type == 'clang'):
             pre_sm_32 = False
             pre_sm_60 = False
             pre_sm_70 = False
@@ -654,10 +659,9 @@ class Configuration(object):
                 if arch < 70: pre_sm_70 = True
                 if arch < 80: pre_sm_80 = True
                 if arch < 90: pre_sm_90 = True
+                arch_flag = real_arch_format.format(arch)
                 if mode.count("virtual"):
-                    arch_flag = '-gencode=arch=compute_{0},code=compute_{0}'.format(arch)
-                else:
-                    arch_flag = '-gencode=arch=compute_{0},code=sm_{0}'.format(arch)
+                    arch_flag = virt_arch_format.format(arch)
                 self.cxx.compile_flags += [arch_flag]
         if pre_sm_32:
             self.config.available_features.add("pre-sm-32")
@@ -820,8 +824,9 @@ class Configuration(object):
                                  and self.cxx_stdlib_under_test != 'libc++'):
             self.lit_config.note('using the system cxx headers')
             return
-        if self.cxx.type != 'nvcc' and self.cxx.type != 'nvhpc':
-            self.cxx.compile_flags += ['-nostdinc++']
+        # I don't think this is required, since removing it helps clang-cuda compile and libcudacxx only supports building in CUDA modes?
+        # if self.cxx.type != 'nvcc' and self.cxx.type != 'pgi':
+        #    self.cxx.compile_flags += ['-nostdinc++']
         if cxx_headers is None:
             cxx_headers = os.path.join(self.libcudacxx_src_root, 'include')
         if not os.path.isdir(cxx_headers):
@@ -1063,17 +1068,6 @@ class Configuration(object):
             self.cxx.link_flags += ['-lc++experimental']
         if self.link_shared:
             self.cxx.link_flags += ['-lc++']
-        elif self.cxx.type != 'nvcc' and self.cxx.type != 'nvhpc':
-            cxx_library_root = self.get_lit_conf('cxx_library_root')
-            if cxx_library_root:
-                libname = self.make_static_lib_name('c++')
-                abs_path = os.path.join(cxx_library_root, libname)
-                assert os.path.exists(abs_path) and \
-                       "static libc++ library does not exist"
-                self.cxx.link_flags += [abs_path]
-            else:
-                self.cxx.link_flags += ['-lc++']
-
     def configure_link_flags_abi_library(self):
         cxx_abi = self.get_lit_conf('cxx_abi', 'libcxxabi')
         if cxx_abi == 'libstdc++':
@@ -1175,7 +1169,8 @@ class Configuration(object):
                 addIfHostSupports('-Wall')
                 addIfHostSupports('-Wextra')
                 addIfHostSupports('-Werror')
-                addIfHostSupports('-Wno-literal-suffix') # GCC warning about reserved UDLs
+                if 'gcc' in self.config.available_features:
+                    addIfHostSupports('-Wno-literal-suffix') # GCC warning about reserved UDLs
                 addIfHostSupports('-Wno-user-defined-literals') # Clang warning about reserved UDLs
                 addIfHostSupports('-Wno-unused-parameter')
                 addIfHostSupports('-Wno-unused-local-typedefs') # GCC warning local typdefs

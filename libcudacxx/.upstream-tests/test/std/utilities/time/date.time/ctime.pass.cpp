@@ -51,7 +51,9 @@ int main(int, char**)
     unused(tmspec); // Prevent unused warning
 #endif
 
+#ifndef TEST_COMPILER_CLANG_CUDA
     static_assert((cuda::std::is_same<decltype(cuda::std::clock()), cuda::std::clock_t>::value), "");
+#endif // TEST_COMPILER_CLANG_CUDA
     static_assert((cuda::std::is_same<decltype(cuda::std::difftime(t,t)), double>::value), "");
     static_assert((cuda::std::is_same<decltype(cuda::std::mktime(&tm)), cuda::std::time_t>::value), "");
     static_assert((cuda::std::is_same<decltype(cuda::std::time(&t)), cuda::std::time_t>::value), "");

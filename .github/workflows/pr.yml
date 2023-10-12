@@ -23,7 +23,6 @@ defaults:
 on:
   push:
     branches:
-      - main
       - "pull-request/[0-9]+"
 
 # Only runs one instance of this workflow at a time for a given PR and cancels any in-progress runs when a new one starts.
@@ -42,6 +41,8 @@ jobs:
       HOST_COMPILERS: ${{steps.set-outputs.outputs.HOST_COMPILERS}}
       PER_CUDA_COMPILER_MATRIX: ${{steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX}}
       NVRTC_MATRIX: ${{steps.set-outputs.outputs.NVRTC_MATRIX}}
+      CLANG_CUDA_MATRIX: ${{steps.set-outputs.outputs.CLANG_CUDA_MATRIX}}
+      EXAMPLES_MATRIX: ${{steps.set-outputs.outputs.EXAMPLES_MATRIX}}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -111,19 +112,41 @@ jobs:
       devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
       is_windows: ${{ contains(matrix.compiler, 'cl') }}
 
-  examples:
-    name: CCCL Examples
+  clang-cuda:
+    name: ${{matrix.lib}} ${{matrix.cpu}}/CTK${{matrix.cuda}}/clang-cuda
     needs: compute-matrix
-    uses: ./.github/workflows/build-examples.yml
     strategy:
       fail-fast: false
       matrix:
-        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }}
-        compiler: ${{ fromJSON(needs.compute-matrix.outputs.HOST_COMPILERS) }}
+        include: ${{ fromJSON(needs.compute-matrix.outputs.CLANG_CUDA_MATRIX) }}
+    uses: ./.github/workflows/run-as-coder.yml
     with:
-      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
-      devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
-      is_windows: ${{ contains(matrix.compiler, 'cl') }}
+      name: ${{matrix.lib}} CTK${{matrix.cuda}} clang-cuda${{matrix.compiler.version}}/${{matrix.std}}
+      runner: linux-${{matrix.cpu}}-cpu16
+      image: rapidsai/devcontainers:${{needs.compute-matrix.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
+      command: |
+        CMAKE_CUDA_COMPILER="${{matrix.compiler.exe}}" ./ci/build_${{matrix.lib}}.sh ${{matrix.compiler.exe}} ${{matrix.std}} ${{matrix.gpu_build_archs}}
+
+  examples:
+    name: CCCL Examples
+    needs: compute-matrix
+    if: ${{ !contains(github.event.head_commit.message, 'skip-tests') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.compute-matrix.outputs.EXAMPLES_MATRIX) }}
+    uses: ./.github/workflows/run-as-coder.yml
+    with:
+      name: CCCL Examples CUDA${{matrix.cuda}} ${{matrix.compiler.name}}${{matrix.compiler.version}}
+      runner: linux-${{matrix.cpu}}-gpu-v100-latest-1
+      image: rapidsai/devcontainers:${{needs.compute-matrix.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
+      command: |
+        cmake -S . --preset=examples -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA} -DCMAKE_CUDA_COMPILER=nvcc
+        ctest --preset=examples
+
+  verify-devcontainers:
+    name: Verify Dev Containers
+    uses: ./.github/workflows/verify-devcontainers.yml
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
@@ -131,10 +154,12 @@ jobs:
     runs-on: ubuntu-latest
     name: CI
     needs:
+      - clang-cuda
       - cub
       - libcudacxx
       - nvrtc
       - thrust
       - examples
+      - verify-devcontainers
     steps:
       - run: echo "CI success"

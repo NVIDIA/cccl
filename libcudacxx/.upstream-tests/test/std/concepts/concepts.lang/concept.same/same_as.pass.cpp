@@ -16,6 +16,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 using cuda::std::same_as;
 
 struct S1 {};
@@ -35,6 +37,9 @@ struct S5 {
   int* p;
 };
 
+#ifdef TEST_COMPILER_CLANG_CUDA
+#pragma clang diagnostic ignored "-Wunused-private-field"
+#endif // TEST_COMPILER_CLANG_CUDA
 class C1 {};
 class C2 {
   /* [[maybe_unused]] */ int i;

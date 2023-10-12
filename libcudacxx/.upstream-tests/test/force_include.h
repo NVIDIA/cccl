@@ -93,6 +93,6 @@ int main(int argc, char** argv)
     return ret;
 }
 
-#define main fake_main
+#define main __host__ __device__ fake_main
 
 #endif
