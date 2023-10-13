@@ -360,7 +360,7 @@ int main() {
                 if(op == "sub")
                     out << "    __tmp = -__tmp;\n";
                 out << "    __tmp *= sizeof(_Type);\n";
-		out << "    if (__cuda_fetch_add_weak_if_local((uint64_t*)__ptr, __tmp, (uint64_t*)&__ret)) return __ret;\n";
+                out << "    if (__cuda_fetch_add_weak_if_local((uint64_t*)__ptr, __tmp, (uint64_t*)&__ret)) return __ret;\n";
                 out << "    NV_DISPATCH_TARGET(\n";
                 out << "      NV_PROVIDES_SM_70, (\n";
                 out << "        switch (__memorder) {\n";
