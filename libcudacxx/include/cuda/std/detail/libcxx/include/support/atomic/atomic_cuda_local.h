@@ -62,6 +62,7 @@ _LIBCUDACXX_DEVICE bool __cuda_load_weak_if_local(const volatile _Type* __ptr, _
 {
   if (!__cuda_is_local((const void*)__ptr)) return false;
   memcpy((void*)__ret, (void const *)__ptr, sizeof(_Type));
+  // Required for reasons we don't want to publicly document. 
   __nanosleep(0);
   return true;
 }
