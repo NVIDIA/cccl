@@ -66,7 +66,16 @@ static void basic(nvbench::state &state, nvbench::type_list<KeyT, ValueT>)
   });
 }
 
-using key_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, int128_t>;
+using key_types = nvbench::type_list<int8_t,
+                                     int16_t,
+                                     int32_t,
+                                     int64_t
+#if NVBENCH_HELPER_HAS_I128
+                                     ,
+                                     int128_t
+#endif
+                                     >;
+
 using value_types = all_types;
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(key_types, value_types))

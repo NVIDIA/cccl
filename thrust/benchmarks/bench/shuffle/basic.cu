@@ -68,7 +68,15 @@ static void basic(nvbench::state &state, nvbench::type_list<T>)
   }
 }
 
-using types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, int128_t>;
+using types = nvbench::type_list<int8_t,
+                                 int16_t,
+                                 int32_t,
+                                 int64_t
+#if NVBENCH_HELPER_HAS_I128
+                                 ,
+                                 int128_t
+#endif
+                                 >;
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
   .set_name("base")

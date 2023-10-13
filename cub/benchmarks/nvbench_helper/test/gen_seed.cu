@@ -31,8 +31,17 @@
 #include <catch2/catch.hpp>
 #include <nvbench_helper.cuh>
 
-using types =
-  nvbench::type_list<bool, int8_t, int16_t, int32_t, int64_t, int128_t, float, double, complex>;
+using types = nvbench::type_list<bool,
+                                 int8_t,
+                                 int16_t,
+                                 int32_t,
+                                 int64_t,
+#if NVBENCH_HELPER_HAS_I128
+                                 int128_t,
+#endif
+                                 float,
+                                 double,
+                                 complex>;
 
 TEMPLATE_LIST_TEST_CASE("Generator seeds the data", "[gen]", types)
 {
