@@ -58,7 +58,7 @@ cmake_minimum_required(VERSION 3.17)
 option(THRUST_ENABLE_HEADER_TESTING "Test that all public headers compile." "ON")
 option(THRUST_ENABLE_TESTING "Build Thrust testing suite." "ON")
 option(THRUST_ENABLE_EXAMPLES "Build Thrust examples." "ON")
-option(THRUST_ENABLE_BENCHMARKS "Build Thrust runtime benchmarks." "OFF")
+option(THRUST_ENABLE_BENCHMARKS "Build Thrust runtime benchmarks." "${CCCL_ENABLE_BENCHMARKS}")
 option(THRUST_INCLUDE_CUB_CMAKE "Build CUB tests and examples. (Requires CUDA)." "OFF")
 
 # Mark this option as advanced for now. We'll revisit this later once the new
@@ -135,6 +135,7 @@ if (THRUST_ENABLE_EXAMPLES)
 endif()
 
 if (THRUST_ENABLE_BENCHMARKS)
+  add_subdirectory(benchmarks)
   add_subdirectory(internal/benchmark)
 endif()
 

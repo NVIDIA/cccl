@@ -105,7 +105,7 @@ static void select(nvbench::state &state, nvbench::type_list<KeyT, ValueT, Offse
   thrust::device_vector<ValueT> out_vals(elements);
   thrust::device_vector<KeyT> out_keys(elements);
   thrust::device_vector<KeyT> in_keys =
-    gen_uniform_key_segments<KeyT>(seed_t{}, elements, min_segment_size, max_segment_size);
+    generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
   KeyT *d_in_keys         = thrust::raw_pointer_cast(in_keys.data());
   KeyT *d_out_keys        = thrust::raw_pointer_cast(out_keys.data());

@@ -1,5 +1,4 @@
-find_package(CUDAToolkit REQUIRED)
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
+include(${CMAKE_SOURCE_DIR}/benchmarks/cmake/CCCLBenchmarkRegistry.cmake)
 
 # Defer dependencies collection to nvbench helper 
 add_subdirectory(nvbench_helper)
@@ -34,35 +33,7 @@ function(get_recursive_subdirs subdirs)
   set(${subdirs} "${dirs}" PARENT_SCOPE)
 endfunction()
 
-set(meta_path "${CMAKE_BINARY_DIR}/cub_bench_meta.csv")
-file(REMOVE "${meta_path}")
-
-set(ctk_version "${CUDAToolkit_VERSION}")
-message(STATUS "CTK version: ${ctk_version}")
-
-find_package(Git REQUIRED)
-if(GIT_FOUND)
-    execute_process(
-        COMMAND ${GIT_EXECUTABLE} describe
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE cub_revision
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-    if(cub_revision STREQUAL "")
-      # There's currently no tag
-      execute_process(
-          COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-          OUTPUT_VARIABLE cub_revision
-          OUTPUT_STRIP_TRAILING_WHITESPACE)
-    endif()
-    message(STATUS "Git revision: ${cub_revision}")
-else()
-    message(WARNING "Git not found. Unable to determine Git revision.")
-endif()
-
-file(APPEND "${meta_path}" "ctk_version,${ctk_version}\n")
-file(APPEND "${meta_path}" "cub_revision,${cub_revision}\n")
+create_benchmark_registry()
 
 function(get_bench_ranges src bench_name)
   file(READ "${src}" file_data)
@@ -91,7 +62,7 @@ function(get_bench_ranges src bench_name)
   string(LENGTH "${ranges}" ranges_length)
   math(EXPR last_character_index "${ranges_length} - 1")
   string(SUBSTRING "${ranges}" 0 ${last_character_index} ranges)
-  file(APPEND "${meta_path}" "${bench_name},${ranges}\n")
+  register_cccl_tuning("${bench_name}" "${ranges}")
 endfunction()
 
 function(add_bench target_name bench_name bench_src)
@@ -125,15 +96,19 @@ function(add_bench_dir bench_dir)
     add_dependencies(${benches_meta_target} ${base_bench_target})
     target_compile_definitions(${base_bench_target} PRIVATE TUNE_BASE=1)
 
-    # tuning
     if (CUB_ENABLE_TUNING)
+      # tuning
       set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${bench_src}")
       get_bench_ranges("${bench_src}" "${bench_name}")
       set(tuning_name "${bench_name}.variant")
       set(tuning_path "${CMAKE_BINARY_DIR}/${tuning_name}.h")
       add_bench(bench_target ${tuning_name} "${bench_src}")
-      file(WRITE "${tuning_path}" "#pragma once\n")
+      # for convenience, make tuning variant buildable by default
+      file(WRITE "${tuning_path}" "#pragma once\n#define TUNE_BASE 1\n")
       target_compile_options(${bench_target} PRIVATE "-include${tuning_path}")
+    else()
+      # benchmarking
+      register_cccl_benchmark("${bench_name}" "")
     endif()
   endforeach()
 endfunction()
