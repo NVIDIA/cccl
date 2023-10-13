@@ -192,7 +192,7 @@ struct is_pod
 #elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC
 // only use the intrinsic for >= 4.3
 #if (__GNUC__ * 100 + __GNUC_MINOR__ >= 403)
-                                  || __is_pod(T)
+                                 || __is_pod(T)
 #endif // GCC VERSION
 #endif // THRUST_HOST_COMPILER
                                >
