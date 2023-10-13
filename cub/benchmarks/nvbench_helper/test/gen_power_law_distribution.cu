@@ -25,15 +25,16 @@
  *
  ******************************************************************************/
 
+#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+
+#include <algorithm>
+#include <cmath>
 
 #include <boost/math/statistics/anderson_darling.hpp>
 #include <boost/math/statistics/univariate_statistics.hpp>
-
 #include <catch2/catch.hpp>
 #include <nvbench_helper.cuh>
-#include <algorithm>
-#include <cmath>
 
 bool is_normal(thrust::host_vector<double> data)
 {

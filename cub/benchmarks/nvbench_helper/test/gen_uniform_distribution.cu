@@ -26,16 +26,14 @@
  ******************************************************************************/
 
 #include <thrust/count.h>
-#include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
-#include <thrust/sort.h>
+#include <thrust/host_vector.h>
 
-#include <boost/math/distributions/chi_squared.hpp>
-
-#include <limits>
 #include <cmath>
+#include <limits>
 #include <map>
 
+#include <boost/math/distributions/chi_squared.hpp>
 #include <catch2/catch.hpp>
 #include <nvbench_helper.cuh>
 
@@ -201,6 +199,8 @@ TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed key segments",
       length = 1;
     }
   }
+  REQUIRE(length >= min_segment_size);
+  REQUIRE(length <= max_segment_size);
   segment_sizes.push_back(length);
 
   REQUIRE(is_uniform<int>(std::move(segment_sizes), min_segment_size, max_segment_size));

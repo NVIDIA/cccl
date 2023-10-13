@@ -31,6 +31,7 @@
 #include <thrust/execution_policy.h>
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
+#include <thrust/transform.h>
 
 #include <algorithm>
 #include <array>
