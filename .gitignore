@@ -4,3 +4,5 @@
 .aws
 .config
 _deps/catch2-src/
+.vscode/
+
