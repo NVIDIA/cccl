@@ -35,6 +35,7 @@ option(CCCL_ENABLE_CUB "Enable the CUB developer build." ON)
 option(CCCL_ENABLE_THRUST "Enable the Thrust developer build." ON)
 option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." ON)
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." ON)
+option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
 
 include(CTest)
 enable_testing()

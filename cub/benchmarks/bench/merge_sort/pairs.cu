@@ -102,12 +102,10 @@ void pairs(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT>)
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  thrust::device_vector<key_t> keys_buffer_1(elements);
+  thrust::device_vector<key_t> keys_buffer_1 = generate(elements, entropy);
   thrust::device_vector<key_t> keys_buffer_2(elements);
   thrust::device_vector<value_t> values_buffer_1(elements);
   thrust::device_vector<value_t> values_buffer_2(elements);
-
-  gen(seed_t{}, keys_buffer_1);
 
   key_t *d_keys_buffer_1   = thrust::raw_pointer_cast(keys_buffer_1.data());
   key_t *d_keys_buffer_2   = thrust::raw_pointer_cast(keys_buffer_2.data());
@@ -158,7 +156,15 @@ using key_types = all_types;
 #ifdef TUNE_ValueT
 using value_types = nvbench::type_list<TUNE_ValueT>;
 #else // !defined(TUNE_ValueT)
-using value_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, int128_t>;
+using value_types = nvbench::type_list<int8_t,
+                                       int16_t,
+                                       int32_t,
+                                       int64_t
+#if NVBENCH_HELPER_HAS_I128
+                                       ,
+                                       int128_t
+#endif
+                                       >;
 #endif // TUNE_ValueT
 
 NVBENCH_BENCH_TYPES(pairs, NVBENCH_TYPE_AXES(key_types, value_types, offset_types))

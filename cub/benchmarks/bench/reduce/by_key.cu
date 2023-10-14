@@ -111,7 +111,7 @@ static void reduce(nvbench::state &state, nvbench::type_list<KeyT, ValueT, Offse
   thrust::device_vector<ValueT> out_vals(elements);
   thrust::device_vector<KeyT> out_keys(elements);
   thrust::device_vector<KeyT> in_keys =
-    gen_uniform_key_segments<KeyT>(seed_t{}, elements, min_segment_size, max_segment_size);
+    generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
   KeyT *d_in_keys         = thrust::raw_pointer_cast(in_keys.data());
   KeyT *d_out_keys        = thrust::raw_pointer_cast(out_keys.data());
@@ -178,7 +178,15 @@ using some_offset_types = nvbench::type_list<nvbench::int32_t>;
 #ifdef TUNE_KeyT
 using key_types = nvbench::type_list<TUNE_KeyT>;
 #else // !defined(TUNE_KeyT)
-using key_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, int128_t>;
+using key_types = nvbench::type_list<int8_t,
+                                     int16_t,
+                                     int32_t,
+                                     int64_t
+#if NVBENCH_HELPER_HAS_I128
+                                     ,
+                                     int128_t
+#endif
+                                     >;
 #endif // TUNE_KeyT
 
 #ifdef TUNE_ValueT

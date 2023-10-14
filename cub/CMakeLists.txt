@@ -38,7 +38,7 @@ endif()
 
 option(CUB_ENABLE_HEADER_TESTING "Test that all public headers compile." ON)
 option(CUB_ENABLE_TESTING "Build CUB testing suite." ON)
-option(CUB_ENABLE_BENCHMARKS "Build CUB benchmarking suite." OFF)
+option(CUB_ENABLE_BENCHMARKS "Build CUB benchmarking suite." "${CCCL_ENABLE_BENCHMARKS}")
 option(CUB_ENABLE_TUNING "Build CUB tuning suite." OFF)
 option(CUB_ENABLE_EXAMPLES "Build CUB examples." ON)
 
