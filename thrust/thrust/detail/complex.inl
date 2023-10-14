@@ -66,6 +66,13 @@ operator==(const complex<T0> &x, const T1 &y)
 
 template <typename T0, typename T1>
 __host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
+operator!=(const complex<T0> &x, const complex<T1> &y)
+{
+  return !(x == y);
+}
+
+template <typename T0, typename T1>
+__host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
 operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
 {
   return !(x == y);
