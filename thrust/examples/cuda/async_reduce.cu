@@ -57,7 +57,8 @@ int main()
   // reset the result
   result[0] = 0;
 
-
+  // method 2: use std::async to create asynchrony
+  // copy all the algorithm parameters
   auto begin        = data.begin();
   auto end          = data.end();
   unsigned int init = 0;
