@@ -132,7 +132,7 @@ auto async_copy_n(
       thrust::raw_pointer_cast(&*output)
     , thrust::raw_pointer_cast(&*first)
     , sizeof(T) * n
-    , direction_of_copy(from_exec, to_exec).value
+    , direction_of_copy(from_exec, to_exec)
     , e.stream().native_handle()
     )
   , "after copy launch"
