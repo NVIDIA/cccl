@@ -36,7 +36,7 @@ template<typename T> class device_reference;
 namespace detail
 {
  /// helper classes [4.3].
- template <typename T, T v>
+template <typename T, T v>
 using integral_constant = ::cuda::std::integral_constant<T, v>;
 using true_type  = ::cuda::std::true_type;
 using false_type = ::cuda::std::false_type;
