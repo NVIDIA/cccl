@@ -10,7 +10,6 @@
 #include <thrust/detail/config.h>
 #include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/modern_gcc_required.h>
-
 // remove?
 #if !defined(THRUST_LEGACY_GCC)
 
@@ -210,3 +209,4 @@ make_zip_function(Function&& fun)
 
 THRUST_NAMESPACE_END
 
+#endif

@@ -22,6 +22,7 @@
 
 #include <type_traits>
 
+
 THRUST_NAMESPACE_BEGIN
 
 namespace mr

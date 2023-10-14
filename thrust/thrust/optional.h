@@ -2870,5 +2870,4 @@ template <class T> struct hash<THRUST_NS_QUALIFIER::optional<T>> {
 };
 } // namespace std
 
-#endif // THRUST_CPP_DIALECT >= 2011
 
