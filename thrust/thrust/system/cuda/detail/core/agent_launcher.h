@@ -52,6 +52,9 @@ namespace core {
 #if !defined(THRUST_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
 _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")
 _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")                      
+#if !defined(_LIBCUDACXX_COMPILER_NVHPC_CUDA)
+_LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(attribute_requires_external_linkage)
+#endif
 #endif
 
 #ifndef THRUST_DETAIL_KERNEL_ATTRIBUTES
