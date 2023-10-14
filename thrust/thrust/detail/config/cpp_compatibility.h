@@ -52,7 +52,8 @@
 //#  if   THRUST_CPP_DIALECT >= 2017
 //#    define THRUST_INLINE_CONSTANT                 inline constexpr
 //#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
-#  if THRUST_CPP_DIALECT >= 2011
+// not that comfortable touching the stuff here
+#if THRUST_CPP_DIALECT >= 2011
 #    define THRUST_INLINE_CONSTANT                 static const __device__
 #    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
 #  else

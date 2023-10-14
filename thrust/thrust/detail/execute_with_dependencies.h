@@ -19,8 +19,6 @@
 #include <thrust/detail/config.h>
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
-
 #include <thrust/detail/type_deduction.h>
 #include <thrust/type_traits/remove_cvref.h>
 
@@ -264,4 +262,3 @@ extract_dependencies(System &&)
 
 THRUST_NAMESPACE_END
 
-#endif // THRUST_CPP_DIALECT >= 2011

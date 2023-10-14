@@ -10,7 +10,6 @@
 #include <thrust/detail/config.h>
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
 
 #include <thrust/detail/preprocessor.h>
 
@@ -86,5 +85,4 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif // THRUST_CPP_DIALECT >= 2011
 

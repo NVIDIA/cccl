@@ -23,7 +23,6 @@
 #include <thrust/detail/config.h>
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
 
 #include <thrust/mr/disjoint_pool.h>
 
@@ -65,5 +64,4 @@ thrust::mr::disjoint_unsynchronized_pool_resource<Upstream, Bookkeeper> & tls_di
 } // end mr
 THRUST_NAMESPACE_END
 
-#endif // THRUST_CPP_DIALECT >= 2011
 

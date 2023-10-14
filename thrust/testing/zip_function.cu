@@ -1,6 +1,7 @@
 #include <thrust/detail/config.h>
 
-#if THRUST_CPP_DIALECT >= 2011 && !defined(THRUST_LEGACY_GCC)
+// remove?
+#if !defined(THRUST_LEGACY_GCC)
 
 #include <unittest/unittest.h>
 #include <thrust/iterator/zip_iterator.h>

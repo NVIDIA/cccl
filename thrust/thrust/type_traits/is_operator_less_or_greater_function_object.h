@@ -65,16 +65,8 @@ struct is_operator_greater_function_object_impl;
  *  \see is_operator_plus_function_object
  */
 template <typename T>
-#if THRUST_CPP_DIALECT >= 2011
 using is_operator_less_function_object =
-#else
-struct is_operator_less_function_object :
-#endif
-  detail::is_operator_less_function_object_impl<T>
-#if THRUST_CPP_DIALECT < 2011
-{}
-#endif
-;
+  detail::is_operator_less_function_object_impl<T>;
 
 #if THRUST_CPP_DIALECT >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is a
@@ -102,16 +94,8 @@ constexpr bool is_operator_less_function_object_v
  *  \see is_operator_plus_function_object
  */
 template <typename T>
-#if THRUST_CPP_DIALECT >= 2011
 using is_operator_greater_function_object =
-#else
-struct is_operator_greater_function_object :
-#endif
-  detail::is_operator_greater_function_object_impl<T>
-#if THRUST_CPP_DIALECT < 2011
-{}
-#endif
-;
+  detail::is_operator_greater_function_object_impl<T>;
 
 #if THRUST_CPP_DIALECT >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is a
@@ -139,11 +123,7 @@ constexpr bool is_operator_greater_function_object_v
  *  \see is_operator_plus_function_object
  */
 template <typename T>
-#if THRUST_CPP_DIALECT >= 2011
 using is_operator_less_or_greater_function_object =
-#else
-struct is_operator_less_or_greater_function_object :
-#endif
   integral_constant<
     bool
   ,    detail::is_operator_less_function_object_impl<T>::value

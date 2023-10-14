@@ -54,7 +54,6 @@ namespace cuda_cub {
     }
   };
 
-#if THRUST_CPP_DIALECT >= 2011
   // Device to host.
   template <class Sys1, class Sys2>
   constexpr __host__ __device__
@@ -308,7 +307,6 @@ namespace cuda_cub {
   select_host_system(thrust::execution_policy<Sys1> const &sys1,
                      thrust::execution_policy<Sys2> const &)
   THRUST_DECLTYPE_RETURNS(sys1)
-#endif
 
   // Device to host.
   template <class Sys1, class Sys2>

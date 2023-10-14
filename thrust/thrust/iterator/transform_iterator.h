@@ -206,9 +206,7 @@ template <class AdaptableUnaryFunction, class Iterator, class Reference = use_de
     __host__ __device__
     transform_iterator() {}
 
-#if THRUST_CPP_DIALECT >= 2011
     transform_iterator(transform_iterator const&) = default;
-#endif
 
     /*! This constructor takes as arguments an \c Iterator and an \c AdaptableUnaryFunction
      *  and copies them to a new \p transform_iterator.

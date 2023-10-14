@@ -40,16 +40,8 @@ THRUST_NAMESPACE_BEGIN
  *  otherwise.
  */
 template <typename T>
-#if THRUST_CPP_DIALECT >= 2011
 using is_execution_policy =
-#else
-struct is_execution_policy :
-#endif
-  detail::is_base_of<detail::execution_policy_marker, T>
-#if THRUST_CPP_DIALECT < 2011
-{}
-#endif
-;
+  detail::is_base_of<detail::execution_policy_marker, T>;
 
 #if THRUST_CPP_DIALECT >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is an

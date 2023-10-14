@@ -25,7 +25,6 @@
 #include <thrust/detail/config.h>
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
 
 #include <type_traits>
 #include <utility>
@@ -377,5 +376,4 @@ struct integer_sequence_push_back_impl<T, I0, integer_sequence<T, Is...> >
 
 THRUST_NAMESPACE_END
 
-#endif // THRUST_CPP_DIALECT >= 2011
 

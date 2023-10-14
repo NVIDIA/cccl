@@ -3,10 +3,7 @@
 #include <thrust/detail/config.h>
 #include <thrust/mr/disjoint_pool.h>
 #include <thrust/mr/new.h>
-
-#if THRUST_CPP_DIALECT >= 2011
 #include <thrust/mr/disjoint_sync_pool.h>
-#endif
 
 struct alloc_id
 {
@@ -183,13 +180,11 @@ void TestDisjointUnsynchronizedPool()
 }
 DECLARE_UNITTEST(TestDisjointUnsynchronizedPool);
 
-#if THRUST_CPP_DIALECT >= 2011
 void TestDisjointSynchronizedPool()
 {
     TestDisjointPool<thrust::mr::disjoint_synchronized_pool_resource>();
 }
 DECLARE_UNITTEST(TestDisjointSynchronizedPool);
-#endif
 
 template<template<typename, typename> class PoolTemplate>
 void TestDisjointPoolCachingOversized()
@@ -266,13 +261,11 @@ void TestDisjointUnsynchronizedPoolCachingOversized()
 }
 DECLARE_UNITTEST(TestDisjointUnsynchronizedPoolCachingOversized);
 
-#if THRUST_CPP_DIALECT >= 2011
 void TestDisjointSynchronizedPoolCachingOversized()
 {
     TestDisjointPoolCachingOversized<thrust::mr::disjoint_synchronized_pool_resource>();
 }
 DECLARE_UNITTEST(TestDisjointSynchronizedPoolCachingOversized);
-#endif
 
 template<template<typename, typename> class PoolTemplate>
 void TestDisjointGlobalPool()
@@ -291,11 +284,9 @@ void TestUnsynchronizedDisjointGlobalPool()
 }
 DECLARE_UNITTEST(TestUnsynchronizedDisjointGlobalPool);
 
-#if THRUST_CPP_DIALECT >= 2011
 void TestSynchronizedDisjointGlobalPool()
 {
     TestDisjointGlobalPool<thrust::mr::disjoint_synchronized_pool_resource>();
 }
 DECLARE_UNITTEST(TestSynchronizedDisjointGlobalPool);
-#endif
 

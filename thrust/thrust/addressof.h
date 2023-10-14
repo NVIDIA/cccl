@@ -7,9 +7,7 @@
 
 #include <thrust/detail/config.h>
 
-#if THRUST_CPP_DIALECT >= 2011
-#  include <thrust/detail/memory_wrapper.h>
-#endif
+#include <thrust/detail/memory_wrapper.h>
 
 THRUST_NAMESPACE_BEGIN
 

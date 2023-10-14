@@ -23,7 +23,6 @@
 #include <thrust/detail/config.h>
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
 
 #include <thrust/detail/config.h>
 #include <thrust/detail/execution_policy.h>
@@ -176,4 +175,3 @@ __host__ __device__ void shuffle_copy(RandomIterator first, RandomIterator last,
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/shuffle.inl>
-#endif

@@ -108,7 +108,6 @@ template<typename T, typename Alloc>
      */
     vector_base(const vector_base &v, const Alloc &alloc);
 
-  #if THRUST_CPP_DIALECT >= 2011
     /*! Move constructor moves from another vector_base.
      *  \param v The vector_base to move.
      */
@@ -118,7 +117,6 @@ template<typename T, typename Alloc>
     // iterators, which is necessary for the following constructor to be implemented
     // correctly
     // vector_base(vector_base &&v, const Alloc &alloc);
-  #endif
 
     /*! Copy assign operator copies from another vector_base.
      *  \param v The vector_base to copy.

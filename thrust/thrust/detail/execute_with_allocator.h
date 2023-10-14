@@ -84,8 +84,6 @@ return_temporary_buffer(
   alloc_traits::deallocate(system.get_allocator(), to_ptr, num_elements);
 }
 
-#if THRUST_CPP_DIALECT >= 2011
-
 template <
     typename T,
     template <typename> class BaseSystem,
@@ -142,7 +140,6 @@ return_temporary_buffer(
   alloc_traits::deallocate(system.get_allocator(), to_ptr, num_elements);
 }
 
-#endif
 
 } // namespace detail
 

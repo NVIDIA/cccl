@@ -20,9 +20,7 @@
 #include <thrust/detail/execute_with_allocator_fwd.h>
 #include <thrust/detail/alignment.h>
 
-#if THRUST_CPP_DIALECT >= 2011
-  #include <type_traits>
-#endif
+#include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -82,7 +80,6 @@ struct allocator_aware_execution_policy
     return typename execute_with_allocator_type<Allocator>::type(alloc);
   }
 
-#if THRUST_CPP_DIALECT >= 2011
   // just the rvalue overload
   // perfect forwarding doesn't help, because a const reference has to be turned
   // into a value by copying for the purpose of storing it in execute_with_allocator
@@ -93,7 +90,6 @@ struct allocator_aware_execution_policy
   {
     return typename execute_with_allocator_type<Allocator>::type(std::move(alloc));
   }
-#endif
 };
 
 } // end namespace detail

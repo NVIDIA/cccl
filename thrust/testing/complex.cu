@@ -622,7 +622,6 @@ struct TestComplexTrigonometricFunctions
     ASSERT_ALMOST_EQUAL(thrust::sinh(a), std::sinh(c));
     ASSERT_ALMOST_EQUAL(thrust::tanh(a), std::tanh(c));
 
-#if THRUST_CPP_DIALECT >= 2011
 
     ASSERT_ALMOST_EQUAL(thrust::acos(a), std::acos(c));
     ASSERT_ALMOST_EQUAL(thrust::asin(a), std::asin(c));
@@ -632,7 +631,6 @@ struct TestComplexTrigonometricFunctions
     ASSERT_ALMOST_EQUAL(thrust::asinh(a), std::asinh(c));
     ASSERT_ALMOST_EQUAL(thrust::atanh(a), std::atanh(c));
 
-#endif
   }
 };
 SimpleUnitTest<TestComplexTrigonometricFunctions, FloatingPointTypes>
@@ -655,7 +653,6 @@ struct TestComplexStreamOperators
 };
 SimpleUnitTest<TestComplexStreamOperators, FloatingPointTypes> TestComplexStreamOperatorsInstance;
 
-#if THRUST_CPP_DIALECT >= 2011
 template <typename T>
 struct TestComplexStdComplexDeviceInterop
 {
@@ -678,4 +675,3 @@ struct TestComplexStdComplexDeviceInterop
 };
 SimpleUnitTest<TestComplexStdComplexDeviceInterop, FloatingPointTypes>
   TestComplexStdComplexDeviceInteropInstance;
-#endif

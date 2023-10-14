@@ -27,10 +27,7 @@
 #include <thrust/detail/static_assert.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
-
-#if THRUST_CPP_DIALECT >= 2011
-  #include <type_traits>
-#endif
+#include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -70,16 +67,8 @@ struct is_trivially_relocatable_impl;
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename T>
-#if THRUST_CPP_DIALECT >= 2011
 using is_trivially_relocatable =
-#else
-struct is_trivially_relocatable :
-#endif
-  detail::is_trivially_relocatable_impl<T>
-#if THRUST_CPP_DIALECT < 2011
-{}
-#endif
-;
+  detail::is_trivially_relocatable_impl<T>;
 
 #if THRUST_CPP_DIALECT >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is
@@ -112,19 +101,11 @@ constexpr bool is_trivially_relocatable_v = is_trivially_relocatable<T>::value;
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename From, typename To>
-#if THRUST_CPP_DIALECT >= 2011
 using is_trivially_relocatable_to =
-#else
-struct is_trivially_relocatable_to :
-#endif
   integral_constant<
     bool
   , detail::is_same<From, To>::value && is_trivially_relocatable<To>::value
-  >
-#if THRUST_CPP_DIALECT < 2011
-{}
-#endif
-;
+  >;
 
 #if THRUST_CPP_DIALECT >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c From is
@@ -159,11 +140,7 @@ constexpr bool is_trivially_relocatable_to_v
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename FromIterator, typename ToIterator>
-#if THRUST_CPP_DIALECT >= 2011
 using is_indirectly_trivially_relocatable_to =
-#else
-struct is_indirectly_trivially_relocatable_to :
-#endif
   integral_constant<
     bool
   ,    is_contiguous_iterator<FromIterator>::value
@@ -172,11 +149,7 @@ struct is_indirectly_trivially_relocatable_to :
          typename thrust::iterator_traits<FromIterator>::value_type,
          typename thrust::iterator_traits<ToIterator>::value_type
        >::value
-  >
-#if THRUST_CPP_DIALECT < 2011
-{}
-#endif
-;
+  >;
 
 #if THRUST_CPP_DIALECT >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if the element type of
@@ -260,7 +233,6 @@ template <typename T>
 struct is_trivially_copyable_impl
     : integral_constant<
         bool,
-        #if THRUST_CPP_DIALECT >= 2011
             #if defined(__GLIBCXX__) && __has_feature(is_trivially_copyable)
                 __is_trivially_copyable(T)
             #elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC && THRUST_GCC_VERSION >= 50000
@@ -268,9 +240,7 @@ struct is_trivially_copyable_impl
             #else
                 has_trivial_assign<T>::value
             #endif
-        #else
-            has_trivial_assign<T>::value
-        #endif
+        
     >
 {
 };
