@@ -28,10 +28,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS integral_constant
   typedef integral_constant type;
   _LIBCUDACXX_INLINE_VISIBILITY
   constexpr operator value_type() const noexcept {return value;}
-#if _LIBCUDACXX_STD_VER > 11
   _LIBCUDACXX_INLINE_VISIBILITY
   constexpr value_type operator ()() const noexcept {return value;}
-#endif
+
 };
 
 template <class _Tp, _Tp __v>
