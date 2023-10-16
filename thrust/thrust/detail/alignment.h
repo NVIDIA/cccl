@@ -32,18 +32,6 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-/// \p THRUST_ALIGNOF is a macro that takes a single type-id as a parameter,
-/// and returns the alignment requirement of the type in bytes.
-/// 
-/// It is an approximation of C++11's `alignof` operator.
-///
-/// Note: MSVC does not allow the builtin used to implement this to be placed
-/// inside of a `__declspec(align(#))` attribute. As a workaround, you can
-/// assign the result of \p THRUST_ALIGNOF to a variable and pass the variable
-/// as the argument to `__declspec(align(#))`.
-    #define THRUST_ALIGNOF(x) alignof(x) 
-
-
 /// \p alignment_of provides the member constant `value` which is equal to the
 /// alignment requirement of the type `T`, as if obtained by a C++11 `alignof`
 /// expression.

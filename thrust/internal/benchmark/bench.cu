@@ -44,8 +44,6 @@
 
 #define PP_CAT(a, b) a ## b
 
-#define NOEXCEPT noexcept
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1068,8 +1066,8 @@ std::vector<std::string> split(std::string const& str, std::string const& delim)
 
 struct command_line_option_error : std::exception
 {
-  virtual ~command_line_option_error() NOEXCEPT {}
-  virtual const char* what() const NOEXCEPT = 0;
+  virtual ~command_line_option_error() noexcept {}
+  virtual const char* what() const noexcept = 0;
 };
 
 struct only_one_option_allowed : command_line_option_error
@@ -1098,9 +1096,9 @@ struct only_one_option_allowed : command_line_option_error
     message += ".";
   }
 
-  virtual ~only_one_option_allowed() NOEXCEPT {}
+  virtual ~only_one_option_allowed() noexcept {}
 
-  virtual const char* what() const NOEXCEPT
+  virtual const char* what() const noexcept
   {
     return message.c_str();
   }
@@ -1121,9 +1119,9 @@ struct required_option_missing : command_line_option_error
     message += "` option is required.";
   }
 
-  virtual ~required_option_missing() NOEXCEPT {}
+  virtual ~required_option_missing() noexcept {}
 
-  virtual const char* what() const NOEXCEPT
+  virtual const char* what() const noexcept
   {
     return message.c_str();
   }
