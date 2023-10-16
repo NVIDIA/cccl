@@ -13,13 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+string(REPLACE ";" "\\\;" arches_escaped "${CMAKE_CUDA_ARCHITECTURES}")
+
 set(cmake_opts
   -D "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   -D "CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
   -D "CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
   -D "CMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}"
   -D "CMAKE_CUDA_HOST_COMPILER=${CMAKE_CUDA_HOST_COMPILER}"
-  -D "CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}"
+  -D "CMAKE_CUDA_ARCHITECTURES=${arches_escaped}"
 )
 
 set(CCCL_EXAMPLE_CPM_REPOSITORY "nvidia/cccl" CACHE STRING "GitHub repository used for CPM examples.")

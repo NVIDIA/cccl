@@ -38,6 +38,7 @@ update_devcontainer() {
        --arg cuda_version "$cuda_version" --arg compiler_name "$compiler_name" \
        --arg compiler_version "$compiler_version" --arg os "$os" \
        '.image = $image | .name = $name | .containerEnv.DEVCONTAINER_NAME = $name |
+        .containerEnv.CCCL_BUILD_INFIX = $name |
         .containerEnv.CCCL_CUDA_VERSION = $cuda_version | .containerEnv.CCCL_HOST_COMPILER = $compiler_name |
         .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version' \
        "$input_file" > "$output_file"
