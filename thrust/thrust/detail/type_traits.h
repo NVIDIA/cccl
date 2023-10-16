@@ -36,7 +36,7 @@ template<typename T> class device_reference;
 namespace detail
 {
  /// helper classes [4.3].
-template <typename T, T v>
+template<typename T, T v>
 using integral_constant = ::cuda::std::integral_constant<T, v>;
 using true_type  = ::cuda::std::true_type;
 using false_type = ::cuda::std::false_type;
@@ -250,7 +250,8 @@ template<typename T1, typename T2>
 
 #if THRUST_CPP_DIALECT >= 2011
 
-using ::cuda::std::is_convertible;
+template<class From, class To>
+using is_convertible = ::cuda::std::is_convertible<From, To>;
 
 #else
 
@@ -534,7 +535,8 @@ template<typename T1, typename T2>
 
 #if THRUST_CPP_DIALECT >= 2011
 
-using ::cuda::std::is_base_of;
+template<class Base, class Derived>
+using is_base_of = ::cuda::std::is_base_of<Base, Derived>;
 
 #else
 
