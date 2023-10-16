@@ -6,3 +6,5 @@
 _deps/catch2-src/
 .vscode/
 
+compile_commands.json
+CMakeUserPresets.json

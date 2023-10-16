@@ -109,7 +109,7 @@
 #endif
 
 #define CUB_COMPILER_DEPRECATION(REQ) \
-  CUB_COMP_DEPR_IMPL(CUB requires at least REQ. Define CUB_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.)
+  CUB_COMP_DEPR_IMPL(CUB requires at least REQ. Define CUB_IGNORE_DEPRECATED_COMPILER to suppress this message.)
 
 #define CUB_COMPILER_DEPRECATION_SOFT(REQ, CUR) \
   CUB_COMP_DEPR_IMPL(CUB requires at least REQ. CUR is deprecated but still supported. CUR support will be removed in a future release. Define CUB_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.)
