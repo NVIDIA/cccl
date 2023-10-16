@@ -43,8 +43,6 @@
 #define PP_STRINGIZE(expr)  PP_STRINGIZE_(expr)
 
 #define PP_CAT(a, b) a ## b
-
-
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
