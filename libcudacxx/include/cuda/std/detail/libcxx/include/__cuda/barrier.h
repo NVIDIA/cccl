@@ -739,13 +739,13 @@ bool __is_local_smem_barrier(barrier<_Sco, _CompF> & __barrier) {
 
 // __try_get_barrier_handle returns barrier handle of block-scoped barriers and a nullptr otherwise.
 template<thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_INLINE_VISIBILITY inline
 _CUDA_VSTD::uint64_t * __try_get_barrier_handle(barrier<_Sco, _CompF> & __barrier) {
     return nullptr;
 }
 
 template<>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_INLINE_VISIBILITY inline
 _CUDA_VSTD::uint64_t * __try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_completion>(barrier<::cuda::thread_scope_block> & __barrier) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -757,7 +757,7 @@ _CUDA_VSTD::uint64_t * __try_get_barrier_handle<::cuda::thread_scope_block, _CUD
     );
 }
 
-// This struct contains functions to delay the completion of a barrier phase
+// This struct contains functions to defer the completion of a barrier phase
 // or pipeline stage until a specific memcpy_async operation *initiated by
 // this thread* has completed.
 
@@ -768,13 +768,13 @@ struct __memcpy_completion_impl {
 
     template<typename _Group>
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY static
-    async_contract_fulfillment __delay(
+    async_contract_fulfillment __defer(
         __completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, barrier<::cuda::thread_scope_block> & __barrier) {
         // In principle, this is the overload for shared memory barriers. However, a
         // block-scope barrier may also be located in global memory. Therefore, we
         // check if the barrier is a non-smem barrier and handle that separately.
         if (! __is_local_smem_barrier(__barrier)) {
-            return __delay_non_smem_barrier(__cm, __group, __size, __barrier);
+            return __defer_non_smem_barrier(__cm, __group, __size, __barrier);
         }
 
         switch (__cm) {
@@ -817,14 +817,14 @@ struct __memcpy_completion_impl {
 
     template<typename _Group, thread_scope _Sco, typename _CompF>
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY static
-    async_contract_fulfillment __delay(
+    async_contract_fulfillment __defer(
         __completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
-        return __delay_non_smem_barrier(__cm, __group, __size, __barrier);
+        return __defer_non_smem_barrier(__cm, __group, __size, __barrier);
     }
 
     template<typename _Group, thread_scope _Sco, typename _CompF>
     _LIBCUDACXX_INLINE_VISIBILITY static
-    async_contract_fulfillment __delay_non_smem_barrier(
+    async_contract_fulfillment __defer_non_smem_barrier(
         __completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
         // Overload for non-smem barriers.
 
@@ -854,7 +854,7 @@ struct __memcpy_completion_impl {
 
     template<typename _Group, thread_scope _Sco>
     _LIBCUDACXX_INLINE_VISIBILITY static
-    async_contract_fulfillment __delay(__completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, pipeline<_Sco> & __pipeline) {
+    async_contract_fulfillment __defer(__completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, pipeline<_Sco> & __pipeline) {
         // pipeline does not sync on memcpy_async, defeat pipeline purpose otherwise
         __unused(__pipeline);
         __unused(__size);
@@ -1124,13 +1124,8 @@ __completion_mechanism __dispatch_memcpy_async_device(_Group const & __group, ch
 template<typename _Group, typename _Tp, typename _Size>
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
 __completion_mechanism __dispatch_memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, _CUDA_VSTD::uint32_t __allowed_completions, uint64_t* __bar_handle) {
-    // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
-    // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
-    // memcpy_async when compiling with GCC 4.8.
-    // FIXME: remove the #if once GCC 4.8 is no longer supported.
-#if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
     static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
-#endif
+
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
         // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
         constexpr _CUDA_VSTD::size_t __size_align = __get_size_align<_Size>::align;
@@ -1181,10 +1176,10 @@ async_contract_fulfillment __memcpy_async_barrier(_Group const & __group, _Tp * 
 
     // 2. Issue actual copy instructions.
     auto __bh = __try_get_barrier_handle(__barrier);
-    auto __cm =  __dispatch_memcpy_async(__single_thread_group{}, __destination, __source, __size, __allowed_completions, __bh);
+    auto __cm =  __dispatch_memcpy_async(__group, __destination, __source, __size, __allowed_completions, __bh);
 
     // 3. Synchronize barrier with copy instructions.
-    return __memcpy_completion_impl::__delay(__cm, __group, __size, __barrier);
+    return __memcpy_completion_impl::__defer(__cm, __group, __size, __barrier);
 }
 
 template<typename _Group, class _Tp, _CUDA_VSTD::size_t _Alignment, thread_scope _Sco, typename _CompF>
