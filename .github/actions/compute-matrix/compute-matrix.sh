@@ -23,6 +23,7 @@ extract_matrix() {
   write_output "HOST_COMPILERS" "$(echo "$nvcc_full_matrix" | jq -cr '[.[] | .compiler.name] | unique')"
   write_output "PER_CUDA_COMPILER_MATRIX" "$(echo "$nvcc_full_matrix" | jq -cr ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')"
   write_output "NVRTC_MATRIX" "$(echo "$matrix" | jq '.nvrtc' | explode_std_versions)"
+  write_output "EXAMPLES_MATRIX" "$(echo "$matrix" | jq -cr '.examples' )"
 }
 
 main() {
