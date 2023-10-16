@@ -10,7 +10,6 @@
 #include <thrust/detail/config.h>
 #include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/modern_gcc_required.h>
-// remove?
 #if !defined(THRUST_LEGACY_GCC)
 
 #include <thrust/tuple.h>

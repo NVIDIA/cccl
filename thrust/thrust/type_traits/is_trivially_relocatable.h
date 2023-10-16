@@ -240,7 +240,6 @@ struct is_trivially_copyable_impl
             #else
                 has_trivial_assign<T>::value
             #endif
-        
     >
 {
 };
