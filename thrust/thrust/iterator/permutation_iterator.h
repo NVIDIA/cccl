@@ -22,7 +22,7 @@
  * (C) Copyright Toon Knapen    2001.
  * (C) Copyright David Abrahams 2003.
  * (C) Copyright Roland Richter 2003.
- * 
+ *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying NOTICE file for the complete license)
  *
@@ -135,9 +135,7 @@ template <typename ElementIterator,
     /*! Null constructor calls the null constructor of this \p permutation_iterator's
      *  element iterator.
      */
-    __host__ __device__
-    permutation_iterator()
-      : m_element_iterator() {}
+    permutation_iterator() = default;
 
     /*! Constructor accepts an \c ElementIterator into a range of values and an
      *  \c IndexIterator into a range of indices defining the indexing scheme on the
