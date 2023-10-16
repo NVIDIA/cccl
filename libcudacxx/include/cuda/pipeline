@@ -521,14 +521,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
     template<typename _Group, class _Tp, typename _Size, thread_scope _Scope>
     _LIBCUDACXX_INLINE_VISIBILITY
     async_contract_fulfillment __memcpy_async_pipeline(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, pipeline<_Scope> & __pipeline) {
-        // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
-        // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
-        // memcpy_async when compiling with GCC 4.8.
-        // FIXME: remove the #if once GCC 4.8 is no longer supported.
-#if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
-        static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
-#endif
-
         // 1. Set the completion mechanisms that can be used.
         //
         //    Do not (yet) allow async_bulk_group completion. Do not allow
@@ -537,7 +529,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
         _CUDA_VSTD::uint32_t __allowed_completions = _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
 
         // 2. Issue actual copy instructions.
-        auto __cm =  __dispatch_memcpy_async(__single_thread_group{}, __destination, __source, __size, __allowed_completions);
+        auto __cm =  __dispatch_memcpy_async(__group, __destination, __source, __size, __allowed_completions);
 
         // 3. No need to synchronize with copy instructions.
         return __memcpy_completion_impl::__defer(__cm, __group, __size, __pipeline);
