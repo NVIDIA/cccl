@@ -25,110 +25,86 @@ THRUST_NAMESPACE_BEGIN
 
 /* --- Equality Operators --- */
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
-operator==(const complex<T0> &x, const complex<T1> &y)
+template <typename T0, typename T1, typename>
+__host__ __device__ bool operator==(const complex<T0> &x, const complex<T1> &y)
 {
   return x.real() == y.real() && x.imag() == y.imag();
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
-operator==(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
+template <typename T0, typename T1, typename>
+__host__ __device__ bool operator==(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
 {
   return x.real() == y.real() && x.imag() == y.imag();
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
-operator==(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
+template <typename T0, typename T1, typename>
+__host__ __device__ bool operator==(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
 {
   return x.real() == y.real() && x.imag() == y.imag();
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
-  bool>::type
-operator==(const T0 &x, const complex<T1> &y)
+template <typename T0, typename T1, typename, typename>
+__host__ __device__ bool operator==(const T0 &x, const complex<T1> &y)
 {
   return x == y.real() && T0() == y.imag();
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  bool>::type
-operator==(const complex<T0> &x, const T1 &y)
+template <typename T0, typename T1, typename, typename>
+__host__ __device__ bool operator==(const complex<T0> &x, const T1 &y)
 {
   return x.real() == y && x.imag() == T1();
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
-operator!=(const complex<T0> &x, const complex<T1> &y)
+template <typename T0, typename T1, typename>
+__host__ __device__ bool operator!=(const complex<T0> &x, const complex<T1> &y)
 {
   return !(x == y);
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
-operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
+template <typename T0, typename T1, typename>
+__host__ __device__ bool operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
 {
   return !(x == y);
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::enable_if<detail::is_same<T0, T1>::value, bool>::type
-operator!=(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
+template <typename T0, typename T1, typename>
+__host__ __device__ bool operator!=(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
 {
   return !(x == y);
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
-  bool>::type
-operator!=(const T0 &x, const complex<T1> &y)
+template <typename T0, typename T1, typename, typename>
+__host__ __device__ bool operator!=(const T0 &x, const complex<T1> &y)
 {
   return !(x == y);
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  bool>::type
-operator!=(const complex<T0> &x, const T1 &y)
+template <typename T0, typename T1, typename, typename>
+__host__ __device__ bool operator!=(const complex<T0> &x, const T1 &y)
 {
   return !(x == y);
 }
 
 /* --- Assignment Add Operator --- */
 
-template <typename T0, typename T1>
-__host__ __device__
-  typename detail::disable_if<detail::is_same<T0, T1>::value,
-                              complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-  operator+(const complex<T0> &x, const complex<T1> &y)
+template <typename T0, typename T1, typename>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator+(const complex<T0> &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
   return complex<T>(x.real() + y.real(), x.imag() + y.imag());
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
+template <typename T0, typename T1, typename, typename>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator+(const complex<T0> &x, const T1 &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
   return complex<T>(x.real() + y, T(x.imag()));
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
+template <typename T0, typename T1, typename, typename>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator+(const T0 &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -137,30 +113,24 @@ operator+(const T0 &x, const complex<T1> &y)
 
 /* --- Substraction Operator --- */
 
-template <typename T0, typename T1>
-__host__ __device__
-  typename detail::disable_if<detail::is_same<T0, T1>::value,
-                              complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-  operator-(const complex<T0> &x, const complex<T1> &y)
+template <typename T0, typename T1, typename>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator-(const complex<T0> &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
   return complex<T>(x.real() - y.real(), x.imag() - y.imag());
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
+template <typename T0, typename T1, typename, typename>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator-(const complex<T0> &x, const T1 &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
   return complex<T>(x.real() - y, T(x.imag()));
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
+template <typename T0, typename T1, typename, typename>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator-(const T0 &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -169,21 +139,22 @@ operator-(const T0 &x, const complex<T1> &y)
 
 /* --- Multiplication Operator --- */
 
-template <typename T0, typename T1>
-__host__ __device__
-  typename detail::disable_if<detail::is_same<T0, T1>::value,
-                              complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-  operator*(const complex<T0> &x, const complex<T1> &y)
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator*(const complex<T0> &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
   // fall back to std implementation of multiplication
   return ::cuda::std::complex<T>(x) * ::cuda::std::complex<T>(y);
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator*(const complex<T0> &x, const T1 &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -191,10 +162,11 @@ operator*(const complex<T0> &x, const T1 &y)
   return ::cuda::std::complex<T>(x) * ::cuda::std::complex<T>(y);
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator*(const T0 &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -204,21 +176,22 @@ operator*(const T0 &x, const complex<T1> &y)
 
 /* --- Division Operator --- */
 
-template <typename T0, typename T1>
-__host__ __device__
-  typename detail::disable_if<detail::is_same<T0, T1>::value,
-                              complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-  operator/(const complex<T0> &x, const complex<T1> &y)
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator/(const complex<T0> &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
   // fall back to std implementation of division
   return ::cuda::std::complex<T>(x) / ::cuda::std::complex<T>(y);
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator/(const complex<T0> &x, const T1 &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -226,10 +199,11 @@ operator/(const complex<T0> &x, const T1 &y)
   return ::cuda::std::complex<T>(x) / ::cuda::std::complex<T>(y);
 }
 
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator/(const T0 &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
