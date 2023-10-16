@@ -29,7 +29,11 @@
 
 #include "../../config.cuh"
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #include <cub/agent/agent_segmented_radix_sort.cuh>
 #include <cub/agent/agent_sub_warp_merge_sort.cuh>

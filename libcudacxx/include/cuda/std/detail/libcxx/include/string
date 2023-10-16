@@ -523,7 +523,11 @@ basic_string<char32_t> operator "" s( const char32_t *str, size_t len ); // C++1
 
 #include "__fwd/string.h"
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>

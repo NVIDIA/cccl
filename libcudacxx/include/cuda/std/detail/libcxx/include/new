@@ -106,7 +106,11 @@ void  operator delete[](void* ptr, void*) noexcept;
 #include <__pragma_push>
 #endif // __cuda_std__
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #if !defined(__cpp_sized_deallocation) || __cpp_sized_deallocation  < 201309L
 #define _LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION
