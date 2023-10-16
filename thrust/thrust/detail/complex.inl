@@ -23,68 +23,6 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/* --- Equality Operators --- */
-
-template <typename T0, typename T1, typename>
-__host__ __device__ bool operator==(const complex<T0> &x, const complex<T1> &y)
-{
-  return x.real() == y.real() && x.imag() == y.imag();
-}
-
-template <typename T0, typename T1, typename>
-__host__ __device__ bool operator==(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
-{
-  return x.real() == y.real() && x.imag() == y.imag();
-}
-
-template <typename T0, typename T1, typename>
-__host__ __device__ bool operator==(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
-{
-  return x.real() == y.real() && x.imag() == y.imag();
-}
-
-template <typename T0, typename T1, typename, typename>
-__host__ __device__ bool operator==(const T0 &x, const complex<T1> &y)
-{
-  return x == y.real() && T0() == y.imag();
-}
-
-template <typename T0, typename T1, typename, typename>
-__host__ __device__ bool operator==(const complex<T0> &x, const T1 &y)
-{
-  return x.real() == y && x.imag() == T1();
-}
-
-template <typename T0, typename T1, typename>
-__host__ __device__ bool operator!=(const complex<T0> &x, const complex<T1> &y)
-{
-  return !(x == y);
-}
-
-template <typename T0, typename T1, typename>
-__host__ __device__ bool operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
-{
-  return !(x == y);
-}
-
-template <typename T0, typename T1, typename>
-__host__ __device__ bool operator!=(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
-{
-  return !(x == y);
-}
-
-template <typename T0, typename T1, typename, typename>
-__host__ __device__ bool operator!=(const T0 &x, const complex<T1> &y)
-{
-  return !(x == y);
-}
-
-template <typename T0, typename T1, typename, typename>
-__host__ __device__ bool operator!=(const complex<T0> &x, const T1 &y)
-{
-  return !(x == y);
-}
-
 /* --- Assignment Add Operator --- */
 
 template <typename T0, typename T1, typename>

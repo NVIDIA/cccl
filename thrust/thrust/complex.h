@@ -96,7 +96,10 @@ struct complex : public ::cuda::std::complex<T>
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator==(const complex<T0> &x, const complex<T1> &y);
+__host__ __device__ bool operator==(const complex<T0> &x, const complex<T1> &y)
+{
+  return x.real() == y.real() && x.imag() == y.imag();
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are equal and false otherwise.
@@ -109,7 +112,10 @@ __host__ __device__ bool operator==(const complex<T0> &x, const complex<T1> &y);
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator==(const complex<T0> &x, const ::cuda::std::complex<T1> &y);
+__host__ __device__ bool operator==(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
+{
+  return x.real() == y.real() && x.imag() == y.imag();
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are equal and false otherwise.
@@ -122,7 +128,10 @@ __host__ __device__ bool operator==(const complex<T0> &x, const ::cuda::std::com
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator==(const ::cuda::std::complex<T0> &x, const complex<T1> &y);
+__host__ __device__ bool operator==(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
+{
+  return x.real() == y.real() && x.imag() == y.imag();
+}
 
 /*! Returns true if the imaginary part of the \p complex number is zero and
  *  the real part is equal to the scalar. Returns false otherwise.
@@ -136,7 +145,10 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ bool operator==(const T0 &x, const complex<T1> &y);
+__host__ __device__ bool operator==(const T0 &x, const complex<T1> &y)
+{
+  return x == y.real() && T0() == y.imag();
+}
 
 /*! Returns true if the imaginary part of the \p complex number is zero and
  *  the real part is equal to the scalar. Returns false otherwise.
@@ -150,7 +162,10 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ bool operator==(const complex<T0> &x, const T1 &y);
+__host__ __device__ bool operator==(const complex<T0> &x, const T1 &y)
+{
+  return x.real() == y && x.imag() == T1();
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are different and false otherwise.
@@ -163,7 +178,10 @@ __host__ __device__ bool operator==(const complex<T0> &x, const T1 &y);
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator!=(const complex<T0> &x, const complex<T1> &y);
+__host__ __device__ bool operator!=(const complex<T0> &x, const complex<T1> &y)
+{
+  return !(x == y);
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are different and false otherwise.
@@ -176,7 +194,10 @@ __host__ __device__ bool operator!=(const complex<T0> &x, const complex<T1> &y);
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y);
+__host__ __device__ bool operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
+{
+  return !(x == y);
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are different and false otherwise.
@@ -189,7 +210,10 @@ __host__ __device__ bool operator!=(const complex<T0> &x, const ::cuda::std::com
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator!=(const ::cuda::std::complex<T0> &x, const complex<T1> &y);
+__host__ __device__ bool operator!=(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
+{
+  return !(x == y);
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are different and false otherwise.
@@ -203,7 +227,10 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ bool operator!=(const T0 &x, const complex<T1> &y);
+__host__ __device__ bool operator!=(const T0 &x, const complex<T1> &y)
+{
+  return !(x == y);
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are different and false otherwise.
@@ -217,7 +244,10 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ bool operator!=(const complex<T0> &x, const T1 &y);
+__host__ __device__ bool operator!=(const complex<T0> &x, const T1 &y)
+{
+  return !(x == y);
+}
 
 /* --- Add Operator --- */
 
