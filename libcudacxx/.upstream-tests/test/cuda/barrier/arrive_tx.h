@@ -46,18 +46,27 @@ void mbarrier_complete_tx(
   );
 }
 
-template<typename Barrier>
+template<bool split_arrive_and_expect = false, typename Barrier>
 __device__
 void thread(Barrier& b, int arrives_per_thread)
 {
   constexpr int tx_count = 1;
-  auto tok = cuda::device::barrier_arrive_tx(b, arrives_per_thread, tx_count);
+  typename Barrier::arrival_token tok;
+
+  if (split_arrive_and_expect) {
+    cuda::device::barrier_expect_tx(b, tx_count);
+    tok = b.arrive(arrives_per_thread);
+  } else{
+    tok = cuda::device::barrier_arrive_tx(b, arrives_per_thread, tx_count);
+  }
+
   // Manually increase the transaction count of the barrier.
   mbarrier_complete_tx(b, tx_count);
 
   b.wait(cuda::std::move(tok));
 }
 
+template<bool split_arrive_and_expect = false>
 __device__
 void test()
 {
@@ -69,13 +78,13 @@ void test()
       __shared__ cuda::barrier<block> bar_1;
       init(&bar_1, (int) blockDim.x);
       __syncthreads();
-      thread(bar_1, 1);
+      thread<split_arrive_and_expect>(bar_1, 1);
 
       // Run all threads, each arriving with arrival count 2
       __shared__ cuda::barrier<block> bar_2;
       init(&bar_2, (int) 2 * blockDim.x);
       __syncthreads();
-      thread(bar_2, 2);
+      thread<split_arrive_and_expect>(bar_2, 2);
     )
   );
 }
