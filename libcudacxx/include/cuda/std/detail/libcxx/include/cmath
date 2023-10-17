@@ -674,7 +674,7 @@ __constexpr_isfinite(_A1 __lcpp_x) noexcept
     return isfinite(__lcpp_x);
 }
 
-#if defined(_MSC_VER) || defined(__CUDACC_RTC__)
+#if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _A1 __constexpr_copysign(_A1 __x, _A1 __y) noexcept
@@ -708,7 +708,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 typename __enable_if_t<is_arithmetic<_A1>::val
 }
 #endif // !_MSC_VER
 
-#if defined(_MSC_VER) || defined(__CUDACC_RTC__)
+#if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _A1 __constexpr_fabs(_A1 __x) noexcept
@@ -738,7 +738,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 double __constexpr_fabs(_Tp __x) noexcept {
 }
 #endif // !_MSC_VER
 
-#if defined(_MSC_VER) || defined(__CUDACC_RTC__)
+#if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _A1 __constexpr_fmax(_A1 __x, _A1 __y) noexcept
@@ -797,7 +797,7 @@ __constexpr_fmax(_Tp __x, _Up __y) noexcept {
 }
 #endif // !_MSC_VER
 
-#if defined(_MSC_VER) || defined(__CUDACC_RTC__)
+#if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _A1 __constexpr_logb(_A1 __x)
@@ -834,7 +834,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX _Tp __constexpr_logb(_Tp __x) {
 }
 #endif // !_MSVC
 
-#if defined(_MSC_VER) || defined(__CUDACC_RTC__)
+#if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 _Tp __constexpr_scalbn(_Tp __x, int __i) {

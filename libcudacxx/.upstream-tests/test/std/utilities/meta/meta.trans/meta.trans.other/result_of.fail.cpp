@@ -8,6 +8,7 @@
 
 // Mandates: invoke result must fail to compile when used with device lambdas.
 // UNSUPPORTED: nvrtc
+// UNSUPPORTED: clang && (!nvcc)
 
 // <cuda/std/functional>
 
@@ -31,7 +32,7 @@ void test_lambda(Fn &&)
 
 int main(int, char**)
 {
-#if defined(__NVCC__) 
+#if defined(TEST_COMPILER_NVCC)
     { // extended device lambda
     test_lambda<int>([] __device__ () -> int { return 42; });
     test_lambda<double>([] __device__ () -> double { return 42.0; });

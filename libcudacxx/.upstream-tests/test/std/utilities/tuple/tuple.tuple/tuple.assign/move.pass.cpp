@@ -57,7 +57,6 @@ int main(int, char**)
         t = cuda::std::move(t0);
         unused(t);
     }
-#if !defined(TEST_COMPILER_MSVC_2017)
     {
         typedef cuda::std::tuple<MoveOnly> T;
         T t0(MoveOnly(0));
@@ -97,7 +96,6 @@ int main(int, char**)
         assert(cuda::std::get<1>(t) == y2);
         assert(&cuda::std::get<1>(t) == &y);
     }
-#endif
     // cuda::std::unique_ptr not supported
     /*
     {

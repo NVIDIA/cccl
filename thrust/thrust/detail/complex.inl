@@ -66,6 +66,13 @@ operator==(const complex<T0> &x, const T1 &y)
 
 template <typename T0, typename T1>
 __host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
+operator!=(const complex<T0> &x, const complex<T1> &y)
+{
+  return !(x == y);
+}
+
+template <typename T0, typename T1>
+__host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
 operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
 {
   return !(x == y);
@@ -120,7 +127,7 @@ operator+(const complex<T0> &x, const T1 &y)
 
 template <typename T0, typename T1>
 __host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
+  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
   complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
 operator+(const T0 &x, const complex<T1> &y)
 {
@@ -152,7 +159,7 @@ operator-(const complex<T0> &x, const T1 &y)
 
 template <typename T0, typename T1>
 __host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
+  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
   complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
 operator-(const T0 &x, const complex<T1> &y)
 {
@@ -186,7 +193,7 @@ operator*(const complex<T0> &x, const T1 &y)
 
 template <typename T0, typename T1>
 __host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
+  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
   complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
 operator*(const T0 &x, const complex<T1> &y)
 {
@@ -221,7 +228,7 @@ operator/(const complex<T0> &x, const T1 &y)
 
 template <typename T0, typename T1>
 __host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
+  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
   complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
 operator/(const T0 &x, const complex<T1> &y)
 {

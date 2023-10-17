@@ -97,23 +97,23 @@ public:
   constexpr unexpected& operator=(unexpected&&)      = default;
 
   // [expected.un.obs]
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr const _Err& error() const& noexcept {
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr const _Err& error() const& noexcept {
     return __unex_;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr _Err& error() & noexcept {
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr _Err& error() & noexcept {
     return __unex_;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr const _Err&& error() const&& noexcept {
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr const _Err&& error() const&& noexcept {
     return _CUDA_VSTD::move(__unex_);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr _Err&& error() && noexcept {
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr _Err&& error() && noexcept {
     return _CUDA_VSTD::move(__unex_);
   }
 

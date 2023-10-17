@@ -11,16 +11,18 @@
 #define _LIBCUDACXX___TUPLE_TUPLE_TYPES_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
+#  pragma GCC system_header
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class ..._Tp> struct __tuple_types {};
+template <class... _Tp>
+struct __tuple_types
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

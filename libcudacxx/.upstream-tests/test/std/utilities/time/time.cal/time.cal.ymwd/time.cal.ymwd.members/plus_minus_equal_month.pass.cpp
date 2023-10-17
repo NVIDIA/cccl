@@ -39,7 +39,6 @@ int main(int, char**)
 {
     using year               = cuda::std::chrono::year;
     using month              = cuda::std::chrono::month;
-    using weekday            = cuda::std::chrono::weekday;
     using weekday_indexed    = cuda::std::chrono::weekday_indexed;
     using year_month_weekday = cuda::std::chrono::year_month_weekday;
     using months             = cuda::std::chrono::months;

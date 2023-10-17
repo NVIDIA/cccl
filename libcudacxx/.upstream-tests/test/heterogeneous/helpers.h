@@ -11,6 +11,7 @@
 
 #include <cuda/std/type_traits>
 
+#include <cstdio>
 #include <new>
 #include <thread>
 #include <vector>

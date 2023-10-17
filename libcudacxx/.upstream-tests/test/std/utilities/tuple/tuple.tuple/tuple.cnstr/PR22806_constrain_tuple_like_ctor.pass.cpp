@@ -97,11 +97,9 @@ int main(int, char**)
     // cuda::std::allocator not supported
     // cuda::std::allocator<int> A;
     { // rvalue reference
-#if !defined(TEST_COMPILER_MSVC_2017)
         T t1(42);
         cuda::std::tuple< T&& > t2(cuda::std::move(t1));
         assert(&cuda::std::get<0>(t2) == &t1);
-#endif
     }
     { // const lvalue reference
         T t1(42);
@@ -119,12 +117,10 @@ int main(int, char**)
         assert(&cuda::std::get<0>(t2) == &t1);
     }
     { // const rvalue reference
-#if !defined(TEST_COMPILER_MSVC_2017)
         T t1(42);
 
         cuda::std::tuple< T const && > t2(cuda::std::move(t1));
         assert(&cuda::std::get<0>(t2) == &t1);
-#endif
     }
     // cuda::std::allocator not supported
     /*
@@ -159,20 +155,16 @@ int main(int, char**)
     // the 'tuple(UTypes...)' ctor should be chosen and 'UDT' constructed from
     // 'tuple<T>'.
     {
-#if !defined(TEST_COMPILER_MSVC_2017)
         using VT = ConstructibleFromTupleAndInt;
         cuda::std::tuple<int> t1(42);
         cuda::std::tuple<VT> t2(t1);
         assert(cuda::std::get<0>(t2).state == VT::FromTuple);
-#endif
     }
     {
-#if !defined(TEST_COMPILER_MSVC_2017)
         using VT = ConvertibleFromTupleAndInt;
         cuda::std::tuple<int> t1(42);
         cuda::std::tuple<VT> t2 = {t1};
         assert(cuda::std::get<0>(t2).state == VT::FromTuple);
-#endif
     }
     // Test constructing a 1-tuple of the form tuple<UDT> from another 1-tuple
     // 'tuple<T>' where UDT cannot be constructed from 'tuple<T>' but can

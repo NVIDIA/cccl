@@ -302,7 +302,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     __barrier_base(ptrdiff_t __expected, _CompletionF __completion = _CompletionF())
-        : __phase(false), __expected(__expected), __arrived(__expected), __completion(__completion)
+        : __expected(__expected), __arrived(__expected), __completion(__completion), __phase(false)
     {
     }
 

@@ -8,9 +8,6 @@
 
 // UNSUPPORTED: c++98, c++03, c++11
 
-// XFAIL: nvcc
-// FIXME: Triage and fix this.
-
 // type_traits
 
 // is_invocable
@@ -24,8 +21,12 @@
 #include <cuda/std/type_traits>
 // NOTE: These headers are not currently supported by libcu++.
 #include <cuda/std/functional>
+#ifdef _LIBCUDACXX_HAS_MEMORY
 #include <cuda/std/memory>
+#endif // _LIBCUDACXX_HAS_MEMORY
+#ifdef _LIBCUDACXX_HAS_VECTOR
 #include <cuda/std/vector>
+#endif // _LIBCUDACXX_HAS_VECTOR
 
 #include "test_macros.h"
 
@@ -74,9 +75,11 @@ int main(int, char**) {
     static_assert(!cuda::std::is_invocable<const int&>::value, "");
     static_assert(!cuda::std::is_invocable<int&&>::value, "");
 
+#ifdef _LIBCUDACXX_HAS_VECTOR
     static_assert(!cuda::std::is_invocable<cuda::std::vector<int> >::value, "");
     static_assert(!cuda::std::is_invocable<cuda::std::vector<int*> >::value, "");
     static_assert(!cuda::std::is_invocable<cuda::std::vector<int**> >::value, "");
+#endif // _LIBCUDACXX_HAS_VECTOR
 
     static_assert(!cuda::std::is_invocable<AbominableFunc>::value, "");
 
@@ -109,9 +112,11 @@ int main(int, char**) {
     static_assert(!cuda::std::is_invocable_r<int, const int&>::value, "");
     static_assert(!cuda::std::is_invocable_r<int, int&&>::value, "");
 
+#ifdef _LIBCUDACXX_HAS_VECTOR
     static_assert(!cuda::std::is_invocable_r<int, cuda::std::vector<int> >::value, "");
     static_assert(!cuda::std::is_invocable_r<int, cuda::std::vector<int*> >::value, "");
     static_assert(!cuda::std::is_invocable_r<int, cuda::std::vector<int**> >::value, "");
+#endif // _LIBCUDACXX_HAS_VECTOR
     static_assert(!cuda::std::is_invocable_r<void, AbominableFunc>::value, "");
 
     //  with parameters
@@ -154,12 +159,16 @@ int main(int, char**) {
       using T = Tag*;
       using DT = DerFromTag*;
       using CT = const Tag*;
+#ifdef _LIBCUDACXX_HAS_MEMORY
       using ST = cuda::std::unique_ptr<Tag>;
+#endif // _LIBCUDACXX_HAS_MEMORY
       static_assert(cuda::std::is_invocable<Fn, T&, int>::value, "");
       static_assert(cuda::std::is_invocable<Fn, DT&, int>::value, "");
       static_assert(cuda::std::is_invocable<Fn, const T&, int>::value, "");
       static_assert(cuda::std::is_invocable<Fn, T&&, int>::value, "");
+#ifdef _LIBCUDACXX_HAS_MEMORY
       static_assert(cuda::std::is_invocable<Fn, ST, int>::value, "");
+#endif // _LIBCUDACXX_HAS_MEMORY
       static_assert(!cuda::std::is_invocable<Fn, CT&, int>::value, "");
       static_assert(!cuda::std::is_invocable<RFn, T, int>::value, "");
     }
@@ -191,12 +200,16 @@ int main(int, char**) {
       using T = Tag*;
       using DT = DerFromTag*;
       using CT = const Tag*;
+#ifdef _LIBCUDACXX_HAS_MEMORY
       using ST = cuda::std::unique_ptr<Tag>;
+#endif // _LIBCUDACXX_HAS_MEMORY
       static_assert(cuda::std::is_invocable<Fn, T&>::value, "");
       static_assert(cuda::std::is_invocable<Fn, DT&>::value, "");
       static_assert(cuda::std::is_invocable<Fn, const T&>::value, "");
       static_assert(cuda::std::is_invocable<Fn, T&&>::value, "");
+#ifdef _LIBCUDACXX_HAS_MEMORY
       static_assert(cuda::std::is_invocable<Fn, ST>::value, "");
+#endif // _LIBCUDACXX_HAS_MEMORY
       static_assert(cuda::std::is_invocable<Fn, CT&>::value, "");
     }
   }

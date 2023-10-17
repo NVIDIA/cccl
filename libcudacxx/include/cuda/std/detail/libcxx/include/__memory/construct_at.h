@@ -27,6 +27,10 @@
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 
+#ifdef _LIBCUDACXX_COMPILER_CLANG_CUDA
+#include <new>
+#endif // _LIBCUDACXX_COMPILER_CLANG_CUDA
+
 #if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
 #pragma GCC system_header
 #endif

@@ -534,7 +534,7 @@ using dextents = typename __detail::__make_dextents<_IndexType, _Rank>::type;
 
 #if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
 template <class... _IndexTypes>
-extents(_IndexTypes...)
+_LIBCUDACXX_HOST_DEVICE extents(_IndexTypes...)
   // Workaround for nvcc
   //-> extents<size_t, __detail::__make_dynamic_extent<_IndexTypes>()...>;
   // Adding "(void)" so that clang doesn't complain this is unused

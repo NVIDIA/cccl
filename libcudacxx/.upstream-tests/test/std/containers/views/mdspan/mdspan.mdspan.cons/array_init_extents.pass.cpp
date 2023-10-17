@@ -84,8 +84,7 @@ int main(int, char**)
 
     // Constraint: N == rank() || N == rank_dynamic() is true
     {
-        using      mdspan_t = cuda::std::mdspan< int, cuda::std::extents< int, dyn, dyn > >;
-        using other_index_t = int;
+        using mdspan_t = cuda::std::mdspan< int, cuda::std::extents< int, dyn, dyn > >;
 
         static_assert( is_array_cons_avail_v< mdspan_t, int *, int, 1 > == false, "" );
     }

@@ -14,7 +14,9 @@
 #define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/type_traits>
-// #include <cuda/std/memory>
+#ifdef _LIBCUDACXX_HAS_MEMORY
+#include <cuda/std/memory>
+#endif // _LIBCUDACXX_HAS_MEMORY
 #include <cuda/std/cassert>
 #include <cuda/functional>
 #include "test_macros.h"
@@ -168,74 +170,80 @@ int main(int, char**)
     test_result_of<PMS0(                             S&),  int> ();
     test_result_of<PMS0(                             S*),  int> ();
     test_result_of<PMS0(                             S*&), int> ();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+
     test_result_of<PMS0(      cuda::std::reference_wrapper<S>),  int> ();
     test_result_of<PMS0(const cuda::std::reference_wrapper<S>&), int> ();
     test_result_of<PMS0(      cuda::std::reference_wrapper<SD>),  int> ();
     test_result_of<PMS0(const cuda::std::reference_wrapper<SD>&), int> ();
+
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS0(cuda::std::unique_ptr<S>),  int> ();
     test_result_of<PMS0(cuda::std::unique_ptr<SD>), int> ();
-#endif
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS0(const          S&)>();
     test_no_result<PMS0(volatile       S&)>();
     test_no_result<PMS0(const volatile S&)>();
     test_no_result<PMS0(ND &                           )>();
     test_no_result<PMS0(const ND&                      )>();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS0(cuda::std::unique_ptr<S const>       )>();
+    test_no_result<PMS0(cuda::std::unique_ptr<ND>            )>();
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS0(cuda::std::reference_wrapper<S const>)>();
     test_no_result<PMS0(cuda::std::reference_wrapper<ND>     )>();
-    test_no_result<PMS0(cuda::std::unique_ptr<ND>            )>();
-#endif
 
     test_result_of<PMS1(                             S,   int), int*> ();
     test_result_of<PMS1(                             S&,  int), int*> ();
     test_result_of<PMS1(                             S*,  int), int*> ();
     test_result_of<PMS1(                             S*&, int), int*> ();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS1(cuda::std::unique_ptr<S>,               int), int*> ();
     test_result_of<PMS1(cuda::std::unique_ptr<SD>,              int), int*> ();
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS1(cuda::std::reference_wrapper<S>,        int), int*> ();
     test_result_of<PMS1(const cuda::std::reference_wrapper<S>&, int), int*> ();
     test_result_of<PMS1(cuda::std::reference_wrapper<SD>,        int), int*> ();
     test_result_of<PMS1(const cuda::std::reference_wrapper<SD>&, int), int*> ();
-#endif
+
     test_no_result<PMS1(const          S&, int)>();
     test_no_result<PMS1(volatile       S&, int)>();
     test_no_result<PMS1(const volatile S&, int)>();
     test_no_result<PMS1(ND &,                            int)>();
     test_no_result<PMS1(const ND&,                       int)>();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS1(cuda::std::unique_ptr<S const>,        int)>();
+    test_no_result<PMS1(cuda::std::unique_ptr<ND>,             int)>();
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS1(cuda::std::reference_wrapper<S const>, int)>();
     test_no_result<PMS1(cuda::std::reference_wrapper<ND>,      int)>();
-    test_no_result<PMS1(cuda::std::unique_ptr<ND>,             int)>();
-#endif
 
     test_result_of<PMS2(               S,   int, int), int&> ();
     test_result_of<PMS2(               S&,  int, int), int&> ();
     test_result_of<PMS2(               S*,  int, int), int&> ();
     test_result_of<PMS2(               S*&, int, int), int&> ();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS2(cuda::std::unique_ptr<S>, int, int), int&> ();
     test_result_of<PMS2(cuda::std::unique_ptr<SD>, int, int), int&> ();
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS2(cuda::std::reference_wrapper<S>,         int, int), int&> ();
     test_result_of<PMS2(const cuda::std::reference_wrapper<S>&,  int, int), int&> ();
     test_result_of<PMS2(cuda::std::reference_wrapper<SD>,        int, int), int&> ();
     test_result_of<PMS2(const cuda::std::reference_wrapper<SD>&, int, int), int&> ();
-#endif
+
     test_no_result<PMS2(const          S&, int, int)>();
     test_no_result<PMS2(volatile       S&, int, int)>();
     test_no_result<PMS2(const volatile S&, int, int)>();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS2(cuda::std::unique_ptr<S const>,   int, int)>();
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS2(cuda::std::reference_wrapper<S const>, int, int)>();
-#endif
+
     test_no_result<PMS2(const ND&,                  int, int)>();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
     test_no_result<PMS2(cuda::std::reference_wrapper<ND>, int, int)>();
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS2(cuda::std::unique_ptr<ND>,        int, int)>();
-#endif
+#endif // _LIBCUDACXX_HAS_MEMORY
 
     test_result_of<PMS3(S&, int), const int &>();
     test_result_of<PMS3(S&, int, long), const int &>();
@@ -251,9 +259,10 @@ int main(int, char**)
     test_result_of<PMS0C(const          S*),  int> ();
     test_result_of<PMS0C(               S*&), int> ();
     test_result_of<PMS0C(const          S*&), int> ();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS0C(cuda::std::unique_ptr<S>), int> ();
     test_result_of<PMS0C(cuda::std::unique_ptr<SD>), int> ();
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS0C(cuda::std::reference_wrapper<S>              ), int> ();
     test_result_of<PMS0C(cuda::std::reference_wrapper<const S>        ), int> ();
     test_result_of<PMS0C(const cuda::std::reference_wrapper<S> &      ), int> ();
@@ -262,7 +271,7 @@ int main(int, char**)
     test_result_of<PMS0C(cuda::std::reference_wrapper<const SD>       ), int> ();
     test_result_of<PMS0C(const cuda::std::reference_wrapper<SD> &     ), int> ();
     test_result_of<PMS0C(const cuda::std::reference_wrapper<const SD> &), int> ();
-#endif
+
     test_no_result<PMS0C(volatile       S&)>();
     test_no_result<PMS0C(const volatile S&)>();
 
@@ -273,9 +282,9 @@ int main(int, char**)
     test_result_of<PMS1C(const          S*,  int), int*> ();
     test_result_of<PMS1C(               S*&, int), int*> ();
     test_result_of<PMS1C(const          S*&, int), int*> ();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS1C(cuda::std::unique_ptr<S>, int), int*> ();
-#endif
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS1C(volatile       S&, int)>();
     test_no_result<PMS1C(const volatile S&, int)>();
 
@@ -286,9 +295,9 @@ int main(int, char**)
     test_result_of<PMS2C(const          S*,  int, int), int&> ();
     test_result_of<PMS2C(               S*&, int, int), int&> ();
     test_result_of<PMS2C(const          S*&, int, int), int&> ();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS2C(cuda::std::unique_ptr<S>, int, int), int&> ();
-#endif
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS2C(volatile       S&, int, int)>();
     test_no_result<PMS2C(const volatile S&, int, int)>();
 
@@ -306,9 +315,9 @@ int main(int, char**)
     test_result_of<PMS0V(volatile       S*),  int> ();
     test_result_of<PMS0V(               S*&), int> ();
     test_result_of<PMS0V(volatile       S*&), int> ();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS0V(cuda::std::unique_ptr<S>), int> ();
-#endif
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS0V(const          S&)>();
     test_no_result<PMS0V(const volatile S&)>();
 
@@ -319,9 +328,9 @@ int main(int, char**)
     test_result_of<PMS1V(volatile       S*,  int), int*> ();
     test_result_of<PMS1V(               S*&, int), int*> ();
     test_result_of<PMS1V(volatile       S*&, int), int*> ();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS1V(cuda::std::unique_ptr<S>, int), int*> ();
-#endif
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS1V(const          S&, int)>();
     test_no_result<PMS1V(const volatile S&, int)>();
 
@@ -332,9 +341,9 @@ int main(int, char**)
     test_result_of<PMS2V(volatile       S*,  int, int), int&> ();
     test_result_of<PMS2V(               S*&, int, int), int&> ();
     test_result_of<PMS2V(volatile       S*&, int, int), int&> ();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS2V(cuda::std::unique_ptr<S>, int, int), int&> ();
-#endif
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_no_result<PMS2V(const          S&, int, int)>();
     test_no_result<PMS2V(const volatile S&, int, int)>();
 
@@ -358,9 +367,9 @@ int main(int, char**)
     test_result_of<PMS0CV(const          S*&), int> ();
     test_result_of<PMS0CV(volatile       S*&), int> ();
     test_result_of<PMS0CV(const volatile S*&), int> ();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS0CV(cuda::std::unique_ptr<S>), int> ();
-#endif
+#endif // _LIBCUDACXX_HAS_MEMORY
 
     test_result_of<PMS1CV(               S,   int), int*> ();
     test_result_of<PMS1CV(               S&,  int), int*> ();
@@ -375,9 +384,9 @@ int main(int, char**)
     test_result_of<PMS1CV(const          S*&, int), int*> ();
     test_result_of<PMS1CV(volatile       S*&, int), int*> ();
     test_result_of<PMS1CV(const volatile S*&, int), int*> ();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS1CV(cuda::std::unique_ptr<S>, int), int*> ();
-#endif
+#endif // _LIBCUDACXX_HAS_MEMORY
 
     test_result_of<PMS2CV(               S,   int, int), int&> ();
     test_result_of<PMS2CV(               S&,  int, int), int&> ();
@@ -392,9 +401,9 @@ int main(int, char**)
     test_result_of<PMS2CV(const          S*&, int, int), int&> ();
     test_result_of<PMS2CV(volatile       S*&, int, int), int&> ();
     test_result_of<PMS2CV(const volatile S*&, int, int), int&> ();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMS2CV(cuda::std::unique_ptr<S>, int, int), int&> ();
-#endif
+#endif // _LIBCUDACXX_HAS_MEMORY
 
     test_result_of<PMS3CV(S&, int), const int &>();
     test_result_of<PMS3CV(S&, int, long), const int &>();
@@ -414,15 +423,15 @@ int main(int, char**)
     test_result_of<PMD(SD const&), const char&>();
     test_result_of<PMD(SD*), char&>();
     test_result_of<PMD(const SD*), const char&>();
-#if !(defined(__NVCC__) || defined(__CUDACC_RTC__))
+#ifdef _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMD(cuda::std::unique_ptr<S>), char &>();
     test_result_of<PMD(cuda::std::unique_ptr<S const>), const char&>();
+#endif // _LIBCUDACXX_HAS_MEMORY
     test_result_of<PMD(cuda::std::reference_wrapper<S>), char&>();
     test_result_of<PMD(cuda::std::reference_wrapper<S const>), const char&>();
-#endif
     test_no_result<PMD(ND&)>();
     }
-#if defined(__NVCC__)
+#if defined(TEST_COMPILER_NVCC)
     { // extended lambda
     NV_IF_TARGET(NV_IS_DEVICE,(
         test_lambda<int>([] __host__ __device__ () -> int { return 42; });

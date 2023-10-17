@@ -27,7 +27,7 @@ __host__ __device__ auto extract ( const AtContainer &t, const cuda::std::intege
 int main(int, char**)
 {
 //  Make a couple of sequences
-    using int3    = cuda::std::make_integer_sequence<int, 3>;     // generates int:    0,1,2
+    using intseq3 = cuda::std::make_integer_sequence<int, 3>;     // generates int:    0,1,2
     using size7   = cuda::std::make_integer_sequence<size_t, 7>;  // generates size_t: 0,1,2,3,4,5,6
     using size4   = cuda::std::make_index_sequence<4>;            // generates size_t: 0,1,2,3
     using size2   = cuda::std::index_sequence_for<int, size_t>;   // generates size_t: 0,1
@@ -35,8 +35,8 @@ int main(int, char**)
     using sizemix = cuda::std::index_sequence<1, 1, 2, 3, 5>;     // generates size_t: 1,1,2,3,5
 
 //  Make sure they're what we expect
-    static_assert ( cuda::std::is_same<int3::value_type, int>::value, "int3 type wrong" );
-    static_assert ( int3::size () == 3, "int3 size wrong" );
+    static_assert ( cuda::std::is_same<intseq3::value_type, int>::value, "intseq3 type wrong" );
+    static_assert ( intseq3::size () == 3, "intseq3 size wrong" );
 
     static_assert ( cuda::std::is_same<size7::value_type, size_t>::value, "size7 type wrong" );
     static_assert ( size7::size () == 7, "size7 size wrong" );
@@ -56,8 +56,8 @@ int main(int, char**)
     auto tup = cuda::std::make_tuple ( 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 );
 
 //  Use them
-    auto t3 = extract ( tup, int3() );
-    static_assert ( cuda::std::tuple_size<decltype(t3)>::value == int3::size (), "t3 size wrong");
+    auto t3 = extract ( tup, intseq3() );
+    static_assert ( cuda::std::tuple_size<decltype(t3)>::value == intseq3::size (), "t3 size wrong");
     assert ( t3 == cuda::std::make_tuple ( 10, 11, 12 ));
 
     auto t7 = extract ( tup, size7 ());

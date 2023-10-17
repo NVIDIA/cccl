@@ -1,4 +1,5 @@
 # 3.15 is the minimum for including the project with add_subdirectory.
+# 3.18 for C++17 + CUDA and clang-cuda support.
 # 3.21 is the minimum for the developer build.
 cmake_minimum_required(VERSION 3.15)
 
@@ -27,14 +28,15 @@ if (NOT LIBCUDACXX_TOPLEVEL_PROJECT)
   return()
 endif()
 
+# Must be called in root CMakeLists.txt
+include(CTest)
+enable_testing()
+
 # Note that this currently returns and skips the rest of the build
 # system.
-option(libcudacxx_ENABLE_CMAKE_TESTS "Enable ctest-based testing." OFF)
+option(libcudacxx_ENABLE_CMAKE_TESTS "Enable ctest-based testing." ON)
 if (libcudacxx_ENABLE_CMAKE_TESTS)
-  include(CTest)
-  enable_testing() # Must be called in root CMakeLists.txt
   add_subdirectory(cmake/test/)
-  return()
 endif()
 
 set(CMAKE_MODULE_PATH "${libcudacxx_SOURCE_DIR}/cmake")
