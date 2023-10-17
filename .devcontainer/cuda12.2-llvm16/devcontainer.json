@@ -18,7 +18,9 @@
     "CCCL_CUDA_VERSION": "12.2",
     "CCCL_HOST_COMPILER": "llvm",
     "CCCL_HOST_COMPILER_VERSION": "16",
-    "CCCL_BUILD_INFIX": "cuda12.2-llvm16"
+    "CCCL_BUILD_INFIX": "cuda12.2-llvm16",
+    "CXX": "clang++",
+    "CUDAHOSTCXX": "clang++"
   },
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
