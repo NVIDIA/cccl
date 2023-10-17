@@ -27,6 +27,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include "../cstdlib"                // _LIBCUDACXX_UNREACHABLE
 #include "../__type_traits/void_t.h" // _CUDA_VSTD::__void_t
+#include <cuda/ptx>             // cuda::ptx::*
 
 #if defined(_LIBCUDACXX_COMPILER_NVRTC)
 #define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type *)0)->member))
@@ -603,14 +604,12 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
             // us in release builds. In debug builds, the error would be caught
             // by the asserts at the top of this function.
 
-            auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+            auto __native_handle = barrier_native_handle(__b);
+            auto __bh = __cvta_generic_to_shared(__native_handle);
             if (__arrive_count_update == 1) {
-                asm (
-                    "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
-                    : "=l"(__token)
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
-                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
-                    : "memory");
+                __token = cuda::ptx::mbarrier_arrive_expect_tx(
+                    cuda::ptx::sem_release, cuda::ptx::scope_cta, cuda::ptx::space_shared, __native_handle, __transaction_count_update
+                );
             } else {
                 asm (
                     "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
