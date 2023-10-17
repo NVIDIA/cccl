@@ -1,0 +1,352 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_PTX
+#define _CUDA_PTX
+
+#include "std/detail/__config"  // Macros
+#include "std/type_traits"      // std::integral_constant
+#include "../nv/target"         // __CUDA_MINIMUM_ARCH__ and friends
+
+/*
+ * The cuda::ptx namespace intends to provide PTX wrappers for new hardware
+ * features and new PTX instructions so that they can be experimented with
+ * before higher-level C++ APIs are designed and developed.
+ *
+ * The wrappers have the following responsibilities:
+ *
+ * - They must prevent any PTX assembler errors, that is:
+ *   - They are defined only for versions of the CUDA Toolkit in which nvcc/ptxas
+ *     actually recognizes the instruction.
+ *   - Sizes and types of parameters are correct.
+ * - They must convert state spaces correctly.
+ * - They adhere to the libcu++ coding standards of using:
+ *   - Double underscores for all parameters, variables
+ *   - _CUDA_VSTD:: namespace for types
+ *
+ * The wrappers should not do the following:
+ *
+ * - Use any non-native types. For example, an mbarrier instruction wrapper
+ *   takes the barrier address as a uint64_t pointer.
+ *
+ * This header is intended for:
+ *
+ * - internal consumption by higher-level APIs such as cuda::barrier,
+ * - outside developers who want to experiment with the latest features of the
+ *   hardware.
+ *
+ */
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+
+/*
+ * Integral constant types and values for
+ *
+ * - .sem
+ * - .space
+ * - .scope
+ *
+ * Skipping some steps in my reasoning: If we want to keep the PTX bindings
+ * relatively stable, and also be able to adapt to additions of semantics,
+ * space, and scope variants of a PTX instruction, then we must be able to add
+ * new overloads of an instruction with .sem, .space, or .scope as type-level
+ * parameters.
+ *
+ */
+
+enum class dot_sem {
+    acq_rel,
+    acquire,
+    relaxed,
+    release,
+    sc,
+    weak
+    // mmio?
+    // volatile?
+};
+
+enum class dot_space {
+    reg,
+    sreg,
+    const_mem, // can't use const
+    global,
+    local,
+    param,
+    shared,
+    shared_cluster,
+    tex // deprecated
+};
+
+enum class dot_scope {
+    cta,
+    cluster,
+    gpu,
+    sys
+};
+
+template <dot_sem sem>
+using sem_t = std::integral_constant<dot_sem, sem>;
+using sem_acq_rel_t = sem_t<dot_sem::acq_rel>;
+using sem_acquire_t = sem_t<dot_sem::acquire>;
+using sem_relaxed_t = sem_t<dot_sem::relaxed>;
+using sem_release_t = sem_t<dot_sem::release>;
+using sem_sc_t = sem_t<dot_sem::sc>;
+using sem_weak_t = sem_t<dot_sem::weak>;
+
+static constexpr sem_acq_rel_t sem_acq_rel{};
+static constexpr sem_acquire_t sem_acquire{};
+static constexpr sem_relaxed_t sem_relaxed{};
+static constexpr sem_release_t sem_release{};
+static constexpr sem_sc_t sem_sc{};
+static constexpr sem_weak_t sem_weak{};
+
+template <dot_space spc>
+using space_t = std::integral_constant<dot_space, spc>;
+using space_const_mem_t = std::integral_constant<dot_space, dot_space::const_mem>;
+using space_global_t = std::integral_constant<dot_space, dot_space::global>;
+using space_local_t = std::integral_constant<dot_space, dot_space::local>;
+using space_param_t = std::integral_constant<dot_space, dot_space::param>;
+using space_reg_t = std::integral_constant<dot_space, dot_space::reg>;
+using space_shared_t = std::integral_constant<dot_space, dot_space::shared>;
+using space_shared_cluster_t = std::integral_constant<dot_space, dot_space::shared_cluster>;
+using space_sreg_t = std::integral_constant<dot_space, dot_space::sreg>;
+using space_tex_t = std::integral_constant<dot_space, dot_space::tex>;
+
+static constexpr space_const_mem_t space_const_mem{};
+static constexpr space_global_t space_global{};
+static constexpr space_local_t space_local{};
+static constexpr space_param_t space_param{};
+static constexpr space_reg_t space_reg{};
+static constexpr space_shared_t space_shared{};
+static constexpr space_shared_cluster_t space_shared_cluster{};
+static constexpr space_sreg_t space_sreg{};
+static constexpr space_tex_t space_tex{};
+
+template <dot_scope scope>
+using scope_t = std::integral_constant<dot_scope, scope>;
+using scope_cluster_t = std::integral_constant<dot_scope, dot_scope::cluster>;
+using scope_cta_t = std::integral_constant<dot_scope, dot_scope::cta>;
+using scope_gpu_t = std::integral_constant<dot_scope, dot_scope::gpu>;
+using scope_sys_t = std::integral_constant<dot_scope, dot_scope::sys>;
+
+static constexpr scope_cluster_t scope_cluster{};
+static constexpr scope_cta_t scope_cta{};
+static constexpr scope_gpu_t scope_gpu{};
+static constexpr scope_sys_t scope_sys{};
+
+
+inline __device__ _CUDA_VSTD::uint32_t __as_smem_ptr(const void * __ptr)   { return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr)); }
+inline __device__ _CUDA_VSTD::uint32_t __as_remote_dsmem_ptr(const void * __ptr)   { return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr)); }
+inline __device__ _CUDA_VSTD::uint64_t __as_gmem_ptr(const void * __ptr)   { return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr)); }
+
+
+
+// SM 90 features
+// --------------
+
+/*
+ *  TMA / cp.async.bulk
+ *
+ */
+
+// cp.async.bulk
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
+
+// cp.reduce.async.bulk
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk
+
+// cp.async.bulk.tensor
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
+
+// cp.reduce.async.bulk.tensor
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk-tensor
+
+// cp.async.bulk.commit_group
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-commit-group
+
+// cp.async.bulk.wait_group
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group
+
+
+// Lower priority:
+
+// prefetch{.tensormap_space}.tensormap [a];  // prefetch the tensormap
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prefetch-prefetchu
+
+// cp.async.bulk.prefetch
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
+
+// cp.async.bulk.prefetch.tensor
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch-tensor
+
+/*
+ *  Shared memory barrier
+ *
+ */
+
+// mbarrier.expect_tx
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-expect-tx
+
+// mbarrier.complete_tx
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-complete-tx
+
+// mbarrier.arrive.expect_tx
+// Support for count argument without the modifier .noComplete requires sm_90 or higher.
+// Qualifier .expect_tx requires sm_90 or higher.
+// Sub-qualifier ::cluster requires sm_90 or higher.
+// Support for .cluster scope requires sm_90 or higher.
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive
+
+
+
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive
+#if (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
+template <dot_scope _Sco>
+_LIBCUDACXX_DEVICE inline
+_CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(sem_release_t __sem, scope_t<_Sco> __scope, space_shared_t __spc, _CUDA_VSTD::uint64_t* __addr, _CUDA_VSTD::uint32_t __tx_count)
+{
+    // Arrive on local shared memory barrier
+    static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+    _CUDA_VSTD::uint64_t __token;
+
+    if constexpr (__scope == scope_cta) {
+        asm (
+            "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
+            : "=l"(__token)
+            : "r"(__as_smem_ptr(__addr)),
+              "r"(__tx_count)
+            : "memory");
+    } else {
+        asm (
+            "mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2;"
+            : "=l"(__token)
+            : "r"(__as_smem_ptr(__addr)),
+              "r"(__tx_count)
+            : "memory");
+    }
+    return __token;
+}
+
+template <dot_scope _Sco>
+_LIBCUDACXX_DEVICE inline
+void mbarrier_arrive_expect_tx(sem_release_t __sem, scope_t<_Sco> __scope, space_shared_cluster_t __spc, _CUDA_VSTD::uint64_t* __addr, _CUDA_VSTD::uint32_t __tx_count)
+{
+    // Arrive on remote cluster barrier
+    static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+    if constexpr (__scope == scope_cta) {
+        asm (
+            "mbarrier.arrive.expect_tx.release.cta.shared::cluster.b64 _, [%0], %1;"
+            :
+            : "r"(__as_smem_ptr(__addr)),
+              "r"(__tx_count)
+            : "memory");
+    } else {
+        asm (
+            "mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64 _, [%0], %1;"
+            :
+            : "r"(__as_smem_ptr(__addr)),
+              "r"(__tx_count)
+            : "memory");
+    }
+}
+#endif // __CUDA_MINIMUM_ARCH__
+
+
+
+
+// mbarrier.test_wait/mbarrier.try_wait
+// mbarrier.try_wait requires sm_90 or higher.
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-mbarrier-try-wait
+
+
+/*
+ *  Cluster Basics:
+ *
+ *  These instructions are already exposed at a higher level, so may not be necessary.
+ */
+
+// mapa{.space}.type          d, a, b;
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mapa
+
+// getctarank{.space}.type d, a;
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank
+
+// barrier.cluster
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster
+
+// atom .cluster
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom
+
+// red .cluster
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red
+
+/*
+ *   Cluster async
+ *
+ */
+
+// st.async
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st-async
+
+// red.async
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red-async
+
+/*
+ *
+ *   Other instructions
+ */
+
+// fence.proxy.async.{global, shared::{cta, cluster}}
+// fence.mbarrier_init.release.cluster (may be a bit overkill??)
+// fence.{sc, acq_rel}.cluster
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence
+
+// multimem.ld_reduce, multimem.st, multimem.red
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-multimem-ld-reduce-multimem-st-multimem-red
+
+// griddepcontrol
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-griddepcontrol
+
+// elect.sync
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-elect-sync
+
+// stmatrix
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-store-instruction-stmatrix
+
+/*
+ *  Special registers (cluster-related)
+ *
+ */
+
+//  10.12. Special Registers: %clusterid
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-clusterid
+
+//  10.13. Special Registers: %nclusterid
+//  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-nclusterid
+
+//  10.14. Special Registers: %cluster_ctaid
+//  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-ctaid
+
+// 10.15. Special Registers: %cluster_nctaid
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-nctaid
+
+//  10.16. Special Registers: %cluster_ctarank
+//  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-ctarank
+
+//  10.17. Special Registers: %cluster_nctarank
+//  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-nctarank
+
+//  10.31. Special Registers: %aggr_smem_size
+//  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-aggr-smem-size
+
+_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+
+#endif // _CUDA_PTX
