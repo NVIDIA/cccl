@@ -1101,57 +1101,39 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
     return __completion_mechanism::__sync;
 }
 
-template<_CUDA_VSTD::size_t _Align, typename _Group>
-_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
-__completion_mechanism __dispatch_memcpy_async_device(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
-    // Dispatch based on direction of the copy: global to shared, shared to
-    // global, etc.
-
-    // CUDA compilers <= 12.2 may not propagate assumptions about the state space
-    // of pointers correctly. Therefore, we
-    // 1) put the code for each copy direction in a separate function, and
-    // 2) make sure none of the code paths can reach each other by "falling through".
-    //
-    // See nvbug 4074679 and also PR #478.
-    if (__isGlobal(__src_char) && __isShared(__dest_char)) {
-        return __dispatch_memcpy_async_global_to_shared<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
-    } else {
-        return __dispatch_memcpy_async_any_to_any<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
-    }
-}
-
 // __dispatch_memcpy_async is the internal entry point for dispatching to the correct memcpy_async implementation.
-template<typename _Group, typename _Tp, typename _Size>
+template<_CUDA_VSTD::size_t _Align, typename _Group>
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
-__completion_mechanism __dispatch_memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, _CUDA_VSTD::uint32_t __allowed_completions, uint64_t* __bar_handle) {
-    static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
-
+__completion_mechanism __dispatch_memcpy_async(_Group const & __group, char * __dest_char, char const * __src_char, size_t __size, _CUDA_VSTD::uint32_t __allowed_completions, uint64_t* __bar_handle) {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
-        // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
-        constexpr _CUDA_VSTD::size_t __size_align = __get_size_align<_Size>::align;
-        constexpr _CUDA_VSTD::size_t __align = (alignof(_Tp) < __size_align) ? __size_align : alignof(_Tp);
+        // Dispatch based on direction of the copy: global to shared, shared to
+        // global, etc.
 
-        // Cast to char pointers. We don't need the type for alignment anymore and
-        // erasing the types reduces the number of instantiations of down-stream
-        // functions.
-        char * __dest_char = reinterpret_cast<char*>(__destination);
-        char const * __src_char = reinterpret_cast<char const *>(__source);
-
-        return __dispatch_memcpy_async_device<__align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
+        // CUDA compilers <= 12.2 may not propagate assumptions about the state space
+        // of pointers correctly. Therefore, we
+        // 1) put the code for each copy direction in a separate function, and
+        // 2) make sure none of the code paths can reach each other by "falling through".
+        //
+        // See nvbug 4074679 and also PR #478.
+        if (__isGlobal(__src_char) && __isShared(__dest_char)) {
+            return __dispatch_memcpy_async_global_to_shared<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
+        } else {
+            return __dispatch_memcpy_async_any_to_any<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
+        }
     ), (
         // Host code path:
         if (__group.thread_rank() == 0) {
-            memcpy(__destination, __source, __size);
+            memcpy(__dest_char, __src_char, __size);
         }
         return __completion_mechanism::__sync;
     ));
 }
 
-template<typename _Group, typename _Tp, typename _Size>
+template<_CUDA_VSTD::size_t _Align, typename _Group>
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
-__completion_mechanism __dispatch_memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, _CUDA_VSTD::uint32_t __allowed_completions) {
+__completion_mechanism __dispatch_memcpy_async(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, _CUDA_VSTD::uint32_t __allowed_completions) {
     _LIBCUDACXX_DEBUG_ASSERT(! (__allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx)), "Cannot allow mbarrier_complete_tx completion mechanism when not passing a barrier. ");
-    return __dispatch_memcpy_async(__group, __destination, __source, __size, __allowed_completions, nullptr);
+    return __dispatch_memcpy_async<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1168,6 +1150,8 @@ struct __single_thread_group {
 template<typename _Group, class _Tp, typename _Size, thread_scope _Sco, typename _CompF>
 _LIBCUDACXX_INLINE_VISIBILITY
 async_contract_fulfillment __memcpy_async_barrier(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, barrier<_Sco, _CompF> & __barrier) {
+    static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
+
     // 1. Determine which completion mechanisms can be used with the current
     // barrier. A local shared memory barrier, i.e., block-scope barrier in local
     // shared memory, supports the mbarrier_complete_tx mechanism in addition to
@@ -1176,9 +1160,18 @@ async_contract_fulfillment __memcpy_async_barrier(_Group const & __group, _Tp * 
         ? ( _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group) | _CUDA_VSTD::uint32_t(__completion_mechanism::__mbarrier_complete_tx))
         : _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
 
+    // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
+    constexpr _CUDA_VSTD::size_t __size_align = __get_size_align<_Size>::align;
+    constexpr _CUDA_VSTD::size_t __align = (alignof(_Tp) < __size_align) ? __size_align : alignof(_Tp);
+    // Cast to char pointers. We don't need the type for alignment anymore and
+    // erasing the types reduces the number of instantiations of down-stream
+    // functions.
+    char * __dest_char = reinterpret_cast<char*>(__destination);
+    char const * __src_char = reinterpret_cast<char const *>(__source);
+
     // 2. Issue actual copy instructions.
     auto __bh = __try_get_barrier_handle(__barrier);
-    auto __cm =  __dispatch_memcpy_async(__group, __destination, __source, __size, __allowed_completions, __bh);
+    auto __cm =  __dispatch_memcpy_async<__align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bh);
 
     // 3. Synchronize barrier with copy instructions.
     return __memcpy_completion_impl::__defer(__cm, __group, __size, __barrier);

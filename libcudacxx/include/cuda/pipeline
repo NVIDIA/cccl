@@ -528,8 +528,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
         //    the pipeline has stage barriers in shared memory.
         _CUDA_VSTD::uint32_t __allowed_completions = _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
 
+        // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
+        constexpr _CUDA_VSTD::size_t __size_align = __get_size_align<_Size>::align;
+        constexpr _CUDA_VSTD::size_t __align = (alignof(_Tp) < __size_align) ? __size_align : alignof(_Tp);
+        // Cast to char pointers. We don't need the type for alignment anymore and
+        // erasing the types reduces the number of instantiations of down-stream
+        // functions.
+        char * __dest_char = reinterpret_cast<char*>(__destination);
+        char const * __src_char = reinterpret_cast<char const *>(__source);
+
         // 2. Issue actual copy instructions.
-        auto __cm =  __dispatch_memcpy_async(__group, __destination, __source, __size, __allowed_completions);
+        auto __cm =  __dispatch_memcpy_async<__align>(__group, __dest_char, __src_char, __size, __allowed_completions);
 
         // 3. No need to synchronize with copy instructions.
         return __memcpy_completion_impl::__defer(__cm, __group, __size, __pipeline);
