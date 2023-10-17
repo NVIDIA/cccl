@@ -265,7 +265,11 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
 __host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator+(const complex<T0> &x, const complex<T1> &y);
+operator+(const complex<T0> &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  return complex<T>(x.real() + y.real(), x.imag() + y.imag());
+}
 
 /*! Adds a scalar to a \p complex number.
  *
@@ -282,7 +286,11 @@ template <typename T0,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
 __host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator+(const complex<T0> &x, const T1 &y);
+operator+(const complex<T0> &x, const T1 &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  return complex<T>(x.real() + y, T(x.imag()));
+}
 
 /*! Adds a \p complex number to a scalar.
  *
@@ -299,7 +307,11 @@ template <typename T0,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
 __host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator+(const T0 &x, const complex<T1> &y);
+operator+(const T0 &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  return complex<T>(x + y.real(), T(y.imag()));
+}
 
 /* --- Substraction Operator --- */
 
@@ -317,7 +329,11 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
 __host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator-(const complex<T0> &x, const complex<T1> &y);
+operator-(const complex<T0> &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  return complex<T>(x.real() - y.real(), x.imag() - y.imag());
+}
 
 /*! Subtracts a scalar from a \p complex number.
  *
@@ -334,7 +350,11 @@ template <typename T0,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
 __host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator-(const complex<T0> &x, const T1 &y);
+operator-(const complex<T0> &x, const T1 &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  return complex<T>(x.real() - y, T(x.imag()));
+}
 
 /*! Subtracts a \p complex number from a scalar.
  *
@@ -351,7 +371,85 @@ template <typename T0,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
 __host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator-(const T0 &x, const complex<T1> &y);
+operator-(const T0 &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  return complex<T>(x - y.real(), -T(y.imag()));
+}
+
+/* --- Multiplication Operator --- */
+
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator*(const complex<T0> &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  // fall back to std implementation of multiplication
+  return ::cuda::std::complex<T>(x) * ::cuda::std::complex<T>(y);
+}
+
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator*(const complex<T0> &x, const T1 &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  // fall back to std implementation of multiplication
+  return ::cuda::std::complex<T>(x) * ::cuda::std::complex<T>(y);
+}
+
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator*(const T0 &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  // fall back to std implementation of multiplication
+  return ::cuda::std::complex<T>(x) * ::cuda::std::complex<T>(y);
+}
+
+/* --- Division Operator --- */
+
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator/(const complex<T0> &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  // fall back to std implementation of division
+  return ::cuda::std::complex<T>(x) / ::cuda::std::complex<T>(y);
+}
+
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator/(const complex<T0> &x, const T1 &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  // fall back to std implementation of division
+  return ::cuda::std::complex<T>(x) / ::cuda::std::complex<T>(y);
+}
+
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator/(const T0 &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  // fall back to std implementation of division
+  return ::cuda::std::complex<T>(x) / ::cuda::std::complex<T>(y);
+}
 
 // The using declarations allows imports all necessary functions for thurst::complex.
 // However, they also lead to thrust::abs(1.0F) being valid code after include <thurst/complex.h>.
@@ -401,8 +499,6 @@ struct is_complex<::std::complex<T>> : public thrust::true_type
 {};
 
 THRUST_NAMESPACE_END
-
-#include <thrust/detail/complex.inl>
 
 /*! \} // complex_numbers
  */
