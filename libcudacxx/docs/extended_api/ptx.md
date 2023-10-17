@@ -16,11 +16,11 @@ experiment with new hardware features before a high-level C++ API is available.
 ```cuda
 template <dot_scope _Sco>
 __device__ inline
-uint64_t mbarrier_arrive_expect_tx(sem_release_t __sem, scope_t<_Sco> __scope, space_shared_t __spc, uint64_t* __addr, uint32_t __tx_count);
+uint64_t mbarrier_arrive_expect_tx(sem_release_t sem, scope_t<_Sco> scope, space_shared_t spc, uint64_t* addr, uint32_t tx_count);
 
 template <dot_scope _Sco>
 __device__ inline
-void mbarrier_arrive_expect_tx(sem_release_t __sem, scope_t<_Sco> __scope, space_shared_cluster_t __spc, uint64_t* __addr, uint32_t __tx_count);
+void mbarrier_arrive_expect_tx(sem_release_t sem, scope_t<_Sco> scope, space_shared_cluster_t spc, uint64_t* addr, uint32_t tx_count);
 ```
 
 Usage:
@@ -41,8 +41,6 @@ __global__ void kernel() {
     __shared__ barrier_t bar;
     init(&bar, blockDim.x);
     __syncthreads();
-
-    
 
     NV_IF_TARGET(NV_PROVIDES_SM_90, (
         // Arrive on local shared memory barrier:
