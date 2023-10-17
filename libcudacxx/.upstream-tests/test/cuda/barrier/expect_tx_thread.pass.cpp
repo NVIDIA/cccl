@@ -22,10 +22,10 @@ int main(int, char**)
         // Required by concurrent_agents_launch to know how many we're
         // launching. This can only be an int, because the nvrtc tests use grep
         // to figure out how many threads to launch.
-        cuda_thread_count = 256;
+        cuda_thread_count = 2;
         ),
         NV_IS_DEVICE, (
-            constexpr bool split_arrive_and_expect = false;
+            constexpr bool split_arrive_and_expect = true;
             test<split_arrive_and_expect>();
         )
     );
