@@ -73,18 +73,18 @@ void test()
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE, (
       // Run all threads, each arriving with arrival count 1
-      constexpr auto block = cuda::thread_scope_block;
+      using barrier_t = cuda::barrier<cuda::thread_scope_block>;
 
-      __shared__ cuda::barrier<block> bar_1;
-      init(&bar_1, (int) blockDim.x);
+      shared_memory_selector<barrier_t, constructor_initializer> sel_1;
+      barrier_t* bar_1 = sel_1.construct(blockDim.x);
       __syncthreads();
-      thread<split_arrive_and_expect>(bar_1, 1);
+      thread<split_arrive_and_expect>(*bar_1, 1);
 
       // Run all threads, each arriving with arrival count 2
-      __shared__ cuda::barrier<block> bar_2;
-      init(&bar_2, (int) 2 * blockDim.x);
+      shared_memory_selector<barrier_t, constructor_initializer> sel_2;
+      barrier_t* bar_2 = sel_2.construct(2 * blockDim.x);
       __syncthreads();
-      thread<split_arrive_and_expect>(bar_2, 2);
+      thread<split_arrive_and_expect>(*bar_2, 2);
     )
   );
 }
