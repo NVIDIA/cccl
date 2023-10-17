@@ -1140,7 +1140,9 @@ __completion_mechanism __dispatch_memcpy_async(_Group const & __group, _Tp * __d
         return __dispatch_memcpy_async_device<__align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
     ), (
         // Host code path:
-        memcpy(__destination, __source, __size);
+        if (__group.thread_rank() == 0) {
+            memcpy(__destination, __source, __size);
+        }
         return __completion_mechanism::__sync;
     ));
 }
