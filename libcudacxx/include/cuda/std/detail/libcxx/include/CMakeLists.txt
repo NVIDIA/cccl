@@ -17,6 +17,7 @@ set(files
   __algorithm/for_each.h
   __algorithm/half_positive.h
   __algorithm/is_permutation.h
+  __algorithm/lexicographical_compare.h
   __algorithm/mismatch.h
   __algorithm/none_of.h
   __algorithm/search_n.h
