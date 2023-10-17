@@ -108,6 +108,7 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #endif // __cuda_std__
 
 #include "__algorithm/equal.h"
+#include "__algorithm/lexicographical_compare.h"
 #include "__algorithm/swap_ranges.h"
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__debug"
