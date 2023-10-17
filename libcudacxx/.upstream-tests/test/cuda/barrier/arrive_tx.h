@@ -46,14 +46,14 @@ void mbarrier_complete_tx(
   );
 }
 
-template<bool split_arrive_and_expect = false, typename Barrier>
+template<bool split_arrive_and_expect>
 __device__
-void thread(Barrier& b, int arrives_per_thread)
+void thread(cuda::barrier<cuda::thread_scope_block>& b, int arrives_per_thread)
 {
   constexpr int tx_count = 1;
-  typename Barrier::arrival_token tok;
+  typename cuda::barrier<cuda::thread_scope_block>::arrival_token tok;
 
-  if _LIBCUDACXX_CONSTEXPR_CXX17 (split_arrive_and_expect) {
+  if _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 (split_arrive_and_expect) {
     cuda::device::barrier_expect_tx(b, tx_count);
     tok = b.arrive(arrives_per_thread);
   } else{
@@ -66,7 +66,7 @@ void thread(Barrier& b, int arrives_per_thread)
   b.wait(cuda::std::move(tok));
 }
 
-template<bool split_arrive_and_expect = false>
+template<bool split_arrive_and_expect>
 __device__
 void test()
 {
