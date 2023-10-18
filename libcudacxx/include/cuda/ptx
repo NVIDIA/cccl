@@ -58,6 +58,45 @@
  *   more easily than in other parts of libcu++.
  */
 
+
+/*
+ * Targeting macros
+ *
+ */
+
+#if (defined(__CUDA_MINIMUM_ARCH__) && 800 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
+#  define _LIBCUDACXX_PTX_SM_80_AVAILABLE
+#endif
+
+#if (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
+#  define _LIBCUDACXX_PTX_SM_90_AVAILABLE
+#endif
+
+// PTX ISA 7.8 is available from CTK 11.8, driver r520
+#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 11 && __CUDACC_VER_MINOR__ >= 8)) || (!defined(__CUDACC_VER_MAJOR__))
+#  define _LIBCUDACXX_PTX_ISA_78_AVAILABLE
+#endif
+
+// PTX ISA 7.8 is available from CTK 11.8, driver r520 (so also from CTK 12.0 onwards)
+#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 0)) || (!defined(__CUDACC_VER_MAJOR__))
+#  define _LIBCUDACXX_PTX_ISA_78_AVAILABLE
+#endif
+
+// PTX ISA 8.0 is available from CTK 12.0, driver r525
+#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 0)) || (!defined(__CUDACC_VER_MAJOR__))
+#  define _LIBCUDACXX_PTX_ISA_80_AVAILABLE
+#endif
+
+// PTX ISA 8.1 is available from CTK 12.1, driver r530
+#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 1)) || (!defined(__CUDACC_VER_MAJOR__))
+#  define _LIBCUDACXX_PTX_ISA_81_AVAILABLE
+#endif
+
+// PTX ISA 8.2 is available from CTK 12.2, driver r535
+#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 2)) || (!defined(__CUDACC_VER_MAJOR__))
+#  define _LIBCUDACXX_PTX_ISA_82_AVAILABLE
+#endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 /*
@@ -171,6 +210,18 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_remote_dsmem_ptr(const void*
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_gmem_ptr(const void* __ptr)
 {
   return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr));
+}
+
+template <typename _Tp>
+inline _LIBCUDACXX_DEVICE int __as_b32(_Tp __val) {
+    static_assert(sizeof(_Tp) == 4, "");
+    return *reinterpret_cast<int*>(&__val);
+}
+
+template <typename _Tp>
+inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val) {
+    static_assert(sizeof(_Tp) == 8, "");
+    return *reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__val);
 }
 
 // SM 90 features
