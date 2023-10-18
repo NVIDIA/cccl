@@ -32,10 +32,12 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "llvm-vs-code-extensions.vscode-clangd"
+        "llvm-vs-code-extensions.vscode-clangd",
+        "xaver.clang-format"
       ],
       "settings": {
-        "clangFormat.executable.default": "/usr/local/bin/clang-format"
+        "editor.defaultFormatter": "xaver.clang-format",
+        "clang-format.executable": "/usr/local/bin/clang-format"
       }
     }
   },
