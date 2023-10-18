@@ -158,10 +158,9 @@ static constexpr scope_sys_t scope_sys{};
 
 
 // Private helper functions
-inline __device__ _CUDA_VSTD::uint32_t __as_smem_ptr(const void * __ptr)   { return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr)); }
-inline __device__ _CUDA_VSTD::uint32_t __as_remote_dsmem_ptr(const void * __ptr)   { return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr)); }
-inline __device__ _CUDA_VSTD::uint64_t __as_gmem_ptr(const void * __ptr)   { return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr)); }
-
+inline _LIBCUDACXX_DEVICE CUDA_VSTD::uint32_t __as_smem_ptr(const void * __ptr)   { return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr)); }
+inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_remote_dsmem_ptr(const void * __ptr)   { return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr)); }
+inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_gmem_ptr(const void * __ptr)   { return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr)); }
 
 
 // SM 90 features
