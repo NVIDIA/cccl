@@ -989,7 +989,7 @@ void __cp_async_shared_global_mechanism(_Group __g, char * __dest, const char * 
     const int __group_size = __g.size();
     const int __group_rank = __g.thread_rank();
     const int __stride = __group_size * __copy_size;
-    for (int __offset = __group_rank *  __copy_size; __offset < __size; __offset += __stride) {
+    for (int __offset = __group_rank *  __copy_size; __offset < static_cast<int>(__size); __offset += __stride) {
         __cp_async_shared_global<__copy_size>(__dest + __offset, __src + __offset);
     }
 }
