@@ -29,7 +29,7 @@
  *   - Sizes and types of parameters are correct.
  * - They must convert state spaces correctly.
  * - They adhere to the libcu++ coding standards of using:
- *   - Double underscores for all parameters, variables
+ *   - Reserved identifiers for all parameters, variables. E.g. `__meow` or `_Woof`
  *   - _CUDA_VSTD:: namespace for types
  *
  * The wrappers should not do the following:
