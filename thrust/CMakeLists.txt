@@ -10,7 +10,7 @@ if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
   set(THRUST_TOPLEVEL_PROJECT ON)
 endif()
 
-## thrust_fix_clang_nvcc_build_for 
+## thrust_fix_clang_nvcc_build_for
 #
 # Modifies the given target to include a fix for the clang host compiler case.
 # The fix consists of force-including a header into each compilation unit.
@@ -22,7 +22,7 @@ function(thrust_fix_clang_nvcc_build_for target)
     set(clang_fix_header_path "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/testing/fix_clang_nvcc_11.5.h")
 
     # Only affects host compiler
-    target_compile_options(${target} PRIVATE 
+    target_compile_options(${target} PRIVATE
         "$<$<COMPILE_LANGUAGE:CUDA>:-include${clang_fix_header_path}>")
   endif()
 endfunction()
@@ -30,7 +30,6 @@ endfunction()
 # This must be done before any languages are enabled:
 if (THRUST_TOPLEVEL_PROJECT)
   cmake_minimum_required(VERSION 3.21)
-  include(cmake/ThrustCompilerHacks.cmake)
 endif()
 
 # This must appear after our Compiler Hacks or else CMake will delete the cache

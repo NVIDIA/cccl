@@ -77,7 +77,7 @@ template<typename Eval>
 // met.
 template <typename T>
 using actor_check_ref_type =
-  thrust::detail::integral_constant<bool,
+  ::cuda::std::integral_constant<bool,
     ( std::is_lvalue_reference<T>::value ||
       thrust::detail::is_wrapped_reference<T>::value )>;
 

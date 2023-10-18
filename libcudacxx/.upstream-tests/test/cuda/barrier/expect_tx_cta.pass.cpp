@@ -25,7 +25,7 @@ int main(int, char**)
         cuda_thread_count = 256;
         ),
         NV_IS_DEVICE, (
-            constexpr bool split_arrive_and_expect = false;
+            constexpr bool split_arrive_and_expect = true;
             test<split_arrive_and_expect>();
         )
     );
