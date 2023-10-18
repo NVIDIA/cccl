@@ -1,7 +1,7 @@
 ## PTX instructions
 
-The `cuda::ptx` namespace contains functions that map one-to-one to PTX
-[instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html). These can be used for maximal control of the generated code, or to
+The `cuda::ptx` namespace contains functions that map one-to-one to
+[PTX instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html). These can be used for maximal control of the generated code, or to
 experiment with new hardware features before a high-level C++ API is available.
 
 ### Shared memory barrier (mbarrier)
