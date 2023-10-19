@@ -13,6 +13,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Passes all args directly to execute_process while setting up the following
+# results variables and propogating them to the caller's scope:
+#
+# - cccl_process_exit_code
+# - cccl_process_stdout
+# - cccl_process_stderr
+#
+# If the command
+# is not successful (e.g. the last command does not return zero), a non-fatal
+# warning is printed.
+function(cccl_execute_non_fatal_process)
+  execute_process(${ARGN}
+    RESULT_VARIABLE cccl_process_exit_code
+    OUTPUT_VARIABLE cccl_process_stdout
+    ERROR_VARIABLE cccl_process_stderr
+  )
+
+  if (NOT cccl_process_exit_code EQUAL 0)
+    message(WARNING
+      "execute_process failed with non-zero exit code: ${cccl_process_exit_code}\n"
+      "${ARGN}\n"
+      "stdout:\n${cccl_process_stdout}\n"
+      "stderr:\n${cccl_process_stderr}\n"
+    )
+  endif()
+
+  set(cccl_process_exit_code "${cccl_process_exit_code}" PARENT_SCOPE)
+  set(cccl_process_stdout "${cccl_process_stdout}" PARENT_SCOPE)
+  set(cccl_process_stderr "${cccl_process_stderr}" PARENT_SCOPE)
+endfunction()
 
 # Add a build-and-test CTest.
 # - full_test_name_var will be set to the full name of the test.

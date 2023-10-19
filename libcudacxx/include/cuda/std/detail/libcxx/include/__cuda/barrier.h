@@ -23,6 +23,8 @@
 #pragma GCC system_header
 #endif
 
+#include "../cstdlib"           // _LIBCUDACXX_UNREACHABLE
+
 #if defined(_LIBCUDACXX_COMPILER_NVRTC)
 #define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type *)0)->member))
 #else
@@ -609,6 +611,73 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
         )
     );
     return __token;
+}
+
+template <typename _Tp, _CUDA_VSTD::size_t _Alignment>
+_LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
+    _Tp* __dest,
+    const _Tp* __src,
+    ::cuda::aligned_size_t<_Alignment> __size,
+    ::cuda::barrier<::cuda::thread_scope_block> & __b) {
+    // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
+    // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
+    // memcpy_async when compiling with GCC 4.8.
+    // FIXME: remove the #if once GCC 4.8 is no longer supported.
+#if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
+    static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async_tx requires a trivially copyable type");
+#endif
+    static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
+
+    _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+    _LIBCUDACXX_DEBUG_ASSERT(__isShared(__dest), "dest must point to shared memory.");
+    _LIBCUDACXX_DEBUG_ASSERT(__isGlobal(__src), "src must point to global memory.");
+
+    auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+    if (__isShared(__dest) && __isGlobal(__src)) {
+        asm volatile(
+            "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
+            :
+            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+              "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+              "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
+              "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh))
+            : "memory");
+    } else {
+        // memcpy_async_tx only supports copying from global to shared
+        // or from shared to remote cluster dsmem. To copy to remote
+        // dsmem, we need to arrive on a cluster-scoped barrier, which
+        // is not yet implemented. So we trap in this case as well.
+        _LIBCUDACXX_UNREACHABLE();
+    }
+
+    return async_contract_fulfillment::async;
+}
+
+_LIBCUDACXX_DEVICE inline
+void barrier_expect_tx(
+    barrier<thread_scope_block> & __b,
+    _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
+
+    _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+    _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
+    _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
+
+    // We do not check for the statespace of the barrier here. This is
+    // on purpose. This allows debugging tools like memcheck/racecheck
+    // to detect that we are passing a pointer with the wrong state
+    // space to mbarrier.arrive. If we checked for the state space here,
+    // and __trap() if wrong, then those tools would not be able to help
+    // us in release builds. In debug builds, the error would be caught
+    // by the asserts at the top of this function.
+
+    auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+    asm (
+        "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
+        :
+        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
+          "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
+        : "memory");
 }
 #endif // __CUDA_MINIMUM_ARCH__
 

@@ -140,7 +140,7 @@ treated as equally important.
 .. code:: c++
 
   NVBENCH_BENCH_TYPES(algname, NVBENCH_TYPE_AXES(all_types, offset_types))
-    .set_name("cub::DeviceAlgname::Algname")
+    .set_name("base")
     .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
     .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
@@ -195,7 +195,7 @@ Both :code:`-a` and :code:`-R` options are optional. The first one is used to sp
 for. The second one is used to specify benchmarks to be tuned. If not specified, all benchmarks are 
 going to be tuned.
 
-The result of the search is stored in the :code:`build/cub_bench_meta.db` file. To analyze the 
+The result of the search is stored in the :code:`build/cccl_meta_bench.db` file. To analyze the 
 result you can use the :code:`analyze.py` script:
 
 .. code:: bash 
