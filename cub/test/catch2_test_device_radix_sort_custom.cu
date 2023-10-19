@@ -578,8 +578,8 @@ struct decomposer_t
 };
 // example-end custom-type
 
-static __host__ std::ostream &operator<<(std::ostream &os, const custom_t &self) 
-{ 
+static __host__ std::ostream &operator<<(std::ostream &os, const custom_t &self)
+{
   return os << "{ " << self.f << ", " << self.lli << " }";
 }
 
@@ -1100,14 +1100,14 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = 01000001110000011001100110011010 00100000000000...0000
     // decompose(in[1]) = 01000010001010011001100110011010 00010000000000...0000
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
     //
     // The bit subrange `[60, 68)` specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
 
     thrust::device_vector<custom_t> out(num_items);
 
@@ -1156,7 +1156,7 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     constexpr int num_items = 2;
     thrust::device_vector<custom_t> in = {
       {42.4f, 1ll << 60},
-      {24.2f, 1ll << 61} 
+      {24.2f, 1ll << 61}
     };
 
     constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
@@ -1167,14 +1167,14 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = 01000010001010011001100110011010 00010000000000...0000
     // decompose(in[1]) = 01000001110000011001100110011010 00100000000000...0000
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
     //
     // The bit subrange `[60, 68)` specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
 
     thrust::device_vector<custom_t> out(num_items);
 
@@ -1236,7 +1236,7 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = 01000001110000011001100110011010 00100000000000...0000
     // decompose(in[1]) = 01000010001010011001100110011010 00010000000000...0000
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
     //
     // The bit subrange `[60, 68)` specifies differentiating key bits:
     //
@@ -1302,7 +1302,7 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     constexpr int num_items = 2;
     thrust::device_vector<custom_t> keys_in = {
       {42.4f, 1ll << 60},
-      {24.2f, 1ll << 61} 
+      {24.2f, 1ll << 61}
     };
 
     thrust::device_vector<int> vals_in = { 1, 0 };
@@ -1315,14 +1315,14 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = 01000010001010011001100110011010 00010000000000...0000
     // decompose(in[1]) = 01000001110000011001100110011010 00100000000000...0000
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
     //
     // The bit subrange `[60, 68)` specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
 
     thrust::device_vector<custom_t> keys_out(num_items);
     thrust::device_vector<int> vals_out(num_items);
