@@ -28,6 +28,8 @@
         "utility": "cpp",
         "variant": "cpp",
         "span": "cpp",
-        "__target_macros": "cpp"
+        "__target_macros": "cpp",
+        "cassert": "cpp",
+        "__config": "cpp"
     }
 }
