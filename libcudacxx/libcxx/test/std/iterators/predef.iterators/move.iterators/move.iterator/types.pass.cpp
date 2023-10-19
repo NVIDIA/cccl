@@ -38,9 +38,13 @@ struct FooIter {
   using pointer = void*;
   using reference = char&;
   bool& operator*() const;
+  FooIter& operator++();
+  FooIter& operator--();
+  FooIter operator++(int);
+  FooIter operator--(int);
 };
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 14
 template <>
 struct std::indirectly_readable_traits<FooIter> {
   using value_type = int;
@@ -51,13 +55,12 @@ struct std::incrementable_traits<FooIter> {
 };
 #endif
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 14
 // Not using `FooIter::value_type`.
-static_assert(std::is_same_v<typename std::move_iterator<FooIter>::value_type, int>);
+static_assert(std::is_same_v<typename std::move_iterator<FooIter>::value_type, int>, "");
 // Not using `FooIter::difference_type`.
-static_assert(std::is_same_v<typename std::move_iterator<FooIter>::difference_type, char>);
-static_assert(std::is_same_v<typename std::reverse_iterator<FooIter>::reference, bool&>);
-
+static_assert(std::is_same_v<typename std::move_iterator<FooIter>::difference_type, char>, "");
+static_assert(std::is_same_v<typename std::reverse_iterator<FooIter>::reference, bool&>, "");
 #else
 static_assert(std::is_same<typename std::reverse_iterator<FooIter>::reference, char&>::value, "");
 #endif

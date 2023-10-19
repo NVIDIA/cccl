@@ -11,8 +11,8 @@
 
 // reverse_iterator
 
-// template <RandomAccessIterator Iterator>
-// reverse_iterator<Iter> operator+(Iter::difference_type n, const reverse_iterator<Iter>& x); // constexpr in C++17
+// template <class U>
+// reverse_iterator(const reverse_iterator<U> &u); // constexpr since C++17
 
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
@@ -20,17 +20,21 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(It i, typename cuda::std::iterator_traits<It>::difference_type n, It x) {
-    const cuda::std::reverse_iterator<It> r(i);
-    cuda::std::reverse_iterator<It> rr = n + r;
-    assert(rr.base() == x);
+struct Base { };
+struct Derived : Base { };
+
+template <class It, class U>
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test(U u) {
+    const cuda::std::reverse_iterator<U> r2(u);
+    cuda::std::reverse_iterator<It> r1 = r2;
+    assert(base(r1.base()) == base(u));
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
-    const char* s = "1234567890";
-    test(random_access_iterator<const char*>(s+5), 5, random_access_iterator<const char*>(s));
-    test(s+5, 5, s);
+    Derived d{};
+    test<bidirectional_iterator<Base*> >(bidirectional_iterator<Derived*>(&d));
+    test<random_access_iterator<const Base*> >(random_access_iterator<Derived*>(&d));
+    test<Base*>(&d);
     return true;
 }
 

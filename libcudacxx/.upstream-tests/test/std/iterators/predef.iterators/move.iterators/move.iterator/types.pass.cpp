@@ -59,7 +59,7 @@ struct cuda::std::incrementable_traits<FooIter> {
 static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<FooIter>::value_type, int>, "");
 // Not using `FooIter::difference_type`.
 static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<FooIter>::difference_type, char>, "");
-//static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::reference, bool&>, "");
+static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::reference, bool&>, "");
 #else
 static_assert(cuda::std::is_same<typename cuda::std::reverse_iterator<FooIter>::reference, char&>::value, "");
 #endif
