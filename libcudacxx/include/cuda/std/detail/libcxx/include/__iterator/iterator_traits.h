@@ -429,11 +429,12 @@ namespace __iterator_traits_detail {
 template <class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __cpp17_iterator_,
-  requires(_Ip __i) //
-  (requires(__can_reference<decltype(*__i)>),
-   requires(same_as<_Ip&, decltype(++__i)>),
-   requires(__can_reference<decltype(*__i++)>),
-   requires(copyable<_Ip>)));
+  requires(_Ip __i)(//
+    requires(__can_reference<decltype(*__i)>),
+    requires(same_as<_Ip&, decltype(++__i)>),
+    requires(__can_reference<decltype(*__i++)>),
+    requires(copyable<_Ip>)
+  ));
 
 template <class _Ip>
 _LIBCUDACXX_CONCEPT __cpp17_iterator = _LIBCUDACXX_FRAGMENT(__cpp17_iterator_, _Ip);
@@ -485,14 +486,15 @@ _LIBCUDACXX_CONCEPT __cpp17_bidirectional_iterator = _LIBCUDACXX_FRAGMENT(__cpp1
 template<class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __cpp17_random_access_iterator_,
-  requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n) //
-  (requires(same_as<_Ip&, decltype(__i += __n)>),
-   requires(same_as<_Ip&, decltype(__i -= __n)>),
-   requires(same_as<_Ip, decltype(__i +  __n)>),
-   requires(same_as<_Ip, decltype(__n +  __i)>),
-   requires(same_as<_Ip, decltype(__i -  __n)>),
-   requires(same_as<decltype(__n), decltype(__i -  __i)>),
-   requires(convertible_to<decltype(__i[__n]), iter_reference_t<_Ip>>)));
+  requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n)( //
+    requires(same_as<_Ip&, decltype(__i += __n)>),
+    requires(same_as<_Ip&, decltype(__i -= __n)>),
+    requires(same_as<_Ip, decltype(__i +  __n)>),
+    requires(same_as<_Ip, decltype(__n +  __i)>),
+    requires(same_as<_Ip, decltype(__i -  __n)>),
+    requires(same_as<decltype(__n), decltype(__i -  __i)>),
+    requires(convertible_to<decltype(__i[__n]), iter_reference_t<_Ip>>)
+  ));
 
 template<class _Ip>
 _LIBCUDACXX_CONCEPT __cpp17_random_access_iterator =

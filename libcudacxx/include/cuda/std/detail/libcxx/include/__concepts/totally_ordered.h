@@ -61,15 +61,16 @@ concept totally_ordered_with =
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __partially_ordered_with_,
-  requires(__make_const_lvalue_ref<_Tp> __t, __make_const_lvalue_ref<_Up> __u) //
-  (requires(__boolean_testable<decltype(__t <  __u)>),
-   requires(__boolean_testable<decltype(__t >  __u)>),
-   requires(__boolean_testable<decltype(__t <= __u)>),
-   requires(__boolean_testable<decltype(__t >= __u)>),
-   requires(__boolean_testable<decltype(__u <  __t)>),
-   requires(__boolean_testable<decltype(__u >  __t)>),
-   requires(__boolean_testable<decltype(__u <= __t)>),
-   requires(__boolean_testable<decltype(__u >= __t)>)));
+  requires(__make_const_lvalue_ref<_Tp> __t, __make_const_lvalue_ref<_Up> __u)(
+    requires(__boolean_testable<decltype(__t <  __u)>),
+    requires(__boolean_testable<decltype(__t >  __u)>),
+    requires(__boolean_testable<decltype(__t <= __u)>),
+    requires(__boolean_testable<decltype(__t >= __u)>),
+    requires(__boolean_testable<decltype(__u <  __t)>),
+    requires(__boolean_testable<decltype(__u >  __t)>),
+    requires(__boolean_testable<decltype(__u <= __t)>),
+    requires(__boolean_testable<decltype(__u >= __t)>)
+  ));
 
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT __partially_ordered_with = _LIBCUDACXX_FRAGMENT(__partially_ordered_with_, _Tp, _Up);
