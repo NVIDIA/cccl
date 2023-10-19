@@ -528,6 +528,9 @@ INSTANTIATE(__nv_fp8_e4m3);
 INSTANTIATE(float);
 INSTANTIATE(double);
 
+INSTANTIATE(bool);
+INSTANTIATE(char);
+
 #ifdef TEST_HALF_T
 INSTANTIATE(half_t);
 #endif

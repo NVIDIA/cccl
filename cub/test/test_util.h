@@ -70,6 +70,7 @@
  * Types `T` and `U` must be the same size.
  */
 template <typename T, typename U>
+__host__ __device__
 T SafeBitCast(const U& in)
 {
   static_assert(sizeof(T) == sizeof(U), "Types must be same size.");
