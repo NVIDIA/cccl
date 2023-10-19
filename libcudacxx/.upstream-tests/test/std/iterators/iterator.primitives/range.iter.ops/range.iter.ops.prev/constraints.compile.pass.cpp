@@ -9,7 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
-// UNSUPPORTED: nvrtc
 
 // ranges::prev
 // Make sure we're SFINAE-friendly when the template argument constraints are not met.

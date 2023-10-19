@@ -19,10 +19,11 @@
 // template<class F> constexpr auto transform(F&&) const&;
 // template<class F> constexpr auto transform(F&&) const&&;
 
-#include "test_macros.h"
 #include <cuda/std/cassert>
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
+
+#include "test_macros.h"
 
 struct LVal {
   __host__ __device__

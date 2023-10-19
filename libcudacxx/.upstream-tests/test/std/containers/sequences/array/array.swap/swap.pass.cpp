@@ -1,8 +1,9 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -16,18 +17,14 @@
 
 #include "test_macros.h"
 
-// cuda::std::array is explicitly allowed to be initialized with A a = { init-list };.
-// Disable the missing braces warning for this reason.
-#include "disable_missing_braces_warning.h"
-
 struct NonSwappable {
-  __host__ __device__ NonSwappable() {}
+    __host__ __device__ TEST_CONSTEXPR NonSwappable() { }
 private:
-  __host__ __device__ NonSwappable(NonSwappable const&);
-  __host__ __device__ NonSwappable& operator=(NonSwappable const&);
+    __host__ __device__ NonSwappable(NonSwappable const&);
+    __host__ __device__ NonSwappable& operator=(NonSwappable const&);
 };
 
-int main(int, char**)
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 {
     {
         typedef double T;
@@ -87,6 +84,14 @@ int main(int, char**)
         static_assert(noexcept(l.swap(r)), "");
     }
 
+    return true;
+}
 
+int main(int, char**)
+{
+    tests();
+#if TEST_STD_VER >= 14
+    static_assert(tests(), "");
+#endif
   return 0;
 }
