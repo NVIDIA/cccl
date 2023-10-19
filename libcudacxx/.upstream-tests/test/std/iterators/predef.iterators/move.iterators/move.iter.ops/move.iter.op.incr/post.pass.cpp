@@ -11,38 +11,46 @@
 
 // move_iterator
 
-// move_iterator operator++(int);
-//
-//  constexpr in C++17
+// constexpr auto operator++(int); // Return type was move_iterator until C++20
 
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 #include "test_iterators.h"
 
+#if TEST_STD_VER > 11
 template <class It>
-__host__ __device__
-void
-test(It i, It x)
-{
+__host__ __device__ void test_single_pass(It i, It x) {
+  cuda::std::move_iterator<It> r(cuda::std::move(i));
+  r++;
+  assert(cuda::std::move(r).base() == x);
+}
+#endif
+
+template <class It>
+__host__ __device__ void test(It i, It x) {
     cuda::std::move_iterator<It> r(i);
     cuda::std::move_iterator<It> rr = r++;
     assert(r.base() == x);
     assert(rr.base() == i);
 }
 
-int main(int, char**)
-{
-    char s[] = "123";
-    test(cpp17_input_iterator<char*>(s), cpp17_input_iterator<char*>(s+1));
-    test(forward_iterator<char*>(s), forward_iterator<char*>(s+1));
-    test(bidirectional_iterator<char*>(s), bidirectional_iterator<char*>(s+1));
-    test(random_access_iterator<char*>(s), random_access_iterator<char*>(s+1));
-    test(s, s+1);
+int main(int, char**) {
+  char s[] = "123";
+#if TEST_STD_VER > 11
+  test_single_pass(cpp17_input_iterator<char*>(s), cpp17_input_iterator<char*>(s + 1));
+#else
+  test(cpp17_input_iterator<char*>(s), cpp17_input_iterator<char*>(s+1));
+#endif
+  test(forward_iterator<char*>(s), forward_iterator<char*>(s+1));
+  test(bidirectional_iterator<char*>(s), bidirectional_iterator<char*>(s+1));
+  test(random_access_iterator<char*>(s), random_access_iterator<char*>(s+1));
+  test(s, s+1);
 
-#if TEST_STD_VER > 14
-    {
+#if TEST_STD_VER > 11
+  {
     constexpr const char *p = "123456789";
     typedef cuda::std::move_iterator<const char *> MI;
     constexpr MI it1 = cuda::std::make_move_iterator(p);
@@ -51,8 +59,35 @@ int main(int, char**)
     constexpr MI it3 = cuda::std::make_move_iterator(p) ++;
     static_assert(it1 == it3, "");
     static_assert(it2 != it3, "");
-    }
+  }
 #endif
+
+#if TEST_STD_VER > 11
+  // Forward iterators return a copy.
+  {
+    int a[] = {1, 2, 3};
+    using MoveIter = cuda::std::move_iterator<forward_iterator<int*>>;
+
+    MoveIter i = MoveIter(forward_iterator<int*>(a));
+    ASSERT_SAME_TYPE(decltype(i++), MoveIter);
+    auto j = i++;
+    assert(base(j.base()) == a);
+    assert(base(i.base()) == a + 1);
+  }
+#endif // TEST_STD_VER > 11
+
+#if TEST_STD_VER > 14
+  // Non-forward iterators return void.
+  {
+    int a[] = {1, 2, 3};
+    using MoveIter = cuda::std::move_iterator<cpp20_input_iterator<int*>>;
+
+    MoveIter i = MoveIter(cpp20_input_iterator<int*>(a));
+    ASSERT_SAME_TYPE(decltype(i++), void);
+    i++;
+    assert(base(i.base()) == a + 1);
+  }
+#endif // TEST_STD_VER > 14
 
   return 0;
 }

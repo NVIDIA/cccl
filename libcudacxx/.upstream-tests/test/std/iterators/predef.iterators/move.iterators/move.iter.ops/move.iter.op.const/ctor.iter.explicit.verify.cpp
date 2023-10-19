@@ -7,8 +7,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-int main(int, char**)
-{
+// <cuda/std/iterator>
 
-  return 0;
+// move_iterator
+
+// explicit move_iterator(Iter );
+
+// test explicitness
+
+#include <cuda/std/>
+
+int main(int, char**) {
+    char const* it = "";
+    cuda::std::move_iterator<char const*> r = it; // expected-error{{no viable conversion from 'const char *' to 'std::move_iterator<const char *>'}}
+    return 0;
 }
