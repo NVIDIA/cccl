@@ -11,6 +11,8 @@
 // XFAIL: msvc-19.36 && c++20
 
 // Compiler bug for being unable to convert __nv_hdl lambdas
+// XFAIL: msvc-19.33
+// XFAIL: windows && c++20
 
 // <cuda/std/barrier>
 
