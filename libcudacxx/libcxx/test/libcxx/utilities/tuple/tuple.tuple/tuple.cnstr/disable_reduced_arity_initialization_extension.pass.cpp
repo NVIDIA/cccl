@@ -15,6 +15,8 @@
 
 // UNSUPPORTED: c++98, c++03
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <tuple>
 #include <cassert>
 #include <type_traits>
