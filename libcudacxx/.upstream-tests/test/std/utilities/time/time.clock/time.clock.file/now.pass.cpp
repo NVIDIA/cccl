@@ -9,6 +9,9 @@
 // UNSUPPORTED: c++98, c++03, c++11, c++14, c++17
 // XFAIL: dylib-has-no-filesystem
 
+// File clock is undefined in NVRTC
+// UNSUPPORTED: nvrtc
+
 // <cuda/std/chrono>
 
 // file_clock
