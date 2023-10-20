@@ -10,7 +10,7 @@
 
 // template <class Duration>
 // class hh_mm_ss
-// 
+//
 // constexpr bool is_negative() const noexcept;
 
 #include <cuda/std/chrono>
@@ -30,10 +30,10 @@ constexpr bool check_neg(Duration d)
 int main(int, char**)
 {
 	using microfortnights = cuda::std::chrono::duration<int, cuda::std::ratio<756, 625>>;
-	
+
 	static_assert(!check_neg(cuda::std::chrono::minutes( 1)), "");
 	static_assert( check_neg(cuda::std::chrono::minutes(-1)), "");
-	
+
 	assert(!check_neg(cuda::std::chrono::seconds( 5000)));
 	assert( check_neg(cuda::std::chrono::seconds(-5000)));
 	assert(!check_neg(cuda::std::chrono::minutes( 5000)));

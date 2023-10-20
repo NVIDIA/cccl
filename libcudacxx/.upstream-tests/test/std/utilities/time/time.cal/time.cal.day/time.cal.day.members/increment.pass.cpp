@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class day;
@@ -37,8 +37,8 @@ int main(int, char**)
     ASSERT_NOEXCEPT(++(cuda::std::declval<day&>())  );
     ASSERT_NOEXCEPT(  (cuda::std::declval<day&>())++);
 
-    ASSERT_SAME_TYPE(day , decltype(  std::declval<day&>()++));
-    ASSERT_SAME_TYPE(day&, decltype(++std::declval<day&>()  ));
+    ASSERT_SAME_TYPE(day , decltype(  cuda::std::declval<day&>()++));
+    ASSERT_SAME_TYPE(day&, decltype(++cuda::std::declval<day&>()  ));
 
     static_assert(testConstexpr<day>(), "");
 

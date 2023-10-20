@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 // XFAIL: gcc-4.8, gcc-5, gcc-6
 // gcc before gcc-7 fails with an internal compiler error
 
@@ -44,11 +44,11 @@ int main(int, char**)
     using months             = cuda::std::chrono::months;
 
 
-    ASSERT_NOEXCEPT(                               std::declval<year_month_weekday&>() += std::declval<months>());
-    ASSERT_SAME_TYPE(year_month_weekday&, decltype(cuda::std::declval<year_month_weekday&>() += std::declval<months>()));
+    ASSERT_NOEXCEPT(                               cuda::std::declval<year_month_weekday&>() += cuda::std::declval<months>());
+    ASSERT_SAME_TYPE(year_month_weekday&, decltype(cuda::std::declval<year_month_weekday&>() += cuda::std::declval<months>()));
 
-    ASSERT_NOEXCEPT(                               std::declval<year_month_weekday&>() -= std::declval<months>());
-    ASSERT_SAME_TYPE(year_month_weekday&, decltype(cuda::std::declval<year_month_weekday&>() -= std::declval<months>()));
+    ASSERT_NOEXCEPT(                               cuda::std::declval<year_month_weekday&>() -= cuda::std::declval<months>());
+    ASSERT_SAME_TYPE(year_month_weekday&, decltype(cuda::std::declval<year_month_weekday&>() -= cuda::std::declval<months>()));
 
     auto constexpr Tuesday = cuda::std::chrono::Tuesday;
     static_assert(testConstexpr<year_month_weekday, months>(year_month_weekday{year{1234}, month{1}, weekday_indexed{Tuesday, 2}}), "");

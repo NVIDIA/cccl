@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class year_month;
@@ -25,7 +25,7 @@ int main(int, char**)
     using month      = cuda::std::chrono::month;
     using year_month = cuda::std::chrono::year_month;
 
-    ASSERT_NOEXCEPT(                std::declval<const year_month>().year());
+    ASSERT_NOEXCEPT(                cuda::std::declval<const year_month>().year());
     ASSERT_SAME_TYPE(year, decltype(cuda::std::declval<const year_month>().year()));
 
     static_assert( year_month{}.year() == year{}, "");

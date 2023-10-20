@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 // XFAIL: gcc-4.8, gcc-5, gcc-6
 // gcc before gcc-7 fails with an internal compiler error
 
@@ -43,11 +43,11 @@ int main(int, char**)
     using year_month_day_last = cuda::std::chrono::year_month_day_last;
     using years               = cuda::std::chrono::years;
 
-    ASSERT_NOEXCEPT(cuda::std::declval<year_month_day_last&>() += std::declval<years>());
-    ASSERT_NOEXCEPT(cuda::std::declval<year_month_day_last&>() -= std::declval<years>());
+    ASSERT_NOEXCEPT(cuda::std::declval<year_month_day_last&>() += cuda::std::declval<years>());
+    ASSERT_NOEXCEPT(cuda::std::declval<year_month_day_last&>() -= cuda::std::declval<years>());
 
-    ASSERT_SAME_TYPE(year_month_day_last&, decltype(cuda::std::declval<year_month_day_last&>() += std::declval<years>()));
-    ASSERT_SAME_TYPE(year_month_day_last&, decltype(cuda::std::declval<year_month_day_last&>() -= std::declval<years>()));
+    ASSERT_SAME_TYPE(year_month_day_last&, decltype(cuda::std::declval<year_month_day_last&>() += cuda::std::declval<years>()));
+    ASSERT_SAME_TYPE(year_month_day_last&, decltype(cuda::std::declval<year_month_day_last&>() -= cuda::std::declval<years>()));
 
     static_assert(testConstexpr<year_month_day_last, years>(year_month_day_last{year{1}, month_day_last{month{1}}}), "");
 
