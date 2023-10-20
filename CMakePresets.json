@@ -231,13 +231,37 @@
   "buildPresets": [
     {
       "name": "libcudacxx-nvrtcc",
-      "hidden": false,
+      "hidden": true,
       "targets": ["libcudacxx.nvrtcc"]
     },
     {
       "name": "libcudacxx-base",
       "hidden": true,
       "targets": ["libcudacxx.test.lit.precompile"]
+    },
+    {
+      "name": "libcudacxx-nvrtc-cpp11",
+      "hidden": false,
+      "inherits": ["libcudacxx-nvrtcc"],
+      "configurePreset": "libcudacxx-nvrtc-cpp11"
+    },
+    {
+      "name": "libcudacxx-nvrtc-cpp14",
+      "hidden": false,
+      "inherits": ["libcudacxx-nvrtcc"],
+      "configurePreset": "libcudacxx-nvrtc-cpp14"
+    },
+    {
+      "name": "libcudacxx-nvrtc-cpp17",
+      "hidden": false,
+      "inherits": ["libcudacxx-nvrtcc"],
+      "configurePreset": "libcudacxx-nvrtc-cpp17"
+    },
+    {
+      "name": "libcudacxx-nvrtc-cpp20",
+      "hidden": false,
+      "inherits": ["libcudacxx-nvrtcc"],
+      "configurePreset": "libcudacxx-nvrtc-cpp20"
     },
     {
       "name": "libcudacxx-cpp11",
