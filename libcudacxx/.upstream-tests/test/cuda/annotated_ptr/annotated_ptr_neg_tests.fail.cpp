@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: pre-sm-70
+// NVRTC does not do host side testing
 // UNSUPPORTED: nvrtc
 
 #include "utils.h"

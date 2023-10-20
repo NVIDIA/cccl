@@ -10,7 +10,7 @@
 
 // UNSUPPORTED: pre-sm-70
 // UNSUPPORTED: !nvcc
-// UNSUPPORTED: nvrtc
+
 // UNSUPPORTED: c++98, c++03
 
 #include "utils.h"
@@ -28,4 +28,3 @@ int main(int argc, char ** argv)
   test_access_property_fail();
   return 0;
 }
-

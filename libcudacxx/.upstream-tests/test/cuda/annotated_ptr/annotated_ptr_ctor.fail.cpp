@@ -10,7 +10,7 @@
 
 // UNSUPPORTED: pre-sm-70
 // UNSUPPORTED: !nvcc
-// UNSUPPORTED: nvrtc
+
 
 #include "utils.h"
 
