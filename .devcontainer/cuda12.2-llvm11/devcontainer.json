@@ -37,7 +37,10 @@
       ],
       "settings": {
         "editor.defaultFormatter": "xaver.clang-format",
-        "clang-format.executable": "/usr/local/bin/clang-format"
+        "clang-format.executable": "/usr/local/bin/clang-format",
+        "clangd.arguments": [
+          "--compile-commands-dir=${workspaceFolder}"
+        ]
       }
     }
   },
