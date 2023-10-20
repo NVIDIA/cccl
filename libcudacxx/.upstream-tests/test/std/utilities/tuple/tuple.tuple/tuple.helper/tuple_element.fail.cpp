@@ -17,7 +17,7 @@
 // };
 
 // UNSUPPORTED: c++98, c++03
-// UNSUPPORTED: nvrtc
+
 
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>

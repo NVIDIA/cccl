@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++98, c++03, c++11
-// UNSUPPORTED: nvrtc
+
 
 #include <cuda/std/utility>
 #include <cuda/std/complex>

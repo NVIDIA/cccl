@@ -14,9 +14,6 @@
 // UNSUPPORTED: clang-3.5, clang-3.6, clang-3.7, clang-3.8
 // UNSUPPORTED: apple-clang-6, apple-clang-7, apple-clang-8.0
 
-// .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
-// UNSUPPORTED: nvrtc
-
 // template <class IntegerType>
 //   constexpr byte& operator<<=(byte& b, IntegerType shift) noexcept;
 // This function shall not participate in overload resolution unless

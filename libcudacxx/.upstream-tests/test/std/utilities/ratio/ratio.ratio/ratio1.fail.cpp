@@ -8,8 +8,6 @@
 
 // test ratio:  The template argument D shall not be zero
 
-// .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
-// UNSUPPORTED: nvrtc
 
 #include <cuda/std/ratio>
 #include <cuda/std/cstdint>
