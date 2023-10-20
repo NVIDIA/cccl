@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class weekday;
@@ -18,9 +18,6 @@
 //    [days{0}, days{6}] satisfying y + d == x.
 // Otherwise the value returned is unspecified.
 // [Example: Sunday - Monday == days{6}. —end example]
-
-
-extern "C" int printf(const char *, ...);
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
