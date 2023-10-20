@@ -153,13 +153,13 @@ template <class _Derived, class _Upstream>
 struct __fn {
   _LIBCUDACXX_DISABLE_EXEC_CHECK
   _LIBCUDACXX_TEMPLATE(class _Property)
-    (requires (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
+    _LIBCUDACXX_REQUIRES( (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_INLINE_VISIBILITY friend constexpr void get_property(const _Derived&, _Property) noexcept {}
 
   // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
   _LIBCUDACXX_DISABLE_EXEC_CHECK
   _LIBCUDACXX_TEMPLATE(class _Property, class _Derived2 = _Derived)
-    (requires property_with_value<_Property> _LIBCUDACXX_AND has_property<_Upstream, _Property> _LIBCUDACXX_AND
+    _LIBCUDACXX_REQUIRES( property_with_value<_Property> _LIBCUDACXX_AND has_property<_Upstream, _Property> _LIBCUDACXX_AND
               __has_upstream_resource<_Derived2, _Upstream>)
   _LIBCUDACXX_INLINE_VISIBILITY friend constexpr __property_value_t<_Property> get_property(
     const _Derived& __res, _Property __prop) {
@@ -178,12 +178,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__get_property)
 struct __fn {
   _LIBCUDACXX_DISABLE_EXEC_CHECK
   _LIBCUDACXX_TEMPLATE(class _Upstream, class _Property)
-    (requires (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
+    _LIBCUDACXX_REQUIRES( (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(const _Upstream&, _Property) const noexcept {}
 
   _LIBCUDACXX_DISABLE_EXEC_CHECK
   _LIBCUDACXX_TEMPLATE(class _Upstream, class _Property)
-    (requires (property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
+    _LIBCUDACXX_REQUIRES( (property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __property_value_t<_Property> operator()(
     const _Upstream& __res, _Property __prop) const {
     return get_property(__res, __prop);
@@ -330,7 +330,7 @@ struct _Resource_vtable_builder
     }
 
     _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type)
-      (requires(_Alloc_type == _AllocType::_Default)) //
+      _LIBCUDACXX_REQUIRES((_Alloc_type == _AllocType::_Default)) //
      static constexpr _Alloc_vtable _Create() noexcept
     {
       return {&_Resource_vtable_builder::_Alloc<_Resource>,
@@ -339,7 +339,7 @@ struct _Resource_vtable_builder
     }
 
     _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type)
-      (requires(_Alloc_type == _AllocType::_Async)) //
+      _LIBCUDACXX_REQUIRES((_Alloc_type == _AllocType::_Async)) //
      static constexpr _Async_alloc_vtable _Create() noexcept
     {
       return {&_Resource_vtable_builder::_Alloc<_Resource>,
@@ -513,7 +513,7 @@ private:
 public:
   // clang-format off
     _LIBCUDACXX_TEMPLATE(class _Resource)
-        (requires (!_Is_basic_resource_ref<_Resource>
+        _LIBCUDACXX_REQUIRES( (!_Is_basic_resource_ref<_Resource>
           && (((_Alloc_type == _AllocType::_Default) && resource_with<_Resource, _Properties...>) //
             ||((_Alloc_type == _AllocType::_Async) && async_resource_with<_Resource, _Properties...>)))) //
      basic_resource_ref(_Resource& __res) noexcept
@@ -522,7 +522,7 @@ public:
     {}
 
     _LIBCUDACXX_TEMPLATE(class _Resource)
-        (requires (!_Is_basic_resource_ref<_Resource>
+        _LIBCUDACXX_REQUIRES( (!_Is_basic_resource_ref<_Resource>
           && (((_Alloc_type == _AllocType::_Default) && resource_with<_Resource, _Properties...>) //
             ||((_Alloc_type == _AllocType::_Async) && async_resource_with<_Resource, _Properties...>)))) //
      basic_resource_ref(_Resource* __res) noexcept
@@ -532,10 +532,10 @@ public:
 
     #if _LIBCUDACXX_STD_VER > 14
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
+      _LIBCUDACXX_REQUIRES( (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
     #else
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<
+      _LIBCUDACXX_REQUIRES( _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<
             _CUDA_VSTD::_One_of<_Properties, _OtherProperties...>>...>)
     #endif
      basic_resource_ref(
@@ -546,11 +546,11 @@ public:
 
     #if _LIBCUDACXX_STD_VER > 14
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires (_Alloc_type == _AllocType::_Default)
+      _LIBCUDACXX_REQUIRES( (_Alloc_type == _AllocType::_Default)
         && (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
     #else
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires (_Alloc_type == _AllocType::_Default)
+      _LIBCUDACXX_REQUIRES( (_Alloc_type == _AllocType::_Default)
         && _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<
             _CUDA_VSTD::_One_of<_Properties, _OtherProperties...>>...>)
     #endif
@@ -562,11 +562,11 @@ public:
 
     #if _LIBCUDACXX_STD_VER > 14
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires(sizeof...(_Properties) == sizeof...(_OtherProperties))
+      _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
             && (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
     #else
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires (sizeof...(_Properties) == sizeof...(_OtherProperties))
+      _LIBCUDACXX_REQUIRES( (sizeof...(_Properties) == sizeof...(_OtherProperties))
           && _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<
           _CUDA_VSTD::_One_of<_Properties, _OtherProperties...>>...>)
     #endif
@@ -578,11 +578,11 @@ public:
 
     #if _LIBCUDACXX_STD_VER > 14
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires (sizeof...(_Properties) == sizeof...(_OtherProperties))
+      _LIBCUDACXX_REQUIRES( (sizeof...(_Properties) == sizeof...(_OtherProperties))
             && (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
     #else
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-      (requires (sizeof...(_Properties) == sizeof...(_OtherProperties))
+      _LIBCUDACXX_REQUIRES( (sizeof...(_Properties) == sizeof...(_OtherProperties))
           && _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<
           _CUDA_VSTD::_One_of<_Properties, _OtherProperties...>>...>)
     #endif
@@ -592,11 +592,11 @@ public:
     }
 
     _LIBCUDACXX_TEMPLATE(class _Property)
-        (requires (!property_with_value<_Property>) _LIBCUDACXX_AND  _CUDA_VSTD::_One_of<_Property, _Properties...>) //
+        _LIBCUDACXX_REQUIRES( (!property_with_value<_Property>) _LIBCUDACXX_AND  _CUDA_VSTD::_One_of<_Property, _Properties...>) //
      friend void get_property(const basic_resource_ref &, _Property) noexcept {}
 
     _LIBCUDACXX_TEMPLATE(class _Property)
-        (requires  property_with_value<_Property> _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>) //
+        _LIBCUDACXX_REQUIRES(  property_with_value<_Property> _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>) //
      friend __property_value_t<_Property> get_property(
         const basic_resource_ref &__res, _Property) noexcept {
         return __res._Property_vtable<_Property>::__property_fn(__res.__object);

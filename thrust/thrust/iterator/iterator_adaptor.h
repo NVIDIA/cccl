@@ -23,7 +23,7 @@
  * (C) Copyright David Abrahams 2002.
  * (C) Copyright Jeremy Siek    2002.
  * (C) Copyright Thomas Witt    2002.
- * 
+ *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying NOTICE file for the complete license)
  *
@@ -106,7 +106,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \p iterator_adaptor is a powerful tool for creating custom iterators directly. However, the large set of iterator semantics which must be satisfied
  *  for algorithm compatibility can make \p iterator_adaptor difficult to use correctly. Unless you require the full expressivity of \p iterator_adaptor,
- *  consider building a custom iterator through composition of existing higher-level fancy iterators instead. 
+ *  consider building a custom iterator through composition of existing higher-level fancy iterators instead.
  *
  *  Interested users may refer to <tt>boost::iterator_adaptor</tt>'s documentation for further usage examples.
  */
@@ -134,12 +134,11 @@ template<typename Derived,
 
   /*! \endcond
    */
-  
+
   public:
     /*! \p iterator_adaptor's default constructor does nothing.
      */
-    __host__ __device__
-    iterator_adaptor(){}
+    iterator_adaptor() = default;
 
     /*! This constructor copies from a given instance of the \p Base iterator.
      */
@@ -152,11 +151,11 @@ template<typename Derived,
     /*! The type of iterator this \p iterator_adaptor's \p adapts.
      */
     typedef Base       base_type;
-                                                                                              
+
     /*! \cond
      */
     typedef typename super_t::reference reference;
-                                                                                              
+
     typedef typename super_t::difference_type difference_type;
     /*! \endcond
      */

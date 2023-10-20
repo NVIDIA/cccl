@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:23.10-cpp-llvm9-cuda12.2-ubuntu20.04",
+  "image": "rapidsai/devcontainers:23.12-cpp-llvm9-cuda12.2-ubuntu20.04",
   "hostRequirements": {
     "gpu": true
   },
@@ -18,7 +18,9 @@
     "CCCL_CUDA_VERSION": "12.2",
     "CCCL_HOST_COMPILER": "llvm",
     "CCCL_HOST_COMPILER_VERSION": "9",
-    "CCCL_BUILD_INFIX": "cuda12.2-llvm9"
+    "CCCL_BUILD_INFIX": "cuda12.2-llvm9",
+    "CXX": "clang++",
+    "CUDAHOSTCXX": "clang++"
   },
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
@@ -30,8 +32,13 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "llvm-vs-code-extensions.vscode-clangd"
-      ]
+        "llvm-vs-code-extensions.vscode-clangd",
+        "xaver.clang-format"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "xaver.clang-format",
+        "clang-format.executable": "/usr/local/bin/clang-format"
+      }
     }
   },
   "name": "cuda12.2-llvm9"

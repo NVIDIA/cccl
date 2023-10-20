@@ -70,12 +70,12 @@ union __expected_union_t {
   struct __empty_t {};
 
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-    (requires _LIBCUDACXX_TRAIT(is_default_constructible, _Tp2))
+    _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_default_constructible, _Tp2))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr
   __expected_union_t() noexcept(_LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp2)) : __val_() {}
 
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-    (requires (!_LIBCUDACXX_TRAIT(is_default_constructible, _Tp2)))
+    _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_default_constructible, _Tp2)))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr
   __expected_union_t() noexcept : __empty_() {}
 
@@ -117,12 +117,12 @@ union __expected_union_t<_Tp, _Err, true> {
   struct __empty_t {};
 
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-    (requires _LIBCUDACXX_TRAIT(is_default_constructible, _Tp2))
+    _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_default_constructible, _Tp2))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr
   __expected_union_t() noexcept(_LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp2)) : __val_() {}
 
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-    (requires (!_LIBCUDACXX_TRAIT(is_default_constructible, _Tp2)))
+    _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_default_constructible, _Tp2)))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr
   __expected_union_t() noexcept : __empty_() {}
 
@@ -380,7 +380,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
 #endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2, class... _Args)
-    (requires _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...))
+    _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...))
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
   void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args) noexcept {
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__oldval));
@@ -388,7 +388,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   }
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2, class... _Args)
-    (requires (!_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...)) _LIBCUDACXX_AND
+    _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...)) _LIBCUDACXX_AND
                 _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _T1)
     )
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
@@ -399,7 +399,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   }
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2, class... _Args)
-    (requires (!_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...)) _LIBCUDACXX_AND
+    _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...)) _LIBCUDACXX_AND
               (!_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _T1))
     )
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
@@ -416,7 +416,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   }
 
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
-    (requires _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2))
+    _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2))
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
   void __swap_val_unex_impl(__expected_storage<_Tp, _Err2>& __with_val, __expected_storage& __with_err) {
     _Err __tmp(_CUDA_VSTD::move(__with_err.__union_.__unex_));
@@ -433,7 +433,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   }
 
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
-    (requires (!_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2)))
+    _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2)))
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
   void __swap_val_unex_impl(__expected_storage<_Tp, _Err2>& __with_val, __expected_storage& __with_err) {
     static_assert(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp),

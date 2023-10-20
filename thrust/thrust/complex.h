@@ -93,9 +93,13 @@ struct complex : public ::cuda::std::complex<T>
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
-operator==(const complex<T0> &x, const complex<T1> &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
+__host__ __device__ bool operator==(const complex<T0> &x, const complex<T1> &y)
+{
+  return x.real() == y.real() && x.imag() == y.imag();
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are equal and false otherwise.
@@ -105,9 +109,13 @@ operator==(const complex<T0> &x, const complex<T1> &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
-operator==(const complex<T0> &x, const ::cuda::std::complex<T1> &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
+__host__ __device__ bool operator==(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
+{
+  return x.real() == y.real() && x.imag() == y.imag();
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are equal and false otherwise.
@@ -117,9 +125,13 @@ operator==(const complex<T0> &x, const ::cuda::std::complex<T1> &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
-operator==(const ::cuda::std::complex<T0> &x, const complex<T1> &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
+__host__ __device__ bool operator==(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
+{
+  return x.real() == y.real() && x.imag() == y.imag();
+}
 
 /*! Returns true if the imaginary part of the \p complex number is zero and
  *  the real part is equal to the scalar. Returns false otherwise.
@@ -129,11 +141,14 @@ operator==(const ::cuda::std::complex<T0> &x, const complex<T1> &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
-  bool>::type
-operator==(const T0 &x, const complex<T1> &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
+__host__ __device__ bool operator==(const T0 &x, const complex<T1> &y)
+{
+  return x == y.real() && T0() == y.imag();
+}
 
 /*! Returns true if the imaginary part of the \p complex number is zero and
  *  the real part is equal to the scalar. Returns false otherwise.
@@ -143,11 +158,14 @@ operator==(const T0 &x, const complex<T1> &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  bool>::type
-operator==(const complex<T0> &x, const T1 &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
+__host__ __device__ bool operator==(const complex<T0> &x, const T1 &y)
+{
+  return x.real() == y && x.imag() == T1();
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are different and false otherwise.
@@ -157,9 +175,13 @@ operator==(const complex<T0> &x, const T1 &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
-operator!=(const complex<T0> &x, const complex<T1> &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
+__host__ __device__ bool operator!=(const complex<T0> &x, const complex<T1> &y)
+{
+  return !(x == y);
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are different and false otherwise.
@@ -169,9 +191,13 @@ operator!=(const complex<T0> &x, const complex<T1> &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<detail::is_same<T0, T1>::value, bool>::type
-operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
+__host__ __device__ bool operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
+{
+  return !(x == y);
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are different and false otherwise.
@@ -181,9 +207,13 @@ operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::enable_if<detail::is_same<T0, T1>::value, bool>::type
-operator!=(const ::cuda::std::complex<T0> &x, const complex<T1> &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
+__host__ __device__ bool operator!=(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
+{
+  return !(x == y);
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are different and false otherwise.
@@ -193,11 +223,14 @@ operator!=(const ::cuda::std::complex<T0> &x, const complex<T1> &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
-  bool>::type
-operator!=(const T0 &x, const complex<T1> &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
+__host__ __device__ bool operator!=(const T0 &x, const complex<T1> &y)
+{
+  return !(x == y);
+}
 
 /*! Returns true if two \p complex numbers with different underlying type
  * are different and false otherwise.
@@ -207,11 +240,14 @@ operator!=(const T0 &x, const complex<T1> &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  bool>::type
-operator!=(const complex<T0> &x, const T1 &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
+__host__ __device__ bool operator!=(const complex<T0> &x, const T1 &y)
+{
+  return !(x == y);
+}
 
 /* --- Add Operator --- */
 
@@ -225,11 +261,15 @@ operator!=(const complex<T0> &x, const T1 &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__
-  typename detail::disable_if<detail::is_same<T0, T1>::value,
-                              complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-  operator+(const complex<T0> &x, const complex<T1> &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator+(const complex<T0> &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  return complex<T>(x.real() + y.real(), x.imag() + y.imag());
+}
 
 /*! Adds a scalar to a \p complex number.
  *
@@ -241,11 +281,16 @@ __host__ __device__
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-operator+(const complex<T0> &x, const T1 &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator+(const complex<T0> &x, const T1 &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  return complex<T>(x.real() + y, T(x.imag()));
+}
 
 /*! Adds a \p complex number to a scalar.
  *
@@ -257,11 +302,16 @@ operator+(const complex<T0> &x, const T1 &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-operator+(const T0 &x, const complex<T1> &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator+(const T0 &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  return complex<T>(x + y.real(), T(y.imag()));
+}
 
 /* --- Substraction Operator --- */
 
@@ -275,11 +325,15 @@ operator+(const T0 &x, const complex<T1> &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__
-  typename detail::disable_if<detail::is_same<T0, T1>::value,
-                              complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-  operator-(const complex<T0> &x, const complex<T1> &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator-(const complex<T0> &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  return complex<T>(x.real() - y.real(), x.imag() - y.imag());
+}
 
 /*! Subtracts a scalar from a \p complex number.
  *
@@ -291,11 +345,16 @@ __host__ __device__
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T1>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-operator-(const complex<T0> &x, const T1 &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator-(const complex<T0> &x, const T1 &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  return complex<T>(x.real() - y, T(x.imag()));
+}
 
 /*! Subtracts a \p complex number from a scalar.
  *
@@ -307,11 +366,90 @@ operator-(const complex<T0> &x, const T1 &y);
  *
  *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0, typename T1>
-__host__ __device__ typename detail::disable_if<
-  detail::or_<detail::is_same<T0, T1>, detail::not_<detail::is_arithmetic<T0>>>::value,
-  complex<typename detail::promoted_numerical_type<T0, T1>::type>>::type
-operator-(const T0 &x, const complex<T1> &y);
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator-(const T0 &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  return complex<T>(x - y.real(), -T(y.imag()));
+}
+
+/* --- Multiplication Operator --- */
+
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator*(const complex<T0> &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  // fall back to std implementation of multiplication
+  return ::cuda::std::complex<T>(x) * ::cuda::std::complex<T>(y);
+}
+
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator*(const complex<T0> &x, const T1 &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  // fall back to std implementation of multiplication
+  return ::cuda::std::complex<T>(x) * ::cuda::std::complex<T>(y);
+}
+
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator*(const T0 &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  // fall back to std implementation of multiplication
+  return ::cuda::std::complex<T>(x) * ::cuda::std::complex<T>(y);
+}
+
+/* --- Division Operator --- */
+
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator/(const complex<T0> &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  // fall back to std implementation of division
+  return ::cuda::std::complex<T>(x) / ::cuda::std::complex<T>(y);
+}
+
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator/(const complex<T0> &x, const T1 &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  // fall back to std implementation of division
+  return ::cuda::std::complex<T>(x) / ::cuda::std::complex<T>(y);
+}
+
+template <typename T0,
+          typename T1,
+          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
+          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator/(const T0 &x, const complex<T1> &y)
+{
+  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
+  // fall back to std implementation of division
+  return ::cuda::std::complex<T>(x) / ::cuda::std::complex<T>(y);
+}
 
 // The using declarations allows imports all necessary functions for thurst::complex.
 // However, they also lead to thrust::abs(1.0F) being valid code after include <thurst/complex.h>.
@@ -361,8 +499,6 @@ struct is_complex<::std::complex<T>> : public thrust::true_type
 {};
 
 THRUST_NAMESPACE_END
-
-#include <thrust/detail/complex.inl>
 
 /*! \} // complex_numbers
  */

@@ -646,14 +646,14 @@ static_assert(!check_swappable_with<HasANonMovable, HasANonMovable>(), "");
 namespace LWG3175 {
 // Example taken directly from [concept.swappable]
 _LIBCUDACXX_TEMPLATE(class T, class U)
-  (requires swappable_with<T, U>)
+  _LIBCUDACXX_REQUIRES( swappable_with<T, U>)
 __host__ __device__
 constexpr void value_swap(T&& t, U&& u) {
   cuda::std::ranges::swap(cuda::std::forward<T>(t), cuda::std::forward<U>(u));
 }
 
 _LIBCUDACXX_TEMPLATE(class T)
-  (requires swappable<T>)
+  _LIBCUDACXX_REQUIRES( swappable<T>)
 __host__ __device__
 constexpr void lv_swap(T& t1, T& t2) {
   cuda::std::ranges::swap(t1, t2);

@@ -45,7 +45,7 @@ private:
 
 public:
   _LIBCUDACXX_TEMPLATE(class... _Args)
-    (requires is_constructible_v<tuple<_BoundArgs...>, _Args&&...>)
+    _LIBCUDACXX_REQUIRES( is_constructible_v<tuple<_BoundArgs...>, _Args&&...>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
   explicit constexpr __perfect_forward_impl(_Args&&... __bound_args)
     noexcept(is_nothrow_constructible_v<tuple<_BoundArgs...>, _Args&&...>)
@@ -58,47 +58,47 @@ public:
   __perfect_forward_impl& operator=(__perfect_forward_impl&&) = default;
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-    (requires is_invocable_v<_Op, _BoundArgs&..., _Args...>)
+    _LIBCUDACXX_REQUIRES( is_invocable_v<_Op, _BoundArgs&..., _Args...>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) &
     noexcept(noexcept(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...)))
     -> decltype(      _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...))
     { return          _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...); }
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-    (requires (!is_invocable_v<_Op, _BoundArgs&..., _Args...>))
+    _LIBCUDACXX_REQUIRES( (!is_invocable_v<_Op, _BoundArgs&..., _Args...>))
   _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Args&&...) & = delete;
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-    (requires is_invocable_v<_Op, _BoundArgs const&..., _Args...>)
+    _LIBCUDACXX_REQUIRES( is_invocable_v<_Op, _BoundArgs const&..., _Args...>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) const&
     noexcept(noexcept(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...)))
     -> decltype(      _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...))
     { return          _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...); }
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-    (requires (!is_invocable_v<_Op, _BoundArgs const&..., _Args...>))
+    _LIBCUDACXX_REQUIRES( (!is_invocable_v<_Op, _BoundArgs const&..., _Args...>))
   _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Args&&...) const& = delete;
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-    (requires is_invocable_v<_Op, _BoundArgs..., _Args...>)
+    _LIBCUDACXX_REQUIRES( is_invocable_v<_Op, _BoundArgs..., _Args...>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) &&
     noexcept(noexcept(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...)))
     -> decltype(      _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...))
     { return          _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...); }
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-    (requires (!is_invocable_v<_Op, _BoundArgs..., _Args...>))
+    _LIBCUDACXX_REQUIRES( (!is_invocable_v<_Op, _BoundArgs..., _Args...>))
   _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Args&&...) && = delete;
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-    (requires is_invocable_v<_Op, _BoundArgs const..., _Args...>)
+    _LIBCUDACXX_REQUIRES( is_invocable_v<_Op, _BoundArgs const..., _Args...>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) const&&
     noexcept(noexcept(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...)))
     -> decltype(      _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...))
     { return          _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...); }
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-    (requires (!is_invocable_v<_Op, _BoundArgs const..., _Args...>))
+    _LIBCUDACXX_REQUIRES( (!is_invocable_v<_Op, _BoundArgs const..., _Args...>))
   _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Args&&...) const&& = delete;
 };
 

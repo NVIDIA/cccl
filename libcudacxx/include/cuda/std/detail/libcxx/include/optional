@@ -745,32 +745,32 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY constexpr optional(nullopt_t) noexcept {}
 
     _LIBCUDACXX_TEMPLATE(class _In_place_t, class... _Args)
-      (requires _LIBCUDACXX_TRAIT(is_same, _In_place_t, in_place_t) _LIBCUDACXX_AND
+      _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_same, _In_place_t, in_place_t) _LIBCUDACXX_AND
                 _LIBCUDACXX_TRAIT(is_constructible, value_type, _Args...))
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     explicit optional(_In_place_t, _Args&&... __args)
         : __base(in_place, _CUDA_VSTD::forward<_Args>(__args)...) {}
 
     _LIBCUDACXX_TEMPLATE(class _Up, class... _Args)
-      (requires _LIBCUDACXX_TRAIT(is_constructible, value_type, initializer_list<_Up>&, _Args...))
+      _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_constructible, value_type, initializer_list<_Up>&, _Args...))
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     explicit optional(in_place_t, initializer_list<_Up> __il, _Args&&... __args)
         : __base(in_place, __il, _CUDA_VSTD::forward<_Args>(__args)...) {}
 
     _LIBCUDACXX_TEMPLATE(class _Up = value_type)
-      (requires __opt_is_constructible_from_U<_Tp, _Up> _LIBCUDACXX_AND
+      _LIBCUDACXX_REQUIRES( __opt_is_constructible_from_U<_Tp, _Up> _LIBCUDACXX_AND
                 __opt_is_implictly_constructible<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional(_Up&& __v) : __base(in_place, _CUDA_VSTD::forward<_Up>(__v)) {}
 
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __opt_is_constructible_from_U<_Tp, _Up> _LIBCUDACXX_AND
+      _LIBCUDACXX_REQUIRES( __opt_is_constructible_from_U<_Tp, _Up> _LIBCUDACXX_AND
                 __opt_is_explictly_constructible<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     explicit optional(_Up&& __v) : __base(in_place, _CUDA_VSTD::forward<_Up>(__v)) {}
 
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND
+      _LIBCUDACXX_REQUIRES( __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND
                 __opt_is_implictly_constructible<_Tp, const _Up&>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional(const optional<_Up>& __v) {
@@ -778,7 +778,7 @@ public:
     }
 
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND
+      _LIBCUDACXX_REQUIRES( __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND
                 __opt_is_explictly_constructible<_Tp, const _Up&>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     explicit optional(const optional<_Up>& __v) {
@@ -786,7 +786,7 @@ public:
     }
 
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND
+      _LIBCUDACXX_REQUIRES( __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND
                 __opt_is_implictly_constructible<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional(optional<_Up>&& __v) {
@@ -794,7 +794,7 @@ public:
     }
 
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND
+      _LIBCUDACXX_REQUIRES( __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND
                 __opt_is_explictly_constructible<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     explicit optional(optional<_Up>&& __v) {
@@ -820,7 +820,7 @@ public:
     constexpr optional& operator=(optional&&) = default;
 
     _LIBCUDACXX_TEMPLATE(class _Up = value_type)
-      (requires __opt_is_assignable_from_U<_Tp, _Up> _LIBCUDACXX_AND
+      _LIBCUDACXX_REQUIRES( __opt_is_assignable_from_U<_Tp, _Up> _LIBCUDACXX_AND
                 __opt_is_assignable<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional& operator=(_Up&& __v) {
@@ -832,7 +832,7 @@ public:
     }
 
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __opt_is_assignable_from_opt<_Tp, _Up> _LIBCUDACXX_AND
+      _LIBCUDACXX_REQUIRES( __opt_is_assignable_from_opt<_Tp, _Up> _LIBCUDACXX_AND
                 __opt_is_assignable<_Tp, const _Up&>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional& operator=(const optional<_Up>& __v) {
@@ -841,7 +841,7 @@ public:
     }
 
     _LIBCUDACXX_TEMPLATE(class _Up)
-      (requires __opt_is_assignable_from_opt<_Tp, _Up> _LIBCUDACXX_AND
+      _LIBCUDACXX_REQUIRES( __opt_is_assignable_from_opt<_Tp, _Up> _LIBCUDACXX_AND
                 __opt_is_assignable<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional& operator=(optional<_Up>&& __v) {
@@ -1118,7 +1118,7 @@ public:
     }
 
     _LIBCUDACXX_TEMPLATE(class _Func, class _Tp2 = _Tp)
-        (requires invocable<_Func> _LIBCUDACXX_AND _LIBCUDACXX_TRAIT(is_copy_constructible, _Tp2))
+        _LIBCUDACXX_REQUIRES( invocable<_Func> _LIBCUDACXX_AND _LIBCUDACXX_TRAIT(is_copy_constructible, _Tp2))
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional or_else(_Func&& __f) const& {
         static_assert(_LIBCUDACXX_TRAIT(is_same, remove_cvref_t<invoke_result_t<_Func>>, optional),
@@ -1131,7 +1131,7 @@ public:
     }
 
     _LIBCUDACXX_TEMPLATE(class _Func, class _Tp2 = _Tp)
-        (requires invocable<_Func> _LIBCUDACXX_AND _LIBCUDACXX_TRAIT(is_move_constructible, _Tp2))
+        _LIBCUDACXX_REQUIRES( invocable<_Func> _LIBCUDACXX_AND _LIBCUDACXX_TRAIT(is_move_constructible, _Tp2))
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     optional or_else(_Func&& __f) && {
         static_assert(_LIBCUDACXX_TRAIT(is_same, remove_cvref_t<invoke_result_t<_Func>>, optional),
