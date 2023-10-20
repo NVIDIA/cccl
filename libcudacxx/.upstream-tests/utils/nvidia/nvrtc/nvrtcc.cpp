@@ -30,6 +30,7 @@ std::string outputDir;
 std::string outputFile;
 std::string inputFile;
 
+bool skipOutput = false;
 bool building = false;
 bool execute = false;
 
@@ -49,15 +50,6 @@ using ArgHandlerMap = std::vector<ArgPair>;
 
 int     g_argc;
 char ** g_argv;
-
-constexpr auto make_greedy_handler = [](char const* match) {
-    return ArgPair{
-        std::regex(match),
-        [](const std::smatch& match) {
-            return GREEDY;
-        }
-    };
-};
 
 // Ignore PTX arch, only capture output version since PTX only compilation *must* be the same
 std::regex real_capture("^.*arch=.*,code=(sm_[0-9]+a?)$");
@@ -80,7 +72,16 @@ static ArchConfig translate_gpu_arch(const std::string& arch) {
 }
 
 // Greedy handlers inform the argument processor to expect more arguments
-ArgHandlerMap argHandlers {
+constexpr auto make_greedy_handler = [](char const* match) {
+    return ArgPair{
+        std::regex(match),
+        [](const std::smatch& match) {
+            return GREEDY;
+        }
+    };
+};
+
+ArgPair argHandlers[] = {
     {
         // Forward all arguments to NVCC
         std::regex("^-c$"),
@@ -144,6 +145,14 @@ ArgHandlerMap argHandlers {
     },
     {
         make_greedy_handler("^-o$")
+    },
+    {
+        // Matches '-o nul' which is used for syntax only testing (i.e. .fail.cpp tests)
+        std::regex("^-o (?:.*?dev)?.*nul$"),
+            [](const std::smatch& match) {
+                skipOutput = true;
+                return NORMAL;
+            }
     },
     {
         // Matches '-o object' and obtains the output directory
@@ -255,8 +264,10 @@ int main(int argc, char **argv) {
 
     fprintf(stderr, "NVRTCC Configuration:\r\n");
     fprintf(stderr, "  Output dir: %s\r\n", outputDir.c_str());
+    fprintf(stderr, "  Output file: %s\r\n", outputFile.c_str());
     fprintf(stderr, "  Input file: %s\r\n", inputFile.c_str());
     fprintf(stderr, "  Building: %s\r\n", building ? "true" : "false");
+    fprintf(stderr, "  Skipping output: %s\r\n", skipOutput ? "true" : "false");
     fprintf(stderr, "  Executing: %s\r\n", execute ? "true" : "false");
 
     // Load the input file and execute
@@ -273,7 +284,9 @@ int main(int argc, char **argv) {
     }
 
     // Rebuild the output file template based on the filename
+    // Check for nul - do not write files
     std::string outputTemplate;
+
     if (outputDir.size() && outputFile.size())
         outputTemplate = outputDir+"/"+outputFile;
     else
@@ -285,18 +298,28 @@ int main(int argc, char **argv) {
     // Write any needed kernel launch data to file for later
     RunConfig runConfig = parse_run_config(testCu);
 
-    std::ofstream ostr(outputTemplate + ".build.yml");
-    ostr << "cuda_thread_count: " << runConfig.threadCount << '\n';
-    ostr << "cuda_block_shmem_size: " << runConfig.shmemSize << '\n';
+    if (!skipOutput) {
+        std::ofstream ostr(outputTemplate + ".build.yml");
+        ostr << "cuda_thread_count: " << runConfig.threadCount << '\n';
+        ostr << "cuda_block_shmem_size: " << runConfig.shmemSize << '\n';
 
-    // Do a build for each arch and add it to the build list
-    ostr << "builds:\n";
-    for (const auto& build : buildList) {
-        ostr << "  - ";
-        ostr << '\'' << nvrtc_build_prog(testCu, outputTemplate, build, nvrtcArguments) << '\'';
-        ostr << '\n';
+        // Do a build for each arch and add it to the build list
+        ostr << "builds:\n";
+        for (const auto& build : buildList) {
+            auto gpuCode = nvrtc_build_prog(testCu, build, nvrtcArguments);
+            std::string gpuCodeFile = outputTemplate + "." + archString(build) + ".gpu";
+            write_output_file(gpuCode.data(), gpuCode.size(), gpuCodeFile);
+            ostr << "  - ";
+            ostr << '\'' << gpuCodeFile << '\'';
+            ostr << '\n';
+        }
+        ostr.close();
     }
-    ostr.close();
+    else {
+        for (const auto& build : buildList) {
+            auto gpuCode = nvrtc_build_prog(testCu, build, nvrtcArguments);
+        }
+    }
 
     return 0;
 }

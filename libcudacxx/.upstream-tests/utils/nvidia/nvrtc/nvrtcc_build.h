@@ -33,8 +33,10 @@ ArchList buildList;
 
 using ArgList = std::vector<std::string>;
 
+using GpuProg = std::vector<char>;
+
 // Takes arguments for building a file and returns the path to the output file
-std::string nvrtc_build_prog(const std::string& testCu, const std::string& outputTemplate, const ArchConfig& config, const ArgList& argList) {
+GpuProg nvrtc_build_prog(const std::string& testCu, const ArchConfig& config, const ArgList& argList) {
     // Assemble arguments
     std::vector<const char*> optList;
 
@@ -69,6 +71,7 @@ std::string nvrtc_build_prog(const std::string& testCu, const std::string& outpu
     size_t log_size;
     NVRTC_SAFE_CALL(nvrtcGetProgramLogSize(prog, &log_size));
 
+
     {
         std::unique_ptr<char[]> log{ new char[log_size] };
         NVRTC_SAFE_CALL(nvrtcGetProgramLog(prog, log.get()));
@@ -80,24 +83,19 @@ std::string nvrtc_build_prog(const std::string& testCu, const std::string& outpu
     }
 
     size_t codeSize;
-    std::unique_ptr<char[]> code{nullptr};
+    GpuProg code;
 
     if (isArchReal(config)) {
         NVRTC_SAFE_CALL(nvrtcGetCUBINSize(prog, &codeSize));
-        code = std::unique_ptr<char[]>{new char[codeSize]};
-        NVRTC_SAFE_CALL(nvrtcGetCUBIN(prog, code.get()));
+        code.resize(codeSize);
+        NVRTC_SAFE_CALL(nvrtcGetCUBIN(prog, code.data()));
     }
     else {
         NVRTC_SAFE_CALL(nvrtcGetPTXSize(prog, &codeSize));
-        code = std::unique_ptr<char[]>{new char[codeSize]};
-        NVRTC_SAFE_CALL(nvrtcGetPTX(prog, code.get()));
+        code.resize(codeSize);
+        NVRTC_SAFE_CALL(nvrtcGetPTX(prog, code.data()));
     }
     NVRTC_SAFE_CALL(nvrtcDestroyProgram(&prog));
 
-    std::string output_file = outputTemplate + "." + archString(config) + ".gpu";
-    fprintf(stderr, "Writing output to: %s\r\n", output_file.c_str());
-
-    write_output_file(code.get(), codeSize, output_file);
-
-    return output_file;
+    return code;
 }
