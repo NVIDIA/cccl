@@ -22,6 +22,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -150,7 +156,7 @@ bool equal(InputIterator1 first1, InputIterator1 last1,
  *  #include <thrust/equal.h>
  *  #include <thrust/execution_policy.h>
  *  ...
- *  
+ *
  *  struct compare_modulo_two
  *  {
  *    __host__ __device__
@@ -200,7 +206,7 @@ bool equal(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, Inp
  *
  *  \code
  *  #include <thrust/equal.h>
- *  
+ *
  *  struct compare_modulo_two
  *  {
  *    __host__ __device__
@@ -220,7 +226,7 @@ bool equal(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, Inp
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/equal
  */
-template <typename InputIterator1, typename InputIterator2, 
+template <typename InputIterator1, typename InputIterator2,
           typename BinaryPredicate>
 bool equal(InputIterator1 first1, InputIterator1 last1,
            InputIterator2 first2, BinaryPredicate binary_pred);

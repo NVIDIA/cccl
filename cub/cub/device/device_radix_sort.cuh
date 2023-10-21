@@ -13,9 +13,9 @@
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -26,13 +26,20 @@
  *
  ******************************************************************************/
 
-//! @file cub::DeviceRadixSort provides device-wide, parallel operations for 
-//!       computing a radix sort across a sequence of data items residing within 
+//! @file cub::DeviceRadixSort provides device-wide, parallel operations for
+//!       computing a radix sort across a sequence of data items residing within
 //!       device-accessible memory.
 
 #pragma once
 
-#include <cub/config.cuh>
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 #include <cub/util_deprecated.cuh>
@@ -43,33 +50,33 @@
 CUB_NAMESPACE_BEGIN
 
 
-//! @brief DeviceRadixSort provides device-wide, parallel operations for 
-//!        computing a radix sort across a sequence of data items residing 
+//! @brief DeviceRadixSort provides device-wide, parallel operations for
+//!        computing a radix sort across a sequence of data items residing
 //!        within device-accessible memory. ![](sorting_logo.png)
 //! @ingroup SingleModule
-//! 
+//!
 //! @par Overview
-//! The [*radix sorting method*](http://en.wikipedia.org/wiki/Radix_sort) 
-//! arranges items into ascending (or descending) order. The algorithm relies 
-//! upon a positional representation for keys, i.e., each key is comprised of an 
-//! ordered sequence of symbols (e.g., digits, characters, etc.) specified from 
-//! least-significant to most-significant. For a given input sequence of keys 
-//! and a set of rules specifying a total ordering of the symbolic alphabet, the 
+//! The [*radix sorting method*](http://en.wikipedia.org/wiki/Radix_sort)
+//! arranges items into ascending (or descending) order. The algorithm relies
+//! upon a positional representation for keys, i.e., each key is comprised of an
+//! ordered sequence of symbols (e.g., digits, characters, etc.) specified from
+//! least-significant to most-significant. For a given input sequence of keys
+//! and a set of rules specifying a total ordering of the symbolic alphabet, the
 //! radix sorting method produces a lexicographic ordering of those keys.
-//! 
+//!
 //! @par Supported Types
 //! DeviceRadixSort can sort all of the built-in C++ numeric primitive types
 //! (`unsigned char`, `int`, `double`, etc.) as well as CUDA's `__half`
-//! and `__nv_bfloat16` 16-bit floating-point types. User-defined types are 
+//! and `__nv_bfloat16` 16-bit floating-point types. User-defined types are
 //! supported as long as decomposer object is provided.
-//! 
+//!
 //! @par Floating-Point Special Cases
-//! 
+//!
 //! - Positive and negative zeros are considered equivalent, and will be treated
 //!   as such in the output.
 //! - No special handling is implemented for NaN values; these are sorted
 //!   according to their bit representations after any transformations.
-//! 
+//!
 //! @par Transformations
 //! Although the direct radix sorting method can only be applied to unsigned
 //! integral types, DeviceRadixSort is able to sort signed and floating-point
@@ -78,41 +85,41 @@ CUB_NAMESPACE_BEGIN
 //! transformations must be considered when restricting the
 //! `[begin_bit, end_bit)` range, as the bitwise transformations will occur
 //! before the bit-range truncation.
-//! 
+//!
 //! Any transformations applied to the keys prior to sorting are reversed
 //! while writing to the final output buffer.
-//! 
+//!
 //! @par Type Specific Bitwise Transformations
 //! To convert the input values into a radix-sortable bitwise representation,
 //! the following transformations take place prior to sorting:
-//! 
+//!
 //! - For unsigned integral values, the keys are used directly.
 //! - For signed integral values, the sign bit is inverted.
 //! - For positive floating point values, the sign bit is inverted.
 //! - For negative floating point values, the full key is inverted.
-//! 
+//!
 //! For floating point types, positive and negative zero are a special case and
 //! will be considered equivalent during sorting.
-//! 
+//!
 //! @par Descending Sort Bitwise Transformations
 //! If descending sort is used, the keys are inverted after performing any
 //! type-specific transformations, and the resulting keys are sorted in ascending
 //! order.
-//! 
+//!
 //! @par Stability
 //! DeviceRadixSort is stable. For floating-point types, `-0.0` and `+0.0` are
 //! considered equal and appear in the result in the same order as they appear in
 //! the input.
-//! 
+//!
 //! @par Usage Considerations
 //! @cdp_class{DeviceRadixSort}
-//! 
+//!
 //! @par Performance
-//! @linear_performance{radix sort} The following chart illustrates 
-//! DeviceRadixSort::SortKeys performance across different CUDA architectures 
+//! @linear_performance{radix sort} The following chart illustrates
+//! DeviceRadixSort::SortKeys performance across different CUDA architectures
 //! for uniform-random `uint32` keys.
 //! @plots_below
-//! 
+//!
 //! @image html lsb_radix_sort_int32_keys.png
 struct DeviceRadixSort
 {
@@ -203,7 +210,7 @@ public:
   //! @name KeyT-value pairs
   //@{
 
-  //! @brief Sorts key-value pairs into ascending order. 
+  //! @brief Sorts key-value pairs into ascending order.
   //!        (`~2N` auxiliary storage required)
   //!
   //! @par
@@ -216,15 +223,15 @@ public:
   //!   - `[d_keys_out,   d_keys_out   + num_items)`
   //!   - `[d_values_in,  d_values_in  + num_items)`
   //!   - `[d_values_out, d_values_out + num_items)`
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key 
-  //!   bits can be specified. This can reduce overall sorting overhead and 
+  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! - @devicestorageNP For sorting using only `O(P)` temporary storage, see 
+  //! - @devicestorageNP For sorting using only `O(P)` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! - @devicestorage
   //!
   //! @par Performance
-  //! The following charts illustrate saturated sorting performance across 
+  //! The following charts illustrate saturated sorting performance across
   //! different CUDA architectures for uniform-random `uint32, uint32` and
   //! `uint64, uint64` pairs, respectively.
   //!
@@ -236,10 +243,10 @@ public:
   //! keys with associated vector of `int` values.
   //! @par
   //! @code
-  //! #include <cub/cub.cuh>   
+  //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
-  //! // Declare, allocate, and initialize device-accessible pointers 
+  //! // Declare, allocate, and initialize device-accessible pointers
   //! // for sorting data
   //! int  num_items;          // e.g., 7
   //! int  *d_keys_in;         // e.g., [8, 6, 7, 5, 3, 0, 9]
@@ -265,49 +272,49 @@ public:
   //! // d_values_out          <-- [5, 4, 3, 1, 2, 0, 6]
   //! @endcode
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam ValueT    
+  //! @tparam ValueT
   //!   **[inferred]** ValueT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] d_keys_in 
+  //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
   //!
-  //! @param[out] d_keys_out 
+  //! @param[out] d_keys_out
   //!   Pointer to the sorted output sequence of key data
   //!
-  //! @param[in] d_values_in 
+  //! @param[in] d_values_in
   //!   Pointer to the corresponding input sequence of associated value items
   //!
-  //! @param[out] d_values_out 
-  //!   Pointer to the correspondingly-reordered output sequence of associated 
+  //! @param[out] d_values_out
+  //!   Pointer to the correspondingly-reordered output sequence of associated
   //!   value items
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., sizeof(unsigned int) * 8)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
@@ -380,9 +387,9 @@ public:
   }
   #endif
 
-  //! @rst 
+  //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx 2N` auxiliary storage.
-  //! 
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -394,10 +401,10 @@ public:
   //!   * ``[d_values_in,  d_values_in  + num_items)``
   //!   * ``[d_values_out, d_values_out + num_items)``
   //!
-  //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify 
-  //!   differentiating key bits. This can reduce overall sorting overhead and 
+  //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify
+  //!   differentiating key bits. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see 
+  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! * @devicestorage
   //!
@@ -417,7 +424,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairs``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -426,62 +433,62 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam ValueT    
+  //! @tparam ValueT
   //!   **[inferred]** ValueT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] d_keys_in 
+  //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
   //!
-  //! @param[out] d_keys_out 
+  //! @param[out] d_keys_out
   //!   Pointer to the sorted output sequence of key data
   //!
-  //! @param[in] d_values_in 
+  //! @param[in] d_values_in
   //!   Pointer to the corresponding input sequence of associated value items
   //!
-  //! @param[out] d_values_out 
-  //!   Pointer to the correspondingly-reordered output sequence of associated 
+  //! @param[out] d_values_out
+  //!   Pointer to the correspondingly-reordered output sequence of associated
   //!   value items
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -530,9 +537,9 @@ public:
                                                              stream);
   }
 
-  //! @rst 
+  //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx 2N` auxiliary storage.
-  //! 
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -544,7 +551,7 @@ public:
   //!   * ``[d_values_in,  d_values_in  + num_items)``
   //!   * ``[d_values_out, d_values_out + num_items)``
   //!
-  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see 
+  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! * @devicestorage
   //!
@@ -564,7 +571,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairs``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -573,54 +580,54 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam ValueT    
+  //! @tparam ValueT
   //!   **[inferred]** ValueT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] d_keys_in 
+  //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
   //!
-  //! @param[out] d_keys_out 
+  //! @param[out] d_keys_out
   //!   Pointer to the sorted output sequence of key data
   //!
-  //! @param[in] d_values_in 
+  //! @param[in] d_values_in
   //!   Pointer to the corresponding input sequence of associated value items
   //!
-  //! @param[out] d_values_out 
-  //!   Pointer to the correspondingly-reordered output sequence of associated 
+  //! @param[out] d_values_out
+  //!   Pointer to the correspondingly-reordered output sequence of associated
   //!   value items
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -665,7 +672,7 @@ public:
                                                              stream);
   }
 
-  //! @brief Sorts key-value pairs into ascending order. 
+  //! @brief Sorts key-value pairs into ascending order.
   //!        (`~N` auxiliary storage required)
   //!
   //! @par
@@ -673,7 +680,7 @@ public:
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
   //!   contains the input data to be sorted).
-  //! - The contents of both buffers within each pair may be altered by the 
+  //! - The contents of both buffers within each pair may be altered by the
   //!   sorting operation.
   //! - In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
@@ -681,18 +688,18 @@ public:
   //!   - `[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
   //!   - `[d_values.Current(),   d_values.Current()   + num_items)`
   //!   - `[d_values.Alternate(), d_values.Alternate() + num_items)`
-  //! - Upon completion, the sorting operation will update the "current" 
-  //!   indicator within each DoubleBuffer wrapper to reference which of the two 
-  //!   buffers now contains the sorted output sequence (a function of the 
+  //! - Upon completion, the sorting operation will update the "current"
+  //!   indicator within each DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key 
-  //!   bits can be specified. This can reduce overall sorting overhead and 
+  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //! - @devicestorageP
   //! - @devicestorage
   //!
   //! @par Performance
-  //! The following charts illustrate saturated sorting performance across 
+  //! The following charts illustrate saturated sorting performance across
   //! different CUDA architectures for uniform-random `uint32, uint32` and
   //! `uint64, uint64` pairs, respectively.
   //!
@@ -700,14 +707,14 @@ public:
   //! @image html lsb_radix_sort_int64_pairs.png
   //!
   //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of `int` 
+  //! The code snippet below illustrates the sorting of a device vector of `int`
   //! keys with associated vector of `int` values.
   //! @par
   //! @code
-  //! #include <cub/cub.cuh>   
+  //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
-  //! // Declare, allocate, and initialize device-accessible pointers for 
+  //! // Declare, allocate, and initialize device-accessible pointers for
   //! // sorting data
   //! int  num_items;          // e.g., 7
   //! int  *d_key_buf;         // e.g., [8, 6, 7, 5, 3, 0, 9]
@@ -738,45 +745,45 @@ public:
   //!
   //! @endcode
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam ValueT    
+  //! @tparam ValueT
   //!   **[inferred]** ValueT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to @p temp_storage_bytes and no work is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in,out] d_keys 
-  //!   Reference to the double-buffer of keys whose "current" device-accessible 
-  //!   buffer contains the unsorted input keys and, upon return, is updated to 
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
   //!
-  //! @param[in,out] d_values 
-  //!   Double-buffer of values whose "current" device-accessible buffer 
-  //!   contains the unsorted input values and, upon return, is updated to point 
+  //! @param[in,out] d_values
+  //!   Double-buffer of values whose "current" device-accessible buffer
+  //!   contains the unsorted input values and, upon return, is updated to point
   //!   to the sorted output values
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `sizeof(unsigned int) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
@@ -833,14 +840,14 @@ public:
   }
   #endif
 
-  //! @rst 
+  //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx N` auxiliary storage.
-  //! 
+  //!
   //! * The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
   //!   contains the input data to be sorted).
-  //! * The contents of both buffers within each pair may be altered by the 
+  //! * The contents of both buffers within each pair may be altered by the
   //!   sorting operation.
   //! * In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
@@ -850,9 +857,9 @@ public:
   //!   - ``[d_values.Current(),   d_values.Current()   + num_items)``
   //!   - ``[d_values.Alternate(), d_values.Alternate() + num_items)``
   //!
-  //! - Upon completion, the sorting operation will update the "current" 
-  //!   indicator within each DoubleBuffer wrapper to reference which of the two 
-  //!   buffers now contains the sorted output sequence (a function of the 
+  //! - Upon completion, the sorting operation will update the "current"
+  //!   indicator within each DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
   //! - @devicestorageP
   //! - @devicestorage
@@ -873,7 +880,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairs``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -882,51 +889,51 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam ValueT    
+  //! @tparam ValueT
   //!   **[inferred]** ValueT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in,out] d_keys 
-  //!   Reference to the double-buffer of keys whose "current" device-accessible 
-  //!   buffer contains the unsorted input keys and, upon return, is updated to 
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
   //!
-  //! @param[in,out] d_values 
-  //!   Double-buffer of values whose "current" device-accessible buffer 
-  //!   contains the unsorted input values and, upon return, is updated to point 
+  //! @param[in,out] d_values
+  //!   Double-buffer of values whose "current" device-accessible buffer
+  //!   contains the unsorted input values and, upon return, is updated to point
   //!   to the sorted output values
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -963,14 +970,14 @@ public:
                                                              stream);
   }
 
-  //! @rst 
+  //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx N` auxiliary storage.
-  //! 
+  //!
   //! * The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
   //!   contains the input data to be sorted).
-  //! * The contents of both buffers within each pair may be altered by the 
+  //! * The contents of both buffers within each pair may be altered by the
   //!   sorting operation.
   //! * In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
@@ -980,12 +987,12 @@ public:
   //!   - ``[d_values.Current(),   d_values.Current()   + num_items)``
   //!   - ``[d_values.Alternate(), d_values.Alternate() + num_items)``
   //!
-  //! - Upon completion, the sorting operation will update the "current" 
-  //!   indicator within each DoubleBuffer wrapper to reference which of the two 
-  //!   buffers now contains the sorted output sequence (a function of the 
+  //! - Upon completion, the sorting operation will update the "current"
+  //!   indicator within each DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
-  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key 
-  //!   bits can be specified. This can reduce overall sorting overhead and 
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //! - @devicestorageP
   //! - @devicestorage
@@ -1006,7 +1013,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairs``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -1015,59 +1022,59 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam ValueT    
+  //! @tparam ValueT
   //!   **[inferred]** ValueT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in,out] d_keys 
-  //!   Reference to the double-buffer of keys whose "current" device-accessible 
-  //!   buffer contains the unsorted input keys and, upon return, is updated to 
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
   //!
-  //! @param[in,out] d_values 
-  //!   Double-buffer of values whose "current" device-accessible buffer 
-  //!   contains the unsorted input values and, upon return, is updated to point 
+  //! @param[in,out] d_values
+  //!   Double-buffer of values whose "current" device-accessible buffer
+  //!   contains the unsorted input values and, upon return, is updated to point
   //!   to the sorted output values
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -1108,7 +1115,7 @@ public:
                                                              stream);
   }
 
-  //! @brief Sorts key-value pairs into descending order. 
+  //! @brief Sorts key-value pairs into descending order.
   //!        (`~2N` auxiliary storage required).
   //!
   //! @par
@@ -1121,10 +1128,10 @@ public:
   //!   - `[d_keys_out,   d_keys_out   + num_items)`
   //!   - `[d_values_in,  d_values_in  + num_items)`
   //!   - `[d_values_out, d_values_out + num_items)`
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key 
-  //!   bits can be specified. This can reduce overall sorting overhead and 
+  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! - @devicestorageNP  For sorting using only `O(P)` temporary storage, see 
+  //! - @devicestorageNP  For sorting using only `O(P)` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! - @devicestorage
   //!
@@ -1132,14 +1139,14 @@ public:
   //! Performance is similar to DeviceRadixSort::SortPairs.
   //!
   //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of `int` 
+  //! The code snippet below illustrates the sorting of a device vector of `int`
   //! keys with associated vector of `int` values.
   //! @par
   //! @code
-  //! #include <cub/cub.cuh>   
+  //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
-  //! // Declare, allocate, and initialize device-accessible pointers 
+  //! // Declare, allocate, and initialize device-accessible pointers
   //! // for sorting data
   //! int  num_items;          // e.g., 7
   //! int  *d_keys_in;         // e.g., [8, 6, 7, 5, 3, 0, 9]
@@ -1167,49 +1174,49 @@ public:
   //! // d_values_out          <-- [6, 0, 2, 1, 3, 4, 5]
   //! @endcode
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam ValueT    
+  //! @tparam ValueT
   //!   **[inferred]** ValueT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of @p d_temp_storage allocation
   //!
-  //! @param[in] d_keys_in 
+  //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
   //!
-  //! @param[out] d_keys_out 
+  //! @param[out] d_keys_out
   //!   Pointer to the sorted output sequence of key data
   //!
-  //! @param[in] d_values_in 
+  //! @param[in] d_values_in
   //!   Pointer to the corresponding input sequence of associated value items
   //!
-  //! @param[out] d_values_out 
-  //!   Pointer to the correspondingly-reordered output sequence of associated 
+  //! @param[out] d_values_out
+  //!   Pointer to the correspondingly-reordered output sequence of associated
   //!   value items
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `sizeof(unsigned int) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
@@ -1279,9 +1286,9 @@ public:
   }
   #endif
 
-  //! @rst 
+  //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx 2N` auxiliary storage.
-  //! 
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -1293,10 +1300,10 @@ public:
   //!   * ``[d_values_in,  d_values_in  + num_items)``
   //!   * ``[d_values_out, d_values_out + num_items)``
   //!
-  //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify 
-  //!   differentiating key bits. This can reduce overall sorting overhead and 
+  //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify
+  //!   differentiating key bits. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see 
+  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! * @devicestorage
   //!
@@ -1316,7 +1323,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairsDescending``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -1325,62 +1332,62 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam ValueT    
+  //! @tparam ValueT
   //!   **[inferred]** ValueT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] d_keys_in 
+  //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
   //!
-  //! @param[out] d_keys_out 
+  //! @param[out] d_keys_out
   //!   Pointer to the sorted output sequence of key data
   //!
-  //! @param[in] d_values_in 
+  //! @param[in] d_values_in
   //!   Pointer to the corresponding input sequence of associated value items
   //!
-  //! @param[out] d_values_out 
-  //!   Pointer to the correspondingly-reordered output sequence of associated 
+  //! @param[out] d_values_out
+  //!   Pointer to the correspondingly-reordered output sequence of associated
   //!   value items
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -1429,9 +1436,9 @@ public:
                                                              stream);
   }
 
-  //! @rst 
+  //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx 2N` auxiliary storage.
-  //! 
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -1443,7 +1450,7 @@ public:
   //!   * ``[d_values_in,  d_values_in  + num_items)``
   //!   * ``[d_values_out, d_values_out + num_items)``
   //!
-  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see 
+  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! * @devicestorage
   //!
@@ -1463,7 +1470,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairsDescending``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -1472,54 +1479,54 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam ValueT    
+  //! @tparam ValueT
   //!   **[inferred]** ValueT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] d_keys_in 
+  //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
   //!
-  //! @param[out] d_keys_out 
+  //! @param[out] d_keys_out
   //!   Pointer to the sorted output sequence of key data
   //!
-  //! @param[in] d_values_in 
+  //! @param[in] d_values_in
   //!   Pointer to the corresponding input sequence of associated value items
   //!
-  //! @param[out] d_values_out 
-  //!   Pointer to the correspondingly-reordered output sequence of associated 
+  //! @param[out] d_values_out
+  //!   Pointer to the correspondingly-reordered output sequence of associated
   //!   value items
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -1564,7 +1571,7 @@ public:
                                                              stream);
   }
 
-  //! @brief Sorts key-value pairs into descending order. 
+  //! @brief Sorts key-value pairs into descending order.
   //!        (`~N` auxiliary storage required).
   //!
   //! @par
@@ -1572,7 +1579,7 @@ public:
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
   //!   contains the input data to be sorted).
-  //! - The contents of both buffers within each pair may be altered by the 
+  //! - The contents of both buffers within each pair may be altered by the
   //!   sorting operation.
   //! - In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
@@ -1580,12 +1587,12 @@ public:
   //!   - `[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
   //!   - `[d_values.Current(),   d_values.Current()   + num_items)`
   //!   - `[d_values.Alternate(), d_values.Alternate() + num_items)`
-  //! - Upon completion, the sorting operation will update the "current" 
-  //!   indicator within each DoubleBuffer wrapper to reference which of the two 
-  //!   buffers now contains the sorted output sequence (a function of the number 
+  //! - Upon completion, the sorting operation will update the "current"
+  //!   indicator within each DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the number
   //!   of key bits specified and the targeted device architecture).
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key 
-  //!   bits can be specified. This can reduce overall sorting overhead and 
+  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //! - @devicestorageP
   //! - @devicestorage
@@ -1594,14 +1601,14 @@ public:
   //! Performance is similar to DeviceRadixSort::SortPairs.
   //!
   //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of `int` 
+  //! The code snippet below illustrates the sorting of a device vector of `int`
   //! keys with associated vector of `int` values.
   //! @par
   //! @code
-  //! #include <cub/cub.cuh>   
+  //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
-  //! // Declare, allocate, and initialize device-accessible pointers 
+  //! // Declare, allocate, and initialize device-accessible pointers
   //! // for sorting data
   //! int  num_items;          // e.g., 7
   //! int  *d_key_buf;         // e.g., [8, 6, 7, 5, 3, 0, 9]
@@ -1631,46 +1638,46 @@ public:
   //! // d_values.Current()    <-- [6, 0, 2, 1, 3, 4, 5]
   //! @endcode
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam ValueT    
+  //! @tparam ValueT
   //!   **[inferred]** ValueT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in,out] d_keys 
-  //!   Reference to the double-buffer of keys whose "current" device-accessible 
-  //!   buffer contains the unsorted input keys and, upon return, is updated to 
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
   //!
-  //! @param[in,out] d_values 
-  //!   Double-buffer of values whose "current" device-accessible buffer 
-  //!   contains the unsorted input values and, upon return, is updated to point 
+  //! @param[in,out] d_values
+  //!   Double-buffer of values whose "current" device-accessible buffer
+  //!   contains the unsorted input values and, upon return, is updated to point
   //!   to the sorted output values
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `sizeof(unsigned int) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within.  
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
@@ -1727,14 +1734,14 @@ public:
   }
   #endif
 
-  //! @rst 
+  //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx N` auxiliary storage.
-  //! 
+  //!
   //! * The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
   //!   contains the input data to be sorted).
-  //! * The contents of both buffers within each pair may be altered by the 
+  //! * The contents of both buffers within each pair may be altered by the
   //!   sorting operation.
   //! * In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
@@ -1744,9 +1751,9 @@ public:
   //!   - ``[d_values.Current(),   d_values.Current()   + num_items)``
   //!   - ``[d_values.Alternate(), d_values.Alternate() + num_items)``
   //!
-  //! - Upon completion, the sorting operation will update the "current" 
-  //!   indicator within each DoubleBuffer wrapper to reference which of the two 
-  //!   buffers now contains the sorted output sequence (a function of the 
+  //! - Upon completion, the sorting operation will update the "current"
+  //!   indicator within each DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
   //! - @devicestorageP
   //! - @devicestorage
@@ -1767,7 +1774,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairsDescending``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -1776,51 +1783,51 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam ValueT    
+  //! @tparam ValueT
   //!   **[inferred]** ValueT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in,out] d_keys 
-  //!   Reference to the double-buffer of keys whose "current" device-accessible 
-  //!   buffer contains the unsorted input keys and, upon return, is updated to 
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
   //!
-  //! @param[in,out] d_values 
-  //!   Double-buffer of values whose "current" device-accessible buffer 
-  //!   contains the unsorted input values and, upon return, is updated to point 
+  //! @param[in,out] d_values
+  //!   Double-buffer of values whose "current" device-accessible buffer
+  //!   contains the unsorted input values and, upon return, is updated to point
   //!   to the sorted output values
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -1857,14 +1864,14 @@ public:
                                                              stream);
   }
 
-  //! @rst 
+  //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx N` auxiliary storage.
-  //! 
+  //!
   //! * The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
   //!   contains the input data to be sorted).
-  //! * The contents of both buffers within each pair may be altered by the 
+  //! * The contents of both buffers within each pair may be altered by the
   //!   sorting operation.
   //! * In-place operations are not supported. There must be no overlap between
   //!   any of the provided ranges:
@@ -1874,12 +1881,12 @@ public:
   //!   - ``[d_values.Current(),   d_values.Current()   + num_items)``
   //!   - ``[d_values.Alternate(), d_values.Alternate() + num_items)``
   //!
-  //! - Upon completion, the sorting operation will update the "current" 
-  //!   indicator within each DoubleBuffer wrapper to reference which of the two 
-  //!   buffers now contains the sorted output sequence (a function of the 
+  //! - Upon completion, the sorting operation will update the "current"
+  //!   indicator within each DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
-  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key 
-  //!   bits can be specified. This can reduce overall sorting overhead and 
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //! - @devicestorageP
   //! - @devicestorage
@@ -1900,7 +1907,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairsDescending``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -1909,59 +1916,59 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam ValueT    
+  //! @tparam ValueT
   //!   **[inferred]** ValueT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in,out] d_keys 
-  //!   Reference to the double-buffer of keys whose "current" device-accessible 
-  //!   buffer contains the unsorted input keys and, upon return, is updated to 
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
   //!
-  //! @param[in,out] d_values 
-  //!   Double-buffer of values whose "current" device-accessible buffer 
-  //!   contains the unsorted input values and, upon return, is updated to point 
+  //! @param[in,out] d_values
+  //!   Double-buffer of values whose "current" device-accessible buffer
+  //!   contains the unsorted input values and, upon return, is updated to point
   //!   to the sorted output values
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -2009,7 +2016,7 @@ public:
   //@{
 
 
-  //! @brief Sorts keys into ascending order. 
+  //! @brief Sorts keys into ascending order.
   //!        (`~2N` auxiliary storage required)
   //!
   //! @par
@@ -2020,30 +2027,30 @@ public:
   //!   any of the provided ranges:
   //!   - `[d_keys_in,    d_keys_in    + num_items)`
   //!   - `[d_keys_out,   d_keys_out   + num_items)`
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key 
-  //!   bits can be specified. This can reduce overall sorting overhead and 
+  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! - @devicestorageNP  For sorting using only `O(P)` temporary storage, see 
+  //! - @devicestorageNP  For sorting using only `O(P)` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! - @devicestorage
   //!
   //! @par Performance
-  //! The following charts illustrate saturated sorting performance across 
-  //! different CUDA architectures for uniform-random `uint32` and `uint64` 
+  //! The following charts illustrate saturated sorting performance across
+  //! different CUDA architectures for uniform-random `uint32` and `uint64`
   //! keys, respectively.
   //!
   //! @image html lsb_radix_sort_int32_keys.png
   //! @image html lsb_radix_sort_int64_keys.png
   //!
   //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of 
+  //! The code snippet below illustrates the sorting of a device vector of
   //! `int` keys.
   //! @par
   //! @code
-  //! #include <cub/cub.cuh>   
+  //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
-  //! // Declare, allocate, and initialize device-accessible pointers 
+  //! // Declare, allocate, and initialize device-accessible pointers
   //! // for sorting data
   //! int  num_items;          // e.g., 7
   //! int  *d_keys_in;         // e.g., [8, 6, 7, 5, 3, 0, 9]
@@ -2066,42 +2073,42 @@ public:
   //! // d_keys_out            <-- [0, 3, 5, 6, 7, 8, 9]
   //! @endcode
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] d_keys_in 
+  //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
   //!
-  //! @param[out] d_keys_out 
+  //! @param[out] d_keys_out
   //!   Pointer to the sorted output sequence of key data
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `sizeof(unsigned int) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
@@ -2138,9 +2145,9 @@ public:
       stream);
   }
 
-  //! @rst 
+  //! @rst
   //! Sorts keys into ascending order using :math:`\approx 2N` auxiliary storage.
-  //! 
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -2150,10 +2157,10 @@ public:
   //!   * ``[d_keys_in,  d_keys_in  + num_items)``
   //!   * ``[d_keys_out, d_keys_out + num_items)``
   //!
-  //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify 
-  //!   differentiating key bits. This can reduce overall sorting overhead and 
+  //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify
+  //!   differentiating key bits. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see 
+  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! * @devicestorage
   //!
@@ -2173,7 +2180,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeys``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -2182,52 +2189,52 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] d_keys_in 
+  //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
   //!
-  //! @param[out] d_keys_out 
+  //! @param[out] d_keys_out
   //!   Pointer to the sorted output sequence of key data
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -2274,9 +2281,9 @@ public:
                                                              stream);
   }
 
-  //! @rst 
+  //! @rst
   //! Sorts keys into ascending order using :math:`\approx 2N` auxiliary storage.
-  //! 
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -2286,10 +2293,10 @@ public:
   //!   * ``[d_keys_in,  d_keys_in  + num_items)``
   //!   * ``[d_keys_out, d_keys_out + num_items)``
   //!
-  //! * An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key 
-  //!   bits can be specified. This can reduce overall sorting overhead and 
+  //! * An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see 
+  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! * @devicestorage
   //!
@@ -2309,7 +2316,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeys``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -2318,44 +2325,44 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] d_keys_in 
+  //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
   //!
-  //! @param[out] d_keys_out 
+  //! @param[out] d_keys_out
   //!   Pointer to the sorted output sequence of key data
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -2437,33 +2444,33 @@ public:
   //!   any of the provided ranges:
   //!   - `[d_keys.Current(),     d_keys.Current()     + num_items)`
   //!   - `[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
-  //! - Upon completion, the sorting operation will update the "current" 
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two 
-  //!   buffers now contains the sorted output sequence (a function of the 
+  //! - Upon completion, the sorting operation will update the "current"
+  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key 
-  //!   bits can be specified. This can reduce overall sorting overhead and 
+  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //! - @devicestorageP
   //! - @devicestorage
   //!
   //! @par Performance
-  //! The following charts illustrate saturated sorting performance across 
-  //! different CUDA architectures for uniform-random `uint32` and `uint64` 
+  //! The following charts illustrate saturated sorting performance across
+  //! different CUDA architectures for uniform-random `uint32` and `uint64`
   //! keys, respectively.
   //!
   //! @image html lsb_radix_sort_int32_keys.png
   //! @image html lsb_radix_sort_int64_keys.png
   //!
   //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of 
+  //! The code snippet below illustrates the sorting of a device vector of
   //! `int` keys.
   //! @par
   //! @code
-  //! #include <cub/cub.cuh>   
+  //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
-  //! // Declare, allocate, and initialize device-accessible pointers 
+  //! // Declare, allocate, and initialize device-accessible pointers
   //! // for sorting data
   //! int  num_items;          // e.g., 7
   //! int  *d_key_buf;         // e.g., [8, 6, 7, 5, 3, 0, 9]
@@ -2489,38 +2496,38 @@ public:
   //! // d_keys.Current()      <-- [0, 3, 5, 6, 7, 8, 9]
   //! @endcode
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in,out] d_keys 
-  //!   Reference to the double-buffer of keys whose "current" device-accessible 
-  //!   buffer contains the unsorted input keys and, upon return, is updated to 
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `sizeof(unsigned int) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
@@ -2577,9 +2584,9 @@ public:
   }
   #endif
 
-  //! @rst 
+  //! @rst
   //! Sorts keys into ascending order using :math:`\approx N` auxiliary storage.
-  //! 
+  //!
   //! * The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
@@ -2590,9 +2597,9 @@ public:
   //!   * ``[d_keys.Current(),     d_keys.Current()     + num_items)``
   //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
   //!
-  //! * Upon completion, the sorting operation will update the "current" 
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two 
-  //!   buffers now contains the sorted output sequence (a function of the 
+  //! * Upon completion, the sorting operation will update the "current"
+  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
   //! * @devicestorageP
   //! * @devicestorage
@@ -2613,7 +2620,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeys``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -2622,43 +2629,43 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in,out] d_keys 
-  //!   Reference to the double-buffer of keys whose "current" device-accessible 
-  //!   buffer contains the unsorted input keys and, upon return, is updated to 
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -2695,9 +2702,9 @@ public:
                                                              stream);
   }
 
-  //! @rst 
+  //! @rst
   //! Sorts keys into ascending order using :math:`\approx N` auxiliary storage.
-  //! 
+  //!
   //! * The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
@@ -2708,12 +2715,12 @@ public:
   //!   * ``[d_keys.Current(),     d_keys.Current()     + num_items)``
   //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
   //!
-  //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify 
-  //!   differentiating key bits. This can reduce overall sorting overhead and 
+  //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify
+  //!   differentiating key bits. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! * Upon completion, the sorting operation will update the "current" 
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two 
-  //!   buffers now contains the sorted output sequence (a function of the 
+  //! * Upon completion, the sorting operation will update the "current"
+  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
   //! * @devicestorageP
   //! * @devicestorage
@@ -2734,7 +2741,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeys``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -2743,51 +2750,51 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in,out] d_keys 
-  //!   Reference to the double-buffer of keys whose "current" device-accessible 
-  //!   buffer contains the unsorted input keys and, upon return, is updated to 
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -2827,8 +2834,8 @@ public:
                                                              end_bit,
                                                              stream);
   }
-  
-  //! @brief Sorts keys into descending order. 
+
+  //! @brief Sorts keys into descending order.
   //!        (`~2N` auxiliary storage required).
   //!
   //! @par
@@ -2839,10 +2846,10 @@ public:
   //!   any of the provided ranges:
   //!   - `[d_keys_in,    d_keys_in    + num_items)`
   //!   - `[d_keys_out,   d_keys_out   + num_items)`
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key 
-  //!   bits can be specified. This can reduce overall sorting overhead and 
+  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! - @devicestorageNP For sorting using only `O(P)` temporary storage, see 
+  //! - @devicestorageNP For sorting using only `O(P)` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! - @devicestorage
   //!
@@ -2850,14 +2857,14 @@ public:
   //! Performance is similar to DeviceRadixSort::SortKeys.
   //!
   //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of 
+  //! The code snippet below illustrates the sorting of a device vector of
   //! `int` keys.
   //! @par
   //! @code
-  //! #include <cub/cub.cuh>   
+  //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
-  //! // Declare, allocate, and initialize device-accessible pointers 
+  //! // Declare, allocate, and initialize device-accessible pointers
   //! // for sorting data
   //! int  num_items;          // e.g., 7
   //! int  *d_keys_in;         // e.g., [8, 6, 7, 5, 3, 0, 9]
@@ -2870,7 +2877,7 @@ public:
   //! // Determine temporary device storage requirements
   //! void     *d_temp_storage = NULL;
   //! size_t   temp_storage_bytes = 0;
-  //! cub::DeviceRadixSort::SortKeysDescending( 
+  //! cub::DeviceRadixSort::SortKeysDescending(
   //!   d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
   //!
   //! // Allocate temporary storage
@@ -2884,39 +2891,39 @@ public:
   //!
   //! @endcode
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] d_keys_in 
+  //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
   //!
-  //! @param[out] d_keys_out 
+  //! @param[out] d_keys_out
   //!   Pointer to the sorted output sequence of key data
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `sizeof(unsigned int) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within.  
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
@@ -2979,9 +2986,9 @@ public:
   }
   #endif
 
-  //! @rst 
+  //! @rst
   //! Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
-  //! 
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -2991,10 +2998,10 @@ public:
   //!   * ``[d_keys_in,  d_keys_in  + num_items)``
   //!   * ``[d_keys_out, d_keys_out + num_items)``
   //!
-  //! * An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key 
-  //!   bits can be specified. This can reduce overall sorting overhead and 
+  //! * An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see 
+  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! * @devicestorage
   //!
@@ -3014,7 +3021,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeysDescending``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -3023,52 +3030,52 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] d_keys_in 
+  //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
   //!
-  //! @param[out] d_keys_out 
+  //! @param[out] d_keys_out
   //!   Pointer to the sorted output sequence of key data
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -3115,9 +3122,9 @@ public:
                                                              stream);
   }
 
-  //! @rst 
+  //! @rst
   //! Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
-  //! 
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -3127,7 +3134,7 @@ public:
   //!   * ``[d_keys_in,  d_keys_in  + num_items)``
   //!   * ``[d_keys_out, d_keys_out + num_items)``
   //!
-  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see 
+  //! * @devicestorageNP For sorting using only :math:`O(P)` temporary storage, see
   //!   the sorting interface using DoubleBuffer wrappers below.
   //! * @devicestorage
   //!
@@ -3147,7 +3154,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeysDescending``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -3156,44 +3163,44 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] d_keys_in 
+  //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
   //!
-  //! @param[out] d_keys_out 
+  //! @param[out] d_keys_out
   //!   Pointer to the sorted output sequence of key data
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -3236,7 +3243,7 @@ public:
                                                              stream);
   }
 
-  //! @brief Sorts keys into descending order. 
+  //! @brief Sorts keys into descending order.
   //!        (`~N` auxiliary storage required).
   //!
   //! @par
@@ -3248,12 +3255,12 @@ public:
   //!   any of the provided ranges:
   //!   - `[d_keys.Current(),     d_keys.Current()     + num_items)`
   //!   - `[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
-  //! - Upon completion, the sorting operation will update the "current" 
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two 
-  //!   buffers now contains the sorted output sequence (a function of the 
+  //! - Upon completion, the sorting operation will update the "current"
+  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
-  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key 
-  //!   bits can be specified. This can reduce overall sorting overhead and 
+  //! - An optional bit subrange `[begin_bit, end_bit)` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //! - @devicestorageP
   //! - @devicestorage
@@ -3265,10 +3272,10 @@ public:
   //! The code snippet below illustrates the sorting of a device vector of @p int keys.
   //! @par
   //! @code
-  //! #include <cub/cub.cuh>   
+  //! #include <cub/cub.cuh>
   //! // or equivalently <cub/device/device_radix_sort.cuh>
   //!
-  //! // Declare, allocate, and initialize device-accessible pointers 
+  //! // Declare, allocate, and initialize device-accessible pointers
   //! // for sorting data
   //! int  num_items;          // e.g., 7
   //! int  *d_key_buf;         // e.g., [8, 6, 7, 5, 3, 0, 9]
@@ -3294,38 +3301,38 @@ public:
   //! // d_keys.Current()      <-- [9, 8, 7, 6, 5, 3, 0]
   //! @endcode
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in,out] d_keys 
-  //!   Reference to the double-buffer of keys whose "current" device-accessible 
-  //!   buffer contains the unsorted input keys and, upon return, is updated to 
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `sizeof(unsigned int) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t
@@ -3382,9 +3389,9 @@ public:
   }
   #endif
 
-  //! @rst 
+  //! @rst
   //! Sorts keys into descending order using :math:`\approx N` auxiliary storage.
-  //! 
+  //!
   //! * The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
@@ -3395,9 +3402,9 @@ public:
   //!   * ``[d_keys.Current(),     d_keys.Current()     + num_items)``
   //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
   //!
-  //! * Upon completion, the sorting operation will update the "current" 
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two 
-  //!   buffers now contains the sorted output sequence (a function of the 
+  //! * Upon completion, the sorting operation will update the "current"
+  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
   //! * @devicestorageP
   //! * @devicestorage
@@ -3418,7 +3425,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeysDescending``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -3427,43 +3434,43 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in,out] d_keys 
-  //!   Reference to the double-buffer of keys whose "current" device-accessible 
-  //!   buffer contains the unsorted input keys and, upon return, is updated to 
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //
@@ -3500,9 +3507,9 @@ public:
                                                              stream);
   }
 
-  //! @rst 
+  //! @rst
   //! Sorts keys into descending order using :math:`\approx N` auxiliary storage.
-  //! 
+  //!
   //! * The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
@@ -3513,12 +3520,12 @@ public:
   //!   * ``[d_keys.Current(),     d_keys.Current()     + num_items)``
   //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
   //!
-  //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify 
-  //!   differentiating key bits. This can reduce overall sorting overhead and 
+  //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify
+  //!   differentiating key bits. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! * Upon completion, the sorting operation will update the "current" 
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two 
-  //!   buffers now contains the sorted output sequence (a function of the 
+  //! * Upon completion, the sorting operation will update the "current"
+  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the
   //!   number of key bits specified and the targeted device architecture).
   //! * @devicestorageP
   //! * @devicestorage
@@ -3539,7 +3546,7 @@ public:
   //!
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeysDescending``:
-  //! 
+  //!
   //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
@@ -3548,51 +3555,51 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam KeyT      
+  //! @tparam KeyT
   //!   **[inferred]** KeyT type
   //!
-  //! @tparam NumItemsT 
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of a callable object responsible for decomposing a 
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-  //!   The leftmost element of the tuple is considered the most significant. 
+  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the 
-  //!   required allocation size is written to `temp_storage_bytes` and no work 
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in,out] d_keys 
-  //!   Reference to the double-buffer of keys whose "current" device-accessible 
-  //!   buffer contains the unsorted input keys and, upon return, is updated to 
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
   //!
-  //! @param[in] num_items 
+  //! @param[in] num_items
   //!   Number of items to sort
   //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-  //!   references to its constituent arithmetic types. The leftmost element of 
-  //!   the tuple is considered the most significant. The call operator must not 
+  //!   references to its constituent arithmetic types. The leftmost element of
+  //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] begin_bit 
-  //!   **[optional]** The least-significant bit index (inclusive) needed for 
+  //! @param[in] begin_bit
+  //!   **[optional]** The least-significant bit index (inclusive) needed for
   //!   key comparison
   //!
-  //! @param[in] end_bit 
-  //!   **[optional]** The most-significant bit index (exclusive) needed for key 
+  //! @param[in] end_bit
+  //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   //!
-  //! @param[in] stream 
-  //!   **[optional]** CUDA stream to launch kernels within. 
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static                                //

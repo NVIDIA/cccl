@@ -34,8 +34,8 @@
 #include <cub/agent/agent_unique_by_key.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
+#include <cub/config.cuh>
 #include <cub/util_deprecated.cuh>
-#include <cub/util_macro.cuh>
 #include <cub/util_math.cuh>
 
 #include <iterator>

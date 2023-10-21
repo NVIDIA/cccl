@@ -13,9 +13,9 @@
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -27,17 +27,24 @@
  ******************************************************************************/
 
 /**
- * @file cub::AgentReduce implements a stateful abstraction of CUDA thread 
+ * @file cub::AgentReduce implements a stateful abstraction of CUDA thread
  *       blocks for participating in device-wide reduction.
  */
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <iterator>
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
-#include <cub/config.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/grid/grid_mapping.cuh>
@@ -368,7 +375,7 @@ struct AgentReduce
         .Reduce(thread_aggregate, reduction_op, valid_items);
     }
 
-    // Extracting this into a function saves 8% of generated kernel size by allowing to reuse 
+    // Extracting this into a function saves 8% of generated kernel size by allowing to reuse
     // the block reduction below. This also workaround hang in nvcc.
     ConsumeFullTileRange(thread_aggregate, even_share, can_vectorize);
 
@@ -439,7 +446,7 @@ private:
 
     even_share.block_offset += even_share.block_stride;
 
-    // Consume subsequent full tiles of input, at least one full tile was processed, so 
+    // Consume subsequent full tiles of input, at least one full tile was processed, so
     // `even_share.block_end >= TILE_ITEMS`
     while (even_share.block_offset <= even_share.block_end - TILE_ITEMS)
     {

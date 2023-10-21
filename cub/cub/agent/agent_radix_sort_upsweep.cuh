@@ -33,12 +33,19 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "../thread/thread_reduce.cuh"
 #include "../thread/thread_load.cuh"
 #include "../warp/warp_reduce.cuh"
 #include "../block/block_load.cuh"
 #include "../block/radix_rank_sort_operations.cuh"
-#include "../config.cuh"
 #include "../util_type.cuh"
 #include "../iterator/cache_modified_input_iterator.cuh"
 
@@ -321,7 +328,7 @@ struct AgentRadixSortUpsweep
         const OffsetT &block_end)
     {
         // Process partial tile if necessary using single loads
-        for (OffsetT offset = threadIdx.x; offset < block_end - block_offset; offset += BLOCK_THREADS) 
+        for (OffsetT offset = threadIdx.x; offset < block_end - block_offset; offset += BLOCK_THREADS)
         {
             // Load and bucket key
             bit_ordered_type key = d_keys_in[block_offset + offset];
@@ -346,7 +353,7 @@ struct AgentRadixSortUpsweep
     :
         temp_storage(temp_storage.Alias()),
         d_keys_in(reinterpret_cast<const bit_ordered_type*>(d_keys_in)),
-        current_bit(current_bit), 
+        current_bit(current_bit),
         num_bits(num_bits),
         decomposer(decomposer)
     {}

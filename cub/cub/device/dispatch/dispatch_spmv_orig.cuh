@@ -34,10 +34,17 @@
 
 #pragma once
 
+#include "../../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/agent/agent_segment_fixup.cuh>
 #include <cub/agent/agent_spmv_orig.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
-#include <cub/config.cuh>
 #include <cub/detail/cpp_compatibility.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
@@ -196,9 +203,9 @@ DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_params)
     {
         ValueT result = 0.0;
 
-        CUB_IF_CONSTEXPR(HAS_BETA) 
+        CUB_IF_CONSTEXPR(HAS_BETA)
         {
-            result += spmv_params.beta * spmv_params.d_vector_y[row]; 
+            result += spmv_params.beta * spmv_params.d_vector_y[row];
         }
 
         spmv_params.d_vector_y[row] = result;
@@ -838,7 +845,7 @@ struct DispatchSpmv
             constexpr bool has_beta = false;
 
             if (CubDebug(error = Dispatch(
-                d_temp_storage, temp_storage_bytes, spmv_params, stream, 
+                d_temp_storage, temp_storage_bytes, spmv_params, stream,
                 DeviceSpmv1ColKernel<PtxSpmvPolicyT, ValueT, OffsetT>,
                 DeviceSpmvSearchKernel<PtxSpmvPolicyT, OffsetT, CoordinateT, SpmvParamsT>,
                 DeviceSpmvKernel<PtxSpmvPolicyT, ScanTileStateT, ValueT, OffsetT, CoordinateT, has_alpha, has_beta>,

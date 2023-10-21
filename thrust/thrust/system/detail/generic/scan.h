@@ -18,6 +18,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -39,7 +45,7 @@ __host__ __device__
                                 OutputIterator result);
 
 
-// XXX it is an error to call this function; it has no implementation 
+// XXX it is an error to call this function; it has no implementation
 template<typename ExecutionPolicy,
          typename InputIterator,
          typename OutputIterator,
@@ -74,7 +80,7 @@ __host__ __device__
                                 T init);
 
 
-// XXX it is an error to call this function; it has no implementation 
+// XXX it is an error to call this function; it has no implementation
 template<typename ExecutionPolicy,
          typename InputIterator,
          typename OutputIterator,

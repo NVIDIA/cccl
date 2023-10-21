@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -34,18 +34,25 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "block_exchange.cuh"
 #include "block_radix_rank.cuh"
 #include "radix_rank_sort_operations.cuh"
-#include "../config.cuh"
 #include "../util_ptx.cuh"
 #include "../util_type.cuh"
 
 CUB_NAMESPACE_BEGIN
 
 //! @rst
-//! BlockRadixSort class provides :ref:`collective <collective-primitives>` methods for sorting 
-//! items partitioned across a CUDA thread block using a radix sorting method.  
+//! BlockRadixSort class provides :ref:`collective <collective-primitives>` methods for sorting
+//! items partitioned across a CUDA thread block using a radix sorting method.
 //!
 //! .. image:: ../img/sorting_logo.png
 //!     :align: center
@@ -156,7 +163,7 @@ CUB_NAMESPACE_BEGIN
 //!         ...
 //!
 //! Suppose the set of input ``thread_keys`` across the block of threads is
-//! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.  
+//! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
 //! The corresponding output ``thread_keys`` in those threads will be
 //! ``{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }``.
 //!
@@ -173,40 +180,40 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @ingroup BlockModule
 //!
-//! @tparam KeyT                 
+//! @tparam KeyT
 //!   KeyT type
 //!
-//! @tparam BLOCK_DIM_X          
+//! @tparam BLOCK_DIM_X
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam ITEMS_PER_THREAD     
+//! @tparam ITEMS_PER_THREAD
 //!   The number of items per thread
 //!
-//! @tparam ValueT               
+//! @tparam ValueT
 //!   **[optional]** ValueT type (default: cub::NullType, which indicates a keys-only sort)
 //!
-//! @tparam RADIX_BITS           
+//! @tparam RADIX_BITS
 //!   **[optional]** The number of radix bits per digit place (default: 4 bits)
 //!
-//! @tparam MEMOIZE_OUTER_SCAN   
-//!  **[optional]** Whether or not to buffer outer raking scan partials to incur fewer shared memory 
-//!  reads at the expense of higher register pressure (default: true for architectures SM35 and 
+//! @tparam MEMOIZE_OUTER_SCAN
+//!  **[optional]** Whether or not to buffer outer raking scan partials to incur fewer shared memory
+//!  reads at the expense of higher register pressure (default: true for architectures SM35 and
 //!  newer, false otherwise).
 //!
-//! @tparam INNER_SCAN_ALGORITHM 
-//!   **[optional]** The cub::BlockScanAlgorithm algorithm to use 
+//! @tparam INNER_SCAN_ALGORITHM
+//!   **[optional]** The cub::BlockScanAlgorithm algorithm to use
 //!   (default: cub::BLOCK_SCAN_WARP_SCANS)
 //!
-//! @tparam SMEM_CONFIG          
+//! @tparam SMEM_CONFIG
 //!   **[optional]*8 Shared memory bank mode (default: `cudaSharedMemBankSizeFourByte`)
 //!
-//! @tparam BLOCK_DIM_Y          
+//! @tparam BLOCK_DIM_Y
 //!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z          
+//! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH      
+//! @tparam LEGACY_PTX_ARCH
 //!   **[optional]** Unused
 template <
     typename                KeyT,
@@ -575,7 +582,7 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
+    //! Performs an ascending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
     //!
     //! * @granularity
@@ -608,27 +615,27 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -648,7 +655,7 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
+    //! Performs an ascending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
     //!
     //! * @granularity
@@ -681,19 +688,19 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -758,7 +765,7 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
+    //! Performs an ascending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
     //!
     //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
@@ -796,13 +803,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -810,16 +817,16 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -841,7 +848,7 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
+    //! Performs an ascending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
     //!
     //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
@@ -879,13 +886,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -893,8 +900,8 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -959,7 +966,7 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
+    //! Performs a descending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
     //!
     //! * @granularity
@@ -992,27 +999,27 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -1035,7 +1042,7 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
+    //! Performs a descending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
     //!
     //! * @granularity
@@ -1068,19 +1075,19 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -1153,7 +1160,7 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
+    //! Performs a descending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
     //!
     //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
@@ -1191,13 +1198,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -1205,16 +1212,16 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -1236,7 +1243,7 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
+    //! Performs a descending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
     //!
     //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
@@ -1274,13 +1281,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -1288,8 +1295,8 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -1364,8 +1371,8 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a 
+    //! Performs an ascending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1377,7 +1384,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1398,27 +1405,27 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -1441,8 +1448,8 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a 
+    //! Performs an ascending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1454,7 +1461,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1475,19 +1482,19 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -1560,8 +1567,8 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a 
+    //! Performs an ascending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1573,7 +1580,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1594,13 +1601,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -1608,16 +1615,16 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -1639,8 +1646,8 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a 
+    //! Performs an ascending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1652,7 +1659,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1673,13 +1680,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -1687,8 +1694,8 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -1756,8 +1763,8 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a 
+    //! Performs a descending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1769,7 +1776,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1790,27 +1797,27 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -1833,8 +1840,8 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a 
+    //! Performs a descending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1846,7 +1853,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1867,19 +1874,19 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -1952,8 +1959,8 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a 
+    //! Performs a descending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1965,7 +1972,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1986,13 +1993,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -2000,16 +2007,16 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
     __device__ __forceinline__         //
@@ -2031,8 +2038,8 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a 
+    //! Performs a descending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -2044,7 +2051,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -2065,13 +2072,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -2079,8 +2086,8 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
     __device__ __forceinline__         //

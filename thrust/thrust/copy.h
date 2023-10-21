@@ -22,6 +22,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -140,7 +146,7 @@ __host__ __device__
                         OutputIterator result);
 
 
-	
+
 /*! \p copy copies elements from the range [\p first, \p last) to the range
  *  [\p result, \p result + (\p last - \p first)). That is, it performs
  *  the assignments *\p result = *\p first, *(\p result + \c 1) = *(\p first + \c 1),

@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,10 +12,10 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -37,11 +37,20 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_type.cuh>
 
+_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
+_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -164,8 +173,8 @@ struct ArgMax
              const KeyValuePair<OffsetT, T> &b) const
   {
     // Mooch BUG (device reduce argmax gk110 3.2 million random fp32)
-    // return ((b.value > a.value) || 
-    //         ((a.value == b.value) && (b.key < a.key))) 
+    // return ((b.value > a.value) ||
+    //         ((a.value == b.value) && (b.key < a.key)))
     //      ? b : a;
 
     if ((b.value > a.value) || ((a.value == b.value) && (b.key < a.key)))
@@ -282,14 +291,14 @@ public:
 /**
  * @brief Reduce-by-segment functor.
  *
- * Given two cub::KeyValuePair inputs `a` and `b` and a binary associative 
- * combining operator `f(const T &x, const T &y)`, an instance of this functor 
- * returns a cub::KeyValuePair whose `key` field is `a.key + b.key`, and whose 
- * `value` field is either `b.value` if `b.key` is non-zero, or 
+ * Given two cub::KeyValuePair inputs `a` and `b` and a binary associative
+ * combining operator `f(const T &x, const T &y)`, an instance of this functor
+ * returns a cub::KeyValuePair whose `key` field is `a.key + b.key`, and whose
+ * `value` field is either `b.value` if `b.key` is non-zero, or
  * `f(a.value, b.value)` otherwise.
  *
- * ReduceBySegmentOp is an associative, non-commutative binary combining 
- * operator for input sequences of cub::KeyValuePair pairings. Such sequences 
+ * ReduceBySegmentOp is an associative, non-commutative binary combining
+ * operator for input sequences of cub::KeyValuePair pairings. Such sequences
  * are typically used to represent a segmented set of values to be reduced
  * and a corresponding set of {0,1}-valued integer "head flags" demarcating the
  * first value of each segment.
@@ -348,7 +357,7 @@ struct ReduceBySegmentOp
     // else {
     //   The second partial reduction does not span a reset, so accumulate both
     //   into the running aggregate
-    // } 
+    // }
     retval.value = (second.key) ? second.value : op(first.value, second.value);
 #endif
     return retval;

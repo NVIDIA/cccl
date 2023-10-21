@@ -7,6 +7,12 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #if THRUST_CPP_DIALECT >= 2011
 #  include <thrust/detail/memory_wrapper.h>
 #endif
@@ -19,7 +25,7 @@ THRUST_NAMESPACE_BEGIN
  */
 template <typename T>
 __host__ __device__
-T* addressof(T& arg) 
+T* addressof(T& arg)
 {
   return reinterpret_cast<T*>(
     &const_cast<char&>(reinterpret_cast<const volatile char&>(arg))

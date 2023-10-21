@@ -32,6 +32,14 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <iterator>
 #include <type_traits>
 
@@ -51,8 +59,8 @@ CUB_NAMESPACE_BEGIN
 /**
  * Parameterizable tuning policy type for AgentUniqueByKey
  *
- * @tparam DelayConstructorT 
- *   Implementation detail, do not specify directly, requirements on the 
+ * @tparam DelayConstructorT
+ *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
 template <int                     _BLOCK_THREADS,
@@ -72,7 +80,7 @@ struct AgentUniqueByKeyPolicy
     static constexpr cub::CacheLoadModifier  LOAD_MODIFIER  = _LOAD_MODIFIER;
     static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
 
-    struct detail 
+    struct detail
     {
         using delay_constructor_t = DelayConstructorT;
     };
@@ -211,7 +219,7 @@ struct AgentUniqueByKey
         ValueOutputIteratorT         d_values_out_,
         EqualityOpT                  equality_op_,
         OffsetT                      num_items_)
-    : 
+    :
         temp_storage(temp_storage_.Alias()),
         d_keys_in(d_keys_in_),
         d_values_in(d_values_in_),
@@ -567,10 +575,10 @@ struct AgentUniqueByKey
         {
             int  num_remaining  = static_cast<int>(num_items - tile_offset);
             OffsetT num_selections = ConsumeTile<true>(num_remaining,
-                                                       tile_idx,                                    
+                                                       tile_idx,
                                                        tile_offset,
                                                        tile_state);
-            if (threadIdx.x == 0)                                                               
+            if (threadIdx.x == 0)
             {
                 *d_num_selected_out = num_selections;
             }

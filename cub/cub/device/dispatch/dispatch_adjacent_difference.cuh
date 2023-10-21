@@ -27,8 +27,15 @@
 
 #pragma once
 
+#include "../../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/agent/agent_adjacent_difference.cuh>
-#include <cub/config.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_deprecated.cuh>
@@ -67,10 +74,10 @@ DeviceAdjacentDifferenceDifferenceKernel(InputIteratorT input,
                                          DifferenceOpT difference_op,
                                          OffsetT num_items)
 {
-  using ActivePolicyT = 
+  using ActivePolicyT =
     typename ChainedPolicyT::ActivePolicy::AdjacentDifferencePolicy;
 
-  // It is OK to introspect the return type or parameter types of the 
+  // It is OK to introspect the return type or parameter types of the
   // `operator()` function of `__device__` extended lambda within device code.
   using OutputT = detail::invoke_result_t<DifferenceOpT, InputT, InputT>;
 
@@ -94,7 +101,7 @@ DeviceAdjacentDifferenceDifferenceKernel(InputIteratorT input,
               num_items);
 
   int tile_idx = static_cast<int>(blockIdx.x);
-  OffsetT tile_base  = static_cast<OffsetT>(tile_idx) 
+  OffsetT tile_base  = static_cast<OffsetT>(tile_idx)
                      * ActivePolicyT::ITEMS_PER_TILE;
 
   agent.Process(tile_idx, tile_base);
@@ -313,7 +320,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
               num_items);
 
       error = CubDebug(detail::DebugSyncStream(stream));
-      
+
       if (cudaSuccess != error)
       {
         break;
