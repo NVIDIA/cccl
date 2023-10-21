@@ -50,32 +50,6 @@ static ExecutionConfig load_execution_config_from_file(const std::string& file) 
     };
 }
 
-static void list_devices()
-{
-    int deviceCount;
-    cudaGetDeviceCount(&deviceCount);
-    fprintf(stderr, "CUDA devices found: %d\n", deviceCount);
-
-    int selectedDevice;
-    cudaGetDevice(&selectedDevice);
-
-    for (int dev = 0; dev < deviceCount; ++dev)
-    {
-        cudaDeviceProp device_prop;
-        cudaGetDeviceProperties(&device_prop, dev);
-
-        fprintf(stderr, "Device %d: \"%s\", ", dev, device_prop.name);
-        if(dev == selectedDevice)
-            fprintf(stderr, "Selected, ");
-        else
-            fprintf(stderr, "Unused, ");
-
-        fprintf(stderr, "SM%d%d, %zu [bytes]\n",
-            device_prop.major, device_prop.minor,
-            device_prop.totalGlobalMem);
-    }
-}
-
 static void load_and_run_gpu_code(const std::string inputFile, const RunConfig& rc) {
     std::ifstream istr(inputFile, std::ios::binary);
     assert(!!istr);

@@ -25,12 +25,6 @@ using ArchConfig = std::tuple<std::string, bool>;
 constexpr auto archString = [](const ArchConfig& a) -> const auto& {return std::get<0>(a);};
 constexpr auto isArchReal = [](const ArchConfig& a) -> const auto& {return std::get<1>(a);};
 
-// Arch list is a set of unique pairs of strings and bools
-// e.x. { compute_arch, real_or_virtual }
-// { "sm_80", true } { "compute_80", false }
-using ArchList = std::set<ArchConfig>;
-ArchList buildList;
-
 using ArgList = std::vector<std::string>;
 
 using GpuProg = std::vector<char>;

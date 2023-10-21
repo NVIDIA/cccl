@@ -55,6 +55,12 @@ char ** g_argv;
 std::regex real_capture("^.*arch=.*,code=(sm_[0-9]+a?)$");
 std::regex virtual_capture("^.*arch=.*,code=(compute_[0-9]+a?)$");
 
+// Arch list is a set of unique pairs of strings and bools
+// e.x. { compute_arch, real_or_virtual }
+// { "sm_80", true } { "compute_80", false }
+using ArchList = std::set<ArchConfig>;
+ArchList buildList;
+
 // Input example: arch=compute_80,code=sm_80
 static ArchConfig translate_gpu_arch(const std::string& arch) {
     std::smatch real;
@@ -75,165 +81,165 @@ static ArchConfig translate_gpu_arch(const std::string& arch) {
 constexpr auto make_greedy_handler = [](char const* match) {
     return ArgPair{
         std::regex(match),
-        [](const std::smatch& match) {
+        [](const std::smatch&) {
             return GREEDY;
         }
     };
 };
 
 ArgPair argHandlers[] = {
-    {
-        // Forward all arguments to NVCC
-        std::regex("^-c$"),
-            [](const std::smatch&) {
-                building = true;
-                // We're compiling, maybe do something useful
-                return NORMAL; // Unreachable
-            }
-    },
-    {
-        // Forward all arguments to NVCC
-        std::regex("^-E$"),
-            [](const std::smatch&) {
-                platform_exec("nvcc", g_argv, g_argc);
-                return ABORT; // Unreachable
-            }
-    },
-    {
-        // Greed input file type flag
-        make_greedy_handler("^-x$")
-    },
-    {
-        // Matches for CUDA input type
-        std::regex("^-x ?cu$"),
-            [](const std::smatch& match) {
-                ignoredArguments.emplace_back(match[0].str());
-                return NORMAL;
-            }
-    },
-    {
-        // Matches anything other than CUDA
-        std::regex("^-x ?(.*)$"),
-            [](const std::smatch& match) {
-                // If we're building with something else just add the default arch
-                buildList.emplace(translate_gpu_arch(""));
-                return NORMAL;
-            }
-    },
-    {
-        // The include flag is improperly formatted, greed append
-        make_greedy_handler("^-I$")
-    },
-    {
-        std::regex("^-I ?(.+)$"),
-            [](const std::smatch& match) {
-                nvrtcArguments.emplace_back(match[0].str());
-                return NORMAL;
-            }
-    },
-    {
-        make_greedy_handler("^(-include|-isystem)$")
-    },
-    {
-        // Matches any force include or system include directories
-        // Might need to figure out if we need to force include a file manually
-        std::regex("^-include ?(.+)$"),
-            [](const std::smatch& match) {
-                nvrtcArguments.emplace_back("--pre-include=" + match[1].str());
-                return NORMAL;
-            }
-    },
-    {
-        make_greedy_handler("^-o$")
-    },
-    {
-        // Matches '-o nul' which is used for syntax only testing (i.e. .fail.cpp tests)
-        std::regex("^-o (?:.*?dev)?.*nul$"),
-            [](const std::smatch& match) {
-                skipOutput = true;
-                return NORMAL;
-            }
-    },
-    {
-        // Matches '-o object' and obtains the output directory
-        // \\\\ skip C++ escape, and skip regex escape to match \ on Windows
-        // The second match grouping catches the name sorta of the file. i.e. test.pass.cpp -> test.pass
-        std::regex("^-o (.+)[\\\\/]([^\\\\/]+)\\..+$"),
-            [](const std::smatch& match) {
-                outputDir = match[1].str();
-                outputFile = match[2].str();
-                return NORMAL;
-            }
-    },
-    {
-        make_greedy_handler("^-gencode$")
-    },
-    {
-        // Matches '-gencode=' or '-gencode ...'
-        std::regex("^-gencode[= ]?(.+)$"),
-            [](const std::smatch& match) {
-                buildList.emplace(translate_gpu_arch(match[1].str().data()));
-                return NORMAL;
-            }
-    },
-    {
-        // Matches the many various versions of dialect switch and normalizes it
-        std::regex("^[-/]std[:=](.+)$"),
-            [](const std::smatch& match) {
-                nvrtcArguments.emplace_back("-std="+match[1].str());
-                return NORMAL;
-            }
-    },
-    {
-        // Capture an argument that is just '-'. If no input file is listed input is on stdin
-        std::regex("^-$"),
-            [](const std::smatch& match) {
-                inputFile = match[0].str();
-                return NORMAL;
-            }
-    },
-    {
-        // If an input lists a .gpu file, run that file instead
-        std::regex("^([^-].*).gpu$"),
-            [](const std::smatch& match) {
-                execute = true;
-                executionConfig = ExecutionConfig {
-                    RunConfig{1, 0},
-                    {match[0].str()}
-                };
+        {
+            // Forward all arguments to NVCC
+            std::regex("^-c$"),
+                [](const std::smatch&) {
+                    building = true;
+                    // We're compiling, maybe do something useful
+                    return NORMAL; // Unreachable
+                }
+        },
+        {
+            // Forward all arguments to NVCC
+            std::regex("^-E$"),
+                [](const std::smatch&) {
+                    platform_exec("nvcc", g_argv, g_argc);
+                    return ABORT; // Unreachable
+                }
+        },
+        {
+            // Greed input file type flag
+            make_greedy_handler("^-x$")
+        },
+        {
+            // Matches for CUDA input type
+            std::regex("^-x ?cu$"),
+                [](const std::smatch& match) {
+                    ignoredArguments.emplace_back(match[0].str());
+                    return NORMAL;
+                }
+        },
+        {
+            // Matches anything other than CUDA as the CUDA flag is captured before this one
+            std::regex("^-x ?(.*)$"),
+                [](const std::smatch&) {
+                    // If we're building with something else just add the default arch
+                    buildList.emplace(translate_gpu_arch(""));
+                    return NORMAL;
+                }
+        },
+        {
+            // The include flag is improperly formatted, greed append
+            make_greedy_handler("^-I$")
+        },
+        {
+            std::regex("^-I ?(.+)$"),
+                [](const std::smatch& match) {
+                    nvrtcArguments.emplace_back(match[0].str());
+                    return NORMAL;
+                }
+        },
+        {
+            make_greedy_handler("^(-include|-isystem)$")
+        },
+        {
+            // Matches any force include or system include directories
+            // Might need to figure out if we need to force include a file manually
+            std::regex("^-include ?(.+)$"),
+                [](const std::smatch& match) {
+                    nvrtcArguments.emplace_back("--pre-include=" + match[1].str());
+                    return NORMAL;
+                }
+        },
+        {
+            make_greedy_handler("^-o$")
+        },
+        {
+            // Matches '-o nul' which is used for syntax only testing (i.e. .fail.cpp tests)
+            std::regex("^-o (?:.*?dev)?.*nul$"),
+                [](const std::smatch&) {
+                    skipOutput = true;
+                    return NORMAL;
+                }
+        },
+        {
+            // Matches '-o object' and obtains the output directory
+            // \\\\ skip C++ escape, and skip regex escape to match \ on Windows
+            // The second match grouping catches the name sorta of the file. i.e. test.pass.cpp -> test.pass
+            std::regex("^-o (.+)[\\\\/]([^\\\\/]+)\\..+$"),
+                [](const std::smatch& match) {
+                    outputDir = match[1].str();
+                    outputFile = match[2].str();
+                    return NORMAL;
+                }
+        },
+        {
+            make_greedy_handler("^-gencode$")
+        },
+        {
+            // Matches '-gencode=' or '-gencode ...'
+            std::regex("^-gencode[= ]?(.+)$"),
+                [](const std::smatch& match) {
+                    buildList.emplace(translate_gpu_arch(match[1].str().data()));
+                    return NORMAL;
+                }
+        },
+        {
+            // Matches the many various versions of dialect switch and normalizes it
+            std::regex("^[-/]std[:=](.+)$"),
+                [](const std::smatch& match) {
+                    nvrtcArguments.emplace_back("-std="+match[1].str());
+                    return NORMAL;
+                }
+        },
+        {
+            // Capture an argument that is just '-'. If no input file is listed input is on stdin
+            std::regex("^-$"),
+                [](const std::smatch& match) {
+                    inputFile = match[0].str();
+                    return NORMAL;
+                }
+        },
+        {
+            // If an input lists a .gpu file, run that file instead
+            std::regex("^([^-].*).gpu$"),
+                [](const std::smatch& match) {
+                    execute = true;
+                    executionConfig = ExecutionConfig {
+                        RunConfig{1, 0},
+                        {match[0].str()}
+                    };
 
-                return NORMAL;
-            }
-    },
-    {
-        // If an input is a .exe file, search for other builds and run those
-        std::regex("^([^-].*).exe$"),
-            [](const std::smatch& match) {
-                execute = true;
-                executionConfig = load_execution_config_from_file(match[1].str() + ".build.yml");
-                assert(executionConfig.builds.size());
-                return NORMAL;
-            }
-    },
-    {
-        // Capture any argument not starting with '-' as the input file
-        std::regex("^([^-].+)[\\\\/].+$"),
-            [](const std::smatch& match) {
-                inputFile = match[0].str();
-                // Capture directory of input file as an include path
-                nvrtcArguments.emplace_back("-I " + match[1].str());
-                return NORMAL;
-            }
-    },
-    {
-        // Throw away remaining arguments
-        std::regex("^-.+$"),
-            [](const std::smatch& match) {
-                ignoredArguments.emplace_back(match[0].str());
-                return NORMAL;
-            }
-    },
-};
+                    return NORMAL;
+                }
+        },
+        {
+            // If an input is a .exe file, search for other builds and run those
+            std::regex("^([^-].*).exe$"),
+                [](const std::smatch& match) {
+                    execute = true;
+                    executionConfig = load_execution_config_from_file(match[1].str() + ".build.yml");
+                    assert(executionConfig.builds.size());
+                    return NORMAL;
+                }
+        },
+        {
+            // Capture any argument not starting with '-' as the input file
+            std::regex("^([^-].+)[\\\\/].+$"),
+                [](const std::smatch& match) {
+                    inputFile = match[0].str();
+                    // Capture directory of input file as an include path
+                    nvrtcArguments.emplace_back("-I " + match[1].str());
+                    return NORMAL;
+                }
+        },
+        {
+            // Throw away remaining arguments
+            std::regex("^-.+$"),
+                [](const std::smatch& match) {
+                    ignoredArguments.emplace_back(match[0].str());
+                    return NORMAL;
+                }
+        },
+    };
 
 int main(int argc, char **argv) {
     // Greedily take off first arg
