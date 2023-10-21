@@ -23,7 +23,7 @@
  * (C) Copyright David Abrahams 2002.
  * (C) Copyright Jeremy Siek    2002.
  * (C) Copyright Thomas Witt    2002.
- * 
+ *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying NOTICE file for the complete license)
  *
@@ -33,6 +33,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/reverse_iterator_base.h>
 #include <thrust/iterator/iterator_facade.h>
@@ -216,7 +222,7 @@ template<typename BidirectionalIterator>
 
 /*! \p make_reverse_iterator creates a \p reverse_iterator
  *  from a \c BidirectionalIterator pointing to a range of elements to reverse.
- *  
+ *
  *  \param x A \c BidirectionalIterator pointing to a range to reverse.
  *  \return A new \p reverse_iterator which reverses the range \p x.
  */

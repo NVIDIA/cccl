@@ -33,6 +33,14 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <iterator>
 
 #include "single_pass_scan_operators.cuh"
@@ -41,7 +49,6 @@
 #include "../block/block_scan.cuh"
 #include "../block/block_exchange.cuh"
 #include "../block/block_discontinuity.cuh"
-#include "../config.cuh"
 #include "../grid/grid_queue.cuh"
 #include "../iterator/cache_modified_input_iterator.cuh"
 
@@ -55,23 +62,23 @@ CUB_NAMESPACE_BEGIN
 /**
  * Parameterizable tuning policy type for AgentSelectIf
  *
- * @tparam _BLOCK_THREADS 
+ * @tparam _BLOCK_THREADS
  *   Threads per thread block
  *
- * @tparam _ITEMS_PER_THREAD 
+ * @tparam _ITEMS_PER_THREAD
  *   Items per thread (per tile of input)
  *
- * @tparam _LOAD_ALGORITHM 
+ * @tparam _LOAD_ALGORITHM
  *   The BlockLoad algorithm to use
  *
- * @tparam _LOAD_MODIFIER 
+ * @tparam _LOAD_MODIFIER
  *   Cache load modifier for reading input elements
  *
- * @tparam _SCAN_ALGORITHM 
+ * @tparam _SCAN_ALGORITHM
  *   The BlockScan algorithm to use
  *
- * @tparam DelayConstructorT 
- *   Implementation detail, do not specify directly, requirements on the 
+ * @tparam DelayConstructorT
+ *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
 template <int _BLOCK_THREADS,
@@ -92,7 +99,7 @@ struct AgentSelectIfPolicy
     static constexpr CacheLoadModifier      LOAD_MODIFIER           = _LOAD_MODIFIER;       ///< Cache load modifier for reading input elements
     static constexpr BlockScanAlgorithm     SCAN_ALGORITHM          = _SCAN_ALGORITHM;      ///< The BlockScan algorithm to use
 
-    struct detail 
+    struct detail
     {
         using delay_constructor_t = DelayConstructorT;
     };

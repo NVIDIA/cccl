@@ -33,6 +33,14 @@
 
 #pragma once
 
+#include "config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "util_namespace.cuh"
 #include "util_debug.cuh"
 
@@ -453,13 +461,13 @@ struct CachingDeviceAllocator
             if (device != entrypoint_device)
             {
                 error = CubDebug(cudaGetDevice(&entrypoint_device));
-                if (cudaSuccess != error) 
+                if (cudaSuccess != error)
                 {
                     return error;
                 }
 
                 error = CubDebug(cudaSetDevice(device));
-                if (cudaSuccess != error) 
+                if (cudaSuccess != error)
                 {
                     return error;
                 }
@@ -491,13 +499,13 @@ struct CachingDeviceAllocator
 
                     // Free device memory and destroy stream event.
                     error = CubDebug(cudaFree(block_itr->d_ptr));
-                    if (cudaSuccess != error) 
+                    if (cudaSuccess != error)
                     {
                         break;
                     }
 
                     error = CubDebug(cudaEventDestroy(block_itr->ready_event));
-                    if (cudaSuccess != error) 
+                    if (cudaSuccess != error)
                     {
                         break;
                     }
@@ -519,7 +527,7 @@ struct CachingDeviceAllocator
 
                 // Try to allocate again
                 error = CubDebug(cudaMalloc(&search_key.d_ptr, search_key.bytes));
-                if (cudaSuccess != error) 
+                if (cudaSuccess != error)
                 {
                     return error;
                 }
@@ -547,7 +555,7 @@ struct CachingDeviceAllocator
             if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device))
             {
                 error = CubDebug(cudaSetDevice(entrypoint_device));
-                if (cudaSuccess != error) 
+                if (cudaSuccess != error)
                 {
                     return error;
                 }
@@ -639,13 +647,13 @@ struct CachingDeviceAllocator
         if (device != entrypoint_device)
         {
             error = CubDebug(cudaGetDevice(&entrypoint_device));
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 return error;
             }
 
             error = CubDebug(cudaSetDevice(device));
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 return error;
             }
@@ -655,7 +663,7 @@ struct CachingDeviceAllocator
         {
             // Insert the ready event in the associated stream (must have current device set properly)
             error = CubDebug(cudaEventRecord(search_key.ready_event, search_key.associated_stream));
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 return error;
             }
@@ -665,13 +673,13 @@ struct CachingDeviceAllocator
         {
             // Free the allocation from the runtime and cleanup the event.
             error = CubDebug(cudaFree(d_ptr));
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 return error;
             }
 
             error = CubDebug(cudaEventDestroy(search_key.ready_event));
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 return error;
             }
@@ -684,7 +692,7 @@ struct CachingDeviceAllocator
         if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device))
         {
             error = CubDebug(cudaSetDevice(entrypoint_device));
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 return error;
             }
@@ -728,7 +736,7 @@ struct CachingDeviceAllocator
             if (entrypoint_device == INVALID_DEVICE_ORDINAL)
             {
                 error = CubDebug(cudaGetDevice(&entrypoint_device));
-                if (cudaSuccess != error) 
+                if (cudaSuccess != error)
                 {
                     break;
                 }
@@ -738,7 +746,7 @@ struct CachingDeviceAllocator
             if (begin->device != current_device)
             {
                 error = CubDebug(cudaSetDevice(begin->device));
-                if (cudaSuccess != error) 
+                if (cudaSuccess != error)
                 {
                     break;
                 }
@@ -747,13 +755,13 @@ struct CachingDeviceAllocator
 
             // Free device memory
             error = CubDebug(cudaFree(begin->d_ptr));
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 break;
             }
 
             error = CubDebug(cudaEventDestroy(begin->ready_event));
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 break;
             }

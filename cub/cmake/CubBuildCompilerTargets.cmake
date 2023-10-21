@@ -11,6 +11,9 @@ function(cub_build_compiler_targets)
   set(cxx_compile_options)
   set(cuda_compile_options)
 
+  # Ensure that we build our tests without treating ourself as system header
+  list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     list(APPEND cxx_compile_definitions _ENABLE_EXTENDED_ALIGNED_STORAGE)
     list(APPEND cuda_compile_options "--use-local-env")

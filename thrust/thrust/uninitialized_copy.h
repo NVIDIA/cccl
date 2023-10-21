@@ -22,6 +22,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -66,13 +72,13 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/device_malloc.h>
  *  #include <thrust/device_vector.h>
  *  #include <thrust/execution_policy.h>
- *  
+ *
  *  struct Int
  *  {
  *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
- *  };  
+ *  };
  *  ...
  *  const int N = 137;
  *
@@ -128,13 +134,13 @@ __host__ __device__
  *  #include <thrust/uninitialized_copy.h>
  *  #include <thrust/device_malloc.h>
  *  #include <thrust/device_vector.h>
- *  
+ *
  *  struct Int
  *  {
  *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
- *  };  
+ *  };
  *  ...
  *  const int N = 137;
  *
@@ -195,13 +201,13 @@ template<typename InputIterator, typename ForwardIterator>
  *  #include <thrust/device_malloc.h>
  *  #include <thrust/device_vector.h>
  *  #include <thrust/execution_policy.h>
- *  
+ *
  *  struct Int
  *  {
  *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
- *  };  
+ *  };
  *  ...
  *  const int N = 137;
  *
@@ -259,13 +265,13 @@ __host__ __device__
  *  #include <thrust/uninitialized_copy.h>
  *  #include <thrust/device_malloc.h>
  *  #include <thrust/device_vector.h>
- *  
+ *
  *  struct Int
  *  {
  *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
- *  };  
+ *  };
  *  ...
  *  const int N = 137;
  *

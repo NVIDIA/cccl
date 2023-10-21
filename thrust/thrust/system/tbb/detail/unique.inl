@@ -17,6 +17,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/system/tbb/detail/unique.h>
 #include <thrust/system/detail/generic/unique.h>
 #include <thrust/pair.h>
@@ -73,7 +79,7 @@ template<typename DerivedPolicy,
 
 
 } // end namespace detail
-} // end namespace tbb 
+} // end namespace tbb
 } // end namespace system
 THRUST_NAMESPACE_END
 

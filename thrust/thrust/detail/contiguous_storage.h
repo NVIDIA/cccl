@@ -16,10 +16,17 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <thrust/iterator/detail/normal_iterator.h>
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/allocator/allocator_traits.h>
-#include <thrust/detail/config.h>
 
 THRUST_NAMESPACE_BEGIN
 

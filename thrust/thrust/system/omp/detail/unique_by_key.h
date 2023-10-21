@@ -17,6 +17,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/pair.h>
 
@@ -35,7 +41,7 @@ template<typename DerivedPolicy,
          typename BinaryPredicate>
   thrust::pair<ForwardIterator1,ForwardIterator2>
     unique_by_key(execution_policy<DerivedPolicy> &exec,
-                  ForwardIterator1 keys_first, 
+                  ForwardIterator1 keys_first,
                   ForwardIterator1 keys_last,
                   ForwardIterator2 values_first,
                   BinaryPredicate binary_pred);
@@ -49,7 +55,7 @@ template<typename DerivedPolicy,
          typename BinaryPredicate>
   thrust::pair<OutputIterator1,OutputIterator2>
     unique_by_key_copy(execution_policy<DerivedPolicy> &exec,
-                       InputIterator1 keys_first, 
+                       InputIterator1 keys_first,
                        InputIterator1 keys_last,
                        InputIterator2 values_first,
                        OutputIterator1 keys_output,
@@ -58,7 +64,7 @@ template<typename DerivedPolicy,
 
 
 } // end namespace detail
-} // end namespace omp 
+} // end namespace omp
 } // end namespace system
 THRUST_NAMESPACE_END
 

@@ -33,11 +33,18 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <iterator>
 
 #include "../util_type.cuh"
 #include "../block/block_load.cuh"
-#include "../config.cuh"
 #include "../grid/grid_queue.cuh"
 #include "../iterator/cache_modified_input_iterator.cuh"
 
@@ -301,8 +308,8 @@ struct AgentHistogram
         for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
         {
             int channel_bins = num_privatized_bins[CHANNEL];
-            for (int privatized_bin = threadIdx.x; 
-                    privatized_bin < channel_bins;  
+            for (int privatized_bin = threadIdx.x;
+                    privatized_bin < channel_bins;
                     privatized_bin += BLOCK_THREADS)
             {
                 int         output_bin  = -1;
@@ -631,7 +638,7 @@ struct AgentHistogram
                 // Consume a partially-full tile at the end of the row
                 OffsetT num_remaining = (num_row_pixels * NUM_CHANNELS) - col_offset;
                 ConsumeTile<IS_ALIGNED, false>(tile_offset, num_remaining);
-            } 
+            }
             else
             {
                 // Consume full tile

@@ -17,6 +17,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/system/detail/generic/tag.h>
 #include <thrust/pair.h>
 
@@ -35,7 +41,7 @@ template<typename ExecutionPolicy,
 __host__ __device__
   thrust::pair<ForwardIterator1,ForwardIterator2>
     unique_by_key(thrust::execution_policy<ExecutionPolicy> &exec,
-                  ForwardIterator1 keys_first, 
+                  ForwardIterator1 keys_first,
                   ForwardIterator1 keys_last,
                   ForwardIterator2 values_first);
 
@@ -47,7 +53,7 @@ template<typename ExecutionPolicy,
 __host__ __device__
   thrust::pair<ForwardIterator1,ForwardIterator2>
     unique_by_key(thrust::execution_policy<ExecutionPolicy> &exec,
-                  ForwardIterator1 keys_first, 
+                  ForwardIterator1 keys_first,
                   ForwardIterator1 keys_last,
                   ForwardIterator2 values_first,
                   BinaryPredicate binary_pred);
@@ -61,7 +67,7 @@ template<typename ExecutionPolicy,
 __host__ __device__
   thrust::pair<OutputIterator1,OutputIterator2>
     unique_by_key_copy(thrust::execution_policy<ExecutionPolicy> &exec,
-                       InputIterator1 keys_first, 
+                       InputIterator1 keys_first,
                        InputIterator1 keys_last,
                        InputIterator2 values_first,
                        OutputIterator1 keys_output,
@@ -77,7 +83,7 @@ template<typename ExecutionPolicy,
 __host__ __device__
   thrust::pair<OutputIterator1,OutputIterator2>
     unique_by_key_copy(thrust::execution_policy<ExecutionPolicy> &exec,
-                       InputIterator1 keys_first, 
+                       InputIterator1 keys_first,
                        InputIterator1 keys_last,
                        InputIterator2 values_first,
                        OutputIterator1 keys_output,

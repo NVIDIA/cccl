@@ -17,6 +17,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/system/cpp/vector.h>
 #include <utility>
 
@@ -98,13 +104,13 @@ template<typename T, typename Allocator>
     return *this;
   }
 #endif
-  
+
   template<typename T, typename Allocator>
     vector<T,Allocator>
       ::vector(std::initializer_list<T> il)
         : super_t(il)
   {}
-  
+
   template<typename T, typename Allocator>
     vector<T,Allocator>
       ::vector(std::initializer_list<T> il, const Allocator& alloc)
@@ -139,7 +145,7 @@ template<typename T, typename Allocator>
   super_t::operator=(x);
   return *this;
 }
-      
+
 } // end cpp
 } // end system
 THRUST_NAMESPACE_END

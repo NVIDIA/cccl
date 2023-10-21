@@ -53,7 +53,7 @@
 #include "../cstddef"
 #include "../limits" // numeric_limits
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#ifdef _LIBCUDACXX_IMPLICIT_SYSTEM_HEADER
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
