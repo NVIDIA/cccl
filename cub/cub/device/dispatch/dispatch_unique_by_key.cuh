@@ -281,7 +281,7 @@ struct DispatchUniqueByKey : SelectedPolicy
             #endif
 
             // Invoke init_kernel to initialize tile descriptors
-            THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+            detail::triple_chevron(
                 init_grid_size, INIT_KERNEL_THREADS, 0, stream
             ).doit(init_kernel, tile_state, num_tiles, d_num_selected_out);
 
@@ -343,7 +343,7 @@ struct DispatchUniqueByKey : SelectedPolicy
             #endif
 
             // Invoke select_if_kernel
-            error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+            error = detail::triple_chevron(
                 scan_grid_size, Policy::BLOCK_THREADS, 0, stream
             ).doit(scan_kernel,
                    d_keys_in,

@@ -41,7 +41,7 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_ptx.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+ #include <cub/detail/triple_chevron_launch.cuh>
 
 #include <cuda/std/type_traits>
 
@@ -612,7 +612,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
 
     // Invoke init_kernel to initialize buffer prefix sum-tile descriptors
     error =
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size,
+      detail::triple_chevron(init_grid_size,
                                                               INIT_KERNEL_THREADS,
                                                               0,
                                                               stream)
@@ -644,7 +644,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
 
     // Invoke kernel to copy small buffers and put the larger ones into a queue that will get picked
     // up by next kernel
-    error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+    error = detail::triple_chevron(
               batch_memcpy_grid_size,
               ActivePolicyT::AgentSmallBufferPolicyT::BLOCK_THREADS,
               0,
@@ -683,7 +683,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
             (long long)stream);
 #endif
 
-    error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(batch_memcpy_blev_grid_size,
+    error = detail::triple_chevron(batch_memcpy_blev_grid_size,
                                                                     BLEV_BLOCK_THREADS,
                                                                     0,
                                                                     stream)

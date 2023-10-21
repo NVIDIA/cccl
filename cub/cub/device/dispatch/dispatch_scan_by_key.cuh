@@ -43,7 +43,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+ #include <cub/detail/triple_chevron_launch.cuh>
 
 #include <iterator>
 
@@ -445,7 +445,7 @@ struct DispatchScanByKey : SelectedPolicy
       #endif
 
       // Invoke init_kernel to initialize tile descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      detail::triple_chevron(
         init_grid_size,
         INIT_KERNEL_THREADS,
         0,
@@ -508,7 +508,7 @@ struct DispatchScanByKey : SelectedPolicy
         #endif
 
         // Invoke scan_kernel
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+        detail::triple_chevron(
           scan_grid_size,
           Policy::BLOCK_THREADS,
           0,

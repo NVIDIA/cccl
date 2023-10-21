@@ -45,7 +45,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+ #include <cub/detail/triple_chevron_launch.cuh>
 
 #include <iterator>
 
@@ -652,7 +652,7 @@ struct DispatchReduce : SelectedPolicy
 #endif
 
       // Invoke single_reduce_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      detail::triple_chevron(
         1,
         ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
         0,
@@ -779,7 +779,7 @@ struct DispatchReduce : SelectedPolicy
 #endif
 
       // Invoke DeviceReduceKernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      detail::triple_chevron(
         reduce_grid_size,
         ActivePolicyT::ReducePolicy::BLOCK_THREADS,
         0,
@@ -810,7 +810,7 @@ struct DispatchReduce : SelectedPolicy
 #endif
 
       // Invoke DeviceReduceSingleTileKernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      detail::triple_chevron(
         1,
         ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
         0,
@@ -1185,7 +1185,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
 #endif
 
       // Invoke DeviceReduceKernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      detail::triple_chevron(
         num_segments,
         ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS,
         0,

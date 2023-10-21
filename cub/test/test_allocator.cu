@@ -123,7 +123,7 @@ int main(int argc, char** argv)
     char *d_999B_stream_other_b;
     allocator.DeviceAllocate((void **) &d_999B_stream_other_a, 999, other_stream);
 
-    // Check that that we have 1 live blocks on the initial GPU (that we allocated a new one because d_999B_stream0_b is only available for stream 0 until it becomes idle)
+    // Check that that we have 1 live blocks on the initial GPU (that we allocated a new one because d_999B_stream0_b is only available for stream 0 until it becomes idle) 
     AssertEquals(allocator.live_blocks.size(), 1);
 
     // Check that that we have one cached block on the initial GPU

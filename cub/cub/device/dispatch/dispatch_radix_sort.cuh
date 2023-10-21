@@ -47,7 +47,7 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+ #include <cub/detail/triple_chevron_launch.cuh>
 
 #include <iterator>
 #include <stdio.h>
@@ -1290,7 +1290,7 @@ struct DispatchRadixSort : SelectedPolicy
             #endif
 
             // Invoke upsweep_kernel with same grid size as downsweep_kernel
-            THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+            detail::triple_chevron(
                 1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream
             ).doit(single_tile_kernel,
                 d_keys.Current(),
@@ -1361,7 +1361,7 @@ struct DispatchRadixSort : SelectedPolicy
             int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
 
             // Invoke upsweep_kernel with same grid size as downsweep_kernel
-            THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+            detail::triple_chevron(
                 pass_config.even_share.grid_size,
                 pass_config.upsweep_config.block_threads, 0, stream
             ).doit(pass_config.upsweep_kernel,
@@ -1394,7 +1394,7 @@ struct DispatchRadixSort : SelectedPolicy
             #endif
 
             // Invoke scan_kernel
-            THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+            detail::triple_chevron(
                 1, pass_config.scan_config.block_threads, 0, stream
             ).doit(pass_config.scan_kernel,
                 d_spine,
@@ -1422,7 +1422,7 @@ struct DispatchRadixSort : SelectedPolicy
             #endif
 
             // Invoke downsweep_kernel
-            THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+            detail::triple_chevron(
                 pass_config.even_share.grid_size,
                 pass_config.downsweep_config.block_threads, 0, stream
             ).doit(pass_config.downsweep_kernel,
@@ -1644,7 +1644,7 @@ struct DispatchRadixSort : SelectedPolicy
                     ActivePolicyT::HistogramPolicy::RADIX_BITS);
             #endif
 
-            error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+            error = detail::triple_chevron(
               histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream
             ).doit(histogram_kernel,
                    d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer);
@@ -1670,7 +1670,7 @@ struct DispatchRadixSort : SelectedPolicy
                     ActivePolicyT::ExclusiveSumPolicy::RADIX_BITS);
             #endif
 
-            error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+            error = detail::triple_chevron(
                       num_passes, SCAN_BLOCK_THREADS, 0, stream
                       ).doit(DeviceRadixSortExclusiveSumKernel<MaxPolicyT, OffsetT>,
                             d_bins);
@@ -1730,7 +1730,7 @@ struct DispatchRadixSort : SelectedPolicy
                     auto onesweep_kernel = DeviceRadixSortOnesweepKernel<
                         MaxPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, PortionOffsetT, AtomicOffsetT, DecomposerT>;
 
-                    error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+                    error = detail::triple_chevron(
                       num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream
                     ).doit(onesweep_kernel,
                            d_lookback, d_ctrs + portion * num_passes + pass,
@@ -2315,7 +2315,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
                     pass_bits);
             #endif
 
-            THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+            detail::triple_chevron(
                 num_segments, pass_config.segmented_config.block_threads, 0,
                 stream
             ).doit(pass_config.segmented_kernel,

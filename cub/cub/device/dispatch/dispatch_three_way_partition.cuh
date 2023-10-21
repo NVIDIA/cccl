@@ -36,7 +36,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+ #include <cub/detail/triple_chevron_launch.cuh>
 
 #include <cstdio>
 #include <iterator>
@@ -286,7 +286,7 @@ struct DispatchThreeWayPartitionIf
 #endif
 
       // Invoke three_way_partition_init_kernel to initialize tile descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size,
+      detail::triple_chevron(init_grid_size,
                                                               INIT_KERNEL_THREADS,
                                                               0,
                                                               stream)
@@ -349,7 +349,7 @@ struct DispatchThreeWayPartitionIf
 #endif
 
       // Invoke select_if_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      detail::triple_chevron(
         scan_grid_size,
         block_threads,
         0,
