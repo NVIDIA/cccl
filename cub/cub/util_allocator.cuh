@@ -383,6 +383,7 @@ struct CachingDeviceAllocator
         BlockDescriptor search_key(device);
         search_key.associated_stream = active_stream;
         NearestPowerOf(search_key.bin, search_key.bytes, bin_growth, bytes);
+        printf("The r: %d", search_key.bin);
 
         if (search_key.bin > max_bin)
         {
