@@ -48,7 +48,7 @@ namespace detail
     Size const shared_mem;
     cudaStream_t const stream;
 
-    THRUST_RUNTIME_FUNCTION // no 
+    CUB_RUNTIME_FUNCTION // Should this be CUB_RUNTIME_FUNCTION now?
     triple_chevron(dim3         grid_,
                    dim3         block_,
                    Size         shared_mem_ = 0,
@@ -137,9 +137,9 @@ namespace detail
     }
     #endif
 
-    __thrust_exec_check_disable__
+    __thrust_exec_check_disable__ // what is
     template <class K, class... Args>
-    THRUST_FUNCTION
+    __host__ __device__ __forceinline__ // use this over THRUST_FUNCTION macro, seems to be convention in CUB
     cudaError_t doit(K k, Args const&... args) const
     {
       NV_IF_TARGET(NV_IS_HOST,
