@@ -894,7 +894,6 @@ struct copy_tester
   #endif
 };
 
-#if THRUST_CPP_DIALECT >= 2011
 template <typename T>
 struct shuffle_tester
 {
@@ -923,7 +922,6 @@ struct shuffle_tester
     }
   };
 };
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 

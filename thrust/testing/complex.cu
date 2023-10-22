@@ -46,10 +46,10 @@ struct TestComplexSizeAndAlignment
   void operator()()
   {
     THRUST_STATIC_ASSERT(sizeof(thrust::complex<T>) == sizeof(T) * 2);
-    THRUST_STATIC_ASSERT(THRUST_ALIGNOF(thrust::complex<T>) == THRUST_ALIGNOF(T) * 2);
+    THRUST_STATIC_ASSERT(alignof(thrust::complex<T>) == alignof(T) * 2);
 
     THRUST_STATIC_ASSERT(sizeof(thrust::complex<T const>) == sizeof(T) * 2);
-    THRUST_STATIC_ASSERT(THRUST_ALIGNOF(thrust::complex<T const>) == THRUST_ALIGNOF(T) * 2);
+    THRUST_STATIC_ASSERT(alignof(thrust::complex<T const>) == alignof(T) * 2);
   }
 };
 SimpleUnitTest<TestComplexSizeAndAlignment, FloatingPointTypes> TestComplexSizeAndAlignmentInstance;

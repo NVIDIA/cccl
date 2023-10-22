@@ -157,11 +157,8 @@ struct par_t : execution_policy<par_t>,
 
 struct par_nosync_t : execution_policy<par_nosync_t>,
   thrust::detail::allocator_aware_execution_policy<
+    execute_on_stream_nosync_base>, thrust::detail::dependencies_aware_execution_policy<
     execute_on_stream_nosync_base>
-#if THRUST_CPP_DIALECT >= 2011
-, thrust::detail::dependencies_aware_execution_policy<
-    execute_on_stream_nosync_base>
-#endif
 {
   typedef execution_policy<par_nosync_t> base_t;
 

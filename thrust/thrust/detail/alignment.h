@@ -38,21 +38,6 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-/// \p THRUST_ALIGNOF is a macro that takes a single type-id as a parameter,
-/// and returns the alignment requirement of the type in bytes.
-///
-/// It is an approximation of C++11's `alignof` operator.
-///
-/// Note: MSVC does not allow the builtin used to implement this to be placed
-/// inside of a `__declspec(align(#))` attribute. As a workaround, you can
-/// assign the result of \p THRUST_ALIGNOF to a variable and pass the variable
-/// as the argument to `__declspec(align(#))`.
-#if THRUST_CPP_DIALECT >= 2011
-    #define THRUST_ALIGNOF(x) alignof(x)
-#else
-    #define THRUST_ALIGNOF(x) __alignof(x)
-#endif
-
 /// \p alignment_of provides the member constant `value` which is equal to the
 /// alignment requirement of the type `T`, as if obtained by a C++11 `alignof`
 /// expression.
@@ -69,8 +54,7 @@ namespace detail
 template <std::size_t Align>
 struct aligned_type;
 
-#if THRUST_CPP_DIALECT >= 2011                                                     \
-  && (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                        \
+#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) \
   && (THRUST_GCC_VERSION >= 40800)
     // C++11 implementation, excluding GCC 4.7, which doesn't have `alignas`.
     template <std::size_t Align>
@@ -130,9 +114,9 @@ struct aligned_type;
 /// strict (as large) as that of every scalar type.
 ///
 /// It is an implementation of C++11's \p std::max_align_t.
-#if THRUST_CPP_DIALECT >= 2011                                                     \
-  && (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                        \
+#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) \
   && (THRUST_GCC_VERSION >= 40900)
+
     // GCC 4.7 and 4.8 don't have `std::max_align_t`.
     using max_align_t = std::max_align_t;
 #else

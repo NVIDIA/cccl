@@ -29,7 +29,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/alignment.h>
 #include <thrust/detail/config/cpp_compatibility.h>
 
-#define THRUST_MR_DEFAULT_ALIGNMENT THRUST_ALIGNOF(THRUST_NS_QUALIFIER::detail::max_align_t)
+#define THRUST_MR_DEFAULT_ALIGNMENT alignof(THRUST_NS_QUALIFIER::detail::max_align_t)
 
 #if THRUST_CPP_DIALECT >= 2017
 #  if __has_include(<memory_resource>)
