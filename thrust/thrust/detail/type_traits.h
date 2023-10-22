@@ -24,6 +24,12 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cuda/std/type_traits>
 
 #include <type_traits>
@@ -36,35 +42,10 @@ template<typename T> class device_reference;
 namespace detail
 {
  /// helper classes [4.3].
- template<typename T, T v>
-   struct integral_constant
-   {
-     THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT T value = v;
-
-     typedef T                       value_type;
-     typedef integral_constant<T, v> type;
-
-     // We don't want to switch to std::integral_constant, because we want access
-     // to the C++14 operator(), but we'd like standard traits to interoperate
-     // with our version when tag dispatching.
-     integral_constant() = default;
-
-     integral_constant(integral_constant const&) = default;
-
-     integral_constant& operator=(integral_constant const&) = default;
-
-     constexpr __host__ __device__
-     integral_constant(std::integral_constant<T, v>) noexcept {}
-
-     constexpr __host__ __device__ operator value_type() const noexcept { return value; }
-     constexpr __host__ __device__ value_type operator()() const noexcept { return value; }
-   };
-
- /// typedef for true_type
- typedef integral_constant<bool, true>  true_type;
-
- /// typedef for true_type
- typedef integral_constant<bool, false> false_type;
+template<typename T, T v>
+using integral_constant = ::cuda::std::integral_constant<T, v>;
+using true_type  = ::cuda::std::true_type;
+using false_type = ::cuda::std::false_type;
 
 //template<typename T> struct is_integral : public std::tr1::is_integral<T> {};
 template<typename T> struct is_integral                           : public false_type {};
@@ -274,7 +255,8 @@ template<typename T1, typename T2>
 }; // end lazy_is_different
 
 
-using std::is_convertible;
+template<class From, class To>
+using is_convertible = ::cuda::std::is_convertible<From, To>;
 
 
 
@@ -480,7 +462,8 @@ template<typename T1, typename T2>
 {};
 
 
-using std::is_base_of;
+template<class Base, class Derived>
+using is_base_of = ::cuda::std::is_base_of<Base, Derived>;
 
 
 

@@ -16,7 +16,7 @@
 
 /*
  * (C) Copyright John Maddock 2000.
- * 
+ *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying NOTICE file for the complete license)
  *
@@ -26,6 +26,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/preprocessor.h>
 
@@ -48,6 +54,39 @@ struct depend_on_instantiation
 #  define THRUST_STATIC_ASSERT_MSG(B, msg) static_assert(B, msg)
 
 
+// HP aCC cannot deal with missing names for template value parameters.
+template <bool x> struct STATIC_ASSERTION_FAILURE;
+
+template <> struct STATIC_ASSERTION_FAILURE<true> {};
+
+// HP aCC cannot deal with missing names for template value parameters.
+template <int x> struct static_assert_test {};
+
+#if    (  (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                  \
+       && (THRUST_GCC_VERSION >= 40800))                                      \
+    || (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_CLANG)
+  // Clang and GCC 4.8+ will complain about this typedef being unused unless we
+  // annotate it as such.
+#  define THRUST_STATIC_ASSERT(B)                                             \
+    typedef THRUST_NS_QUALIFIER::detail::static_assert_test<                  \
+      sizeof(THRUST_NS_QUALIFIER::detail::STATIC_ASSERTION_FAILURE<(bool)(B)>)\
+    >                                                                         \
+      THRUST_PP_CAT2(thrust_static_assert_typedef_, __LINE__)                 \
+      __attribute__((unused))                                                 \
+    /**/
+#else
+#  define THRUST_STATIC_ASSERT(B)                                             \
+    typedef THRUST_NS_QUALIFIER::detail::static_assert_test<                  \
+      sizeof(THRUST_NS_QUALIFIER::detail::STATIC_ASSERTION_FAILURE<(bool)(B)>)\
+    >                                                                         \
+      THRUST_PP_CAT2(thrust_static_assert_typedef_, __LINE__)                 \
+    /**/
+#endif
+
+#define THRUST_STATIC_ASSERT_MSG(B, msg) THRUST_STATIC_ASSERT(B)
+
+#endif // THRUST_CPP_DIALECT >= 2011
+>>>>>>> main
 
 } // namespace detail
 

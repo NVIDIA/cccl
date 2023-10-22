@@ -56,7 +56,7 @@ __host__ __device__ void CheckIsConvertibleButNotConvertibleTo() {
 template <class T>
 #else
 _LIBCUDACXX_TEMPLATE(class T)
-  (requires (!(cuda::std::same_as<T, bool> || cuda::std::same_as<T, nullptr_t>)))
+  _LIBCUDACXX_REQUIRES( (!(cuda::std::same_as<T, bool> || cuda::std::same_as<T, nullptr_t>)))
 #endif
 __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
   CheckNotConvertibleTo<T, void>();
@@ -71,7 +71,7 @@ __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
 }
 
 _LIBCUDACXX_TEMPLATE(class T)
-  (requires cuda::std::same_as<T, bool>)
+  _LIBCUDACXX_REQUIRES( cuda::std::same_as<T, bool>)
 __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
   CheckNotConvertibleTo<bool, void>();
   CheckNotConvertibleTo<bool, nullptr_t>();
@@ -84,7 +84,7 @@ __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
 }
 
 _LIBCUDACXX_TEMPLATE(class T)
-  (requires cuda::std::same_as<T, nullptr_t>)
+  _LIBCUDACXX_REQUIRES( cuda::std::same_as<T, nullptr_t>)
 __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
   CheckNotConvertibleTo<nullptr_t, void>();
   CheckConvertibleTo<nullptr_t, nullptr_t>();

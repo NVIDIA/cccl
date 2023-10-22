@@ -27,20 +27,22 @@ update_devcontainer() {
     local name="$3"
     local cuda_version="$4"
     local compiler_name="$5"
-    local compiler_version="$6"
-    local os="$7"
-    local devcontainer_version="$8"
+    local compiler_exe="$6"
+    local compiler_version="$7"
+    local os="$8"
+    local devcontainer_version="$9"
 
     local IMAGE_ROOT="rapidsai/devcontainers:${devcontainer_version}-cpp-"
     local image="${IMAGE_ROOT}${compiler_name}${compiler_version}-cuda${cuda_version}-${os}"
 
     jq --arg image "$image" --arg name "$name" \
        --arg cuda_version "$cuda_version" --arg compiler_name "$compiler_name" \
-       --arg compiler_version "$compiler_version" --arg os "$os" \
+       --arg compiler_exe "$compiler_exe" --arg compiler_version "$compiler_version" --arg os "$os" \
        '.image = $image | .name = $name | .containerEnv.DEVCONTAINER_NAME = $name |
         .containerEnv.CCCL_BUILD_INFIX = $name |
         .containerEnv.CCCL_CUDA_VERSION = $cuda_version | .containerEnv.CCCL_HOST_COMPILER = $compiler_name |
-        .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version' \
+        .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version |
+        .containerEnv.CXX = $compiler_exe | .containerEnv.CUDAHOSTCXX = $compiler_exe' \
        "$input_file" > "$output_file"
 }
 
@@ -90,7 +92,7 @@ readonly matrix_json=$(echo "$matrix_json" | jq 'del(.pull_request.nvcc[] | sele
 readonly DEVCONTAINER_VERSION=$(echo "$matrix_json" | jq -r '.devcontainer_version')
 
 # Get unique combinations of cuda version, compiler name/version, and Ubuntu version
-readonly combinations=$(echo "$matrix_json" | jq -c '[.pull_request.nvcc[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_version: .compiler.version, os: .os}] | unique | .[]')
+readonly combinations=$(echo "$matrix_json" | jq -c '[.pull_request.nvcc[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_exe: .compiler.exe, compiler_version: .compiler.version, os: .os}] | unique | .[]')
 
 # Update the base devcontainer with the default values
 # The root devcontainer.json file is used as the default container as well as a template for all
@@ -99,11 +101,12 @@ readonly base_devcontainer_file="./devcontainer.json"
 readonly NEWEST_GCC_CUDA_ENTRY=$(echo "$combinations" | jq -rs '[.[] | select(.compiler_name == "gcc")] | sort_by((.cuda | tonumber), (.compiler_version | tonumber)) | .[-1]')
 readonly DEFAULT_CUDA=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.cuda')
 readonly DEFAULT_COMPILER_NAME=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.compiler_name')
+readonly DEFAULT_COMPILER_EXE=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.compiler_exe')
 readonly DEFAULT_COMPILER_VERSION=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.compiler_version')
 readonly DEFAULT_OS=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.os')
 readonly DEFAULT_NAME=$(make_name "$DEFAULT_CUDA" "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_VERSION")
 
-update_devcontainer ${base_devcontainer_file} "./temp_devcontainer.json" "$DEFAULT_NAME" "$DEFAULT_CUDA" "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_VERSION" "$DEFAULT_OS" "$DEVCONTAINER_VERSION"
+update_devcontainer ${base_devcontainer_file} "./temp_devcontainer.json" "$DEFAULT_NAME" "$DEFAULT_CUDA" "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_EXE" "$DEFAULT_COMPILER_VERSION" "$DEFAULT_OS" "$DEVCONTAINER_VERSION"
 mv "./temp_devcontainer.json" ${base_devcontainer_file}
 
 # Create an array to keep track of valid subdirectory names
@@ -113,6 +116,7 @@ valid_subdirs=()
 for combination in $combinations; do
     cuda_version=$(echo "$combination" | jq -r '.cuda')
     compiler_name=$(echo "$combination" | jq -r '.compiler_name')
+    compiler_exe=$(echo "$combination" | jq -r '.compiler_exe')
     compiler_version=$(echo "$combination" | jq -r '.compiler_version')
     os=$(echo "$combination" | jq -r '.os')
 
@@ -120,7 +124,7 @@ for combination in $combinations; do
     mkdir -p "$name"
     new_devcontainer_file="$name/devcontainer.json"
 
-    update_devcontainer "$base_devcontainer_file" "$new_devcontainer_file" "$name" "$cuda_version" "$compiler_name" "$compiler_version" "$os" "$DEVCONTAINER_VERSION"
+    update_devcontainer "$base_devcontainer_file" "$new_devcontainer_file" "$name" "$cuda_version" "$compiler_name" "$compiler_exe" "$compiler_version" "$os" "$DEVCONTAINER_VERSION"
     echo "Created $new_devcontainer_file"
 
     # Add the subdirectory name to the valid_subdirs array

@@ -6,6 +6,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/cpp11_required.h>
 
 #include <thrust/detail/raw_pointer_cast.h>
@@ -243,7 +249,7 @@ private:
   allocator_type alloc_;
   std::size_t    count_;
 };
-  
+
 template <typename T, typename Allocator>
 using uninitialized_array_allocator_delete
   = array_allocator_delete<T, Allocator, true>;

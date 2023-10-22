@@ -26,16 +26,23 @@
  ******************************************************************************/
 #pragma once
 
+#include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cstdio>
 #include <exception>
-#include <thrust/detail/config.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system_error.h>
 #include <thrust/system/cuda/error.h>
 
 #include <cub/detail/device_synchronize.cuh>
-#include <cub/util_arch.cuh>
+#include <cub/config.cuh>
 #include <cub/util_device.cuh>
 
 #include <nv/target>
@@ -316,7 +323,7 @@ struct transform_input_iterator_t
 
   // UnaryOp might not be copy assignable, such as when it is a lambda.  Define
   // an explicit copy assignment operator that doesn't try to assign it.
-  __host__ __device__ 
+  __host__ __device__
   self_t& operator=(const self_t& o)
   {
     input = o.input;

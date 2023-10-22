@@ -34,6 +34,12 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 // #include the details first
 #include <thrust/iterator/detail/transform_iterator.inl>
 #include <thrust/iterator/iterator_facade.h>
@@ -203,8 +209,7 @@ template <class AdaptableUnaryFunction, class Iterator, class Reference = use_de
   public:
     /*! Null constructor does nothing.
      */
-    __host__ __device__
-    transform_iterator() {}
+    transform_iterator() = default;
 
     transform_iterator(transform_iterator const&) = default;
 

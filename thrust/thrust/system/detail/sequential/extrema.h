@@ -22,6 +22,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/pair.h>
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
@@ -41,7 +47,7 @@ template<typename DerivedPolicy,
          typename BinaryPredicate>
 __host__ __device__
 ForwardIterator min_element(sequential::execution_policy<DerivedPolicy> &,
-                            ForwardIterator first, 
+                            ForwardIterator first,
                             ForwardIterator last,
                             BinaryPredicate comp)
 {
@@ -71,7 +77,7 @@ template<typename DerivedPolicy,
          typename BinaryPredicate>
 __host__ __device__
 ForwardIterator max_element(sequential::execution_policy<DerivedPolicy> &,
-                            ForwardIterator first, 
+                            ForwardIterator first,
                             ForwardIterator last,
                             BinaryPredicate comp)
 {
@@ -101,7 +107,7 @@ template<typename DerivedPolicy,
          typename BinaryPredicate>
 __host__ __device__
 thrust::pair<ForwardIterator,ForwardIterator> minmax_element(sequential::execution_policy<DerivedPolicy> &,
-                                                             ForwardIterator first, 
+                                                             ForwardIterator first,
                                                              ForwardIterator last,
                                                              BinaryPredicate comp)
 {
@@ -110,7 +116,7 @@ thrust::pair<ForwardIterator,ForwardIterator> minmax_element(sequential::executi
     BinaryPredicate,
     bool
   > wrapped_comp(comp);
-  
+
   ForwardIterator imin = first;
   ForwardIterator imax = first;
 

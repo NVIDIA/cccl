@@ -23,6 +23,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/memory_wrapper.h>
 #include <thrust/detail/vector_base.h>
 
@@ -214,20 +220,20 @@ template<typename T, typename Alloc = std::allocator<T> >
     __host__
     host_vector &operator=(const detail::vector_base<OtherT,OtherAlloc> &v)
     { Parent::operator=(v); return *this; }
-    
+
     /*! This constructor builds a \p host_vector from an intializer_list.
      *  \param il The intializer_list.
      */
     host_vector(std::initializer_list<T> il)
       :Parent(il) {}
-      
+
     /*! This constructor builds a \p host_vector from an intializer_list.
      *  \param il The intializer_list.
      *  \param alloc The allocator to use by this host_vector.
      */
     host_vector(std::initializer_list<T> il, const Alloc &alloc)
       :Parent(il, alloc) {}
-      
+
     /*! Assign an \p intializer_list with a matching element type
      *  \param il The intializer_list.
      */

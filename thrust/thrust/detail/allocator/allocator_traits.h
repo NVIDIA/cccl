@@ -21,6 +21,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/detail/type_traits/has_member_function.h>
@@ -316,7 +322,7 @@ template<typename Alloc>
 
   template<typename T>
   inline __host__ __device__ static void construct(allocator_type &a, T *p);
-  
+
   template<typename T, typename Arg1>
   inline __host__ __device__ static void construct(allocator_type &a, T *p, const Arg1 &arg1);
 

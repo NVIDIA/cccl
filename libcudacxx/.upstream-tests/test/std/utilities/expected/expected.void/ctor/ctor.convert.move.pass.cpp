@@ -58,7 +58,7 @@ static_assert(!canCstrFromExpected<void, NoCtorFromInt, void, int>, "");
 template <class T>
 struct CtorFrom {
   _LIBCUDACXX_TEMPLATE(class T2 = T)
-    (requires(!cuda::std::same_as<T2, int>))
+    _LIBCUDACXX_REQUIRES((!cuda::std::same_as<T2, int>))
   __host__ __device__ explicit CtorFrom(int);
   __host__ __device__ explicit CtorFrom(T);
   template<class U>

@@ -19,16 +19,18 @@
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/remove_cvref.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _LIBCUDACXX_STD_VER > 14
 
 _LIBCUDACXX_TEMPLATE(class _It, class _Proj)
-  (requires indirectly_readable<_It> _LIBCUDACXX_AND indirectly_regular_unary_invocable<_Proj, _It>)
+  _LIBCUDACXX_REQUIRES( indirectly_readable<_It> _LIBCUDACXX_AND indirectly_regular_unary_invocable<_Proj, _It>)
 struct projected {
   using value_type = remove_cvref_t<indirect_result_t<_Proj&, _It>>;
   _LIBCUDACXX_INLINE_VISIBILITY indirect_result_t<_Proj&, _It> operator*() const; // not defined

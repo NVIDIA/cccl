@@ -1019,17 +1019,17 @@ struct Proxy {
   constexpr const T&& getData() const&& { return static_cast<const T&&>(data); }
 
   _LIBCUDACXX_TEMPLATE(class U)
-    (requires std::constructible_from<T, U&&>)
+    _LIBCUDACXX_REQUIRES( std::constructible_from<T, U&&>)
   constexpr Proxy(U&& u) : data{std::forward<U>(u)} {}
 
   // This constructor covers conversion from cvref of Proxy<U>, including non-const/const versions of copy/move constructor
   _LIBCUDACXX_TEMPLATE(class Other)
-    (requires(IsProxy<std::decay_t<Other>> &&
+    _LIBCUDACXX_REQUIRES((IsProxy<std::decay_t<Other>> &&
               std::constructible_from<T, decltype(std::declval<Other>().getData())>))
   constexpr Proxy(Other&& other) : data{std::forward<Other>(other).getData()} {}
 
   _LIBCUDACXX_TEMPLATE(class Other)
-    (requires(IsProxy<std::decay_t<Other>> &&
+    _LIBCUDACXX_REQUIRES((IsProxy<std::decay_t<Other>> &&
               std::assignable_from<std::__add_lvalue_reference_t<T>, decltype(std::declval<Other>().getData())>))
   constexpr Proxy& operator=(Other&& other) {
     data = std::forward<Other>(other).getData();
@@ -1042,7 +1042,7 @@ TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, ad
 
   // const assignment required to make ProxyIterator model std::indirectly_writable
   _LIBCUDACXX_TEMPLATE(class Other)
-    (requires(IsProxy<std::decay_t<Other>> &&
+    _LIBCUDACXX_REQUIRES((IsProxy<std::decay_t<Other>> &&
               std::assignable_from<const std::__add_lvalue_reference_t<T>, decltype(std::declval<Other>().getData())>))
   constexpr const Proxy& operator=(Other&& other) const {
     data = std::forward<Other>(other).getData();
@@ -1070,7 +1070,7 @@ TEST_NV_DIAG_DEFAULT(1805)
   = default;
 #else
  _LIBCUDACXX_TEMPLATE(class T2 = T)
-    (requires(std::equality_comparable<T2> && !std::is_reference_v<T2>))
+    _LIBCUDACXX_REQUIRES((std::equality_comparable<T2> && !std::is_reference_v<T2>))
   friend constexpr bool operator==(const Proxy& lhs, const Proxy& rhs) {
     return lhs.data == rhs.data;
   }
@@ -1079,7 +1079,7 @@ TEST_NV_DIAG_DEFAULT(1805)
   // Helps compare e.g. `Proxy<int>` and `Proxy<int&>`. Note that the default equality comparison operator is deleted
   // when `T` is a reference type.
  _LIBCUDACXX_TEMPLATE(class U)
-    (requires(std::equality_comparable_with<std::decay_t<T>, std::decay_t<U>>))
+    _LIBCUDACXX_REQUIRES((std::equality_comparable_with<std::decay_t<T>, std::decay_t<U>>))
   friend constexpr bool operator==(const Proxy& lhs, const Proxy<U>& rhs) {
     return lhs.data == rhs.data;
   }
@@ -1159,7 +1159,7 @@ struct ProxyIterator : ProxyIteratorBase<Base> {
   constexpr ProxyIterator(Base base) : base_{std::move(base)} {}
 
   _LIBCUDACXX_TEMPLATE(class T)
-    (requires std::constructible_from<Base, T&&>)
+    _LIBCUDACXX_REQUIRES( std::constructible_from<Base, T&&>)
   constexpr ProxyIterator(T&& t) : base_{std::forward<T>(t)} {}
 
    friend constexpr decltype(auto) base(const ProxyIterator& p) { return base(p.base_); }
@@ -1183,14 +1183,14 @@ struct ProxyIterator : ProxyIteratorBase<Base> {
   constexpr void operator++(int) { ++*this; }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::equality_comparable<B2>)
+    _LIBCUDACXX_REQUIRES( std::equality_comparable<B2>)
   friend constexpr bool operator==(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ == y.base_;
   }
 
   // to satisfy forward_iterator
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::forward_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::forward_iterator<B2>)
   constexpr ProxyIterator operator++(int) {
     auto tmp = *this;
     ++*this;
@@ -1199,14 +1199,14 @@ struct ProxyIterator : ProxyIteratorBase<Base> {
 
   // to satisfy bidirectional_iterator
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::bidirectional_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::bidirectional_iterator<B2>)
   constexpr ProxyIterator& operator--() {
     --base_;
     return *this;
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::bidirectional_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::bidirectional_iterator<B2>)
   constexpr ProxyIterator operator--(int) {
     auto tmp = *this;
     --*this;
@@ -1215,77 +1215,77 @@ struct ProxyIterator : ProxyIteratorBase<Base> {
 
   // to satisfy random_access_iterator
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::random_access_iterator<B2>)
   constexpr ProxyIterator& operator+=(difference_type n) {
     base_ += n;
     return *this;
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::random_access_iterator<B2>)
   constexpr ProxyIterator& operator-=(difference_type n) {
     base_ -= n;
     return *this;
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::random_access_iterator<B2>)
   constexpr Proxy<std::iter_reference_t<Base>> operator[](difference_type n) const {
     return {base_[n]};
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::random_access_iterator<B2>)
   friend constexpr bool operator<(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ < y.base_;
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::random_access_iterator<B2>)
   friend constexpr bool operator>(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ > y.base_;
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::random_access_iterator<B2>)
   friend constexpr bool operator<=(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ <= y.base_;
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::random_access_iterator<B2>)
   friend constexpr bool operator>=(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ >= y.base_;
   }
 
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::random_access_iterator<B2> && std::three_way_comparable<B2>)
+    _LIBCUDACXX_REQUIRES( std::random_access_iterator<B2> && std::three_way_comparable<B2>)
   friend constexpr auto operator<=>(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ <=> y.base_;
   }
 #endif // TEST_HAS_NO_SPACESHIP_OPERATOR
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::random_access_iterator<B2>)
   friend constexpr ProxyIterator operator+(const ProxyIterator& x, difference_type n) {
     return ProxyIterator{x.base_ + n};
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::random_access_iterator<B2>)
   friend constexpr ProxyIterator operator+(difference_type n, const ProxyIterator& x) {
     return ProxyIterator{n + x.base_};
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::random_access_iterator<B2>)
   friend constexpr ProxyIterator operator-(const ProxyIterator& x, difference_type n) {
     return ProxyIterator{x.base_ - n};
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( std::random_access_iterator<B2>)
   friend constexpr difference_type operator-(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ - y.base_;
   }
@@ -1303,7 +1303,7 @@ struct ProxySentinel {
   constexpr ProxySentinel(BaseSent base) : base_{std::move(base)} {}
 
   _LIBCUDACXX_TEMPLATE(class Base)
-    (requires std::equality_comparable_with<Base, BaseSent>)
+    _LIBCUDACXX_REQUIRES( std::equality_comparable_with<Base, BaseSent>)
   friend constexpr bool operator==(const ProxyIterator<Base>& p, const ProxySentinel& sent) {
     return p.base_ == sent.base_;
   }

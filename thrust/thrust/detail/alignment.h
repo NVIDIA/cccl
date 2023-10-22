@@ -21,6 +21,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/type_traits.h> // For `integral_constant`.
 
 #include <cstddef> // For `std::size_t` and `std::max_align_t`.
@@ -32,10 +38,25 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
+/// \p THRUST_ALIGNOF is a macro that takes a single type-id as a parameter,
+/// and returns the alignment requirement of the type in bytes.
+///
+/// It is an approximation of C++11's `alignof` operator.
+///
+/// Note: MSVC does not allow the builtin used to implement this to be placed
+/// inside of a `__declspec(align(#))` attribute. As a workaround, you can
+/// assign the result of \p THRUST_ALIGNOF to a variable and pass the variable
+/// as the argument to `__declspec(align(#))`.
+#if THRUST_CPP_DIALECT >= 2011
+    #define THRUST_ALIGNOF(x) alignof(x)
+#else
+    #define THRUST_ALIGNOF(x) __alignof(x)
+#endif
+
 /// \p alignment_of provides the member constant `value` which is equal to the
 /// alignment requirement of the type `T`, as if obtained by a C++11 `alignof`
 /// expression.
-/// 
+///
 /// It is an implementation of C++11's \p std::alignment_of.
     template <typename T>
     using alignment_of = std::alignment_of<T>;
@@ -61,9 +82,9 @@ struct aligned_type;
     || (   (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                 \
         && (THRUST_GCC_VERSION < 40600))
     // C++03 implementation for MSVC and GCC <= 4.5.
-    // 
+    //
     // We have to implement `aligned_type` with specializations for MSVC
-    // and GCC 4.2.x and older because they require literals as arguments to 
+    // and GCC 4.2.x and older because they require literals as arguments to
     // their alignment attribute.
 
     #if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC)
@@ -85,7 +106,7 @@ struct aligned_type;
             };                                                                \
             /**/
     #endif
-    
+
     THRUST_DEFINE_ALIGNED_TYPE_SPECIALIZATION(1);
     THRUST_DEFINE_ALIGNED_TYPE_SPECIALIZATION(2);
     THRUST_DEFINE_ALIGNED_TYPE_SPECIALIZATION(4);

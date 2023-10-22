@@ -17,6 +17,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/detail/generic/extrema.h>
 
@@ -30,7 +36,7 @@ namespace detail
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator max_element(execution_policy<DerivedPolicy> &exec,
-                            ForwardIterator first, 
+                            ForwardIterator first,
                             ForwardIterator last,
                             BinaryPredicate comp)
 {
@@ -40,7 +46,7 @@ ForwardIterator max_element(execution_policy<DerivedPolicy> &exec,
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator min_element(execution_policy<DerivedPolicy> &exec,
-                            ForwardIterator first, 
+                            ForwardIterator first,
                             ForwardIterator last,
                             BinaryPredicate comp)
 {
@@ -50,7 +56,7 @@ ForwardIterator min_element(execution_policy<DerivedPolicy> &exec,
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 thrust::pair<ForwardIterator,ForwardIterator> minmax_element(execution_policy<DerivedPolicy> &exec,
-                                                             ForwardIterator first, 
+                                                             ForwardIterator first,
                                                              ForwardIterator last,
                                                              BinaryPredicate comp)
 {

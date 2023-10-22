@@ -71,7 +71,7 @@ struct Data {
   cuda::std::tuple<Ts...> tuple_;
 
   _LIBCUDACXX_TEMPLATE(class... Us)
-    (requires cuda::std::is_constructible<cuda::std::tuple<Ts...>, Us&&...>::value)
+    _LIBCUDACXX_REQUIRES( cuda::std::is_constructible<cuda::std::tuple<Ts...>, Us&&...>::value)
   __host__ __device__ constexpr Data(cuda::std::initializer_list<int> il, Us&&... us) : tuple_(cuda::std::forward<Us>(us)...) {
     auto ibegin = il.begin();
     for (cuda::std::size_t i = 0; ibegin != il.end(); ++ibegin, ++i) {

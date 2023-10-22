@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -33,9 +33,16 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "specializations/block_scan_raking.cuh"
 #include "specializations/block_scan_warp_scans.cuh"
-#include "../config.cuh"
 #include "../util_type.cuh"
 #include "../util_ptx.cuh"
 
@@ -735,7 +742,7 @@ public:
         T               input,                          ///< [in] Calling thread's input item
         T               &output,                        ///< [out] Calling thread's output item (may be aliased to \p input)
         T               initial_value,                  ///< [in] Initial value to seed the exclusive scan (and is assigned to \p output[0] in <em>thread</em><sub>0</sub>)
-        ScanOp          scan_op)                        ///< [in] Binary scan functor 
+        ScanOp          scan_op)                        ///< [in] Binary scan functor
     {
         InternalBlockScan(temp_storage).ExclusiveScan(input, output, initial_value, scan_op);
     }
@@ -785,7 +792,7 @@ public:
         T               input,              ///< [in] Calling thread's input items
         T               &output,            ///< [out] Calling thread's output items (may be aliased to \p input)
         T               initial_value,      ///< [in] Initial value to seed the exclusive scan (and is assigned to \p output[0] in <em>thread</em><sub>0</sub>)
-        ScanOp          scan_op,            ///< [in] Binary scan functor 
+        ScanOp          scan_op,            ///< [in] Binary scan functor
         T               &block_aggregate)   ///< [out] block-wide aggregate reduction of input items
     {
         InternalBlockScan(temp_storage).ExclusiveScan(input, output, initial_value, scan_op, block_aggregate);
@@ -873,7 +880,7 @@ public:
     __device__ __forceinline__ void ExclusiveScan(
         T                       input,                          ///< [in] Calling thread's input item
         T                       &output,                        ///< [out] Calling thread's output item (may be aliased to \p input)
-        ScanOp                  scan_op,                        ///< [in] Binary scan functor 
+        ScanOp                  scan_op,                        ///< [in] Binary scan functor
         BlockPrefixCallbackOp   &block_prefix_callback_op)      ///< [in-out] <b>[<em>warp</em><sub>0</sub> only]</b> Call-back functor for specifying a block-wide prefix to be applied to the logical input sequence.
     {
         InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op, block_prefix_callback_op);
@@ -1717,7 +1724,7 @@ public:
     __device__ __forceinline__ void InclusiveScan(
         T               input,                          ///< [in] Calling thread's input item
         T               &output,                        ///< [out] Calling thread's output item (may be aliased to \p input)
-        ScanOp          scan_op)                        ///< [in] Binary scan functor 
+        ScanOp          scan_op)                        ///< [in] Binary scan functor
     {
         InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op);
     }
@@ -1766,7 +1773,7 @@ public:
     __device__ __forceinline__ void InclusiveScan(
         T               input,                          ///< [in] Calling thread's input item
         T               &output,                        ///< [out] Calling thread's output item (may be aliased to \p input)
-        ScanOp          scan_op,                        ///< [in] Binary scan functor 
+        ScanOp          scan_op,                        ///< [in] Binary scan functor
         T               &block_aggregate)               ///< [out] block-wide aggregate reduction of input items
     {
         InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op, block_aggregate);
@@ -1854,7 +1861,7 @@ public:
     __device__ __forceinline__ void InclusiveScan(
         T                       input,                          ///< [in] Calling thread's input item
         T                       &output,                        ///< [out] Calling thread's output item (may be aliased to \p input)
-        ScanOp                  scan_op,                        ///< [in] Binary scan functor 
+        ScanOp                  scan_op,                        ///< [in] Binary scan functor
         BlockPrefixCallbackOp   &block_prefix_callback_op)      ///< [in-out] <b>[<em>warp</em><sub>0</sub> only]</b> Call-back functor for specifying a block-wide prefix to be applied to the logical input sequence.
     {
         InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op, block_prefix_callback_op);
@@ -1914,7 +1921,7 @@ public:
     __device__ __forceinline__ void InclusiveScan(
         T               (&input)[ITEMS_PER_THREAD],     ///< [in] Calling thread's input items
         T               (&output)[ITEMS_PER_THREAD],    ///< [out] Calling thread's output items (may be aliased to \p input)
-        ScanOp          scan_op)                        ///< [in] Binary scan functor 
+        ScanOp          scan_op)                        ///< [in] Binary scan functor
     {
         if (ITEMS_PER_THREAD == 1)
         {
@@ -1984,7 +1991,7 @@ public:
     __device__ __forceinline__ void InclusiveScan(
         T               (&input)[ITEMS_PER_THREAD],     ///< [in] Calling thread's input items
         T               (&output)[ITEMS_PER_THREAD],    ///< [out] Calling thread's output items (may be aliased to \p input)
-        ScanOp          scan_op,                        ///< [in] Binary scan functor 
+        ScanOp          scan_op,                        ///< [in] Binary scan functor
         T               &block_aggregate)               ///< [out] block-wide aggregate reduction of input items
     {
         if (ITEMS_PER_THREAD == 1)
@@ -2098,7 +2105,7 @@ public:
     __device__ __forceinline__ void InclusiveScan(
         T                       (&input)[ITEMS_PER_THREAD],     ///< [in] Calling thread's input items
         T                       (&output)[ITEMS_PER_THREAD],    ///< [out] Calling thread's output items (may be aliased to \p input)
-        ScanOp                  scan_op,                        ///< [in] Binary scan functor 
+        ScanOp                  scan_op,                        ///< [in] Binary scan functor
         BlockPrefixCallbackOp   &block_prefix_callback_op)      ///< [in-out] <b>[<em>warp</em><sub>0</sub> only]</b> Call-back functor for specifying a block-wide prefix to be applied to the logical input sequence.
     {
         if (ITEMS_PER_THREAD == 1)

@@ -22,7 +22,7 @@
  * (C) Copyright Toon Knapen    2001.
  * (C) Copyright David Abrahams 2003.
  * (C) Copyright Roland Richter 2003.
- * 
+ *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying NOTICE file for the complete license)
  *
@@ -32,6 +32,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/permutation_iterator_base.h>
 #include <thrust/iterator/iterator_facade.h>
@@ -135,9 +141,7 @@ template <typename ElementIterator,
     /*! Null constructor calls the null constructor of this \p permutation_iterator's
      *  element iterator.
      */
-    __host__ __device__
-    permutation_iterator()
-      : m_element_iterator() {}
+    permutation_iterator() = default;
 
     /*! Constructor accepts an \c ElementIterator into a range of values and an
      *  \c IndexIterator into a range of indices defining the indexing scheme on the

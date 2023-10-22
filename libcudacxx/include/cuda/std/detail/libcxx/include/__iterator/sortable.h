@@ -21,9 +21,11 @@
 #include "../__iterator/permutable.h"
 #include "../__iterator/projected.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -39,9 +41,10 @@ concept sortable =
 template <class _Iter, class _Comp, class _Proj>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __sortable_,
-  requires() //
-  (requires(permutable<_Iter>),
-   requires(indirect_strict_weak_order<_Comp, projected<_Iter, _Proj>>)));
+  requires()( //
+    requires(permutable<_Iter>),
+    requires(indirect_strict_weak_order<_Comp, projected<_Iter, _Proj>>)
+  ));
 
 template <class _Iter, class _Comp = _CUDA_VRANGES::less, class _Proj = identity>
 _LIBCUDACXX_CONCEPT sortable = _LIBCUDACXX_FRAGMENT(__sortable_, _Iter, _Comp, _Proj);

@@ -22,6 +22,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <iostream>
 #include <thrust/detail/cstdint.h>
 #include <thrust/random/detail/random_core_access.h>
@@ -113,7 +119,7 @@ template<typename UIntType, UIntType a, UIntType c, UIntType m>
 {
   public:
     // types
-    
+
     /*! \typedef result_type
      *  \brief The type of the unsigned integer produced by this \p linear_congruential_engine.
      */
@@ -149,7 +155,7 @@ template<typename UIntType, UIntType a, UIntType c, UIntType m>
 
     /*! This constructor, which optionally accepts a seed, initializes a new
      *  \p linear_congruential_engine.
-     *  
+     *
      *  \param s The seed used to intialize this \p linear_congruential_engine's state.
      */
     __host__ __device__
@@ -280,7 +286,7 @@ typedef linear_congruential_engine<thrust::detail::uint32_t, 48271, 0, 214748364
 
 /*! \} // predefined_random
  */
-  
+
 } // end random
 
 // import names into thrust::

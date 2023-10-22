@@ -18,6 +18,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -30,8 +36,8 @@ namespace generic
 
 
 template<typename ExecutionPolicy,
-         typename InputIterator, 
-         typename UnaryFunction, 
+         typename InputIterator,
+         typename UnaryFunction,
          typename OutputType,
          typename BinaryFunction>
 __host__ __device__

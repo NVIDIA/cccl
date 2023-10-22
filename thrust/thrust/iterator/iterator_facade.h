@@ -22,7 +22,7 @@
  * (C) Copyright David Abrahams 2002.
  * (C) Copyright Jeremy Siek    2002.
  * (C) Copyright Thomas Witt    2002.
- * 
+ *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying NOTICE file for the complete license)
  *
@@ -33,6 +33,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/iterator_facade_category.h>
 #include <thrust/iterator/detail/distance_from_result.h>
@@ -189,7 +195,7 @@ class iterator_core_access
     {
       return f2.distance_to(f1);
     }
-    
+
     template <class Facade1, class Facade2>
     __host__ __device__
     static typename thrust::detail::distance_from_result<Facade1,Facade2>::type
