@@ -229,7 +229,6 @@ public:
 
     stateless_resource_allocator & operator=(const stateless_resource_allocator &) = default;
 
-
     /*! Destructor. */
     __host__ __device__
     ~stateless_resource_allocator() {}
