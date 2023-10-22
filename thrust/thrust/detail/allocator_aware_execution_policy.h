@@ -27,7 +27,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/detail/alignment.h>
 
 #include <type_traits>
-
+#include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
