@@ -28,9 +28,20 @@ they can be enabled using the ``_LIBCUDACXX_DEBUG`` macro.
   which provides additional assertions about the validity of iterators used by
   the program.
 
+<<<<<<< HEAD
+  Note that this option has no effect on libc++'s ABI
+
+**_LIBCUDACXX_DEBUG_USE_EXCEPTIONS**:
+  When this macro is defined ``_LIBCUDACXX_ASSERT`` failures throw
+  ``__libcpp_debug_exception`` instead of aborting. Additionally this macro
+  disables exception specifications on functions containing ``_LIBCUDACXX_ASSERT``
+  checks. This allows assertion failures to correctly throw through these
+  functions.
+=======
   Note that this option has no effect on libc++'s ABI; but it does have broad
   ODR implications. Users should compile their whole program at the same
   debugging level.
+>>>>>>> 48a15a7b3a9f02fd60fceb28adcdf7aea7a1b1da
 
 Handling Assertion Failures
 ---------------------------
