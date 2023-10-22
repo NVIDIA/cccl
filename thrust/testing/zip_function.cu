@@ -1,6 +1,6 @@
 #include <thrust/detail/config.h>
 
-// remove?
+
 #if !defined(THRUST_LEGACY_GCC)
 
 #include <unittest/unittest.h>

@@ -5,7 +5,6 @@
 
 #include <thrust/detail/config.h>
 
-// possibly remove this too 
 #if !defined(THRUST_LEGACY_GCC) 
 #include <thrust/zip_function.h>
 #endif // >= C++11
@@ -53,7 +52,7 @@ struct arbitrary_functor1
     }
 };
 
-// remove?
+
 #if !defined(THRUST_LEGACY_GCC)
 struct arbitrary_functor2
 {
@@ -91,7 +90,7 @@ int main(void)
     for(int i = 0; i < 5; i++)
         std::cout << A[i] << " + " << B[i] << " * " << C[i] << " = " << D1[i] << std::endl;
 
-// remove?
+
     // apply the transformation using zip_function
 #if !defined(THRUST_LEGACY_GCC)
     thrust::device_vector<float> D2(5);
