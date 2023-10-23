@@ -151,7 +151,6 @@ jobs:
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
   ci:
-    runs-on: ubuntu-latest
     name: CI
     needs:
       - clang-cuda
@@ -161,5 +160,5 @@ jobs:
       - thrust
       - cccl-infra
       - verify-devcontainers
-    steps:
-      - run: echo "CI success"
+     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-23.12
+
