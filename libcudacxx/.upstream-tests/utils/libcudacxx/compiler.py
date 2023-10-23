@@ -210,7 +210,7 @@ class CXXCompiler(object):
 
     def _basicCmd(self, source_files, out, mode=CM_Default, flags=[],
                   input_is_cxx=False):
-        if self.path.startswith('cl'):
+        if self.path.startswith('cl') and not self.path.startswith('clang'):
             return self._basicCmdCl(source_files, out, mode, flags)
 
         cmd = []
