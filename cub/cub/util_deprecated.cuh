@@ -32,12 +32,16 @@
 
 #pragma once
 
+#include "config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #include <cub/detail/type_traits.cuh>
-#include <cub/util_compiler.cuh>
-#include <cub/util_cpp_dialect.cuh>
 #include <cub/util_debug.cuh>
-
 
 #if defined(THRUST_IGNORE_DEPRECATED_API) && !defined(CUB_IGNORE_DEPRECATED_API)
 #  define CUB_IGNORE_DEPRECATED_API

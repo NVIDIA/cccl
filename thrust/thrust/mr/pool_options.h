@@ -14,18 +14,24 @@
  *  limitations under the License.
  */
 
-/*! \file 
+/*! \file
  *  \brief A type used by the pooling resource adaptors to fine-tune their
  *  behavior.
  */
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cstddef>
 
 #include <thrust/detail/integer_math.h>
-
-#include <thrust/detail/config.h>
 #include <thrust/detail/config/memory_resource.h>
 
 THRUST_NAMESPACE_BEGIN

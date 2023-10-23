@@ -71,9 +71,8 @@ static void even(nvbench::state &state, nvbench::type_list<SampleT, CounterT, Of
   const SampleT lower_level = 0;
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
-  thrust::device_vector<SampleT> input(elements);
+  thrust::device_vector<SampleT> input = generate(elements, entropy, lower_level, upper_level);
   thrust::device_vector<CounterT> hist(num_bins);
-  gen(seed_t{}, input, entropy, lower_level, upper_level);
 
   SampleT *d_input      = thrust::raw_pointer_cast(input.data());
   CounterT *d_histogram = thrust::raw_pointer_cast(hist.data());

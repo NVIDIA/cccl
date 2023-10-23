@@ -43,7 +43,7 @@ __host__ __device__ constexpr bool models_totally_ordered() noexcept {
 #else
 
 _LIBCUDACXX_TEMPLATE(class T)
-  (requires cuda::std::totally_ordered<T>)
+  _LIBCUDACXX_REQUIRES( cuda::std::totally_ordered<T>)
 __host__ __device__ constexpr bool models_totally_ordered() noexcept {
   return true;
 }

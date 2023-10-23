@@ -17,10 +17,16 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <new>
 #include <string>
-
-#include <thrust/detail/config.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -51,7 +57,7 @@ class bad_alloc
   private:
     std::string m_what;
 }; // end bad_alloc
-  
+
 } // end detail
 } // end system
 THRUST_NAMESPACE_END

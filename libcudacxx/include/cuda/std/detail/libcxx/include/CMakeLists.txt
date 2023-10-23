@@ -6,6 +6,7 @@ set(files
   __bsd_locale_defaults.h
   __bsd_locale_fallbacks.h
   __errc
+  __cccl_config
   __concepts/__concept_macros.h
   __concepts/_One_of.h
   __concepts/arithmetic.h
@@ -82,6 +83,7 @@ set(files
   __iterator/access.h
   __iterator/advance.h
   __iterator/back_insert_iterator.h
+  __iterator/bounded_iterator.h
   __iterator/concepts.h
   __iterator/data.h
   __iterator/default_sentinel.h
@@ -100,6 +102,7 @@ set(files
   __iterator/iterator_traits.h
   __iterator/mergeable.h
   __iterator/move_iterator.h
+  __iterator/move_sentinel.h
   __iterator/next.h
   __iterator/ostream_iterator.h
   __iterator/ostreambuf_iterator.h
@@ -111,6 +114,7 @@ set(files
   __iterator/reverse_iterator.h
   __iterator/size.h
   __iterator/sortable.h
+  __iterator/unreachable_sentinel.h
   __iterator/wrap_iter.h
   __libcpp_version
   __locale

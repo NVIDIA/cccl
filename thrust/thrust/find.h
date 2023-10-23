@@ -22,6 +22,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -35,7 +41,7 @@ THRUST_NAMESPACE_BEGIN
  */
 
 
-/*! \p find returns the first iterator \c i in the range 
+/*! \p find returns the first iterator \c i in the range
  *  <tt>[first, last)</tt> such that <tt>*i == value</tt>
  *  or \c last if no such iterator exists.
  *
@@ -50,7 +56,7 @@ THRUST_NAMESPACE_BEGIN
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
  *          and \p InputIterator's \c value_type is equality comparable to type \c T.
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">EqualityComparable</a>. 
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">EqualityComparable</a>.
  *
  *  \code
  *  #include <thrust/find.h>
@@ -82,7 +88,7 @@ InputIterator find(const thrust::detail::execution_policy_base<DerivedPolicy> &e
                    const T& value);
 
 
-/*! \p find returns the first iterator \c i in the range 
+/*! \p find returns the first iterator \c i in the range
  *  <tt>[first, last)</tt> such that <tt>*i == value</tt>
  *  or \c last if no such iterator exists.
  *
@@ -93,7 +99,7 @@ InputIterator find(const thrust::detail::execution_policy_base<DerivedPolicy> &e
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
  *          and \p InputIterator's \c value_type is equality comparable to type \c T.
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">EqualityComparable</a>. 
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">EqualityComparable</a>.
  *
  *  \code
  *  #include <thrust/find.h>
@@ -122,7 +128,7 @@ InputIterator find(InputIterator first,
                    const T& value);
 
 
-/*! \p find_if returns the first iterator \c i in the range 
+/*! \p find_if returns the first iterator \c i in the range
  *  <tt>[first, last)</tt> such that <tt>pred(*i)</tt> is \c true
  *  or \c last if no such iterator exists.
  *
@@ -189,7 +195,7 @@ InputIterator find_if(const thrust::detail::execution_policy_base<DerivedPolicy>
                       Predicate pred);
 
 
-/*! \p find_if returns the first iterator \c i in the range 
+/*! \p find_if returns the first iterator \c i in the range
  *  <tt>[first, last)</tt> such that <tt>pred(*i)</tt> is \c true
  *  or \c last if no such iterator exists.
  *
@@ -248,7 +254,7 @@ InputIterator find_if(InputIterator first,
                       Predicate pred);
 
 
-/*! \p find_if_not returns the first iterator \c i in the range 
+/*! \p find_if_not returns the first iterator \c i in the range
  *  <tt>[first, last)</tt> such that <tt>pred(*i)</tt> is \c false
  *  or \c last if no such iterator exists.
  *
@@ -315,7 +321,7 @@ InputIterator find_if_not(const thrust::detail::execution_policy_base<DerivedPol
                           Predicate pred);
 
 
-/*! \p find_if_not returns the first iterator \c i in the range 
+/*! \p find_if_not returns the first iterator \c i in the range
  *  <tt>[first, last)</tt> such that <tt>pred(*i)</tt> is \c false
  *  or \c last if no such iterator exists.
  *

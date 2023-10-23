@@ -112,7 +112,7 @@ static void rle(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<offset_t> out_vals(elements);
   thrust::device_vector<T> out_keys(elements);
   thrust::device_vector<T> in_keys =
-    gen_uniform_key_segments<T>(seed_t{}, elements, min_segment_size, max_segment_size);
+    generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
   T *d_in_keys             = thrust::raw_pointer_cast(in_keys.data());
   T *d_out_keys            = thrust::raw_pointer_cast(out_keys.data());

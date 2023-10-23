@@ -78,9 +78,8 @@ void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 #endif // TUNE_BASE
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  thrust::device_vector<T> in(elements);
+  thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(elements);
-  gen(seed_t{}, in);
 
   input_it_t d_in   = thrust::raw_pointer_cast(in.data());
   output_it_t d_out = thrust::raw_pointer_cast(out.data());

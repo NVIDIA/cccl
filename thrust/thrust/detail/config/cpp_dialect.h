@@ -20,6 +20,14 @@
 
 #pragma once
 
+#include <thrust/detail/config/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <thrust/detail/config/compiler.h>
 
 // Deprecation warnings may be silenced by defining the following macros. These
@@ -98,7 +106,7 @@
 #endif
 
 #define THRUST_COMPILER_DEPRECATION(REQ) \
-  THRUST_COMP_DEPR_IMPL(Thrust requires at least REQ. Define THRUST_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.)
+  THRUST_COMP_DEPR_IMPL(Thrust requires at least REQ. Define THRUST_IGNORE_DEPRECATED_COMPILER to suppress this message.)
 
 #define THRUST_COMPILER_DEPRECATION_SOFT(REQ, CUR) \
   THRUST_COMP_DEPR_IMPL(Thrust requires at least REQ. CUR is deprecated but still supported. CUR support will be removed in a future release. Define THRUST_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.)

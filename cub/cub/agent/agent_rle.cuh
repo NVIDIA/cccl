@@ -33,6 +33,14 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <iterator>
 
 #include "single_pass_scan_operators.cuh"
@@ -41,7 +49,6 @@
 #include "../block/block_scan.cuh"
 #include "../block/block_exchange.cuh"
 #include "../block/block_discontinuity.cuh"
-#include "../config.cuh"
 #include "../grid/grid_queue.cuh"
 #include "../iterator/cache_modified_input_iterator.cuh"
 #include "../iterator/constant_input_iterator.cuh"
@@ -56,28 +63,28 @@ CUB_NAMESPACE_BEGIN
 /**
  * Parameterizable tuning policy type for AgentRle
  *
- * @tparam _BLOCK_THREADS 
+ * @tparam _BLOCK_THREADS
  *   Threads per thread block
  *
- * @tparam _ITEMS_PER_THREAD 
+ * @tparam _ITEMS_PER_THREAD
  *   Items per thread (per tile of input)
  *
- * @tparam _LOAD_ALGORITHM 
+ * @tparam _LOAD_ALGORITHM
  *   The BlockLoad algorithm to use
  *
- * @tparam _LOAD_MODIFIER 
+ * @tparam _LOAD_MODIFIER
  *   Cache load modifier for reading input elements
  *
- * @tparam _STORE_WARP_TIME_SLICING 
- *   Whether or not only one warp's worth of shared memory should be allocated and time-sliced among 
- *   block-warps during any store-related data transpositions 
+ * @tparam _STORE_WARP_TIME_SLICING
+ *   Whether or not only one warp's worth of shared memory should be allocated and time-sliced among
+ *   block-warps during any store-related data transpositions
  *   (versus each warp having its own storage)
  *
- * @tparam _SCAN_ALGORITHM 
+ * @tparam _SCAN_ALGORITHM
  *   The BlockScan algorithm to use
  *
- * @tparam DelayConstructorT 
- *   Implementation detail, do not specify directly, requirements on the 
+ * @tparam DelayConstructorT
+ *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
 template <int _BLOCK_THREADS,
@@ -89,41 +96,66 @@ template <int _BLOCK_THREADS,
           typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentRlePolicy
 {
-    enum
-    {
-        BLOCK_THREADS           = _BLOCK_THREADS,               ///< Threads per thread block
-        ITEMS_PER_THREAD        = _ITEMS_PER_THREAD,            ///< Items per thread (per tile of input)
-        STORE_WARP_TIME_SLICING = _STORE_WARP_TIME_SLICING,     ///< Whether or not only one warp's worth of shared memory should be allocated and time-sliced among block-warps during any store-related data transpositions (versus each warp having its own storage)
-    };
+  enum
+  {
+    /// Threads per thread block
+    BLOCK_THREADS = _BLOCK_THREADS,
 
-    static constexpr BlockLoadAlgorithm     LOAD_ALGORITHM          = _LOAD_ALGORITHM;      ///< The BlockLoad algorithm to use
-    static constexpr CacheLoadModifier      LOAD_MODIFIER           = _LOAD_MODIFIER;       ///< Cache load modifier for reading input elements
-    static constexpr BlockScanAlgorithm     SCAN_ALGORITHM          = _SCAN_ALGORITHM;      ///< The BlockScan algorithm to use
+    /// Items per thread (per tile of input)
+    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
 
-    struct detail 
-    {
-        using delay_constructor_t = DelayConstructorT;
-    };
+    /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced
+    /// among block-warps during any store-related data transpositions (versus each warp having its
+    /// own storage)
+    STORE_WARP_TIME_SLICING = _STORE_WARP_TIME_SLICING,
+  };
+
+  /// The BlockLoad algorithm to use
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+
+  /// Cache load modifier for reading input elements
+  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+
+  /// The BlockScan algorithm to use
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+
+  struct detail
+  {
+    using delay_constructor_t = DelayConstructorT;
+  };
 };
-
-
-
-
 
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
 
 /**
- * \brief AgentRle implements a stateful abstraction of CUDA thread blocks for participating in device-wide run-length-encode 
+ * @brief AgentRle implements a stateful abstraction of CUDA thread blocks for participating in device-wide run-length-encode 
+ *
+ * @tparam AgentRlePolicyT
+ *   Parameterized AgentRlePolicyT tuning policy type
+ *
+ * @tparam InputIteratorT
+ *   Random-access input iterator type for data
+ *
+ * @tparam OffsetsOutputIteratorT
+ *   Random-access output iterator type for offset values
+ *
+ * @tparam LengthsOutputIteratorT
+ *   Random-access output iterator type for length values
+ *
+ * @tparam EqualityOpT
+ *   T equality operator type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
  */
-template <
-    typename    AgentRlePolicyT,        ///< Parameterized AgentRlePolicyT tuning policy type
-    typename    InputIteratorT,         ///< Random-access input iterator type for data
-    typename    OffsetsOutputIteratorT, ///< Random-access output iterator type for offset values
-    typename    LengthsOutputIteratorT, ///< Random-access output iterator type for length values
-    typename    EqualityOpT,            ///< T equality operator type
-    typename    OffsetT>                ///< Signed integer type for global offsets
+template <typename AgentRlePolicyT,
+          typename InputIteratorT,
+          typename OffsetsOutputIteratorT,
+          typename LengthsOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT>
 struct AgentRle
 {
     //---------------------------------------------------------------------
@@ -146,21 +178,22 @@ struct AgentRle
     // Constants
     enum
     {
-        WARP_THREADS            = CUB_WARP_THREADS(0),
-        BLOCK_THREADS           = AgentRlePolicyT::BLOCK_THREADS,
-        ITEMS_PER_THREAD        = AgentRlePolicyT::ITEMS_PER_THREAD,
-        WARP_ITEMS              = WARP_THREADS * ITEMS_PER_THREAD,
-        TILE_ITEMS              = BLOCK_THREADS * ITEMS_PER_THREAD,
-        WARPS                   = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
+      WARP_THREADS     = CUB_WARP_THREADS(0),
+      BLOCK_THREADS    = AgentRlePolicyT::BLOCK_THREADS,
+      ITEMS_PER_THREAD = AgentRlePolicyT::ITEMS_PER_THREAD,
+      WARP_ITEMS       = WARP_THREADS * ITEMS_PER_THREAD,
+      TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
+      WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
 
-        /// Whether or not to sync after loading data
-        SYNC_AFTER_LOAD         = (AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_DIRECT),
+      /// Whether or not to sync after loading data
+      SYNC_AFTER_LOAD = (AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_DIRECT),
 
-        /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced among block-warps during any store-related data transpositions (versus each warp having its own storage)
-        STORE_WARP_TIME_SLICING = AgentRlePolicyT::STORE_WARP_TIME_SLICING,
-        ACTIVE_EXCHANGE_WARPS   = (STORE_WARP_TIME_SLICING) ? 1 : WARPS,
+      /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced
+      /// among block-warps during any store-related data transpositions (versus each warp having
+      /// its own storage)
+      STORE_WARP_TIME_SLICING = AgentRlePolicyT::STORE_WARP_TIME_SLICING,
+      ACTIVE_EXCHANGE_WARPS   = (STORE_WARP_TIME_SLICING) ? 1 : WARPS,
     };
-
 
     /**
      * Special operator that signals all out-of-bounds items are not equal to everything else,
@@ -241,10 +274,17 @@ struct AgentRle
         {
             struct ScanStorage
             {
-                typename BlockDiscontinuityT::TempStorage       discontinuity;              // Smem needed for discontinuity detection
-                typename WarpScanPairs::TempStorage             warp_scan[WARPS];           // Smem needed for warp-synchronous scans
-                Uninitialized<LengthOffsetPair[WARPS]>          warp_aggregates;            // Smem needed for sharing warp-wide aggregates
-                typename TilePrefixCallbackOpT::TempStorage     prefix;                     // Smem needed for cooperative prefix callback
+                // Smem needed for discontinuity detection
+                typename BlockDiscontinuityT::TempStorage discontinuity;
+
+                // Smem needed for warp-synchronous scans
+                typename WarpScanPairs::TempStorage warp_scan[WARPS];
+
+                // Smem needed for sharing warp-wide aggregates
+                Uninitialized<LengthOffsetPair[WARPS]> warp_aggregates;
+
+                // Smem needed for cooperative prefix callback
+                typename TilePrefixCallbackOpT::TempStorage prefix;
             } scan_storage;
 
             // Smem needed for input loading
@@ -261,9 +301,9 @@ struct AgentRle
 
         } aliasable;
 
-        OffsetT             tile_idx;                   // Shared tile index
-        LengthOffsetPair    tile_inclusive;             // Inclusive tile prefix
-        LengthOffsetPair    tile_exclusive;             // Exclusive tile prefix
+        OffsetT tile_idx;                // Shared tile index
+        LengthOffsetPair tile_inclusive; // Inclusive tile prefix
+        LengthOffsetPair tile_exclusive; // Exclusive tile prefix
     };
 
     // Alias wrapper allowing storage to be unioned
@@ -274,40 +314,53 @@ struct AgentRle
     // Per-thread fields
     //---------------------------------------------------------------------
 
-    _TempStorage&                   temp_storage;       ///< Reference to temp_storage
+    _TempStorage &temp_storage; ///< Reference to temp_storage
 
-    WrappedInputIteratorT           d_in;               ///< Pointer to input sequence of data items
-    OffsetsOutputIteratorT          d_offsets_out;      ///< Input run offsets
-    LengthsOutputIteratorT          d_lengths_out;      ///< Output run lengths
+    WrappedInputIteratorT d_in;           ///< Pointer to input sequence of data items
+    OffsetsOutputIteratorT d_offsets_out; ///< Input run offsets
+    LengthsOutputIteratorT d_lengths_out; ///< Output run lengths
 
-    EqualityOpT                     equality_op;        ///< T equality operator
-    ReduceBySegmentOpT              scan_op;            ///< Reduce-length-by-flag scan operator
-    OffsetT                         num_items;          ///< Total number of input items
-
+    EqualityOpT equality_op;    ///< T equality operator
+    ReduceBySegmentOpT scan_op; ///< Reduce-length-by-flag scan operator
+    OffsetT num_items;          ///< Total number of input items
 
     //---------------------------------------------------------------------
     // Constructor
     //---------------------------------------------------------------------
 
-    // Constructor
-    __device__ __forceinline__
-    AgentRle(
-        TempStorage                 &temp_storage,      ///< [in] Reference to temp_storage
-        InputIteratorT              d_in,               ///< [in] Pointer to input sequence of data items
-        OffsetsOutputIteratorT      d_offsets_out,      ///< [out] Pointer to output sequence of run offsets
-        LengthsOutputIteratorT      d_lengths_out,      ///< [out] Pointer to output sequence of run lengths
-        EqualityOpT                 equality_op,        ///< [in] T equality operator
-        OffsetT                     num_items)          ///< [in] Total number of input items
-    :
-        temp_storage(temp_storage.Alias()),
-        d_in(d_in),
-        d_offsets_out(d_offsets_out),
-        d_lengths_out(d_lengths_out),
-        equality_op(equality_op),
-        scan_op(cub::Sum()),
-        num_items(num_items)
+    /**
+     * @param[in] temp_storage 
+     *   Reference to temp_storage
+     *
+     * @param[in] d_in 
+     *   Pointer to input sequence of data items
+     *
+     * @param[out] d_offsets_out 
+     *   Pointer to output sequence of run offsets
+     *
+     * @param[out] d_lengths_out 
+     *   Pointer to output sequence of run lengths
+     *
+     * @param[in] equality_op 
+     *   Equality operator
+     *
+     * @param[in] num_items 
+     *   Total number of input items
+     */
+    __device__ __forceinline__ AgentRle(TempStorage &temp_storage,
+                                        InputIteratorT d_in,
+                                        OffsetsOutputIteratorT d_offsets_out,
+                                        LengthsOutputIteratorT d_lengths_out,
+                                        EqualityOpT equality_op,
+                                        OffsetT num_items)
+        : temp_storage(temp_storage.Alias())
+        , d_in(d_in)
+        , d_offsets_out(d_offsets_out)
+        , d_lengths_out(d_lengths_out)
+        , equality_op(equality_op)
+        , scan_op(cub::Sum())
+        , num_items(num_items)
     {}
-
 
     //---------------------------------------------------------------------
     // Utility methods for initializing the selections
@@ -413,12 +466,12 @@ struct AgentRle
 
         // `thread_exclusive_in_warp.key`:
         //      number of non-trivial runs starts in previous threads
-        // `thread_exclusive_in_warp.val`: 
+        // `thread_exclusive_in_warp.val`:
         //      number of items in the last non-trivial run in previous threads
 
         // `thread_aggregate.key`:
         //      number of non-trivial runs starts in this thread
-        // `thread_aggregate.val`: 
+        // `thread_aggregate.val`:
         //      number of items in the last non-trivial run in this thread
         LengthOffsetPair thread_aggregate = internal::ThreadReduce(lengths_and_num_runs, scan_op);
         WarpScanPairs(temp_storage.aliasable.scan_storage.warp_scan[warp_id]).Scan(
@@ -430,7 +483,7 @@ struct AgentRle
 
         // `thread_inclusive.key`:
         //      number of non-trivial runs starts in this and previous warp threads
-        // `thread_inclusive.val`: 
+        // `thread_inclusive.val`:
         //      number of items in the last non-trivial run in this or previous warp threads
 
         // Last lane in each warp shares its warp-aggregate
@@ -676,16 +729,29 @@ struct AgentRle
     //---------------------------------------------------------------------
 
     /**
-     * Process a tile of input (dynamic chained scan)
+     * @brief Process a tile of input (dynamic chained scan)
+     *
+     * @param num_items 
+     *   Total number of global input items
+     *
+     * @param num_remaining 
+     *   Number of global input items remaining (including this tile)
+     *
+     * @param tile_idx 
+     *   Tile index
+     *
+     * @param tile_offset 
+     *   Tile offset
+     *
+     * @param &tile_status 
+     *   Global list of tile status
      */
-    template <
-        bool                LAST_TILE>
-    __device__ __forceinline__ LengthOffsetPair ConsumeTile(
-        OffsetT             num_items,          ///< Total number of global input items
-        OffsetT             num_remaining,      ///< Number of global input items remaining (including this tile)
-        int                 tile_idx,           ///< Tile index
-        OffsetT             tile_offset,        ///< Tile offset
-        ScanTileStateT      &tile_status)       ///< Global list of tile status
+    template <bool LAST_TILE>
+    __device__ __forceinline__ LengthOffsetPair ConsumeTile(OffsetT num_items,
+                                                            OffsetT num_remaining,
+                                                            int tile_idx,
+                                                            OffsetT tile_offset,
+                                                            ScanTileStateT &tile_status)
     {
         if (tile_idx == 0)
         {
@@ -733,7 +799,7 @@ struct AgentRle
             if (thread_exclusive_in_warp.key == 0)
             {
                 // If there are no non-trivial runs starts in the previous warp threads, then
-                // `thread_exclusive_in_warp.val` denotes the number of items in the last 
+                // `thread_exclusive_in_warp.val` denotes the number of items in the last
                 // non-trivial run of the previous CTA threads, so the better name for it is
                 // `thread_exclusive_in_tile`.
                 thread_exclusive_in_warp.value += warp_exclusive_in_tile.value;
@@ -830,7 +896,7 @@ struct AgentRle
             if (thread_exclusive_in_warp.key == 0)
             {
                 // If there are no non-trivial runs starts in the previous warp threads, then
-                // `thread_exclusive_in_warp.val` denotes the number of items in the last 
+                // `thread_exclusive_in_warp.val` denotes the number of items in the last
                 // non-trivial run of the previous grid threads, so the better name for it is
                 // `thread_exclusive_in_grid`.
                 thread_exclusive_in_warp.value += thread_exclusive.value;
@@ -885,13 +951,24 @@ struct AgentRle
 
 
     /**
-     * Scan tiles of items as part of a dynamic chained scan
+     * @brief Scan tiles of items as part of a dynamic chained scan
+     *
+     * @param num_tiles 
+     *   Total number of input tiles
+     *
+     * @param tile_status 
+     *   Global list of tile status
+     *
+     * @param d_num_runs_out 
+     *   Output pointer for total number of runs identified
+     *
+     * @tparam NumRunsIteratorT
+     *   Output iterator type for recording number of items selected
      */
-    template <typename NumRunsIteratorT>            ///< Output iterator type for recording number of items selected
-    __device__ __forceinline__ void ConsumeRange(
-        int                 num_tiles,              ///< Total number of input tiles
-        ScanTileStateT&     tile_status,            ///< Global list of tile status
-        NumRunsIteratorT    d_num_runs_out)         ///< Output pointer for total number of runs identified
+    template <typename NumRunsIteratorT>
+    __device__ __forceinline__ void ConsumeRange(int num_tiles,
+                                                 ScanTileStateT &tile_status,
+                                                 NumRunsIteratorT d_num_runs_out)
     {
         // Blocks are launched in increasing order, so just assign one tile per block
         int     tile_idx        = (blockIdx.x * gridDim.y) + blockIdx.y;    // Current tile index

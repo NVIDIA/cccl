@@ -23,6 +23,12 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <thrust/advance.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
@@ -91,7 +97,7 @@ __host__ __device__
 ForwardIterator upper_bound(sequential::execution_policy<DerivedPolicy> &,
                             ForwardIterator first,
                             ForwardIterator last,
-                            const T& val, 
+                            const T& val,
                             StrictWeakOrdering comp)
 {
   // wrap comp
@@ -136,7 +142,7 @@ __host__ __device__
 bool binary_search(sequential::execution_policy<DerivedPolicy> &exec,
                    ForwardIterator first,
                    ForwardIterator last,
-                   const T& val, 
+                   const T& val,
                    StrictWeakOrdering comp)
 {
   ForwardIterator iter = sequential::lower_bound(exec, first, last, val, comp);

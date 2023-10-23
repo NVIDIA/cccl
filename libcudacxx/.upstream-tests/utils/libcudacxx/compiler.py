@@ -147,6 +147,9 @@ class CXXCompiler(object):
         if self.type == 'nvcc':
             # Treat C++ as CUDA when the compiler is NVCC.
             self.source_lang = 'cu'
+        elif self.type == 'clang':
+            # Treat C++ as clang-cuda when the compiler is Clang.
+            self.source_lang = 'cu'
 
     def _basicCmd(self, source_files, out, mode=CM_Default, flags=[],
                   input_is_cxx=False):

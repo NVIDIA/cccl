@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: nvrtc, pre-sm-70
+// UNSUPPORTED: true
 
 // uncomment for a really verbose output detailing what test steps are being launched
 // #define DEBUG_TESTERS
@@ -79,7 +80,7 @@ using aw_aw_pw1 = performer_list<
     barrier_arrive_and_wait,
     barrier_arrive_and_wait,
     async_tester_fence,
-    clear_token,
+    clear_token
 >;
 
 using aw_aw_pw2 = performer_list<

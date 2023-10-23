@@ -26,6 +26,9 @@ function(thrust_build_compiler_targets)
 
   thrust_update_system_found_flags()
 
+  # Ensure that we build our tests without treating ourself as system header
+  list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     append_option_if_available("/W4" cxx_compile_options)
 

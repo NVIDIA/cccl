@@ -149,9 +149,11 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #include "__tuple_dir/tuple_element.h"
 #include "__tuple_dir/tuple_size.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -394,8 +396,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
 template<class _Tp, class... _Args,
          class = __enable_if_t<(is_same_v<_Tp, _Args> && ...), void>
          >
-array(_Tp, _Args...)
-  -> array<_Tp, 1 + sizeof...(_Args)>;
+_LIBCUDACXX_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
 #endif
 
 template <class _Tp, size_t _Size>

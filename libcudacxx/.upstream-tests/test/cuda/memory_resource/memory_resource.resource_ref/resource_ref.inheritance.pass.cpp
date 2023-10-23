@@ -38,11 +38,11 @@ struct resource_base {
   bool operator!=(const resource_base& other) const { return false; }
 
   _LIBCUDACXX_TEMPLATE(class Property)
-    (requires (!cuda::property_with_value<Property>) && _CUDA_VSTD::_One_of<Property, Properties...>) //
+    _LIBCUDACXX_REQUIRES( (!cuda::property_with_value<Property>) && _CUDA_VSTD::_One_of<Property, Properties...>) //
   friend void get_property(const resource_base&, Property) noexcept {}
 
   _LIBCUDACXX_TEMPLATE(class Property)
-    (requires cuda::property_with_value<Property> && _CUDA_VSTD::_One_of<Property, Properties...>) //
+    _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property> && _CUDA_VSTD::_One_of<Property, Properties...>) //
   friend typename Property::value_type get_property(const resource_base& res, Property) noexcept {
     return 42;
   }

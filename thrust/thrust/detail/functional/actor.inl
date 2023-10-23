@@ -26,6 +26,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/functional/composite.h>
 #include <thrust/detail/functional/operators/assignment_operator.h>
 #include <thrust/functional.h>
@@ -54,18 +60,6 @@ template<typename Eval>
       : eval_type(base)
 {}
 
-template<typename Eval>
-  __host__ __device__
-  typename apply_actor<
-    typename actor<Eval>::eval_type,
-    typename thrust::null_type
-  >::type
-    actor<Eval>
-      ::operator()(void) const
-{
-  return eval_type::eval(thrust::null_type());
-} // end basic_environment::operator()
-
 // actor::operator() needs to construct a tuple of references to its
 // arguments. To make this work with thrust::reference<T>, we need to
 // detect thrust proxy references and store them as T rather than T&.
@@ -77,7 +71,7 @@ template<typename Eval>
 // met.
 template <typename T>
 using actor_check_ref_type =
-  thrust::detail::integral_constant<bool,
+  ::cuda::std::integral_constant<bool,
     ( std::is_lvalue_reference<T>::value ||
       thrust::detail::is_wrapped_reference<T>::value )>;
 

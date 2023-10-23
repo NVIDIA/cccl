@@ -24,9 +24,11 @@
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #if _LIBCUDACXX_STD_VER > 14
 
@@ -97,7 +99,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
 
   struct __fn {
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
-    (requires __unqualified_iter_swap<_T1, _T2>)
+    _LIBCUDACXX_REQUIRES( __unqualified_iter_swap<_T1, _T2>)
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr void operator()(_T1&& __x, _T2&& __y) const
       noexcept(noexcept(iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y))))
@@ -106,7 +108,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
     }
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
-    (requires __readable_swappable<_T1, _T2>)
+    _LIBCUDACXX_REQUIRES( __readable_swappable<_T1, _T2>)
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr void operator()(_T1&& __x, _T2&& __y) const
       noexcept(noexcept(_CUDA_VRANGES::swap(*_CUDA_VSTD::forward<_T1>(__x), *_CUDA_VSTD::forward<_T2>(__y))))
@@ -115,7 +117,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
     }
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
-    (requires __moveable_storable<_T2, _T1>)
+    _LIBCUDACXX_REQUIRES( __moveable_storable<_T2, _T1>)
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr void operator()(_T1&& __x, _T2&& __y) const
       noexcept(noexcept(iter_value_t<_T2>(_CUDA_VRANGES::iter_move(__y))) &&

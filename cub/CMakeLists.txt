@@ -15,7 +15,6 @@ endif ()
 # This must be done before any languages are enabled:
 if (CUB_TOPLEVEL_PROJECT)
   cmake_minimum_required(VERSION 3.21)
-  include(cmake/CubCompilerHacks.cmake)
 endif()
 
 # This must appear after our Compiler Hacks or else CMake will delete the cache
@@ -38,7 +37,7 @@ endif()
 
 option(CUB_ENABLE_HEADER_TESTING "Test that all public headers compile." ON)
 option(CUB_ENABLE_TESTING "Build CUB testing suite." ON)
-option(CUB_ENABLE_BENCHMARKS "Build CUB benchmarking suite." OFF)
+option(CUB_ENABLE_BENCHMARKS "Build CUB benchmarking suite." "${CCCL_ENABLE_BENCHMARKS}")
 option(CUB_ENABLE_TUNING "Build CUB tuning suite." OFF)
 option(CUB_ENABLE_EXAMPLES "Build CUB examples." ON)
 

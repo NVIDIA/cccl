@@ -19,9 +19,11 @@
 #include "../__concepts/invocable.h"
 #include "../__functional/invoke.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -37,9 +39,10 @@ concept predicate =
 template<class _Fn, class... _Args>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   _Predicate_,
-  requires()
-  (requires(regular_invocable<_Fn, _Args...>),
-   requires(__boolean_testable<invoke_result_t<_Fn, _Args...>>)));
+  requires()(//
+    requires(regular_invocable<_Fn, _Args...>),
+    requires(__boolean_testable<invoke_result_t<_Fn, _Args...>>)
+  ));
 
 template<class _Fn, class... _Args>
 _LIBCUDACXX_CONCEPT predicate = _LIBCUDACXX_FRAGMENT(_Predicate_, _Fn, _Args...);

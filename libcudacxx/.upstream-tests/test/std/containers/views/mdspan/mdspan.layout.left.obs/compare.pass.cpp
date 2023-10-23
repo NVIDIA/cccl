@@ -35,7 +35,6 @@ int main(int, char**)
     typed_test_compare_left();
 
     using index_t = size_t;
-    using ext1d_t = cuda::std::extents<index_t,dyn>;
     using ext2d_t = cuda::std::extents<index_t,dyn,dyn>;
 
     {

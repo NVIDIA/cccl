@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 #include "test_macros.h"
+#include "cuda_space_selector.h"
 
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
@@ -30,7 +31,7 @@ constexpr size_t stages_count = 2; // Pipeline with two stages
 // Simply copy shared memory to global out
 __device__ __forceinline__ void compute(int* global_out, int const* shared_in){
     auto block = cooperative_groups::this_thread_block();
-    for (int i = 0; i < block.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(block.size()); ++i) {
         global_out[i] = shared_in[i];
     }
 }
@@ -46,8 +47,11 @@ __global__ void with_staging(int* global_out, int const* global_in, size_t size,
     size_t shared_offset[stages_count] = { 0, block.size() }; // Offsets to each batch
 
     // Allocate shared storage for a two-stage cuda::pipeline:
-    __shared__ cuda::pipeline_shared_state<cuda::thread_scope::thread_scope_block, stages_count> shared_state;
-    auto pipeline = cuda::make_pipeline(block, &shared_state);
+    using pipeline_state = cuda::pipeline_shared_state<cuda::thread_scope::thread_scope_block, stages_count>;
+    __shared__ pipeline_state* shared_state;
+    shared_memory_selector<pipeline_state, constructor_initializer> sel;
+    shared_state = sel.construct();
+    auto pipeline = cuda::make_pipeline(block, shared_state);
 
     // Each thread processes `batch_sz` elements.
     // Compute offset of the batch `batch` of this thread block in global memory:

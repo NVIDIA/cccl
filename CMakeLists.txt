@@ -13,7 +13,8 @@ if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
   set(CCCL_TOPLEVEL_PROJECT ON)
 endif()
 
-project(CCCL LANGUAGES NONE)
+# Enable CXX so CMake can configure install paths
+project(CCCL LANGUAGES CXX)
 
 # Optionally include installation rules for non-top-level builds:
 option(CCCL_ENABLE_INSTALL_RULES "Enable installation of CCCL." ${CCCL_TOPLEVEL_PROJECT})
@@ -35,11 +36,13 @@ option(CCCL_ENABLE_CUB "Enable the CUB developer build." ON)
 option(CCCL_ENABLE_THRUST "Enable the Thrust developer build." ON)
 option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." ON)
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." ON)
+option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
 
 include(CTest)
 enable_testing()
 
-include(cmake/CCCLUtilities.cmake)
+include(cmake/CCCLUtilities.cmake) # include this first
+include(cmake/CCCLClangdCompileInfo.cmake)
 
 if (CCCL_ENABLE_LIBCUDACXX)
   set(LIBCUDACXX_TOPLEVEL_PROJECT ON)

@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,13 +27,21 @@
  ******************************************************************************/
 
 /**
- * \file
- * cub::WarpScanSmem provides smem-based variants of parallel prefix scan of items partitioned across a CUDA thread warp.
+ * @file
+ * cub::WarpScanSmem provides smem-based variants of parallel prefix scan of items partitioned
+ * across a CUDA thread warp.
  */
 
 #pragma once
 
 #include "../../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "../../thread/thread_operators.cuh"
 #include "../../thread/thread_load.cuh"
 #include "../../thread/thread_store.cuh"
@@ -42,12 +50,19 @@
 CUB_NAMESPACE_BEGIN
 
 /**
- * \brief WarpScanSmem provides smem-based variants of parallel prefix scan of items partitioned across a CUDA thread warp.
+ * @brief WarpScanSmem provides smem-based variants of parallel prefix scan of items partitioned
+ *        across a CUDA thread warp.
+ *
+ * @tparam T
+ *   Data type being scanned
+ *
+ * @tparam LOGICAL_WARP_THREADS
+ *   Number of threads per logical warp
+ *
+ * @tparam LEGACY_PTX_ARCH
+ *   The PTX compute capability for which to to specialize this collective
  */
-template <
-    typename    T,                      ///< Data type being scanned
-    int         LOGICAL_WARP_THREADS,   ///< Number of threads per logical warp
-    int         LEGACY_PTX_ARCH = 0>    ///< The PTX compute capability for which to to specialize this collective
+template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
 struct WarpScanSmem
 {
     /******************************************************************************
@@ -150,13 +165,23 @@ struct WarpScanSmem
         Int2Type<STEPS>         /*step*/)
     {}
 
-
-    /// Inclusive prefix scan (specialized for summation across primitive types)
-    __device__ __forceinline__ void InclusiveScan(
-        T                       input,              ///< [in] Calling thread's input item.
-        T                       &output,            ///< [out] Calling thread's output item.  May be aliased with \p input.
-        Sum                     scan_op,            ///< [in] Binary scan operator
-        Int2Type<true>          /*is_primitive*/)   ///< [in] Marker type indicating whether T is primitive type
+    /**
+     * @brief Inclusive prefix scan (specialized for summation across primitive types)
+     *
+     * @param[in] input
+     *   Calling thread's input item
+     *
+     * @param[out] output
+     *   Calling thread's output item. May be aliased with @p input
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[in]
+     *   Marker type indicating whether T is primitive type
+     */
+    __device__ __forceinline__ void
+    InclusiveScan(T input, T &output, Sum scan_op, Int2Type<true> /*is_primitive*/)
     {
         T identity = 0;
         ThreadStore<STORE_VOLATILE>(&temp_storage[lane_id], (CellT) identity);
@@ -168,14 +193,24 @@ struct WarpScanSmem
         ScanStep<true>(output, scan_op, Int2Type<0>());
     }
 
-
-    /// Inclusive prefix scan
+    /**
+     * @brief Inclusive prefix scan
+     *
+     * @param[in] input
+     *   Calling thread's input item
+     *
+     * @param[out] output
+     *   Calling thread's output item. May be aliased with @p input
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[in] is_primitive
+     *   Marker type indicating whether T is primitive type
+     */
     template <typename ScanOp, int IS_PRIMITIVE>
-    __device__ __forceinline__ void InclusiveScan(
-        T                       input,              ///< [in] Calling thread's input item.
-        T                       &output,            ///< [out] Calling thread's output item.  May be aliased with \p input.
-        ScanOp                  scan_op,            ///< [in] Binary scan operator
-        Int2Type<IS_PRIMITIVE>  /*is_primitive*/)   ///< [in] Marker type indicating whether T is primitive type
+    __device__ __forceinline__ void
+    InclusiveScan(T input, T &output, ScanOp scan_op, Int2Type<IS_PRIMITIVE> /*is_primitive*/)
     {
         // Iterate scan steps
         output = input;
@@ -191,10 +226,16 @@ struct WarpScanSmem
     // Broadcast
     //---------------------------------------------------------------------
 
-    /// Broadcast
-    __device__ __forceinline__ T Broadcast(
-        T               input,              ///< [in] The value to broadcast
-        unsigned int    src_lane)           ///< [in] Which warp lane is to do the broadcasting
+    /**
+     * @brief Broadcast
+     *
+     * @param[in] input
+     *   The value to broadcast
+     *
+     * @param[in] src_lane
+     *   Which warp lane is to do the broadcasting
+     */
+    __device__ __forceinline__ T Broadcast(T input, unsigned int src_lane)
     {
         if (lane_id == src_lane)
         {
@@ -211,24 +252,42 @@ struct WarpScanSmem
     // Inclusive operations
     //---------------------------------------------------------------------
 
-    /// Inclusive scan
+    /**
+     * @brief Inclusive scan
+     *
+     * @param[in] input
+     *   Calling thread's input item.
+     *
+     * @param[out] inclusive_output
+     *   Calling thread's output item. May be aliased with @p input
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     */
     template <typename ScanOp>
-    __device__ __forceinline__ void InclusiveScan(
-        T               input,              ///< [in] Calling thread's input item.
-        T               &inclusive_output,  ///< [out] Calling thread's output item.  May be aliased with \p input.
-        ScanOp          scan_op)            ///< [in] Binary scan operator
+    __device__ __forceinline__ void InclusiveScan(T input, T &inclusive_output, ScanOp scan_op)
     {
         InclusiveScan(input, inclusive_output, scan_op, Int2Type<Traits<T>::PRIMITIVE>());
     }
 
-
-    /// Inclusive scan with aggregate
+    /**
+     * @brief Inclusive scan with aggregate
+     *
+     * @param[in] input
+     *   Calling thread's input item
+     *
+     * @param[out] inclusive_output
+     *   Calling thread's output item. May be aliased with @p input
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[out] warp_aggregate
+     *   Warp-wide aggregate reduction of input items.
+     */
     template <typename ScanOp>
-    __device__ __forceinline__ void InclusiveScan(
-        T               input,              ///< [in] Calling thread's input item.
-        T               &inclusive_output,  ///< [out] Calling thread's output item.  May be aliased with \p input.
-        ScanOp          scan_op,            ///< [in] Binary scan operator
-        T               &warp_aggregate)    ///< [out] Warp-wide aggregate reduction of input items.
+    __device__ __forceinline__ void
+    InclusiveScan(T input, T &inclusive_output, ScanOp scan_op, T &warp_aggregate)
     {
         InclusiveScan(input, inclusive_output, scan_op);
 
@@ -247,14 +306,22 @@ struct WarpScanSmem
     // Get exclusive from inclusive
     //---------------------------------------------------------------------
 
-    /// Update inclusive and exclusive using input and inclusive
+    /**
+     * @brief Update inclusive and exclusive using input and inclusive
+     *
+     * @param[in] input
+     *
+     * @param[in, out] inclusive
+     *
+     * @param[out] exclusive
+     *
+     * @param[in] scan_op
+     *
+     * @param[in] is_integer
+     */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void Update(
-        T                       /*input*/,      ///< [in]
-        T                       &inclusive,     ///< [in, out]
-        T                       &exclusive,     ///< [out]
-        ScanOpT                 /*scan_op*/,    ///< [in]
-        IsIntegerT              /*is_integer*/) ///< [in]
+    __device__ __forceinline__ void
+    Update(T /*input*/, T &inclusive, T &exclusive, ScanOpT /*scan_op*/, IsIntegerT /*is_integer*/)
     {
         // initial value unknown
         ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);
@@ -264,7 +331,10 @@ struct WarpScanSmem
         exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
     }
 
-    /// Update inclusive and exclusive using input and inclusive (specialized for summation of integer types)
+    /**
+     * @brief Update inclusive and exclusive using input and inclusive (specialized for summation of
+     *        integer types)
+     */
     __device__ __forceinline__ void Update(
         T                       input,
         T                       &inclusive,
@@ -276,7 +346,10 @@ struct WarpScanSmem
         exclusive = inclusive - input;
     }
 
-    /// Update inclusive and exclusive using initial value using input, inclusive, and initial value
+    /**
+     * @brief Update inclusive and exclusive using initial value using input, inclusive, and initial
+     *        value
+     */
     template <typename ScanOpT, typename IsIntegerT>
     __device__ __forceinline__ void Update (
         T                       /*input*/,
@@ -296,7 +369,10 @@ struct WarpScanSmem
             exclusive = initial_value;
     }
 
-    /// Update inclusive and exclusive using initial value using input and inclusive (specialized for summation of integer types)
+    /**
+     * @brief Update inclusive and exclusive using initial value using input and inclusive
+     *        (specialized for summation of integer types)
+     */
     __device__ __forceinline__ void Update (
         T                       input,
         T                       &inclusive,
@@ -309,8 +385,9 @@ struct WarpScanSmem
         exclusive = inclusive - input;
     }
 
-
-    /// Update inclusive, exclusive, and warp aggregate using input and inclusive
+    /**
+     * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive
+     */
     template <typename ScanOpT, typename IsIntegerT>
     __device__ __forceinline__ void Update (
         T                       /*input*/,
@@ -329,7 +406,10 @@ struct WarpScanSmem
         warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
     }
 
-    /// Update inclusive, exclusive, and warp aggregate using input and inclusive (specialized for summation of integer types)
+    /**
+     * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive (specialized
+     *        for summation of integer types)
+     */
     __device__ __forceinline__ void Update (
         T                       input,
         T                       &inclusive,
@@ -347,7 +427,10 @@ struct WarpScanSmem
         exclusive = inclusive - input;
     }
 
-    /// Update inclusive, exclusive, and warp aggregate using input, inclusive, and initial value
+    /**
+     * @brief Update inclusive, exclusive, and warp aggregate using input, inclusive, and initial
+     *        value
+     */
     template <typename ScanOpT, typename IsIntegerT>
     __device__ __forceinline__ void Update (
         T                       /*input*/,

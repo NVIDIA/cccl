@@ -24,9 +24,11 @@
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -110,7 +112,7 @@ _LIBCUDACXX_CONCEPT __just_deref = _LIBCUDACXX_FRAGMENT(__just_deref_, _Tp);
 
 struct __fn {
   _LIBCUDACXX_TEMPLATE(class _Ip)
-    (requires __unqualified_iter_move<_Ip>)
+    _LIBCUDACXX_REQUIRES( __unqualified_iter_move<_Ip>)
   _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
     constexpr decltype(auto) operator()(_Ip&& __i) const
     noexcept(noexcept(iter_move(_CUDA_VSTD::forward<_Ip>(__i))))
@@ -119,14 +121,14 @@ struct __fn {
   }
 
   _LIBCUDACXX_TEMPLATE(class _Ip)
-    (requires __move_deref<_Ip>)
+    _LIBCUDACXX_REQUIRES( __move_deref<_Ip>)
   _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Ip&& __i) const
     noexcept(noexcept(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i))))
     -> decltype(      _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))
     { return          _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)); }
 
   _LIBCUDACXX_TEMPLATE(class _Ip)
-    (requires __just_deref<_Ip>)
+    _LIBCUDACXX_REQUIRES( __just_deref<_Ip>)
   _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Ip&& __i) const
     noexcept(noexcept(*_CUDA_VSTD::forward<_Ip>(__i)))
     -> decltype(      *_CUDA_VSTD::forward<_Ip>(__i))

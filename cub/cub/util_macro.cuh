@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,14 +32,20 @@
 
 #pragma once
 
+#include "version.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/utility>
-#include <cuda/std/version> // _LIBCUDACXX_HIDDEN, _LIBCUDACXX_{CLANG,GCC}_DIAGNOSTIC_IGNORED
 
 CUB_NAMESPACE_BEGIN
-
 
 /**
  * \addtogroup UtilModule
@@ -116,7 +122,7 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 #endif
 
 #ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
-#define CUB_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
+#define CUB_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
 #endif
 
 /**
@@ -124,9 +130,12 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
  * If defined, the default suppression of kernel visibility attribute warning is disabled.
  */
 #if !defined(CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
-_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")
-_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")                      
-#endif
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
+#if !defined(_CCCL_CUDA_COMPILER_NVHPC)
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
+#endif // !_CCCL_CUDA_COMPILER_NVHPC
+#endif // !CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
 
 /** @} */       // end group UtilModule
 

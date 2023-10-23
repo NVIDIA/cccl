@@ -198,11 +198,10 @@ void copy(nvbench::state &state,
                                                       policy_t,
                                                       is_memcpy>;
 
-  thrust::device_vector<T> input_buffer(elements);
+  thrust::device_vector<T> input_buffer = generate(elements);
   thrust::device_vector<T> output_buffer(elements);
   thrust::device_vector<offset_t> offsets =
-    gen_uniform_offsets<offset_t>(seed_t{}, elements, min_buffer_size, max_buffer_size);
-  gen(seed_t{}, input_buffer);
+    generate.uniform.segment_offsets(elements, min_buffer_size, max_buffer_size);
 
   T *d_input_buffer   = thrust::raw_pointer_cast(input_buffer.data());
   T *d_output_buffer  = thrust::raw_pointer_cast(output_buffer.data());

@@ -20,9 +20,11 @@
 #include "../__type_traits/common_reference.h"
 #include "../__type_traits/make_const_lvalue_ref.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -61,15 +63,16 @@ concept totally_ordered_with =
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __partially_ordered_with_,
-  requires(__make_const_lvalue_ref<_Tp> __t, __make_const_lvalue_ref<_Up> __u) //
-  (requires(__boolean_testable<decltype(__t <  __u)>),
-   requires(__boolean_testable<decltype(__t >  __u)>),
-   requires(__boolean_testable<decltype(__t <= __u)>),
-   requires(__boolean_testable<decltype(__t >= __u)>),
-   requires(__boolean_testable<decltype(__u <  __t)>),
-   requires(__boolean_testable<decltype(__u >  __t)>),
-   requires(__boolean_testable<decltype(__u <= __t)>),
-   requires(__boolean_testable<decltype(__u >= __t)>)));
+  requires(__make_const_lvalue_ref<_Tp> __t, __make_const_lvalue_ref<_Up> __u)(
+    requires(__boolean_testable<decltype(__t <  __u)>),
+    requires(__boolean_testable<decltype(__t >  __u)>),
+    requires(__boolean_testable<decltype(__t <= __u)>),
+    requires(__boolean_testable<decltype(__t >= __u)>),
+    requires(__boolean_testable<decltype(__u <  __t)>),
+    requires(__boolean_testable<decltype(__u >  __t)>),
+    requires(__boolean_testable<decltype(__u <= __t)>),
+    requires(__boolean_testable<decltype(__u >= __t)>)
+  ));
 
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT __partially_ordered_with = _LIBCUDACXX_FRAGMENT(__partially_ordered_with_, _Tp, _Up);

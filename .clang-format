@@ -1,0 +1,176 @@
+# Note that we don't specify the language in this file because some files are
+# detected as Cpp, but others are detected as ObjC and we want this formatting
+# to apply to all types of files.
+BasedOnStyle: LLVM
+AccessModifierOffset: -2
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveBitFields: Consecutive
+AlignConsecutiveMacros: Consecutive
+AlignEscapedNewlines: Left
+AlignOperands: AlignAfterOperator
+AllowAllArgumentsOnNextLine: true
+AlignTrailingComments:
+  Kind: Never
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowAllConstructorInitializersOnNextLine: true
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Empty
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: None
+AlwaysBreakTemplateDeclarations: Yes
+AttributeMacros: [
+                  'CUB_RUNTIME_FUNCTION',
+                  'CUB_DETAIL_KERNEL_ATTRIBUTES',
+                  'THRUST_RUNTIME_FUNCTION',
+                  'THRUST_DETAIL_KERNEL_ATTRIBUTES',
+                  '_ALIGNAS_TYPE',
+                  '_ALIGNAS',
+                  '_LIBCUDACXX_ALIGNOF',
+                  '_LIBCUDACXX_ALWAYS_INLINE',
+                  '_LIBCUDACXX_CONSTEXPR_AFTER_CXX11',
+                  '_LIBCUDACXX_CONSTEXPR_AFTER_CXX14',
+                  '_LIBCUDACXX_CONSTEXPR_AFTER_CXX20',
+                  '_LIBCUDACXX_CONSTEXPR_AFTER_CXX23',
+                  '_LIBCUDACXX_CONSTEXPR',
+                  '_LIBCUDACXX_CONSTINIT',
+                  '_LIBCUDACXX_DEPRECATED_IN_CXX11',
+                  '_LIBCUDACXX_DEPRECATED_IN_CXX14',
+                  '_LIBCUDACXX_DEPRECATED_IN_CXX17',
+                  '_LIBCUDACXX_DEPRECATED_IN_CXX20',
+                  '_LIBCUDACXX_DEPRECATED',
+                  '_LIBCUDACXX_DISABLE_EXTENTSION_WARNING',
+                  '_LIBCUDACXX_EXCLUDE_FROM_EXPLICIT_INSTANTIATION',
+                  '_LIBCUDACXX_EXPORTED_FROM_ABI',
+                  '_LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS',
+                  '_LIBCUDACXX_FALLTHROUGH',
+                  '_LIBCUDACXX_HIDDEN',
+                  '_LIBCUDACXX_HIDE_FROM_ABI_AFTER_V1',
+                  '_LIBCUDACXX_HIDE_FROM_ABI',
+                  '_LIBCUDACXX_INLINE_VISIBILITY',
+                  '_LIBCUDACXX_INTERNAL_LINKAGE',
+                  '_LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS',
+                  '_LIBCUDACXX_NO_DESTROY',
+                  '_LIBCUDACXX_NO_SANITIZE',
+                  '_LIBCUDACXX_NO_UNIQUE_ADDRESS',
+                  '_LIBCUDACXX_NOALIAS',
+                  '_LIBCUDACXX_NODISCARD_EXT',
+                  '_LIBCUDACXX_NODISCARD',
+                  '_LIBCUDACXX_NORETURN',
+                  '_LIBCUDACXX_OVERRIDABLE_FUNC_VIS',
+                  '_LIBCUDACXX_STANDALONE_DEBUG',
+                  '_LIBCUDACXX_TEMPLATE_DATA_VIS',
+                  '_LIBCUDACXX_TEMPLATE_VIS',
+                  '_LIBCUDACXX_THREAD_SAFETY_ANNOTATION',
+                  '_LIBCUDACXX_USING_IF_EXISTS',
+                  '_LIBCUDACXX_WEAK',
+                 ]
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+BreakBeforeConceptDeclarations: true
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
+ColumnLimit: 120
+CompactNamespaces: false
+ContinuationIndentWidth: 2
+EmptyLineAfterAccessModifier: Never
+EmptyLineBeforeAccessModifier: Always
+FixNamespaceComments: true
+IndentWrappedFunctionNames: false
+IncludeBlocks:   Regroup
+IncludeCategories:
+  - Regex:           '^<cub'
+    Priority:            1
+    SortPriority:        0
+  - Regex:           '^<thrust'
+    Priority:            2
+    SortPriority:        1
+  - Regex:           '^<cuda'
+    Priority:            3
+    SortPriority:        2
+  - Regex:           '^<[a-z_]*>$'
+    Priority:            4
+    SortPriority:        3
+InsertBraces: true
+IndentCaseLabels: true
+InsertNewlineAtEOF: true
+InsertTrailingCommas: Wrapped
+IndentRequires: true
+IndentPPDirectives: AfterHash
+IndentWidth: 2
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+Macros:
+- _LIBCUDACXX_TEMPLATE(...)=template<...>
+- _LIBCUDACXX_REQUIRES(...)=requires (...)
+NamespaceIndentation: None
+PackConstructorInitializers: Never
+PenaltyBreakAssignment: 30
+PenaltyBreakBeforeFirstCallParameter: 50
+PenaltyBreakComment: 0
+PenaltyBreakFirstLessLess: 0
+PenaltyBreakString: 70
+PenaltyBreakTemplateDeclaration: 0
+PenaltyExcessCharacter: 100
+PenaltyReturnTypeOnItsOwnLine: 90
+PenaltyIndentedWhitespace: 2
+PointerAlignment: Left
+ReflowComments: true
+RemoveSemicolon: false
+SortIncludes: CaseInsensitive
+SpaceAfterCStyleCast: true
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: Leave
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+Standard: c++20
+StatementMacros: [
+  'CUB_NAMESPACE_BEGIN',
+  'CUB_NAMESPACE_END',
+  'THRUST_NAMESPACE_BEGIN',
+  'THRUST_NAMESPACE_END',
+  '_LIBCUDACXX_BEGIN_NAMESPACE_STD',
+  '_LIBCUDACXX_END_NAMESPACE_STD',
+  '_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION',
+  '_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION',
+  '_LIBCUDACXX_BEGIN_NAMESPACE_RANGES',
+  '_LIBCUDACXX_END_NAMESPACE_RANGES',
+  '_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI',
+  '_LIBCUDACXX_END_NAMESPACE_RANGES_ABI',
+  '_LIBCUDACXX_BEGIN_NAMESPACE_CPO',
+  '_LIBCUDACXX_END_NAMESPACE_CPO',
+  '_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS',
+  '_LIBCUDACXX_END_NAMESPACE_VIEWS',
+]
+TabWidth: 2
+UseTab: Never

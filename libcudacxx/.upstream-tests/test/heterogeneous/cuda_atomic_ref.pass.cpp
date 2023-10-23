@@ -166,7 +166,7 @@ using arithmetic_atomic_testers = extend_tester_list<
     fetch_sub_tester<30, 21, 9>,
     fetch_min_tester<9, 5, 5>,
     fetch_max_tester<5, 9, 9>,
-    fetch_sub_tester<9, 17, -8>,
+    fetch_sub_tester<9, 17, -8>
 >;
 
 using bitwise_atomic_testers = extend_tester_list<

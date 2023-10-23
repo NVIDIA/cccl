@@ -59,9 +59,11 @@
 #include <utility>
 #endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -366,8 +368,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
         noexcept((is_nothrow_constructible<first_type, _Args1...>::value &&
                     is_nothrow_constructible<second_type, _Args2...>::value))
         : pair(__pc, __first_args, __second_args,
-                typename __make_tuple_indices<sizeof...(_Args1)>::type(),
-                typename __make_tuple_indices<sizeof...(_Args2) >::type()) {}
+                __make_tuple_indices_t<sizeof...(_Args1)>(),
+                __make_tuple_indices_t<sizeof...(_Args2)>()) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     pair& operator=(__conditional_t<
@@ -564,7 +566,7 @@ private:
 
 #if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 template<class _T1, class _T2>
-pair(_T1, _T2) -> pair<_T1, _T2>;
+_LIBCUDACXX_HOST_DEVICE pair(_T1, _T2) -> pair<_T1, _T2>;
 #endif // _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 
 // [pairs.spec], specialized algorithms
@@ -769,32 +771,28 @@ struct __get_pair<1>
 };
 
 template <size_t _Ip, class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-typename tuple_element<_Ip, pair<_T1, _T2> >::type&
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __tuple_element_t<_Ip, pair<_T1, _T2>>&
 get(pair<_T1, _T2>& __p) noexcept
 {
-    return __get_pair<_Ip>::get(__p);
+  return __get_pair<_Ip>::get(__p);
 }
 
 template <size_t _Ip, class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-const typename tuple_element<_Ip, pair<_T1, _T2> >::type&
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __tuple_element_t<_Ip, pair<_T1, _T2>>&
 get(const pair<_T1, _T2>& __p) noexcept
 {
-    return __get_pair<_Ip>::get(__p);
+  return __get_pair<_Ip>::get(__p);
 }
 
 template <size_t _Ip, class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-typename tuple_element<_Ip, pair<_T1, _T2> >::type&&
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __tuple_element_t<_Ip, pair<_T1, _T2>>&&
 get(pair<_T1, _T2>&& __p) noexcept
 {
     return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
 }
 
 template <size_t _Ip, class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-const typename tuple_element<_Ip, pair<_T1, _T2> >::type&&
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __tuple_element_t<_Ip, pair<_T1, _T2>>&&
 get(const pair<_T1, _T2>&& __p) noexcept
 {
     return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));

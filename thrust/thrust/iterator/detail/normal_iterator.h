@@ -24,6 +24,12 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
@@ -49,7 +55,7 @@ template<typename Pointer>
     __host__ __device__
     normal_iterator(Pointer p)
       : super_t(p) {}
-    
+
     template<typename OtherPointer>
     __host__ __device__
     normal_iterator(const normal_iterator<OtherPointer> &other,

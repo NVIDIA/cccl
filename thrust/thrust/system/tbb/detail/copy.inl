@@ -17,6 +17,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/system/tbb/detail/copy.h>
 #include <thrust/system/detail/generic/copy.h>
 #include <thrust/system/detail/sequential/copy.h>
@@ -101,7 +107,7 @@ OutputIterator copy(execution_policy<DerivedPolicy> &exec,
 {
   typedef typename thrust::iterator_traversal<InputIterator>::type  traversal1;
   typedef typename thrust::iterator_traversal<OutputIterator>::type traversal2;
-  
+
   typedef typename thrust::detail::minimum_type<traversal1,traversal2>::type traversal;
 
   // dispatch on minimum traversal
@@ -121,7 +127,7 @@ OutputIterator copy_n(execution_policy<DerivedPolicy> &exec,
 {
   typedef typename thrust::iterator_traversal<InputIterator>::type  traversal1;
   typedef typename thrust::iterator_traversal<OutputIterator>::type traversal2;
-  
+
   typedef typename thrust::detail::minimum_type<traversal1,traversal2>::type traversal;
 
   // dispatch on minimum traversal
