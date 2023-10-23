@@ -56,39 +56,63 @@ CUB_NAMESPACE_BEGIN
  ******************************************************************************/
 
 /**
- * Parameterizable tuning policy type for AgentRadixSortUpsweep
+ * @brief Parameterizable tuning policy type for AgentRadixSortUpsweep
+ *
+ * @tparam NOMINAL_BLOCK_THREADS_4B
+ *   Threads per thread block
+ *
+ * @tparam NOMINAL_ITEMS_PER_THREAD_4B
+ *   Items per thread (per tile of input)
+ *
+ * @tparam ComputeT
+ *   Dominant compute type
+ *
+ * @tparam _LOAD_MODIFIER
+ *   Cache load modifier for reading keys
+ *
+ * @tparam _RADIX_BITS
+ *   The number of radix bits, i.e., log2(bins)
  */
-template <
-    int                 NOMINAL_BLOCK_THREADS_4B,       ///< Threads per thread block
-    int                 NOMINAL_ITEMS_PER_THREAD_4B,    ///< Items per thread (per tile of input)
-    typename            ComputeT,                       ///< Dominant compute type
-    CacheLoadModifier   _LOAD_MODIFIER,                 ///< Cache load modifier for reading keys
-    int                 _RADIX_BITS,                    ///< The number of radix bits, i.e., log2(bins)
-    typename            ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT> >
-struct AgentRadixSortUpsweepPolicy :
-    ScalingType
+template <int NOMINAL_BLOCK_THREADS_4B,
+          int NOMINAL_ITEMS_PER_THREAD_4B,
+          typename ComputeT,
+          CacheLoadModifier _LOAD_MODIFIER,
+          int _RADIX_BITS,
+          typename ScalingType =
+            RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+struct AgentRadixSortUpsweepPolicy : ScalingType
 {
-    enum
-    {
-        RADIX_BITS          = _RADIX_BITS,          ///< The number of radix bits, i.e., log2(bins)
-    };
+  enum
+  {
+    /// The number of radix bits, i.e., log2(bins)
+    RADIX_BITS = _RADIX_BITS,
+  };
 
-    static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;      ///< Cache load modifier for reading keys
+  /// Cache load modifier for reading keys
+  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
 };
-
 
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
 
 /**
- * \brief AgentRadixSortUpsweep implements a stateful abstraction of CUDA thread blocks for participating in device-wide radix sort upsweep .
+ * @brief AgentRadixSortUpsweep implements a stateful abstraction of CUDA thread blocks for
+ * participating in device-wide radix sort upsweep .
+ *
+ * @tparam AgentRadixSortUpsweepPolicy
+ *   Parameterized AgentRadixSortUpsweepPolicy tuning policy type
+ *
+ * @tparam KeyT
+ *   KeyT type
+ *
+ * @tparam DecomposerT = detail::identity_decomposer_t
+ *   Signed integer type for global offsets
  */
-template <
-    typename AgentRadixSortUpsweepPolicy,   ///< Parameterized AgentRadixSortUpsweepPolicy tuning policy type
-    typename KeyT,                          ///< KeyT type
-    typename OffsetT,
-    typename DecomposerT = detail::identity_decomposer_t>                       ///< Signed integer type for global offsets
+template <typename AgentRadixSortUpsweepPolicy,
+          typename KeyT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
 struct AgentRadixSortUpsweep
 {
 
@@ -483,11 +507,14 @@ struct AgentRadixSortUpsweep
 
 
     /**
-     * Extract counts
+     * @brief Extract counts
+     *
+     * @param[out] bin_count
+     *   The exclusive prefix sum for the digits 
+     *   [(threadIdx.x * BINS_TRACKED_PER_THREAD) ... (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
      */
     template <int BINS_TRACKED_PER_THREAD>
-    __device__ __forceinline__ void ExtractCounts(
-        OffsetT (&bin_count)[BINS_TRACKED_PER_THREAD])  ///< [out] The exclusive prefix sum for the digits [(threadIdx.x * BINS_TRACKED_PER_THREAD) ... (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
+    __device__ __forceinline__ void ExtractCounts(OffsetT (&bin_count)[BINS_TRACKED_PER_THREAD])
     {
         unsigned int warp_id    = threadIdx.x >> LOG_WARP_THREADS;
         unsigned int warp_tid   = LaneId();

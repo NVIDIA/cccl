@@ -26,7 +26,7 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * cub::AgentUniqueByKey implements a stateful abstraction of CUDA thread blocks for participating in device-wide unique-by-key.
  */
 
@@ -93,18 +93,38 @@ struct AgentUniqueByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-
 /**
- * \brief AgentUniqueByKey implements a stateful abstraction of CUDA thread blocks for participating in device-wide unique-by-key
+ * @brief AgentUniqueByKey implements a stateful abstraction of CUDA thread blocks for participating
+ * in device-wide unique-by-key
+ *
+ * @tparam AgentUniqueByKeyPolicyT
+ *   Parameterized AgentUniqueByKeyPolicy tuning policy type
+ *
+ * @tparam KeyInputIteratorT
+ *   Random-access input iterator type for keys
+ *
+ * @tparam ValueInputIteratorT
+ *   Random-access input iterator type for values
+ *
+ * @tparam KeyOutputIteratorT
+ *   Random-access output iterator type for keys
+ *
+ * @tparam ValueOutputIteratorT
+ *   Random-access output iterator type for values
+ *
+ * @tparam EqualityOpT
+ *   Equality operator type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
  */
-template <
-    typename AgentUniqueByKeyPolicyT,           ///< Parameterized AgentUniqueByKeyPolicy tuning policy type
-    typename KeyInputIteratorT,                 ///< Random-access input iterator type for keys
-    typename ValueInputIteratorT,               ///< Random-access input iterator type for values
-    typename KeyOutputIteratorT,                ///< Random-access output iterator type for keys
-    typename ValueOutputIteratorT,              ///< Random-access output iterator type for values
-    typename EqualityOpT,                       ///< Equality operator type
-    typename OffsetT>                           ///< Signed integer type for global offsets
+template <typename AgentUniqueByKeyPolicyT,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT>
 struct AgentUniqueByKey
 {
     //---------------------------------------------------------------------
@@ -295,15 +315,24 @@ struct AgentUniqueByKey
     // Cooperatively scan a device-wide sequence of tiles with other CTAs
     //---------------------------------------------------------------------
 
-
     /**
-     * Process first tile of input (dynamic chained scan).  Returns the running count of selections (including this tile)
+     * @brief Process first tile of input (dynamic chained scan).
+     *
+     * @param num_tile_items
+     *   Number of input items comprising this tile
+     *
+     * @param tile_offset
+     *   Tile offset
+     *
+     * @param tile_state
+     *   Global tile state descriptor
+     *
+     * @return The running count of selections (including this tile)
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ OffsetT ConsumeFirstTile(
-        int                 num_tile_items,     ///< Number of input items comprising this tile
-        OffsetT             tile_offset,        ///< Tile offset
-        ScanTileStateT&     tile_state)         ///< Global tile state descriptor
+    __device__ __forceinline__ OffsetT ConsumeFirstTile(int num_tile_items,
+                                                        OffsetT tile_offset,
+                                                        ScanTileStateT &tile_state)
     {
         KeyT        keys[ITEMS_PER_THREAD];
         OffsetT     selection_flags[ITEMS_PER_THREAD];
@@ -411,14 +440,27 @@ struct AgentUniqueByKey
     }
 
     /**
-     * Process subsequent tile of input (dynamic chained scan).  Returns the running count of selections (including this tile)
+     * @brief Process subsequent tile of input (dynamic chained scan).  
+     *
+     * @param num_tile_items
+     *   Number of input items comprising this tile
+     *
+     * @param tile_idx
+     *   Tile index
+     *
+     * @param tile_offset
+     *   Tile offset
+     *
+     * @param tile_state
+     *   Global tile state descriptor
+     *
+     * @return Returns the running count of selections (including this tile)
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ OffsetT ConsumeSubsequentTile(
-        int                 num_tile_items,     ///< Number of input items comprising this tile
-        int                 tile_idx,           ///< Tile index
-        OffsetT             tile_offset,        ///< Tile offset
-        ScanTileStateT&     tile_state)         ///< Global tile state descriptor
+    __device__ __forceinline__ OffsetT ConsumeSubsequentTile(int num_tile_items,
+                                                             int tile_idx,
+                                                             OffsetT tile_offset,
+                                                             ScanTileStateT &tile_state)
     {
         KeyT        keys[ITEMS_PER_THREAD];
         OffsetT     selection_flags[ITEMS_PER_THREAD];
@@ -527,16 +569,24 @@ struct AgentUniqueByKey
         return num_selections;
     }
 
-
     /**
-     * Process a tile of input
+     * @brief Process a tile of input
+     *
+     * @param num_tile_items
+     *   Number of input items comprising this tile
+     *
+     * @param tile_idx
+     *   Tile index
+     *
+     * @param tile_offset
+     *   Tile offset
+     *
+     * @param tile_state
+     *   Global tile state descriptor
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ OffsetT ConsumeTile(
-        int                 num_tile_items,     ///< Number of input items comprising this tile
-        int                 tile_idx,           ///< Tile index
-        OffsetT             tile_offset,        ///< Tile offset
-        ScanTileStateT&     tile_state)         ///< Global tile state descriptor
+    __device__ __forceinline__ OffsetT
+    ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT &tile_state)
     {
         OffsetT num_selections;
         if (tile_idx == 0)
@@ -552,13 +602,25 @@ struct AgentUniqueByKey
     }
 
     /**
-     * Scan tiles of items as part of a dynamic chained scan
+     * @brief Scan tiles of items as part of a dynamic chained scan
+     *
+     * @param num_tiles
+     *   Total number of input tiles
+     *
+     * @param tile_state
+     *   Global tile state descriptor
+     *
+     * @param d_num_selected_out
+     *   Output total number selection_flags
+     *
+     * @tparam NumSelectedIteratorT
+     *   Output iterator type for recording number of items selection_flags
+     *
      */
-    template <typename NumSelectedIteratorT>        ///< Output iterator type for recording number of items selection_flags
-    __device__ __forceinline__ void ConsumeRange(
-        int                     num_tiles,          ///< Total number of input tiles
-        ScanTileStateT&         tile_state,         ///< Global tile state descriptor
-        NumSelectedIteratorT    d_num_selected_out) ///< Output total number selection_flags
+    template <typename NumSelectedIteratorT>
+    __device__ __forceinline__ void ConsumeRange(int num_tiles,
+                                                 ScanTileStateT &tile_state,
+                                                 NumSelectedIteratorT d_num_selected_out)
     {
         // Blocks are launched in increasing order, so just assign one tile per block
         int     tile_idx        = (blockIdx.x * gridDim.y) + blockIdx.y;    // Current tile index
