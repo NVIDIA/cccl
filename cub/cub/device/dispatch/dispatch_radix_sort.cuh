@@ -54,7 +54,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
- #include <cub/detail/triple_chevron_launch.cuh>
+#include <cub/detail/triple_chevron_launch.cuh>
 
 #include <iterator>
 #include <stdio.h>

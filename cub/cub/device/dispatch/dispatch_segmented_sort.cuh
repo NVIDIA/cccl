@@ -54,7 +54,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/reverse_iterator.h>
- #include <cub/detail/triple_chevron_launch.cuh>
+#include <cub/detail/triple_chevron_launch.cuh>
 
 #include <nv/target>
 
