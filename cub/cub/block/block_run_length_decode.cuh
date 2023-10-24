@@ -47,19 +47,20 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 CUB_NAMESPACE_BEGIN
 
 /**
- * \brief The BlockRunLengthDecode class supports decoding a run-length encoded array of items. That is, given
- * the two arrays run_value[N] and run_lengths[N], run_value[i] is repeated run_lengths[i] many times in the output
- * array.
- * Due to the nature of the run-length decoding algorithm ("decompression"), the output size of the run-length decoded
- * array is runtime-dependent and potentially without any upper bound. To address this, BlockRunLengthDecode allows
- * retrieving a "window" from the run-length decoded array. The window's offset can be specified and BLOCK_THREADS *
- * DECODED_ITEMS_PER_THREAD (i.e., referred to as window_size) decoded items from the specified window will be returned.
+ * @brief The BlockRunLengthDecode class supports decoding a run-length encoded array of items. That
+ * is, given the two arrays run_value[N] and run_lengths[N], run_value[i] is repeated run_lengths[i]
+ * many times in the output array. Due to the nature of the run-length decoding algorithm
+ * ("decompression"), the output size of the run-length decoded array is runtime-dependent and
+ * potentially without any upper bound. To address this, BlockRunLengthDecode allows retrieving a
+ * "window" from the run-length decoded array. The window's offset can be specified and
+ * BLOCK_THREADS * DECODED_ITEMS_PER_THREAD (i.e., referred to as window_size) decoded items from
+ * the specified window will be returned.
  *
- * \note: Trailing runs of length 0 are supported (i.e., they may only appear at the end of the run_lengths array).
- * A run of length zero may not be followed by a run length that is not zero.
+ * @note: Trailing runs of length 0 are supported (i.e., they may only appear at the end of the
+ * run_lengths array). A run of length zero may not be followed by a run length that is not zero.
  *
- * \par
- * \code
+ * @par
+ * @code
  * __global__ void ExampleKernel(...)
  * {
  *   // Specialising BlockRunLengthDecode to run-length decode items of type uint64_t
@@ -107,23 +108,38 @@ CUB_NAMESPACE_BEGIN
  *     ...
  *   }
  * }
- * \endcode
- * \par
- * Suppose the set of input \p run_values across the block of threads is
+ * @endcode
+ * @par
+ * Suppose the set of input @p run_values across the block of threads is
  * <tt>{ [0, 1], [2, 3], [4, 5], [6, 7], ..., [254, 255] }</tt> and
- * \p run_lengths is <tt>{ [1, 2], [3, 4], [5, 1], [2, 3], ..., [5, 1] }</tt>.
- * The corresponding output \p decoded_items in those threads will be <tt>{ [0, 1, 1, 2], [2, 2, 3, 3], [3, 3, 4, 4],
- * [4, 4, 4, 5], ..., [169, 169, 170, 171] }</tt> and \p relative_offsets will be <tt>{ [0, 0, 1, 0], [1, 2, 0, 1], [2,
- * 3, 0, 1], [2, 3, 4, 0], ..., [3, 4, 0, 0] }</tt> during the first iteration of the while loop.
+ * @p run_lengths is <tt>{ [1, 2], [3, 4], [5, 1], [2, 3], ..., [5, 1] }</tt>.
+ * The corresponding output @p decoded_items in those threads will be 
+ * <tt>{ [0, 1, 1, 2], [2, 2, 3, 3], [3, 3, 4, 4], [4, 4, 4, 5], ..., [169, 169, 170, 171] }</tt> 
+ * and @p relative_offsets will be
+ * <tt>{ [0, 0, 1, 0], [1, 2, 0, 1], [2, 3, 0, 1], [2, 3, 4, 0], ..., [3, 4, 0, 0] }</tt> during the
+ * first iteration of the while loop.
  *
- * \tparam ItemT The data type of the items being run-length decoded
- * \tparam BLOCK_DIM_X The thread block length in threads along the X dimension
- * \tparam RUNS_PER_THREAD The number of consecutive runs that each thread contributes
- * \tparam DECODED_ITEMS_PER_THREAD The maximum number of decoded items that each thread holds
- * \tparam DecodedOffsetT Type used to index into the block's decoded items (large enough to hold the sum over all the
- * runs' lengths)
- * \tparam BLOCK_DIM_Y The thread block length in threads along the Y dimension
- * \tparam BLOCK_DIM_Z The thread block length in threads along the Z dimension
+ * @tparam ItemT
+ *   The data type of the items being run-length decoded
+ *
+ * @tparam BLOCK_DIM_X
+ *   The thread block length in threads along the X dimension
+ *
+ * @tparam RUNS_PER_THREAD
+ *   The number of consecutive runs that each thread contributes
+ *
+ * @tparam DECODED_ITEMS_PER_THREAD
+ *   The maximum number of decoded items that each thread holds
+ *
+ * @tparam DecodedOffsetT
+ *   Type used to index into the block's decoded items (large enough to hold the sum over all the
+ *   runs' lengths)
+ *
+ * @tparam BLOCK_DIM_Y 
+ *   The thread block length in threads along the Y dimension
+ *
+ * @tparam BLOCK_DIM_Z 
+ *   The thread block length in threads along the Z dimension
  */
 template <typename ItemT,
           int BLOCK_DIM_X,
@@ -240,17 +256,23 @@ public:
 
 private:
   /**
-   * \brief Returns the offset of the first value within \p input which compares greater than \p val. This version takes
-   * \p MAX_NUM_ITEMS, an upper bound of the array size, which will be used to determine the number of binary search
-   * iterations at compile time.
+   * @brief Returns the offset of the first value within @p input which compares greater than
+   * @p val. This version takes @p MAX_NUM_ITEMS, an upper bound of the array size, which will
+   * be used to determine the number of binary search iterations at compile time.
+   *
+   * @param[in] input
+   *   Input sequence
+   *
+   * @param[in] num_items
+   *   Input sequence length
+   *
+   * @param[in] val
+   *   Search key
    */
-  template <int MAX_NUM_ITEMS,
-            typename InputIteratorT,
-            typename OffsetT,
-            typename T>
-  __device__ __forceinline__ OffsetT StaticUpperBound(InputIteratorT input, ///< [in] Input sequence
-                                                      OffsetT num_items,    ///< [in] Input sequence length
-                                                      T val)                ///< [in] Search key
+  template <int MAX_NUM_ITEMS, typename InputIteratorT, typename OffsetT, typename T>
+  __device__ __forceinline__ OffsetT StaticUpperBound(InputIteratorT input,
+                                                      OffsetT num_items,
+                                                      T val)
   {
     OffsetT lower_bound = 0;
     OffsetT upper_bound = num_items;

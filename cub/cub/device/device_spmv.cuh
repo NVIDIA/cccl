@@ -28,8 +28,9 @@
  ******************************************************************************/
 
 /**
- * \file
- * cub::DeviceSpmv provides device-wide parallel operations for performing sparse-matrix * vector multiplication (SpMV).
+ * @file
+ * cub::DeviceSpmv provides device-wide parallel operations for performing sparse-matrix * vector
+ * multiplication (SpMV).
  */
 
 #pragma once
@@ -54,10 +55,12 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * \brief DeviceSpmv provides device-wide parallel operations for performing sparse-matrix * dense-vector multiplication (SpMV).
- * \ingroup SingleModule
+ * @brief DeviceSpmv provides device-wide parallel operations for performing 
+ *        sparse-matrix * dense-vector multiplication (SpMV).
  *
- * \par Overview
+ * @ingroup SingleModule
+ *
+ * @par Overview
  * The [<em>SpMV computation</em>](http://en.wikipedia.org/wiki/Sparse_matrix-vector_multiplication)
  * performs the matrix-vector operation
  * <em>y</em> = <b>A</b>*<em>x</em> + <em>y</em>,
@@ -67,29 +70,31 @@ CUB_NAMESPACE_BEGIN
  *    (i.e., three arrays: <em>values</em>, <em>row_offsets</em>, and <em>column_indices</em>)
  *  - <em>x</em> and <em>y</em> are dense vectors
  *
- * \par Usage Considerations
- * \cdp_class{DeviceSpmv}
+ * @par Usage Considerations
+ * @cdp_class{DeviceSpmv}
  *
  */
 struct DeviceSpmv
 {
     /******************************************************************//**
-     * \name CSR matrix operations
+     * @name CSR matrix operations
      *********************************************************************/
     //@{
 
     /**
-     * \brief This function performs the matrix-vector operation <em>y</em> = <b>A</b>*<em>x</em>.
+     * @brief This function performs the matrix-vector operation
+     *        <em>y</em> = <b>A</b>*<em>x</em>.
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates SpMV upon a 9x9 CSR matrix <b>A</b>
      * representing a 3x3 lattice (24 non-zeros).
      *
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/device/device_spmv.cuh>
      *
-     * // Declare, allocate, and initialize device-accessible pointers for input matrix A, input vector x,
+     * // Declare, allocate, and initialize device-accessible pointers for input matrix A, input
+     * vector x,
      * // and output vector y
      * int    num_rows = 9;
      * int    num_cols = 9;
@@ -126,25 +131,63 @@ struct DeviceSpmv
      *
      * // d_vector_y <-- [2, 3, 2, 3, 4, 3, 2, 3, 2]
      *
-     * \endcode
+     * @endcode
      *
-     * \tparam ValueT       <b>[inferred]</b> Matrix and vector value type (e.g., /p float, /p double, etc.)
+     * @tparam ValueT
+     *   <b>[inferred]</b> Matrix and vector value type (e.g., @p float, @p double, etc.)
+     *
+     * @param[in] d_temp_storage
+     *   Device-accessible allocation of temporary storage.
+     *   When NULL, the required allocation size is written to @p temp_storage_bytes
+     *   and no work is done.
+     *
+     * @param[in,out] temp_storage_bytes
+     *   Reference to size in bytes of @p d_temp_storage allocation
+     *
+     * @param[in] d_values
+     *   Pointer to the array of @p num_nonzeros values of the corresponding nonzero elements
+     *   of matrix <b>A</b>.
+     *
+     * @param[in] d_row_offsets
+     *   Pointer to the array of @p m + 1 offsets demarcating the start of every row in
+     *   @p d_column_indices and @p d_values (with the final entry being equal to @p num_nonzeros)
+     *
+     * @param[in] d_column_indices
+     *   Pointer to the array of @p num_nonzeros column-indices of the corresponding nonzero
+     *   elements of matrix <b>A</b>.  (Indices are zero-valued.)
+     *
+     * @param[in] d_vector_x
+     *   Pointer to the array of @p num_cols values corresponding to the dense input vector
+     * <em>x</em>
+     *
+     * @param[out] d_vector_y
+     *   Pointer to the array of @p num_rows values corresponding to the dense output vector
+     * <em>y</em>
+     *
+     * @param[in] num_rows
+     *   number of rows of matrix <b>A</b>.
+     *
+     * @param[in] num_cols
+     *   number of columns of matrix <b>A</b>.
+     *
+     * @param[in] num_nonzeros
+     *   number of nonzero elements of matrix <b>A</b>.
+     *
+     * @param[in] stream
+     *   <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
      */
-    template <
-        typename            ValueT>
-    CUB_RUNTIME_FUNCTION
-    static cudaError_t CsrMV(
-        void*               d_temp_storage,                     ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-        size_t&             temp_storage_bytes,                 ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
-        const ValueT*       d_values,                           ///< [in] Pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix <b>A</b>.
-        const int*          d_row_offsets,                      ///< [in] Pointer to the array of \p m + 1 offsets demarcating the start of every row in \p d_column_indices and \p d_values (with the final entry being equal to \p num_nonzeros)
-        const int*          d_column_indices,                   ///< [in] Pointer to the array of \p num_nonzeros column-indices of the corresponding nonzero elements of matrix <b>A</b>.  (Indices are zero-valued.)
-        const ValueT*       d_vector_x,                         ///< [in] Pointer to the array of \p num_cols values corresponding to the dense input vector <em>x</em>
-        ValueT*             d_vector_y,                         ///< [out] Pointer to the array of \p num_rows values corresponding to the dense output vector <em>y</em>
-        int                 num_rows,                           ///< [in] number of rows of matrix <b>A</b>.
-        int                 num_cols,                           ///< [in] number of columns of matrix <b>A</b>.
-        int                 num_nonzeros,                       ///< [in] number of nonzero elements of matrix <b>A</b>.
-        cudaStream_t        stream = 0)                         ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+    template <typename ValueT>
+    CUB_RUNTIME_FUNCTION static cudaError_t CsrMV(void *d_temp_storage,
+                                                  size_t &temp_storage_bytes,
+                                                  const ValueT *d_values,
+                                                  const int *d_row_offsets,
+                                                  const int *d_column_indices,
+                                                  const ValueT *d_vector_x,
+                                                  ValueT *d_vector_y,
+                                                  int num_rows,
+                                                  int num_cols,
+                                                  int num_nonzeros,
+                                                  cudaStream_t stream = 0)
     {
         SpmvParams<ValueT, int> spmv_params;
         spmv_params.d_values             = d_values;

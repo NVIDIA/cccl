@@ -27,10 +27,11 @@
  ******************************************************************************/
 
 /**
- * \file
- * cub::GridEvenShare is a descriptor utility for distributing input among CUDA thread blocks in an "even-share" fashion.  Each thread block gets roughly the same number of fixed-size work units (grains).
+ * @file
+ * cub::GridEvenShare is a descriptor utility for distributing input among CUDA thread blocks in an
+ * "even-share" fashion.  Each thread block gets roughly the same number of fixed-size work units
+ * (grains).
  */
-
 
 #pragma once
 
@@ -50,17 +51,17 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * \addtogroup GridModule
+ * @addtogroup GridModule
  * @{
  */
 
 
 /**
- * \brief GridEvenShare is a descriptor utility for distributing input among
+ * @brief GridEvenShare is a descriptor utility for distributing input among
  * CUDA thread blocks in an "even-share" fashion.  Each thread block gets roughly
  * the same number of input tiles.
  *
- * \par Overview
+ * @par Overview
  * Each thread block is assigned a consecutive sequence of input tiles.  To help
  * preserve alignment and eliminate the overhead of guarded loads for all but the
  * last thread block, to GridEvenShare assigns one of three different amounts of
@@ -69,7 +70,7 @@ CUB_NAMESPACE_BEGIN
  * last thread block may be partially-full if the input is not an even multiple of
  * the scheduling grain size.
  *
- * \par
+ * @par
  * Before invoking a child grid, a parent thread will typically construct an
  * instance of GridEvenShare.  The instance can be passed to child thread blocks
  * which can initialize their per-thread block offsets using \p BlockInit().
@@ -119,14 +120,22 @@ public:
         block_stride(0)
     {}
 
-
     /**
-     * \brief Dispatch initializer. To be called prior prior to kernel launch.
+     * @brief Dispatch initializer. To be called prior prior to kernel launch.
+     *
+     * @param num_items_
+     *   Total number of input items
+     *
+     * @param max_grid_size
+     *   Maximum grid size allowable (actual grid size may be less if not warranted by the the
+     *   number of input items)
+     *
+     * @param tile_items
+     *   Number of data items per input tile
      */
-    __host__ __device__ __forceinline__ void DispatchInit(
-        OffsetT num_items_,          ///< Total number of input items
-        int     max_grid_size,      ///< Maximum grid size allowable (actual grid size may be less if not warranted by the the number of input items)
-        int     tile_items)         ///< Number of data items per input tile
+    __host__ __device__ __forceinline__ void DispatchInit(OffsetT num_items_,
+                                                          int max_grid_size,
+                                                          int tile_items)
     {
         this->block_offset          = num_items_;    // Initialize past-the-end
         this->block_end             = num_items_;    // Initialize past-the-end
@@ -141,16 +150,14 @@ public:
         this->big_share_items       = normal_share_items + tile_items;
     }
 
-
     /**
-     * \brief Initializes ranges for the specified thread block index.  Specialized
-     * for a "raking" access pattern in which each thread block is assigned a
-     * consecutive sequence of input tiles.
+     * @brief Initializes ranges for the specified thread block index. Specialized
+     *        for a "raking" access pattern in which each thread block is assigned a
+     *        consecutive sequence of input tiles.
      */
     template <int TILE_ITEMS>
-    __device__ __forceinline__ void BlockInit(
-        int block_id,
-        Int2Type<GRID_MAPPING_RAKE> /*strategy_tag*/)
+    __device__ __forceinline__ void BlockInit(int block_id,
+                                              Int2Type<GRID_MAPPING_RAKE> /*strategy_tag*/)
     {
         block_stride = TILE_ITEMS;
         if (block_id < big_shares)
@@ -169,46 +176,44 @@ public:
         // Else default past-the-end
     }
 
-
     /**
-     * \brief Block-initialization, specialized for a "raking" access
-     * pattern in which each thread block is assigned a consecutive sequence
-     * of input tiles.
+     * @brief Block-initialization, specialized for a "raking" access
+     *        pattern in which each thread block is assigned a consecutive sequence
+     *        of input tiles.
      */
     template <int TILE_ITEMS>
-    __device__ __forceinline__ void BlockInit(
-        int block_id,
-        Int2Type<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
+    __device__ __forceinline__ void BlockInit(int block_id,
+                                              Int2Type<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
     {
         block_stride = grid_size * TILE_ITEMS;
         block_offset = (block_id * TILE_ITEMS);
         block_end = num_items;
     }
 
-
     /**
-     * \brief Block-initialization, specialized for "strip mining" access
-     * pattern in which the input tiles assigned to each thread block are
-     * separated by a stride equal to the the extent of the grid.
+     * @brief Block-initialization, specialized for "strip mining" access
+     *        pattern in which the input tiles assigned to each thread block are
+     *        separated by a stride equal to the the extent of the grid.
      */
-    template <
-        int TILE_ITEMS,
-        GridMappingStrategy STRATEGY>
+    template <int TILE_ITEMS, GridMappingStrategy STRATEGY>
     __device__ __forceinline__ void BlockInit()
     {
         BlockInit<TILE_ITEMS>(blockIdx.x, Int2Type<STRATEGY>());
     }
 
-
     /**
-     * \brief Block-initialization, specialized for a "raking" access
-     * pattern in which each thread block is assigned a consecutive sequence
-     * of input tiles.
+     * @brief Block-initialization, specialized for a "raking" access
+     *        pattern in which each thread block is assigned a consecutive sequence
+     *        of input tiles.
+     *
+     * @param[in] block_offset
+     *   Threadblock begin offset (inclusive)
+     *
+     * @param[in] block_end
+     *   Threadblock end offset (exclusive)
      */
     template <int TILE_ITEMS>
-    __device__ __forceinline__ void BlockInit(
-        OffsetT block_offset,                       ///< [in] Threadblock begin offset (inclusive)
-        OffsetT block_end)                          ///< [in] Threadblock end offset (exclusive)
+    __device__ __forceinline__ void BlockInit(OffsetT block_offset, OffsetT block_end)
     {
         this->block_offset = block_offset;
         this->block_end = block_end;
@@ -217,8 +222,6 @@ public:
 
 
 };
-
-
 
 
 

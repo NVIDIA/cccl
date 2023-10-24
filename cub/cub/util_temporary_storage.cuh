@@ -48,22 +48,36 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 CUB_NAMESPACE_BEGIN
 
 /**
- * \addtogroup UtilMgmt
+ * @addtogroup UtilMgmt
  * @{
  */
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 /**
- * \brief Alias temporaries to externally-allocated device storage (or simply return the amount of storage needed).
+ * @brief Alias temporaries to externally-allocated device storage (or simply return the amount of
+ *        storage needed).
+ *
+ * @param[in] d_temp_storage
+ *   Device-accessible allocation of temporary storage.
+ *   When NULL, the required allocation size is written to @p temp_storage_bytes and no work is
+ *   done.
+ *
+ * @param[in,out] temp_storage_bytes
+ *   Size in bytes of @p d_temp_storage allocation
+ *
+ * @param[in,out] allocations
+ *   Pointers to device allocations needed
+ *
+ * @param[in] allocation_sizes
+ *   Sizes in bytes of device allocations needed
  */
 template <int ALLOCATIONS>
-__host__ __device__ __forceinline__
-cudaError_t AliasTemporaries(
-    void    *d_temp_storage,                    ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-    size_t& temp_storage_bytes,                 ///< [in,out] Size in bytes of \t d_temp_storage allocation
-    void*   (&allocations)[ALLOCATIONS],        ///< [in,out] Pointers to device allocations needed
-    size_t  (&allocation_sizes)[ALLOCATIONS])   ///< [in] Sizes in bytes of device allocations needed
+__host__ __device__ __forceinline__ cudaError_t
+AliasTemporaries(void *d_temp_storage,
+                 size_t &temp_storage_bytes,
+                 void *(&allocations)[ALLOCATIONS],
+                 size_t (&allocation_sizes)[ALLOCATIONS])
 {
     constexpr int ALIGN_BYTES   = 256;
     constexpr int ALIGN_MASK    = ~(ALIGN_BYTES - 1);

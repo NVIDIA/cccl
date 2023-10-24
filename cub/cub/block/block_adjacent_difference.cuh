@@ -1069,18 +1069,26 @@ public:
     #ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
 
     /**
-     * \deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeads
-     * APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft instead.
+     * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeads
+     *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft instead.
+     *
+     * @param[out] output
+     *   Calling thread's discontinuity head_flags
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[out] preds
+     *   Calling thread's predecessor items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
      */
-    template <
-        int             ITEMS_PER_THREAD,
-        typename        FlagT,
-        typename        FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagHeads(
-        FlagT           (&output)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        T               (&input)[ITEMS_PER_THREAD],     ///< [in] Calling thread's input items
-        T               (&preds)[ITEMS_PER_THREAD],     ///< [out] Calling thread's predecessor items
-        FlagOp          flag_op)                        ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    CUB_DEPRECATED __device__ __forceinline__ void FlagHeads(FlagT (&output)[ITEMS_PER_THREAD],
+                                                             T (&input)[ITEMS_PER_THREAD],
+                                                             T (&preds)[ITEMS_PER_THREAD],
+                                                             FlagOp flag_op)
     {
         // Share last item
         temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
@@ -1103,18 +1111,31 @@ public:
     }
 
     /**
-     * \deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeads
-     * APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft instead.
+     * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeads
+     *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft instead.
+     *
+     * @param[out] output
+     *   Calling thread's discontinuity result
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[out] preds
+     *   Calling thread's predecessor items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
+     *
+     * @param[in] tile_predecessor_item
+     *   <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item
+     *   (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
      */
-    template <int             ITEMS_PER_THREAD,
-              typename        FlagT,
-              typename        FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagHeads(
-        FlagT           (&output)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity result
-        T               (&input)[ITEMS_PER_THREAD],     ///< [in] Calling thread's input items
-        T               (&preds)[ITEMS_PER_THREAD],     ///< [out] Calling thread's predecessor items
-        FlagOp          flag_op,                        ///< [in] Binary boolean flag predicate
-        T               tile_predecessor_item)          ///< [in] <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    CUB_DEPRECATED __device__ __forceinline__ void FlagHeads(FlagT (&output)[ITEMS_PER_THREAD],
+                                                             T (&input)[ITEMS_PER_THREAD],
+                                                             T (&preds)[ITEMS_PER_THREAD],
+                                                             FlagOp flag_op,
+                                                             T tile_predecessor_item)
     {
         // Share last item
         temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
@@ -1135,51 +1156,71 @@ public:
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
     /**
-     * \deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeads
-     * APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft instead.
+     * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeads
+     *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft instead.
+     *
+     * @param[out] output
+     *   Calling thread's discontinuity result
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
      */
-    template <int ITEMS_PER_THREAD,
-              typename FlagT,
-              typename FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void
-    FlagHeads(FlagT           (&output)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity result
-              T               (&input)[ITEMS_PER_THREAD],     ///< [in] Calling thread's input items
-              FlagOp          flag_op)                        ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    CUB_DEPRECATED __device__ __forceinline__ void FlagHeads(FlagT (&output)[ITEMS_PER_THREAD],
+                                                             T (&input)[ITEMS_PER_THREAD],
+                                                             FlagOp flag_op)
     {
         T preds[ITEMS_PER_THREAD];
         FlagHeads(output, input, preds, flag_op);
     }
 
     /**
-     * \deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeads
-     * APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft instead.
+     * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeads
+     *              APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft instead.
+     *
+     * @param[out] output
+     *   Calling thread's discontinuity result
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
+     *
+     * @param[in] tile_predecessor_item
+     *   <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item
+     *   (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
      */
-    template <int ITEMS_PER_THREAD,
-              typename FlagT,
-              typename FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void
-    FlagHeads(FlagT           (&output)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity result
-              T               (&input)[ITEMS_PER_THREAD],     ///< [in] Calling thread's input items
-              FlagOp          flag_op,                        ///< [in] Binary boolean flag predicate
-              T               tile_predecessor_item)          ///< [in] <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    CUB_DEPRECATED __device__ __forceinline__ void FlagHeads(FlagT (&output)[ITEMS_PER_THREAD],
+                                                             T (&input)[ITEMS_PER_THREAD],
+                                                             FlagOp flag_op,
+                                                             T tile_predecessor_item)
     {
         T preds[ITEMS_PER_THREAD];
         FlagHeads(output, input, preds, flag_op, tile_predecessor_item);
     }
 
-
     /**
-     * \deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagTails
-     * APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractRight instead.
+     * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagTails
+     *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractRight instead.
+     *
+     * @param output
+     *   [out] Calling thread's discontinuity result
+     *
+     * @param input
+     *   [in] Calling thread's input items
+     *
+     * @param flag_op
+     *   [in] Binary boolean flag predicate
      */
-    template <
-      int             ITEMS_PER_THREAD,
-      typename        FlagT,
-      typename        FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagTails(
-        FlagT           (&output)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity result
-        T               (&input)[ITEMS_PER_THREAD],     ///< [in] Calling thread's input items
-        FlagOp          flag_op)                        ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    CUB_DEPRECATED __device__ __forceinline__ void FlagTails(FlagT (&output)[ITEMS_PER_THREAD],
+                                                             T (&input)[ITEMS_PER_THREAD],
+                                                             FlagOp flag_op)
     {
         // Share first item
         temp_storage.first_items[linear_tid] = input[0];
@@ -1199,20 +1240,29 @@ public:
         Iterate::FlagTails(linear_tid, output, input, flag_op);
     }
 
-
     /**
-     * \deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagTails
-     * APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractRight instead.
+     * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagTails
+     *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractRight instead.
+     *
+     * @param[out] output
+     *   Calling thread's discontinuity result
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
+     *
+     * @param[in] tile_successor_item
+     *   <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> Item with which to compare
+     *   the last tile item (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from
+     *   <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
      */
-    template <
-      int             ITEMS_PER_THREAD,
-      typename        FlagT,
-      typename        FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagTails(
-        FlagT           (&output)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity result
-        T               (&input)[ITEMS_PER_THREAD],     ///< [in] Calling thread's input items
-        FlagOp          flag_op,                        ///< [in] Binary boolean flag predicate
-        T               tile_successor_item)            ///< [in] <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> Item with which to compare the last tile item (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    CUB_DEPRECATED __device__ __forceinline__ void FlagTails(FlagT (&output)[ITEMS_PER_THREAD],
+                                                             T (&input)[ITEMS_PER_THREAD],
+                                                             FlagOp flag_op,
+                                                             T tile_successor_item)
     {
         // Share first item
         temp_storage.first_items[linear_tid] = input[0];
@@ -1234,21 +1284,29 @@ public:
         Iterate::FlagTails(linear_tid, output, input, flag_op);
     }
 
-
     /**
-     * \deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
-     * APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft or
-     * cub::BlockAdjacentDifference::SubtractRight instead.
+     * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
+     *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft or
+     *             cub::BlockAdjacentDifference::SubtractRight instead.
+     *
+     * @param[out] head_flags
+     *   Calling thread's discontinuity head_flags
+     *
+     * @param[out] tail_flags
+     *   Calling thread's discontinuity tail_flags
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
      */
-    template <
-      int             ITEMS_PER_THREAD,
-      typename        FlagT,
-      typename        FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagHeadsAndTails(
-        FlagT           (&head_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        FlagT           (&tail_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity tail_flags
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        FlagOp          flag_op)                            ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    CUB_DEPRECATED __device__ __forceinline__ void
+    FlagHeadsAndTails(FlagT (&head_flags)[ITEMS_PER_THREAD],
+                      FlagT (&tail_flags)[ITEMS_PER_THREAD],
+                      T (&input)[ITEMS_PER_THREAD],
+                      FlagOp flag_op)
     {
         // Share first and last items
         temp_storage.first_items[linear_tid] = input[0];
@@ -1290,22 +1348,35 @@ public:
         Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
     }
 
-
     /**
-     * \deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
-     * APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft or
-     * cub::BlockAdjacentDifference::SubtractRight instead.
+     * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
+     *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft or
+     *             cub::BlockAdjacentDifference::SubtractRight instead.
+     *
+     * @param[out] head_flags
+     *   Calling thread's discontinuity head_flags
+     *
+     * @param[out] tail_flags
+     *   Calling thread's discontinuity tail_flags
+     *
+     * @param[in] tile_successor_item
+     *   <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> Item with which to compare
+     *   the last tile item (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from
+     *   <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
      */
-    template <
-      int             ITEMS_PER_THREAD,
-      typename        FlagT,
-      typename        FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagHeadsAndTails(
-        FlagT           (&head_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        FlagT           (&tail_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity tail_flags
-        T               tile_successor_item,                ///< [in] <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> Item with which to compare the last tile item (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        FlagOp          flag_op)                            ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    CUB_DEPRECATED __device__ __forceinline__ void
+    FlagHeadsAndTails(FlagT (&head_flags)[ITEMS_PER_THREAD],
+                      FlagT (&tail_flags)[ITEMS_PER_THREAD],
+                      T tile_successor_item,
+                      T (&input)[ITEMS_PER_THREAD],
+                      FlagOp flag_op)
     {
         // Share first and last items
         temp_storage.first_items[linear_tid] = input[0];
@@ -1349,20 +1420,33 @@ public:
     }
 
     /**
-     * \deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
-     * APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft or
-     * cub::BlockAdjacentDifference::SubtractRight instead.
+     * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
+     *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft or
+     *             cub::BlockAdjacentDifference::SubtractRight instead.
+     *
+     * @param[out] head_flags
+     *   Calling thread's discontinuity head_flags
+     *
+     * @param[in] tile_predecessor_item
+     *   <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item
+     *   (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
+     *
+     * @param[out] tail_flags
+     *   Calling thread's discontinuity tail_flags
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
      */
-    template <
-      int             ITEMS_PER_THREAD,
-      typename        FlagT,
-      typename        FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagHeadsAndTails(
-        FlagT           (&head_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        T               tile_predecessor_item,              ///< [in] <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
-        FlagT           (&tail_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity tail_flags
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        FlagOp          flag_op)                            ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    CUB_DEPRECATED __device__ __forceinline__ void
+    FlagHeadsAndTails(FlagT (&head_flags)[ITEMS_PER_THREAD],
+                      T tile_predecessor_item,
+                      FlagT (&tail_flags)[ITEMS_PER_THREAD],
+                      T (&input)[ITEMS_PER_THREAD],
+                      FlagOp flag_op)
     {
         // Share first and last items
         temp_storage.first_items[linear_tid] = input[0];
@@ -1399,23 +1483,40 @@ public:
         Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
     }
 
-
     /**
-     * \deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
-     * APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft or
-     * cub::BlockAdjacentDifference::SubtractRight instead.
+     * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
+     *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft or
+     *             cub::BlockAdjacentDifference::SubtractRight instead.
+     *
+     * @param head_flags
+     *   [out] Calling thread's discontinuity head_flags
+     *
+     * @param tile_predecessor_item
+     *   [in] <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile
+     *   item (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
+     *
+     * @param tail_flags
+     *   [out] Calling thread's discontinuity tail_flags
+     *
+     * @param tile_successor_item
+     *   [in] <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> Item with which to
+     *   compare the last tile item (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from
+     *   <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
+     *
+     * @param input
+     *   [in] Calling thread's input items
+     *
+     * @param flag_op
+     *   [in] Binary boolean flag predicate
      */
-    template <
-        int             ITEMS_PER_THREAD,
-        typename        FlagT,
-        typename        FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagHeadsAndTails(
-        FlagT           (&head_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        T               tile_predecessor_item,              ///< [in] <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
-        FlagT           (&tail_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity tail_flags
-        T               tile_successor_item,                ///< [in] <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> Item with which to compare the last tile item (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        FlagOp          flag_op)                            ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    CUB_DEPRECATED __device__ __forceinline__ void
+    FlagHeadsAndTails(FlagT (&head_flags)[ITEMS_PER_THREAD],
+                      T tile_predecessor_item,
+                      FlagT (&tail_flags)[ITEMS_PER_THREAD],
+                      T tile_successor_item,
+                      T (&input)[ITEMS_PER_THREAD],
+                      FlagOp flag_op)
     {
         // Share first and last items
         temp_storage.first_items[linear_tid] = input[0];

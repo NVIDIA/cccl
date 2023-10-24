@@ -27,7 +27,7 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Random-access iterator types
  */
 
@@ -59,30 +59,30 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * \addtogroup UtilIterator
+ * @addtogroup UtilIterator
  * @{
  */
 
-
 /**
- * \brief A random-access input wrapper for dereferencing array values using a PTX cache load modifier.
+ * @brief A random-access input wrapper for dereferencing array values using a PTX cache load
+ *        modifier.
  *
- * \par Overview
+ * @par Overview
  * - CacheModifiedInputIterator is a random-access input iterator that wraps a native
- *   device pointer of type <tt>ValueType*</tt>. \p ValueType references are
- *   made by reading \p ValueType values through loads modified by \p MODIFIER.
+ *   device pointer of type <tt>ValueType*</tt>. @p ValueType references are
+ *   made by reading @p ValueType values through loads modified by @p MODIFIER.
  * - Can be used to load any data type from memory using PTX cache load modifiers (e.g., "LOAD_LDG",
  *   "LOAD_CG", "LOAD_CA", "LOAD_CS", "LOAD_CV", etc.).
  * - Can be constructed, manipulated, and exchanged within and between host and device
  *   functions, but can only be dereferenced within device functions.
  * - Compatible with Thrust API v1.7 or newer.
  *
- * \par Snippet
- * The code snippet below illustrates the use of \p CacheModifiedInputIterator to
+ * @par Snippet
+ * The code snippet below illustrates the use of @p CacheModifiedInputIterator to
  * dereference a device array of double using the "ldg" PTX load modifier
  * (i.e., load values through texture cache).
- * \par
- * \code
+ * @par
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/iterator/cache_modified_input_iterator.cuh>
  *
  * // Declare, allocate, and initialize a device array
@@ -96,11 +96,16 @@ CUB_NAMESPACE_BEGIN
  * printf("%f\n", itr[1]);  // 6.0
  * printf("%f\n", itr[6]);  // 9.0
  *
- * \endcode
+ * @endcode
  *
- * \tparam CacheLoadModifier    The cub::CacheLoadModifier to use when accessing data
- * \tparam ValueType            The value type of this iterator
- * \tparam OffsetT              The difference type of this iterator (Default: \p ptrdiff_t)
+ * @tparam CacheLoadModifier    
+ *   The cub::CacheLoadModifier to use when accessing data
+ *
+ * @tparam ValueType            
+ *   The value type of this iterator
+ *
+ * @tparam OffsetT              
+ *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <
     CacheLoadModifier   MODIFIER,
@@ -111,22 +116,35 @@ class CacheModifiedInputIterator
 public:
 
     // Required iterator traits
-    typedef CacheModifiedInputIterator          self_type;              ///< My own type
-    typedef OffsetT                             difference_type;        ///< Type to express the result of subtracting one iterator from another
-    typedef ValueType                           value_type;             ///< The type of the element the iterator can point to
-    typedef ValueType*                          pointer;                ///< The type of a pointer to an element the iterator can point to
-    typedef ValueType                           reference;              ///< The type of a reference to an element the iterator can point to
+
+    /// My own type
+    typedef CacheModifiedInputIterator self_type;
+
+    /// Type to express the result of subtracting one iterator from another
+    typedef OffsetT difference_type;
+
+    /// The type of the element the iterator can point to
+    typedef ValueType value_type;
+
+    /// The type of a pointer to an element the iterator can point to
+    typedef ValueType *pointer;
+
+    /// The type of a reference to an element the iterator can point to
+    typedef ValueType reference;
 
 #if (THRUST_VERSION >= 100700)
     // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
+
+    /// The iterator category
     typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
         THRUST_NS_QUALIFIER::device_system_tag,
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        ///< The iterator category
+      >::type iterator_category;                                        
 #else
-    typedef std::random_access_iterator_tag     iterator_category;      ///< The iterator category
+    /// The iterator category
+    typedef std::random_access_iterator_tag     iterator_category;      
 #endif  // THRUST_VERSION
 
 
