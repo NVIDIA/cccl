@@ -27,8 +27,9 @@
  ******************************************************************************/
 
 /**
- * \file
- * cub::DeviceSelect::UniqueByKey provides device-wide, parallel operations for selecting unique items by key from sequences of data items residing within device-accessible memory.
+ * @file
+ * cub::DeviceSelect::UniqueByKey provides device-wide, parallel operations for selecting unique
+ * items by key from sequences of data items residing within device-accessible memory.
  */
 
 #include <cub/agent/agent_unique_by_key.cuh>
@@ -47,29 +48,81 @@ CUB_NAMESPACE_BEGIN
  *****************************************************************************/
 
 /**
- * Unique by key kernel entry point (multi-block)
+ * @brief Unique by key kernel entry point (multi-block)
+ *
+ * @tparam KeyInputIteratorT
+ *   Random-access input iterator type for keys
+ *
+ * @tparam ValueInputIteratorT
+ *   Random-access input iterator type for values
+ *
+ * @tparam KeyOutputIteratorT
+ *   Random-access output iterator type for keys
+ *
+ * @tparam ValueOutputIteratorT
+ *   Random-access output iterator type for values
+ *
+ * @tparam NumSelectedIteratorT
+ *   Output iterator type for recording the number of items selected
+ *
+ * @tparam ScanTileStateT
+ *   Tile status interface type
+ *
+ * @tparam EqualityOpT
+ *   Equality operator type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
+ *
+ * @param[in] d_keys_in
+ *   Pointer to the input sequence of keys
+ *
+ * @param[in] d_values_in
+ *   Pointer to the input sequence of values
+ *
+ * @param[out] d_keys_out
+ *   Pointer to the output sequence of selected data items
+ *
+ * @param[out] d_values_out
+ *   Pointer to the output sequence of selected data items
+ *
+ * @param[out] d_num_selected_out
+ *   Pointer to the total number of items selected
+ *   (i.e., length of @p d_keys_out or @p d_values_out)
+ *
+ * @param[in] tile_state
+ *   Tile status interface
+ *
+ * @param[in] equality_op
+ *   Equality operator
+ *
+ * @param[in] num_items
+ *   Total number of input items
+ *   (i.e., length of @p d_keys_in or @p d_values_in)
+ *
+ * @param[in] num_tiles
+ *   Total number of tiles for the entire problem
  */
-template <
-    typename ChainedPolicyT,
-    typename KeyInputIteratorT,                     ///< Random-access input iterator type for keys
-    typename ValueInputIteratorT,                   ///< Random-access input iterator type for values
-    typename KeyOutputIteratorT,                    ///< Random-access output iterator type for keys
-    typename ValueOutputIteratorT,                  ///< Random-access output iterator type for values
-    typename NumSelectedIteratorT,                  ///< Output iterator type for recording the number of items selected
-    typename ScanTileStateT,                        ///< Tile status interface type
-    typename EqualityOpT,                           ///< Equality operator type
-    typename OffsetT>                               ///< Signed integer type for global offsets
-__launch_bounds__ (int(ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT::BLOCK_THREADS))
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
-    KeyInputIteratorT       d_keys_in,              ///< [in] Pointer to the input sequence of keys
-    ValueInputIteratorT     d_values_in,            ///< [in] Pointer to the input sequence of values
-    KeyOutputIteratorT      d_keys_out,             ///< [out] Pointer to the output sequence of selected data items
-    ValueOutputIteratorT    d_values_out,           ///< [out] Pointer to the output sequence of selected data items
-    NumSelectedIteratorT    d_num_selected_out,     ///< [out] Pointer to the total number of items selected (i.e., length of \p d_keys_out or \p d_values_out)
-    ScanTileStateT          tile_state,             ///< [in] Tile status interface
-    EqualityOpT             equality_op,            ///< [in] Equality operator
-    OffsetT                 num_items,              ///< [in] Total number of input items (i.e., length of \p d_keys_in or \p d_values_in)
-    int                     num_tiles)              ///< [in] Total number of tiles for the entire problem
+template <typename ChainedPolicyT,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename NumSelectedIteratorT,
+          typename ScanTileStateT,
+          typename EqualityOpT,
+          typename OffsetT>
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES
+  void DeviceUniqueByKeySweepKernel(KeyInputIteratorT d_keys_in,
+                                    ValueInputIteratorT d_values_in,
+                                    KeyOutputIteratorT d_keys_out,
+                                    ValueOutputIteratorT d_values_out,
+                                    NumSelectedIteratorT d_num_selected_out,
+                                    ScanTileStateT tile_state,
+                                    EqualityOpT equality_op,
+                                    OffsetT num_items,
+                                    int num_tiles)
 {
     using AgentUniqueByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT;
 
@@ -98,17 +151,37 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
  ******************************************************************************/
 
 /**
- * Utility class for dispatching the appropriately-tuned kernels for DeviceSelect
+ * @brief Utility class for dispatching the appropriately-tuned kernels for DeviceSelect
+ *
+ * @tparam KeyInputIteratorT
+ *   Random-access input iterator type for keys
+ *
+ * @tparam ValueInputIteratorT
+ *   Random-access input iterator type for values
+ *
+ * @tparam KeyOutputIteratorT
+ *   Random-access output iterator type for keys
+ *
+ * @tparam ValueOutputIteratorT
+ *   Random-access output iterator type for values
+ *
+ * @tparam NumSelectedIteratorT
+ *   Output iterator type for recording the number of items selected
+ *
+ * @tparam EqualityOpT
+ *   Equality operator type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
  */
-template <
-    typename KeyInputIteratorT,                 ///< Random-access input iterator type for keys
-    typename ValueInputIteratorT,               ///< Random-access input iterator type for values
-    typename KeyOutputIteratorT,                ///< Random-access output iterator type for keys
-    typename ValueOutputIteratorT,              ///< Random-access output iterator type for values
-    typename NumSelectedIteratorT,              ///< Output iterator type for recording the number of items selected
-    typename EqualityOpT,                       ///< Equality operator type
-    typename OffsetT,                           ///< Signed integer type for global offsets
-    typename SelectedPolicy = DeviceUniqueByKeyPolicy<KeyInputIteratorT, ValueInputIteratorT>>
+template <typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename NumSelectedIteratorT,
+          typename EqualityOpT,
+          typename OffsetT,
+          typename SelectedPolicy = DeviceUniqueByKeyPolicy<KeyInputIteratorT, ValueInputIteratorT>>
 struct DispatchUniqueByKey : SelectedPolicy
 {
     /******************************************************************************
@@ -127,41 +200,93 @@ struct DispatchUniqueByKey : SelectedPolicy
     // Tile status descriptor interface type
     using ScanTileStateT = ScanTileState<OffsetT>;
 
+    /// Device-accessible allocation of temporary storage.  When NULL, the required allocation size
+    /// is written to @p temp_storage_bytes and no work is done.
+    void *d_temp_storage;
 
-    void*                   d_temp_storage;             ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-    size_t&                 temp_storage_bytes;         ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
-    KeyInputIteratorT       d_keys_in;                  ///< [in] Pointer to the input sequence of keys
-    ValueInputIteratorT     d_values_in;                ///< [in] Pointer to the input sequence of values
-    KeyOutputIteratorT      d_keys_out;                 ///< [out] Pointer to the output sequence of selected data items
-    ValueOutputIteratorT    d_values_out;               ///< [out] Pointer to the output sequence of selected data items
-    NumSelectedIteratorT    d_num_selected_out;         ///< [out] Pointer to the total number of items selected (i.e., length of \p d_keys_out or \p d_values_out)
-    EqualityOpT             equality_op;                ///< [in] Equality operator
-    OffsetT                 num_items;                  ///< [in] Total number of input items (i.e., length of \p d_keys_in or \p d_values_in)
-    cudaStream_t            stream;                     ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+    /// Reference to size in bytes of @p d_temp_storage allocation
+    size_t &temp_storage_bytes;
 
-    CUB_RUNTIME_FUNCTION __forceinline__
-    DispatchUniqueByKey(
-        void*                   d_temp_storage,         ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-        size_t&                 temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
-        KeyInputIteratorT       d_keys_in,              ///< [in] Pointer to the input sequence of keys
-        ValueInputIteratorT     d_values_in,            ///< [in] Pointer to the input sequence of values
-        KeyOutputIteratorT      d_keys_out,             ///< [out] Pointer to the output sequence of selected data items
-        ValueOutputIteratorT    d_values_out,           ///< [out] Pointer to the output sequence of selected data items
-        NumSelectedIteratorT    d_num_selected_out,     ///< [out] Pointer to the total number of items selected (i.e., length of \p d_keys_out or \p d_values_out)
-        EqualityOpT             equality_op,            ///< [in] Equality operator
-        OffsetT                 num_items,              ///< [in] Total number of input items (i.e., length of \p d_keys_in or \p d_values_in)
-        cudaStream_t            stream                  ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
-    ):
-        d_temp_storage(d_temp_storage),
-        temp_storage_bytes(temp_storage_bytes),
-        d_keys_in(d_keys_in),
-        d_values_in(d_values_in),
-        d_keys_out(d_keys_out),
-        d_values_out(d_values_out),
-        d_num_selected_out(d_num_selected_out),
-        equality_op(equality_op),
-        num_items(num_items),
-        stream(stream)
+    /// Pointer to the input sequence of keys
+    KeyInputIteratorT d_keys_in;
+
+    /// Pointer to the input sequence of values
+    ValueInputIteratorT d_values_in;
+
+    /// Pointer to the output sequence of selected data items
+    KeyOutputIteratorT d_keys_out;
+
+    /// Pointer to the output sequence of selected data items
+    ValueOutputIteratorT d_values_out;
+
+    /// Pointer to the total number of items selected 
+    /// (i.e., length of @p d_keys_out or @p d_values_out)
+    NumSelectedIteratorT d_num_selected_out;
+
+    /// Equality operator
+    EqualityOpT equality_op;
+
+    /// Total number of input items (i.e., length of @p d_keys_in or @p d_values_in)
+    OffsetT num_items;
+
+    /// <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+    cudaStream_t stream;
+
+    /**
+     * @param[in] d_temp_storage
+     *   Device-accessible allocation of temporary storage.
+     *   When NULL, the required allocation size is written to
+     *   @p temp_storage_bytes and no work is done.
+     *
+     * @tparam temp_storage_bytes
+     *   [in,out] Reference to size in bytes of @p d_temp_storage allocation
+     *
+     * @param[in] d_keys_in
+     *   Pointer to the input sequence of keys
+     *
+     * @param[in] d_values_in
+     *   Pointer to the input sequence of values
+     *
+     * @param[out] d_keys_out
+     *   Pointer to the output sequence of selected data items
+     *
+     * @param[out] d_values_out
+     *   Pointer to the output sequence of selected data items
+     *
+     * @param[out] d_num_selected_out
+     *   Pointer to the total number of items selected
+     *   (i.e., length of @p d_keys_out or @p d_values_out)
+     *
+     * @param[in] equality_op
+     *   Equality operator
+     *
+     * @param[in] num_items
+     *   Total number of input items (i.e., length of @p d_keys_in or @p d_values_in)
+     *
+     * @param[in] stream
+     *   <b>[optional]</b> CUDA stream to launch kernels within.
+     *   Default is stream<sub>0</sub>.
+     */
+    CUB_RUNTIME_FUNCTION __forceinline__ DispatchUniqueByKey(void *d_temp_storage,
+                                                             size_t &temp_storage_bytes,
+                                                             KeyInputIteratorT d_keys_in,
+                                                             ValueInputIteratorT d_values_in,
+                                                             KeyOutputIteratorT d_keys_out,
+                                                             ValueOutputIteratorT d_values_out,
+                                                             NumSelectedIteratorT d_num_selected_out,
+                                                             EqualityOpT equality_op,
+                                                             OffsetT num_items,
+                                                             cudaStream_t stream)
+        : d_temp_storage(d_temp_storage)
+        , temp_storage_bytes(temp_storage_bytes)
+        , d_keys_in(d_keys_in)
+        , d_values_in(d_values_in)
+        , d_keys_out(d_keys_out)
+        , d_values_out(d_values_out)
+        , d_num_selected_out(d_num_selected_out)
+        , equality_op(equality_op)
+        , num_items(num_items)
+        , stream(stream)
     {}
 
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
@@ -397,22 +522,54 @@ struct DispatchUniqueByKey : SelectedPolicy
         );
     }
 
-
     /**
-    * Internal dispatch routine
-    */
-    CUB_RUNTIME_FUNCTION __forceinline__
-    static cudaError_t Dispatch(
-        void*                   d_temp_storage,         ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-        size_t                  &temp_storage_bytes,    ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
-        KeyInputIteratorT       d_keys_in,              ///< [in] Pointer to the input sequence of keys
-        ValueInputIteratorT     d_values_in,            ///< [in] Pointer to the input sequence of values
-        KeyOutputIteratorT      d_keys_out,             ///< [out] Pointer to the output sequence of selected data items
-        ValueOutputIteratorT    d_values_out,           ///< [out] Pointer to the output sequence of selected data items
-        NumSelectedIteratorT    d_num_selected_out,     ///< [out] Pointer to the total number of items selected (i.e., length of \p d_keys_out or \p d_values_out)
-        EqualityOpT             equality_op,            ///< [in] Equality operator
-        OffsetT                 num_items,              ///< [in] Total number of input items (i.e., the length of \p d_in)
-        cudaStream_t            stream)                 ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+     * @brief Internal dispatch routine
+     *
+     * @param[in] d_temp_storage
+     *   Device-accessible allocation of temporary storage.
+     *   When NULL, the required allocation size is written to
+     *   @p temp_storage_bytes and no work is done.
+     *
+     * @param[in,out] &temp_storage_bytes
+     *   Reference to size in bytes of @p d_temp_storage allocation
+     *
+     * @param[in] d_keys_in
+     *   Pointer to the input sequence of keys
+     *
+     * @param[in] d_values_in
+     *   Pointer to the input sequence of values
+     *
+     * @param[out] d_keys_out
+     *   Pointer to the output sequence of selected data items
+     *
+     * @param[out] d_values_out
+     *   Pointer to the output sequence of selected data items
+     *
+     * @param[out] d_num_selected_out
+     *   Pointer to the total number of items selected
+     *   (i.e., length of @p d_keys_out or @p d_values_out)
+     *
+     * @param[in] equality_op
+     *   Equality operator
+     *
+     * @param[in] num_items
+     *   Total number of input items (i.e., the length of @p d_in)
+     *
+     * @param[in] stream
+     *   <b>[optional]</b> CUDA stream to launch kernels within.
+     *   Default is stream<sub>0</sub>.
+     */
+    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    Dispatch(void *d_temp_storage,
+             size_t &temp_storage_bytes,
+             KeyInputIteratorT d_keys_in,
+             ValueInputIteratorT d_values_in,
+             KeyOutputIteratorT d_keys_out,
+             ValueOutputIteratorT d_values_out,
+             NumSelectedIteratorT d_num_selected_out,
+             EqualityOpT equality_op,
+             OffsetT num_items,
+             cudaStream_t stream)
     {
         using MaxPolicyT = typename DispatchUniqueByKey::MaxPolicy;
 

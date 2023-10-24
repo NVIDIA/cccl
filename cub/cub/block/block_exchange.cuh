@@ -202,15 +202,20 @@ private:
         return private_storage;
     }
 
-
     /**
-     * Transposes data items from <em>blocked</em> arrangement to <em>striped</em> arrangement.  Specialized for no timeslicing.
+     * @brief Transposes data items from <em>blocked</em> arrangement to <em>striped</em>
+     *        arrangement. Specialized for no timeslicing.
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
      */
     template <typename OutputT>
-    __device__ __forceinline__ void BlockedToStriped(
-        InputT          (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OutputT         (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        Int2Type<false> /*time_slicing*/)
+    __device__ __forceinline__ void BlockedToStriped(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                     OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                     Int2Type<false> /*time_slicing*/)
     {
         #pragma unroll
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
@@ -232,15 +237,20 @@ private:
         }
     }
 
-
     /**
-     * Transposes data items from <em>blocked</em> arrangement to <em>striped</em> arrangement.  Specialized for warp-timeslicing.
+     * @brief Transposes data items from <em>blocked</em> arrangement to <em>striped</em>
+     *        arrangement.  Specialized for warp-timeslicing.
+     *
+     * @param[in] input_items 
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[out] output_items 
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
      */
     template <typename OutputT>
-    __device__ __forceinline__ void BlockedToStriped(
-        InputT          (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OutputT         (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        Int2Type<true>  /*time_slicing*/)
+    __device__ __forceinline__ void BlockedToStriped(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                     OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                     Int2Type<true> /*time_slicing*/)
     {
         InputT temp_items[ITEMS_PER_THREAD];
 
@@ -293,15 +303,20 @@ private:
         }
     }
 
-
     /**
-     * Transposes data items from <em>blocked</em> arrangement to <em>warp-striped</em> arrangement. Specialized for no timeslicing
+     * @brief Transposes data items from <em>blocked</em> arrangement to <em>warp-striped</em>
+     *        arrangement. Specialized for no timeslicing
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
      */
     template <typename OutputT>
-    __device__ __forceinline__ void BlockedToWarpStriped(
-        InputT          (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OutputT         (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        Int2Type<false> /*time_slicing*/)
+    __device__ __forceinline__ void BlockedToWarpStriped(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                         OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                         Int2Type<false> /*time_slicing*/)
     {
         #pragma unroll
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
@@ -324,13 +339,19 @@ private:
     }
 
     /**
-     * Transposes data items from <em>blocked</em> arrangement to <em>warp-striped</em> arrangement. Specialized for warp-timeslicing
+     * @brief Transposes data items from <em>blocked</em> arrangement to <em>warp-striped</em>
+     *        arrangement. Specialized for warp-timeslicing
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
      */
     template <typename OutputT>
-    __device__ __forceinline__ void BlockedToWarpStriped(
-        InputT          (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OutputT         (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        Int2Type<true>  /*time_slicing*/)
+    __device__ __forceinline__ void BlockedToWarpStriped(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                         OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                         Int2Type<true> /*time_slicing*/)
     {
         if (warp_id == 0)
         {
@@ -383,15 +404,20 @@ private:
         }
     }
 
-
     /**
-     * Transposes data items from <em>striped</em> arrangement to <em>blocked</em> arrangement.  Specialized for no timeslicing.
+     * @brief Transposes data items from <em>striped</em> arrangement to <em>blocked</em>
+     *        arrangement. Specialized for no timeslicing.
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
      */
     template <typename OutputT>
-    __device__ __forceinline__ void StripedToBlocked(
-        InputT          (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OutputT         (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        Int2Type<false> /*time_slicing*/)
+    __device__ __forceinline__ void StripedToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                     OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                     Int2Type<false> /*time_slicing*/)
     {
         #pragma unroll
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
@@ -414,15 +440,20 @@ private:
         }
     }
 
-
     /**
-     * Transposes data items from <em>striped</em> arrangement to <em>blocked</em> arrangement.  Specialized for warp-timeslicing.
+     * @brief Transposes data items from <em>striped</em> arrangement to <em>blocked</em>
+     *        arrangement. Specialized for warp-timeslicing.
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
      */
     template <typename OutputT>
-    __device__ __forceinline__ void StripedToBlocked(
-        InputT          (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OutputT         (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        Int2Type<true>  /*time_slicing*/)
+    __device__ __forceinline__ void StripedToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                     OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                     Int2Type<true> /*time_slicing*/)
     {
         // Warp time-slicing
         InputT temp_items[ITEMS_PER_THREAD];
@@ -477,15 +508,20 @@ private:
         }
     }
 
-
     /**
-     * Transposes data items from <em>warp-striped</em> arrangement to <em>blocked</em> arrangement.  Specialized for no timeslicing
+     * @brief Transposes data items from <em>warp-striped</em> arrangement to <em>blocked</em>
+     *        arrangement. Specialized for no timeslicing
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
      */
     template <typename OutputT>
-    __device__ __forceinline__ void WarpStripedToBlocked(
-        InputT          (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OutputT         (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        Int2Type<false> /*time_slicing*/)
+    __device__ __forceinline__ void WarpStripedToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                         OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                         Int2Type<false> /*time_slicing*/)
     {
         #pragma unroll
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
@@ -508,15 +544,20 @@ private:
         }
     }
 
-
     /**
-     * Transposes data items from <em>warp-striped</em> arrangement to <em>blocked</em> arrangement.  Specialized for warp-timeslicing
+     * @brief Transposes data items from <em>warp-striped</em> arrangement to <em>blocked</em>
+     *        arrangement. Specialized for warp-timeslicing
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
      */
     template <typename OutputT>
-    __device__ __forceinline__ void WarpStripedToBlocked(
-        InputT          (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OutputT         (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        Int2Type<true>  /*time_slicing*/)
+    __device__ __forceinline__ void WarpStripedToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                         OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                         Int2Type<true> /*time_slicing*/)
     {
         #pragma unroll
         for (unsigned int SLICE = 0; SLICE < TIME_SLICES; ++SLICE)
@@ -547,16 +588,24 @@ private:
         }
     }
 
-
     /**
-     * Exchanges data items annotated by rank into <em>blocked</em> arrangement.  Specialized for no timeslicing.
+     * @brief Exchanges data items annotated by rank into <em>blocked</em> arrangement.  Specialized
+     * for no timeslicing.
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[in] ranks
+     *   Corresponding scatter ranks
      */
     template <typename OutputT, typename OffsetT>
-    __device__ __forceinline__ void ScatterToBlocked(
-        InputT          (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OutputT         (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OffsetT         (&ranks)[ITEMS_PER_THREAD],            ///< [in] Corresponding scatter ranks
-        Int2Type<false> /*time_slicing*/)
+    __device__ __forceinline__ void ScatterToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                     OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                     OffsetT (&ranks)[ITEMS_PER_THREAD],
+                                                     Int2Type<false> /*time_slicing*/)
     {
         #pragma unroll
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
@@ -579,14 +628,23 @@ private:
     }
 
     /**
-     * Exchanges data items annotated by rank into <em>blocked</em> arrangement.  Specialized for warp-timeslicing.
+     * @brief Exchanges data items annotated by rank into <em>blocked</em> arrangement. Specialized
+     *        for warp-timeslicing.
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[in] ranks
+     *   Corresponding scatter ranks
      */
     template <typename OutputT, typename OffsetT>
-    __device__ __forceinline__ void ScatterToBlocked(
-        InputT          (&input_items)[ITEMS_PER_THREAD],     ///< [in] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OutputT         (&output_items)[ITEMS_PER_THREAD],    ///< [out] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OffsetT         ranks[ITEMS_PER_THREAD],              ///< [in] Corresponding scatter ranks
-        Int2Type<true>  /*time_slicing*/)
+    __device__ __forceinline__ void ScatterToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                     OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                     OffsetT ranks[ITEMS_PER_THREAD],
+                                                     Int2Type<true> /*time_slicing*/)
     {
         InputT temp_items[ITEMS_PER_THREAD];
 
@@ -631,16 +689,24 @@ private:
         }
     }
 
-
     /**
-     * Exchanges data items annotated by rank into <em>striped</em> arrangement.  Specialized for no timeslicing.
+     * @brief Exchanges data items annotated by rank into <em>striped</em> arrangement.  Specialized
+     *        for no timeslicing.
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[in] ranks
+     *   Corresponding scatter ranks
      */
     template <typename OutputT, typename OffsetT>
-    __device__ __forceinline__ void ScatterToStriped(
-        InputT          (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OutputT         (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OffsetT         (&ranks)[ITEMS_PER_THREAD],            ///< [in] Corresponding scatter ranks
-        Int2Type<false> /*time_slicing*/)
+    __device__ __forceinline__ void ScatterToStriped(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                     OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                     OffsetT (&ranks)[ITEMS_PER_THREAD],
+                                                     Int2Type<false> /*time_slicing*/)
     {
         #pragma unroll
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
@@ -662,16 +728,24 @@ private:
         }
     }
 
-
     /**
-     * Exchanges data items annotated by rank into <em>striped</em> arrangement.  Specialized for warp-timeslicing.
+     * @brief Exchanges data items annotated by rank into <em>striped</em> arrangement. Specialized
+     *        for warp-timeslicing.
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
+     *
+     * @param[in] ranks
+     *   Corresponding scatter ranks
      */
     template <typename OutputT, typename OffsetT>
-    __device__ __forceinline__ void ScatterToStriped(
-        InputT          (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OutputT         (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-        OffsetT         (&ranks)[ITEMS_PER_THREAD],            ///< [in] Corresponding scatter ranks
-        Int2Type<true> /*time_slicing*/)
+    __device__ __forceinline__ void ScatterToStriped(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                     OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                     OffsetT (&ranks)[ITEMS_PER_THREAD],
+                                                     Int2Type<true> /*time_slicing*/)
     {
         InputT temp_items[ITEMS_PER_THREAD];
 
@@ -728,12 +802,12 @@ private:
 public:
 
     /******************************************************************//**
-     * \name Collective constructors
+     * @name Collective constructors
      *********************************************************************/
     //@{
 
     /**
-     * \brief Collective constructor using a private static allocation of shared memory as temporary storage.
+     * @brief Collective constructor using a private static allocation of shared memory as temporary storage.
      */
     __device__ __forceinline__ BlockExchange()
     :
@@ -744,38 +818,39 @@ public:
         warp_offset(warp_id * WARP_TIME_SLICED_ITEMS)
     {}
 
-
     /**
-     * \brief Collective constructor using the specified memory allocation as temporary storage.
+     * @brief Collective constructor using the specified memory allocation as temporary storage.
+     *
+     * @param[in] temp_storage
+     *   Reference to memory allocation having layout type TempStorage
      */
-    __device__ __forceinline__ BlockExchange(
-        TempStorage &temp_storage)             ///< [in] Reference to memory allocation having layout type TempStorage
-    :
-        temp_storage(temp_storage.Alias()),
-        linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z)),
-        lane_id(LaneId()),
-        warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS),
-        warp_offset(warp_id * WARP_TIME_SLICED_ITEMS)
+    __device__ __forceinline__ BlockExchange(TempStorage &temp_storage)
+        : temp_storage(temp_storage.Alias())
+        , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+        , lane_id(LaneId())
+        , warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS)
+        , warp_offset(warp_id * WARP_TIME_SLICED_ITEMS)
     {}
 
 
     //@}  end member group
     /******************************************************************//**
-     * \name Structured exchanges
+     * @name Structured exchanges
      *********************************************************************/
     //@{
 
     /**
-     * \brief Transposes data items from <em>striped</em> arrangement to <em>blocked</em> arrangement.
+     * @brief Transposes data items from <em>striped</em> arrangement to <em>blocked</em>
+     *        arrangement.
      *
-     * \par
-     * - \smemreuse
+     * @par
+     * - @smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates the conversion from a "striped" to a "blocked" arrangement
      * of 512 integer items partitioned across 128 threads where each thread owns 4 items.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
      *
      * __global__ void ExampleKernel(int *d_data, ...)
@@ -793,34 +868,38 @@ public:
      *     // Collectively exchange data into a blocked arrangement across threads
      *     BlockExchange(temp_storage).StripedToBlocked(thread_data, thread_data);
      *
-     * \endcode
-     * \par
-     * Suppose the set of striped input \p thread_data across the block of threads is
-     * <tt>{ [0,128,256,384], [1,129,257,385], ..., [127,255,383,511] }</tt> after loading from device-accessible memory.
-     * The corresponding output \p thread_data in those threads will be
+     * @endcode
+     * @par
+     * Suppose the set of striped input @p thread_data across the block of threads is
+     * <tt>{ [0,128,256,384], [1,129,257,385], ..., [127,255,383,511] }</tt> after loading from
+     * device-accessible memory. The corresponding output @p thread_data in those threads will be
      * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }</tt>.
      *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
      */
     template <typename OutputT>
-    __device__ __forceinline__ void StripedToBlocked(
-        InputT      (&input_items)[ITEMS_PER_THREAD],    ///< [in] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OutputT     (&output_items)[ITEMS_PER_THREAD])   ///< [out] Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+    __device__ __forceinline__ void StripedToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                     OutputT (&output_items)[ITEMS_PER_THREAD])
     {
         StripedToBlocked(input_items, output_items, Int2Type<WARP_TIME_SLICING>());
     }
 
-
     /**
-     * \brief Transposes data items from <em>blocked</em> arrangement to <em>striped</em> arrangement.
+     * @brief Transposes data items from <em>blocked</em> arrangement to <em>striped</em>
+     *        arrangement.
      *
-     * \par
-     * - \smemreuse
+     * @par
+     * - @smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates the conversion from a "blocked" to a "striped" arrangement
      * of 512 integer items partitioned across 128 threads where each thread owns 4 items.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
      *
      * __global__ void ExampleKernel(int *d_data, ...)
@@ -841,36 +920,40 @@ public:
      *     // Store data striped across block threads into an ordered tile
      *     cub::StoreDirectStriped<STORE_DEFAULT, 128>(threadIdx.x, d_data, thread_data);
      *
-     * \endcode
-     * \par
-     * Suppose the set of blocked input \p thread_data across the block of threads is
+     * @endcode
+     * @par
+     * Suppose the set of blocked input @p thread_data across the block of threads is
      * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }</tt>.
-     * The corresponding output \p thread_data in those threads will be
+     * The corresponding output @p thread_data in those threads will be
      * <tt>{ [0,128,256,384], [1,129,257,385], ..., [127,255,383,511] }</tt> in
      * preparation for storing to device-accessible memory.
      *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
      */
     template <typename OutputT>
-    __device__ __forceinline__ void BlockedToStriped(
-        InputT      (&input_items)[ITEMS_PER_THREAD],    ///< [in] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OutputT     (&output_items)[ITEMS_PER_THREAD])   ///< [out] Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+    __device__ __forceinline__ void BlockedToStriped(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                     OutputT (&output_items)[ITEMS_PER_THREAD])
     {
         BlockedToStriped(input_items, output_items, Int2Type<WARP_TIME_SLICING>());
     }
 
-
-
     /**
-     * \brief Transposes data items from <em>warp-striped</em> arrangement to <em>blocked</em> arrangement.
+     * @brief Transposes data items from <em>warp-striped</em> arrangement to <em>blocked</em>
+     *        arrangement.
      *
-     * \par
-     * - \smemreuse
+     * @par
+     * - @smemreuse
      *
-     * \par Snippet
-     * The code snippet below illustrates the conversion from a "warp-striped" to a "blocked" arrangement
-     * of 512 integer items partitioned across 128 threads where each thread owns 4 items.
-     * \par
-     * \code
+     * @par Snippet
+     * The code snippet below illustrates the conversion from a "warp-striped" to a "blocked"
+     * arrangement of 512 integer items partitioned across 128 threads where each thread owns 4
+     * items.
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
      *
      * __global__ void ExampleKernel(int *d_data, ...)
@@ -888,37 +971,41 @@ public:
      *     // Collectively exchange data into a blocked arrangement across threads
      *     BlockExchange(temp_storage).WarpStripedToBlocked(thread_data);
      *
-     * \endcode
-     * \par
-     * Suppose the set of warp-striped input \p thread_data across the block of threads is
+     * @endcode
+     * @par
+     * Suppose the set of warp-striped input @p thread_data across the block of threads is
      * <tt>{ [0,32,64,96], [1,33,65,97], [2,34,66,98], ..., [415,447,479,511] }</tt>
      * after loading from device-accessible memory.  (The first 128 items are striped across
      * the first warp of 32 threads, the second 128 items are striped across the second warp, etc.)
-     * The corresponding output \p thread_data in those threads will be
+     * The corresponding output @p thread_data in those threads will be
      * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }</tt>.
      *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
      */
     template <typename OutputT>
-    __device__ __forceinline__ void WarpStripedToBlocked(
-        InputT      (&input_items)[ITEMS_PER_THREAD],    ///< [in] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OutputT     (&output_items)[ITEMS_PER_THREAD])   ///< [out] Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+    __device__ __forceinline__ void WarpStripedToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                         OutputT (&output_items)[ITEMS_PER_THREAD])
     {
         WarpStripedToBlocked(input_items, output_items, Int2Type<WARP_TIME_SLICING>());
     }
 
-
-
     /**
-     * \brief Transposes data items from <em>blocked</em> arrangement to <em>warp-striped</em> arrangement.
+     * @brief Transposes data items from <em>blocked</em> arrangement to <em>warp-striped</em>
+     * arrangement.
      *
-     * \par
-     * - \smemreuse
+     * @par
+     * - @smemreuse
      *
-     * \par Snippet
-     * The code snippet below illustrates the conversion from a "blocked" to a "warp-striped" arrangement
-     * of 512 integer items partitioned across 128 threads where each thread owns 4 items.
-     * \par
-     * \code
+     * @par Snippet
+     * The code snippet below illustrates the conversion from a "blocked" to a "warp-striped"
+     * arrangement of 512 integer items partitioned across 128 threads where each thread owns 4
+     * items.
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
      *
      * __global__ void ExampleKernel(int *d_data, ...)
@@ -939,20 +1026,25 @@ public:
      *     // Store data striped across warp threads into an ordered tile
      *     cub::StoreDirectStriped<STORE_DEFAULT, 128>(threadIdx.x, d_data, thread_data);
      *
-     * \endcode
-     * \par
-     * Suppose the set of blocked input \p thread_data across the block of threads is
+     * @endcode
+     * @par
+     * Suppose the set of blocked input @p thread_data across the block of threads is
      * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }</tt>.
-     * The corresponding output \p thread_data in those threads will be
+     * The corresponding output @p thread_data in those threads will be
      * <tt>{ [0,32,64,96], [1,33,65,97], [2,34,66,98], ..., [415,447,479,511] }</tt>
-     * in preparation for storing to device-accessible memory. (The first 128 items are striped across
-     * the first warp of 32 threads, the second 128 items are striped across the second warp, etc.)
+     * in preparation for storing to device-accessible memory. (The first 128 items are striped
+     * across the first warp of 32 threads, the second 128 items are striped across the second warp,
+     * etc.)
      *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
      */
     template <typename OutputT>
-    __device__ __forceinline__ void BlockedToWarpStriped(
-        InputT      (&input_items)[ITEMS_PER_THREAD],    ///< [in] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OutputT     (&output_items)[ITEMS_PER_THREAD])   ///< [out] Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+    __device__ __forceinline__ void BlockedToWarpStriped(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                         OutputT (&output_items)[ITEMS_PER_THREAD])
     {
         BlockedToWarpStriped(input_items, output_items, Int2Type<WARP_TIME_SLICING>());
     }
@@ -961,62 +1053,86 @@ public:
 
     //@}  end member group
     /******************************************************************//**
-     * \name Scatter exchanges
+     * @name Scatter exchanges
      *********************************************************************/
     //@{
 
-
     /**
-     * \brief Exchanges data items annotated by rank into <em>blocked</em> arrangement.
+     * @brief Exchanges data items annotated by rank into <em>blocked</em> arrangement.
      *
-     * \par
-     * - \smemreuse
+     * @par
+     * - @smemreuse
      *
-     * \tparam OffsetT                              <b>[inferred]</b> Signed integer type for local offsets
+     * @tparam OffsetT
+     *   <b>[inferred]</b> Signed integer type for local offsets
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[in] ranks
+     *   Corresponding scatter ranks
      */
     template <typename OutputT, typename OffsetT>
-    __device__ __forceinline__ void ScatterToBlocked(
-        InputT      (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OutputT     (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OffsetT     (&ranks)[ITEMS_PER_THREAD])            ///< [in] Corresponding scatter ranks
+    __device__ __forceinline__ void ScatterToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                     OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                     OffsetT (&ranks)[ITEMS_PER_THREAD])
     {
         ScatterToBlocked(input_items, output_items, ranks, Int2Type<WARP_TIME_SLICING>());
     }
 
-
-
     /**
-     * \brief Exchanges data items annotated by rank into <em>striped</em> arrangement.
+     * @brief Exchanges data items annotated by rank into <em>striped</em> arrangement.
      *
-     * \par
-     * - \smemreuse
+     * @par
+     * - @smemreuse
      *
-     * \tparam OffsetT                              <b>[inferred]</b> Signed integer type for local offsets
+     * @tparam OffsetT
+     *   <b>[inferred]</b> Signed integer type for local offsets
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[in] ranks
+     *   Corresponding scatter ranks
      */
     template <typename OutputT, typename OffsetT>
-    __device__ __forceinline__ void ScatterToStriped(
-        InputT      (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OutputT     (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OffsetT     (&ranks)[ITEMS_PER_THREAD])            ///< [in] Corresponding scatter ranks
+    __device__ __forceinline__ void ScatterToStriped(InputT (&input_items)[ITEMS_PER_THREAD],
+                                                     OutputT (&output_items)[ITEMS_PER_THREAD],
+                                                     OffsetT (&ranks)[ITEMS_PER_THREAD])
     {
         ScatterToStriped(input_items, output_items, ranks, Int2Type<WARP_TIME_SLICING>());
     }
 
-
-
     /**
-     * \brief Exchanges data items annotated by rank into <em>striped</em> arrangement.  Items with rank -1 are not exchanged.
+     * @brief Exchanges data items annotated by rank into <em>striped</em> arrangement.
+     *        Items with rank -1 are not exchanged.
      *
-     * \par
-     * - \smemreuse
+     * @par
+     * - @smemreuse
      *
-     * \tparam OffsetT                              <b>[inferred]</b> Signed integer type for local offsets
+     * @tparam OffsetT
+     *   <b>[inferred]</b> Signed integer type for local offsets
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[in] ranks
+     *   Corresponding scatter ranks
      */
     template <typename OutputT, typename OffsetT>
-    __device__ __forceinline__ void ScatterToStripedGuarded(
-        InputT      (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OutputT     (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OffsetT     (&ranks)[ITEMS_PER_THREAD])            ///< [in] Corresponding scatter ranks
+    __device__ __forceinline__ void
+    ScatterToStripedGuarded(InputT (&input_items)[ITEMS_PER_THREAD],
+                            OutputT (&output_items)[ITEMS_PER_THREAD],
+                            OffsetT (&ranks)[ITEMS_PER_THREAD])
     {
         #pragma unroll
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
@@ -1038,24 +1154,36 @@ public:
         }
     }
 
-
-
-
     /**
-     * \brief Exchanges valid data items annotated by rank into <em>striped</em> arrangement.
+     * @brief Exchanges valid data items annotated by rank into <em>striped</em> arrangement.
      *
-     * \par
-     * - \smemreuse
+     * @par
+     * - @smemreuse
      *
-     * \tparam OffsetT                              <b>[inferred]</b> Signed integer type for local offsets
-     * \tparam ValidFlag                            <b>[inferred]</b> FlagT type denoting which items are valid
+     * @tparam OffsetT
+     *   <b>[inferred]</b> Signed integer type for local offsets
+     *
+     * @tparam ValidFlag
+     *   <b>[inferred]</b> FlagT type denoting which items are valid
+     *
+     * @param[in] input_items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[out] output_items
+     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[in] ranks
+     *   Corresponding scatter ranks
+     *
+     * @param[in] is_valid
+     *   Corresponding flag denoting item validity
      */
     template <typename OutputT, typename OffsetT, typename ValidFlag>
-    __device__ __forceinline__ void ScatterToStripedFlagged(
-        InputT      (&input_items)[ITEMS_PER_THREAD],      ///< [in] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OutputT     (&output_items)[ITEMS_PER_THREAD],     ///< [out] Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OffsetT     (&ranks)[ITEMS_PER_THREAD],            ///< [in] Corresponding scatter ranks
-        ValidFlag   (&is_valid)[ITEMS_PER_THREAD])         ///< [in] Corresponding flag denoting item validity
+    __device__ __forceinline__ void
+    ScatterToStripedFlagged(InputT (&input_items)[ITEMS_PER_THREAD],
+                            OutputT (&output_items)[ITEMS_PER_THREAD],
+                            OffsetT (&ranks)[ITEMS_PER_THREAD],
+                            ValidFlag (&is_valid)[ITEMS_PER_THREAD])
     {
         #pragma unroll
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
@@ -1084,60 +1212,98 @@ public:
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
 
-
-    __device__ __forceinline__ void StripedToBlocked(
-        InputT      (&items)[ITEMS_PER_THREAD])   ///< [in-out] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+    /**
+     * @param[in-out] items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     */
+    __device__ __forceinline__ void StripedToBlocked(InputT (&items)[ITEMS_PER_THREAD])
     {
         StripedToBlocked(items, items);
     }
 
-    __device__ __forceinline__ void BlockedToStriped(
-        InputT      (&items)[ITEMS_PER_THREAD])   ///< [in-out] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+    /**
+     * @param[in-out] items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     */
+    __device__ __forceinline__ void BlockedToStriped(InputT (&items)[ITEMS_PER_THREAD])
     {
         BlockedToStriped(items, items);
     }
 
-    __device__ __forceinline__ void WarpStripedToBlocked(
-        InputT      (&items)[ITEMS_PER_THREAD])    ///< [in-out] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+    /**
+     * @param[in-out] items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     */
+    __device__ __forceinline__ void WarpStripedToBlocked(InputT (&items)[ITEMS_PER_THREAD])
     {
         WarpStripedToBlocked(items, items);
     }
 
-    __device__ __forceinline__ void BlockedToWarpStriped(
-        InputT      (&items)[ITEMS_PER_THREAD])    ///< [in-out] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+    /**
+     * @param[in-out] items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     */
+    __device__ __forceinline__ void BlockedToWarpStriped(InputT (&items)[ITEMS_PER_THREAD])
     {
         BlockedToWarpStriped(items, items);
     }
 
+    /**
+     * @param[in-out] items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[in] ranks
+     *   Corresponding scatter ranks
+     */
     template <typename OffsetT>
-    __device__ __forceinline__ void ScatterToBlocked(
-        InputT      (&items)[ITEMS_PER_THREAD],    ///< [in-out] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OffsetT     (&ranks)[ITEMS_PER_THREAD])    ///< [in] Corresponding scatter ranks
+    __device__ __forceinline__ void ScatterToBlocked(InputT (&items)[ITEMS_PER_THREAD],
+                                                     OffsetT (&ranks)[ITEMS_PER_THREAD])
     {
         ScatterToBlocked(items, items, ranks);
     }
 
+    /**
+     * @param[in-out] items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[in] ranks
+     *   Corresponding scatter ranks
+     */
     template <typename OffsetT>
-    __device__ __forceinline__ void ScatterToStriped(
-        InputT      (&items)[ITEMS_PER_THREAD],    ///< [in-out] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OffsetT     (&ranks)[ITEMS_PER_THREAD])    ///< [in] Corresponding scatter ranks
+    __device__ __forceinline__ void ScatterToStriped(InputT (&items)[ITEMS_PER_THREAD],
+                                                     OffsetT (&ranks)[ITEMS_PER_THREAD])
     {
         ScatterToStriped(items, items, ranks);
     }
 
+    /**
+     * @param[in-out] items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[in] ranks
+     *   Corresponding scatter ranks
+     */
     template <typename OffsetT>
-    __device__ __forceinline__ void ScatterToStripedGuarded(
-        InputT      (&items)[ITEMS_PER_THREAD],    ///< [in-out] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OffsetT     (&ranks)[ITEMS_PER_THREAD])    ///< [in] Corresponding scatter ranks
+    __device__ __forceinline__ void ScatterToStripedGuarded(InputT (&items)[ITEMS_PER_THREAD],
+                                                            OffsetT (&ranks)[ITEMS_PER_THREAD])
     {
         ScatterToStripedGuarded(items, items, ranks);
     }
 
+    /**
+     * @param[in-out] items
+     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *
+     * @param[in] ranks
+     *   Corresponding scatter ranks
+     *
+     * @param[in] is_valid
+     *   Corresponding flag denoting item validity
+     */
     template <typename OffsetT, typename ValidFlag>
-    __device__ __forceinline__ void ScatterToStripedFlagged(
-        InputT      (&items)[ITEMS_PER_THREAD],        ///< [in-out] Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-        OffsetT     (&ranks)[ITEMS_PER_THREAD],        ///< [in] Corresponding scatter ranks
-        ValidFlag   (&is_valid)[ITEMS_PER_THREAD])     ///< [in] Corresponding flag denoting item validity
+    __device__ __forceinline__ void ScatterToStripedFlagged(InputT (&items)[ITEMS_PER_THREAD],
+                                                            OffsetT (&ranks)[ITEMS_PER_THREAD],
+                                                            ValidFlag (&is_valid)[ITEMS_PER_THREAD])
     {
         ScatterToStriped(items, items, ranks, is_valid);
     }

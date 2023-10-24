@@ -27,8 +27,9 @@
  ******************************************************************************/
 
 /**
- * \file
- * cub::BlockReduceRakingCommutativeOnly provides raking-based methods of parallel reduction across a CUDA thread block.  Does not support non-commutative reduction operators.
+ * @file
+ * cub::BlockReduceRakingCommutativeOnly provides raking-based methods of parallel reduction across
+ * a CUDA thread block.  Does not support non-commutative reduction operators.
  */
 
 #pragma once
@@ -48,16 +49,27 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 CUB_NAMESPACE_BEGIN
 
-
 /**
- * \brief BlockReduceRakingCommutativeOnly provides raking-based methods of parallel reduction across a CUDA thread block.  Does not support non-commutative reduction operators.  Does not support block sizes that are not a multiple of the warp size.
+ * @brief BlockReduceRakingCommutativeOnly provides raking-based methods of parallel reduction
+ *        across a CUDA thread block. Does not support non-commutative reduction operators. Does not
+ *        support block sizes that are not a multiple of the warp size.
+ *
+ * @tparam T
+ *   Data type being reduced
+ *
+ * @tparam BLOCK_DIM_X
+ *   The thread block length in threads along the X dimension
+ *
+ * @tparam BLOCK_DIM_Y
+ *   The thread block length in threads along the Y dimension
+ *
+ * @tparam BLOCK_DIM_Z
+ *   The thread block length in threads along the Z dimension
+ *
+ * @tparam LEGACY_PTX_ARCH
+ *   The PTX compute capability for which to to specialize this collective
  */
-template <
-    typename    T,              ///< Data type being reduced
-    int         BLOCK_DIM_X,    ///< The thread block length in threads along the X dimension
-    int         BLOCK_DIM_Y,    ///< The thread block length in threads along the Y dimension
-    int         BLOCK_DIM_Z,    ///< The thread block length in threads along the Z dimension
-    int         LEGACY_PTX_ARCH = 0> ///< The PTX compute capability for which to to specialize this collective
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
 struct BlockReduceRakingCommutativeOnly
 {
     /// Constants
@@ -98,15 +110,18 @@ struct BlockReduceRakingCommutativeOnly
     /// Shared memory storage layout type
     union _TempStorage
     {
-        struct DefaultStorage
-        {
-            typename WarpReduce::TempStorage        warp_storage;        ///< Storage for warp-synchronous reduction
-            typename BlockRakingLayout::TempStorage raking_grid;         ///< Padded thread block raking grid
-        } default_storage;
+      struct DefaultStorage
+      {
+        /// Storage for warp-synchronous reduction
+        typename WarpReduce::TempStorage warp_storage;
 
-        typename FallBack::TempStorage              fallback_storage;    ///< Fall-back storage for non-commutative block reduction
+        /// Padded thread block raking grid
+        typename BlockRakingLayout::TempStorage raking_grid;
+      } default_storage;
+
+      /// Fall-back storage for non-commutative block reduction
+      typename FallBack::TempStorage fallback_storage;
     };
-
 
     /// Alias wrapper allowing storage to be unioned
     struct TempStorage : Uninitialized<_TempStorage> {};
@@ -125,12 +140,19 @@ struct BlockReduceRakingCommutativeOnly
         linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
 
-
-    /// Computes a thread block-wide reduction using addition (+) as the reduction operator. The first num_valid threads each contribute one reduction partial.  The return value is only valid for thread<sub>0</sub>.
+    /**
+     * @brief Computes a thread block-wide reduction using addition (+) as the reduction operator.
+     *        The first num_valid threads each contribute one reduction partial.
+     *        The return value is only valid for thread<sub>0</sub>.
+     *
+     * @param[in] partial
+     *   Calling thread's input partial reductions
+     *
+     * @param[in] num_valid
+     *   Number of valid elements (may be less than BLOCK_THREADS)
+     */
     template <bool FULL_TILE>
-    __device__ __forceinline__ T Sum(
-        T                   partial,            ///< [in] Calling thread's input partial reductions
-        int                 num_valid)          ///< [in] Number of valid elements (may be less than BLOCK_THREADS)
+    __device__ __forceinline__ T Sum(T partial, int num_valid)
     {
         if (USE_FALLBACK || !FULL_TILE)
         {
@@ -159,15 +181,22 @@ struct BlockReduceRakingCommutativeOnly
         return partial;
     }
 
-
-    /// Computes a thread block-wide reduction using the specified reduction operator. The first num_valid threads each contribute one reduction partial.  The return value is only valid for thread<sub>0</sub>.
-    template <
-        bool                FULL_TILE,
-        typename            ReductionOp>
-    __device__ __forceinline__ T Reduce(
-        T                   partial,            ///< [in] Calling thread's input partial reductions
-        int                 num_valid,          ///< [in] Number of valid elements (may be less than BLOCK_THREADS)
-        ReductionOp         reduction_op)       ///< [in] Binary reduction operator
+    /**
+     * @brief Computes a thread block-wide reduction using the specified reduction operator.
+     *        The first num_valid threads each contribute one reduction partial.
+     *        The return value is only valid for thread<sub>0</sub>.
+     *
+     * @param[in] partial
+     *   Calling thread's input partial reductions
+     *
+     * @param[in] num_valid
+     *   Number of valid elements (may be less than BLOCK_THREADS)
+     *
+     * @param[in] reduction_op
+     *   Binary reduction operator
+     */
+    template <bool FULL_TILE, typename ReductionOp>
+    __device__ __forceinline__ T Reduce(T partial, int num_valid, ReductionOp reduction_op)
     {
         if (USE_FALLBACK || !FULL_TILE)
         {

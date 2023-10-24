@@ -27,8 +27,9 @@
  ******************************************************************************/
 
 /**
- * \file
- * cub::DeviceRadixSort provides device-wide, parallel operations for computing a radix sort across a sequence of data items residing within device-accessible memory.
+ * @file
+ * cub::DeviceRadixSort provides device-wide, parallel operations for computing a radix sort across
+ * a sequence of data items residing within device-accessible memory.
  */
 
 #pragma once
@@ -74,26 +75,59 @@ CUB_NAMESPACE_BEGIN
  *****************************************************************************/
 
 /**
- * Upsweep digit-counting kernel entry point (multi-block).  Computes privatized digit histograms, one per block.
+ * @brief Upsweep digit-counting kernel entry point (multi-block).
+ *        Computes privatized digit histograms, one per block.
+ *
+ * @tparam ChainedPolicyT
+ *   Chained tuning policy
+ *
+ * @tparam ALT_DIGIT_BITS
+ *   Whether or not to use the alternate (lower-bits) policy
+ *
+ * @tparam IS_DESCENDING
+ *   Whether or not the sorted-order is high-to-low
+ *
+ * @tparam KeyT
+ *   Key type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
+ *
+ * @param[in] d_keys
+ *   Input keys buffer
+ *
+ * @param[out] d_spine
+ *   Privatized (per block) digit histograms (striped, i.e., 0s counts from each block,
+ *   then 1s counts from each block, etc.)
+ *
+ * @param[in] num_items
+ *   Total number of input data items
+ *
+ * @param[in] current_bit
+ *   Bit position of current radix digit
+ *
+ * @param[in] num_bits
+ *   Number of bits of current radix digit
+ *
+ * @param[in] even_share
+ *   Even-share descriptor for mapan equal number of tiles onto each thread block
  */
-template <
-    typename ChainedPolicyT,                 ///< Chained tuning policy
-    bool     ALT_DIGIT_BITS,                 ///< Whether or not to use the alternate (lower-bits) policy
-    bool     IS_DESCENDING,                  ///< Whether or not the sorted-order is high-to-low
-    typename KeyT,                           ///< Key type
-    typename OffsetT,                        ///< Signed integer type for global offsets
-    typename DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__ (int((ALT_DIGIT_BITS) ?
-    int(ChainedPolicyT::ActivePolicy::AltUpsweepPolicy::BLOCK_THREADS) :
-    int(ChainedPolicyT::ActivePolicy::UpsweepPolicy::BLOCK_THREADS)))
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
-    const KeyT              *d_keys,                        ///< [in] Input keys buffer
-    OffsetT                 *d_spine,                       ///< [out] Privatized (per block) digit histograms (striped, i.e., 0s counts from each block, then 1s counts from each block, etc.)
-    OffsetT                 /*num_items*/,                  ///< [in] Total number of input data items
-    int                     current_bit,                    ///< [in] Bit position of current radix digit
-    int                     num_bits,                       ///< [in] Number of bits of current radix digit
-    GridEvenShare<OffsetT>  even_share,                     ///< [in] Even-share descriptor for mapan equal number of tiles onto each thread block
-    DecomposerT             decomposer = {})
+template <typename ChainedPolicyT,
+          bool ALT_DIGIT_BITS,
+          bool IS_DESCENDING,
+          typename KeyT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
+__launch_bounds__(int((ALT_DIGIT_BITS)
+                        ? int(ChainedPolicyT::ActivePolicy::AltUpsweepPolicy::BLOCK_THREADS)
+                        : int(ChainedPolicyT::ActivePolicy::UpsweepPolicy::BLOCK_THREADS)))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(const KeyT *d_keys,
+                                                                 OffsetT *d_spine,
+                                                                 OffsetT /*num_items*/,
+                                                                 int current_bit,
+                                                                 int num_bits,
+                                                                 GridEvenShare<OffsetT> even_share,
+                                                                 DecomposerT decomposer = {})
 {
     using ActiveUpsweepPolicyT =
       cub::detail::conditional_t<
@@ -137,17 +171,27 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
     upsweep.template ExtractCounts<IS_DESCENDING>(d_spine, gridDim.x, blockIdx.x);
 }
 
-
 /**
- * Spine scan kernel entry point (single-block).  Computes an exclusive prefix sum over the privatized digit histograms
+ * @brief Spine scan kernel entry point (single-block).
+ *        Computes an exclusive prefix sum over the privatized digit histograms
+ *
+ * @tparam ChainedPolicyT
+ *   Chained tuning policy
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
+ *
+ * @param[in,out] d_spine
+ *   Privatized (per block) digit histograms (striped, i.e., 0s counts from each block,
+ *   then 1s counts from each block, etc.)
+ *
+ * @param[in] num_counts
+ *   Total number of bin-counts
  */
-template <
-    typename                ChainedPolicyT,                 ///< Chained tuning policy
-    typename                OffsetT>                        ///< Signed integer type for global offsets
-__launch_bounds__ (int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 1)
-CUB_DETAIL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(
-    OffsetT                 *d_spine,                       ///< [in,out] Privatized (per block) digit histograms (striped, i.e., 0s counts from each block, then 1s counts from each block, etc.)
-    int                     num_counts)                     ///< [in] Total number of bin-counts
+template <typename ChainedPolicyT, typename OffsetT>
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS),
+                  1) CUB_DETAIL_KERNEL_ATTRIBUTES
+  void RadixSortScanBinsKernel(OffsetT *d_spine, int num_counts)
 {
     // Parameterize the AgentScan type for the current configuration
     typedef AgentScan<
@@ -183,32 +227,77 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(
     }
 }
 
-
 /**
- * Downsweep pass kernel entry point (multi-block).  Scatters keys (and values) into corresponding bins for the current digit place.
+ * @brief Downsweep pass kernel entry point (multi-block).
+ *        Scatters keys (and values) into corresponding bins for the current digit place.
+ *
+ * @tparam ChainedPolicyT
+ *   Chained tuning policy
+ *
+ * @tparam ALT_DIGIT_BITS
+ *   Whether or not to use the alternate (lower-bits) policy
+ *
+ * @tparam IS_DESCENDING
+ *   Whether or not the sorted-order is high-to-low
+ *
+ * @tparam KeyT
+ *   Key type
+ *
+ * @tparam ValueT
+ *   Value type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
+ *
+ * @param[in] d_keys_in
+ *   Input keys buffer
+ *
+ * @param[in] d_keys_out
+ *   Output keys buffer
+ *
+ * @param[in] d_values_in
+ *   Input values buffer
+ *
+ * @param[in] d_values_out
+ *   Output values buffer
+ *
+ * @param[in] d_spine
+ *   Scan of privatized (per block) digit histograms (striped, i.e., 0s counts from each block,
+ *   then 1s counts from each block, etc.)
+ *
+ * @param[in] num_items
+ *   Total number of input data items
+ *
+ * @param[in] current_bit
+ *   Bit position of current radix digit
+ *
+ * @param[in] num_bits
+ *   Number of bits of current radix digit
+ *
+ * @param[in] even_share
+ *   Even-share descriptor for mapan equal number of tiles onto each thread block
  */
-template <
-    typename                ChainedPolicyT,                 ///< Chained tuning policy
-    bool                    ALT_DIGIT_BITS,                 ///< Whether or not to use the alternate (lower-bits) policy
-    bool                    IS_DESCENDING,                  ///< Whether or not the sorted-order is high-to-low
-    typename                KeyT,                           ///< Key type
-    typename                ValueT,                         ///< Value type
-    typename                OffsetT,                        ///< Signed integer type for global offsets
-    typename                DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__ (int((ALT_DIGIT_BITS) ?
-    int(ChainedPolicyT::ActivePolicy::AltDownsweepPolicy::BLOCK_THREADS) :
-    int(ChainedPolicyT::ActivePolicy::DownsweepPolicy::BLOCK_THREADS)))
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
-    const KeyT              *d_keys_in,                     ///< [in] Input keys buffer
-    KeyT                    *d_keys_out,                    ///< [in] Output keys buffer
-    const ValueT            *d_values_in,                   ///< [in] Input values buffer
-    ValueT                  *d_values_out,                  ///< [in] Output values buffer
-    OffsetT                 *d_spine,                       ///< [in] Scan of privatized (per block) digit histograms (striped, i.e., 0s counts from each block, then 1s counts from each block, etc.)
-    OffsetT                 num_items,                      ///< [in] Total number of input data items
-    int                     current_bit,                    ///< [in] Bit position of current radix digit
-    int                     num_bits,                       ///< [in] Number of bits of current radix digit
-    GridEvenShare<OffsetT>  even_share,                     ///< [in] Even-share descriptor for mapan equal number of tiles onto each thread block
-    DecomposerT             decomposer = {})
+template <typename ChainedPolicyT,
+          bool ALT_DIGIT_BITS,
+          bool IS_DESCENDING,
+          typename KeyT,
+          typename ValueT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
+__launch_bounds__(int((ALT_DIGIT_BITS)
+                        ? int(ChainedPolicyT::ActivePolicy::AltDownsweepPolicy::BLOCK_THREADS)
+                        : int(ChainedPolicyT::ActivePolicy::DownsweepPolicy::BLOCK_THREADS)))
+  CUB_DETAIL_KERNEL_ATTRIBUTES
+  void DeviceRadixSortDownsweepKernel(const KeyT *d_keys_in,
+                                      KeyT *d_keys_out,
+                                      const ValueT *d_values_in,
+                                      ValueT *d_values_out,
+                                      OffsetT *d_spine,
+                                      OffsetT num_items,
+                                      int current_bit,
+                                      int num_bits,
+                                      GridEvenShare<OffsetT> even_share,
+                                      DecomposerT decomposer = {})
 {
     using ActiveUpsweepPolicyT =
       cub::detail::conditional_t<
@@ -250,27 +339,62 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
         even_share.block_end);
 }
 
-
 /**
- * Single pass kernel entry point (single-block).  Fully sorts a tile of input.
+ * @brief Single pass kernel entry point (single-block).
+ *        Fully sorts a tile of input.
+ *
+ * @tparam ChainedPolicyT
+ *   Chained tuning policy
+ *
+ * @tparam IS_DESCENDING
+ *   Whether or not the sorted-order is high-to-low
+ *
+ * @tparam KeyT
+ *   Key type
+ *
+ * @tparam ValueT
+ *   Value type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
+ *
+ * @param[in] d_keys_in
+ *   Input keys buffer
+ *
+ * @param[in] d_keys_out
+ *   Output keys buffer
+ *
+ * @param[in] d_values_in
+ *   Input values buffer
+ *
+ * @param[in] d_values_out
+ *   Output values buffer
+ *
+ * @param[in] num_items
+ *   Total number of input data items
+ *
+ * @param[in] current_bit
+ *   Bit position of current radix digit
+ *
+ * @param[in] end_bit
+ *   The past-the-end (most-significant) bit index needed for key comparison
  */
-template <
-    typename                ChainedPolicyT,                 ///< Chained tuning policy
-    bool                    IS_DESCENDING,                  ///< Whether or not the sorted-order is high-to-low
-    typename                KeyT,                           ///< Key type
-    typename                ValueT,                         ///< Value type
-    typename                OffsetT,                        ///< Signed integer type for global offsets
-    typename                DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__ (int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS), 1)
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
-    const KeyT              *d_keys_in,                     ///< [in] Input keys buffer
-    KeyT                    *d_keys_out,                    ///< [in] Output keys buffer
-    const ValueT            *d_values_in,                   ///< [in] Input values buffer
-    ValueT                  *d_values_out,                  ///< [in] Output values buffer
-    OffsetT                 num_items,                      ///< [in] Total number of input data items
-    int                     current_bit,                    ///< [in] Bit position of current radix digit
-    int                     end_bit,                        ///< [in] The past-the-end (most-significant) bit index needed for key comparison
-    DecomposerT             decomposer = {})
+template <typename ChainedPolicyT,
+          bool IS_DESCENDING,
+          typename KeyT,
+          typename ValueT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
+                  1) CUB_DETAIL_KERNEL_ATTRIBUTES
+  void DeviceRadixSortSingleTileKernel(const KeyT *d_keys_in,
+                                       KeyT *d_keys_out,
+                                       const ValueT *d_values_in,
+                                       ValueT *d_values_out,
+                                       OffsetT num_items,
+                                       int current_bit,
+                                       int end_bit,
+                                       DecomposerT decomposer = {})
 {
     // Constants
     enum
@@ -370,34 +494,89 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
     }
 }
 
-
 /**
- * Segmented radix sorting pass (one block per segment)
+ * @brief Segmented radix sorting pass (one block per segment)
+ *
+ * @tparam ChainedPolicyT
+ *   Chained tuning policy
+ *
+ * @tparam ALT_DIGIT_BITS
+ *   Whether or not to use the alternate (lower-bits) policy
+ *
+ * @tparam IS_DESCENDING
+ *   Whether or not the sorted-order is high-to-low
+ *
+ * @tparam KeyT
+ *   Key type
+ *
+ * @tparam ValueT
+ *   Value type
+ *
+ * @tparam BeginOffsetIteratorT
+ *   Random-access input iterator type for reading segment beginning offsets \iterator
+ *
+ * @tparam EndOffsetIteratorT
+ *   Random-access input iterator type for reading segment ending offsets \iterator
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
+ *
+ * @param[in] d_keys_in
+ *   Input keys buffer
+ *
+ * @param[in] d_keys_out
+ *   Output keys buffer
+ *
+ * @param[in] d_values_in
+ *   Input values buffer
+ *
+ * @param[in] d_values_out
+ *   Output values buffer
+ *
+ * @param[in] d_begin_offsets
+ *   Random-access input iterator to the sequence of beginning offsets of length @p num_segments,
+ *   such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup>
+ *   data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
+ *
+ * @param[in] d_end_offsets
+ *   Random-access input iterator to the sequence of ending offsets of length @p num_segments,
+ *   such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup>
+ *   data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.
+ *   If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>,
+ *   the <em>i</em><sup>th</sup> is considered empty.
+ *
+ * @param[in] num_segments
+ *   The number of segments that comprise the sorting data
+ *
+ * @param[in] current_bit
+ *   Bit position of current radix digit
+ *
+ * @param[in] pass_bits
+ *   Number of bits of current radix digit
  */
-template <
-    typename                ChainedPolicyT,                 ///< Chained tuning policy
-    bool                    ALT_DIGIT_BITS,                 ///< Whether or not to use the alternate (lower-bits) policy
-    bool                    IS_DESCENDING,                  ///< Whether or not the sorted-order is high-to-low
-    typename                KeyT,                           ///< Key type
-    typename                ValueT,                         ///< Value type
-    typename                BeginOffsetIteratorT,           ///< Random-access input iterator type for reading segment beginning offsets \iterator
-    typename                EndOffsetIteratorT,             ///< Random-access input iterator type for reading segment ending offsets \iterator
-    typename                OffsetT,                        ///< Signed integer type for global offsets
-    typename                DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__ (int((ALT_DIGIT_BITS) ?
-    ChainedPolicyT::ActivePolicy::AltSegmentedPolicy::BLOCK_THREADS :
-    ChainedPolicyT::ActivePolicy::SegmentedPolicy::BLOCK_THREADS))
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
-    const KeyT              *d_keys_in,                     ///< [in] Input keys buffer
-    KeyT                    *d_keys_out,                    ///< [in] Output keys buffer
-    const ValueT            *d_values_in,                   ///< [in] Input values buffer
-    ValueT                  *d_values_out,                  ///< [in] Output values buffer
-    BeginOffsetIteratorT    d_begin_offsets,                ///< [in] Random-access input iterator to the sequence of beginning offsets of length \p num_segments, such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
-    EndOffsetIteratorT      d_end_offsets,                  ///< [in] Random-access input iterator to the sequence of ending offsets of length \p num_segments, such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.  If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>, the <em>i</em><sup>th</sup> is considered empty.
-    int                     /*num_segments*/,               ///< [in] The number of segments that comprise the sorting data
-    int                     current_bit,                    ///< [in] Bit position of current radix digit
-    int                     pass_bits,                      ///< [in] Number of bits of current radix digit
-    DecomposerT             decomposer = {})
+template <typename ChainedPolicyT,
+          bool ALT_DIGIT_BITS,
+          bool IS_DESCENDING,
+          typename KeyT,
+          typename ValueT,
+          typename BeginOffsetIteratorT,
+          typename EndOffsetIteratorT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
+__launch_bounds__(int((ALT_DIGIT_BITS)
+                        ? ChainedPolicyT::ActivePolicy::AltSegmentedPolicy::BLOCK_THREADS
+                        : ChainedPolicyT::ActivePolicy::SegmentedPolicy::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES
+  void DeviceSegmentedRadixSortKernel(const KeyT *d_keys_in,
+                                      KeyT *d_keys_out,
+                                      const ValueT *d_values_in,
+                                      ValueT *d_values_out,
+                                      BeginOffsetIteratorT d_begin_offsets,
+                                      EndOffsetIteratorT d_end_offsets,
+                                      int /*num_segments*/,
+                                      int current_bit,
+                                      int pass_bits,
+                                      DecomposerT decomposer = {})
 {
     //
     // Constants
@@ -695,12 +874,18 @@ template <> struct sm90_small_key_tuning<2, 16, 8> { static constexpr int thread
  ******************************************************************************/
 
 /**
- * Tuning policy for kernel specialization
+ * @brief Tuning policy for kernel specialization
+ *
+ * @tparam KeyT
+ *   Key type
+ *
+ * @tparam ValueT
+ *   Value type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
  */
-template <
-    typename KeyT,          ///< Key type
-    typename ValueT,        ///< Value type
-    typename OffsetT>       ///< Signed integer type for global offsets
+template <typename KeyT, typename ValueT, typename OffsetT>
 struct DeviceRadixSortPolicy
 {
     //------------------------------------------------------------------------------
@@ -1192,17 +1377,41 @@ struct DispatchRadixSort : SelectedPolicy
     // Problem state
     //------------------------------------------------------------------------------
 
-    void                    *d_temp_storage;        ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-    size_t                  &temp_storage_bytes;    ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
-    DoubleBuffer<KeyT>      &d_keys;                ///< [in,out] Double-buffer whose current buffer contains the unsorted input keys and, upon return, is updated to point to the sorted output keys
-    DoubleBuffer<ValueT>    &d_values;              ///< [in,out] Double-buffer whose current buffer contains the unsorted input values and, upon return, is updated to point to the sorted output values
-    OffsetT                 num_items;              ///< [in] Number of items to sort
-    int                     begin_bit;              ///< [in] The beginning (least-significant) bit index needed for key comparison
-    int                     end_bit;                ///< [in] The past-the-end (most-significant) bit index needed for key comparison
-    cudaStream_t            stream;                 ///< [in] CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
-    int                     ptx_version;            ///< [in] PTX version
-    bool                    is_overwrite_okay;      ///< [in] Whether is okay to overwrite source buffers
-    DecomposerT             decomposer;
+    /// Device-accessible allocation of temporary storage.
+    //  When NULL, the required allocation size is written to @p temp_storage_bytes and no work is
+    //  done.
+    void *d_temp_storage;
+
+    /// Reference to size in bytes of @p d_temp_storage allocation
+    size_t &temp_storage_bytes;
+
+    /// Double-buffer whose current buffer contains the unsorted input keys and, upon return, is
+    /// updated to point to the sorted output keys
+    DoubleBuffer<KeyT> &d_keys;
+
+    /// Double-buffer whose current buffer contains the unsorted input values and, upon return, is
+    /// updated to point to the sorted output values
+    DoubleBuffer<ValueT> &d_values;
+
+    /// Number of items to sort
+    OffsetT num_items;
+
+    /// The beginning (least-significant) bit index needed for key comparison
+    int begin_bit;
+
+    /// The past-the-end (most-significant) bit index needed for key comparison
+    int end_bit;
+
+    /// CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+    cudaStream_t stream;
+
+    /// PTX version
+    int ptx_version;
+
+    /// Whether is okay to overwrite source buffers
+    bool is_overwrite_okay;
+
+    DecomposerT decomposer;
 
 
     //------------------------------------------------------------------------------
@@ -1271,13 +1480,21 @@ struct DispatchRadixSort : SelectedPolicy
     // Small-problem (single tile) invocation
     //------------------------------------------------------------------------------
 
-    /// Invoke a single block to sort in-core
-    template <
-        typename                ActivePolicyT,          ///< Umbrella policy active for the target device
-        typename                SingleTileKernelT>      ///< Function type of cub::DeviceRadixSortSingleTileKernel
-    CUB_RUNTIME_FUNCTION __forceinline__
-    cudaError_t InvokeSingleTile(
-        SingleTileKernelT       single_tile_kernel)     ///< [in] Kernel function pointer to parameterization of cub::DeviceRadixSortSingleTileKernel
+    /**
+     * @brief Invoke a single block to sort in-core
+     *
+     * @tparam ActivePolicyT
+     *   Umbrella policy active for the target device
+     *
+     * @tparam SingleTileKernelT
+     *   Function type of cub::DeviceRadixSortSingleTileKernel
+     *
+     * @param[in] single_tile_kernel
+     *   Kernel function pointer to parameterization of cub::DeviceRadixSortSingleTileKernel
+     */
+    template <typename ActivePolicyT, typename SingleTileKernelT>
+    CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+    InvokeSingleTile(SingleTileKernelT single_tile_kernel)
     {
         cudaError error = cudaSuccess;
         do
@@ -1786,19 +2003,47 @@ struct DispatchRadixSort : SelectedPolicy
         return error;
     }
 
-    /// Invocation (run multiple digit passes)
-    template <
-        typename            ActivePolicyT,          ///< Umbrella policy active for the target device
-        typename            UpsweepKernelT,         ///< Function type of cub::DeviceRadixSortUpsweepKernel
-        typename            ScanKernelT,            ///< Function type of cub::SpineScanKernel
-        typename            DownsweepKernelT>       ///< Function type of cub::DeviceRadixSortDownsweepKernel
-    CUB_RUNTIME_FUNCTION __forceinline__
-    cudaError_t InvokePasses(
-        UpsweepKernelT      upsweep_kernel,         ///< [in] Kernel function pointer to parameterization of cub::DeviceRadixSortUpsweepKernel
-        UpsweepKernelT      alt_upsweep_kernel,     ///< [in] Alternate kernel function pointer to parameterization of cub::DeviceRadixSortUpsweepKernel
-        ScanKernelT         scan_kernel,            ///< [in] Kernel function pointer to parameterization of cub::SpineScanKernel
-        DownsweepKernelT    downsweep_kernel,       ///< [in] Kernel function pointer to parameterization of cub::DeviceRadixSortDownsweepKernel
-        DownsweepKernelT    alt_downsweep_kernel)   ///< [in] Alternate kernel function pointer to parameterization of cub::DeviceRadixSortDownsweepKernel
+    /**
+     * @brief Invocation (run multiple digit passes)
+     *
+     * @tparam ActivePolicyT
+     *   Umbrella policy active for the target device
+     *
+     * @tparam UpsweepKernelT
+     *   Function type of cub::DeviceRadixSortUpsweepKernel
+     *
+     * @tparam ScanKernelT
+     *   Function type of cub::SpineScanKernel
+     *
+     * @tparam DownsweepKernelT
+     *   Function type of cub::DeviceRadixSortDownsweepKernel
+     *
+     * @param[in] upsweep_kernel
+     *   Kernel function pointer to parameterization of cub::DeviceRadixSortUpsweepKernel
+     *
+     * @param[in] alt_upsweep_kernel
+     *   Alternate kernel function pointer to parameterization of cub::DeviceRadixSortUpsweepKernel
+     *
+     * @param[in] scan_kernel
+     *   Kernel function pointer to parameterization of cub::SpineScanKernel
+     *
+     * @param[in] downsweep_kernel
+     *   Kernel function pointer to parameterization of cub::DeviceRadixSortDownsweepKernel
+     *
+     * @param[in] alt_downsweep_kernel
+     *   Alternate kernel function pointer to parameterization of
+     *   cub::DeviceRadixSortDownsweepKernel
+     */
+    template <typename ActivePolicyT,
+              typename UpsweepKernelT,
+              typename ScanKernelT,
+              typename DownsweepKernelT>
+    CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+    InvokePasses(UpsweepKernelT upsweep_kernel,
+                 UpsweepKernelT alt_upsweep_kernel,
+                 ScanKernelT scan_kernel,
+                 DownsweepKernelT downsweep_kernel,
+                 DownsweepKernelT alt_downsweep_kernel)
     {
         cudaError error = cudaSuccess;
         do
@@ -1858,9 +2103,14 @@ struct DispatchRadixSort : SelectedPolicy
             void* allocations[3] = {};
             size_t allocation_sizes[3] =
             {
-                spine_length * sizeof(OffsetT),                                         // bytes needed for privatized block digit histograms
-                (is_overwrite_okay) ? 0 : num_items * sizeof(KeyT),                     // bytes needed for 3rd keys buffer
-                (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * sizeof(ValueT),    // bytes needed for 3rd values buffer
+                // bytes needed for privatized block digit histograms
+                spine_length * sizeof(OffsetT),                                         
+
+                // bytes needed for 3rd keys buffer
+                (is_overwrite_okay) ? 0 : num_items * sizeof(KeyT),                     
+
+                // bytes needed for 3rd values buffer
+                (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * sizeof(ValueT),    
             };
 
             // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
@@ -2087,20 +2337,48 @@ struct DispatchRadixSort : SelectedPolicy
     //------------------------------------------------------------------------------
 
     /**
-     * Internal dispatch routine
+     * @brief Internal dispatch routine
+     *
+     * @param[in] d_temp_storage
+     *   Device-accessible allocation of temporary storage. When NULL, the required
+     *   allocation size is written to @p temp_storage_bytes and no work is done.
+     *
+     * @param[in,out] temp_storage_bytes
+     *   Reference to size in bytes of @p d_temp_storage allocation
+     *
+     * @param[in,out] d_keys
+     *   Double-buffer whose current buffer contains the unsorted input keys and,
+     *   upon return, is updated to point to the sorted output keys
+     *
+     * @param[in,out] d_values
+     *   Double-buffer whose current buffer contains the unsorted input values and,
+     *   upon return, is updated to point to the sorted output values
+     *
+     * @param[in] num_items
+     *   Number of items to sort
+     *
+     * @param[in] begin_bit
+     *   The beginning (least-significant) bit index needed for key comparison
+     *
+     * @param[in] end_bit
+     *   The past-the-end (most-significant) bit index needed for key comparison
+     *
+     * @param[in] is_overwrite_okay
+     *   Whether is okay to overwrite source buffers
+     *
+     * @param[in] stream
+     *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
      */
-    CUB_RUNTIME_FUNCTION __forceinline__
-    static cudaError_t Dispatch(
-        void*                   d_temp_storage,         ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-        size_t                  &temp_storage_bytes,    ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
-        DoubleBuffer<KeyT>      &d_keys,                ///< [in,out] Double-buffer whose current buffer contains the unsorted input keys and, upon return, is updated to point to the sorted output keys
-        DoubleBuffer<ValueT>    &d_values,              ///< [in,out] Double-buffer whose current buffer contains the unsorted input values and, upon return, is updated to point to the sorted output values
-        OffsetT                 num_items,              ///< [in] Number of items to sort
-        int                     begin_bit,              ///< [in] The beginning (least-significant) bit index needed for key comparison
-        int                     end_bit,                ///< [in] The past-the-end (most-significant) bit index needed for key comparison
-        bool                    is_overwrite_okay,      ///< [in] Whether is okay to overwrite source buffers
-        cudaStream_t            stream,                 ///< [in] CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
-        DecomposerT             decomposer = {})
+    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(void *d_temp_storage,
+                                                                     size_t &temp_storage_bytes,
+                                                                     DoubleBuffer<KeyT> &d_keys,
+                                                                     DoubleBuffer<ValueT> &d_values,
+                                                                     OffsetT num_items,
+                                                                     int begin_bit,
+                                                                     int end_bit,
+                                                                     bool is_overwrite_okay,
+                                                                     cudaStream_t stream,
+                                                                     DecomposerT decomposer = {})
     {
         typedef typename DispatchRadixSort::MaxPolicy MaxPolicyT;
 
@@ -2174,17 +2452,35 @@ struct DispatchRadixSort : SelectedPolicy
  ******************************************************************************/
 
 /**
- * Utility class for dispatching the appropriately-tuned kernels for segmented device-wide radix sort
+ * @brief Utility class for dispatching the appropriately-tuned kernels for segmented device-wide
+ * radix sort
+ *
+ * @tparam IS_DESCENDING
+ *   Whether or not the sorted-order is high-to-low
+ *
+ * @tparam KeyT
+ *   Key type
+ *
+ * @tparam ValueT
+ *   Value type
+ *
+ * @tparam BeginOffsetIteratorT
+ *   Random-access input iterator type for reading segment beginning offsets \iterator
+ *
+ * @tparam EndOffsetIteratorT
+ *   Random-access input iterator type for reading segment ending offsets \iterator
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
  */
-template <
-    bool     IS_DESCENDING,     ///< Whether or not the sorted-order is high-to-low
-    typename KeyT,              ///< Key type
-    typename ValueT,            ///< Value type
-    typename BeginOffsetIteratorT,   ///< Random-access input iterator type for reading segment beginning offsets \iterator
-    typename EndOffsetIteratorT,   ///< Random-access input iterator type for reading segment ending offsets \iterator
-    typename OffsetT,           ///< Signed integer type for global offsets
-    typename SelectedPolicy = DeviceRadixSortPolicy<KeyT, ValueT, OffsetT>,
-    typename DecomposerT = detail::identity_decomposer_t>
+template <bool IS_DESCENDING,
+          typename KeyT,
+          typename ValueT,
+          typename BeginOffsetIteratorT,
+          typename EndOffsetIteratorT,
+          typename OffsetT,
+          typename SelectedPolicy = DeviceRadixSortPolicy<KeyT, ValueT, OffsetT>,
+          typename DecomposerT    = detail::identity_decomposer_t>
 struct DispatchSegmentedRadixSort : SelectedPolicy
 {
     //------------------------------------------------------------------------------
@@ -2198,21 +2494,54 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
     // Parameter members
     //------------------------------------------------------------------------------
 
-    void                    *d_temp_storage;        ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-    size_t                  &temp_storage_bytes;    ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
-    DoubleBuffer<KeyT>      &d_keys;                ///< [in,out] Double-buffer whose current buffer contains the unsorted input keys and, upon return, is updated to point to the sorted output keys
-    DoubleBuffer<ValueT>    &d_values;              ///< [in,out] Double-buffer whose current buffer contains the unsorted input values and, upon return, is updated to point to the sorted output values
-    OffsetT                 num_items;              ///< [in] Number of items to sort
-    OffsetT                 num_segments;           ///< [in] The number of segments that comprise the sorting data
-    BeginOffsetIteratorT    d_begin_offsets;        ///< [in] Random-access input iterator to the sequence of beginning offsets of length \p num_segments, such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
-    EndOffsetIteratorT      d_end_offsets;          ///< [in] Random-access input iterator to the sequence of ending offsets of length \p num_segments, such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.  If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>, the <em>i</em><sup>th</sup> is considered empty.
-    int                     begin_bit;              ///< [in] The beginning (least-significant) bit index needed for key comparison
-    int                     end_bit;                ///< [in] The past-the-end (most-significant) bit index needed for key comparison
-    cudaStream_t            stream;                 ///< [in] CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
-    int                     ptx_version;            ///< [in] PTX version
-    bool                    is_overwrite_okay;      ///< [in] Whether is okay to overwrite source buffers
-    DecomposerT             decomposer;
+    /// Device-accessible allocation of temporary storage.  When NULL, the required allocation size
+    /// is written to @p temp_storage_bytes and no work is done.
+    void *d_temp_storage;
 
+    /// Reference to size in bytes of @p d_temp_storage allocation
+    size_t &temp_storage_bytes;
+
+    /// Double-buffer whose current buffer contains the unsorted input keys and, upon return, is
+    /// updated to point to the sorted output keys
+    DoubleBuffer<KeyT> &d_keys;
+
+    /// Double-buffer whose current buffer contains the unsorted input values and, upon return, is
+    /// updated to point to the sorted output values
+    DoubleBuffer<ValueT> &d_values;
+
+    /// Number of items to sort
+    OffsetT num_items;
+
+    /// The number of segments that comprise the sorting data
+    OffsetT num_segments;
+
+    /// Random-access input iterator to the sequence of beginning offsets of length @p num_segments,
+    /// such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup>
+    /// data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
+    BeginOffsetIteratorT d_begin_offsets;
+
+    /// Random-access input iterator to the sequence of ending offsets of length @p num_segments,
+    /// such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup>
+    /// data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>. If <tt>d_end_offsets[i]-1</tt>
+    /// <= <tt>d_begin_offsets[i]</tt>, the <em>i</em><sup>th</sup> is considered empty.
+    EndOffsetIteratorT d_end_offsets;
+
+    /// The beginning (least-significant) bit index needed for key comparison
+    int begin_bit;
+
+    /// The past-the-end (most-significant) bit index needed for key comparison
+    int end_bit;
+
+    /// CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+    cudaStream_t stream;
+
+    /// PTX version
+    int ptx_version;
+
+    /// Whether is okay to overwrite source buffers
+    bool is_overwrite_okay;
+
+    DecomposerT decomposer;
 
     //------------------------------------------------------------------------------
     // Constructors
@@ -2220,36 +2549,34 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
 
     /// Constructor
     CUB_RUNTIME_FUNCTION __forceinline__
-    DispatchSegmentedRadixSort(
-        void*                   d_temp_storage,
-        size_t                  &temp_storage_bytes,
-        DoubleBuffer<KeyT>      &d_keys,
-        DoubleBuffer<ValueT>    &d_values,
-        OffsetT                 num_items,
-        OffsetT                 num_segments,
-        BeginOffsetIteratorT    d_begin_offsets,
-        EndOffsetIteratorT      d_end_offsets,
-        int                     begin_bit,
-        int                     end_bit,
-        bool                    is_overwrite_okay,
-        cudaStream_t            stream,
-        int                     ptx_version,
-        DecomposerT             decomposer = {})
-    :
-        d_temp_storage(d_temp_storage),
-        temp_storage_bytes(temp_storage_bytes),
-        d_keys(d_keys),
-        d_values(d_values),
-        num_items(num_items),
-        num_segments(num_segments),
-        d_begin_offsets(d_begin_offsets),
-        d_end_offsets(d_end_offsets),
-        begin_bit(begin_bit),
-        end_bit(end_bit),
-        stream(stream),
-        ptx_version(ptx_version),
-        is_overwrite_okay(is_overwrite_okay),
-        decomposer(decomposer)
+    DispatchSegmentedRadixSort(void *d_temp_storage,
+                                size_t &temp_storage_bytes,
+                                DoubleBuffer<KeyT> &d_keys,
+                                DoubleBuffer<ValueT> &d_values,
+                                OffsetT num_items,
+                                OffsetT num_segments,
+                                BeginOffsetIteratorT d_begin_offsets,
+                                EndOffsetIteratorT d_end_offsets,
+                                int begin_bit,
+                                int end_bit,
+                                bool is_overwrite_okay,
+                                cudaStream_t stream,
+                                int ptx_version,
+                                DecomposerT decomposer = {})
+        : d_temp_storage(d_temp_storage)
+        , temp_storage_bytes(temp_storage_bytes)
+        , d_keys(d_keys)
+        , d_values(d_values)
+        , num_items(num_items)
+        , num_segments(num_segments)
+        , d_begin_offsets(d_begin_offsets)
+        , d_end_offsets(d_end_offsets)
+        , begin_bit(begin_bit)
+        , end_bit(end_bit)
+        , stream(stream)
+        , ptx_version(ptx_version)
+        , is_overwrite_okay(is_overwrite_okay)
+        , decomposer(decomposer)
     {}
 
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
@@ -2376,15 +2703,25 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
         }
     };
 
-
-    /// Invocation (run multiple digit passes)
-    template <
-        typename                ActivePolicyT,          ///< Umbrella policy active for the target device
-        typename                SegmentedKernelT>       ///< Function type of cub::DeviceSegmentedRadixSortKernel
-    CUB_RUNTIME_FUNCTION __forceinline__
-    cudaError_t InvokePasses(
-        SegmentedKernelT     segmented_kernel,          ///< [in] Kernel function pointer to parameterization of cub::DeviceSegmentedRadixSortKernel
-        SegmentedKernelT     alt_segmented_kernel)      ///< [in] Alternate kernel function pointer to parameterization of cub::DeviceSegmentedRadixSortKernel
+    /**
+     * @brief Invocation (run multiple digit passes)
+     *
+     * @tparam ActivePolicyT
+     *   Umbrella policy active for the target device
+     *
+     * @tparam SegmentedKernelT
+     *   Function type of cub::DeviceSegmentedRadixSortKernel
+     *
+     * @param[in] segmented_kernel
+     *   Kernel function pointer to parameterization of cub::DeviceSegmentedRadixSortKernel
+     *
+     * @param[in] alt_segmented_kernel
+     *   Alternate kernel function pointer to parameterization of
+     *   cub::DeviceSegmentedRadixSortKernel
+     */
+    template <typename ActivePolicyT, typename SegmentedKernelT>
+    CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+    InvokePasses(SegmentedKernelT segmented_kernel, SegmentedKernelT alt_segmented_kernel)
     {
         cudaError error = cudaSuccess;
         do
@@ -2398,8 +2735,11 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
             void* allocations[2] = {};
             size_t allocation_sizes[2] =
             {
-                (is_overwrite_okay) ? 0 : num_items * sizeof(KeyT),                      // bytes needed for 3rd keys buffer
-                (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * sizeof(ValueT),     // bytes needed for 3rd values buffer
+                // bytes needed for 3rd keys buffer
+                (is_overwrite_okay) ? 0 : num_items * sizeof(KeyT),                      
+
+                // bytes needed for 3rd values buffer
+                (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * sizeof(ValueT),     
             };
 
             // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
@@ -2515,22 +2855,67 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
     // Dispatch entrypoints
     //------------------------------------------------------------------------------
 
-
-    /// Internal dispatch routine
-    CUB_RUNTIME_FUNCTION __forceinline__
-    static cudaError_t Dispatch(
-        void*                   d_temp_storage,         ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-        size_t                  &temp_storage_bytes,    ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
-        DoubleBuffer<KeyT>      &d_keys,                ///< [in,out] Double-buffer whose current buffer contains the unsorted input keys and, upon return, is updated to point to the sorted output keys
-        DoubleBuffer<ValueT>    &d_values,              ///< [in,out] Double-buffer whose current buffer contains the unsorted input values and, upon return, is updated to point to the sorted output values
-        int                     num_items,              ///< [in] Number of items to sort
-        int                     num_segments,           ///< [in] The number of segments that comprise the sorting data
-        BeginOffsetIteratorT    d_begin_offsets,        ///< [in] Random-access input iterator to the sequence of beginning offsets of length \p num_segments, such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
-        EndOffsetIteratorT      d_end_offsets,          ///< [in] Random-access input iterator to the sequence of ending offsets of length \p num_segments, such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.  If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>, the <em>i</em><sup>th</sup> is considered empty.
-        int                     begin_bit,              ///< [in] The beginning (least-significant) bit index needed for key comparison
-        int                     end_bit,                ///< [in] The past-the-end (most-significant) bit index needed for key comparison
-        bool                    is_overwrite_okay,      ///< [in] Whether is okay to overwrite source buffers
-        cudaStream_t            stream)                 ///< [in] CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+    /**
+     * @brief Internal dispatch routine
+     *
+     * @param[in] d_temp_storage
+     *   Device-accessible allocation of temporary storage.  When NULL, the required allocation size
+     *   is written to @p temp_storage_bytes and no work is done.
+     *
+     * @param[in,out] temp_storage_bytes
+     *   Reference to size in bytes of @p d_temp_storage allocation
+     *
+     * @param[in,out] d_keys
+     *   Double-buffer whose current buffer contains the unsorted input keys and, upon return, is
+     * updated to point to the sorted output keys
+     *
+     * @param[in,out] d_values
+     *   Double-buffer whose current buffer contains the unsorted input values and, upon return, is
+     *   updated to point to the sorted output values
+     *
+     * @param[in] num_items
+     *   Number of items to sort
+     *
+     * @param[in] num_segments
+     *   The number of segments that comprise the sorting data
+     *
+     * @param[in] d_begin_offsets
+     *   Random-access input iterator to the sequence of beginning offsets of length
+     *   @p num_segments, such that <tt>d_begin_offsets[i]</tt> is the first element of the
+     *   <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
+     *
+     * @param[in] d_end_offsets
+     *   Random-access input iterator to the sequence of ending offsets of length @p num_segments,
+     *   such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup>
+     *   data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.  
+     *   If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>, 
+     *   the <em>i</em><sup>th</sup> is considered empty.
+     *
+     * @param[in] begin_bit
+     *   The beginning (least-significant) bit index needed for key comparison
+     *
+     * @param[in] end_bit
+     *   The past-the-end (most-significant) bit index needed for key comparison
+     *
+     * @param[in] is_overwrite_okay
+     *   Whether is okay to overwrite source buffers
+     *
+     * @param[in] stream
+     *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+     */
+    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    Dispatch(void *d_temp_storage,
+             size_t &temp_storage_bytes,
+             DoubleBuffer<KeyT> &d_keys,
+             DoubleBuffer<ValueT> &d_values,
+             int num_items,
+             int num_segments,
+             BeginOffsetIteratorT d_begin_offsets,
+             EndOffsetIteratorT d_end_offsets,
+             int begin_bit,
+             int end_bit,
+             bool is_overwrite_okay,
+             cudaStream_t stream)
     {
         typedef typename DispatchSegmentedRadixSort::MaxPolicy MaxPolicyT;
 

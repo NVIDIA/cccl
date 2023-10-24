@@ -27,10 +27,10 @@
  ******************************************************************************/
 
 /**
- * \file
- * cub::BlockRakingLayout provides a conflict-free shared memory layout abstraction for warp-raking across thread block data.
+ * @file
+ * cub::BlockRakingLayout provides a conflict-free shared memory layout abstraction for warp-raking
+ * across thread block data.
  */
-
 
 #pragma once
 
@@ -47,19 +47,26 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 CUB_NAMESPACE_BEGIN
 
 /**
- * \brief BlockRakingLayout provides a conflict-free shared memory layout abstraction for 1D raking across thread block data.    ![](raking.png)
- * \ingroup BlockModule
+ * @brief BlockRakingLayout provides a conflict-free shared memory layout abstraction for 1D raking
+ *        across thread block data.    ![](raking.png)
  *
- * \par Overview
+ * @ingroup BlockModule
+ *
+ * @par Overview
  * This type facilitates a shared memory usage pattern where a block of CUDA
  * threads places elements into shared memory and then reduces the active
  * parallelism to one "raking" warp of threads for serially aggregating consecutive
  * sequences of shared items.  Padding is inserted to eliminate bank conflicts
  * (for most data types).
  *
- * \tparam T                        The data type to be exchanged.
- * \tparam BLOCK_THREADS            The thread block size in threads.
- * \tparam LEGACY_PTX_ARCH          <b>[optional]</b> Unused.
+ * @tparam T                        
+ *   The data type to be exchanged.
+ *
+ * @tparam BLOCK_THREADS            
+ *   The thread block size in threads.
+ *
+ * @tparam LEGACY_PTX_ARCH          
+ *   <b>[optional]</b> Unused.
  */
 template <
     typename    T,
@@ -105,7 +112,7 @@ struct BlockRakingLayout
 
 
     /**
-     * \brief Shared memory storage type
+     * @brief Shared memory storage type
      */
     struct __align__(16) _TempStorage
     {
@@ -117,7 +124,7 @@ struct BlockRakingLayout
 
 
     /**
-     * \brief Returns the location for the calling thread to place data into the grid
+     * @brief Returns the location for the calling thread to place data into the grid
      */
     static __device__ __forceinline__ T* PlacementPtr(
         TempStorage &temp_storage,
@@ -138,7 +145,7 @@ struct BlockRakingLayout
 
 
     /**
-     * \brief Returns the location for the calling thread to begin sequential raking
+     * @brief Returns the location for the calling thread to begin sequential raking
      */
     static __device__ __forceinline__ T* RakingPtr(
         TempStorage &temp_storage,

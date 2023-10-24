@@ -27,7 +27,7 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Thread utilities for writing memory using PTX cache modifiers.
  */
 
@@ -47,7 +47,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 CUB_NAMESPACE_BEGIN
 
 /**
- * \addtogroup UtilIo
+ * @addtogroup UtilIo
  * @{
  */
 
@@ -57,29 +57,29 @@ CUB_NAMESPACE_BEGIN
 //-----------------------------------------------------------------------------
 
 /**
- * \brief Enumeration of cache modifiers for memory store operations.
+ * @brief Enumeration of cache modifiers for memory store operations.
  */
 enum CacheStoreModifier
 {
-    STORE_DEFAULT,              ///< Default (no modifier)
-    STORE_WB,                   ///< Cache write-back all coherent levels
-    STORE_CG,                   ///< Cache at global level
-    STORE_CS,                   ///< Cache streaming (likely to be accessed once)
-    STORE_WT,                   ///< Cache write-through (to system memory)
-    STORE_VOLATILE,             ///< Volatile shared (any memory space)
+  STORE_DEFAULT,  ///< Default (no modifier)
+  STORE_WB,       ///< Cache write-back all coherent levels
+  STORE_CG,       ///< Cache at global level
+  STORE_CS,       ///< Cache streaming (likely to be accessed once)
+  STORE_WT,       ///< Cache write-through (to system memory)
+  STORE_VOLATILE, ///< Volatile shared (any memory space)
 };
 
-
 /**
- * \name Thread I/O (cache modified)
+ * @name Thread I/O (cache modified)
  * @{
  */
 
 /**
- * \brief Thread utility for writing memory using cub::CacheStoreModifier cache modifiers.  Can be used to store any data type.
+ * @brief Thread utility for writing memory using cub::CacheStoreModifier cache modifiers.
+ *        Can be used to store any data type.
  *
- * \par Example
- * \code
+ * @par Example
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/thread/thread_store.cuh>
  *
  * // 32-bit store using cache-global modifier:
@@ -102,11 +102,16 @@ enum CacheStoreModifier
  * TestFoo *d_struct;
  * TestFoo val;
  * cub::ThreadStore<cub::STORE_CS>(d_out + threadIdx.x, val);
- * \endcode
+ * @endcode
  *
- * \tparam MODIFIER             <b>[inferred]</b> CacheStoreModifier enumeration
- * \tparam InputIteratorT       <b>[inferred]</b> Output iterator type \iterator
- * \tparam T                    <b>[inferred]</b> Data type of output value
+ * @tparam MODIFIER
+ *   <b>[inferred]</b> CacheStoreModifier enumeration
+ *
+ * @tparam InputIteratorT
+ *   <b>[inferred]</b> Output iterator type \iterator
+ *
+ * @tparam T
+ *   <b>[inferred]</b> Data type of output value
  */
 template <
     CacheStoreModifier  MODIFIER,
