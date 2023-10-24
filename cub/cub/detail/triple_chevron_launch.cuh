@@ -44,7 +44,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-  struct _LIBCUDACXX_HIDDEN triple_chevron
+  struct _CCCL_ATTRIBUTE_HIDDEN triple_chevron
   {
     typedef size_t Size;
     dim3 const grid;
