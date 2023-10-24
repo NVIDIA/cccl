@@ -79,6 +79,7 @@ namespace detail
     }
 
     size_t __device__ argument_pack_size(size_t size) const { return size; }
+    
     template <class Arg, class... Args>
     size_t __device__
     argument_pack_size(size_t size, Arg const& arg, Args const&... args) const
