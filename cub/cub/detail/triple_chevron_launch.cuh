@@ -26,13 +26,17 @@
  ******************************************************************************/
 #pragma once
 
-#include <thrust/detail/config.h>
-#include <thrust/system/cuda/detail/core/alignment.h>
-#include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
+#include <cuda/__cccl_config> // _CCCL_ATTRIBUTE_HIDDEN
 
-#include <cuda/std/version> // _LIBCUDACXX_HIDDEN
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
-#include <cassert>
+#include <cub/config.cuh>
+#include <cuda/std/type_traits>
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
@@ -40,7 +44,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-  struct _LIBCUDACXX_HIDDEN triple_chevron
+  struct _CCCL_ATTRIBUTE_HIDDEN triple_chevron
   {
     typedef size_t Size;
     dim3 const grid;
@@ -70,11 +74,12 @@ namespace detail
     size_t __device__
     align_up(size_t offset) const
     {
-      size_t alignment = THRUST_NS_QUALIFIER::cuda_cub::alignment_of<T>::value;
+      constexpr ::cuda::std::size_t alignment = ::cuda::std::alignment_of<T>::value;
       return alignment * ((offset + (alignment - 1))/ alignment);
     }
 
     size_t __device__ argument_pack_size(size_t size) const { return size; }
+    
     template <class Arg, class... Args>
     size_t __device__
     argument_pack_size(size_t size, Arg const& arg, Args const&... args) const
@@ -106,7 +111,7 @@ namespace detail
       fill_arguments(buffer, copy_arg(buffer, offset, arg), args...);
     }
 
-    #ifdef THRUST_RDC_ENABLED
+    #ifdef CUB_RDC_ENABLED
     template<class K, class... Args>
     cudaError_t __device__
     doit_device(K k, Args const&... args) const
@@ -137,9 +142,9 @@ namespace detail
     }
     #endif
 
-    __thrust_exec_check_disable__ // what is
+    _LIBCUDACXX_DISABLE_EXEC_CHECK
     template <class K, class... Args>
-    __host__ __device__ __forceinline__ // use this over THRUST_FUNCTION macro, seems to be convention in CUB
+    __host__ __device__ __forceinline__
     cudaError_t doit(K k, Args const&... args) const
     {
       NV_IF_TARGET(NV_IS_HOST,
