@@ -123,7 +123,7 @@ public:
 
     virtual tracked_pointer<void> do_allocate(std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
     {
-        ASSERT_EQUAL(static_cast<bool>(id_to_allocate), true);
+        ASSERT_EQUAL(id_to_allocate || id_to_allocate == -1u, true);
 
         void * raw = upstream.do_allocate(n, alignment);
         tracked_pointer<void> ret(raw);
@@ -131,15 +131,18 @@ public:
         ret.size = n;
         ret.alignment = alignment;
 
-        id_to_allocate = 0;
+        if (id_to_allocate != -1u)
+        {
+            id_to_allocate = 0;
+        }
 
         return ret;
     }
 
     virtual void do_deallocate(tracked_pointer<void> p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
     {
-        ASSERT_EQUAL(p.size, n);
-        ASSERT_EQUAL(p.alignment, alignment);
+        ASSERT_GEQUAL(p.size, n);
+        ASSERT_GEQUAL(p.alignment, alignment);
 
         if (id_to_deallocate != 0)
         {
@@ -318,6 +321,36 @@ void TestPoolCachingOversized()
     upstream.id_to_allocate = 7;
     tracked_pointer<void> a9 = pool.do_allocate(2048, 32);
     ASSERT_EQUAL(a9.id, 7u);
+
+    // make sure that reusing a larger oversized block for a smaller allocation works
+    // this is NVIDIA/cccl#585
+    upstream.id_to_allocate = 8;
+    tracked_pointer<void> a10 = pool.do_allocate(2048 + 16, THRUST_MR_DEFAULT_ALIGNMENT);
+    pool.do_deallocate(a10, 2048 + 16, THRUST_MR_DEFAULT_ALIGNMENT);
+    tracked_pointer<void> a11 = pool.do_allocate(2048, THRUST_MR_DEFAULT_ALIGNMENT);
+    ASSERT_EQUAL(a11.ptr, a10.ptr);
+    pool.do_deallocate(a11, 2048, THRUST_MR_DEFAULT_ALIGNMENT);
+
+    // original minimized reproducer from NVIDIA/cccl#585:
+    {
+        upstream.id_to_allocate = -1u;
+
+        auto ptr1 = pool.allocate(43920240);
+        auto ptr2 = pool.allocate(2465264);
+        pool.deallocate(ptr1, 43920240);
+        pool.deallocate(ptr2, 2465264);
+        auto ptr3 = pool.allocate(4930528);
+        pool.deallocate(ptr3, 4930528);
+        auto ptr4 = pool.allocate(14640080);
+        std::memset(thrust::raw_pointer_cast(ptr4), 0xff, 14640080);
+
+        auto crash = pool.allocate(4930528);
+
+        pool.deallocate(crash, 4930528);
+        pool.deallocate(ptr4, 14640080);
+
+        upstream.id_to_allocate = 0;
+    }
 }
 
 void TestUnsynchronizedPoolCachingOversized()
