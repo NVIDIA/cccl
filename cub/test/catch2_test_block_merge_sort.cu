@@ -39,8 +39,6 @@
 
 #include <cub/block/block_merge_sort.cuh>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 struct CustomLess
