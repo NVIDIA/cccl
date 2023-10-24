@@ -27,13 +27,11 @@ int main(int, char**)
     cuda::std::chrono::duration<double, cuda::std::milli> d = i;
     assert(d.count() == 3000);
     }
-#if TEST_STD_VER >= 11
     {
     constexpr cuda::std::chrono::duration<int> i(3);
     constexpr cuda::std::chrono::duration<double, cuda::std::milli> d = i;
     static_assert(d.count() == 3000, "");
     }
-#endif
 
   return 0;
 }

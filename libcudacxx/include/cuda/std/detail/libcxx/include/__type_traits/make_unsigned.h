@@ -24,9 +24,11 @@
 #include "../__type_traits/type_list.h"
 #include "../cstddef"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -88,13 +90,11 @@ struct make_unsigned {
 template <class _Tp> using make_unsigned_t = __make_unsigned_t<_Tp>;
 #endif
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
 __make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) noexcept {
     return static_cast<__make_unsigned_t<_Tp> >(__x);
 }
-#endif
 
 template <class _Tp, class _Up>
 using __copy_unsigned_t = __conditional_t<is_unsigned<_Tp>::value, __make_unsigned_t<_Up>, _Up>;

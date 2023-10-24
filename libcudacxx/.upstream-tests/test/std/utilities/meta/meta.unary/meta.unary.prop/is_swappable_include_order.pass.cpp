@@ -10,7 +10,7 @@
 
 // is_swappable
 
-// XFAIL: nvcc
+// XFAIL: nvcc && (!nvrtc) && (!c++20) && (!clang-16) && (!gcc-12)
 
 // If we're just building the test and not executing it, it should pass.
 // UNSUPPORTED: no_execute
@@ -23,7 +23,8 @@
 // This test checks that (1) and (2) see forward declarations
 // for (3).
 #include <cuda/std/type_traits>
-#include <cuda/std/algorithm>
+//#include <cuda/std/algorithm>
+#include <cuda/std/array>
 #include <cuda/std/utility>
 
 #include "test_macros.h"

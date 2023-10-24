@@ -78,9 +78,7 @@ typedef void (*FunctionPtr)();
 
 int main(int, char**)
 {
-#if TEST_STD_VER >= 11
     test_is_literal_type<cuda::std::nullptr_t>();
-#endif
 
 // Before C++14, void was not a literal type
 // In C++14, cv-void is a literal type
@@ -94,9 +92,7 @@ int main(int, char**)
     test_is_literal_type<int*>();
     test_is_literal_type<const int*>();
     test_is_literal_type<int&>();
-#if TEST_STD_VER >= 11
     test_is_literal_type<int&&>();
-#endif
     test_is_literal_type<double>();
     test_is_literal_type<char[3]>();
     test_is_literal_type<char[]>();

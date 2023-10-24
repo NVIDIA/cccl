@@ -19,7 +19,7 @@
 #define _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(__x) __atomic_is_lock_free(__x, 0)
 #endif
 
-_LIBCUDACXX_INLINE_VISIBILITY inline _LIBCUDACXX_CONSTEXPR int __cxx_atomic_order_to_int(memory_order __order) {
+_LIBCUDACXX_INLINE_VISIBILITY inline constexpr int __cxx_atomic_order_to_int(memory_order __order) {
   // Avoid switch statement to make this a constexpr.
   return __order == memory_order_relaxed ? __ATOMIC_RELAXED:
          (__order == memory_order_acquire ? __ATOMIC_ACQUIRE:
@@ -29,7 +29,7 @@ _LIBCUDACXX_INLINE_VISIBILITY inline _LIBCUDACXX_CONSTEXPR int __cxx_atomic_orde
               __ATOMIC_CONSUME))));
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY inline _LIBCUDACXX_CONSTEXPR int __cxx_atomic_failure_order_to_int(memory_order __order) {
+_LIBCUDACXX_INLINE_VISIBILITY inline constexpr int __cxx_atomic_failure_order_to_int(memory_order __order) {
   // Avoid switch statement to make this a constexpr.
   return __order == memory_order_relaxed ? __ATOMIC_RELAXED:
          (__order == memory_order_acquire ? __ATOMIC_ACQUIRE:

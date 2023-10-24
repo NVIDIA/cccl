@@ -50,16 +50,14 @@ namespace std
 #include <__pragma_push>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
 # error <latch> is not supported on this single threaded system
-#endif
-
-#if _LIBCUDACXX_STD_VER < 11
-# error <latch> is requires C++11 or later
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -75,7 +73,7 @@ class __latch_base
 {
     _LIBCUDACXX_LATCH_ALIGNMENT __atomic_base<ptrdiff_t, _Sco> __counter;
 public:
-    inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
     explicit __latch_base(ptrdiff_t __expected)
         : __counter(__expected) { }
 

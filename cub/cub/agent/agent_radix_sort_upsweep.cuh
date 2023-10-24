@@ -33,12 +33,19 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "../thread/thread_reduce.cuh"
 #include "../thread/thread_load.cuh"
 #include "../warp/warp_reduce.cuh"
 #include "../block/block_load.cuh"
 #include "../block/radix_rank_sort_operations.cuh"
-#include "../config.cuh"
 #include "../util_type.cuh"
 #include "../iterator/cache_modified_input_iterator.cuh"
 
@@ -49,39 +56,63 @@ CUB_NAMESPACE_BEGIN
  ******************************************************************************/
 
 /**
- * Parameterizable tuning policy type for AgentRadixSortUpsweep
+ * @brief Parameterizable tuning policy type for AgentRadixSortUpsweep
+ *
+ * @tparam NOMINAL_BLOCK_THREADS_4B
+ *   Threads per thread block
+ *
+ * @tparam NOMINAL_ITEMS_PER_THREAD_4B
+ *   Items per thread (per tile of input)
+ *
+ * @tparam ComputeT
+ *   Dominant compute type
+ *
+ * @tparam _LOAD_MODIFIER
+ *   Cache load modifier for reading keys
+ *
+ * @tparam _RADIX_BITS
+ *   The number of radix bits, i.e., log2(bins)
  */
-template <
-    int                 NOMINAL_BLOCK_THREADS_4B,       ///< Threads per thread block
-    int                 NOMINAL_ITEMS_PER_THREAD_4B,    ///< Items per thread (per tile of input)
-    typename            ComputeT,                       ///< Dominant compute type
-    CacheLoadModifier   _LOAD_MODIFIER,                 ///< Cache load modifier for reading keys
-    int                 _RADIX_BITS,                    ///< The number of radix bits, i.e., log2(bins)
-    typename            ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT> >
-struct AgentRadixSortUpsweepPolicy :
-    ScalingType
+template <int NOMINAL_BLOCK_THREADS_4B,
+          int NOMINAL_ITEMS_PER_THREAD_4B,
+          typename ComputeT,
+          CacheLoadModifier _LOAD_MODIFIER,
+          int _RADIX_BITS,
+          typename ScalingType =
+            RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+struct AgentRadixSortUpsweepPolicy : ScalingType
 {
-    enum
-    {
-        RADIX_BITS          = _RADIX_BITS,          ///< The number of radix bits, i.e., log2(bins)
-    };
+  enum
+  {
+    /// The number of radix bits, i.e., log2(bins)
+    RADIX_BITS = _RADIX_BITS,
+  };
 
-    static const CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;      ///< Cache load modifier for reading keys
+  /// Cache load modifier for reading keys
+  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
 };
-
 
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
 
 /**
- * \brief AgentRadixSortUpsweep implements a stateful abstraction of CUDA thread blocks for participating in device-wide radix sort upsweep .
+ * @brief AgentRadixSortUpsweep implements a stateful abstraction of CUDA thread blocks for
+ * participating in device-wide radix sort upsweep .
+ *
+ * @tparam AgentRadixSortUpsweepPolicy
+ *   Parameterized AgentRadixSortUpsweepPolicy tuning policy type
+ *
+ * @tparam KeyT
+ *   KeyT type
+ *
+ * @tparam DecomposerT = detail::identity_decomposer_t
+ *   Signed integer type for global offsets
  */
-template <
-    typename AgentRadixSortUpsweepPolicy,   ///< Parameterized AgentRadixSortUpsweepPolicy tuning policy type
-    typename KeyT,                          ///< KeyT type
-    typename OffsetT,
-    typename DecomposerT = detail::identity_decomposer_t>                       ///< Signed integer type for global offsets
+template <typename AgentRadixSortUpsweepPolicy,
+          typename KeyT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
 struct AgentRadixSortUpsweep
 {
 
@@ -98,7 +129,7 @@ struct AgentRadixSortUpsweep
     // Integer type for packing DigitCounters into columns of shared memory banks
     typedef unsigned int PackedCounter;
 
-    static const CacheLoadModifier LOAD_MODIFIER = AgentRadixSortUpsweepPolicy::LOAD_MODIFIER;
+    static constexpr CacheLoadModifier LOAD_MODIFIER = AgentRadixSortUpsweepPolicy::LOAD_MODIFIER;
 
     enum
     {
@@ -321,7 +352,7 @@ struct AgentRadixSortUpsweep
         const OffsetT &block_end)
     {
         // Process partial tile if necessary using single loads
-        for (OffsetT offset = threadIdx.x; offset < block_end - block_offset; offset += BLOCK_THREADS) 
+        for (OffsetT offset = threadIdx.x; offset < block_end - block_offset; offset += BLOCK_THREADS)
         {
             // Load and bucket key
             bit_ordered_type key = d_keys_in[block_offset + offset];
@@ -346,7 +377,7 @@ struct AgentRadixSortUpsweep
     :
         temp_storage(temp_storage.Alias()),
         d_keys_in(reinterpret_cast<const bit_ordered_type*>(d_keys_in)),
-        current_bit(current_bit), 
+        current_bit(current_bit),
         num_bits(num_bits),
         decomposer(decomposer)
     {}
@@ -476,11 +507,14 @@ struct AgentRadixSortUpsweep
 
 
     /**
-     * Extract counts
+     * @brief Extract counts
+     *
+     * @param[out] bin_count
+     *   The exclusive prefix sum for the digits 
+     *   [(threadIdx.x * BINS_TRACKED_PER_THREAD) ... (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
      */
     template <int BINS_TRACKED_PER_THREAD>
-    __device__ __forceinline__ void ExtractCounts(
-        OffsetT (&bin_count)[BINS_TRACKED_PER_THREAD])  ///< [out] The exclusive prefix sum for the digits [(threadIdx.x * BINS_TRACKED_PER_THREAD) ... (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
+    __device__ __forceinline__ void ExtractCounts(OffsetT (&bin_count)[BINS_TRACKED_PER_THREAD])
     {
         unsigned int warp_id    = threadIdx.x >> LOG_WARP_THREADS;
         unsigned int warp_tid   = LaneId();

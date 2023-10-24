@@ -27,9 +27,11 @@
 #include "../__utility/declval.h"
 #include "../cstddef"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -92,18 +94,18 @@ template<class _Ip>
 struct incrementable_traits<const _Ip> : incrementable_traits<_Ip> {};
 
 template<class _Tp, class = void>
-inline constexpr bool __has_member_difference_type = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_difference_type = false;
 
 template<class _Tp>
-inline constexpr bool __has_member_difference_type<_Tp, void_t<typename _Tp::difference_type>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_difference_type<_Tp, void_t<typename _Tp::difference_type>> = true;
 
 template<class _Tp,class = void, class = void>
-inline constexpr bool __has_integral_minus = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_integral_minus = false;
 
 // In C++17 we get issues trying to bind void* to a const& so special case it here
 template<class _Tp>
-inline constexpr bool __has_integral_minus<_Tp, enable_if_t<!same_as<_Tp, void*>>,
-                                                void_t<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>>
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_integral_minus<_Tp, enable_if_t<!same_as<_Tp, void*>>,
+                                                                void_t<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>>
   = integral<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>;
 
 template <class _Tp>

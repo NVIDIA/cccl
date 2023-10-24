@@ -6,15 +6,24 @@
 #include <algorithm>
 
 THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
-    
+
+// There is a unfortunate miscompilation of the gcc-12 vectorizer leading to OOB writes
+// Adding this attribute suffices that this miscompilation does not appear anymore
+#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) && __GNUC__ >= 12
+#define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
+#else
+#define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
+#endif
+
 const size_t NUM_SAMPLES = 10000;
 
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestUnaryFunctional(void)
 {
     typedef typename InputVector::value_type  InputType;
     typedef typename OutputVector::value_type OutputType;
-    
+
     thrust::host_vector<InputType>  std_input = unittest::random_samples<InputType>(NUM_SAMPLES);
     thrust::host_vector<OutputType> std_output(NUM_SAMPLES);
 
@@ -28,11 +37,12 @@ void TestUnaryFunctional(void)
 }
 
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestBinaryFunctional(void)
 {
     typedef typename InputVector::value_type  InputType;
     typedef typename OutputVector::value_type OutputType;
-    
+
     thrust::host_vector<InputType>  std_input1 = unittest::random_samples<InputType>(NUM_SAMPLES);
     thrust::host_vector<InputType>  std_input2 = unittest::random_samples<InputType>(NUM_SAMPLES);
     thrust::host_vector<OutputType> std_output(NUM_SAMPLES);
@@ -40,8 +50,8 @@ void TestBinaryFunctional(void)
     // Replace zeros to avoid divide by zero exceptions
     std::replace(std_input2.begin(), std_input2.end(), (InputType) 0, (InputType) 1);
 
-    InputVector input1 = std_input1; 
-    InputVector input2 = std_input2; 
+    InputVector input1 = std_input1;
+    InputVector input2 = std_input2;
     OutputVector output(NUM_SAMPLES);
 
     thrust::transform(    input1.begin(),     input1.end(),      input2.begin(),     output.begin(),          Operator());
@@ -50,8 +60,6 @@ void TestBinaryFunctional(void)
     // Note: FP division is not bit-equal, even when nvcc is invoked with --prec-div
     ASSERT_ALMOST_EQUAL(output, std_output);
 }
-
-
 
 // XXX add bool to list
 // Instantiate a macro for all integer-like data types
@@ -175,14 +183,15 @@ DECLARE_UNARY_LOGICAL_FUNCTIONAL_UNITTEST(logical_not, LogicalNot);
 
 // Ad-hoc testing for other functionals
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestIdentityFunctional(void)
 {
     typedef typename Vector::value_type T;
 
-    Vector input(3);
-    input[0] = 0; input[1] = 1; input[2] = 2;
+    Vector input(4);
+    input[0] = 0; input[1] = 1; input[2] = 2; input[3] = 3;
 
-    Vector output(3);
+    Vector output(4);
 
     thrust::transform(input.begin(), input.end(), output.begin(), thrust::identity<T>());
 
@@ -191,17 +200,19 @@ void TestIdentityFunctional(void)
 DECLARE_VECTOR_UNITTEST(TestIdentityFunctional);
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestProject1stFunctional(void)
 {
     typedef typename Vector::value_type T;
 
-    Vector lhs(3);
-    Vector rhs(3);
-    lhs[0] = 0;  rhs[0] = 3; 
+    Vector lhs(4);
+    Vector rhs(4);
+    lhs[0] = 0;  rhs[0] = 3;
     lhs[1] = 1;  rhs[1] = 4;
     lhs[2] = 2;  rhs[2] = 5;
+    lhs[2] = 3;  rhs[2] = 6;
 
-    Vector output(3);
+    Vector output(4);
 
     thrust::transform(lhs.begin(), lhs.end(), rhs.begin(), output.begin(), thrust::project1st<T,T>());
 
@@ -210,17 +221,19 @@ void TestProject1stFunctional(void)
 DECLARE_VECTOR_UNITTEST(TestProject1stFunctional);
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestProject2ndFunctional(void)
 {
     typedef typename Vector::value_type T;
 
-    Vector lhs(3);
-    Vector rhs(3);
-    lhs[0] = 0;  rhs[0] = 3; 
+    Vector lhs(4);
+    Vector rhs(4);
+    lhs[0] = 0;  rhs[0] = 3;
     lhs[1] = 1;  rhs[1] = 4;
     lhs[2] = 2;  rhs[2] = 5;
+    lhs[2] = 3;  rhs[2] = 6;
 
-    Vector output(3);
+    Vector output(4);
 
     thrust::transform(lhs.begin(), lhs.end(), rhs.begin(), output.begin(), thrust::project2nd<T,T>());
 
@@ -229,52 +242,57 @@ void TestProject2ndFunctional(void)
 DECLARE_VECTOR_UNITTEST(TestProject2ndFunctional);
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestMaximumFunctional(void)
 {
     typedef typename Vector::value_type T;
 
-    Vector input1(3);
-    Vector input2(3);
-    input1[0] = 8; input1[1] = 3; input1[2] = 7;
-    input2[0] = 5; input2[1] = 6; input2[2] = 9;
+    Vector input1(4);
+    Vector input2(4);
+    input1[0] = 8; input1[1] = 3; input1[2] = 7; input1[3] = 7;
+    input2[0] = 5; input2[1] = 6; input2[2] = 9; input2[3] = 3;
 
-    Vector output(3);
+    Vector output(4);
 
-    thrust::transform(input1.begin(), input1.end(), 
-                      input2.begin(), 
-                      output.begin(), 
+    thrust::transform(input1.begin(), input1.end(),
+                      input2.begin(),
+                      output.begin(),
                       thrust::maximum<T>());
 
     ASSERT_EQUAL(output[0], 8);
     ASSERT_EQUAL(output[1], 6);
     ASSERT_EQUAL(output[2], 9);
+    ASSERT_EQUAL(output[3], 7);
 }
 DECLARE_VECTOR_UNITTEST(TestMaximumFunctional);
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestMinimumFunctional(void)
 {
     typedef typename Vector::value_type T;
 
-    Vector input1(3);
-    Vector input2(3);
-    input1[0] = 8; input1[1] = 3; input1[2] = 7;
-    input2[0] = 5; input2[1] = 6; input2[2] = 9;
+    Vector input1(4);
+    Vector input2(4);
+    input1[0] = 8; input1[1] = 3; input1[2] = 7; input1[3] = 7;
+    input2[0] = 5; input2[1] = 6; input2[2] = 9; input2[3] = 3;
 
-    Vector output(3);
+    Vector output(4);
 
-    thrust::transform(input1.begin(), input1.end(), 
-                      input2.begin(), 
-                      output.begin(), 
+    thrust::transform(input1.begin(), input1.end(),
+                      input2.begin(),
+                      output.begin(),
                       thrust::minimum<T>());
 
     ASSERT_EQUAL(output[0], 5);
     ASSERT_EQUAL(output[1], 3);
     ASSERT_EQUAL(output[2], 7);
+    ASSERT_EQUAL(output[3], 3);
 }
 DECLARE_VECTOR_UNITTEST(TestMinimumFunctional);
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestNot1(void)
 {
     typedef typename Vector::value_type T;
@@ -284,8 +302,8 @@ void TestNot1(void)
 
     Vector output(5);
 
-    thrust::transform(input.begin(), input.end(), 
-                      output.begin(), 
+    thrust::transform(input.begin(), input.end(),
+                      output.begin(),
                       thrust::not1(thrust::identity<T>()));
 
     ASSERT_EQUAL(output[0], 0);
@@ -310,6 +328,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestNot1);
       THRUST_CPP_DIALECT == 2011)
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestNot2(void)
 {
     typedef typename Vector::value_type T;
@@ -321,9 +340,9 @@ void TestNot2(void)
 
     Vector output(5);
 
-    thrust::transform(input1.begin(), input1.end(), 
+    thrust::transform(input1.begin(), input1.end(),
                       input2.begin(),
-                      output.begin(), 
+                      output.begin(),
                       thrust::not2(thrust::equal_to<T>()));
 
     ASSERT_EQUAL(output[0], 0);

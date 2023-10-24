@@ -130,7 +130,7 @@ void TestCopyNVectorBool(void)
 
     thrust::host_vector<bool> h(3);
     thrust::device_vector<bool> d(3);
-    
+
     thrust::copy_n(v.begin(), v.size(), h.begin());
     thrust::copy_n(v.begin(), v.size(), d.begin());
 
@@ -157,7 +157,7 @@ void TestCopyNListTo(void)
     l.push_back(2);
     l.push_back(3);
     l.push_back(4);
-   
+
     Vector v(l.size());
 
     typename Vector::iterator v_result = thrust::copy_n(l.begin(), l.size(), v.begin());
@@ -208,13 +208,13 @@ void TestCopyNZipIterator(void)
 {
     typedef typename Vector::value_type T;
 
-    Vector v1(3); v1[0] = 1; v1[1] = 2; v1[2] = 3;
-    Vector v2(3); v2[0] = 4; v2[1] = 5; v2[2] = 6; 
-    Vector v3(3, T(0));
-    Vector v4(3, T(0));
+    Vector v1(4); v1[0] = 1; v1[1] = 2; v1[2] = 3; v1[3] = 4;
+    Vector v2(4); v2[0] = 4; v2[1] = 5; v2[2] = 6; v2[3] = 7;
+    Vector v3(4, T(0));
+    Vector v4(4, T(0));
 
     thrust::copy_n(thrust::make_zip_iterator(thrust::make_tuple(v1.begin(),v2.begin())),
-                   3,
+                   4,
                    thrust::make_zip_iterator(thrust::make_tuple(v3.begin(),v4.begin())));
 
     ASSERT_EQUAL(v1, v3);
@@ -227,8 +227,8 @@ void TestCopyNConstantIteratorToZipIterator(void)
 {
     typedef typename Vector::value_type T;
 
-    Vector v1(3, T(0));
-    Vector v2(3, T(0));
+    Vector v1(4, T(0));
+    Vector v2(4, T(0));
 
     thrust::copy_n(thrust::make_constant_iterator(thrust::tuple<T,T>(4,7)),
                    v1.size(),
@@ -237,9 +237,11 @@ void TestCopyNConstantIteratorToZipIterator(void)
     ASSERT_EQUAL(v1[0], T(4));
     ASSERT_EQUAL(v1[1], T(4));
     ASSERT_EQUAL(v1[2], T(4));
+    ASSERT_EQUAL(v1[3], T(4));
     ASSERT_EQUAL(v2[0], T(7));
     ASSERT_EQUAL(v2[1], T(7));
     ASSERT_EQUAL(v2[2], T(7));
+    ASSERT_EQUAL(v2[3], T(7));
 };
 DECLARE_VECTOR_UNITTEST(TestCopyNConstantIteratorToZipIterator);
 

@@ -86,6 +86,10 @@
 // compiler.
 # define TEST_COMPILER_NVCC
 # define TEST_COMPILER_EDG
+#elif defined(_NVHPC_CUDA)
+#  define TEST_COMPILER_NVHPC_CUDA
+#elif defined(__CUDA__) && defined(_LIBCUDACXX_COMPILER_CLANG)
+#  define TEST_COMPILER_CLANG_CUDA
 #endif
 
 #if defined(__apple_build_version__)
@@ -142,75 +146,56 @@
 #endif
 #endif
 
-#if TEST_STD_VER >= 11
 #define TEST_ALIGNOF(...) alignof(__VA_ARGS__)
 #define TEST_ALIGNAS(...) alignas(__VA_ARGS__)
 #define TEST_CONSTEXPR constexpr
 #define TEST_NOEXCEPT noexcept
 #define TEST_NOEXCEPT_FALSE noexcept(false)
 #define TEST_NOEXCEPT_COND(...) noexcept(__VA_ARGS__)
-# if TEST_STD_VER >= 14
-#   define TEST_CONSTEXPR_CXX14 constexpr
-# else
-#   define TEST_CONSTEXPR_CXX14
-# endif
-# if TEST_STD_VER >= 17
-#   define TEST_CONSTEXPR_CXX17 constexpr
-# else
-#   define TEST_CONSTEXPR_CXX17
-# endif
-# if TEST_STD_VER >= 20
-#   define TEST_CONSTEXPR_CXX20 constexpr
-# else
-#   define TEST_CONSTEXPR_CXX20
-# endif
-# if TEST_STD_VER > 14
-#   define TEST_THROW_SPEC(...)
-# else
-#   define TEST_THROW_SPEC(...) throw(__VA_ARGS__)
-# endif
+#if TEST_STD_VER >= 14
+#  define TEST_CONSTEXPR_CXX14 constexpr
 #else
-#if defined(TEST_COMPILER_CLANG)
-# define TEST_ALIGNOF(...) _Alignof(__VA_ARGS__)
-#else
-# define TEST_ALIGNOF(...) __alignof(__VA_ARGS__)
+#  define TEST_CONSTEXPR_CXX14
 #endif
-#define TEST_ALIGNAS(...) __attribute__((__aligned__(__VA_ARGS__)))
-#define TEST_CONSTEXPR
-#define TEST_CONSTEXPR_CXX14
-#define TEST_CONSTEXPR_CXX17
-#define TEST_CONSTEXPR_CXX20
-#define TEST_NOEXCEPT throw()
-#define TEST_NOEXCEPT_FALSE
-#define TEST_NOEXCEPT_COND(...)
-#define TEST_THROW_SPEC(...) throw(__VA_ARGS__)
+#if TEST_STD_VER >= 17
+#  define TEST_CONSTEXPR_CXX17 constexpr
+#else
+#  define TEST_CONSTEXPR_CXX17
+#endif
+#if TEST_STD_VER >= 20
+#  define TEST_CONSTEXPR_CXX20 constexpr
+#else
+#  define TEST_CONSTEXPR_CXX20
+#endif
+#if TEST_STD_VER > 14
+#  define TEST_THROW_SPEC(...)
+#else
+#  define TEST_THROW_SPEC(...) throw(__VA_ARGS__)
 #endif
 
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
 // This is cribbed from __config; but lives here as well because we can't assume libc++
-#if __ISO_C_VISIBLE >= 2011 || TEST_STD_VER >= 11
-#  if defined(__FreeBSD__)
+#if defined(__FreeBSD__)
 //  Specifically, FreeBSD does NOT have timespec_get, even though they have all
 //  the rest of C11 - this is PR#38495
 #    define TEST_HAS_C11_FEATURES
-#  elif defined(__Fuchsia__) || defined(__wasi__)
-#    define TEST_HAS_C11_FEATURES
-#    define TEST_HAS_TIMESPEC_GET
-#  elif defined(__linux__)
+#elif defined(__Fuchsia__) || defined(__wasi__)
+#  define TEST_HAS_C11_FEATURES
+#  define TEST_HAS_TIMESPEC_GET
+#elif defined(__linux__)
 // This block preserves the old behavior used by include/__config:
 // _LIBCUDACXX_GLIBC_PREREQ would be defined to 0 if __GLIBC_PREREQ was not
 // available. The configuration here may be too vague though, as Bionic, uClibc,
 // newlib, etc may all support these features but need to be configured.
-#    if defined(TEST_GLIBC_PREREQ)
-#      if TEST_GLIBC_PREREQ(2, 17)
-#        define TEST_HAS_TIMESPEC_GET
-#        define TEST_HAS_C11_FEATURES
-#      endif
-#    elif defined(_LIBCUDACXX_HAS_MUSL_LIBC)
-#      define TEST_HAS_C11_FEATURES
+#  if defined(TEST_GLIBC_PREREQ)
+#    if TEST_GLIBC_PREREQ(2, 17)
 #      define TEST_HAS_TIMESPEC_GET
+#      define TEST_HAS_C11_FEATURES
 #    endif
+#  elif defined(_LIBCUDACXX_HAS_MUSL_LIBC)
+#    define TEST_HAS_C11_FEATURES
+#    define TEST_HAS_TIMESPEC_GET
 #  endif
 #endif
 
@@ -272,16 +257,11 @@
 #define TEST_HAS_NO_SPACESHIP_OPERATOR
 #endif
 
-#if TEST_STD_VER < 11
-#define ASSERT_NOEXCEPT(...)
-#define ASSERT_NOT_NOEXCEPT(...)
-#else
 #define ASSERT_NOEXCEPT(...) \
     static_assert(noexcept(__VA_ARGS__), "Operation must be noexcept")
 
 #define ASSERT_NOT_NOEXCEPT(...) \
     static_assert(!noexcept(__VA_ARGS__), "Operation must NOT be noexcept")
-#endif
 
 #if TEST_STD_VER > 11
 #define STATIC_ASSERT_CXX14(Pred) static_assert(Pred, "")
@@ -422,7 +402,9 @@ constexpr bool unused(T &&) {return true;}
 // Define a helper macro to properly suppress warnings
 #define _TEST_TOSTRING2(x) #x
 #define _TEST_TOSTRING(x) _TEST_TOSTRING2(x)
-#if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+#if defined(TEST_COMPILER_CLANG_CUDA)
+# define TEST_NV_DIAG_SUPPRESS(WARNING)
+#elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
 #if defined (TEST_COMPILER_MSVC)
 # define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
 #else // ^^^ MSVC ^^^ / vvv not MSVC vvv

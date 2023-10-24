@@ -37,7 +37,6 @@ int main(int, char**)
         assert(c.max_size() == 0);
         assert(c.empty());
     }
-#if TEST_STD_VER >= 11
     {
         typedef double T;
         typedef cuda::std::array<T, 3> C;
@@ -54,7 +53,6 @@ int main(int, char**)
         static_assert(c.max_size() == 0, "");
         static_assert(c.empty(), "");
     }
-#endif
 
   return 0;
 }

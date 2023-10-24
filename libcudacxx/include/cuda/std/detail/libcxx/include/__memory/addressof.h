@@ -15,9 +15,11 @@
 #include <__config>
 #endif //__cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -29,7 +31,7 @@ template <class _Tp>
 inline _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _LIBCUDACXX_NO_CFI _LIBCUDACXX_INLINE_VISIBILITY
 _Tp*
-addressof(_Tp& __x) _NOEXCEPT
+addressof(_Tp& __x) noexcept
 {
     return __builtin_addressof(__x);
 }
@@ -39,7 +41,7 @@ addressof(_Tp& __x) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_NO_CFI _LIBCUDACXX_INLINE_VISIBILITY
 _Tp*
-addressof(_Tp& __x) _NOEXCEPT
+addressof(_Tp& __x) noexcept
 {
   return reinterpret_cast<_Tp *>(
       const_cast<char *>(&reinterpret_cast<const volatile char &>(__x)));
@@ -55,7 +57,7 @@ addressof(_Tp& __x) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __strong _Tp*
-addressof(__strong _Tp& __x) _NOEXCEPT
+addressof(__strong _Tp& __x) noexcept
 {
   return &__x;
 }
@@ -64,7 +66,7 @@ addressof(__strong _Tp& __x) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __weak _Tp*
-addressof(__weak _Tp& __x) _NOEXCEPT
+addressof(__weak _Tp& __x) noexcept
 {
   return &__x;
 }
@@ -73,7 +75,7 @@ addressof(__weak _Tp& __x) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __autoreleasing _Tp*
-addressof(__autoreleasing _Tp& __x) _NOEXCEPT
+addressof(__autoreleasing _Tp& __x) noexcept
 {
   return &__x;
 }
@@ -81,15 +83,13 @@ addressof(__autoreleasing _Tp& __x) _NOEXCEPT
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __unsafe_unretained _Tp*
-addressof(__unsafe_unretained _Tp& __x) _NOEXCEPT
+addressof(__unsafe_unretained _Tp& __x) noexcept
 {
   return &__x;
 }
 #endif
 
-#if !defined(_LIBCUDACXX_CXX03_LANG)
 template <class _Tp> _Tp* addressof(const _Tp&&) noexcept = delete;
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

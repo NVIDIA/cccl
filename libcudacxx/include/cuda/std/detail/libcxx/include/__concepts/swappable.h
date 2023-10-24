@@ -31,9 +31,11 @@
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
 _LIBCUDACXX_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
@@ -116,7 +118,7 @@ _LIBCUDACXX_NV_DIAG_DEFAULT(2642)
     // 2.1   `S` is `(void)swap(E1, E2)`* if `E1` or `E2` has class or enumeration type and...
     // *The name `swap` is used here unqualified.
     _LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
-      (requires __unqualified_swappable_with<_Tp, _Up>)
+      _LIBCUDACXX_REQUIRES( __unqualified_swappable_with<_Tp, _Up>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp&& __t, _Up&& __u) const
       noexcept(noexcept(swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u))))
     {
@@ -125,7 +127,7 @@ _LIBCUDACXX_NV_DIAG_DEFAULT(2642)
 
     // 2.2   Otherwise, if `E1` and `E2` are lvalues of array types with equal extent and...
     _LIBCUDACXX_TEMPLATE(class _Tp, class _Up, size_t _Size)
-      (requires __swappable_arrays<_Tp, _Up, _Size>)
+      _LIBCUDACXX_REQUIRES( __swappable_arrays<_Tp, _Up, _Size>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp(& __t)[_Size], _Up(& __u)[_Size]) const
       noexcept(__noexcept_swappable_arrays<_Tp, _Up>)
     {
@@ -137,7 +139,7 @@ _LIBCUDACXX_NV_DIAG_DEFAULT(2642)
 
     // 2.3   Otherwise, if `E1` and `E2` are lvalues of the same type `T` that models...
     _LIBCUDACXX_TEMPLATE(class _Tp)
-      (requires __exchangeable<_Tp>)
+      _LIBCUDACXX_REQUIRES( __exchangeable<_Tp>)
     _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp& __x, _Tp& __y) const
       noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp) && _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Tp))
     {

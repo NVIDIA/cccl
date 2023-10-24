@@ -52,7 +52,7 @@ int main(int, char**)
 #endif
     test<float, true>();
     test<double, true>();
-#if (defined(__ppc__) || defined(__ppc64__))
+#if (defined(__ppc__) || defined(__ppc64__) || defined(__PPC64__))
     test<long double, false>();
 #else
     test<long double, true>();

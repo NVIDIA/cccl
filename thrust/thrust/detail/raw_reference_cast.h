@@ -17,11 +17,16 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/tuple_transform.h>
-#include <thrust/iterator/detail/tuple_of_iterator_references.h>
 
 
 // the order of declarations and definitions in this file is totally goofy
@@ -33,6 +38,8 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
+template<typename... Ts>
+class tuple_of_iterator_references;
 
 __THRUST_DEFINE_HAS_NESTED_TYPE(is_wrapped_reference, wrapped_reference_hint)
 

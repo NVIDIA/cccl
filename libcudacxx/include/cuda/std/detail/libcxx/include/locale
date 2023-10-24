@@ -207,9 +207,11 @@ template <class charT> class messages_byname;
 #include <__bsd_locale_fallbacks.h>
 #endif
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
@@ -3660,10 +3662,8 @@ public:
     wstring_convert(_Codecvt* __pcvt, state_type __state);
     _LIBCUDACXX_EXPLICIT_AFTER_CXX11 wstring_convert(const byte_string& __byte_err,
                     const wide_string& __wide_err = wide_string());
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     wstring_convert(wstring_convert&& __wc);
-#endif
     ~wstring_convert();
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -3689,7 +3689,7 @@ public:
     byte_string to_bytes(const _Elem* __first, const _Elem* __last);
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    size_t converted() const _NOEXCEPT {return __cvtcount_;}
+    size_t converted() const noexcept {return __cvtcount_;}
     _LIBCUDACXX_INLINE_VISIBILITY
     state_type state() const {return __cvtstate_;}
 };
@@ -3719,8 +3719,6 @@ wstring_convert<_Codecvt, _Elem, _Wide_alloc, _Byte_alloc>::
     __cvtptr_ = new _Codecvt;
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
-
 template<class _Codecvt, class _Elem, class _Wide_alloc, class _Byte_alloc>
 inline
 wstring_convert<_Codecvt, _Elem, _Wide_alloc, _Byte_alloc>::
@@ -3732,8 +3730,6 @@ wstring_convert<_Codecvt, _Elem, _Wide_alloc, _Byte_alloc>::
 {
     __wc.__cvtptr_ = nullptr;
 }
-
-#endif  // _LIBCUDACXX_CXX03_LANG
 
 template<class _Codecvt, class _Elem, class _Wide_alloc, class _Byte_alloc>
 wstring_convert<_Codecvt, _Elem, _Wide_alloc, _Byte_alloc>::~wstring_convert()

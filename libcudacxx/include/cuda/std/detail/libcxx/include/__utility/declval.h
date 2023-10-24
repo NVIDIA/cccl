@@ -14,9 +14,11 @@
 #include <__config>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -30,7 +32,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _Tp __declval(long);
 _LIBCUDACXX_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() _NOEXCEPT;
+_LIBCUDACXX_INLINE_VISIBILITY decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noexcept;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

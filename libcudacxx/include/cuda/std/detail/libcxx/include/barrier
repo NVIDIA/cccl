@@ -65,16 +65,14 @@ namespace std
 #include <__pragma_push>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
 # error <barrier> is not supported on this single threaded system
-#endif
-
-#if _LIBCUDACXX_STD_VER < 11
-# error <barrier> requires C++11 or later
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -306,7 +304,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     __barrier_base(ptrdiff_t __expected, _CompletionF __completion = _CompletionF())
-        : __phase(false), __expected(__expected), __arrived(__expected), __completion(__completion)
+        : __expected(__expected), __arrived(__expected), __completion(__completion), __phase(false)
     {
     }
 
@@ -322,9 +320,7 @@ public:
         auto const __result = __arrived.fetch_sub(__update, memory_order_acq_rel) - __update;
         auto const __new_expected = __expected.load(memory_order_relaxed);
 
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__result >= 0);
-#endif
+        _LIBCUDACXX_DEBUG_ASSERT(__result >= 0, "");
 
         if(0 == __result) {
             __completion();
@@ -352,7 +348,7 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    static constexpr ptrdiff_t max() _NOEXCEPT
+    static constexpr ptrdiff_t max() noexcept
     {
         return numeric_limits<ptrdiff_t>::max();
     }
@@ -385,13 +381,14 @@ private:
     _LIBCUDACXX_INLINE_VISIBILITY
     friend bool __call_try_wait_parity(const _Barrier& __b, bool __parity);
 
-    static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
-    uint64_t __init(ptrdiff_t __count) _NOEXCEPT
+    static _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    uint64_t __init(ptrdiff_t __count) noexcept
     {
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__count >= 0);
-#endif
-
+#if _LIBCUDACXX_STD_VER > 11
+        // This debug assert is not supported in C++11 due to resulting in a
+        // multi-statement constexpr function.
+        _LIBCUDACXX_DEBUG_ASSERT(__count >= 0, "Count must be non-negative.");
+#endif // _LIBCUDACXX_STD_VER > 11
         return (((1u << 31) - __count) << 32)
               | ((1u << 31) - __count);
     }
@@ -418,9 +415,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     __barrier_base(ptrdiff_t __count, __empty_completion = __empty_completion())
         : __phase_arrived_expected(__init(__count)) {
-#if (_LIBCUDACXX_DEBUG_LEVEL >= 2)
-        _LIBCUDACXX_DEBUG_ASSERT(__count >= 0);
-#endif
+        _LIBCUDACXX_DEBUG_ASSERT(__count >= 0, "");
     }
 
     ~__barrier_base() = default;
@@ -462,7 +457,7 @@ public:
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    static constexpr ptrdiff_t max() _NOEXCEPT
+    static constexpr ptrdiff_t max() noexcept
     {
         return numeric_limits<int32_t>::max();
     }
@@ -473,7 +468,7 @@ public:
 template<class _CompletionF = __empty_completion>
 class barrier : public __barrier_base<_CompletionF> {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     barrier(ptrdiff_t __count, _CompletionF __completion = _CompletionF())
         : __barrier_base<_CompletionF>(__count, __completion) {
     }

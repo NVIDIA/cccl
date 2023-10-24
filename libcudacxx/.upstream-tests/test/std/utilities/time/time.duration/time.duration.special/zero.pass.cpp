@@ -31,13 +31,11 @@ void test()
     Rep zero_rep = cuda::std::chrono::duration_values<Rep>::zero();
     assert(D::zero().count() == zero_rep);
     }
-#if TEST_STD_VER >= 11
     {
     typedef typename D::rep Rep;
     constexpr Rep zero_rep = cuda::std::chrono::duration_values<Rep>::zero();
     static_assert(D::zero().count() == zero_rep, "");
     }
-#endif
 }
 
 int main(int, char**)

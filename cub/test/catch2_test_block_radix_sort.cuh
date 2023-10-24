@@ -33,8 +33,6 @@
 #include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 
@@ -123,8 +121,6 @@ void block_radix_sort(
     int end_bit,
     bool striped)
 {
-  cudaDeviceSetSharedMemConfig(ShmemConfig);
-
   kernel<InputIteratorT,
          OutputIteratorT,
          ActionT,
@@ -239,8 +235,6 @@ void block_radix_sort(
     int end_bit,
     bool striped)
 {
-  cudaDeviceSetSharedMemConfig(ShmemConfig);
-
   kernel<InputKeyIteratorT,
          InputValueIteratorT,
          OutputKeyIteratorT,

@@ -93,7 +93,6 @@ int main(int, char**)
     assert( (s1 <= s2));
     assert( (s1 >= s2));
     }
-#if TEST_STD_VER >= 11
     {
     constexpr cuda::std::chrono::seconds s1(3);
     constexpr cuda::std::chrono::seconds s2(3);
@@ -150,7 +149,6 @@ int main(int, char**)
     static_assert( (s1 <= s2), "");
     static_assert( (s1 >= s2), "");
     }
-#endif
 
   return 0;
 }

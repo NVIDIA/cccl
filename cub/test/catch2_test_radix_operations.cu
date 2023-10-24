@@ -162,7 +162,7 @@ template <std::size_t I, class... Ts>
 typename ::cuda::std::enable_if<I == 0>::type 
 buffer_to_tpl_helper(const char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
-  const std::size_t element_size =
+  constexpr std::size_t element_size =
     sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
   std::memcpy(&::cuda::std::get<I>(tpl), buffer, element_size);
 }
@@ -171,7 +171,7 @@ template <std::size_t I, class... Ts>
 typename ::cuda::std::enable_if <I != 0>::type
 buffer_to_tpl_helper(const char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
-  const std::size_t element_size =
+  constexpr std::size_t element_size =
     sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
   std::memcpy(&::cuda::std::get<I>(tpl), buffer, element_size);
   buffer_to_tpl_helper<I - 1>(buffer + element_size, tpl);
@@ -187,7 +187,7 @@ template <std::size_t I, class... Ts>
 typename ::cuda::std::enable_if<I == 0>::type 
 tpl_to_buffer_helper(char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
-  const std::size_t element_size =
+  constexpr std::size_t element_size =
     sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
   std::memcpy(buffer, &::cuda::std::get<I>(tpl), element_size);
 }
@@ -196,7 +196,7 @@ template <std::size_t I, class... Ts>
 typename ::cuda::std::enable_if <I != 0>::type
 tpl_to_buffer_helper(char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
-  const std::size_t element_size =
+  constexpr std::size_t element_size =
     sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
   std::memcpy(buffer, &::cuda::std::get<I>(tpl), element_size);
   tpl_to_buffer_helper<I - 1>(buffer + element_size, tpl);
@@ -219,7 +219,7 @@ template <std::size_t I = 0, class... Ts>
 typename ::cuda::std::enable_if <I < sizeof...(Ts), int>::type
 tpl_to_max_bits(::cuda::std::tuple<Ts...> &tpl)
 {
-  const std::size_t element_size =
+  constexpr std::size_t element_size =
     sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
   return element_size * CHAR_BIT + tpl_to_max_bits<I + 1>(tpl);
 }
@@ -624,7 +624,7 @@ TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations]")
   fp_aggregate_t ordered_negative = conversion_policy::to_bit_ordered(decomposer_t{}, negative);
   fp_aggregate_t ordered_positibe = conversion_policy::to_bit_ordered(decomposer_t{}, positive);
 
-  const int num_bits       = CHAR_BIT;
+  constexpr int num_bits = CHAR_BIT;
 
   for (int bit = 0; bit < 8; bit += num_bits)
   {
@@ -656,8 +656,8 @@ TEST_CASE("Radix operations allow fields permutation", "[radix][operations]")
   fp_aggregate_t ordered_lhs = conversion_policy::to_bit_ordered(decomposer_t{}, lhs);
   fp_aggregate_t ordered_rhs = conversion_policy::to_bit_ordered(decomposer_t{}, lhs);
 
-  const int num_bits       = CHAR_BIT;
-  const int aggregate_bits = static_cast<int>(sizeof(float) + sizeof(double)) * CHAR_BIT;
+  constexpr int num_bits       = CHAR_BIT;
+  constexpr int aggregate_bits = (sizeof(float) + sizeof(double)) * CHAR_BIT;
 
   for (int current_bit = aggregate_bits - num_bits; current_bit >= 0; current_bit -= num_bits)
   {

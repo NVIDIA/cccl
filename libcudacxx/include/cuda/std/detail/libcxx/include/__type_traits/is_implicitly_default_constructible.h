@@ -17,13 +17,14 @@
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_default_constructible.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 // First of all, we can't implement this check in C++03 mode because the {}
 // default initialization syntax isn't valid.
 // Second, we implement the trait in a funny manner with two defaulted template
@@ -45,7 +46,6 @@ template <class _Tp>
 struct __is_implicitly_default_constructible<_Tp, decltype(__test_implicit_default_constructible<_Tp const&>({})), false_type>
     : false_type
 { };
-#endif // !C++03
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

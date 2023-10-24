@@ -15,9 +15,11 @@
 #error "<__cuda/semaphore> should only be included in from <cuda/std/semaphore>"
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -26,7 +28,7 @@ class counting_semaphore : public _CUDA_VSTD::__semaphore_base<__least_max_value
 {
     static_assert(__least_max_value <= _CUDA_VSTD::__semaphore_base<__least_max_value, _Sco>::max(), "");
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     counting_semaphore(ptrdiff_t __count = 0) : _CUDA_VSTD::__semaphore_base<__least_max_value, _Sco>(__count) { }
     ~counting_semaphore() = default;
 

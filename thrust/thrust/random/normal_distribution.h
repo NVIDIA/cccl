@@ -22,6 +22,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/pair.h>
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/detail/normal_distribution_base.h>
@@ -43,7 +49,7 @@ namespace random
  *
  *  \tparam RealType The type of floating point number to produce.
  *
- *  The following code snippet demonstrates examples of using a \p normal_distribution with a 
+ *  The following code snippet demonstrates examples of using a \p normal_distribution with a
  *  random number engine to produce random values drawn from the Normal distribution with a given
  *  mean and variance:
  *
@@ -86,7 +92,7 @@ template<typename RealType = double>
 
   public:
     // types
-    
+
     /*! \typedef result_type
      *  \brief The type of the floating point number produced by this \p normal_distribution.
      */
@@ -98,10 +104,10 @@ template<typename RealType = double>
     typedef thrust::pair<RealType,RealType> param_type;
 
     // constructors and reset functions
-    
+
     /*! This constructor creates a new \p normal_distribution from two values defining the
      *  half-open interval of the distribution.
-     *  
+     *
      *  \param mean The mean (expected value) of the distribution. Defaults to \c 0.0.
      *  \param stddev The standard deviation of the distribution. Defaults to \c 1.0.
      */
@@ -110,7 +116,7 @@ template<typename RealType = double>
 
     /*! This constructor creates a new \p normal_distribution from a \p param_type object
      *  encapsulating the range of the distribution.
-     *  
+     *
      *  \param parm A \p param_type object encapsulating the parameters (i.e., the mean and standard deviation) of the distribution.
      */
     __host__ __device__
@@ -134,7 +140,7 @@ template<typename RealType = double>
     __host__ __device__
     result_type operator()(UniformRandomNumberGenerator &urng);
 
-    /*! This method produces a new Normal random integer as if by creating a new \p normal_distribution 
+    /*! This method produces a new Normal random integer as if by creating a new \p normal_distribution
      *  from the given \p param_type object, and calling its <tt>operator()</tt> method with the given
      *  \p UniformRandomNumberGenerator as a source of randomness.
      *

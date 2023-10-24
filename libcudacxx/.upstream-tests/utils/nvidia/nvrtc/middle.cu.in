@@ -11,8 +11,6 @@ int main() {
         0, NULL, NULL));
 
     const char * opts[] = {
-        "-rdc=true",
-
 #if __cplusplus < 201103L
         "-std=c++98",
 #elif __cplusplus < 201402L

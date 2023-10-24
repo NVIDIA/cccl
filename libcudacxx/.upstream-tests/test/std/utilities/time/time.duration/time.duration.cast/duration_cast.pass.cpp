@@ -45,12 +45,10 @@ int main(int, char**)
          cuda::std::chrono::duration<double, cuda::std::ratio<3600> >(7265./3600));
     test(cuda::std::chrono::duration<int, cuda::std::ratio<2, 3> >(9),
          cuda::std::chrono::duration<int, cuda::std::ratio<3, 5> >(10));
-#if TEST_STD_VER >= 11
     {
     constexpr cuda::std::chrono::hours h = cuda::std::chrono::duration_cast<cuda::std::chrono::hours>(cuda::std::chrono::milliseconds(7265000));
     static_assert(h.count() == 2, "");
     }
-#endif
 
   return 0;
 }

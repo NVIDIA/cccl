@@ -84,8 +84,8 @@ template <typename KeyT,
           int ItemsPerThread>
 void Test()
 {
-  const unsigned int threads_in_block = 1024;
-  const unsigned int elements = threads_in_block * ItemsPerThread;
+  constexpr unsigned int threads_in_block = 1024;
+  constexpr unsigned int elements = threads_in_block * ItemsPerThread;
 
   thrust::default_random_engine re;
   thrust::device_vector<std::uint8_t> data_source(elements);

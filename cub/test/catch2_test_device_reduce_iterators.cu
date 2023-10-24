@@ -36,13 +36,9 @@
 
 #include "catch2_test_device_reduce.cuh"
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "c2h/custom_type.cuh"
-#include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
-#include <nv/target>
 
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::Sum, device_sum);

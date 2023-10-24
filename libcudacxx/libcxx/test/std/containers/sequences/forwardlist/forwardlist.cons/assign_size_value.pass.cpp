@@ -26,7 +26,7 @@ int main(int, char**)
         C c(std::begin(t1), std::end(t1));
         c.assign(10, 1);
         int n = 0;
-        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, ++n)
+        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, (void)++n)
             assert(*i == 1);
         assert(n == 10);
     }
@@ -37,7 +37,7 @@ int main(int, char**)
         C c(std::begin(t1), std::end(t1));
         c.assign(4, 10);
         int n = 0;
-        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, ++n)
+        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, (void)++n)
             assert(*i == 10);
         assert(n == 4);
     }
@@ -49,7 +49,7 @@ int main(int, char**)
         C c(std::begin(t1), std::end(t1));
         c.assign(10, 1);
         int n = 0;
-        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, ++n)
+        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, (void)++n)
             assert(*i == 1);
         assert(n == 10);
     }
@@ -60,7 +60,7 @@ int main(int, char**)
         C c(std::begin(t1), std::end(t1));
         c.assign(4, 10);
         int n = 0;
-        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, ++n)
+        for (C::const_iterator i = c.cbegin(); i != c.cend(); ++i, (void)++n)
             assert(*i == 10);
         assert(n == 4);
     }

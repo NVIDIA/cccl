@@ -25,14 +25,12 @@ int main(int, char**)
            cuda::std::numeric_limits<double>::lowest());
     assert(cuda::std::chrono::duration_values<Rep>::min() ==
            cuda::std::numeric_limits<Rep>::lowest());
-#if TEST_STD_VER >= 11
     static_assert(cuda::std::chrono::duration_values<int>::min() ==
            cuda::std::numeric_limits<int>::lowest(), "");
     static_assert(cuda::std::chrono::duration_values<double>::min() ==
            cuda::std::numeric_limits<double>::lowest(), "");
     static_assert(cuda::std::chrono::duration_values<Rep>::min() ==
            cuda::std::numeric_limits<Rep>::lowest(), "");
-#endif
 
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::min());
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<double>::min());

@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -33,13 +33,19 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <iterator>
 #include <iostream>
 
 #include "../thread/thread_load.cuh"
 #include "../thread/thread_store.cuh"
-#include "../config.cuh"
-#include "../util_device.cuh"
 
 #if (THRUST_VERSION >= 100700)
     // This iterator is compatible with Thrust API 1.7 and newer
@@ -51,25 +57,25 @@
 CUB_NAMESPACE_BEGIN
 
 /**
- * \addtogroup UtilIterator
+ * @addtogroup UtilIterator
  * @{
  */
 
 /**
- * \brief A random-access input generator for dereferencing a sequence of incrementing integer values.
+ * @brief A random-access input generator for dereferencing a sequence of incrementing integer values.
  *
- * \par Overview
- * - After initializing a CountingInputIteratorTto a certain integer \p base, read references
- *   at \p offset will return the value \p base + \p offset.
+ * @par Overview
+ * - After initializing a CountingInputIteratorTto a certain integer @p base, read references
+ *   at @p offset will return the value @p base + @p offset.
  * - Can be constructed, manipulated, dereferenced, and exchanged within and between host and device
  *   functions.
  * - Compatible with Thrust API v1.7 or newer.
  *
- * \par Snippet
- * The code snippet below illustrates the use of \p CountingInputIteratorTto
+ * @par Snippet
+ * The code snippet below illustrates the use of @p CountingInputIteratorTto
  * dereference a sequence of incrementing integers.
- * \par
- * \code
+ * @par
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/iterator/counting_input_iterator.cuh>
  *
  * cub::CountingInputIterator<int> itr(5);
@@ -79,10 +85,13 @@ CUB_NAMESPACE_BEGIN
  * printf("%d\n", itr[2]);      // 7
  * printf("%d\n", itr[50]);     // 55
  *
- * \endcode
+ * @endcode
  *
- * \tparam ValueType            The value type of this iterator
- * \tparam OffsetT              The difference type of this iterator (Default: \p ptrdiff_t)
+ * @tparam ValueType            
+ *   The value type of this iterator
+ *
+ * @tparam OffsetT              
+ *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <
     typename ValueType,
@@ -92,22 +101,35 @@ class CountingInputIterator
 public:
 
     // Required iterator traits
-    typedef CountingInputIterator               self_type;              ///< My own type
-    typedef OffsetT                             difference_type;        ///< Type to express the result of subtracting one iterator from another
-    typedef ValueType                           value_type;             ///< The type of the element the iterator can point to
-    typedef ValueType*                          pointer;                ///< The type of a pointer to an element the iterator can point to
-    typedef ValueType                           reference;              ///< The type of a reference to an element the iterator can point to
+
+    /// My own type
+    typedef CountingInputIterator self_type;
+
+    /// Type to express the result of subtracting one iterator from another
+    typedef OffsetT difference_type;
+
+    /// The type of the element the iterator can point to
+    typedef ValueType value_type;
+
+    /// The type of a pointer to an element the iterator can point to
+    typedef ValueType *pointer;
+
+    /// The type of a reference to an element the iterator can point to
+    typedef ValueType reference;
 
 #if (THRUST_VERSION >= 100700)
     // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
+
+    /// The iterator category
     typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
         THRUST_NS_QUALIFIER::any_system_tag,
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        ///< The iterator category
+      >::type iterator_category;                                        
 #else
-    typedef std::random_access_iterator_tag     iterator_category;      ///< The iterator category
+    /// The iterator category
+    typedef std::random_access_iterator_tag     iterator_category;      
 #endif  // THRUST_VERSION
 
 private:
@@ -115,20 +137,20 @@ private:
     ValueType val;
 
 public:
-
-    /// Constructor
-    __host__ __device__ __forceinline__ CountingInputIterator(
-        const ValueType &val)          ///< Starting value for the iterator instance to report
-    :
-        val(val)
+    /**
+     * @param val
+     *   Starting value for the iterator instance to report
+     */
+    __host__ __device__ __forceinline__ CountingInputIterator(const ValueType &val)
+        : val(val)
     {}
 
     /// Postfix increment
     __host__ __device__ __forceinline__ self_type operator++(int)
     {
-        self_type retval = *this;
-        val++;
-        return retval;
+      self_type retval = *this;
+      val++;
+      return retval;
     }
 
     /// Prefix increment

@@ -1,0 +1,49 @@
+name: Build Windows
+
+on:
+  workflow_call:
+    inputs:
+      test_name: {type: string, required: false}
+      build_script: {type: string, required: false}
+      container_image: {type: string, required: false}
+
+jobs:
+  prepare:
+    name: Build ${{inputs.test_name}}
+    runs-on: windows-2022
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      SCCACHE_BUCKET: rapids-sccache-devs
+      SCCACHE_REGION: us-east-2
+      SCCACHE_IDLE_TIMEOUT: 0
+      SCCACHE_S3_USE_SSL: true
+      SCCACHE_S3_NO_CREDENTIALS: false
+    steps:
+      - name: Get AWS credentials for sccache bucket
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12 hours
+      - name: Fetch ${{ inputs.container_image }}
+        shell: powershell
+        run: docker pull ${{ inputs.container_image }}
+      - name: Run the tests
+        shell: powershell
+        run: >-
+            docker run ${{ inputs.container_image }} powershell -c "[System.Environment]::SetEnvironmentVariable('AWS_ACCESS_KEY_ID','${{env.AWS_ACCESS_KEY_ID}}')
+                                                                    [System.Environment]::SetEnvironmentVariable('AWS_SECRET_ACCESS_KEY','${{env.AWS_SECRET_ACCESS_KEY}}')
+                                                                    [System.Environment]::SetEnvironmentVariable('AWS_SESSION_TOKEN','${{env.AWS_SESSION_TOKEN }}')
+                                                                    [System.Environment]::SetEnvironmentVariable('SCCACHE_BUCKET','${{env.SCCACHE_BUCKET}}')
+                                                                    [System.Environment]::SetEnvironmentVariable('SCCACHE_REGION','${{env.SCCACHE_REGION}}')
+                                                                    [System.Environment]::SetEnvironmentVariable('SCCACHE_IDLE_TIMEOUT','${{env.SCCACHE_IDLE_TIMEOUT}}')
+                                                                    [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_USE_SSL','${{env.SCCACHE_S3_USE_SSL}}')
+                                                                    [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_NO_CREDENTIALS','${{env.SCCACHE_S3_NO_CREDENTIALS}}')
+                                                                    git clone https://github.com/NVIDIA/cccl.git;
+                                                                    cd cccl;
+                                                                    git fetch --all;
+                                                                    git checkout ${{github.ref_name}};
+                                                                    ${{inputs.build_script}};"
+

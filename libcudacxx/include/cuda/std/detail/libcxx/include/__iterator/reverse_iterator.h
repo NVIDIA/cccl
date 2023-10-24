@@ -20,9 +20,11 @@
 #include "../__memory/addressof.h"
 #include "../__type_traits/void_t.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -145,7 +147,6 @@ operator<=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& 
     return __x.base() >= __y.base();
 }
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Iter1, class _Iter2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
 auto
@@ -154,15 +155,6 @@ operator-(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& _
 {
     return __y.base() - __x.base();
 }
-#else
-template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename reverse_iterator<_Iter1>::difference_type
-operator-(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-{
-    return __y.base() - __x.base();
-}
-#endif
 
 template <class _Iter>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14

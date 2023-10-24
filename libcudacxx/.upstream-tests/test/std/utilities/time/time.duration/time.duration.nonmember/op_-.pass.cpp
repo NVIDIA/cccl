@@ -46,7 +46,6 @@ int main(int, char**)
     cuda::std::chrono::duration<double, cuda::std::ratio<1, 15> > r = s1 - s2;
     assert(r.count() == -15);
     }
-#if TEST_STD_VER >= 11
     {
     constexpr cuda::std::chrono::seconds s1(3);
     constexpr cuda::std::chrono::seconds s2(5);
@@ -71,7 +70,6 @@ int main(int, char**)
     constexpr cuda::std::chrono::duration<double, cuda::std::ratio<1, 15> > r = s1 - s2;
     static_assert(r.count() == -15, "");
     }
-#endif
 
   return 0;
 }

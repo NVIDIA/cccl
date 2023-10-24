@@ -17,9 +17,11 @@
 
 #include "../cstddef"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -38,8 +40,6 @@ end(_Tp (&__array)[_Np])
 {
     return __array + _Np;
 }
-
-#if !defined(_LIBCUDACXX_CXX03_LANG)
 
 template <class _Cp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
@@ -90,43 +90,6 @@ auto cend(const _Cp& __c) -> decltype(_CUDA_VSTD::end(__c))
 }
 
 #endif
-
-
-#else  // defined(_LIBCUDACXX_CXX03_LANG)
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Cp::iterator
-begin(_Cp& __c)
-{
-    return __c.begin();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Cp::const_iterator
-begin(const _Cp& __c)
-{
-    return __c.begin();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Cp::iterator
-end(_Cp& __c)
-{
-    return __c.end();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Cp::const_iterator
-end(const _Cp& __c)
-{
-    return __c.end();
-}
-
-#endif // !defined(_LIBCUDACXX_CXX03_LANG)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

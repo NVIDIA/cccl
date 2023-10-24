@@ -21,9 +21,11 @@
 #include "../cstddef"
 #include "../iosfwd"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -43,9 +45,9 @@ private:
     ostream_type* __out_stream_;
     const char_type* __delim_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator(ostream_type& __s) _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator(ostream_type& __s) noexcept
         : __out_stream_(_CUDA_VSTD::addressof(__s)), __delim_(0) {}
-    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator(ostream_type& __s, const _CharT* __delimiter) _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
         : __out_stream_(_CUDA_VSTD::addressof(__s)), __delim_(__delimiter) {}
     _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator=(const _Tp& __value_)
         {

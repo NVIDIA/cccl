@@ -33,6 +33,14 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <thrust/type_traits/integer_sequence.h>
 
 #include <cuda/std/tuple>
@@ -40,7 +48,6 @@
 
 #include <type_traits>
 
-#include "../config.cuh"
 #include "../util_ptx.cuh"
 #include "../util_type.cuh"
 #include "cub/detail/cpp_compatibility.cuh"
@@ -96,14 +103,14 @@ struct BaseDigitExtractor<KeyT, FLOATING_POINT>
  * key from a digit. */
 template <typename KeyT>
 struct BFEDigitExtractor : BaseDigitExtractor<KeyT>
-{   
+{
     using typename BaseDigitExtractor<KeyT>::UnsignedBits;
 
-    std::uint32_t bit_start; 
+    std::uint32_t bit_start;
     std::uint32_t num_bits;
 
     explicit __device__ __forceinline__ BFEDigitExtractor(
-        std::uint32_t bit_start = 0, 
+        std::uint32_t bit_start = 0,
         std::uint32_t num_bits = 0)
       : bit_start(bit_start)
       , num_bits(num_bits)
@@ -139,14 +146,14 @@ struct ShiftDigitExtractor : BaseDigitExtractor<KeyT>
 
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
-namespace detail 
+namespace detail
 {
 
 template <bool... Bs>
 struct logic_helper_t;
 
 template <bool>
-struct true_t 
+struct true_t
 {
   static constexpr bool value = true;
 };
@@ -181,9 +188,9 @@ for_each_member_impl(F f, const ::cuda::std::tuple<Ts&...>& tpl)
   static_assert(sizeof...(Ts), "Empty aggregates are not supported");
 
   // Most radix operations are indifferent to the order of operations.
-  // Conversely, the digit extractor traverses fields from the least significant 
-  // to the most significant to imitate bitset printing where higher bits are on 
-  // the left. It also maps to intuition, where something coming first is more 
+  // Conversely, the digit extractor traverses fields from the least significant
+  // to the most significant to imitate bitset printing where higher bits are on
+  // the left. It also maps to intuition, where something coming first is more
   // important. Therefore, we traverse fields on the opposite order.
   for_each_member_impl_helper(f, tpl, THRUST_NS_QUALIFIER::make_reversed_index_sequence<sizeof...(Ts)>{});
 }
@@ -438,7 +445,7 @@ struct digit_f
   template <class T>
   __host__ __device__ void operator()(T &src)
   {
-    const std::uint32_t src_size = sizeof(T) * 8;
+    constexpr std::uint32_t src_size = sizeof(T) * 8;
 
     if (src_bit_start >= src_size)
     {
@@ -578,7 +585,7 @@ struct traits_t<T, false /* is_fundamental */>
 } // namespace detail
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
-//! Twiddling keys for radix sort 
+//! Twiddling keys for radix sort
 template <bool IS_DESCENDING, typename KeyT>
 struct RadixSortTwiddle
 {

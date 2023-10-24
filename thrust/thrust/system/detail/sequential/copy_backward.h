@@ -18,6 +18,12 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -31,8 +37,8 @@ __thrust_exec_check_disable__
 template<typename BidirectionalIterator1,
          typename BidirectionalIterator2>
 __host__ __device__
-BidirectionalIterator2 copy_backward(BidirectionalIterator1 first, 
-                                     BidirectionalIterator1 last, 
+BidirectionalIterator2 copy_backward(BidirectionalIterator1 first,
+                                     BidirectionalIterator1 last,
                                      BidirectionalIterator2 result)
 {
   while (first != last)

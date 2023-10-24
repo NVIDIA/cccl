@@ -29,6 +29,8 @@ class LibcxxTestFormat(object):
       FOO.pass.cpp - Executable test which should compile, run, and exit with
                      code 0.
       FOO.fail.cpp - Negative test case which is expected to fail compilation.
+      FOO.runfail.cpp - Negative test case which is expected to compile, run,
+                        and exit with non-zero exit code.
       FOO.sh.cpp   - A test that uses LIT's ShTest format.
     """
 
@@ -88,6 +90,7 @@ class LibcxxTestFormat(object):
         is_sh_test = name_root.endswith('.sh')
         is_pass_test = name.endswith('.pass.cpp') or name.endswith('.pass.mm')
         is_fail_test = name.endswith('.fail.cpp') or name.endswith('.fail.mm')
+        is_runfail_test = name.endswith('.runfail.cpp') or name.endswith('.runfail.mm')
         is_objcxx_test = name.endswith('.mm')
         is_objcxx_arc_test = name.endswith('.arc.pass.mm') or \
                              name.endswith('.arc.fail.mm')
@@ -163,15 +166,18 @@ class LibcxxTestFormat(object):
         elif is_pass_test:
             return self._evaluate_pass_test(test, tmpBase, lit_config,
                                             test_cxx, parsers)
+        elif is_runfail_test:
+            return self._evaluate_pass_test(test, tmpBase, lit_config,
+                                            test_cxx, parsers,
+                                            run_should_pass=False)
         else:
-            # No other test type is supported
-            assert False
+            assert False and "no other test" # No other test type is supported
 
     def _clean(self, exec_path):  # pylint: disable=no-self-use
         libcxx.util.cleanFile(exec_path)
 
     def _evaluate_pass_test(self, test, tmpBase, lit_config,
-                            test_cxx, parsers):
+                            test_cxx, parsers, run_should_pass=True):
         execDir = os.path.dirname(test.getExecPath())
         source_path = test.getSourcePath()
         exec_path = tmpBase + '.exe'
@@ -207,11 +213,15 @@ class LibcxxTestFormat(object):
                                                       env)
                 report = "Compiled With: '%s'\n" % ' '.join(compile_cmd)
                 report += libcxx.util.makeReport(cmd, out, err, rc)
-                if rc == 0:
+                result_expected = (rc == 0) == run_should_pass
+                if result_expected:
                     res = lit.Test.PASS if retry_count == 0 else lit.Test.FLAKYPASS
                     return lit.Test.Result(res, report)
-                elif rc != 0 and retry_count + 1 == max_retry:
-                    report += "Compiled test failed unexpectedly!"
+                elif retry_count + 1 == max_retry:
+                    if run_should_pass:
+                        report += "Compiled test failed unexpectedly!"
+                    else:
+                        report += "Compiled test succeeded unexpectedly!"
                     return lit.Test.Result(lit.Test.FAIL, report)
 
             assert False # Unreachable

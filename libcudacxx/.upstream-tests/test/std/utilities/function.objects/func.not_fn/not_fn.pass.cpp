@@ -668,6 +668,7 @@ void call_operator_noexcept_test()
     }
 }
 
+#ifndef TEST_COMPILER_CLANG_CUDA // https://github.com/llvm/llvm-project/issues/67533
 __host__ __device__
 void test_lwg2767() {
     // See https://cplusplus.github.io/LWG/lwg-defects.html#2767
@@ -681,6 +682,7 @@ void test_lwg2767() {
         assert(b);
     }
 }
+#endif // TEST_COMPILER_CLANG_CUDA
 
 int main(int, char**)
 {
@@ -691,7 +693,9 @@ int main(int, char**)
     call_operator_sfinae_test(); // somewhat of an extension
     // call_operator_forwarding_test();
     call_operator_noexcept_test();
+#ifndef TEST_COMPILER_CLANG_CUDA
     test_lwg2767();
+#endif // TEST_COMPILER_CLANG_CUDA
 
   return 0;
 }

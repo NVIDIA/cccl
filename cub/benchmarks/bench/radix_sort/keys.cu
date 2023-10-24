@@ -44,7 +44,7 @@ constexpr bool is_overwrite_ok = false;
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_hub_t
 {
-  constexpr static bool KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
+  static constexpr bool KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
 
   using DominantT = cub::detail::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
@@ -145,17 +145,15 @@ void radix_sort_keys(std::integral_constant<bool, true>,
   using dispatch_t = cub::DispatchRadixSort<is_descending, key_t, value_t, offset_t>;
 #endif // TUNE_BASE
 
-  const int begin_bit = 0;
-  const int end_bit   = sizeof(key_t) * 8;
+  constexpr int begin_bit = 0;
+  constexpr int end_bit   = sizeof(key_t) * 8;
 
   // Retrieve axis parameters
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  thrust::device_vector<T> buffer_1(elements);
+  thrust::device_vector<T> buffer_1 = generate(elements, entropy);
   thrust::device_vector<T> buffer_2(elements);
-
-  gen(seed_t{}, buffer_1, entropy);
 
   key_t *d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
   key_t *d_buffer_2 = thrust::raw_pointer_cast(buffer_2.data());
@@ -183,8 +181,6 @@ void radix_sort_keys(std::integral_constant<bool, true>,
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto *temp_storage = thrust::raw_pointer_cast(temp.data());
-
-  report_entropy(buffer_1, entropy);
 
   state.exec([&](nvbench::launch &launch) {
     cub::DoubleBuffer<key_t> keys     = d_keys;

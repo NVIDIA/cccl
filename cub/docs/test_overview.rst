@@ -23,7 +23,6 @@ This guide is focused on new tests.
 
     #include <cub/block/block_scan.cuh>
     #include <thrust/host_vector.h>
-    // Has to go after all cub headers
     #include "catch2_test_helper.h"
 
 Directory and File Naming

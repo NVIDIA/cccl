@@ -27,8 +27,15 @@
 
 #pragma once
 
+#include "../../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/agent/agent_adjacent_difference.cuh>
-#include <cub/config.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_deprecated.cuh>
@@ -42,22 +49,14 @@
 
 CUB_NAMESPACE_BEGIN
 
-
-template <typename AgentDifferenceInitT,
-          typename InputIteratorT,
-          typename InputT,
-          typename OffsetT>
-void __global__ DeviceAdjacentDifferenceInitKernel(InputIteratorT first,
-                                                   InputT *result,
-                                                   OffsetT num_tiles,
-                                                   int items_per_tile)
+template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceInitKernel(InputIteratorT first,
+                                                                     InputT *result,
+                                                                     OffsetT num_tiles,
+                                                                     int items_per_tile)
 {
   const int tile_idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
-  AgentDifferenceInitT::Process(tile_idx,
-                                first,
-                                result,
-                                num_tiles,
-                                items_per_tile);
+  AgentDifferenceInitT::Process(tile_idx, first, result, num_tiles, items_per_tile);
 }
 
 template <typename ChainedPolicyT,
@@ -68,17 +67,17 @@ template <typename ChainedPolicyT,
           typename InputT,
           bool MayAlias,
           bool ReadLeft>
-void __global__
+CUB_DETAIL_KERNEL_ATTRIBUTES void
 DeviceAdjacentDifferenceDifferenceKernel(InputIteratorT input,
                                          InputT *first_tile_previous,
                                          OutputIteratorT result,
                                          DifferenceOpT difference_op,
                                          OffsetT num_items)
 {
-  using ActivePolicyT = 
+  using ActivePolicyT =
     typename ChainedPolicyT::ActivePolicy::AdjacentDifferencePolicy;
 
-  // It is OK to introspect the return type or parameter types of the 
+  // It is OK to introspect the return type or parameter types of the
   // `operator()` function of `__device__` extended lambda within device code.
   using OutputT = detail::invoke_result_t<DifferenceOpT, InputT, InputT>;
 
@@ -102,7 +101,7 @@ DeviceAdjacentDifferenceDifferenceKernel(InputIteratorT input,
               num_items);
 
   int tile_idx = static_cast<int>(blockIdx.x);
-  OffsetT tile_base  = static_cast<OffsetT>(tile_idx) 
+  OffsetT tile_base  = static_cast<OffsetT>(tile_idx)
                      * ActivePolicyT::ITEMS_PER_TILE;
 
   agent.Process(tile_idx, tile_base);
@@ -211,7 +210,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
 
     do
     {
-      const int tile_size = AdjacentDifferencePolicyT::ITEMS_PER_TILE;
+      constexpr int tile_size = AdjacentDifferencePolicyT::ITEMS_PER_TILE;
       const int num_tiles =
         static_cast<int>(DivideAndRoundUp(num_items, tile_size));
 
@@ -221,10 +220,10 @@ struct DispatchAdjacentDifference : public SelectedPolicy
       void *allocations[1]            = {nullptr};
       std::size_t allocation_sizes[1] = {MayAlias * first_tile_previous_size};
 
-      if (CubDebug(error = AliasTemporaries(d_temp_storage,
-                                            temp_storage_bytes,
-                                            allocations,
-                                            allocation_sizes)))
+      error = CubDebug(
+        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -254,7 +253,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
         using AgentDifferenceInitT =
           AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadLeft>;
 
-        const int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
+        constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
         const int init_grid_size = DivideAndRoundUp(num_tiles, init_block_size);
 
         #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
@@ -278,15 +277,16 @@ struct DispatchAdjacentDifference : public SelectedPolicy
                 num_tiles,
                 tile_size);
 
-        error = detail::DebugSyncStream(stream);
+        error = CubDebug(detail::DebugSyncStream(stream));
 
-        if (CubDebug(error))
+        if (cudaSuccess != error)
         {
           break;
         }
 
         // Check for failure to launch
-        if (CubDebug(error = cudaPeekAtLastError()))
+        error = CubDebug(cudaPeekAtLastError());
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -319,15 +319,16 @@ struct DispatchAdjacentDifference : public SelectedPolicy
               difference_op,
               num_items);
 
-      error = detail::DebugSyncStream(stream);
-      
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -352,7 +353,8 @@ struct DispatchAdjacentDifference : public SelectedPolicy
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -367,7 +369,8 @@ struct DispatchAdjacentDifference : public SelectedPolicy
                                           stream);
 
       // Dispatch to chained policy
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }

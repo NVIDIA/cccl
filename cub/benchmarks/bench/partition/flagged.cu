@@ -115,13 +115,11 @@ void flagged(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  thrust::device_vector<T> in(elements);
-  thrust::device_vector<bool> flags(elements);
+  auto generator = generate(elements, entropy);
+
+  thrust::device_vector<T> in       = generator;
+  thrust::device_vector<bool> flags = generator;
   thrust::device_vector<offset_t> num_selected(1);
-
-  gen(seed_t{}, in);
-  gen(seed_t{1}, flags, entropy);
-
   thrust::device_vector<T> out(elements);
 
   input_it_t d_in = thrust::raw_pointer_cast(in.data());

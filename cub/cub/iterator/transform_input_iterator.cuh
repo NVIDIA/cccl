@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,19 +27,25 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Random-access iterator types
  */
 
 #pragma once
+
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #include <iterator>
 #include <iostream>
 
 #include "../thread/thread_load.cuh"
 #include "../thread/thread_store.cuh"
-#include "../config.cuh"
-#include "../util_device.cuh"
 
 #if (THRUST_VERSION >= 100700)
     // This iterator is compatible with Thrust API 1.7 and newer
@@ -51,29 +57,29 @@
 CUB_NAMESPACE_BEGIN
 
 /**
- * \addtogroup UtilIterator
+ * @addtogroup UtilIterator
  * @{
  */
 
 
 /**
- * \brief A random-access input wrapper for transforming dereferenced values.
+ * @brief A random-access input wrapper for transforming dereferenced values.
  *
- * \par Overview
- * - TransformInputIteratorTwraps a unary conversion functor of type \p
- *   ConversionOp and a random-access input iterator of type <tt>InputIteratorT</tt>,
- *   using the former to produce references of type \p ValueType from the latter.
+ * @par Overview
+ * - TransformInputIteratorTwraps a unary conversion functor of type 
+ *   @p ConversionOp and a random-access input iterator of type <tt>InputIteratorT</tt>,
+ *   using the former to produce references of type @p ValueType from the latter.
  * - Can be used with any data type.
  * - Can be constructed, manipulated, and exchanged within and between host and device
  *   functions.  Wrapped host memory can only be dereferenced on the host, and wrapped
  *   device memory can only be dereferenced on the device.
  * - Compatible with Thrust API v1.7 or newer.
  *
- * \par Snippet
- * The code snippet below illustrates the use of \p TransformInputIteratorTto
+ * @par Snippet
+ * The code snippet below illustrates the use of @p TransformInputIteratorTto
  * dereference an array of integers, tripling the values and converting them to doubles.
- * \par
- * \code
+ * @par
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/iterator/transform_input_iterator.cuh>
  *
  * // Functor for tripling integer values and converting to doubles
@@ -97,13 +103,20 @@ CUB_NAMESPACE_BEGIN
  * printf("%f\n", itr[1]);  // 18.0
  * printf("%f\n", itr[6]);  // 27.0
  *
- * \endcode
+ * @endcode
  *
- * \tparam ValueType            The value type of this iterator
- * \tparam ConversionOp         Unary functor type for mapping objects of type \p InputType to type \p ValueType.  Must have member <tt>ValueType operator()(const InputType &datum)</tt>.
- * \tparam InputIteratorT       The type of the wrapped input iterator
- * \tparam OffsetT              The difference type of this iterator (Default: \p ptrdiff_t)
+ * @tparam ValueType            
+ *   The value type of this iterator
  *
+ * @tparam ConversionOp         
+ *   Unary functor type for mapping objects of type @p InputType to type @p ValueType.  
+ *   Must have member <tt>ValueType operator()(const InputType &datum)</tt>.
+ *
+ * @tparam InputIteratorT       
+ *   The type of the wrapped input iterator
+ *
+ * @tparam OffsetT              
+ *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <
     typename ValueType,
@@ -115,22 +128,35 @@ class TransformInputIterator
 public:
 
     // Required iterator traits
-    typedef TransformInputIterator              self_type;              ///< My own type
-    typedef OffsetT                             difference_type;        ///< Type to express the result of subtracting one iterator from another
-    typedef ValueType                           value_type;             ///< The type of the element the iterator can point to
-    typedef ValueType*                          pointer;                ///< The type of a pointer to an element the iterator can point to
-    typedef ValueType                           reference;              ///< The type of a reference to an element the iterator can point to
+
+    /// My own type
+    typedef TransformInputIterator self_type;
+
+    /// Type to express the result of subtracting one iterator from another
+    typedef OffsetT difference_type;
+
+    /// The type of the element the iterator can point to
+    typedef ValueType value_type;
+
+    /// The type of a pointer to an element the iterator can point to
+    typedef ValueType *pointer;
+
+    /// The type of a reference to an element the iterator can point to
+    typedef ValueType reference;
 
 #if (THRUST_VERSION >= 100700)
     // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
+
+    /// The iterator category
     typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
         THRUST_NS_QUALIFIER::any_system_tag,
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        ///< The iterator category
+      >::type iterator_category;                                        
 #else
-    typedef std::random_access_iterator_tag     iterator_category;      ///< The iterator category
+    /// The iterator category
+    typedef std::random_access_iterator_tag     iterator_category;      
 #endif  // THRUST_VERSION
 
 private:
@@ -139,22 +165,25 @@ private:
     InputIteratorT  input_itr;
 
 public:
-
-    /// Constructor
-    __host__ __device__ __forceinline__ TransformInputIterator(
-        InputIteratorT      input_itr,          ///< Input iterator to wrap
-        ConversionOp        conversion_op)      ///< Conversion functor to wrap
-    :
-        conversion_op(conversion_op),
-        input_itr(input_itr)
+    /**
+     * @param input_itr
+     *   Input iterator to wrap
+     *
+     * @param conversion_op
+     *   Conversion functor to wrap
+     */
+    __host__ __device__ __forceinline__ TransformInputIterator(InputIteratorT input_itr,
+                                                               ConversionOp conversion_op)
+        : conversion_op(conversion_op)
+        , input_itr(input_itr)
     {}
 
     /// Postfix increment
     __host__ __device__ __forceinline__ self_type operator++(int)
     {
-        self_type retval = *this;
-        input_itr++;
-        return retval;
+      self_type retval = *this;
+      input_itr++;
+      return retval;
     }
 
     /// Prefix increment

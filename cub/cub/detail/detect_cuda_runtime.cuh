@@ -27,19 +27,22 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Utilities for CUDA dynamic parallelism.
  */
 
 #pragma once
 
-#include <cub/util_namespace.cuh>
+// We cannot use `cub/config.cuh` here due to circular dependencies
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #include <cuda_runtime_api.h>
-
-CUB_NAMESPACE_BEGIN
-namespace detail
-{
 
 #ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:
 
@@ -111,6 +114,3 @@ namespace detail
 #endif
 
 #endif // Do not document
-
-} // namespace detail
-CUB_NAMESPACE_END

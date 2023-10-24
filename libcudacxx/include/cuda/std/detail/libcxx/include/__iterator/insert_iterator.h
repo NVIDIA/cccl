@@ -21,9 +21,11 @@
 #include "../__utility/move.h"
 #include "../cstddef"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -49,10 +51,8 @@ public:
         : container(_CUDA_VSTD::addressof(__x)), iter(__i) {}
     _LIBCUDACXX_INLINE_VISIBILITY insert_iterator& operator=(const typename _Container::value_type& __value_)
         {iter = container->insert(iter, __value_); ++iter; return *this;}
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY insert_iterator& operator=(typename _Container::value_type&& __value_)
         {iter = container->insert(iter, _CUDA_VSTD::move(__value_)); ++iter; return *this;}
-#endif  // _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY insert_iterator& operator*()        {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY insert_iterator& operator++()       {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY insert_iterator& operator++(int)    {return *this;}

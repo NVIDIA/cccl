@@ -34,8 +34,15 @@
 
 #pragma once
 
+#include "../../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/agent/agent_rle.cuh>
-#include <cub/config.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
 #include <cub/grid/grid_queue.cuh>
@@ -119,15 +126,15 @@ template <typename ChainedPolicyT,
           typename ScanTileStateT,
           typename EqualityOpT,
           typename OffsetT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREADS)) __global__
-  void DeviceRleSweepKernel(InputIteratorT d_in,
-                            OffsetsOutputIteratorT d_offsets_out,
-                            LengthsOutputIteratorT d_lengths_out,
-                            NumRunsOutputIteratorT d_num_runs_out,
-                            ScanTileStateT tile_status,
-                            EqualityOpT equality_op,
-                            OffsetT num_items,
-                            int num_tiles)
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(InputIteratorT d_in,
+                                                         OffsetsOutputIteratorT d_offsets_out,
+                                                         LengthsOutputIteratorT d_lengths_out,
+                                                         NumRunsOutputIteratorT d_num_runs_out,
+                                                         ScanTileStateT tile_status,
+                                                         EqualityOpT equality_op,
+                                                         OffsetT num_items,
+                                                         int num_tiles)
 {
   using AgentRlePolicyT = typename ChainedPolicyT::ActivePolicy::RleSweepPolicyT;
 
@@ -172,8 +179,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam SelectedPolicy 
- *   Implementation detail, do not specify directly, requirements on the 
+ * @tparam SelectedPolicy
+ *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
 template <typename InputIteratorT,
@@ -291,15 +298,18 @@ struct DeviceRleDispatch
   {
     cudaError error = cudaSuccess;
 
-    const int block_threads = ActivePolicyT::RleSweepPolicyT::BLOCK_THREADS;
-    const int items_per_thread = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
+    constexpr int block_threads = ActivePolicyT::RleSweepPolicyT::BLOCK_THREADS;
+    constexpr int items_per_thread = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
 
     do
     {
       // Get device ordinal
       int device_ordinal;
-      if (CubDebug(error = cudaGetDevice(&device_ordinal)))
+      error = CubDebug(cudaGetDevice(&device_ordinal));
+      if (cudaSuccess != error)
+      {
         break;
+      }
 
       // Number of input tiles
       int tile_size = block_threads * items_per_thread;
@@ -307,7 +317,8 @@ struct DeviceRleDispatch
 
       // Specify temporary storage allocation requirements
       size_t allocation_sizes[1];
-      if (CubDebug(error = ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0])))
+      error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
+      if (cudaSuccess != error)
       {
         break; // bytes needed for tile status descriptors
       }
@@ -315,9 +326,10 @@ struct DeviceRleDispatch
       // Compute allocation pointers into the single storage blob (or compute the necessary size of
       // the blob)
       void *allocations[1] = {};
-      if (CubDebug(
-            error =
-              AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+
+      error = CubDebug(
+        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      if (error != cudaSuccess)
       {
         break;
       }
@@ -330,7 +342,8 @@ struct DeviceRleDispatch
 
       // Construct the tile status interface
       ScanTileStateT tile_status;
-      if (CubDebug(error = tile_status.Init(num_tiles, allocations[0], allocation_sizes[0])))
+      error = CubDebug(tile_status.Init(num_tiles, allocations[0], allocation_sizes[0]));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -353,14 +366,15 @@ struct DeviceRleDispatch
         .doit(device_scan_init_kernel, tile_status, num_tiles, d_num_runs_out);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -373,17 +387,18 @@ struct DeviceRleDispatch
 
       // Get SM occupancy for device_rle_sweep_kernel
       int device_rle_kernel_sm_occupancy;
-      if (CubDebug(error = MaxSmOccupancy(device_rle_kernel_sm_occupancy, // out
-                                          device_rle_sweep_kernel,
-                                          block_threads)))
+      error = CubDebug(MaxSmOccupancy(device_rle_kernel_sm_occupancy, // out
+                                      device_rle_sweep_kernel,
+                                      block_threads));
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Get max x-dimension of grid
       int max_dim_x;
-      if (CubDebug(
-            error = cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
+      error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -423,14 +438,15 @@ struct DeviceRleDispatch
               num_tiles);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -506,7 +522,8 @@ struct DeviceRleDispatch
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -522,7 +539,8 @@ struct DeviceRleDispatch
                                  stream);
 
       // Dispatch
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }

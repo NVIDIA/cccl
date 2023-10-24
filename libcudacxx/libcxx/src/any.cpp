@@ -9,7 +9,7 @@
 #include "any"
 
 namespace std {
-const char* bad_any_cast::what() const _NOEXCEPT {
+const char* bad_any_cast::what() const noexcept {
     return "bad any cast";
 }
 }
@@ -24,10 +24,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_LFTS
 class _LIBCUDACXX_EXCEPTION_ABI _LIBCUDACXX_AVAILABILITY_BAD_ANY_CAST bad_any_cast : public bad_cast
 {
 public:
-    virtual const char* what() const _NOEXCEPT;
+    virtual const char* what() const noexcept;
 };
 
-const char* bad_any_cast::what() const _NOEXCEPT {
+const char* bad_any_cast::what() const noexcept {
     return "bad any cast";
 }
 

@@ -10,6 +10,14 @@
 #ifndef _LIBCUDACXX_CONFIG
 #define _LIBCUDACXX_CONFIG
 
+#include "__cccl_config"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #if defined(__NVCOMPILER)
 #  define _LIBCUDACXX_COMPILER_NVHPC
 #elif defined(__clang__)
@@ -72,21 +80,16 @@
 #if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1108000
 #define _LIBCUDACXX_CUDACC_BELOW_11_8
 #endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1108000
+#if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1203000
+#define _LIBCUDACXX_CUDACC_BELOW_12_3
+#endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1203000
 
-#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
 #  define _LIBCUDACXX_HAS_PRAGMA_MSVC_WARNING
 #  if !defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)
 #    define _LIBCUDACXX_USE_PRAGMA_MSVC_WARNING
-#  endif
-#else
-#  if !defined(_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
-#    define _LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER
-#  endif
-#endif
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#  endif // !_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING
+#endif // _LIBCUDACXX_COMPILER_MSVC
 
 #ifdef __cplusplus
 
@@ -136,7 +139,7 @@ extern "C++" {
 #endif  // _LIBCUDACXX_STD_VER
 
 #if _LIBCUDACXX_STD_VER < 11
-#define _LIBCUDACXX_CXX03_LANG
+#  error libcu++ requires C++11 or later
 #endif
 
 #if (defined(_LIBCUDACXX_COMPILER_NVHPC) && defined(__linux__)) \
@@ -462,6 +465,18 @@ extern "C++" {
 #  define _ALIGNAS_TYPE(x) __attribute__((__aligned__(_LIBCUDACXX_ALIGNOF(x))))
 #  define _ALIGNAS(x) __attribute__((__aligned__(x)))
 #endif // !_LIBCUDACXX_COMPILER_MSVC && !__has_feature(cxx_alignas)
+
+// This is wrapped in __CUDA_ARCH__ to prevent error: "ignoring '#pragma unroll'
+// [-Werror=unknown-pragmas]"
+#if defined(__CUDA_ARCH__)
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#  define _LIBCUDACXX_PRAGMA_UNROLL(_N) __pragma(_LIBCUDACXX_TOSTRING(unroll _N))
+#else // ^^^ _LIBCUDACXX_COMPILER_MSVC ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC vvv
+#  define _LIBCUDACXX_PRAGMA_UNROLL(_N) _Pragma(_LIBCUDACXX_TOSTRING(unroll _N))
+#endif // !_LIBCUDACXX_COMPILER_MSVC
+#else // ^^^ _LIBCUDACXX_CUDACC ^^^ / vvv !_LIBCUDACXX_CUDACCvvv
+#  define _LIBCUDACXX_PRAGMA_UNROLL(_N)
+#endif // !__CUDA_ARCH__
 
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
 #define _LIBCUDACXX_ALWAYS_INLINE __forceinline
@@ -861,7 +876,7 @@ extern "C++" {
 
 #define _LIBCUDACXX_TOSTRING2(_STR) #_STR
 #define _LIBCUDACXX_TOSTRING(_STR) _LIBCUDACXX_TOSTRING2(_STR)
-#if defined(_LIBCUDACXX_CUDACC)
+#if defined(_LIBCUDACXX_CUDACC) && !defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
 #  if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
 #    if defined(_LIBCUDACXX_COMPILER_MSVC)
 #      define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) __pragma(_LIBCUDACXX_TOSTRING(nv_diag_suppress _WARNING))
@@ -878,8 +893,16 @@ extern "C++" {
        _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
 #    define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(diagnostic pop))
 #  else // _LIBCUDACXX_CUDACC_BELOW_11_3
-#    define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
-#    define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)  _Pragma(_LIBCUDACXX_TOSTRING(diag_default _WARNING))
+#    if defined(_LIBCUDACXX_COMPILER_MSVC_2017) // MSVC 2017 has issues with restoring the warning
+#      define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) __pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
+#      define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)
+#    elif defined(_LIBCUDACXX_COMPILER_MSVC)
+#      define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) __pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
+#      define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)  __pragma(_LIBCUDACXX_TOSTRING(diag_default _WARNING))
+#    else // ^^^ MSVC ^^^ / vvv not MSVC
+#      define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING) _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress _WARNING))
+#      define _LIBCUDACXX_NV_DIAG_DEFAULT(_WARNING)  _Pragma(_LIBCUDACXX_TOSTRING(diag_default _WARNING))
+#    endif // not MSVC
 #  endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
 #else // ^^^ _LIBCUDACXX_CUDACC ^^^ / vvv other compiler vvv
 #  define _LIBCUDACXX_NV_DIAG_SUPPRESS(_WARNING)
@@ -1482,6 +1505,8 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_END_NAMESPACE_CUDA  } }
 #define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE namespace cuda { namespace device { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE  } } }
+#define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL namespace cuda { namespace device { namespace experimental { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL  } } } }
 #endif
 
 // Inline namespaces are available in Clang/GCC/MSVC regardless of C++ dialect.
@@ -1528,41 +1553,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES _LIBCUDACXX_END_NAMESPACE_RANGES
 #  endif
 #endif
 
-#ifndef _LIBCUDACXX_HAS_NO_NOEXCEPT
-#  define _NOEXCEPT noexcept
-#  define _NOEXCEPT_(x) noexcept(x)
-#else
-#  define _NOEXCEPT throw()
-#  define _NOEXCEPT_(x)
-#endif
-
 #ifdef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 typedef unsigned short char16_t;
 typedef unsigned int   char32_t;
 #endif  // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-# define static_assert(...) _Static_assert(__VA_ARGS__)
-# define decltype(...) __decltype(__VA_ARGS__)
-#endif  // _LIBCUDACXX_CXX03_LANG
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-#  define _LIBCUDACXX_CONSTEXPR
-#else
-#  define _LIBCUDACXX_CONSTEXPR constexpr
-#endif
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-#  define _LIBCUDACXX_DEFAULT {}
-#else
-#  define _LIBCUDACXX_DEFAULT = default;
-#endif
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-#  define _LIBCUDACXX_EQUAL_DELETE
-#else
-#  define _LIBCUDACXX_EQUAL_DELETE = delete
-#endif
 
 #if defined(_LIBCUDACXX_COMPILER_GCC)   \
  || defined(_LIBCUDACXX_COMPILER_CLANG)
@@ -1696,11 +1690,7 @@ typedef unsigned int   char32_t;
 #  define _LIBCUDACXX_DEPRECATED
 #endif
 
-#if !defined(_LIBCUDACXX_CXX03_LANG)
-#  define _LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_DEPRECATED
-#else
-#  define _LIBCUDACXX_DEPRECATED_IN_CXX11
-#endif
+#define _LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_DEPRECATED
 
 #if _LIBCUDACXX_STD_VER >= 14
 #  define _LIBCUDACXX_DEPRECATED_IN_CXX14 _LIBCUDACXX_DEPRECATED
@@ -1755,7 +1745,7 @@ typedef unsigned int   char32_t;
 // NODISCARD macros to the correct attribute.
 #if __has_cpp_attribute(nodiscard) || (defined(_LIBCUDACXX_COMPILER_MSVC) && _LIBCUDACXX_STD_VER > 14)
 #  define _LIBCUDACXX_NODISCARD_ATTRIBUTE [[nodiscard]]
-#elif defined(_LIBCUDACXX_COMPILER_CLANG) && !defined(_LIBCUDACXX_CXX03_LANG)
+#elif defined(_LIBCUDACXX_COMPILER_CLANG)
 #  define _LIBCUDACXX_NODISCARD_ATTRIBUTE [[clang::warn_unused_result]]
 #else
 // We can't use GCC's [[gnu::warn_unused_result]] and
@@ -1764,21 +1754,39 @@ typedef unsigned int   char32_t;
 #  define _LIBCUDACXX_NODISCARD_ATTRIBUTE
 #endif
 
+// NVCC below 11.3 does not support nodiscard on friend functions
+// It always fails with clang
+#if defined(_LIBCUDACXX_CUDACC_BELOW_11_3) \
+ || defined(_LIBCUDACXX_COMPILER_CLANG)
+#  define _LIBCUDACXX_NODISCARD_FRIEND friend
+#else // ^^^ _LIBCUDACXX_CUDACC_BELOW_11_3 ^^^ / vvv !_LIBCUDACXX_CUDACC_BELOW_11_3 vvv
+#  define _LIBCUDACXX_NODISCARD_FRIEND _LIBCUDACXX_NODISCARD_ATTRIBUTE friend
+#endif // !_LIBCUDACXX_CUDACC_BELOW_11_3 && !_LIBCUDACXX_COMPILER_CLANG
+
 #  ifdef _LIBCUDACXX_COMPILER_CLANG
 #    define _LIBCUDACXX_DIAGNOSTIC_PUSH _Pragma("clang diagnostic push")
 #    define _LIBCUDACXX_DIAGNOSTIC_POP _Pragma("clang diagnostic pop")
 #    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str) _Pragma(_LIBCUDACXX_TOSTRING(clang diagnostic ignored str))
 #    define _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED(str)
+#    define _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(str)
 #  elif defined(_LIBCUDACXX_COMPILER_GCC)
 #    define _LIBCUDACXX_DIAGNOSTIC_PUSH _Pragma("GCC diagnostic push")
 #    define _LIBCUDACXX_DIAGNOSTIC_POP _Pragma("GCC diagnostic pop")
 #    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str)
 #    define _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED(str) _Pragma(_LIBCUDACXX_TOSTRING(GCC diagnostic ignored str))
+#    define _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(str)
+#  elif defined(_LIBCUDACXX_COMPILER_NVHPC)
+#    define _LIBCUDACXX_DIAGNOSTIC_PUSH _Pragma("diagnostic push")
+#    define _LIBCUDACXX_DIAGNOSTIC_POP _Pragma("diagnostic pop")
+#    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str)
+#    define _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED(str)
+#    define _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(str) _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress str))
 #  else
 #    define _LIBCUDACXX_DIAGNOSTIC_PUSH
 #    define _LIBCUDACXX_DIAGNOSTIC_POP
 #    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str)
 #    define _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED(str)
+#    define _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(str)
 #  endif
 
 // _LIBCUDACXX_NODISCARD_EXT may be used to apply [[nodiscard]] to entities not
@@ -2237,7 +2245,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #endif
 
 #if !defined(_LIBCUDACXX_DISABLE_EXEC_CHECK)
-#if defined(_LIBCUDACXX_CUDACC)                       \
+#if defined(_LIBCUDACXX_CUDACC)               \
  && !defined(_LIBCUDACXX_COMPILER_NVRTC)      \
  && !defined(_LIBCUDACXX_COMPILER_NVHPC_CUDA) \
  && !defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)

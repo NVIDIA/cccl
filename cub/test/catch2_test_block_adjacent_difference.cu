@@ -25,13 +25,11 @@
  *
  ******************************************************************************/
 
+#include "catch2_test_helper.h"
+
 #include <cub/block/block_adjacent_difference.cuh>
 
 #include <thrust/host_vector.h>
-
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
-#include "catch2_test_helper.h"
 
 template <int ThreadsInBlock,
           int ItemsPerThread,
@@ -406,7 +404,7 @@ CUB_TEST("Block adjacent difference supports custom types",
   constexpr int threads_in_block = c2h::get<0, TestType>::value;
   constexpr int tile_size = threads_in_block * items_per_thread;
   constexpr bool read_left = true;
-  const bool in_place = true;
+  constexpr bool in_place = true;
 
   thrust::device_vector<key_t> d_data(tile_size);
   c2h::gen(CUB_SEED(10), d_data);

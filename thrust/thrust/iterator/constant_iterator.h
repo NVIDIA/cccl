@@ -23,6 +23,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/iterator/detail/constant_iterator_base.h>
 #include <thrust/iterator/iterator_facade.h>
 
@@ -77,15 +83,15 @@ THRUST_NAMESPACE_BEGIN
  *    data[1] = 7;
  *    data[2] = 2;
  *    data[3] = 5;
- *    
+ *
  *    // add 10 to all values in data
  *    thrust::transform(data.begin(), data.end(),
  *                      thrust::make_constant_iterator(10),
  *                      data.begin(),
  *                      thrust::plus<int>());
- *    
+ *
  *    // data is now [13, 17, 12, 15]
- *    
+ *
  *    return 0;
  *  }
  *  \endcode
@@ -145,7 +151,7 @@ template<typename Value,
     /*! This constructor receives a value to use as the constant value of this
      *  \p constant_iterator and an index specifying the location of this
      *  \p constant_iterator in a sequence.
-     *  
+     *
      *  \p v The value of this \p constant_iterator's constant value.
      *  \p i The index of this \p constant_iterator in a sequence. Defaults to the
      *       value returned by \c Incrementable's null constructor. For example,
@@ -186,7 +192,7 @@ template<typename Value,
     __host__ __device__
     Value & value_reference()
     { return m_value; }
-  
+
   private: // Core iterator interface
     __host__ __device__
     reference dereference() const

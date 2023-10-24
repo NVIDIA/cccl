@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,13 +27,21 @@
  ******************************************************************************/
 
 /**
- * \file
- * cub::WarpReduceSmem provides smem-based variants of parallel reduction of items partitioned across a CUDA thread warp.
+ * @file
+ * cub::WarpReduceSmem provides smem-based variants of parallel reduction of items partitioned
+ * across a CUDA thread warp.
  */
 
 #pragma once
 
 #include "../../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "../../thread/thread_operators.cuh"
 #include "../../thread/thread_load.cuh"
 #include "../../thread/thread_store.cuh"
@@ -42,12 +50,19 @@
 CUB_NAMESPACE_BEGIN
 
 /**
- * \brief WarpReduceSmem provides smem-based variants of parallel reduction of items partitioned across a CUDA thread warp.
+ * @brief WarpReduceSmem provides smem-based variants of parallel reduction of items partitioned
+ *        across a CUDA thread warp.
+ *
+ * @tparam T
+ *   Data type being reduced
+ *
+ * @tparam LOGICAL_WARP_THREADS
+ *   Number of threads per logical warp
+ *
+ * @tparam LEGACY_PTX_ARCH
+ *   The PTX compute capability for which to to specialize this collective
  */
-template <
-    typename    T,                      ///< Data type being reduced
-    int         LOGICAL_WARP_THREADS,   ///< Number of threads per logical warp
-    int         LEGACY_PTX_ARCH = 0>    ///< The PTX compute capability for which to to specialize this collective
+template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
 struct WarpReduceSmem
 {
     /******************************************************************************
@@ -121,19 +136,25 @@ struct WarpReduceSmem
     //---------------------------------------------------------------------
 
     /**
-     * Reduction step
+     * @brief Reduction step
+     *
+     * @tparam ALL_LANES_VALID
+     *   Whether all lanes in each warp are contributing a valid fold of items
+     *
+     * @param[in] input
+     *   Calling thread's input
+     *
+     * @param[in] valid_items
+     *   Total number of valid items across the logical warp
+     *
+     * @param[in] reduction_op
+     *   Reduction operator
      */
-    template <
-        bool                ALL_LANES_VALID,        ///< Whether all lanes in each warp are contributing a valid fold of items
-        typename            ReductionOp,
-        int                 STEP>
-    __device__ __forceinline__ T ReduceStep(
-        T                   input,                  ///< [in] Calling thread's input
-        int                 valid_items,            ///< [in] Total number of valid items across the logical warp
-        ReductionOp         reduction_op,           ///< [in] Reduction operator
-        Int2Type<STEP>      /*step*/)
+    template <bool ALL_LANES_VALID, typename ReductionOp, int STEP>
+    __device__ __forceinline__ T
+    ReduceStep(T input, int valid_items, ReductionOp reduction_op, Int2Type<STEP> /*step*/)
     {
-        const int OFFSET = 1 << STEP;
+        constexpr int OFFSET = 1 << STEP;
 
         // Share input through buffer
         ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
@@ -152,18 +173,24 @@ struct WarpReduceSmem
         return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, Int2Type<STEP + 1>());
     }
 
-
     /**
-     * Reduction step (terminate)
+     * @brief Reduction step (terminate)
+     *
+     * @tparam ALL_LANES_VALID
+     *   Whether all lanes in each warp are contributing a valid fold of items
+     *
+     * @param[in] input
+     *   Calling thread's input
+     *
+     * @param[in] valid_items
+     *   Total number of valid items across the logical warp
+     *
+     * @param[in] reduction_op
+     *   Reduction operator
      */
-    template <
-        bool                ALL_LANES_VALID,            ///< Whether all lanes in each warp are contributing a valid fold of items
-        typename            ReductionOp>
-    __device__ __forceinline__ T ReduceStep(
-        T                   input,                      ///< [in] Calling thread's input
-        int                 valid_items,                ///< [in] Total number of valid items across the logical warp
-        ReductionOp         /*reduction_op*/,           ///< [in] Reduction operator
-        Int2Type<STEPS>     /*step*/)
+    template <bool ALL_LANES_VALID, typename ReductionOp>
+    __device__ __forceinline__ T
+    ReduceStep(T input, int valid_items, ReductionOp /*reduction_op*/, Int2Type<STEPS> /*step*/)
     {
         return input;
     }
@@ -173,19 +200,27 @@ struct WarpReduceSmem
     // Segmented reduction
     //---------------------------------------------------------------------
 
-
     /**
-     * Ballot-based segmented reduce
+     * @brief Ballot-based segmented reduce
+     *
+     * @tparam HEAD_SEGMENTED
+     *   Whether flags indicate a segment-head or a segment-tail
+     *
+     * @param[in] input
+     *   Calling thread's input
+     *
+     * @param[in] flag
+     *   Whether or not the current lane is a segment head/tail
+     *
+     * @param[in] reduction_op
+     *   Reduction operator
+     *
+     * @param[in] has_ballot
+     *   Marker type for whether the target arch has ballot functionality
      */
-    template <
-        bool            HEAD_SEGMENTED,     ///< Whether flags indicate a segment-head or a segment-tail
-        typename        FlagT,
-        typename        ReductionOp>
-    __device__ __forceinline__ T SegmentedReduce(
-        T               input,                  ///< [in] Calling thread's input
-        FlagT           flag,                   ///< [in] Whether or not the current lane is a segment head/tail
-        ReductionOp     reduction_op,           ///< [in] Reduction operator
-        Int2Type<true>  /*has_ballot*/)         ///< [in] Marker type for whether the target arch has ballot functionality
+    template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+    __device__ __forceinline__ T
+    SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, Int2Type<true> /*has_ballot*/)
     {
         // Get the start flags for each thread in the warp.
         int warp_flags = WARP_BALLOT(flag, member_mask);
@@ -232,19 +267,27 @@ struct WarpReduceSmem
         return input;
     }
 
-
     /**
-     * Smem-based segmented reduce
+     * @brief Smem-based segmented reduce
+     *
+     * @tparam HEAD_SEGMENTED
+     *   Whether flags indicate a segment-head or a segment-tail
+     *
+     * @param[in] input
+     *   Calling thread's input
+     *
+     * @param[in] flag
+     *   Whether or not the current lane is a segment head/tail
+     *
+     * @param[in] reduction_op
+     *   Reduction operator
+     *
+     * @param[in] has_ballot
+     *   Marker type for whether the target arch has ballot functionality
      */
-    template <
-        bool            HEAD_SEGMENTED,     ///< Whether flags indicate a segment-head or a segment-tail
-        typename        FlagT,
-        typename        ReductionOp>
-    __device__ __forceinline__ T SegmentedReduce(
-        T               input,                  ///< [in] Calling thread's input
-        FlagT           flag,                   ///< [in] Whether or not the current lane is a segment head/tail
-        ReductionOp     reduction_op,           ///< [in] Reduction operator
-        Int2Type<false> /*has_ballot*/)         ///< [in] Marker type for whether the target arch has ballot functionality
+    template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+    __device__ __forceinline__ T
+    SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, Int2Type<false> /*has_ballot*/)
     {
         enum
         {
@@ -324,31 +367,43 @@ struct WarpReduceSmem
      ******************************************************************************/
 
     /**
-     * Reduction
+     * @brief Reduction
+     *
+     * @tparam ALL_LANES_VALID
+     *   Whether all lanes in each warp are contributing a valid fold of items
+     *
+     * @param[in] input
+     *   Calling thread's input
+     *
+     * @param[in] valid_items
+     *   Total number of valid items across the logical warp
+     *
+     * @param[in] reduction_op
+     *   Reduction operator
      */
-    template <
-        bool                ALL_LANES_VALID,        ///< Whether all lanes in each warp are contributing a valid fold of items
-        typename            ReductionOp>
-    __device__ __forceinline__ T Reduce(
-        T                   input,                  ///< [in] Calling thread's input
-        int                 valid_items,            ///< [in] Total number of valid items across the logical warp
-        ReductionOp         reduction_op)           ///< [in] Reduction operator
+    template <bool ALL_LANES_VALID, typename ReductionOp>
+    __device__ __forceinline__ T Reduce(T input, int valid_items, ReductionOp reduction_op)
     {
         return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, Int2Type<0>());
     }
 
-
     /**
-     * Segmented reduction
+     * @brief Segmented reduction
+     *
+     * @tparam HEAD_SEGMENTED
+     *   Whether flags indicate a segment-head or a segment-tail
+     *
+     * @param[in] input
+     *   Calling thread's input
+     *
+     * @param[in] flag
+     *   Whether or not the current lane is a segment head/tail
+     *
+     * @param[in] reduction_op
+     *   Reduction operator
      */
-    template <
-        bool            HEAD_SEGMENTED,     ///< Whether flags indicate a segment-head or a segment-tail
-        typename        FlagT,
-        typename        ReductionOp>
-    __device__ __forceinline__ T SegmentedReduce(
-        T               input,              ///< [in] Calling thread's input
-        FlagT            flag,               ///< [in] Whether or not the current lane is a segment head/tail
-        ReductionOp     reduction_op)       ///< [in] Reduction operator
+    template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+    __device__ __forceinline__ T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
     {
         return SegmentedReduce<HEAD_SEGMENTED>(input, flag, reduction_op, Int2Type<true>());
     }

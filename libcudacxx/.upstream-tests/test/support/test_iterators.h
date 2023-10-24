@@ -233,11 +233,11 @@ public:
 #if TEST_STD_VER > 14
   static_assert(cuda::std::random_access_iterator<random_access_iterator<int*>>, "");
 
-template <class It, class = cuda::std::enable_if_t<cuda::std::random_access_iterator<It>>>
+template <class It>
 class cpp20_random_access_iterator {
     It it_;
 
-    template <class U, class>
+    template <class U>
     friend class cpp20_random_access_iterator;
 
 public:
@@ -609,8 +609,12 @@ public:
     using iterator_concept = cuda::std::input_iterator_tag;
 
     __host__ __device__ constexpr explicit cpp20_input_iterator(It it) : it_(it) {}
+
+#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
     cpp20_input_iterator(cpp20_input_iterator&&) = default;
     cpp20_input_iterator& operator=(cpp20_input_iterator&&) = default;
+#endif // !TEST_COMPILER_MSVC_2017
+
     __host__ __device__ constexpr decltype(auto) operator*() const { return *it_; }
     __host__ __device__ constexpr cpp20_input_iterator& operator++() { ++it_; return *this; }
     __host__ __device__ constexpr void operator++(int) { ++it_; }
@@ -643,8 +647,11 @@ public:
     using difference_type = cuda::std::iter_difference_t<It>;
 
     __host__ __device__ constexpr explicit cpp20_output_iterator(It it) : it_(it) {}
+
+#ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference
     cpp20_output_iterator(cpp20_output_iterator&&) = default;
     cpp20_output_iterator& operator=(cpp20_output_iterator&&) = default;
+#endif // !TEST_COMPILER_MSVC_2017
 
     __host__ __device__ constexpr decltype(auto) operator*() const { return *it_; }
     __host__ __device__ constexpr cpp20_output_iterator& operator++() {
@@ -935,6 +942,13 @@ class Iterator {
     return prev;
   }
 
+  __host__ __device__ TEST_CONSTEXPR_CXX20 friend void iter_swap(Iterator a, Iterator b) {
+    cuda::std::swap(a.ptr_, b.ptr_);
+    if (a.iter_swaps_) {
+      ++(*a.iter_swaps_);
+    }
+  }
+
   __host__ __device__ constexpr friend value_type&& iter_move(Iterator iter) {
     if (iter.iter_moves_) {
       ++(*iter.iter_moves_);
@@ -1002,17 +1016,17 @@ struct Proxy {
   __host__ __device__ constexpr const T&& getData() const&& { return static_cast<const T&&>(data); }
 
   _LIBCUDACXX_TEMPLATE(class U)
-    (requires cuda::std::constructible_from<T, U&&>)
+    _LIBCUDACXX_REQUIRES( cuda::std::constructible_from<T, U&&>)
   __host__ __device__ constexpr Proxy(U&& u) : data{cuda::std::forward<U>(u)} {}
 
   // This constructor covers conversion from cvref of Proxy<U>, including non-const/const versions of copy/move constructor
   _LIBCUDACXX_TEMPLATE(class Other)
-    (requires(IsProxy<cuda::std::decay_t<Other>> &&
+    _LIBCUDACXX_REQUIRES((IsProxy<cuda::std::decay_t<Other>> &&
               cuda::std::constructible_from<T, decltype(cuda::std::declval<Other>().getData())>))
   __host__ __device__ constexpr Proxy(Other&& other) : data{cuda::std::forward<Other>(other).getData()} {}
 
   _LIBCUDACXX_TEMPLATE(class Other)
-    (requires(IsProxy<cuda::std::decay_t<Other>> &&
+    _LIBCUDACXX_REQUIRES((IsProxy<cuda::std::decay_t<Other>> &&
               cuda::std::assignable_from<cuda::std::__add_lvalue_reference_t<T>, decltype(cuda::std::declval<Other>().getData())>))
   __host__ __device__ constexpr Proxy& operator=(Other&& other) {
     data = cuda::std::forward<Other>(other).getData();
@@ -1025,7 +1039,7 @@ TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, ad
 
   // const assignment required to make ProxyIterator model cuda::std::indirectly_writable
   _LIBCUDACXX_TEMPLATE(class Other)
-    (requires(IsProxy<cuda::std::decay_t<Other>> &&
+    _LIBCUDACXX_REQUIRES((IsProxy<cuda::std::decay_t<Other>> &&
               cuda::std::assignable_from<const cuda::std::__add_lvalue_reference_t<T>, decltype(cuda::std::declval<Other>().getData())>))
   __host__ __device__ constexpr const Proxy& operator=(Other&& other) const {
     data = cuda::std::forward<Other>(other).getData();
@@ -1053,7 +1067,7 @@ TEST_NV_DIAG_DEFAULT(1805)
   = default;
 #else
  _LIBCUDACXX_TEMPLATE(class T2 = T)
-    (requires(cuda::std::equality_comparable<T2> && !cuda::std::is_reference_v<T2>))
+    _LIBCUDACXX_REQUIRES((cuda::std::equality_comparable<T2> && !cuda::std::is_reference_v<T2>))
   __host__ __device__ friend constexpr bool operator==(const Proxy& lhs, const Proxy& rhs) {
     return lhs.data == rhs.data;
   }
@@ -1062,7 +1076,7 @@ TEST_NV_DIAG_DEFAULT(1805)
   // Helps compare e.g. `Proxy<int>` and `Proxy<int&>`. Note that the default equality comparison operator is deleted
   // when `T` is a reference type.
  _LIBCUDACXX_TEMPLATE(class U)
-    (requires(cuda::std::equality_comparable_with<cuda::std::decay_t<T>, cuda::std::decay_t<U>>))
+    _LIBCUDACXX_REQUIRES((cuda::std::equality_comparable_with<cuda::std::decay_t<T>, cuda::std::decay_t<U>>))
   __host__ __device__ friend constexpr bool operator==(const Proxy& lhs, const Proxy<U>& rhs) {
     return lhs.data == rhs.data;
   }
@@ -1123,6 +1137,7 @@ constexpr auto get_iterator_concept() {
   } else {
     return cuda::std::input_iterator_tag{};
   }
+  _LIBCUDACXX_UNREACHABLE();
 }
 
 template<class Base, cuda::std::enable_if_t<cuda::std::input_iterator<Base>, int> = 0>
@@ -1143,7 +1158,7 @@ struct ProxyIterator : ProxyIteratorBase<Base> {
   __host__ __device__ constexpr ProxyIterator(Base base) : base_{cuda::std::move(base)} {}
 
   _LIBCUDACXX_TEMPLATE(class T)
-    (requires cuda::std::constructible_from<Base, T&&>)
+    _LIBCUDACXX_REQUIRES( cuda::std::constructible_from<Base, T&&>)
   __host__ __device__ constexpr ProxyIterator(T&& t) : base_{cuda::std::forward<T>(t)} {}
 
   __host__ __device__  friend constexpr decltype(auto) base(const ProxyIterator& p) { return base(p.base_); }
@@ -1154,6 +1169,13 @@ struct ProxyIterator : ProxyIteratorBase<Base> {
   // it will likely result in a copy rather than a move
   __host__ __device__ friend constexpr Proxy<cuda::std::iter_rvalue_reference_t<Base>> iter_move(const ProxyIterator& p) noexcept {
     return {cuda::std::ranges::iter_move(p.base_)};
+  }
+
+  // Specialization of iter_swap
+  // Note cuda::std::swap(*x, *y) would fail to compile as operator* returns prvalues
+  // and cuda::std::swap takes non-const lvalue references
+  __host__ __device__ friend constexpr void iter_swap(const ProxyIterator& x, const ProxyIterator& y) noexcept {
+    cuda::std::ranges::iter_swap(x.base_, y.base_);
   }
 
   // to satisfy input_iterator
@@ -1167,14 +1189,14 @@ struct ProxyIterator : ProxyIteratorBase<Base> {
   __host__ __device__ constexpr void operator++(int) { ++*this; }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::equality_comparable<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::equality_comparable<B2>)
   __host__ __device__ friend constexpr bool operator==(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ == y.base_;
   }
 
   // to satisfy forward_iterator
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::forward_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::forward_iterator<B2>)
   __host__ __device__ constexpr ProxyIterator operator++(int) {
     auto tmp = *this;
     ++*this;
@@ -1183,14 +1205,14 @@ struct ProxyIterator : ProxyIteratorBase<Base> {
 
   // to satisfy bidirectional_iterator
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::bidirectional_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::bidirectional_iterator<B2>)
   __host__ __device__ constexpr ProxyIterator& operator--() {
     --base_;
     return *this;
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::bidirectional_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::bidirectional_iterator<B2>)
   __host__ __device__ constexpr ProxyIterator operator--(int) {
     auto tmp = *this;
     --*this;
@@ -1199,77 +1221,77 @@ struct ProxyIterator : ProxyIteratorBase<Base> {
 
   // to satisfy random_access_iterator
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::random_access_iterator<B2>)
   __host__ __device__ constexpr ProxyIterator& operator+=(difference_type n) {
     base_ += n;
     return *this;
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::random_access_iterator<B2>)
   __host__ __device__ constexpr ProxyIterator& operator-=(difference_type n) {
     base_ -= n;
     return *this;
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::random_access_iterator<B2>)
   __host__ __device__ constexpr Proxy<cuda::std::iter_reference_t<Base>> operator[](difference_type n) const {
     return {base_[n]};
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::random_access_iterator<B2>)
   __host__ __device__ friend constexpr bool operator<(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ < y.base_;
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::random_access_iterator<B2>)
   __host__ __device__ friend constexpr bool operator>(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ > y.base_;
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::random_access_iterator<B2>)
   __host__ __device__ friend constexpr bool operator<=(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ <= y.base_;
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::random_access_iterator<B2>)
   __host__ __device__ friend constexpr bool operator>=(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ >= y.base_;
   }
 
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::random_access_iterator<B2> && cuda::std::three_way_comparable<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::random_access_iterator<B2> && cuda::std::three_way_comparable<B2>)
   __host__ __device__ friend constexpr auto operator<=>(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ <=> y.base_;
   }
 #endif // TEST_HAS_NO_SPACESHIP_OPERATOR
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::random_access_iterator<B2>)
   __host__ __device__ friend constexpr ProxyIterator operator+(const ProxyIterator& x, difference_type n) {
     return ProxyIterator{x.base_ + n};
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::random_access_iterator<B2>)
   __host__ __device__ friend constexpr ProxyIterator operator+(difference_type n, const ProxyIterator& x) {
     return ProxyIterator{n + x.base_};
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::random_access_iterator<B2>)
   __host__ __device__ friend constexpr ProxyIterator operator-(const ProxyIterator& x, difference_type n) {
     return ProxyIterator{x.base_ - n};
   }
 
   _LIBCUDACXX_TEMPLATE(class B2 = Base)
-    (requires cuda::std::random_access_iterator<B2>)
+    _LIBCUDACXX_REQUIRES( cuda::std::random_access_iterator<B2>)
   __host__ __device__ friend constexpr difference_type operator-(const ProxyIterator& x, const ProxyIterator& y) {
     return x.base_ - y.base_;
   }
@@ -1287,7 +1309,7 @@ struct ProxySentinel {
   __host__ __device__ constexpr ProxySentinel(BaseSent base) : base_{cuda::std::move(base)} {}
 
   _LIBCUDACXX_TEMPLATE(class Base)
-    (requires cuda::std::equality_comparable_with<Base, BaseSent>)
+    _LIBCUDACXX_REQUIRES( cuda::std::equality_comparable_with<Base, BaseSent>)
   __host__ __device__ friend constexpr bool operator==(const ProxyIterator<Base>& p, const ProxySentinel& sent) {
     return p.base_ == sent.base_;
   }

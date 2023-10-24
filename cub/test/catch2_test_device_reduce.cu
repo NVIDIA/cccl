@@ -35,14 +35,10 @@
 
 #include "catch2_test_device_reduce.cuh"
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
-#include <nv/target>
 
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::Sum, device_sum);
@@ -211,7 +207,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     // Run test
     using result_t = cub::KeyValuePair<int, output_t>;
     thrust::device_vector<result_t> out_result(num_segments);
-    device_arg_max(d_in_it, thrust::raw_pointer_cast(out_result.data()), num_items);
+    device_arg_max(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
 
     // Verify result
     result_t gpu_result = out_result[0];
@@ -228,7 +224,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     // Run test
     using result_t = cub::KeyValuePair<int, output_t>;
     thrust::device_vector<result_t> out_result(num_segments);
-    device_arg_min(d_in_it, thrust::raw_pointer_cast(out_result.data()), num_items);
+    device_arg_min(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
 
     // Verify result
     result_t gpu_result = out_result[0];

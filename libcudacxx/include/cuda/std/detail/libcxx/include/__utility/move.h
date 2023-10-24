@@ -20,15 +20,17 @@
 #include "../__type_traits/is_nothrow_move_constructible.h"
 #include "../__type_traits/remove_reference.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR __libcpp_remove_reference_t<_Tp>&&
-move(_Tp&& __t) _NOEXCEPT {
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY constexpr __libcpp_remove_reference_t<_Tp>&&
+move(_Tp&& __t) noexcept {
   typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tp> _Up;
   return static_cast<_Up&&>(__t);
 }
@@ -39,7 +41,7 @@ using __move_if_noexcept_result_t =
 
 template <class _Tp>
 _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __move_if_noexcept_result_t<_Tp>
-move_if_noexcept(_Tp& __x) _NOEXCEPT {
+move_if_noexcept(_Tp& __x) noexcept {
   return _CUDA_VSTD::move(__x);
 }
 

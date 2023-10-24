@@ -27,8 +27,15 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/block/radix_rank_sort_operations.cuh>
-#include <cub/config.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
@@ -68,10 +75,10 @@ struct AgentSmallAndMediumSegmentedSortPolicy
   using SmallPolicyT                 = SmallPolicy;
   using MediumPolicyT                = MediumPolicy;
 
-  constexpr static int SEGMENTS_PER_MEDIUM_BLOCK = BLOCK_THREADS /
+  static constexpr int SEGMENTS_PER_MEDIUM_BLOCK = BLOCK_THREADS /
                                                    MediumPolicyT::WARP_THREADS;
 
-  constexpr static int SEGMENTS_PER_SMALL_BLOCK = BLOCK_THREADS /
+  static constexpr int SEGMENTS_PER_SMALL_BLOCK = BLOCK_THREADS /
                                                   SmallPolicyT::WARP_THREADS;
 };
 
@@ -159,21 +166,21 @@ class AgentSubWarpSort
     return lhs == rhs;
   }
 
-  __device__ static bool get_oob_default(Int2Type<true> /* is bool */) 
+  __device__ static bool get_oob_default(Int2Type<true> /* is bool */)
   {
     // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
     // comparison with oob unreliable.
     return !IS_DESCENDING;
   }
 
-  __device__ static KeyT get_oob_default(Int2Type<false> /* is bool */) 
+  __device__ static KeyT get_oob_default(Int2Type<false> /* is bool */)
   {
     // For FP64 the difference is:
     // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
     // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
 
     // Segmented sort doesn't support custom types at the moment.
-    bit_ordered_type default_key_bits = IS_DESCENDING 
+    bit_ordered_type default_key_bits = IS_DESCENDING
                                       ? traits::min_raw_binary_key(detail::identity_decomposer_t{})
                                       : traits::max_raw_binary_key(detail::identity_decomposer_t{});
     return reinterpret_cast<KeyT &>(default_key_bits);
@@ -253,7 +260,7 @@ public:
       KeyT keys[PolicyT::ITEMS_PER_THREAD];
       ValueT values[PolicyT::ITEMS_PER_THREAD];
 
-      KeyT oob_default = 
+      KeyT oob_default =
         AgentSubWarpSort::get_oob_default(Int2Type<std::is_same<bool, KeyT>::value>{});
 
       WarpLoadKeysT(storage.load_keys)

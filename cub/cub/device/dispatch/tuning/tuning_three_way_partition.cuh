@@ -27,11 +27,19 @@
 
 #pragma once
 
+#include "../../../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/agent/agent_three_way_partition.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/config.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
@@ -272,7 +280,7 @@ struct device_three_way_partition_policy_hub
 {
   struct DefaultTuning
   {
-    constexpr static int ITEMS_PER_THREAD = Nominal4BItemsToItems<InputT>(9);
+    static constexpr int ITEMS_PER_THREAD = Nominal4BItemsToItems<InputT>(9);
 
     using ThreeWayPartitionPolicy = cub::AgentThreeWayPartitionPolicy<256,
                                                                       ITEMS_PER_THREAD,

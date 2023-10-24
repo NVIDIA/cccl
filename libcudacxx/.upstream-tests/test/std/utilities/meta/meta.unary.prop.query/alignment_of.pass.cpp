@@ -53,7 +53,7 @@ int main(int, char**)
     // we should expect. In most cases it should be 8. But in i386 builds
     // with Clang >= 8 or GCC >= 8 the value is '4'.
     test_alignment_of<double, TEST_ALIGNOF(double)>();
-#if (defined(__ppc__) && !defined(__ppc64__))
+#if (defined(__ppc__) && !defined(__ppc64__) && !defined(__PPC64__))
     test_alignment_of<bool, 4>();   // 32-bit PPC has four byte bool
 #else
     test_alignment_of<bool, 1>();

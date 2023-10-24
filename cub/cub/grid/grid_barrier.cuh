@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -33,8 +33,15 @@
 
 #pragma once
 
-#include "../util_debug.cuh"
 #include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
+#include "../util_debug.cuh"
 #include "../thread/thread_load.cuh"
 
 CUB_NAMESPACE_BEGIN
@@ -154,7 +161,7 @@ public:
         cudaError_t retval = cudaSuccess;
         if (d_sync)
         {
-            CubDebug(retval = cudaFree(d_sync));
+            retval = CubDebug(cudaFree(d_sync));
             d_sync = NULL;
         }
         sync_bytes = 0;
@@ -184,14 +191,27 @@ public:
             {
                 if (d_sync)
                 {
-                    if (CubDebug(retval = cudaFree(d_sync))) break;
+                    retval = CubDebug(cudaFree(d_sync));
+                    if (cudaSuccess != retval)
+                    {
+                      break;
+                    }
                 }
 
                 sync_bytes = new_sync_bytes;
 
                 // Allocate and initialize to zero
-                if (CubDebug(retval = cudaMalloc((void**) &d_sync, sync_bytes))) break;
-                if (CubDebug(retval = cudaMemset(d_sync, 0, new_sync_bytes))) break;
+                retval = CubDebug(cudaMalloc((void**) &d_sync, sync_bytes));
+                if (cudaSuccess != retval)
+                {
+                    break;
+                }
+
+                retval = CubDebug(cudaMemset(d_sync, 0, new_sync_bytes));
+                if (cudaSuccess != retval)
+                {
+                    break;
+                }
             }
         } while (0);
 

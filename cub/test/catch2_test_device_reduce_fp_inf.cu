@@ -31,12 +31,8 @@
 
 #include <cuda/std/limits>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
-#include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
-#include <nv/target>
 
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
@@ -49,8 +45,8 @@ CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
   using offset_t = int;
   using out_t    = cub::KeyValuePair<offset_t, in_t>;
 
-  const int n     = 10;
-  const float inf = ::cuda::std::numeric_limits<float>::infinity();
+  constexpr int n     = 10;
+  constexpr float inf = ::cuda::std::numeric_limits<float>::infinity();
 
   thrust::device_vector<out_t> out(1);
   out_t *d_out = thrust::raw_pointer_cast(out.data());

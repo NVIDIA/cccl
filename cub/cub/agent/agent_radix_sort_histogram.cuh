@@ -34,9 +34,16 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "../block/block_load.cuh"
 #include "../block/radix_rank_sort_operations.cuh"
-#include "../config.cuh"
 #include "../thread/thread_reduce.cuh"
 #include "../util_math.cuh"
 #include "../util_type.cuh"
@@ -120,7 +127,7 @@ struct AgentRadixSortHistogram
     // thread fields
     // shared memory storage
     _TempStorage& s;
-  
+
     // bins for the histogram
     OffsetT* d_bins_out;
 
@@ -175,7 +182,7 @@ struct AgentRadixSortHistogram
     }
 
     __device__ __forceinline__
-    void LoadTileKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])    
+    void LoadTileKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
     {
         // tile_offset < num_items always, hence the line below works
         bool full_tile = num_items - tile_offset >= TILE_ITEMS;
@@ -244,7 +251,7 @@ struct AgentRadixSortHistogram
     {
         // Within a portion, avoid overflowing (u)int32 counters.
         // Between portions, accumulate results in global memory.
-        const OffsetT MAX_PORTION_SIZE = 1 << 30;
+        constexpr OffsetT MAX_PORTION_SIZE = 1 << 30;
         OffsetT num_portions = cub::DivideAndRoundUp(num_items, MAX_PORTION_SIZE);
         for (OffsetT portion = 0; portion < num_portions; ++portion)
         {
@@ -264,7 +271,7 @@ struct AgentRadixSortHistogram
                 AccumulateSharedHistograms(tile_offset, keys);
             }
             CTA_SYNC();
-            
+
             // Accumulate the result in global memory.
             AccumulateGlobalHistograms();
             CTA_SYNC();

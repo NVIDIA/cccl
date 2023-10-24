@@ -33,8 +33,6 @@
 #include <cub/iterator/transform_input_iterator.cuh>
 #include <cub/util_allocator.cuh>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 /******************************************************************************
@@ -68,9 +66,9 @@ template <typename ItemItT,
 class AgentTestBlockRunLengthDecode
 {
 public:
-  constexpr static uint32_t BLOCK_THREADS     = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
-  constexpr static uint32_t RUNS_PER_BLOCK    = RUNS_PER_THREAD * BLOCK_THREADS;
-  constexpr static bool TEST_RELATIVE_OFFSETS = TEST_RELATIVE_OFFSETS_;
+  static constexpr uint32_t BLOCK_THREADS     = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
+  static constexpr uint32_t RUNS_PER_BLOCK    = RUNS_PER_THREAD * BLOCK_THREADS;
+  static constexpr bool TEST_RELATIVE_OFFSETS = TEST_RELATIVE_OFFSETS_;
 
 private:
   using RunItemT   = cub::detail::value_t<ItemItT>;

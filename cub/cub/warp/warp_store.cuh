@@ -29,8 +29,15 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/block/block_store.cuh>
-#include <cub/config.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_exchange.cuh>
@@ -226,7 +233,7 @@ class WarpStore
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE,
                 "LOGICAL_WARP_THREADS must be a power of two");
 
-  constexpr static bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
 
 private:
   /// Store helper

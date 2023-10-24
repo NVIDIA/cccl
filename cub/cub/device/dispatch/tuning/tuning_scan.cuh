@@ -27,12 +27,20 @@
 
 #pragma once
 
+#include "../../../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/agent/agent_scan.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/config.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -101,7 +109,7 @@ template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes
 template <> struct sm90_tuning<float,  primitive_op::yes, primitive_accum::yes, accum_size::_4> : tuning<128, 24, 688, 1140> {};
 template <> struct sm90_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8> : tuning<224, 24, 576, 1215> {};
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <> struct sm90_tuning< __int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16> : tuning<576, 21, 860, 630> {};
 template <> struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_size::_16> : tuning<576, 21, 860, 630> {};
 #endif
@@ -228,7 +236,7 @@ struct sm80_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_si
 } // namespace detail
 
 
-template <typename AccumT, typename ScanOpT = Sum> 
+template <typename AccumT, typename ScanOpT = Sum>
 struct DeviceScanPolicy
 {
   // For large values, use timesliced loads/stores to fit shared memory.

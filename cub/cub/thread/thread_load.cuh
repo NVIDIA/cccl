@@ -27,22 +27,29 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Thread utilities for reading memory using PTX cache modifiers.
  */
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <iterator>
 
-#include "../config.cuh"
 #include "../util_ptx.cuh"
 #include "../util_type.cuh"
 
 CUB_NAMESPACE_BEGIN
 
 /**
- * \addtogroup UtilIo
+ * @addtogroup UtilIo
  * @{
  */
 
@@ -51,30 +58,30 @@ CUB_NAMESPACE_BEGIN
 //-----------------------------------------------------------------------------
 
 /**
- * \brief Enumeration of cache modifiers for memory load operations.
+ * @brief Enumeration of cache modifiers for memory load operations.
  */
 enum CacheLoadModifier
 {
-    LOAD_DEFAULT,       ///< Default (no modifier)
-    LOAD_CA,            ///< Cache at all levels
-    LOAD_CG,            ///< Cache at global level
-    LOAD_CS,            ///< Cache streaming (likely to be accessed once)
-    LOAD_CV,            ///< Cache as volatile (including cached system lines)
-    LOAD_LDG,           ///< Cache as texture
-    LOAD_VOLATILE,      ///< Volatile (any memory space)
+  LOAD_DEFAULT,  ///< Default (no modifier)
+  LOAD_CA,       ///< Cache at all levels
+  LOAD_CG,       ///< Cache at global level
+  LOAD_CS,       ///< Cache streaming (likely to be accessed once)
+  LOAD_CV,       ///< Cache as volatile (including cached system lines)
+  LOAD_LDG,      ///< Cache as texture
+  LOAD_VOLATILE, ///< Volatile (any memory space)
 };
 
-
 /**
- * \name Thread I/O (cache modified)
+ * @name Thread I/O (cache modified)
  * @{
  */
 
 /**
- * \brief Thread utility for reading memory using cub::CacheLoadModifier cache modifiers.  Can be used to load any data type.
+ * @brief Thread utility for reading memory using cub::CacheLoadModifier cache modifiers.  
+ *        Can be used to load any data type.
  *
- * \par Example
- * \code
+ * @par Example
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/thread/thread_load.cuh>
  *
  * // 32-bit load using cache-global modifier:
@@ -95,8 +102,11 @@ enum CacheLoadModifier
  * TestFoo val = cub::ThreadLoad<cub::LOAD_CS>(d_in + threadIdx.x);
  * \endcode
  *
- * \tparam MODIFIER             <b>[inferred]</b> CacheLoadModifier enumeration
- * \tparam InputIteratorT       <b>[inferred]</b> Input iterator type \iterator
+ * @tparam MODIFIER             
+ *   <b>[inferred]</b> CacheLoadModifier enumeration
+ *
+ * @tparam InputIteratorT       
+ *   <b>[inferred]</b> Input iterator type \iterator
  */
 template <CacheLoadModifier MODIFIER,
           typename InputIteratorT>
@@ -332,9 +342,10 @@ __device__ __forceinline__ T ThreadLoadVolatilePointer(
     T                       *ptr,
     Int2Type<false>         /*is_primitive*/)
 {
-    typedef typename UnitWord<T>::VolatileWord VolatileWord;   // Word type for memcopying
+    // Word type for memcopying
+    typedef typename UnitWord<T>::VolatileWord VolatileWord;   
 
-    const int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
+    constexpr int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
 
     T retval;
     VolatileWord *words = reinterpret_cast<VolatileWord*>(&retval);
@@ -370,7 +381,7 @@ __device__ __forceinline__ T ThreadLoad(
 {
     typedef typename UnitWord<T>::DeviceWord DeviceWord;
 
-    const int DEVICE_MULTIPLE = sizeof(T) / sizeof(DeviceWord);
+    constexpr int DEVICE_MULTIPLE = sizeof(T) / sizeof(DeviceWord);
 
     DeviceWord words[DEVICE_MULTIPLE];
 

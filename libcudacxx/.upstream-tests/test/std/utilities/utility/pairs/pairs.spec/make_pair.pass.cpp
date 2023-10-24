@@ -27,7 +27,6 @@ int main(int, char**)
         assert(p1.second == 4);
     }
 
-#if TEST_STD_VER >= 11
     // cuda/std/memory not supported
     /*
     {
@@ -43,7 +42,6 @@ int main(int, char**)
         assert(p1.second == 4);
     }
     */
-#endif
 #if TEST_STD_VER >= 14
     {
         typedef cuda::std::pair<int, short> P1;

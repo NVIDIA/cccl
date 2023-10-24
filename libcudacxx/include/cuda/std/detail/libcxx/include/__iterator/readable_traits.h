@@ -27,9 +27,11 @@
 #include "../__type_traits/remove_extent.h"
 #include "../__type_traits/void_t.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -101,16 +103,16 @@ template<class _Tp>
 struct __cond_value_type<_Tp, enable_if_t<_LIBCUDACXX_TRAIT(is_object, _Tp)>> { using value_type = remove_cv_t<_Tp>; };
 
 template<class _Tp, class = void>
-inline constexpr bool __has_member_value_type = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_value_type = false;
 
 template<class _Tp>
-inline constexpr bool __has_member_value_type<_Tp, void_t<typename _Tp::value_type>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_value_type<_Tp, void_t<typename _Tp::value_type>> = true;
 
 template<class _Tp, class = void>
-inline constexpr bool __has_member_element_type = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_element_type = false;
 
 template<class _Tp>
-inline constexpr bool __has_member_element_type<_Tp, void_t<typename _Tp::element_type>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_element_type<_Tp, void_t<typename _Tp::element_type>> = true;
 
 template<class, class = void> struct indirectly_readable_traits {};
 

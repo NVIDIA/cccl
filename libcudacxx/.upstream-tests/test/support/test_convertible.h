@@ -18,9 +18,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER < 11
-#error test_convertible.h requires C++11 or newer
-#endif
 
 namespace detail {
     template <class Tp> __host__ __device__ void eat_type(Tp);

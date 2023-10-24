@@ -11,12 +11,12 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifdef _LIBCUDACXX_ABI_BAD_FUNCTION_CALL_KEY_FUNCTION
-bad_function_call::~bad_function_call() _NOEXCEPT
+bad_function_call::~bad_function_call() noexcept
 {
 }
 
 const char*
-bad_function_call::what() const _NOEXCEPT
+bad_function_call::what() const noexcept
 {
     return "std::bad_function_call";
 }

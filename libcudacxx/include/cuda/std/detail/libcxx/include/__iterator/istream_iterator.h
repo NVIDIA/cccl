@@ -20,9 +20,11 @@
 #include "../cstddef"
 #include "../iosfwd"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -43,7 +45,7 @@ private:
     istream_type* __in_stream_;
     _Tp __value_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR istream_iterator() : __in_stream_(0), __value_() {}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr istream_iterator() : __in_stream_(0), __value_() {}
     _LIBCUDACXX_INLINE_VISIBILITY istream_iterator(istream_type& __s) : __in_stream_(_CUDA_VSTD::addressof(__s))
         {
             if (!(*__in_stream_ >> __value_))

@@ -59,26 +59,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 template <class> struct VoidT { typedef void type; };
 
-#if TEST_STD_VER < 11
-template <class Trait, class = void>
-struct no_common_type_imp : cuda::std::true_type {};
-
-template <class Trait>
-struct no_common_type_imp<Trait, typename VoidT<typename Trait::type>::type>
-    : cuda::std::false_type {};
-
-struct NoArgTag;
-
-template <class Tp = NoArgTag, class Up = NoArgTag, class Vp = NoArgTag>
-struct no_common_type : no_common_type_imp<cuda::std::common_type<Tp, Up, Vp> > {};
-template <class Tp, class Up>
-struct no_common_type<Tp, Up> : no_common_type_imp<cuda::std::common_type<Tp, Up> > {
-};
-template <class Tp>
-struct no_common_type<Tp> : no_common_type_imp<cuda::std::common_type<Tp> > {};
-template <>
-struct no_common_type<> : no_common_type_imp<cuda::std::common_type<> > {};
-#else
 template <class Tp>
 struct always_bool_imp { using type = bool; };
 template <class Tp> using always_bool = typename always_bool_imp<Tp>::type;
@@ -95,7 +75,6 @@ constexpr bool no_common_type_imp(long) { return true; }
 
 template <class ...Args>
 using no_common_type = cuda::std::integral_constant<bool, no_common_type_imp<Args...>(0)>;
-#endif
 
 template <class T1, class T2>
 struct TernaryOp {
@@ -268,10 +247,8 @@ void test_bullet_four() {
   { // test that there is no ::type member
     static_assert((no_common_type<int, E>::value), "");
     static_assert((no_common_type<int, int, E>::value), "");
-#if TEST_STD_VER >= 11
     static_assert((no_common_type<int, int, E, int>::value), "");
     static_assert((no_common_type<int, int, int, E>::value), "");
-#endif
   }
 }
 
@@ -359,10 +336,8 @@ int main(int, char**)
     static_assert((cuda::std::is_same<cuda::std::common_type<int, const int>::type,       int>::value), "");
     static_assert((cuda::std::is_same<cuda::std::common_type<const int, const int>::type, int>::value), "");
 
-#if TEST_STD_VER >= 11
     // Test that we're really variadic in C++11
     static_assert(cuda::std::is_same<cuda::std::common_type<int, int, int, int, int, int, int, int>::type, int>::value, "");
-#endif
 
 #if 0 // TEST_STD_VER > 20 Not Implemented
     // P2321

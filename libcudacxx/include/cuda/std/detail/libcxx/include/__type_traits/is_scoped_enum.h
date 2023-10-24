@@ -19,9 +19,11 @@
 #include "../__type_traits/is_enum.h"
 #include "../__type_traits/underlying_type.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -38,7 +40,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_scoped_enum
     : public __is_scoped_enum_helper<_Tp> {};
 
 template <class _Tp>
-inline constexpr bool is_scoped_enum_v = is_scoped_enum<_Tp>::value;
+_LIBCUDACXX_INLINE_VAR constexpr bool is_scoped_enum_v = is_scoped_enum<_Tp>::value;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

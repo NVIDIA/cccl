@@ -90,9 +90,9 @@ public:
         return *this;
     }
 
-    ostream_joiner& operator*()     _NOEXCEPT { return *this; }
-    ostream_joiner& operator++()    _NOEXCEPT { return *this; }
-    ostream_joiner& operator++(int) _NOEXCEPT { return *this; }
+    ostream_joiner& operator*()     noexcept { return *this; }
+    ostream_joiner& operator++()    noexcept { return *this; }
+    ostream_joiner& operator++(int) noexcept { return *this; }
 
 private:
     ostream_type*   __output_iter;

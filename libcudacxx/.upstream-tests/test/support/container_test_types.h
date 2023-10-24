@@ -92,10 +92,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER < 11
-#error This header requires C++11 or greater
-#endif
-
 namespace detail {
 // TypeID - Represent a unique identifier for a type. TypeID allows equality
 // comparisons between different types.

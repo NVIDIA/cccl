@@ -35,7 +35,7 @@ If the pipeline is in a _quitted state_ (see [`cuda::pipeline::quit`]), the
 #include <cuda/pipeline>
 
 // Disables `barrier` initialization warning.
-#pragma diag_suppress static_var_with_dynamic_init
+#pragma nv_diag_suppress static_var_with_dynamic_init
 
 __global__ void
 example_kernel(cuda::std::uint64_t* global, cuda::std::size_t element_count) {

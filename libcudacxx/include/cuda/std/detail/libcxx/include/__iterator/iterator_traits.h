@@ -32,9 +32,11 @@
 #include "../__type_traits/void_t.h"
 #include "../cstddef"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -429,11 +431,12 @@ namespace __iterator_traits_detail {
 template <class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __cpp17_iterator_,
-  requires(_Ip __i) //
-  (requires(__can_reference<decltype(*__i)>),
-   requires(same_as<_Ip&, decltype(++__i)>),
-   requires(__can_reference<decltype(*__i++)>),
-   requires(copyable<_Ip>)));
+  requires(_Ip __i)(//
+    requires(__can_reference<decltype(*__i)>),
+    requires(same_as<_Ip&, decltype(++__i)>),
+    requires(__can_reference<decltype(*__i++)>),
+    requires(copyable<_Ip>)
+  ));
 
 template <class _Ip>
 _LIBCUDACXX_CONCEPT __cpp17_iterator = _LIBCUDACXX_FRAGMENT(__cpp17_iterator_, _Ip);
@@ -485,14 +488,15 @@ _LIBCUDACXX_CONCEPT __cpp17_bidirectional_iterator = _LIBCUDACXX_FRAGMENT(__cpp1
 template<class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __cpp17_random_access_iterator_,
-  requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n) //
-  (requires(same_as<_Ip&, decltype(__i += __n)>),
-   requires(same_as<_Ip&, decltype(__i -= __n)>),
-   requires(same_as<_Ip, decltype(__i +  __n)>),
-   requires(same_as<_Ip, decltype(__n +  __i)>),
-   requires(same_as<_Ip, decltype(__i -  __n)>),
-   requires(same_as<decltype(__n), decltype(__i -  __i)>),
-   requires(convertible_to<decltype(__i[__n]), iter_reference_t<_Ip>>)));
+  requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n)( //
+    requires(same_as<_Ip&, decltype(__i += __n)>),
+    requires(same_as<_Ip&, decltype(__i -= __n)>),
+    requires(same_as<_Ip, decltype(__i +  __n)>),
+    requires(same_as<_Ip, decltype(__n +  __i)>),
+    requires(same_as<_Ip, decltype(__i -  __n)>),
+    requires(same_as<decltype(__n), decltype(__i -  __i)>),
+    requires(convertible_to<decltype(__i[__n]), iter_reference_t<_Ip>>)
+  ));
 
 template<class _Ip>
 _LIBCUDACXX_CONCEPT __cpp17_random_access_iterator =
@@ -502,22 +506,22 @@ _LIBCUDACXX_CONCEPT __cpp17_random_access_iterator =
 } // namespace __iterator_traits_detail
 
 template<class, class = void>
-inline constexpr bool __has_member_reference = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_reference = false;
 
 template<class _Tp>
-inline constexpr bool __has_member_reference<_Tp, void_t<typename _Tp::reference>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_reference<_Tp, void_t<typename _Tp::reference>> = true;
 
 template<class, class = void>
-inline constexpr bool __has_member_pointer = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_pointer = false;
 
 template<class _Tp>
-inline constexpr bool __has_member_pointer<_Tp, void_t<typename _Tp::pointer>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_pointer<_Tp, void_t<typename _Tp::pointer>> = true;
 
 template<class, class = void>
-inline constexpr bool __has_member_iterator_category = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_iterator_category = false;
 
 template<class _Tp>
-inline constexpr bool __has_member_iterator_category<_Tp, void_t<typename _Tp::iterator_category>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_iterator_category<_Tp, void_t<typename _Tp::iterator_category>> = true;
 
 template<class _Ip>
 _LIBCUDACXX_CONCEPT __specifies_members =

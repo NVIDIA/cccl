@@ -27,13 +27,11 @@ int main(int, char**)
     cuda::std::chrono::microseconds us = ms;
     assert(us.count() == 1000);
     }
-#if TEST_STD_VER >= 11
     {
     constexpr cuda::std::chrono::milliseconds ms(1);
     constexpr cuda::std::chrono::microseconds us = ms;
     static_assert(us.count() == 1000, "");
     }
-#endif
 
-  return 0;
+    return 0;
 }

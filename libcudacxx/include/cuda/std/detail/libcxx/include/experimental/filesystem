@@ -232,14 +232,14 @@
 #include <experimental/__config>
 #include <filesystem>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
-
-#ifndef _LIBCUDACXX_CXX03_LANG
 
 #define __cpp_lib_experimental_filesystem 201406
 
@@ -248,8 +248,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_EXPERIMENTAL_FILESYSTEM
 using namespace _CUDA_VSTD_FS;
 
 _LIBCUDACXX_END_NAMESPACE_EXPERIMENTAL_FILESYSTEM
-
-#endif // !_LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_POP_MACROS
 

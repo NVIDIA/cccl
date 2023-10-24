@@ -14,6 +14,8 @@
 
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 static_assert(cuda::std::sentinel_for<int*, int*>);
 static_assert(!cuda::std::sentinel_for<int*, long*>);
 struct nth_element_sentinel {
@@ -60,9 +62,12 @@ struct move_only_iterator {
   __host__ __device__ bool operator==(move_only_iterator const&) const;
   __host__ __device__ bool operator!=(move_only_iterator const&) const;
 };
+
+#ifndef TEST_COMPILER_MSVC_2017
 static_assert(cuda::std::movable<move_only_iterator> && !cuda::std::copyable<move_only_iterator> &&
               cuda::std::input_or_output_iterator<move_only_iterator> &&
               !cuda::std::sentinel_for<move_only_iterator, move_only_iterator>);
+#endif // TEST_COMPILER_MSVC_2017
 
 int main(int, char**)
 {

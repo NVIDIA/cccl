@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,32 +27,46 @@
  ******************************************************************************/
 
 /**
- * \file
- * cub::BlockRakingLayout provides a conflict-free shared memory layout abstraction for warp-raking across thread block data.
+ * @file
+ * cub::BlockRakingLayout provides a conflict-free shared memory layout abstraction for warp-raking
+ * across thread block data.
  */
-
 
 #pragma once
 
 #include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "../util_type.cuh"
 
 CUB_NAMESPACE_BEGIN
 
 /**
- * \brief BlockRakingLayout provides a conflict-free shared memory layout abstraction for 1D raking across thread block data.    ![](raking.png)
- * \ingroup BlockModule
+ * @brief BlockRakingLayout provides a conflict-free shared memory layout abstraction for 1D raking
+ *        across thread block data.    ![](raking.png)
  *
- * \par Overview
+ * @ingroup BlockModule
+ *
+ * @par Overview
  * This type facilitates a shared memory usage pattern where a block of CUDA
  * threads places elements into shared memory and then reduces the active
  * parallelism to one "raking" warp of threads for serially aggregating consecutive
  * sequences of shared items.  Padding is inserted to eliminate bank conflicts
  * (for most data types).
  *
- * \tparam T                        The data type to be exchanged.
- * \tparam BLOCK_THREADS            The thread block size in threads.
- * \tparam LEGACY_PTX_ARCH          <b>[optional]</b> Unused.
+ * @tparam T                        
+ *   The data type to be exchanged.
+ *
+ * @tparam BLOCK_THREADS            
+ *   The thread block size in threads.
+ *
+ * @tparam LEGACY_PTX_ARCH          
+ *   <b>[optional]</b> Unused.
  */
 template <
     typename    T,
@@ -98,7 +112,7 @@ struct BlockRakingLayout
 
 
     /**
-     * \brief Shared memory storage type
+     * @brief Shared memory storage type
      */
     struct __align__(16) _TempStorage
     {
@@ -110,7 +124,7 @@ struct BlockRakingLayout
 
 
     /**
-     * \brief Returns the location for the calling thread to place data into the grid
+     * @brief Returns the location for the calling thread to place data into the grid
      */
     static __device__ __forceinline__ T* PlacementPtr(
         TempStorage &temp_storage,
@@ -131,7 +145,7 @@ struct BlockRakingLayout
 
 
     /**
-     * \brief Returns the location for the calling thread to begin sequential raking
+     * @brief Returns the location for the calling thread to begin sequential raking
      */
     static __device__ __forceinline__ T* RakingPtr(
         TempStorage &temp_storage,

@@ -22,6 +22,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -36,16 +42,16 @@ THRUST_NAMESPACE_BEGIN
 
 
 /*! This version of \p transform applies a unary function to each element
- *  of an input sequence and stores the result in the corresponding 
- *  position in an output sequence.  Specifically, for each iterator 
- *  <tt>i</tt> in the range [\p first, \p last) the operation 
+ *  of an input sequence and stores the result in the corresponding
+ *  position in an output sequence.  Specifically, for each iterator
+ *  <tt>i</tt> in the range [\p first, \p last) the operation
  *  <tt>op(*i)</tt> is performed and the result is assigned to <tt>*o</tt>,
  *  where <tt>o</tt> is the corresponding output iterator in the range
  *  [\p result, \p result + (\p last - \p first) ).  The input and
  *  output sequences may coincide, resulting in an in-place transformation.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
- *    
+ *
  *  \param exec The execution policy to use for parallelization.
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
@@ -70,9 +76,9 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/functional.h>
  *  #include <thrust/execution_policy.h>
  *  ...
- *  
+ *
  *  int data[10] = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
- * 
+ *
  *  thrust::negate<int> op;
  *
  *  thrust::transform(thrust::host, data, data + 10, data, op); // in-place transformation
@@ -92,16 +98,16 @@ __host__ __device__
                            OutputIterator result,
                            UnaryFunction op);
 
-	
+
 /*! This version of \p transform applies a unary function to each element
- *  of an input sequence and stores the result in the corresponding 
- *  position in an output sequence.  Specifically, for each iterator 
- *  <tt>i</tt> in the range [\p first, \p last) the operation 
+ *  of an input sequence and stores the result in the corresponding
+ *  position in an output sequence.  Specifically, for each iterator
+ *  <tt>i</tt> in the range [\p first, \p last) the operation
  *  <tt>op(*i)</tt> is performed and the result is assigned to <tt>*o</tt>,
  *  where <tt>o</tt> is the corresponding output iterator in the range
  *  [\p result, \p result + (\p last - \p first) ).  The input and
  *  output sequences may coincide, resulting in an in-place transformation.
- *    
+ *
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
@@ -121,9 +127,9 @@ __host__ __device__
  *  \code
  *  #include <thrust/transform.h>
  *  #include <thrust/functional.h>
- *  
+ *
  *  int data[10] = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
- * 
+ *
  *  thrust::negate<int> op;
  *
  *  thrust::transform(data, data + 10, data, op); // in-place transformation
@@ -144,16 +150,16 @@ template<typename InputIterator,
 /*! This version of \p transform applies a binary function to each pair
  *  of elements from two input sequences and stores the result in the
  *  corresponding position in an output sequence.  Specifically, for
- *  each iterator <tt>i</tt> in the range [\p first1, \p last1) and 
+ *  each iterator <tt>i</tt> in the range [\p first1, \p last1) and
  *  <tt>j = first + (i - first1)</tt> in the range [\p first2, \p last2)
- *  the operation <tt>op(*i,*j)</tt> is performed and the result is 
+ *  the operation <tt>op(*i,*j)</tt> is performed and the result is
  *  assigned to <tt>*o</tt>,  where <tt>o</tt> is the corresponding
  *  output iterator in the range [\p result, \p result + (\p last - \p first) ).
- *  The input and output sequences may coincide, resulting in an 
+ *  The input and output sequences may coincide, resulting in an
  *  in-place transformation.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
- *    
+ *
  *  \param exec The execution policy to use for parallelization.
  *  \param first1 The beginning of the first input sequence.
  *  \param last1 The end of the first input sequence.
@@ -182,11 +188,11 @@ template<typename InputIterator,
  *  #include <thrust/functional.h>
  *  #include <thrust/execution_policy.h>
  *  ...
- *  
+ *
  *  int input1[6] = {-5,  0,  2,  3,  2,  4};
  *  int input2[6] = { 3,  6, -2,  1,  2,  3};
  *  int output[6];
- * 
+ *
  *  thrust::plus<int> op;
  *
  *  thrust::transform(thrust::host, input1, input1 + 6, input2, output, op);
@@ -212,14 +218,14 @@ __host__ __device__
 /*! This version of \p transform applies a binary function to each pair
  *  of elements from two input sequences and stores the result in the
  *  corresponding position in an output sequence.  Specifically, for
- *  each iterator <tt>i</tt> in the range [\p first1, \p last1) and 
+ *  each iterator <tt>i</tt> in the range [\p first1, \p last1) and
  *  <tt>j = first + (i - first1)</tt> in the range [\p first2, \p last2)
- *  the operation <tt>op(*i,*j)</tt> is performed and the result is 
+ *  the operation <tt>op(*i,*j)</tt> is performed and the result is
  *  assigned to <tt>*o</tt>,  where <tt>o</tt> is the corresponding
  *  output iterator in the range [\p result, \p result + (\p last - \p first) ).
- *  The input and output sequences may coincide, resulting in an 
+ *  The input and output sequences may coincide, resulting in an
  *  in-place transformation.
- *    
+ *
  *  \param first1 The beginning of the first input sequence.
  *  \param last1 The end of the first input sequence.
  *  \param first2 The beginning of the second input sequence.
@@ -243,11 +249,11 @@ __host__ __device__
  *  \code
  *  #include <thrust/transform.h>
  *  #include <thrust/functional.h>
- *  
+ *
  *  int input1[6] = {-5,  0,  2,  3,  2,  4};
  *  int input2[6] = { 3,  6, -2,  1,  2,  3};
  *  int output[6];
- * 
+ *
  *  thrust::plus<int> op;
  *
  *  thrust::transform(input1, input1 + 6, input2, output, op);
@@ -268,7 +274,7 @@ template<typename InputIterator1,
 
 
 /*! This version of \p transform_if conditionally applies a unary function
- *  to each element of an input sequence and stores the result in the corresponding 
+ *  to each element of an input sequence and stores the result in the corresponding
  *  position in an output sequence if the corresponding position in the input sequence
  *  satifies a predicate. Otherwise, the corresponding position in the
  *  output sequence is not modified.
@@ -282,7 +288,7 @@ template<typename InputIterator1,
  *  resulting in an in-place transformation.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
- *    
+ *
  *  \param exec The execution policy to use for parallelization.
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
@@ -310,7 +316,7 @@ template<typename InputIterator1,
  *  #include <thrust/functional.h>
  *  #include <thrust/execution_policy.h>
  *  ...
- *  
+ *
  *  int data[10]    = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
  *
  *  struct is_odd
@@ -321,7 +327,7 @@ template<typename InputIterator1,
  *      return x % 2;
  *    }
  *  };
- * 
+ *
  *  thrust::negate<int> op;
  *  thrust::identity<int> identity;
  *
@@ -347,7 +353,7 @@ __host__ __device__
 
 
 /*! This version of \p transform_if conditionally applies a unary function
- *  to each element of an input sequence and stores the result in the corresponding 
+ *  to each element of an input sequence and stores the result in the corresponding
  *  position in an output sequence if the corresponding position in the input sequence
  *  satifies a predicate. Otherwise, the corresponding position in the
  *  output sequence is not modified.
@@ -359,7 +365,7 @@ __host__ __device__
  *  <tt>[result, result + (last - first) )</tt>. Otherwise, <tt>op(*i)</tt> is
  *  not evaluated and no assignment occurs. The input and output sequences may coincide,
  *  resulting in an in-place transformation.
- *    
+ *
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
@@ -382,7 +388,7 @@ __host__ __device__
  *  \code
  *  #include <thrust/transform.h>
  *  #include <thrust/functional.h>
- *  
+ *
  *  int data[10]    = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
  *
  *  struct is_odd
@@ -393,7 +399,7 @@ __host__ __device__
  *      return x % 2;
  *    }
  *  };
- * 
+ *
  *  thrust::negate<int> op;
  *  thrust::identity<int> identity;
  *
@@ -416,7 +422,7 @@ template<typename InputIterator,
 
 
 /*! This version of \p transform_if conditionally applies a unary function
- *  to each element of an input sequence and stores the result in the corresponding 
+ *  to each element of an input sequence and stores the result in the corresponding
  *  position in an output sequence if the corresponding position in a stencil sequence
  *  satisfies a predicate. Otherwise, the corresponding position in the
  *  output sequence is not modified.
@@ -431,7 +437,7 @@ template<typename InputIterator,
  *  resulting in an in-place transformation.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
- *    
+ *
  *  \param exec The execution policy to use for parallelization.
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
@@ -462,10 +468,10 @@ template<typename InputIterator,
  *  #include <thrust/functional.h>
  *  #include <thrust/execution_policy.h>
  *  ...
- *  
+ *
  *  int data[10]    = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
  *  int stencil[10] = { 1, 0, 1,  0, 1, 0, 1,  0, 1, 0};
- * 
+ *
  *  thrust::negate<int> op;
  *  thrust::identity<int> identity;
  *
@@ -492,7 +498,7 @@ __host__ __device__
 
 
 /*! This version of \p transform_if conditionally applies a unary function
- *  to each element of an input sequence and stores the result in the corresponding 
+ *  to each element of an input sequence and stores the result in the corresponding
  *  position in an output sequence if the corresponding position in a stencil sequence
  *  satisfies a predicate. Otherwise, the corresponding position in the
  *  output sequence is not modified.
@@ -505,7 +511,7 @@ __host__ __device__
  *  <tt>[result, result + (last - first) )</tt>. Otherwise, <tt>op(*i)</tt> is
  *  not evaluated and no assignment occurs. The input and output sequences may coincide,
  *  resulting in an in-place transformation.
- *    
+ *
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param stencil The beginning of the stencil sequence.
@@ -531,10 +537,10 @@ __host__ __device__
  *  \code
  *  #include <thrust/transform.h>
  *  #include <thrust/functional.h>
- *  
+ *
  *  int data[10]    = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
  *  int stencil[10] = { 1, 0, 1,  0, 1, 0, 1,  0, 1, 0};
- * 
+ *
  *  thrust::negate<int> op;
  *  thrust::identity<int> identity;
  *
@@ -558,12 +564,12 @@ template<typename InputIterator1,
 
 
 /*! This version of \p transform_if conditionally applies a binary function
- *  to each pair of elements from two input sequences and stores the result in the corresponding 
+ *  to each pair of elements from two input sequences and stores the result in the corresponding
  *  position in an output sequence if the corresponding position in a stencil sequence
  *  satifies a predicate. Otherwise, the corresponding position in the
  *  output sequence is not modified.
  *
- *  Specifically, for each iterator <tt>i</tt> in the range <tt>[first1, last1)</tt> and 
+ *  Specifically, for each iterator <tt>i</tt> in the range <tt>[first1, last1)</tt> and
  *  <tt>j = first2 + (i - first1)</tt> in the range <tt>[first2, first2 + (last1 - first1) )</tt>,
  *  the predicate <tt>pred(*s)</tt> is evaluated, where <tt>s</tt> is the corresponding input
  *  iterator in the range <tt>[stencil, stencil + (last1 - first1) )</tt>. If this predicate
@@ -574,7 +580,7 @@ template<typename InputIterator1,
  *  resulting in an in-place transformation.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
- *    
+ *
  *  \param exec The execution policy to use for parallelization.
  *  \param first1 The beginning of the first input sequence.
  *  \param last1 The end of the first input sequence.
@@ -607,12 +613,12 @@ template<typename InputIterator1,
  *  #include <thrust/functional.h>
  *  #include <thrust/execution_policy.h>
  *  ...
- *  
+ *
  *  int input1[6]  = {-5,  0,  2,  3,  2,  4};
  *  int input2[6]  = { 3,  6, -2,  1,  2,  3};
  *  int stencil[8] = { 1,  0,  1,  0,  1,  0};
  *  int output[6];
- * 
+ *
  *  thrust::plus<int> op;
  *  thrust::identity<int> identity;
  *
@@ -641,12 +647,12 @@ __host__ __device__
 
 
 /*! This version of \p transform_if conditionally applies a binary function
- *  to each pair of elements from two input sequences and stores the result in the corresponding 
+ *  to each pair of elements from two input sequences and stores the result in the corresponding
  *  position in an output sequence if the corresponding position in a stencil sequence
  *  satifies a predicate. Otherwise, the corresponding position in the
  *  output sequence is not modified.
  *
- *  Specifically, for each iterator <tt>i</tt> in the range <tt>[first1, last1)</tt> and 
+ *  Specifically, for each iterator <tt>i</tt> in the range <tt>[first1, last1)</tt> and
  *  <tt>j = first2 + (i - first1)</tt> in the range <tt>[first2, first2 + (last1 - first1) )</tt>,
  *  the predicate <tt>pred(*s)</tt> is evaluated, where <tt>s</tt> is the corresponding input
  *  iterator in the range <tt>[stencil, stencil + (last1 - first1) )</tt>. If this predicate
@@ -655,7 +661,7 @@ __host__ __device__
  *  <tt>[result, result + (last1 - first1) )</tt>. Otherwise, <tt>binary_op(*i,*j)</tt> is
  *  not evaluated and no assignment occurs. The input and output sequences may coincide,
  *  resulting in an in-place transformation.
- *    
+ *
  *  \param first1 The beginning of the first input sequence.
  *  \param last1 The end of the first input sequence.
  *  \param first2 The beginning of the second input sequence.
@@ -683,12 +689,12 @@ __host__ __device__
  *  \code
  *  #include <thrust/transform.h>
  *  #include <thrust/functional.h>
- *  
+ *
  *  int input1[6]  = {-5,  0,  2,  3,  2,  4};
  *  int input2[6]  = { 3,  6, -2,  1,  2,  3};
  *  int stencil[8] = { 1,  0,  1,  0,  1,  0};
  *  int output[6];
- * 
+ *
  *  thrust::plus<int> op;
  *  thrust::identity<int> identity;
  *

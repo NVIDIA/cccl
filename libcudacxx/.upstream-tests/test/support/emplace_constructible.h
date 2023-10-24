@@ -3,7 +3,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 11
 template <class T>
 struct EmplaceConstructible {
   T value;
@@ -69,6 +68,5 @@ struct EmplaceConstructibleMoveableAndAssignable {
     return *this;
   }
 };
-#endif
 
 #endif // TEST_SUPPORT_EMPLACE_CONSTRUCTIBLE_H

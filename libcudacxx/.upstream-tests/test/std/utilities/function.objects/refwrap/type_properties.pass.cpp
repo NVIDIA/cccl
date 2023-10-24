@@ -23,7 +23,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 11
 class MoveOnly
 {
     __host__ __device__ MoveOnly(const MoveOnly&);
@@ -39,7 +38,6 @@ public:
 
     __host__ __device__ int get() const {return data_;}
 };
-#endif
 
 
 template <class T>
@@ -60,9 +58,7 @@ int main(int, char**)
 #ifdef _LIBCUDACXX_HAS_
     test<cuda::std::string>();
 #endif
-#if TEST_STD_VER >= 11
     test<MoveOnly>();
-#endif
 
   return 0;
 }

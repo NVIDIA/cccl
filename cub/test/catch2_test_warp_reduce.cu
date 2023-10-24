@@ -36,8 +36,6 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "c2h/custom_type.cuh"
 #include "catch2_test_helper.h"
 
@@ -375,7 +373,7 @@ CUB_TEST("Warp sum works", "[reduce][warp]", full_type_list, logical_warp_thread
   // Prepare test data
   thrust::device_vector<type> d_in(params::tile_size);
   thrust::device_vector<type> d_out(params::tile_size);
-  const auto valid_items = params::logical_warp_threads;
+  constexpr auto valid_items = params::logical_warp_threads;
   c2h::gen(CUB_SEED(10), d_in);
 
   // Run test
@@ -407,7 +405,7 @@ CUB_TEST("Warp reduce works", "[reduce][warp]", builtin_type_list, logical_warp_
   // Prepare test data
   thrust::device_vector<type> d_in(params::tile_size);
   thrust::device_vector<type> d_out(params::tile_size);
-  const auto valid_items = params::logical_warp_threads;
+  constexpr auto valid_items = params::logical_warp_threads;
   c2h::gen(CUB_SEED(10), d_in);
 
   // Run test
@@ -526,7 +524,7 @@ CUB_TEST("Warp segmented sum works",
   thrust::device_vector<type> d_in(params::tile_size);
   thrust::device_vector<uint8_t> d_flags(params::tile_size);
   thrust::device_vector<type> d_out(params::tile_size);
-  const auto valid_items = params::logical_warp_threads;
+  constexpr auto valid_items = params::logical_warp_threads;
   constexpr uint8_t min  = 0;
   constexpr uint8_t max  = 2;
   c2h::gen(CUB_SEED(5), d_in);
@@ -578,7 +576,7 @@ CUB_TEST("Warp segmented reduction works",
   thrust::device_vector<type> d_in(params::tile_size);
   thrust::device_vector<uint8_t> d_flags(params::tile_size);
   thrust::device_vector<type> d_out(params::tile_size);
-  const auto valid_items = params::logical_warp_threads;
+  constexpr auto valid_items = params::logical_warp_threads;
   constexpr uint8_t min  = 0;
   constexpr uint8_t max  = 2;
   c2h::gen(CUB_SEED(5), d_in);

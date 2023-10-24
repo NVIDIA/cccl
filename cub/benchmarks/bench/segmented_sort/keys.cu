@@ -111,9 +111,9 @@ struct device_seg_sort_policy_hub
 
   struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
   {
-    constexpr static int BLOCK_THREADS          = TUNE_THREADS;
-    constexpr static int RADIX_BITS             = TUNE_RADIX_BITS ;
-    constexpr static int PARTITIONING_THRESHOLD = TUNE_PARTITIONING_THRESHOLD;
+    static constexpr int BLOCK_THREADS          = TUNE_THREADS;
+    static constexpr int RADIX_BITS             = TUNE_RADIX_BITS ;
+    static constexpr int PARTITIONING_THRESHOLD = TUNE_PARTITIONING_THRESHOLD;
 
     using LargeSegmentPolicy =
       cub::AgentRadixSortDownsweepPolicy<BLOCK_THREADS,
@@ -125,8 +125,8 @@ struct device_seg_sort_policy_hub
                                          cub::BLOCK_SCAN_WARP_SCANS,
                                          RADIX_BITS>;
 
-    constexpr static int ITEMS_PER_SMALL_THREAD = TUNE_S_ITEMS;
-    constexpr static int ITEMS_PER_MEDIUM_THREAD = TUNE_M_ITEMS;
+    static constexpr int ITEMS_PER_SMALL_THREAD = TUNE_S_ITEMS;
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = TUNE_M_ITEMS;
 
     using SmallAndMediumSegmentedSortPolicyT = cub::AgentSmallAndMediumSegmentedSortPolicy<
 
@@ -187,10 +187,8 @@ void seg_sort(nvbench::state &state,
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const auto segments = offsets.size() - 1;
 
-  thrust::device_vector<key_t> buffer_1(elements);
+  thrust::device_vector<key_t> buffer_1 = generate(elements, entropy);
   thrust::device_vector<key_t> buffer_2(elements);
-
-  gen(seed_t{}, buffer_1, entropy);
 
   key_t *d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
   key_t *d_buffer_2 = thrust::raw_pointer_cast(buffer_2.data());
@@ -247,9 +245,7 @@ void power_law(nvbench::state &state, nvbench::type_list<T, OffsetT> ts)
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const auto segments       = static_cast<std::size_t>(state.get_int64("Segments{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
-
-  thrust::device_vector<OffsetT> offsets =
-    gen_power_law_offsets<OffsetT>(seed_t{}, elements, segments);
+  thrust::device_vector<OffsetT> offsets = generate.power_law.segment_offsets(elements, segments);
 
   seg_sort(state, ts, offsets, entropy);
 }
@@ -272,7 +268,7 @@ void uniform(nvbench::state &state, nvbench::type_list<T, OffsetT> ts)
   const auto min_segment_size = 1 << (max_segment_size_log - 1);
 
   thrust::device_vector<OffsetT> offsets =
-    gen_uniform_offsets<OffsetT>(seed_t{}, elements, min_segment_size, max_segment_size);
+    generate.uniform.segment_offsets(elements, min_segment_size, max_segment_size);
 
   seg_sort(state, ts, offsets, bit_entropy::_1_000);
 }

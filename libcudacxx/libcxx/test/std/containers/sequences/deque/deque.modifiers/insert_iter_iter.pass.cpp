@@ -59,11 +59,11 @@ test(int P, const C& c0, const C& c2)
     assert(c1.size() == c1_osize + c2.size());
     assert(static_cast<std::size_t>(distance(c1.begin(), c1.end())) == c1.size());
     i = c1.begin();
-    for (int j = 0; j < P; ++j, ++i)
+    for (int j = 0; j < P; ++j, (void)++i)
         assert(*i == j);
-    for (int j = 0; static_cast<std::size_t>(j) < c2.size(); ++j, ++i)
+    for (int j = 0; static_cast<std::size_t>(j) < c2.size(); ++j, (void)++i)
         assert(*i == j);
-    for (int j = P; static_cast<std::size_t>(j) < c1_osize; ++j, ++i)
+    for (int j = P; static_cast<std::size_t>(j) < c1_osize; ++j, (void)++i)
         assert(*i == j);
     }
     {
@@ -76,11 +76,11 @@ test(int P, const C& c0, const C& c2)
     assert(c1.size() == c1_osize + c2.size());
     assert(static_cast<std::size_t>(distance(c1.begin(), c1.end())) == c1.size());
     i = c1.begin();
-    for (int j = 0; j < P; ++j, ++i)
+    for (int j = 0; j < P; ++j, (void)++i)
         assert(*i == j);
-    for (int j = 0; static_cast<std::size_t>(j) < c2.size(); ++j, ++i)
+    for (int j = 0; static_cast<std::size_t>(j) < c2.size(); ++j, (void)++i)
         assert(*i == j);
-    for (int j = P; static_cast<std::size_t>(j) < c1_osize; ++j, ++i)
+    for (int j = P; static_cast<std::size_t>(j) < c1_osize; ++j, (void)++i)
         assert(*i == j);
     }
     {
@@ -93,11 +93,11 @@ test(int P, const C& c0, const C& c2)
     assert(c1.size() == c1_osize + c2.size());
     assert(static_cast<std::size_t>(distance(c1.begin(), c1.end())) == c1.size());
     i = c1.begin();
-    for (int j = 0; j < P; ++j, ++i)
+    for (int j = 0; j < P; ++j, (void)++i)
         assert(*i == j);
-    for (int j = 0; static_cast<std::size_t>(j) < c2.size(); ++j, ++i)
+    for (int j = 0; static_cast<std::size_t>(j) < c2.size(); ++j, (void)++i)
         assert(*i == j);
-    for (int j = P; static_cast<std::size_t>(j) < c1_osize; ++j, ++i)
+    for (int j = P; static_cast<std::size_t>(j) < c1_osize; ++j, (void)++i)
         assert(*i == j);
     }
 }
@@ -174,11 +174,11 @@ testI(int P, C& c1, const C& c2)
     assert(c1.size() == c1_osize + c2.size());
     assert(static_cast<std::size_t>(distance(c1.begin(), c1.end())) == c1.size());
     i = c1.begin();
-    for (int j = 0; j < P; ++j, ++i)
+    for (int j = 0; j < P; ++j, (void)++i)
         assert(*i == j);
-    for (int j = 0; static_cast<std::size_t>(j) < c2.size(); ++j, ++i)
+    for (int j = 0; static_cast<std::size_t>(j) < c2.size(); ++j, (void)++i)
         assert(*i == j);
-    for (int j = P; static_cast<std::size_t>(j) < c1_osize; ++j, ++i)
+    for (int j = P; static_cast<std::size_t>(j) < c1_osize; ++j, (void)++i)
         assert(*i == j);
 }
 
@@ -246,7 +246,7 @@ test_move()
         c.insert(c.end(), std::move_iterator<I>(&mo), std::move_iterator<I>(&mo+1));
     }
     int j = 0;
-    for (CI i = c.begin(); i != c.end(); ++i, ++j)
+    for (CI i = c.begin(); i != c.end(); ++i, (void)++j)
         assert(*i == MoveOnly(j));
     {
         MoveOnly mo(1);
@@ -254,7 +254,7 @@ test_move()
         c.insert(c.end(), std::move_iterator<I>(I(&mo)), std::move_iterator<I>(I(&mo+1)));
     }
     j = 0;
-    for (CI i = c.begin(); i != c.end(); ++i, ++j)
+    for (CI i = c.begin(); i != c.end(); ++i, (void)++j)
         assert(*i == MoveOnly(j));
 #endif
 }

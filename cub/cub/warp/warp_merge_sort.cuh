@@ -27,8 +27,15 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/block/block_merge_sort.cuh>
-#include <cub/config.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
@@ -127,9 +134,9 @@ class WarpMergeSort
         WarpMergeSort<KeyT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ValueT>>
 {
 private:
-  constexpr static bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
-  constexpr static bool KEYS_ONLY    = std::is_same<ValueT, NullType>::value;
-  constexpr static int TILE_SIZE     = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool KEYS_ONLY    = std::is_same<ValueT, NullType>::value;
+  static constexpr int TILE_SIZE     = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
 
   using BlockMergeSortStrategyT =
     BlockMergeSortStrategy<KeyT, ValueT, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, WarpMergeSort>;

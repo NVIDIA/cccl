@@ -109,7 +109,7 @@
 #define _LIBUNWIND_BUILD_SJLJ_APIS
 #endif
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__) || defined(__ppc64__) || defined(__powerpc64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__) || defined(__ppc64__) || defined(__PPC64__) || defined(__powerpc64__)
 #define _LIBUNWIND_SUPPORT_FRAME_APIS
 #endif
 

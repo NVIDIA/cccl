@@ -26,11 +26,17 @@
  ******************************************************************************/
 #pragma once
 
+#include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 // XXX
 // this file must not be included on its own, ever,
 // but must be part of include in thrust/system/cuda/detail/copy.h
-
-#include <thrust/detail/config.h>
 
 #include <thrust/system/cuda/config.h>
 
@@ -178,7 +184,7 @@ namespace __copy {
     // get type of the input data
     typedef typename thrust::iterator_value<InputIt>::type InputTy;
 
-    // allocate device temp storage 
+    // allocate device temp storage
     thrust::detail::temporary_array<InputTy, D> d_in_ptr(device_s, num_items);
 
     // uninitialize copy into temp device storage

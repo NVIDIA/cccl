@@ -683,6 +683,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "__iterator/access.h"
 #include "__iterator/advance.h"
 #include "__iterator/back_insert_iterator.h"
+#include "__iterator/bounded_iter.h"
 #include "__iterator/concepts.h"
 #include "__iterator/data.h"
 #include "__iterator/default_sentinel.h"
@@ -691,21 +692,29 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "__iterator/erase_if_container.h"
 #include "__iterator/front_insert_iterator.h"
 #include "__iterator/incrementable_traits.h"
+#include "__iterator/indirectly_comparable.h"
 #include "__iterator/insert_iterator.h"
 #include "__iterator/istream_iterator.h"
 #include "__iterator/istreambuf_iterator.h"
 #include "__iterator/iter_move.h"
+#include "__iterator/iter_swap.h"
 #include "__iterator/iterator.h"
 #include "__iterator/iterator_traits.h"
+#include "__iterator/mergeable.h"
 #include "__iterator/move_iterator.h"
+#include "__iterator/move_sentinel.h"
 #include "__iterator/next.h"
 #include "__iterator/ostream_iterator.h"
 #include "__iterator/ostreambuf_iterator.h"
+#include "__iterator/permutable.h"
 #include "__iterator/prev.h"
+#include "__iterator/projected.h"
 #include "__iterator/readable_traits.h"
 #include "__iterator/reverse_access.h"
 #include "__iterator/reverse_iterator.h"
 #include "__iterator/size.h"
+#include "__iterator/sortable.h"
+#include "__iterator/unreachable_sentinel.h"
 #include "__iterator/wrap_iter.h"
 #include "__memory/addressof.h"
 #include "__memory/pointer_traits.h"
@@ -720,9 +729,11 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include <__pragma_push>
 #endif //__cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -294,21 +294,24 @@ void assert_gequal(char a, char b,
     }
 }
 
-// define our own abs() because std::abs() isn't portable for all types for some reason
-template<typename T>
-  T abs(const T &x)
+// will catch everything implicitly convertable to a double
+bool almost_equal(double a, double b, double a_tol, double r_tol)
 {
-  return x > 0 ? x : -x;
-}
 
-
-inline
-bool almost_equal(const double& a, const double& b, const double& a_tol, const double& r_tol)
-{
-    if(abs(a - b) > r_tol * (abs(a) + abs(b)) + a_tol)
+    if (std::abs(a - b) > r_tol * (std::abs(a) + std::abs(b)) + a_tol)
         return false;
     else
         return true;
+}
+
+template <typename T1, typename T2>
+typename THRUST_NS_QUALIFIER::detail::enable_if<THRUST_NS_QUALIFIER::is_complex<T1>::value &&
+                                                         THRUST_NS_QUALIFIER::is_complex<T2>::value,
+                                                       bool>::type
+almost_equal(const T1 &a, const T2 &b, double a_tol, double r_tol)
+{
+  return almost_equal(a.real(), b.real(), a_tol, r_tol) &&
+         almost_equal(a.imag(), b.imag(), a_tol, r_tol);
 }
 
 template <typename T1, typename T2>
@@ -320,43 +323,12 @@ void assert_almost_equal(T1 a, T2 b,
     if(!almost_equal(a, b, a_tol, r_tol)){
         unittest::UnitTestFailure f;
         f << "[" << filename << ":" << lineno << "] ";
-        f << "values are not approximately equal: " << (double) a << " " << (double) b;
+        f << "values are not approximately equal: " << a << " " << b;
         f << " [type='" << type_name<T1>() << "']";
         throw f;
     }
 }
 
-
-template <typename T1, typename T2>
-void assert_almost_equal(THRUST_NS_QUALIFIER::complex<T1> a, THRUST_NS_QUALIFIER::complex<T2> b,
-                         const std::string& filename = "unknown", int lineno = -1,
-                         double a_tol = DEFAULT_ABSOLUTE_TOL, double r_tol = DEFAULT_RELATIVE_TOL)
-
-{
-  if(!almost_equal(a.real(), b.real(), a_tol, r_tol)){
-        unittest::UnitTestFailure f;
-        f << "[" << filename << ":" << lineno << "] ";
-        f << "values are not approximately equal: " <<  a << " " << b;
-        f << " [type='" << type_name<T1>() << "']";
-        throw f;
-    }
-}
-
-
-template <typename T1, typename T2>
-  void assert_almost_equal(const THRUST_NS_QUALIFIER::complex<T1>& a, const std::complex<T2>& b,
-                         const std::string& filename = "unknown", int lineno = -1,
-                         double a_tol = DEFAULT_ABSOLUTE_TOL, double r_tol = DEFAULT_RELATIVE_TOL)
-
-{
-  if(!almost_equal(a.real(), b.real(), a_tol, r_tol)){
-        unittest::UnitTestFailure f;
-        f << "[" << filename << ":" << lineno << "] ";
-        f << "values are not approximately equal: " <<  a << " " << b;
-        f << " [type='" << type_name<T1>() << "']";
-        throw f;
-    }
-}
 
 template <typename T>
 class almost_equal_to

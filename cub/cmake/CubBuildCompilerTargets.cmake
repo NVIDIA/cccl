@@ -11,8 +11,15 @@ function(cub_build_compiler_targets)
   set(cxx_compile_options)
   set(cuda_compile_options)
 
+  # Ensure that we build our tests without treating ourself as system header
+  list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     list(APPEND cxx_compile_definitions _ENABLE_EXTENDED_ALIGNED_STORAGE)
+    list(APPEND cuda_compile_options "--use-local-env")
+
+    # sccache cannot handle the -Fd option generationg pdb files
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 
     append_option_if_available("/W4" cxx_compile_options)
 
@@ -131,4 +138,12 @@ function(cub_build_compiler_targets)
     # Don't complain about deprecated GPU targets.
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Wno-deprecated-gpu-targets>
   )
+
+  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    # Use the local env instead of rebuilding it all the time
+    target_compile_options(cub.compiler_interface INTERFACE
+      # If using CUDA w/ NVCC...
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--use-local-env>
+    )
+  endif()
 endfunction()

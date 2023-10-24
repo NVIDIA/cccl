@@ -17,19 +17,19 @@
 
 #include "../__type_traits/underlying_type.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#ifndef _LIBCUDACXX_CXX03_LANG
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr typename underlying_type<_Tp>::type
 __to_underlying(_Tp __val) noexcept {
   return static_cast<typename underlying_type<_Tp>::type>(__val);
 }
-#endif // !_LIBCUDACXX_CXX03_LANG
 
 #if _LIBCUDACXX_STD_VER > 20
 template <class _Tp>

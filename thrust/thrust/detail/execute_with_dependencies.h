@@ -17,6 +17,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/cpp11_required.h>
 
 #if THRUST_CPP_DIALECT >= 2011
@@ -61,8 +67,8 @@ private:
 
 public:
     __host__
-    execute_with_dependencies(super_t const &super, Dependencies && ...dependencies)
-        : super_t(super), dependencies(std::forward<Dependencies>(dependencies)...)
+    execute_with_dependencies(super_t const &super, Dependencies && ...deps)
+        : super_t(super), dependencies(std::forward<Dependencies>(deps)...)
     {
     }
 
@@ -96,7 +102,7 @@ public:
 
     std::tuple<remove_cvref_t<Dependencies>...>
     __host__
-    extract_dependencies() 
+    extract_dependencies()
     {
         return std::move(dependencies);
     }
@@ -184,7 +190,7 @@ public:
 
     std::tuple<remove_cvref_t<Dependencies>...>
     __host__
-    extract_dependencies() 
+    extract_dependencies()
     {
         return std::move(dependencies);
     }

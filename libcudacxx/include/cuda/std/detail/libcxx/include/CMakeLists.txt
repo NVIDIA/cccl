@@ -6,6 +6,7 @@ set(files
   __bsd_locale_defaults.h
   __bsd_locale_fallbacks.h
   __errc
+  __cccl_config
   __concepts/__concept_macros.h
   __concepts/_One_of.h
   __concepts/arithmetic.h
@@ -66,14 +67,13 @@ set(files
   __functional/perfect_forward.h
   __functional/pointer_to_binary_function.h
   __functional/pointer_to_unary_function.h
+  __functional/ranges_operations.h
   __functional/reference_wrapper.h
   __functional/unary_function.h
   __functional/unary_negate.h
   __functional/unwrap_ref.h
   __functional/weak_result_type.h
-  __functional_03
   __functional_base
-  __functional_base_03
   __fwd/array.h
   __fwd/get.h
   __fwd/hash.h
@@ -83,6 +83,7 @@ set(files
   __iterator/access.h
   __iterator/advance.h
   __iterator/back_insert_iterator.h
+  __iterator/bounded_iterator.h
   __iterator/concepts.h
   __iterator/data.h
   __iterator/default_sentinel.h
@@ -92,20 +93,28 @@ set(files
   __iterator/front_insert_iterator.h
   __iterator/insert_iterator.h
   __iterator/incrementable_traits.h
+  __iterator/indirectly_comparable.h
   __iterator/istream_iterator.h
   __iterator/istreambuf_iterator.h
   __iterator/iter_move.h
+  __iterator/iter_swap.h
   __iterator/iterator.h
   __iterator/iterator_traits.h
+  __iterator/mergeable.h
   __iterator/move_iterator.h
+  __iterator/move_sentinel.h
   __iterator/next.h
   __iterator/ostream_iterator.h
   __iterator/ostreambuf_iterator.h
+  __iterator/permutable.h
   __iterator/prev.h
+  __iterator/projected.h
   __iterator/readable_traits.h
   __iterator/reverse_access.h
   __iterator/reverse_iterator.h
   __iterator/size.h
+  __iterator/sortable.h
+  __iterator/unreachable_sentinel.h
   __iterator/wrap_iter.h
   __libcpp_version
   __locale

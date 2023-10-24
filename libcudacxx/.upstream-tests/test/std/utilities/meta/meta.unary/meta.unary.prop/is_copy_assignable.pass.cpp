@@ -79,12 +79,10 @@ int main(int, char**)
     test_is_copy_assignable<NotEmpty> ();
     test_is_copy_assignable<Empty> ();
 
-#if TEST_STD_VER >= 11
     test_is_not_copy_assignable<const int> ();
     test_is_not_copy_assignable<int[]> ();
     test_is_not_copy_assignable<int[3]> ();
     test_is_not_copy_assignable<B> ();
-#endif
     test_is_not_copy_assignable<void> ();
     test_is_not_copy_assignable<C> ();
 

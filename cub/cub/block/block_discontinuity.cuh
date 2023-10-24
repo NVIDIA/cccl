@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,45 +27,65 @@
  ******************************************************************************/
 
 /**
- * \file
- * The cub::BlockDiscontinuity class provides [<em>collective</em>](index.html#sec0) methods for flagging discontinuities within an ordered set of items partitioned across a CUDA thread block.
+ * @file
+ * The cub::BlockDiscontinuity class provides [<em>collective</em>](index.html#sec0) methods for
+ * flagging discontinuities within an ordered set of items partitioned across a CUDA thread block.
  */
 
 #pragma once
 
 #include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "../util_type.cuh"
 #include "../util_ptx.cuh"
 
 CUB_NAMESPACE_BEGIN
 
 /**
- * \brief The BlockDiscontinuity class provides [<em>collective</em>](index.html#sec0) methods for flagging discontinuities within an ordered set of items partitioned across a CUDA thread block. ![](discont_logo.png)
- * \ingroup BlockModule
+ * @brief The BlockDiscontinuity class provides [<em>collective</em>](index.html#sec0) methods for
+ *        flagging discontinuities within an ordered set of items partitioned across a CUDA thread
+ *        block. ![](discont_logo.png)
  *
- * \tparam T                The data type to be flagged.
- * \tparam BLOCK_DIM_X      The thread block length in threads along the X dimension
- * \tparam BLOCK_DIM_Y      <b>[optional]</b> The thread block length in threads along the Y dimension (default: 1)
- * \tparam BLOCK_DIM_Z      <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
- * \tparam LEGACY_PTX_ARCH  <b>[optional]</b> Unused.
+ * @ingroup BlockModule
  *
- * \par Overview
+ * @tparam T
+ *   The data type to be flagged.
+ *
+ * @tparam BLOCK_DIM_X
+ *   The thread block length in threads along the X dimension
+ *
+ * @tparam BLOCK_DIM_Y
+ *   <b>[optional]</b> The thread block length in threads along the Y dimension (default: 1)
+ *
+ * @tparam BLOCK_DIM_Z
+ *   <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
+ *
+ * @tparam LEGACY_PTX_ARCH
+ *   <b>[optional]</b> Unused.
+ *
+ * @par Overview
  * - A set of "head flags" (or "tail flags") is often used to indicate corresponding items
  *   that differ from their predecessors (or successors).  For example, head flags are convenient
  *   for demarcating disjoint data segments as part of a segmented scan or reduction.
  * - \blocked
  *
- * \par Performance Considerations
+ * @par Performance Considerations
  * - \granularity
  *
- * \par A Simple Example
+ * @par A Simple Example
  * \blockcollective{BlockDiscontinuity}
- * \par
+ * @par
  * The code snippet below illustrates the head flagging of 512 integer items that
  * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
  * where each thread owns 4 consecutive items.
- * \par
- * \code
+ * @par
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
  *
  * __global__ void ExampleKernel(...)
@@ -84,21 +104,22 @@ CUB_NAMESPACE_BEGIN
  *     int head_flags[4];
  *     BlockDiscontinuity(temp_storage).FlagHeads(head_flags, thread_data, cub::Inequality());
  *
- * \endcode
- * \par
+ * @endcode
+ * @par
  * Suppose the set of input \p thread_data across the block of threads is
  * <tt>{ [0,0,1,1], [1,1,1,1], [2,3,3,3], [3,4,4,4], ... }</tt>.
  * The corresponding output \p head_flags in those threads will be
  * <tt>{ [1,0,1,0], [0,0,0,0], [1,1,0,0], [0,1,0,0], ... }</tt>.
  *
- * \par Performance Considerations
+ * @par Performance Considerations
  * - Incurs zero bank conflicts for most types
  *
- * \par Re-using dynamically allocating shared memory
+ * @par Re-using dynamically allocating shared memory
  * The following example under the examples/block folder illustrates usage of
  * dynamically shared memory with BlockReduce and how to re-purpose
  * the same memory region:
- * <a href="../../examples/block/example_block_reduce_dyn_smem.cu">example_block_reduce_dyn_smem.cu</a>
+ * <a
+ * href="../../examples/block/example_block_reduce_dyn_smem.cu">example_block_reduce_dyn_smem.cu</a>
  *
  * This example can be easily adapted to the storage required by BlockDiscontinuity.
  */
@@ -169,17 +190,27 @@ private:
     /// Templated unrolling of item comparison (inductive case)
     struct Iterate
     {
-        // Head flags
-        template <
-            int             ITEMS_PER_THREAD,
-            typename        FlagT,
-            typename        FlagOp>
-        static __device__ __forceinline__ void FlagHeads(
-            int                     linear_tid,
-            FlagT                   (&flags)[ITEMS_PER_THREAD],         ///< [out] Calling thread's discontinuity head_flags
-            T                       (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-            T                       (&preds)[ITEMS_PER_THREAD],         ///< [out] Calling thread's predecessor items
-            FlagOp                  flag_op)                            ///< [in] Binary boolean flag predicate
+        /**
+         * @brief Head flags
+         *
+         * @param[out] flags
+         *   Calling thread's discontinuity head_flags
+         *
+         * @param[in] input
+         *   Calling thread's input items
+         *
+         * @param[out] preds
+         *   Calling thread's predecessor items
+         *
+         * @param[in] flag_op
+         *   Binary boolean flag predicate
+         */
+        template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+        static __device__ __forceinline__ void FlagHeads(int linear_tid,
+                                                         FlagT (&flags)[ITEMS_PER_THREAD],
+                                                         T (&input)[ITEMS_PER_THREAD],
+                                                         T (&preds)[ITEMS_PER_THREAD],
+                                                         FlagOp flag_op)
         {
             #pragma unroll
             for (int i = 1; i < ITEMS_PER_THREAD; ++i) {
@@ -192,16 +223,23 @@ private:
             }
         }
 
-        // Tail flags
-        template <
-            int             ITEMS_PER_THREAD,
-            typename        FlagT,
-            typename        FlagOp>
-        static __device__ __forceinline__ void FlagTails(
-            int                     linear_tid,
-            FlagT                   (&flags)[ITEMS_PER_THREAD],         ///< [out] Calling thread's discontinuity head_flags
-            T                       (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-            FlagOp                  flag_op)                            ///< [in] Binary boolean flag predicate
+        /**
+         * @brief Tail flags
+         *
+         * @param[out] flags
+         *   Calling thread's discontinuity head_flags
+         *
+         * @param[in] input
+         *   Calling thread's input items
+         *
+         * @param[in] flag_op
+         *   Binary boolean flag predicate
+         */
+        template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+        static __device__ __forceinline__ void FlagTails(int linear_tid,
+                                                         FlagT (&flags)[ITEMS_PER_THREAD],
+                                                         T (&input)[ITEMS_PER_THREAD],
+                                                         FlagOp flag_op)
         {
             #pragma unroll
             for (int i = 0; i < ITEMS_PER_THREAD - 1; ++i) {
@@ -228,17 +266,18 @@ private:
 
 public:
 
-    /// \smemstorage{BlockDiscontinuity}
+    /// @smemstorage{BlockDiscontinuity}
     struct TempStorage : Uninitialized<_TempStorage> {};
 
 
     /******************************************************************//**
-     * \name Collective constructors
+     * @name Collective constructors
      *********************************************************************/
     //@{
 
     /**
-     * \brief Collective constructor using a private static allocation of shared memory as temporary storage.
+     * @brief Collective constructor using a private static allocation of shared memory as temporary
+     *        storage.
      */
     __device__ __forceinline__ BlockDiscontinuity()
     :
@@ -246,17 +285,16 @@ public:
         linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
 
-
     /**
-     * \brief Collective constructor using the specified memory allocation as temporary storage.
+     * @brief Collective constructor using the specified memory allocation as temporary storage.
+     *
+     * @param[in] temp_storage
+     *   Reference to memory allocation having layout type TempStorage
      */
-    __device__ __forceinline__ BlockDiscontinuity(
-        TempStorage &temp_storage)  ///< [in] Reference to memory allocation having layout type TempStorage
-    :
-        temp_storage(temp_storage.Alias()),
-        linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+    __device__ __forceinline__ BlockDiscontinuity(TempStorage &temp_storage)
+        : temp_storage(temp_storage.Alias())
+        , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
-
 
     //@}  end member group
     /******************************************************************//**
@@ -267,15 +305,24 @@ public:
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
 
-    template <
-        int             ITEMS_PER_THREAD,
-        typename        FlagT,
-        typename        FlagOp>
-    __device__ __forceinline__ void FlagHeads(
-        FlagT           (&head_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        T               (&preds)[ITEMS_PER_THREAD],         ///< [out] Calling thread's predecessor items
-        FlagOp          flag_op)                            ///< [in] Binary boolean flag predicate
+    /**
+     * @param[out] head_flags
+     *   Calling thread's discontinuity head_flags
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[out] preds
+     *   Calling thread's predecessor items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
+     */
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    __device__ __forceinline__ void FlagHeads(FlagT (&head_flags)[ITEMS_PER_THREAD],
+                                              T (&input)[ITEMS_PER_THREAD],
+                                              T (&preds)[ITEMS_PER_THREAD],
+                                              FlagOp flag_op)
     {
         // Share last item
         temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
@@ -297,16 +344,29 @@ public:
         Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
     }
 
-    template <
-        int             ITEMS_PER_THREAD,
-        typename        FlagT,
-        typename        FlagOp>
-    __device__ __forceinline__ void FlagHeads(
-        FlagT           (&head_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        T               (&preds)[ITEMS_PER_THREAD],         ///< [out] Calling thread's predecessor items
-        FlagOp          flag_op,                            ///< [in] Binary boolean flag predicate
-        T               tile_predecessor_item)              ///< [in] <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
+    /**
+     * @param[out] head_flags
+     *   Calling thread's discontinuity head_flags
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[out] preds
+     *   Calling thread's predecessor items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
+     *
+     * @param[in] tile_predecessor_item
+     *   <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item
+     *   (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
+     */
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    __device__ __forceinline__ void FlagHeads(FlagT (&head_flags)[ITEMS_PER_THREAD],
+                                              T (&input)[ITEMS_PER_THREAD],
+                                              T (&preds)[ITEMS_PER_THREAD],
+                                              FlagOp flag_op,
+                                              T tile_predecessor_item)
     {
         // Share last item
         temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
@@ -326,11 +386,11 @@ public:
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
-
     /**
-     * \brief Sets head flags indicating discontinuities between items partitioned across the thread block, for which the first item has no reference and is always flagged.
+     * @brief Sets head flags indicating discontinuities between items partitioned across the thread
+     *        block, for which the first item has no reference and is always flagged.
      *
-     * \par
+     * @par
      * - The flag <tt>head_flags<sub><em>i</em></sub></tt> is set for item
      *   <tt>input<sub><em>i</em></sub></tt> when
      *   <tt>flag_op(</tt><em>previous-item</em><tt>, input<sub><em>i</em></sub>)</tt>
@@ -341,12 +401,12 @@ public:
      * - \granularity
      * - \smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates the head-flagging of 512 integer items that
      * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
      * where each thread owns 4 consecutive items.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
      *
      * __global__ void ExampleKernel(...)
@@ -365,35 +425,49 @@ public:
      *     int head_flags[4];
      *     BlockDiscontinuity(temp_storage).FlagHeads(head_flags, thread_data, cub::Inequality());
      *
-     * \endcode
-     * \par
+     * @endcode
+     * @par
      * Suppose the set of input \p thread_data across the block of threads is
      * <tt>{ [0,0,1,1], [1,1,1,1], [2,3,3,3], [3,4,4,4], ... }</tt>.
      * The corresponding output \p head_flags in those threads will be
      * <tt>{ [1,0,1,0], [0,0,0,0], [1,1,0,0], [0,1,0,0], ... }</tt>.
      *
-     * \tparam ITEMS_PER_THREAD     <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
-     * \tparam FlagT                <b>[inferred]</b> The flag type (must be an integer type)
-     * \tparam FlagOp               <b>[inferred]</b> Binary predicate functor type having member <tt>T operator()(const T &a, const T &b)</tt> or member <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning \p true if a discontinuity exists between \p a and \p b, otherwise \p false.  \p b_index is the rank of b in the aggregate tile of data.
+     * @tparam ITEMS_PER_THREAD
+     *   <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
+     *
+     * @tparam FlagT
+     *   <b>[inferred]</b> The flag type (must be an integer type)
+     *
+     * @tparam FlagOp
+     *   <b>[inferred]</b> Binary predicate functor type having member
+     *   <tt>T operator()(const T &a, const T &b)</tt> or member
+     *   <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning \p true
+     *   if a discontinuity exists between \p a and \p b, otherwise \p false.  \p b_index is the rank
+     *   of b in the aggregate tile of data.
+     *
+     * @param[out] head_flags 
+     *   Calling thread's discontinuity head_flags
+     *
+     * @param[in] input 
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op 
+     *   Binary boolean flag predicate
      */
-    template <
-        int             ITEMS_PER_THREAD,
-        typename        FlagT,
-        typename        FlagOp>
-    __device__ __forceinline__ void FlagHeads(
-        FlagT           (&head_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        FlagOp          flag_op)                            ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    __device__ __forceinline__ void FlagHeads(FlagT (&head_flags)[ITEMS_PER_THREAD],
+                                              T (&input)[ITEMS_PER_THREAD],
+                                              FlagOp flag_op)
     {
         T preds[ITEMS_PER_THREAD];
         FlagHeads(head_flags, input, preds, flag_op);
     }
 
-
     /**
-     * \brief Sets head flags indicating discontinuities between items partitioned across the thread block.
+     * @brief Sets head flags indicating discontinuities between items partitioned across the thread
+     *        block.
      *
-     * \par
+     * @par
      * - The flag <tt>head_flags<sub><em>i</em></sub></tt> is set for item
      *   <tt>input<sub><em>i</em></sub></tt> when
      *   <tt>flag_op(</tt><em>previous-item</em><tt>, input<sub><em>i</em></sub>)</tt>
@@ -405,12 +479,12 @@ public:
      * - \granularity
      * - \smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates the head-flagging of 512 integer items that
      * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
      * where each thread owns 4 consecutive items.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
      *
      * __global__ void ExampleKernel(...)
@@ -434,26 +508,44 @@ public:
      *     BlockDiscontinuity(temp_storage).FlagHeads(
      *         head_flags, thread_data, cub::Inequality(), tile_predecessor_item);
      *
-     * \endcode
-     * \par
+     * @endcode
+     * @par
      * Suppose the set of input \p thread_data across the block of threads is
      * <tt>{ [0,0,1,1], [1,1,1,1], [2,3,3,3], [3,4,4,4], ... }</tt>,
-     * and that \p tile_predecessor_item is \p 0.  The corresponding output \p head_flags in those threads will be
-     * <tt>{ [0,0,1,0], [0,0,0,0], [1,1,0,0], [0,1,0,0], ... }</tt>.
+     * and that \p tile_predecessor_item is \p 0.  The corresponding output \p head_flags in those
+     * threads will be <tt>{ [0,0,1,0], [0,0,0,0], [1,1,0,0], [0,1,0,0], ... }</tt>.
      *
-     * \tparam ITEMS_PER_THREAD     <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
-     * \tparam FlagT                <b>[inferred]</b> The flag type (must be an integer type)
-     * \tparam FlagOp               <b>[inferred]</b> Binary predicate functor type having member <tt>T operator()(const T &a, const T &b)</tt> or member <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning \p true if a discontinuity exists between \p a and \p b, otherwise \p false.  \p b_index is the rank of b in the aggregate tile of data.
+     * @tparam ITEMS_PER_THREAD
+     *   <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
+     *
+     * @tparam FlagT
+     *   <b>[inferred]</b> The flag type (must be an integer type)
+     *
+     * @tparam FlagOp
+     *   <b>[inferred]</b> Binary predicate functor type having member
+     *   <tt>T operator()(const T &a, const T &b)</tt> or member
+     *   <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>,
+     *   and returning \p true if a discontinuity exists between \p a and \p b,
+     *   otherwise \p false.  \p b_index is the rank of b in the aggregate tile of data.
+     *
+     * @param[out] head_flags
+     *   Calling thread's discontinuity head_flags
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
+     *
+     * @param[in] tile_predecessor_item
+     *   <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item
+     *   (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
      */
-    template <
-        int             ITEMS_PER_THREAD,
-        typename        FlagT,
-        typename        FlagOp>
-    __device__ __forceinline__ void FlagHeads(
-        FlagT           (&head_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        FlagOp          flag_op,                            ///< [in] Binary boolean flag predicate
-        T               tile_predecessor_item)              ///< [in] <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    __device__ __forceinline__ void FlagHeads(FlagT (&head_flags)[ITEMS_PER_THREAD],
+                                              T (&input)[ITEMS_PER_THREAD],
+                                              FlagOp flag_op,
+                                              T tile_predecessor_item)
     {
         T preds[ITEMS_PER_THREAD];
         FlagHeads(head_flags, input, preds, flag_op, tile_predecessor_item);
@@ -463,15 +555,15 @@ public:
 
     //@}  end member group
     /******************************************************************//**
-     * \name Tail flag operations
+     * @name Tail flag operations
      *********************************************************************/
     //@{
 
-
     /**
-     * \brief Sets tail flags indicating discontinuities between items partitioned across the thread block, for which the last item has no reference and is always flagged.
+     * @brief Sets tail flags indicating discontinuities between items partitioned across the thread
+     *        block, for which the last item has no reference and is always flagged.
      *
-     * \par
+     * @par
      * - The flag <tt>tail_flags<sub><em>i</em></sub></tt> is set for item
      *   <tt>input<sub><em>i</em></sub></tt> when
      *   <tt>flag_op(input<sub><em>i</em></sub>, </tt><em>next-item</em><tt>)</tt>
@@ -479,16 +571,16 @@ public:
      *   in the same thread or the first item in the next thread).
      * - For <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>, item
      *   <tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> is always flagged.
-     * - \blocked
-     * - \granularity
-     * - \smemreuse
+     * - @blocked
+     * - @granularity
+     * - @smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates the tail-flagging of 512 integer items that
      * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
      * where each thread owns 4 consecutive items.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
      *
      * __global__ void ExampleKernel(...)
@@ -507,25 +599,39 @@ public:
      *     int tail_flags[4];
      *     BlockDiscontinuity(temp_storage).FlagTails(tail_flags, thread_data, cub::Inequality());
      *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_data across the block of threads is
+     * @endcode
+     * @par
+     * Suppose the set of input @p thread_data across the block of threads is
      * <tt>{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }</tt>.
-     * The corresponding output \p tail_flags in those threads will be
+     * The corresponding output @p tail_flags in those threads will be
      * <tt>{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,1] }</tt>.
      *
-     * \tparam ITEMS_PER_THREAD     <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
-     * \tparam FlagT                <b>[inferred]</b> The flag type (must be an integer type)
-     * \tparam FlagOp               <b>[inferred]</b> Binary predicate functor type having member <tt>T operator()(const T &a, const T &b)</tt> or member <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning \p true if a discontinuity exists between \p a and \p b, otherwise \p false.  \p b_index is the rank of b in the aggregate tile of data.
+     * @tparam ITEMS_PER_THREAD
+     *   <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
+     *
+     * @tparam FlagT
+     *   <b>[inferred]</b> The flag type (must be an integer type)
+     *
+     * @tparam FlagOp
+     *   <b>[inferred]</b> Binary predicate functor type having member
+     *   <tt>T operator()(const T &a, const T &b)</tt> or member
+     *   <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning \p true
+     *   if a discontinuity exists between \p a and \p b, otherwise \p false.  \p b_index is the
+     *   rank of b in the aggregate tile of data.
+     *
+     * @param[out] tail_flags
+     *   Calling thread's discontinuity tail_flags
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
      */
-    template <
-        int             ITEMS_PER_THREAD,
-        typename        FlagT,
-        typename        FlagOp>
-    __device__ __forceinline__ void FlagTails(
-        FlagT           (&tail_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity tail_flags
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        FlagOp          flag_op)                            ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    __device__ __forceinline__ void FlagTails(FlagT (&tail_flags)[ITEMS_PER_THREAD],
+                                              T (&input)[ITEMS_PER_THREAD],
+                                              FlagOp flag_op)
     {
         // Share first item
         temp_storage.first_items[linear_tid] = input[0];
@@ -545,29 +651,29 @@ public:
         Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
     }
 
-
     /**
-     * \brief Sets tail flags indicating discontinuities between items partitioned across the thread block.
+     * @brief Sets tail flags indicating discontinuities between items partitioned across the thread
+     *        block.
      *
-     * \par
+     * @par
      * - The flag <tt>tail_flags<sub><em>i</em></sub></tt> is set for item
      *   <tt>input<sub><em>i</em></sub></tt> when
      *   <tt>flag_op(input<sub><em>i</em></sub>, </tt><em>next-item</em><tt>)</tt>
-     *   returns \p true (where <em>next-item</em> is either the next item
+     *   returns @p true (where <em>next-item</em> is either the next item
      *   in the same thread or the first item in the next thread).
      * - For <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>, item
      *   <tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> is compared
-     *   against \p tile_successor_item.
+     *   against @p tile_successor_item.
      * - \blocked
      * - \granularity
      * - \smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates the tail-flagging of 512 integer items that
      * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
      * where each thread owns 4 consecutive items.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
      *
      * __global__ void ExampleKernel(...)
@@ -591,26 +697,45 @@ public:
      *     BlockDiscontinuity(temp_storage).FlagTails(
      *         tail_flags, thread_data, cub::Inequality(), tile_successor_item);
      *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_data across the block of threads is
+     * @endcode
+     * @par
+     * Suppose the set of input @p thread_data across the block of threads is
      * <tt>{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }</tt>
-     * and that \p tile_successor_item is \p 125.  The corresponding output \p tail_flags in those threads will be
-     * <tt>{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,0] }</tt>.
+     * and that @p tile_successor_item is @p 125.  The corresponding output @p tail_flags in those
+     * threads will be <tt>{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,0] }</tt>.
      *
-     * \tparam ITEMS_PER_THREAD     <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
-     * \tparam FlagT                <b>[inferred]</b> The flag type (must be an integer type)
-     * \tparam FlagOp               <b>[inferred]</b> Binary predicate functor type having member <tt>T operator()(const T &a, const T &b)</tt> or member <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning \p true if a discontinuity exists between \p a and \p b, otherwise \p false.  \p b_index is the rank of b in the aggregate tile of data.
+     * @tparam ITEMS_PER_THREAD
+     *   <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
+     *
+     * @tparam FlagT
+     *   <b>[inferred]</b> The flag type (must be an integer type)
+     *
+     * @tparam FlagOp
+     *   <b>[inferred]</b> Binary predicate functor type having member
+     *   <tt>T operator()(const T &a, const T &b)</tt> or member
+     *   <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning @p true
+     *   if a discontinuity exists between @p a and @p b, otherwise @p false.  @p b_index is the
+     *   rank of b in the aggregate tile of data.
+     *
+     * @param[out] tail_flags
+     *   Calling thread's discontinuity tail_flags
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
+     *
+     * @param[in] tile_successor_item
+     *   <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> Item with which to
+     *   compare the last tile item (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from
+     *   <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
      */
-    template <
-        int             ITEMS_PER_THREAD,
-        typename        FlagT,
-        typename        FlagOp>
-    __device__ __forceinline__ void FlagTails(
-        FlagT           (&tail_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity tail_flags
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        FlagOp          flag_op,                            ///< [in] Binary boolean flag predicate
-        T               tile_successor_item)                ///< [in] <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> Item with which to compare the last tile item (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    __device__ __forceinline__ void FlagTails(FlagT (&tail_flags)[ITEMS_PER_THREAD],
+                                              T (&input)[ITEMS_PER_THREAD],
+                                              FlagOp flag_op,
+                                              T tile_successor_item)
     {
         // Share first item
         temp_storage.first_items[linear_tid] = input[0];
@@ -635,25 +760,25 @@ public:
 
     //@}  end member group
     /******************************************************************//**
-     * \name Head & tail flag operations
+     * @name Head & tail flag operations
      *********************************************************************/
     //@{
 
-
     /**
-     * \brief Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.
+     * @brief Sets both head and tail flags indicating discontinuities between items partitioned
+     *        across the thread block.
      *
-     * \par
+     * @par
      * - The flag <tt>head_flags<sub><em>i</em></sub></tt> is set for item
      *   <tt>input<sub><em>i</em></sub></tt> when
      *   <tt>flag_op(</tt><em>previous-item</em><tt>, input<sub><em>i</em></sub>)</tt>
-     *   returns \p true (where <em>previous-item</em> is either the preceding item
+     *   returns @p true (where <em>previous-item</em> is either the preceding item
      *   in the same thread or the last item in the previous thread).
      * - For <em>thread</em><sub>0</sub>, item <tt>input<sub>0</sub></tt> is always flagged.
      * - The flag <tt>tail_flags<sub><em>i</em></sub></tt> is set for item
      *   <tt>input<sub><em>i</em></sub></tt> when
      *   <tt>flag_op(input<sub><em>i</em></sub>, </tt><em>next-item</em><tt>)</tt>
-     *   returns \p true (where <em>next-item</em> is either the next item
+     *   returns @p true (where <em>next-item</em> is either the next item
      *   in the same thread or the first item in the next thread).
      * - For <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>, item
      *   <tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> is always flagged.
@@ -661,12 +786,12 @@ public:
      * - \granularity
      * - \smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates the head- and tail-flagging of 512 integer items that
      * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
      * where each thread owns 4 consecutive items.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
      *
      * __global__ void ExampleKernel(...)
@@ -687,28 +812,45 @@ public:
      *     BlockDiscontinuity(temp_storage).FlagTails(
      *         head_flags, tail_flags, thread_data, cub::Inequality());
      *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_data across the block of threads is
+     * @endcode
+     * @par
+     * Suppose the set of input @p thread_data across the block of threads is
      * <tt>{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }</tt>
-     * and that the tile_successor_item is \p 125.  The corresponding output \p head_flags
+     * and that the tile_successor_item is @p 125.  The corresponding output @p head_flags
      * in those threads will be <tt>{ [1,0,1,0], [0,0,0,0], [1,1,0,0], [0,1,0,0], ... }</tt>.
-     * and the corresponding output \p tail_flags in those threads will be
+     * and the corresponding output @p tail_flags in those threads will be
      * <tt>{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,1] }</tt>.
      *
-     * \tparam ITEMS_PER_THREAD     <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
-     * \tparam FlagT                <b>[inferred]</b> The flag type (must be an integer type)
-     * \tparam FlagOp               <b>[inferred]</b> Binary predicate functor type having member <tt>T operator()(const T &a, const T &b)</tt> or member <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning \p true if a discontinuity exists between \p a and \p b, otherwise \p false.  \p b_index is the rank of b in the aggregate tile of data.
+     * @tparam ITEMS_PER_THREAD
+     *   <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
+     *
+     * @tparam FlagT
+     *   <b>[inferred]</b> The flag type (must be an integer type)
+     *
+     * @tparam FlagOp
+     *   <b>[inferred]</b> Binary predicate functor type having member
+     *   <tt>T operator()(const T &a, const T &b)</tt> or member
+     *   <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning \p true
+     *   if a discontinuity exists between \p a and \p b, otherwise \p false.  \p b_index is the
+     *   rank of b in the aggregate tile of data.
+     *
+     * @param[out] head_flags
+     *   Calling thread's discontinuity head_flags
+     *
+     * @param[out] tail_flags
+     *   Calling thread's discontinuity tail_flags
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
      */
-    template <
-        int             ITEMS_PER_THREAD,
-        typename        FlagT,
-        typename        FlagOp>
-    __device__ __forceinline__ void FlagHeadsAndTails(
-        FlagT           (&head_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        FlagT           (&tail_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity tail_flags
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        FlagOp          flag_op)                            ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    __device__ __forceinline__ void FlagHeadsAndTails(FlagT (&head_flags)[ITEMS_PER_THREAD],
+                                                      FlagT (&tail_flags)[ITEMS_PER_THREAD],
+                                                      T (&input)[ITEMS_PER_THREAD],
+                                                      FlagOp flag_op)
     {
         // Share first and last items
         temp_storage.first_items[linear_tid] = input[0];
@@ -750,35 +892,35 @@ public:
         Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
     }
 
-
     /**
-     * \brief Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.
+     * @brief Sets both head and tail flags indicating discontinuities between items partitioned
+     *        across the thread block.
      *
-     * \par
+     * @par
      * - The flag <tt>head_flags<sub><em>i</em></sub></tt> is set for item
      *   <tt>input<sub><em>i</em></sub></tt> when
      *   <tt>flag_op(</tt><em>previous-item</em><tt>, input<sub><em>i</em></sub>)</tt>
-     *   returns \p true (where <em>previous-item</em> is either the preceding item
+     *   returns @p true (where <em>previous-item</em> is either the preceding item
      *   in the same thread or the last item in the previous thread).
      * - For <em>thread</em><sub>0</sub>, item <tt>input<sub>0</sub></tt> is always flagged.
      * - The flag <tt>tail_flags<sub><em>i</em></sub></tt> is set for item
      *   <tt>input<sub><em>i</em></sub></tt> when
      *   <tt>flag_op(input<sub><em>i</em></sub>, </tt><em>next-item</em><tt>)</tt>
-     *   returns \p true (where <em>next-item</em> is either the next item
+     *   returns @p true (where <em>next-item</em> is either the next item
      *   in the same thread or the first item in the next thread).
      * - For <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>, item
      *   <tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> is compared
-     *   against \p tile_predecessor_item.
+     *   against @p tile_predecessor_item.
      * - \blocked
      * - \granularity
      * - \smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates the head- and tail-flagging of 512 integer items that
      * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
      * where each thread owns 4 consecutive items.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
      *
      * __global__ void ExampleKernel(...)
@@ -803,29 +945,51 @@ public:
      *     BlockDiscontinuity(temp_storage).FlagTails(
      *         head_flags, tail_flags, tile_successor_item, thread_data, cub::Inequality());
      *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_data across the block of threads is
+     * @endcode
+     * @par
+     * Suppose the set of input @p thread_data across the block of threads is
      * <tt>{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }</tt>
-     * and that the tile_successor_item is \p 125.  The corresponding output \p head_flags
+     * and that the tile_successor_item is @p 125.  The corresponding output @p head_flags
      * in those threads will be <tt>{ [1,0,1,0], [0,0,0,0], [1,1,0,0], [0,1,0,0], ... }</tt>.
-     * and the corresponding output \p tail_flags in those threads will be
+     * and the corresponding output @p tail_flags in those threads will be
      * <tt>{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,0] }</tt>.
      *
-     * \tparam ITEMS_PER_THREAD     <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
-     * \tparam FlagT                <b>[inferred]</b> The flag type (must be an integer type)
-     * \tparam FlagOp               <b>[inferred]</b> Binary predicate functor type having member <tt>T operator()(const T &a, const T &b)</tt> or member <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning \p true if a discontinuity exists between \p a and \p b, otherwise \p false.  \p b_index is the rank of b in the aggregate tile of data.
+     * @tparam ITEMS_PER_THREAD
+     *   <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
+     *
+     * @tparam FlagT
+     *   <b>[inferred]</b> The flag type (must be an integer type)
+     *
+     * @tparam FlagOp
+     *   <b>[inferred]</b> Binary predicate functor type having member
+     *   <tt>T operator()(const T &a, const T &b)</tt> or member
+     *   <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning @p true
+     *   if a discontinuity exists between @p a and @p b, otherwise @p false.  @p b_index is the
+     *   rank of b in the aggregate tile of data.
+     *
+     * @param[out] head_flags
+     *   Calling thread's discontinuity head_flags
+     *
+     * @param[out] tail_flags
+     *   Calling thread's discontinuity tail_flags
+     *
+     * @param[in] tile_successor_item
+     *   <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> Item with which to compare
+     *   the last tile item (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from
+     *   <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
      */
-    template <
-        int             ITEMS_PER_THREAD,
-        typename        FlagT,
-        typename        FlagOp>
-    __device__ __forceinline__ void FlagHeadsAndTails(
-        FlagT           (&head_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        FlagT           (&tail_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity tail_flags
-        T               tile_successor_item,                ///< [in] <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> Item with which to compare the last tile item (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        FlagOp          flag_op)                            ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    __device__ __forceinline__ void FlagHeadsAndTails(FlagT (&head_flags)[ITEMS_PER_THREAD],
+                                                      FlagT (&tail_flags)[ITEMS_PER_THREAD],
+                                                      T tile_successor_item,
+                                                      T (&input)[ITEMS_PER_THREAD],
+                                                      FlagOp flag_op)
     {
         // Share first and last items
         temp_storage.first_items[linear_tid] = input[0];
@@ -868,22 +1032,22 @@ public:
         Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
     }
 
-
     /**
-     * \brief Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.
+     * @brief Sets both head and tail flags indicating discontinuities between items partitioned
+     *        across the thread block.
      *
-     * \par
+     * @par
      * - The flag <tt>head_flags<sub><em>i</em></sub></tt> is set for item
      *   <tt>input<sub><em>i</em></sub></tt> when
      *   <tt>flag_op(</tt><em>previous-item</em><tt>, input<sub><em>i</em></sub>)</tt>
-     *   returns \p true (where <em>previous-item</em> is either the preceding item
+     *   returns @p true (where <em>previous-item</em> is either the preceding item
      *   in the same thread or the last item in the previous thread).
      * - For <em>thread</em><sub>0</sub>, item <tt>input<sub>0</sub></tt> is compared
-     *   against \p tile_predecessor_item.
+     *   against @p tile_predecessor_item.
      * - The flag <tt>tail_flags<sub><em>i</em></sub></tt> is set for item
      *   <tt>input<sub><em>i</em></sub></tt> when
      *   <tt>flag_op(input<sub><em>i</em></sub>, </tt><em>next-item</em><tt>)</tt>
-     *   returns \p true (where <em>next-item</em> is either the next item
+     *   returns @p true (where <em>next-item</em> is either the next item
      *   in the same thread or the first item in the next thread).
      * - For <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>, item
      *   <tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> is always flagged.
@@ -891,12 +1055,12 @@ public:
      * - \granularity
      * - \smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates the head- and tail-flagging of 512 integer items that
      * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
      * where each thread owns 4 consecutive items.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
      *
      * __global__ void ExampleKernel(...)
@@ -926,30 +1090,51 @@ public:
      *         head_flags, tile_predecessor_item, tail_flags, tile_successor_item,
      *         thread_data, cub::Inequality());
      *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_data across the block of threads is
+     * @endcode
+     * @par
+     * Suppose the set of input @p thread_data across the block of threads is
      * <tt>{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }</tt>,
-     * that the \p tile_predecessor_item is \p 0, and that the
-     * \p tile_successor_item is \p 125.  The corresponding output \p head_flags
+     * that the @p tile_predecessor_item is @p 0, and that the
+     * @p tile_successor_item is @p 125.  The corresponding output @p head_flags
      * in those threads will be <tt>{ [0,0,1,0], [0,0,0,0], [1,1,0,0], [0,1,0,0], ... }</tt>.
-     * and the corresponding output \p tail_flags in those threads will be
+     * and the corresponding output @p tail_flags in those threads will be
      * <tt>{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,1] }</tt>.
      *
-     * \tparam ITEMS_PER_THREAD     <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
-     * \tparam FlagT                <b>[inferred]</b> The flag type (must be an integer type)
-     * \tparam FlagOp               <b>[inferred]</b> Binary predicate functor type having member <tt>T operator()(const T &a, const T &b)</tt> or member <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning \p true if a discontinuity exists between \p a and \p b, otherwise \p false.  \p b_index is the rank of b in the aggregate tile of data.
+     * @tparam ITEMS_PER_THREAD
+     *   <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
+     *
+     * @tparam FlagT
+     *   <b>[inferred]</b> The flag type (must be an integer type)
+     *
+     * @tparam FlagOp
+     *   <b>[inferred]</b> Binary predicate functor type having member
+     *   <tt>T operator()(const T &a, const T &b)</tt> or member
+     *   <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning @p true
+     *   if a discontinuity exists between @p a and @p b, otherwise @p false. @p b_index is the rank
+     *   of b in the aggregate tile of data.
+     *
+     * @param[out] head_flags
+     *   Calling thread's discontinuity head_flags
+     *
+     * @param[in] tile_predecessor_item
+     *   <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item
+     *   (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
+     *
+     * @param[out] tail_flags
+     *   Calling thread's discontinuity tail_flags
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
      */
-    template <
-        int             ITEMS_PER_THREAD,
-        typename        FlagT,
-        typename        FlagOp>
-    __device__ __forceinline__ void FlagHeadsAndTails(
-        FlagT           (&head_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        T               tile_predecessor_item,              ///< [in] <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
-        FlagT           (&tail_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity tail_flags
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        FlagOp          flag_op)                            ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    __device__ __forceinline__ void FlagHeadsAndTails(FlagT (&head_flags)[ITEMS_PER_THREAD],
+                                                      T tile_predecessor_item,
+                                                      FlagT (&tail_flags)[ITEMS_PER_THREAD],
+                                                      T (&input)[ITEMS_PER_THREAD],
+                                                      FlagOp flag_op)
     {
         // Share first and last items
         temp_storage.first_items[linear_tid] = input[0];
@@ -986,36 +1171,36 @@ public:
         Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
     }
 
-
     /**
-     * \brief Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.
+     * @brief Sets both head and tail flags indicating discontinuities between items partitioned
+     *        across the thread block.
      *
-     * \par
+     * @par
      * - The flag <tt>head_flags<sub><em>i</em></sub></tt> is set for item
      *   <tt>input<sub><em>i</em></sub></tt> when
      *   <tt>flag_op(</tt><em>previous-item</em><tt>, input<sub><em>i</em></sub>)</tt>
-     *   returns \p true (where <em>previous-item</em> is either the preceding item
+     *   returns @p true (where <em>previous-item</em> is either the preceding item
      *   in the same thread or the last item in the previous thread).
      * - For <em>thread</em><sub>0</sub>, item <tt>input<sub>0</sub></tt> is compared
-     *   against \p tile_predecessor_item.
+     *   against @p tile_predecessor_item.
      * - The flag <tt>tail_flags<sub><em>i</em></sub></tt> is set for item
      *   <tt>input<sub><em>i</em></sub></tt> when
      *   <tt>flag_op(input<sub><em>i</em></sub>, </tt><em>next-item</em><tt>)</tt>
-     *   returns \p true (where <em>next-item</em> is either the next item
+     *   returns @p true (where <em>next-item</em> is either the next item
      *   in the same thread or the first item in the next thread).
      * - For <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>, item
      *   <tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> is compared
-     *   against \p tile_successor_item.
-     * - \blocked
-     * - \granularity
-     * - \smemreuse
+     *   against @p tile_successor_item.
+     * - @blocked
+     * - @granularity
+     * - @smemreuse
      *
-     * \par Snippet
+     * @par Snippet
      * The code snippet below illustrates the head- and tail-flagging of 512 integer items that
      * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
      * where each thread owns 4 consecutive items.
-     * \par
-     * \code
+     * @par
+     * @code
      * #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
      *
      * __global__ void ExampleKernel(...)
@@ -1045,31 +1230,57 @@ public:
      *         head_flags, tile_predecessor_item, tail_flags, tile_successor_item,
      *         thread_data, cub::Inequality());
      *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_data across the block of threads is
+     * @endcode
+     * @par
+     * Suppose the set of input @p thread_data across the block of threads is
      * <tt>{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }</tt>,
-     * that the \p tile_predecessor_item is \p 0, and that the
-     * \p tile_successor_item is \p 125.  The corresponding output \p head_flags
+     * that the @p tile_predecessor_item is @p 0, and that the
+     * @p tile_successor_item is @p 125.  The corresponding output @p head_flags
      * in those threads will be <tt>{ [0,0,1,0], [0,0,0,0], [1,1,0,0], [0,1,0,0], ... }</tt>.
-     * and the corresponding output \p tail_flags in those threads will be
+     * and the corresponding output @p tail_flags in those threads will be
      * <tt>{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,0] }</tt>.
      *
-     * \tparam ITEMS_PER_THREAD     <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
-     * \tparam FlagT                <b>[inferred]</b> The flag type (must be an integer type)
-     * \tparam FlagOp               <b>[inferred]</b> Binary predicate functor type having member <tt>T operator()(const T &a, const T &b)</tt> or member <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning \p true if a discontinuity exists between \p a and \p b, otherwise \p false.  \p b_index is the rank of b in the aggregate tile of data.
+     * @tparam ITEMS_PER_THREAD
+     *   <b>[inferred]</b> The number of consecutive items partitioned onto each thread.
+     *
+     * @tparam FlagT
+     *   <b>[inferred]</b> The flag type (must be an integer type)
+     *
+     * @tparam FlagOp
+     *   <b>[inferred]</b> Binary predicate functor type having member
+     *   <tt>T operator()(const T &a, const T &b)</tt> or member
+     *   <tt>T operator()(const T &a, const T &b, unsigned int b_index)</tt>, and returning @p true
+     *   if a discontinuity exists between @p a and @p b, otherwise @p false. @p b_index is the rank
+     *   of b in the aggregate tile of data.
+     *
+     * @param[out] head_flags
+     *   Calling thread's discontinuity head_flags
+     *
+     * @param[in] tile_predecessor_item
+     *   <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item
+     *   (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
+     *
+     * @param[out] tail_flags
+     *   Calling thread's discontinuity tail_flags
+     *
+     * @param[in] tile_successor_item
+     *   <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> Item with which to compare
+     *   the last tile item (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from
+     *   <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
+     *
+     * @param[in] input
+     *   Calling thread's input items
+     *
+     * @param[in] flag_op
+     *   Binary boolean flag predicate
      */
-    template <
-        int             ITEMS_PER_THREAD,
-        typename        FlagT,
-        typename        FlagOp>
-    __device__ __forceinline__ void FlagHeadsAndTails(
-        FlagT           (&head_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity head_flags
-        T               tile_predecessor_item,              ///< [in] <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
-        FlagT           (&tail_flags)[ITEMS_PER_THREAD],    ///< [out] Calling thread's discontinuity tail_flags
-        T               tile_successor_item,                ///< [in] <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> Item with which to compare the last tile item (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
-        T               (&input)[ITEMS_PER_THREAD],         ///< [in] Calling thread's input items
-        FlagOp          flag_op)                            ///< [in] Binary boolean flag predicate
+    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    __device__ __forceinline__ void FlagHeadsAndTails(FlagT (&head_flags)[ITEMS_PER_THREAD],
+                                                      T tile_predecessor_item,
+                                                      FlagT (&tail_flags)[ITEMS_PER_THREAD],
+                                                      T tile_successor_item,
+                                                      T (&input)[ITEMS_PER_THREAD],
+                                                      FlagOp flag_op)
     {
         // Share first and last items
         temp_storage.first_items[linear_tid] = input[0];

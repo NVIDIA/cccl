@@ -26,13 +26,11 @@ int main(int, char**)
     cuda::std::chrono::minutes m2 = -m;
     assert(m2.count() == -m.count());
     }
-#if TEST_STD_VER >= 11
     {
     constexpr cuda::std::chrono::minutes m(3);
     constexpr cuda::std::chrono::minutes m2 = -m;
     static_assert(m2.count() == -m.count(), "");
     }
-#endif
 
 // P0548
     {

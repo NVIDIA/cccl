@@ -35,27 +35,44 @@ env:
  # PVT = Project V2, PVTSSF = Project V2 Single Select Field, PVTIF = Project V2 Iteration Field
  PROJECT_ID: "PVT_kwDOABpemM4AEhOI"
  STATUS_FIELD_ID: "PVTSSF_lADOABpemM4AEhOIzgCmnYc"
- IN_PROGRESS_PROJECT_OPTION_ID: "47fc9ee4"
  WORKING_SPRINT_FIELD_ID: "PVTIF_lADOABpemM4AEhOIzgJlRho"
  START_SPRINT_FIELD_ID: "PVTIF_lADOABpemM4AEhOIzgJlRhU"
+ IN_PROGRESS_PROJECT_OPTION_ID: "47fc9ee4"
+ IN_REVIEW_PROJECT_OPTION_ID: "c6b49c6b"
 
 jobs:
   query_and_mutate_project_fields:
     runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+      pull-requests: write
     
     steps:
       - name: Check if changes requested from a reviewer
         id: check_changes_requested
+        if: github.event_name == 'pull_request_review'
         run: |
-          if [ ${{ github.event_name }} == 'pull_request_review' ]; then
-            if [ ${{ github.event.review.state }} != 'changes_requested' ]; then
-              echo "Changes not requested, exiting"
-              exit 0
-            fi
+          if [ ${{ github.event.review.state }} != 'changes_requested' ]; then
+            echo "Changes not requested, exiting"
+            exit 0
+          
+          # If it is requesting changes, set PR to draft
+          # We use the default token here since we're granting write access to the PR
+          elif [ ${{ github.event.pull_request.draft }} == false ]; then
+            gh api graphql -f query='
+              mutation {
+                convertPullRequestToDraft(input: {pullRequestId: "${{ env.PR_GLOBAL_ID }}"}) {
+                  clientMutationId
+                }
+              }'
+            exit 0
           fi
+        continue-on-error: true
 
       - name: Generate token
         id: generate_token
+        if: github.event_name == 'pull_request_target'
         uses: tibdex/github-app-token@v1.8.0
         with:
           app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
@@ -63,10 +80,28 @@ jobs:
 
       - name: Wait 1 Second
         id: sleep
-        run: sleep 1
-        
+        if: github.event_name == 'pull_request_target'
+        run: sleep 1  # We sleep here to ensure the pr is added to the project before we query for it
+
+      - name: Select Status Field Value
+        id: select_status_field_value
+        if: github.event_name == 'pull_request_target'
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          # If it's not a draft and it's an opened trigger, the status should be "Ready for Review", otherwise "In Progress"
+          if [ ${{ github.event.pull_request.draft }} == false ] && [ ${{ github.event.action }} == "opened" ]; then
+            echo "PR is not a draft, setting status to 'In Review'"
+            echo "STATUS_OPTION_ID=$IN_REVIEW_PROJECT_OPTION_ID" >> $GITHUB_ENV
+          else
+            echo "PR is a draft, setting status to 'In Progress'"
+            echo "STATUS_OPTION_ID=$IN_PROGRESS_PROJECT_OPTION_ID" >> $GITHUB_ENV
+          fi
+        continue-on-error: true
+
       - name: Get PR Project ID
         id: get_pr_id
+        if: github.event_name == 'pull_request_target'
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
@@ -104,6 +139,7 @@ jobs:
             
       - name: Set PR Fields
         id: set_pr_fields
+        if: github.event_name == 'pull_request_target'
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
@@ -115,7 +151,7 @@ jobs:
                             itemId: "${{ env.PR_ID }}"
                             fieldId: "${{ env.STATUS_FIELD_ID }}"
                         value: {
-                            singleSelectOptionId: "${{ env.IN_PROGRESS_PROJECT_OPTION_ID }}"
+                            singleSelectOptionId: "${{ env.STATUS_OPTION_ID }}"
                                 }
                             }
                         ) {
@@ -233,6 +269,7 @@ jobs:
                   
       - name: Sync Linked Issues
         id: sync_linked_issues
+        if: github.event_name == 'pull_request_target'
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
@@ -284,7 +321,7 @@ jobs:
                         itemId: \"$issue_id\"
                         fieldId: \"$STATUS_FIELD_ID\"
                     value: {
-                        singleSelectOptionId: \"$IN_PROGRESS_PROJECT_OPTION_ID\"
+                        singleSelectOptionId: \"$STATUS_OPTION_ID\"
                         }
                     }
                     ) {
@@ -333,20 +370,4 @@ jobs:
                     gh api graphql --field query="$QUERY"
                 fi
             done
-        continue-on-error: true
-
-      - name: set PR to draft
-        id: set_pr_draft
-        # only run if PR is not a draft
-        if: ${{ github.event.pull_request.draft }} == false
-        env:
-            GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-        run: |
-            # Set the PR to draft using the graphQL API
-            gh api graphql -f query='
-              mutation {
-                convertPullRequestToDraft(input: {pullRequestId: "${{ env.PR_GLOBAL_ID }}"}) {
-                  clientMutationId
-                }
-              }'
         continue-on-error: true

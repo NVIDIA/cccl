@@ -14,28 +14,30 @@
 #include <__config>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, _Tp __v>
 struct _LIBCUDACXX_TEMPLATE_VIS integral_constant
 {
-  static _LIBCUDACXX_CONSTEXPR const _Tp      value = __v;
+  static constexpr const _Tp      value = __v;
   typedef _Tp               value_type;
   typedef integral_constant type;
   _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_CONSTEXPR operator value_type() const _NOEXCEPT {return value;}
+  constexpr operator value_type() const noexcept {return value;}
 #if _LIBCUDACXX_STD_VER > 11
   _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr value_type operator ()() const _NOEXCEPT {return value;}
+  constexpr value_type operator ()() const noexcept {return value;}
 #endif
 };
 
 template <class _Tp, _Tp __v>
-_LIBCUDACXX_CONSTEXPR const _Tp integral_constant<_Tp, __v>::value;
+constexpr const _Tp integral_constant<_Tp, __v>::value;
 
 typedef integral_constant<bool, true>  true_type;
 typedef integral_constant<bool, false> false_type;

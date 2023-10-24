@@ -110,9 +110,11 @@ public:
 #include <__mutex_base>
 #include <memory>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #ifndef _LIBCUDACXX_HAS_NO_THREADS
 
@@ -127,9 +129,9 @@ public:
     condition_variable_any();
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    void notify_one() _NOEXCEPT;
+    void notify_one() noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
-    void notify_all() _NOEXCEPT;
+    void notify_all() noexcept;
 
     template <class _Lock>
         _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
@@ -171,7 +173,7 @@ condition_variable_any::condition_variable_any()
 
 inline
 void
-condition_variable_any::notify_one() _NOEXCEPT
+condition_variable_any::notify_one() noexcept
 {
     {lock_guard<mutex> __lx(*__mut_);}
     __cv_.notify_one();
@@ -179,7 +181,7 @@ condition_variable_any::notify_one() _NOEXCEPT
 
 inline
 void
-condition_variable_any::notify_all() _NOEXCEPT
+condition_variable_any::notify_all() noexcept
 {
     {lock_guard<mutex> __lx(*__mut_);}
     __cv_.notify_all();

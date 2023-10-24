@@ -27,17 +27,23 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/system/cuda/detail/core/alignment.h>
 #include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
-#include <cassert>
 
+#include <cassert>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub {
 namespace launcher {
 
-  struct triple_chevron
+  struct _CCCL_ATTRIBUTE_HIDDEN triple_chevron
   {
     typedef size_t Size;
     dim3 const grid;
@@ -125,7 +131,7 @@ namespace launcher {
                               shared_mem,
                               stream);
     }
-    #else 
+    #else
     template<class K, class... Args>
     cudaError_t __device__
     doit_device(K, Args const&... ) const

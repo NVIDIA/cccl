@@ -7,8 +7,6 @@
 #include "test_macros.h"
 #include "test_workarounds.h"
 
-#if TEST_STD_VER >= 11
-
 namespace ArchetypeBases {
 
 template <bool, class T>
@@ -377,7 +375,5 @@ __host__ __device__ constexpr bool operator!=(Tp const& L, Tp const& R) noexcept
 }
 
 } // end namespace ExplicitTrivialTestTypes
-
-#endif // TEST_STD_VER >= 11
 
 #endif // TEST_SUPPORT_ARCHETYPES_H

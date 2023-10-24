@@ -66,8 +66,6 @@ struct A
     A(const A&);
 };
 
-#if TEST_STD_VER >= 11
-
 struct MoveOnly1
 {
     __host__ __device__
@@ -78,8 +76,6 @@ struct MoveOnly2
 {
     MoveOnly2(MoveOnly2&&) = default;
 };
-
-#endif
 
 int main(int, char**)
 {
@@ -96,10 +92,8 @@ int main(int, char**)
     test_is_trivially_move_constructible<const int*>();
     test_is_trivially_move_constructible<bit_zero>();
 
-#if TEST_STD_VER >= 11
     static_assert(!cuda::std::is_trivially_move_constructible<MoveOnly1>::value, "");
     static_assert( cuda::std::is_trivially_move_constructible<MoveOnly2>::value, "");
-#endif
 
   return 0;
 }

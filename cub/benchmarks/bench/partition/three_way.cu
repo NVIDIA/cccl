@@ -113,11 +113,8 @@ void partition(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   select_op_t select_op_1{left_border};
   select_op_t select_op_2{right_border};
 
-  thrust::device_vector<T> in(elements);
+  thrust::device_vector<T> in = generate(elements, entropy, min_val, max_val);
   thrust::device_vector<offset_t> num_selected(1);
-
-  gen(seed_t{}, in, entropy, min_val, max_val);
-
   thrust::device_vector<T> out_1(elements);
   thrust::device_vector<T> out_2(elements);
   thrust::device_vector<T> out_3(elements);

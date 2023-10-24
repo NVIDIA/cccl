@@ -94,33 +94,31 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 #include <__pragma_push>
 #endif //__cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
+#if defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
+#  define _LIBCUDACXX_UNREACHABLE() __builtin_unreachable()
+#elif defined(__CUDA_ARCH__)
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_2)
-#ifdef __CUDA_ARCH__
 #  define _LIBCUDACXX_UNREACHABLE() __trap()
-#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
-#  define _LIBCUDACXX_UNREACHABLE() __builtin_unreachable()
-#endif // !__CUDA_ARCH__
 #elif defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
-#ifdef __CUDA_ARCH__
 #  define _LIBCUDACXX_UNREACHABLE() __builtin_assume(false)
-#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
+#else
 #  define _LIBCUDACXX_UNREACHABLE() __builtin_unreachable()
-#endif // !__CUDA_ARCH__
-#elif defined(_LIBCUDACXX_COMPILER_MSVC)
+#endif // CUDACC above 11.4
+#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
 #  define _LIBCUDACXX_UNREACHABLE() __assume(false)
 #elif defined(_LIBCUDACXX_COMPILER_GCC) || __has_builtin(__builtin_unreachable)
 #  define _LIBCUDACXX_UNREACHABLE() __builtin_unreachable()
 #else // Other compilers
-#ifdef __CUDA_ARCH__
-#  define _LIBCUDACXX_UNREACHABLE() __trap()
-#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
 #  define _LIBCUDACXX_UNREACHABLE() ::abort()
-#endif // !__CUDA_ARCH__
 #endif // Other compilers
+#endif // !__CUDA_ARCH__
 
 #ifdef _LIBCUDACXX_COMPILER_NVHPC
 #define _LIBCUDACXX_UNREACHABLE_AFTER_SWITCH()
@@ -185,7 +183,7 @@ using ::mbtowc;
 using ::wctomb;
 using ::mbstowcs;
 using ::wcstombs;
-#if !defined(_LIBCUDACXX_CXX03_LANG) && defined(_LIBCUDACXX_HAS_QUICK_EXIT)
+#if defined(_LIBCUDACXX_HAS_QUICK_EXIT)
 using ::at_quick_exit;
 using ::quick_exit;
 #endif

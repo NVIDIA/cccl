@@ -19,9 +19,7 @@
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
-#if TEST_STD_VER >= 11
 #include "archetypes.h"
-#endif
 
 int main(int, char**)
 {
@@ -34,7 +32,6 @@ int main(int, char**)
         assert(p2.first == 3);
         assert(p2.second == 4);
     }
-#if TEST_STD_VER >= 11
     {
        using C = TestTypes::TestType;
        using P = cuda::std::pair<int, C>;
@@ -50,7 +47,6 @@ int main(int, char**)
        assert(p.first == 42);
        assert(p.second.value == -42);
     }
-#endif
 
   return 0;
 }

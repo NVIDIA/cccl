@@ -18,9 +18,11 @@
 #include "../cstddef"
 #include "../initializer_list"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -29,14 +31,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Cont> constexpr
 _LIBCUDACXX_INLINE_VISIBILITY
 auto data(_Cont& __c)
-_NOEXCEPT_(noexcept(__c.data()))
+noexcept(noexcept(__c.data()))
 -> decltype        (__c.data())
 { return            __c.data(); }
 
 template <class _Cont> constexpr
 _LIBCUDACXX_INLINE_VISIBILITY
 auto data(const _Cont& __c)
-_NOEXCEPT_(noexcept(__c.data()))
+noexcept(noexcept(__c.data()))
 -> decltype        (__c.data())
 { return            __c.data(); }
 

@@ -60,7 +60,7 @@ inline namespace fundamentals_v1 {
      using is_detected_convertible = is_convertible<detected_t<Op, Args...>, To>;
   template <class To, template<class...> class Op, class... Args>
      constexpr bool is_detected_convertible_v
-       = is_detected_convertible<To, Op, Args...>::value;  
+       = is_detected_convertible<To, Op, Args...>::value;
 
 } // namespace fundamentals_v1
 } // namespace experimental
@@ -75,9 +75,11 @@ inline namespace fundamentals_v1 {
 #include <initializer_list>
 #include <type_traits>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_LFTS
 
@@ -122,14 +124,14 @@ struct _DETECTOR<_Default, void_t<_Op<_Args...>>, _Op, _Args...> {
    using value_t = true_type;
    using type = _Op<_Args...>;
    };
-     
+
 
 template <template<class...> class _Op, class... _Args>
   using is_detected = typename _DETECTOR<nonesuch, void, _Op, _Args...>::value_t;
 template <template<class...> class _Op, class... _Args>
   using detected_t = typename _DETECTOR<nonesuch, void, _Op, _Args...>::type;
 template <template<class...> class _Op, class... _Args>
-  _LIBCUDACXX_CONSTEXPR bool is_detected_v = is_detected<_Op, _Args...>::value;
+  constexpr bool is_detected_v = is_detected<_Op, _Args...>::value;
 
 template <class Default, template<class...> class _Op, class... _Args>
   using detected_or = _DETECTOR<Default, void, _Op, _Args...>;
@@ -139,12 +141,12 @@ template <class Default, template<class...> class _Op, class... _Args>
 template <class Expected, template<class...> class _Op, class... _Args>
   using is_detected_exact = is_same<Expected, detected_t<_Op, _Args...>>;
 template <class Expected, template<class...> class _Op, class... _Args>
-  _LIBCUDACXX_CONSTEXPR bool is_detected_exact_v = is_detected_exact<Expected, _Op, _Args...>::value;
+  constexpr bool is_detected_exact_v = is_detected_exact<Expected, _Op, _Args...>::value;
 
 template <class To, template<class...> class _Op, class... _Args>
   using is_detected_convertible = is_convertible<detected_t<_Op, _Args...>, To>;
 template <class To, template<class...> class _Op, class... _Args>
-  _LIBCUDACXX_CONSTEXPR bool is_detected_convertible_v = is_detected_convertible<To, _Op, _Args...>::value;  
+  constexpr bool is_detected_convertible_v = is_detected_convertible<To, _Op, _Args...>::value;
 
 
 _LIBCUDACXX_END_NAMESPACE_LFTS

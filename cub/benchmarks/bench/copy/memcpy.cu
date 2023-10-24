@@ -198,11 +198,10 @@ void copy(nvbench::state &state,
                                                       policy_t,
                                                       is_memcpy>;
 
-  thrust::device_vector<T> input_buffer(elements);
+  thrust::device_vector<T> input_buffer = generate(elements);
   thrust::device_vector<T> output_buffer(elements);
   thrust::device_vector<offset_t> offsets =
-    gen_uniform_offsets<offset_t>(seed_t{}, elements, min_buffer_size, max_buffer_size);
-  gen(seed_t{}, input_buffer);
+    generate.uniform.segment_offsets(elements, min_buffer_size, max_buffer_size);
 
   T *d_input_buffer   = thrust::raw_pointer_cast(input_buffer.data());
   T *d_output_buffer  = thrust::raw_pointer_cast(output_buffer.data());
@@ -285,13 +284,13 @@ void large(nvbench::state &state, nvbench::type_list<T, OffsetT> tl)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const auto max_buffer_size = elements;
-  const auto min_buffer_size_ratio = 99;
+  constexpr auto min_buffer_size_ratio = 99;
   const auto min_buffer_size =
     static_cast<std::size_t>(static_cast<double>(max_buffer_size) / 100.0) * min_buffer_size_ratio;
   
   // No need to randomize large buffers
-  const bool randomize_input = false; 
-  const bool randomize_output = false;
+  constexpr bool randomize_input = false;
+  constexpr bool randomize_output = false;
 
   copy(state, tl, elements, min_buffer_size, max_buffer_size, randomize_input, randomize_output);
 }

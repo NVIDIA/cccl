@@ -58,16 +58,14 @@ using binary_semaphore = counting_semaphore<1>;
 #include <__pragma_push>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
 # error <semaphore> is not supported on this single threaded system
-#endif
-
-#if _LIBCUDACXX_STD_VER < 11
-# error <semaphore> is requires C++11 or later
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -124,7 +122,7 @@ public:
         return numeric_limits<ptrdiff_t>::max();
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __atomic_semaphore_base(ptrdiff_t __count) noexcept : __count(__count) { }
 
     ~__atomic_semaphore_base() = default;
@@ -195,7 +193,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     static constexpr ptrdiff_t max() noexcept { return 1; }
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __atomic_semaphore_base(ptrdiff_t __available) : __available(__available) { }
 
     ~__atomic_semaphore_base() = default;
@@ -434,7 +432,7 @@ class counting_semaphore : public __semaphore_base<__least_max_value, 0>
 {
     static_assert(__least_max_value <= __semaphore_base<__least_max_value, 0>::max(), "");
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     counting_semaphore(ptrdiff_t __count = 0) : __semaphore_base<__least_max_value, 0>(__count) { }
     ~counting_semaphore() = default;
 

@@ -88,7 +88,7 @@ A `cuda::pipeline` object.
 #include <cooperative_groups.h>
 
 // Disables `pipeline_shared_state` initialization warning.
-#pragma diag_suppress static_var_with_dynamic_init
+#pragma nv_diag_suppress static_var_with_dynamic_init
 
 __global__ void example_kernel() {
   __shared__ cuda::pipeline_shared_state<cuda::thread_scope_block, 2> pss0;

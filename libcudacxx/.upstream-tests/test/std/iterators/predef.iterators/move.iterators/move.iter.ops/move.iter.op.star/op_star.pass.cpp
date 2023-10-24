@@ -62,13 +62,11 @@ int main(int, char**)
         test(&a, A());
     }
 #if defined(_LIBCUDACXX_HAS_MEMORY)
-#if TEST_STD_VER >= 11
     {
         int i;
         cuda::std::unique_ptr<int, do_nothing> p(&i);
         test(&p, cuda::std::unique_ptr<int, do_nothing>(&i));
     }
-#endif
 #endif
 #if TEST_STD_VER > 14
     {

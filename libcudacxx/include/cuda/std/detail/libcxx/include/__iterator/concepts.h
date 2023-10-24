@@ -45,9 +45,11 @@
 #include "../__type_traits/remove_cvref.h"
 #include "../__type_traits/void_t.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -399,7 +401,7 @@ template<class _Sp, class _Ip>
 _LIBCUDACXX_CONCEPT sentinel_for = _LIBCUDACXX_FRAGMENT(__sentinel_for_, _Sp, _Ip);
 
 template<class, class>
-inline constexpr bool disable_sized_sentinel_for = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool disable_sized_sentinel_for = false;
 
 template<class _Sp, class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -699,16 +701,16 @@ template<class _In, class _Out>
 _LIBCUDACXX_CONCEPT indirectly_copyable_storable =_LIBCUDACXX_FRAGMENT(__indirectly_copyable_storable_, _In, _Out);
 
 template<class _Ip, class = void>
-inline constexpr bool __has_iter_category = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_iter_category = false;
 
 template<class _Ip>
-inline constexpr bool __has_iter_category<_Ip, void_t<typename _Ip::iterator_category>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_iter_category<_Ip, void_t<typename _Ip::iterator_category>> = true;
 
 template<class _Ip, class = void>
-inline constexpr bool __has_iter_concept = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_iter_concept = false;
 
 template<class _Ip>
-inline constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
 
 #endif // _LIBCUDACXX_STD_VER > 14
 

@@ -216,9 +216,11 @@ template <class Key, class T, class Hash, class Pred, class Alloc>
 #endif
 #endif
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 namespace __gnu_cxx {
 
@@ -332,7 +334,6 @@ public:
           __second_constructed(false)
         {}
 
-#ifndef _LIBCUDACXX_CXX03_LANG
     _LIBCUDACXX_INLINE_VISIBILITY
     __hash_map_node_destructor(std::__hash_node_destructor<allocator_type>&& __x)
         : __na_(__x.__na_),
@@ -341,16 +342,6 @@ public:
         {
             __x.__value_constructed = false;
         }
-#else  // _LIBCUDACXX_CXX03_LANG
-    _LIBCUDACXX_INLINE_VISIBILITY
-    __hash_map_node_destructor(const std::__hash_node_destructor<allocator_type>& __x)
-        : __na_(__x.__na_),
-          __first_constructed(__x.__value_constructed),
-          __second_constructed(__x.__value_constructed)
-        {
-            const_cast<bool&>(__x.__value_constructed) = false;
-        }
-#endif  // _LIBCUDACXX_CXX03_LANG
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void operator()(pointer __p)

@@ -9,10 +9,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER < 11
-#error
-#else
-
 // <cuda/std/iterator>
 // template <class C> auto begin(C& c) -> decltype(c.begin());
 // template <class C> auto begin(const C& c) -> decltype(c.begin());

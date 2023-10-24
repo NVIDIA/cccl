@@ -27,20 +27,27 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Thread utilities for writing memory using PTX cache modifiers.
  */
 
 #pragma once
 
-#include <cub/config.cuh>
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 
 /**
- * \addtogroup UtilIo
+ * @addtogroup UtilIo
  * @{
  */
 
@@ -50,29 +57,29 @@ CUB_NAMESPACE_BEGIN
 //-----------------------------------------------------------------------------
 
 /**
- * \brief Enumeration of cache modifiers for memory store operations.
+ * @brief Enumeration of cache modifiers for memory store operations.
  */
 enum CacheStoreModifier
 {
-    STORE_DEFAULT,              ///< Default (no modifier)
-    STORE_WB,                   ///< Cache write-back all coherent levels
-    STORE_CG,                   ///< Cache at global level
-    STORE_CS,                   ///< Cache streaming (likely to be accessed once)
-    STORE_WT,                   ///< Cache write-through (to system memory)
-    STORE_VOLATILE,             ///< Volatile shared (any memory space)
+  STORE_DEFAULT,  ///< Default (no modifier)
+  STORE_WB,       ///< Cache write-back all coherent levels
+  STORE_CG,       ///< Cache at global level
+  STORE_CS,       ///< Cache streaming (likely to be accessed once)
+  STORE_WT,       ///< Cache write-through (to system memory)
+  STORE_VOLATILE, ///< Volatile shared (any memory space)
 };
 
-
 /**
- * \name Thread I/O (cache modified)
+ * @name Thread I/O (cache modified)
  * @{
  */
 
 /**
- * \brief Thread utility for writing memory using cub::CacheStoreModifier cache modifiers.  Can be used to store any data type.
+ * @brief Thread utility for writing memory using cub::CacheStoreModifier cache modifiers.
+ *        Can be used to store any data type.
  *
- * \par Example
- * \code
+ * @par Example
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/thread/thread_store.cuh>
  *
  * // 32-bit store using cache-global modifier:
@@ -95,11 +102,16 @@ enum CacheStoreModifier
  * TestFoo *d_struct;
  * TestFoo val;
  * cub::ThreadStore<cub::STORE_CS>(d_out + threadIdx.x, val);
- * \endcode
+ * @endcode
  *
- * \tparam MODIFIER             <b>[inferred]</b> CacheStoreModifier enumeration
- * \tparam InputIteratorT       <b>[inferred]</b> Output iterator type \iterator
- * \tparam T                    <b>[inferred]</b> Data type of output value
+ * @tparam MODIFIER
+ *   <b>[inferred]</b> CacheStoreModifier enumeration
+ *
+ * @tparam InputIteratorT
+ *   <b>[inferred]</b> Output iterator type \iterator
+ *
+ * @tparam T
+ *   <b>[inferred]</b> Data type of output value
  */
 template <
     CacheStoreModifier  MODIFIER,
@@ -325,8 +337,8 @@ __device__ __forceinline__ void ThreadStoreVolatilePtr(
     typedef typename UnitWord<T>::VolatileWord  VolatileWord;
     typedef typename UnitWord<T>::ShuffleWord   ShuffleWord;
 
-    const int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
-    const int SHUFFLE_MULTIPLE  = sizeof(T) / sizeof(ShuffleWord);
+    constexpr int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
+    constexpr int SHUFFLE_MULTIPLE  = sizeof(T) / sizeof(ShuffleWord);
 
     VolatileWord words[VOLATILE_MULTIPLE];
 
@@ -368,8 +380,8 @@ __device__ __forceinline__ void ThreadStore(
     typedef typename UnitWord<T>::DeviceWord    DeviceWord;
     typedef typename UnitWord<T>::ShuffleWord   ShuffleWord;
 
-    const int DEVICE_MULTIPLE   = sizeof(T) / sizeof(DeviceWord);
-    const int SHUFFLE_MULTIPLE  = sizeof(T) / sizeof(ShuffleWord);
+    constexpr int DEVICE_MULTIPLE   = sizeof(T) / sizeof(DeviceWord);
+    constexpr int SHUFFLE_MULTIPLE  = sizeof(T) / sizeof(ShuffleWord);
 
     DeviceWord words[DEVICE_MULTIPLE];
 

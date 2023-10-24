@@ -20,9 +20,11 @@
 #include "../cstddef"
 #include "../iosfwd"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -42,9 +44,9 @@ public:
 private:
     streambuf_type* __sbuf_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator(ostream_type& __s) _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator(ostream_type& __s) noexcept
         : __sbuf_(__s.rdbuf()) {}
-    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator(streambuf_type* __s) _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator(streambuf_type* __s) noexcept
         : __sbuf_(__s) {}
     _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator& operator=(_CharT __c)
         {
@@ -55,7 +57,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator& operator*()     {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator& operator++()    {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator& operator++(int) {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY bool failed() const _NOEXCEPT {return __sbuf_ == 0;}
+    _LIBCUDACXX_INLINE_VISIBILITY bool failed() const noexcept {return __sbuf_ == 0;}
 
     template <class _Ch, class _Tr>
     friend

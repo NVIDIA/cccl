@@ -40,7 +40,6 @@ int main(int, char**)
     cuda::std::chrono::duration<int, cuda::std::ratio<1, 15> > r = s1 % s2;
     assert(r.count() == 24);
     }
-#if TEST_STD_VER >= 11
     {
     constexpr cuda::std::chrono::nanoseconds ns1(15);
     constexpr cuda::std::chrono::nanoseconds ns2(6);
@@ -59,7 +58,6 @@ int main(int, char**)
     constexpr cuda::std::chrono::duration<int, cuda::std::ratio<1, 15> > r = s1 % s2;
     static_assert(r.count() == 24, "");
     }
-#endif
 
   return 0;
 }

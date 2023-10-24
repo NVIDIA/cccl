@@ -29,8 +29,15 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/block/block_load.cuh>
-#include <cub/config.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
@@ -216,7 +223,7 @@ template <typename InputT,
           int LEGACY_PTX_ARCH         = 0>
 class WarpLoad
 {
-  constexpr static bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
 
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE,
                 "LOGICAL_WARP_THREADS must be a power of two");

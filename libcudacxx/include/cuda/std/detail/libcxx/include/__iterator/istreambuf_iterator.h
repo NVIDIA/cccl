@@ -19,9 +19,11 @@
 #include "../__iterator/iterator_traits.h"
 #include "../iosfwd"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -63,12 +65,12 @@ private:
         return __sbuf_ == 0;
     }
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR istreambuf_iterator() _NOEXCEPT : __sbuf_(0) {}
-    _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(istream_type& __s) _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr istreambuf_iterator() noexcept : __sbuf_(0) {}
+    _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(istream_type& __s) noexcept
         : __sbuf_(__s.rdbuf()) {}
-    _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(streambuf_type* __s) _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(streambuf_type* __s) noexcept
         : __sbuf_(__s) {}
-    _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(const __proxy& __p) _NOEXCEPT
+    _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(const __proxy& __p) noexcept
         : __sbuf_(__p.__sbuf_) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY char_type  operator*() const

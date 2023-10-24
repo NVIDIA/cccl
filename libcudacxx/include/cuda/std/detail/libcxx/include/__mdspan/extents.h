@@ -64,9 +64,11 @@
 #include "../cstddef"
 #include "../span"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #if defined(_LIBCUDACXX_PUSH_MACROS)
   _LIBCUDACXX_PUSH_MACROS
@@ -534,7 +536,7 @@ using dextents = typename __detail::__make_dextents<_IndexType, _Rank>::type;
 
 #if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
 template <class... _IndexTypes>
-extents(_IndexTypes...)
+_LIBCUDACXX_HOST_DEVICE extents(_IndexTypes...)
   // Workaround for nvcc
   //-> extents<size_t, __detail::__make_dynamic_extent<_IndexTypes>()...>;
   // Adding "(void)" so that clang doesn't complain this is unused

@@ -16,6 +16,14 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 // When a compiler uses Thrust as part of its implementation of Standard C++
 // algorithms, a cycle of included files may result when Thrust code tries to
 // use a standard algorithm.  Having a macro that is defined only when Thrust

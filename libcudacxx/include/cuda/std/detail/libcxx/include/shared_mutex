@@ -133,9 +133,11 @@ _LIBCUDACXX_PUSH_MACROS
 
 #include <__mutex_base>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
 #error <shared_mutex> is not supported on this single threaded system
@@ -317,7 +319,7 @@ private:
 
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
-    shared_lock() _NOEXCEPT
+    shared_lock() noexcept
         : __m_(nullptr),
           __owns_(false)
         {}
@@ -329,7 +331,7 @@ public:
         {__m_->lock_shared();}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    shared_lock(mutex_type& __m, defer_lock_t) _NOEXCEPT
+    shared_lock(mutex_type& __m, defer_lock_t) noexcept
         : __m_(_CUDA_VSTD::addressof(__m)),
           __owns_(false)
         {}
@@ -373,7 +375,7 @@ public:
     shared_lock& operator=(shared_lock const&) = delete;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    shared_lock(shared_lock&& __u) _NOEXCEPT
+    shared_lock(shared_lock&& __u) noexcept
         : __m_(__u.__m_),
           __owns_(__u.__owns_)
         {
@@ -382,7 +384,7 @@ public:
         }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    shared_lock& operator=(shared_lock&& __u) _NOEXCEPT
+    shared_lock& operator=(shared_lock&& __u) noexcept
     {
         if (__owns_)
             __m_->unlock_shared();
@@ -405,14 +407,14 @@ public:
 
     // Setters
     _LIBCUDACXX_INLINE_VISIBILITY
-    void swap(shared_lock& __u) _NOEXCEPT
+    void swap(shared_lock& __u) noexcept
     {
         _CUDA_VSTD::swap(__m_, __u.__m_);
         _CUDA_VSTD::swap(__owns_, __u.__owns_);
     }
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    mutex_type* release() _NOEXCEPT
+    mutex_type* release() noexcept
     {
         mutex_type* __m = __m_;
         __m_ = nullptr;
@@ -422,13 +424,13 @@ public:
 
     // Getters
     _LIBCUDACXX_INLINE_VISIBILITY
-    bool owns_lock() const _NOEXCEPT {return __owns_;}
+    bool owns_lock() const noexcept {return __owns_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    explicit operator bool () const _NOEXCEPT {return __owns_;}
+    explicit operator bool () const noexcept {return __owns_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    mutex_type* mutex() const _NOEXCEPT {return __m_;}
+    mutex_type* mutex() const noexcept {return __m_;}
 };
 
 template <class _Mutex>
@@ -494,7 +496,7 @@ shared_lock<_Mutex>::unlock()
 template <class _Mutex>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
-swap(shared_lock<_Mutex>& __x, shared_lock<_Mutex>& __y) _NOEXCEPT
+swap(shared_lock<_Mutex>& __x, shared_lock<_Mutex>& __y) noexcept
     {__x.swap(__y);}
 
 _LIBCUDACXX_END_NAMESPACE_STD

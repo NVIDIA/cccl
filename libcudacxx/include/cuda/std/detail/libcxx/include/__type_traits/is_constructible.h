@@ -26,9 +26,11 @@
 #include "../__type_traits/remove_cvref.h"
 #include "../__utility/declval.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -39,7 +41,7 @@ struct __nat {};
 }
 
 // FIXME: This logic isn't awesome.
-#if !defined(_LIBCUDACXX_CXX03_LANG) && (!defined(_LIBCUDACXX_IS_CONSTRUCTIBLE) || \
+#if (!defined(_LIBCUDACXX_IS_CONSTRUCTIBLE) || \
     defined(_LIBCUDACXX_TESTING_FALLBACK_IS_CONSTRUCTIBLE) || \
     defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK))
 

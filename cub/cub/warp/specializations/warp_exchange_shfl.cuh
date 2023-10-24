@@ -27,7 +27,14 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include "../../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
@@ -48,10 +55,10 @@ class WarpExchangeShfl
                 "WARP_EXCHANGE_SHUFFLE currently only works when ITEMS_PER_THREAD == "
                 "LOGICAL_WARP_THREADS");
 
-  constexpr static bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
 
   // concrete recursion class
-  template <typename OutputT, int IDX, int SIZE> 
+  template <typename OutputT, int IDX, int SIZE>
   class CompileTimeArray : protected CompileTimeArray<OutputT, IDX + 1, SIZE>
   {
   protected:
@@ -239,7 +246,7 @@ class WarpExchangeShfl
   };
 
   // terminating partial specialization
-  template <typename OutputT, int SIZE> 
+  template <typename OutputT, int SIZE>
   class CompileTimeArray<OutputT, SIZE, SIZE>
   {
   protected:

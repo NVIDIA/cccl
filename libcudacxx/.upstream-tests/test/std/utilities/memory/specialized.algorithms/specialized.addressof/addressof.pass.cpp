@@ -16,6 +16,10 @@
 
 #include "test_macros.h"
 
+#ifdef TEST_COMPILER_CLANG_CUDA
+#include <new>
+#endif // TEST_COMPILER_CLANG_CUDA
+
 struct A
 {
     __host__ __device__ void operator&() const {}

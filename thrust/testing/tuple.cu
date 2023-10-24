@@ -491,4 +491,30 @@ void TestTupleSwap(void)
 }
 DECLARE_UNITTEST(TestTupleSwap);
 
+#if THRUST_CPP_DIALECT >= 2017
+void TestTupleStructuredBindings(void)
+{
+  const int a = 0;
+  const int b = 42;
+  const int c = 1337;
+  thrust::tuple<int,int,int> t(a,b,c);
 
+  auto [a2, b2, c2] = t;
+  ASSERT_EQUAL(a, a2);
+  ASSERT_EQUAL(b, b2);
+  ASSERT_EQUAL(c, c2);
+}
+DECLARE_UNITTEST(TestTupleStructuredBindings);
+#endif
+
+// Ensure that we are backwards compatible with the old thrust::tuple implementation
+static_assert(thrust::tuple_size<thrust::tuple<thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type>>::value == 0, "");
+static_assert(thrust::tuple_size<thrust::tuple<int,               thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type>>::value == 1, "");
+static_assert(thrust::tuple_size<thrust::tuple<int,               int,               thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type>>::value == 2, "");
+static_assert(thrust::tuple_size<thrust::tuple<int,               int,               int,               thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type>>::value == 3, "");
+static_assert(thrust::tuple_size<thrust::tuple<int,               int,               int,               int,               thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type>>::value == 4, "");
+static_assert(thrust::tuple_size<thrust::tuple<int,               int,               int,               int,               int,               thrust::null_type, thrust::null_type, thrust::null_type, thrust::null_type>>::value == 5, "");
+static_assert(thrust::tuple_size<thrust::tuple<int,               int,               int,               int,               int,               int,               thrust::null_type, thrust::null_type, thrust::null_type>>::value == 6, "");
+static_assert(thrust::tuple_size<thrust::tuple<int,               int,               int,               int,               int,               int,               int,               thrust::null_type, thrust::null_type>>::value == 7, "");
+static_assert(thrust::tuple_size<thrust::tuple<int,               int,               int,               int,               int,               int,               int,               int,               thrust::null_type>>::value == 8, "");
+static_assert(thrust::tuple_size<thrust::tuple<int,               int,               int,               int,               int,               int,               int,               int,               int>>::value               == 9, "");

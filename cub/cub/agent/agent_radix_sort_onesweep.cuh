@@ -33,10 +33,17 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "../block/block_radix_rank.cuh"
 #include "../block/radix_rank_sort_operations.cuh"
 #include "../block/block_store.cuh"
-#include "../config.cuh"
 #include "../util_ptx.cuh"
 #include "../util_type.cuh"
 
@@ -64,7 +71,7 @@ template <
     int NOMINAL_BLOCK_THREADS_4B,
     int NOMINAL_ITEMS_PER_THREAD_4B,
     typename ComputeT,
-    /** \brief Number of private histograms to use in the ranker; 
+    /** \brief Number of private histograms to use in the ranker;
         ignored if the ranking algorithm is not one of RADIX_RANK_MATCH_EARLY_COUNTS_* */
     int _RANK_NUM_PARTS,
     /** \brief Ranking algorithm used in the onesweep kernel. Only algorithms that
@@ -82,9 +89,9 @@ struct AgentRadixSortOnesweepPolicy : ScalingType
         RANK_NUM_PARTS = _RANK_NUM_PARTS,
         RADIX_BITS = _RADIX_BITS,
     };
-    static const RadixRankAlgorithm RANK_ALGORITHM = _RANK_ALGORITHM;
-    static const BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
-    static const RadixSortStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
+    static constexpr RadixRankAlgorithm RANK_ALGORITHM = _RANK_ALGORITHM;
+    static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+    static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
 template <
@@ -106,7 +113,7 @@ struct AgentRadixSortOnesweep
         RANK_NUM_PARTS = AgentRadixSortOnesweepPolicy::RANK_NUM_PARTS,
         TILE_ITEMS = BLOCK_THREADS * ITEMS_PER_THREAD,
         RADIX_BITS = AgentRadixSortOnesweepPolicy::RADIX_BITS,
-        RADIX_DIGITS = 1 << RADIX_BITS,        
+        RADIX_DIGITS = 1 << RADIX_BITS,
         BINS_PER_THREAD = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS,
         FULL_BINS = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS,
         WARP_THREADS = CUB_PTX_WARP_THREADS,
@@ -127,12 +134,12 @@ struct AgentRadixSortOnesweep
       typename traits::template digit_extractor_t<fundamental_digit_extractor_t, DecomposerT>;
 
     typedef PortionOffsetT AtomicOffsetT;
-  
-    static const RadixRankAlgorithm RANK_ALGORITHM =
+
+    static constexpr RadixRankAlgorithm RANK_ALGORITHM =
                                     AgentRadixSortOnesweepPolicy::RANK_ALGORITHM;
-    static const BlockScanAlgorithm SCAN_ALGORITHM =
+    static constexpr BlockScanAlgorithm SCAN_ALGORITHM =
                                     AgentRadixSortOnesweepPolicy::SCAN_ALGORITHM;
-    static const RadixSortStoreAlgorithm STORE_ALGORITHM =
+    static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM =
                                     sizeof(bit_ordered_type) == sizeof(uint32_t) ?
                                     AgentRadixSortOnesweepPolicy::STORE_ALGORITHM :
                                     RADIX_SORT_STORE_DIRECT;
@@ -224,7 +231,7 @@ struct AgentRadixSortOnesweep
     __device__ __forceinline__ void LookbackPartial(int (&bins)[BINS_PER_THREAD])
     {
         #pragma unroll
-        for (int u = 0; u < BINS_PER_THREAD; ++u) 
+        for (int u = 0; u < BINS_PER_THREAD; ++u)
         {
             int bin = ThreadBin(u);
             if (FULL_BINS || bin < RADIX_DIGITS)
@@ -244,7 +251,7 @@ struct AgentRadixSortOnesweep
         AgentT& agent;
         int (&bins)[BINS_PER_THREAD];
         bit_ordered_type (&keys)[ITEMS_PER_THREAD];
-        static const bool EMPTY = false;
+        static constexpr bool EMPTY = false;
         __device__ __forceinline__ CountsCallback(
             AgentT& agent, int (&bins)[BINS_PER_THREAD], bit_ordered_type (&keys)[ITEMS_PER_THREAD])
             : agent(agent), bins(bins), keys(keys) {}
@@ -260,7 +267,7 @@ struct AgentRadixSortOnesweep
             agent.TryShortCircuit(keys, bins);
         }
     };
-  
+
     __device__ __forceinline__ void LookbackGlobal(int (&bins)[BINS_PER_THREAD])
     {
         #pragma unroll
@@ -452,7 +459,7 @@ struct AgentRadixSortOnesweep
             {
                 s.global_offsets[bin] = d_bins_in[bin] - offsets[u];
             }
-        }        
+        }
     }
 
     __device__ __forceinline__ void UpdateBinsGlobal(int (&bins)[BINS_PER_THREAD],
@@ -509,10 +516,10 @@ struct AgentRadixSortOnesweep
     __device__ __forceinline__ void ScatterKeysGlobalAligned()
     {
         // this only works with full tiles
-        const int ITEMS_PER_WARP = TILE_ITEMS / BLOCK_WARPS;
-        const int ALIGN = 8;
-        const auto CACHE_MODIFIER = STORE_CG;
-        
+        constexpr int ITEMS_PER_WARP = TILE_ITEMS / BLOCK_WARPS;
+        constexpr int ALIGN = 8;
+        constexpr auto CACHE_MODIFIER = STORE_CG;
+
         int warp_start = warp * ITEMS_PER_WARP;
         int warp_end = (warp + 1) * ITEMS_PER_WARP;
         int warp_offset = warp_start;
@@ -596,11 +603,11 @@ struct AgentRadixSortOnesweep
         // compute digits corresponding to the keys
         int digits[ITEMS_PER_THREAD];
         ComputeKeyDigits(digits);
-        
+
         // load values
         ValueT values[ITEMS_PER_THREAD];
         LoadValues(block_idx * TILE_ITEMS, values);
-        
+
         // scatter values
         CTA_SYNC();
         ScatterValuesShared(values, ranks);
@@ -608,7 +615,7 @@ struct AgentRadixSortOnesweep
         CTA_SYNC();
         ScatterValuesGlobal(digits);
     }
-        
+
 
     __device__ __forceinline__ void GatherScatterValues(
         int (&ranks)[ITEMS_PER_THREAD], Int2Type<true> keys_only) {}
@@ -628,7 +635,7 @@ struct AgentRadixSortOnesweep
         BlockRadixRankT(s.rank_temp_storage).RankKeys(
             keys, ranks, digit_extractor(), exclusive_digit_prefix,
             CountsCallback(*this, bins, keys));
-        
+
         // scatter keys in shared memory
         CTA_SYNC();
         ScatterKeysShared(keys, ranks);
@@ -637,7 +644,7 @@ struct AgentRadixSortOnesweep
         LoadBinsToOffsetsGlobal(exclusive_digit_prefix);
         LookbackGlobal(bins);
         UpdateBinsGlobal(bins, exclusive_digit_prefix);
-                
+
         // scatter keys in global memory
         CTA_SYNC();
         ScatterKeysGlobal();

@@ -161,9 +161,11 @@ floating_point  midpoint(floating_point a, floating_point b);    // C++20
 #include <__pragma_push>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -477,7 +479,7 @@ template <typename _Result, typename _Source, bool _IsSigned = is_signed<_Source
 
 template <typename _Result, typename _Source>
 struct __ct_abs<_Result, _Source, true> {
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     _Result operator()(_Source __t) const noexcept
     {
     if (__t >= 0) return __t;
@@ -488,13 +490,13 @@ struct __ct_abs<_Result, _Source, true> {
 
 template <typename _Result, typename _Source>
 struct __ct_abs<_Result, _Source, false> {
-    _LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+    constexpr _LIBCUDACXX_INLINE_VISIBILITY
     _Result operator()(_Source __t) const noexcept { return __t; }
 };
 
 
 template<class _Tp>
-_LIBCUDACXX_CONSTEXPR _LIBCUDACXX_HIDDEN
+constexpr _LIBCUDACXX_HIDDEN
 _Tp __gcd(_Tp __m, _Tp __n)
 {
     static_assert((!is_signed<_Tp>::value), "");
@@ -503,7 +505,7 @@ _Tp __gcd(_Tp __m, _Tp __n)
 
 
 template<class _Tp, class _Up>
-_LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+constexpr _LIBCUDACXX_INLINE_VISIBILITY
 common_type_t<_Tp,_Up>
 gcd(_Tp __m, _Up __n)
 {
@@ -518,7 +520,7 @@ gcd(_Tp __m, _Up __n)
 }
 
 template<class _Tp, class _Up>
-_LIBCUDACXX_CONSTEXPR _LIBCUDACXX_INLINE_VISIBILITY
+constexpr _LIBCUDACXX_INLINE_VISIBILITY
 common_type_t<_Tp,_Up>
 lcm(_Tp __m, _Up __n)
 {
