@@ -42,7 +42,6 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
-#include <cub/detail/triple_chevron_launch.cuh>
 #include <cstdint>
 
 CUB_NAMESPACE_BEGIN

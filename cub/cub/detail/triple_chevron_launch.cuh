@@ -52,7 +52,7 @@ namespace detail
     Size const shared_mem;
     cudaStream_t const stream;
 
-    CUB_RUNTIME_FUNCTION // Should this be CUB_RUNTIME_FUNCTION now?
+    CUB_RUNTIME_FUNCTION 
     triple_chevron(dim3         grid_,
                    dim3         block_,
                    Size         shared_mem_ = 0,
