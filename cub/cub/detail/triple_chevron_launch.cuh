@@ -141,7 +141,7 @@ namespace detail
     }
     #endif
 
-    __thrust_exec_check_disable__ // what is
+    _LIBCUDACXX_DISABLE_EXEC_CHECK
     template <class K, class... Args>
     __host__ __device__ __forceinline__ // use this over THRUST_FUNCTION macro, seems to be convention in CUB
     cudaError_t doit(K k, Args const&... args) const
