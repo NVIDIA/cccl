@@ -154,7 +154,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     name: CI
-    if: ${{ !cancelled() }}
+    if: ${{ always() }} # need to use always() instead of !cancelled() because skipped jobs count as success 
     needs:
       - clang-cuda
       - cub
