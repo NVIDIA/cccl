@@ -38,18 +38,6 @@
 #include "cub/util_compiler.cuh"
 #include "test_util_vec.h"
 
-// cudafe considers some catch2 variables as unused. We have to suppress
-// these warnings until NVBug 3423950 is addressed.
-#if (CUB_HOST_COMPILER == CUB_HOST_COMPILER_MSVC) || \
-    (CUB_HOST_COMPILER == CUB_HOST_COMPILER_CLANG) || \
-    defined(__ICC) || defined(_NVHPC_CUDA)
-#  if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
-#    pragma nv_diag_suppress 177
-#  else
-#    pragma diag_suppress 177
-#  endif
-#endif
-
 #include "catch2_main.cuh"
 
 #ifndef VAR_IDX

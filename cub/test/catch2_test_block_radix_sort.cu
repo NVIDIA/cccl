@@ -31,8 +31,6 @@
 #include <type_traits>
 #include <utility>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 // %PARAM% TEST_MEMOIZE mem 0:1

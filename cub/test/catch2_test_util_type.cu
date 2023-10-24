@@ -31,8 +31,6 @@
 
 #include <cuda/std/type_traits>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 CUB_TEST("Tests non_void_value_t", "[util][type]")
