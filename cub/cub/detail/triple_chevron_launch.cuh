@@ -74,7 +74,7 @@ namespace detail
     size_t __device__
     align_up(size_t offset) const
     {
-      size_t alignment = THRUST_NS_QUALIFIER::cuda_cub::alignment_of<T>::value;
+      constexpr ::cuda::std::size_t alignment = ::cuda::std::alignment_of<T>::value;
       return alignment * ((offset + (alignment - 1))/ alignment);
     }
 
