@@ -26,7 +26,7 @@
 #include "../cstdlib"
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
+#  pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
@@ -118,7 +118,9 @@ private:
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
   __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
   {
-    return __a == 0 ? __b == 0 : __a > 0 ? __a >= __b : __a <= __b;
+    return __a == 0 ? __b == 0 : //
+             __a > 0 ? __a >= __b
+                     : __a <= __b;
   };
 
 public:
@@ -163,8 +165,8 @@ public:
     {
       __i = _CUDA_VSTD::move(__bound_sentinel);
     }
-    // Otherwise, if `S` and `I` model `sized_sentinel_for<S, I>`, equivalent to `ranges::advance(i, bound_sentinel -
-    // i)`.
+    // Otherwise, if `S` and `I` model `sized_sentinel_for<S, I>`,
+    // equivalent to `ranges::advance(i, bound_sentinel - i)`.
     else if constexpr (sized_sentinel_for<_Sp, _Ip>)
     {
       (*this)(__i, __bound_sentinel - __i);
@@ -182,8 +184,8 @@ public:
   // Preconditions:
   //   * If `n > 0`, [i, bound_sentinel) denotes a range.
   //   * If `n == 0`, [i, bound_sentinel) or [bound_sentinel, i) denotes a range.
-  //   * If `n < 0`, [bound_sentinel, i) denotes a range, `I` models `bidirectional_iterator`, and `I` and `S` model
-  //   `same_as<I, S>`.
+  //   * If `n < 0`, [bound_sentinel, i) denotes a range, `I` models `bidirectional_iterator`,
+  //     and `I` and `S` model `same_as<I, S>`.
   // Returns: `n - M`, where `M` is the difference between the ending and starting position.
   _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
   _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip> _LIBCUDACXX_AND sentinel_for<_Sp, _Ip>)
