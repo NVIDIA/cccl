@@ -194,6 +194,7 @@ private:
         oversized_block_descriptor_ptr prev;
         oversized_block_descriptor_ptr next;
         oversized_block_descriptor_ptr next_cached;
+        std::size_t current_size;
     };
 
     struct pool
@@ -249,12 +250,15 @@ public:
             oversized_block_descriptor_ptr alloc = m_oversized;
             m_oversized = thrust::raw_reference_cast(*m_oversized).next;
 
+            oversized_block_descriptor desc =
+                thrust::raw_reference_cast(*alloc);
+
             void_ptr p = static_cast<void_ptr>(
-                static_cast<char_ptr>(
-                    static_cast<void_ptr>(alloc)
-                ) - thrust::raw_reference_cast(*alloc).size
-            );
-            m_upstream->do_deallocate(p, thrust::raw_reference_cast(*alloc).size + sizeof(oversized_block_descriptor), thrust::raw_reference_cast(*alloc).alignment);
+                static_cast<char_ptr>(static_cast<void_ptr>(alloc)) -
+                desc.current_size);
+            m_upstream->do_deallocate(
+                p, desc.size + sizeof(oversized_block_descriptor),
+                desc.alignment);
         }
 
         m_cached_oversized = oversized_block_descriptor_ptr();
@@ -305,9 +309,7 @@ public:
                     {
                         if (previous != &m_cached_oversized)
                         {
-                            oversized_block_descriptor previous_desc = **previous;
-                            previous_desc.next_cached = desc.next_cached;
-                            **previous = previous_desc;
+                            *previous = desc.next_cached;
                         }
                         else
                         {
@@ -315,13 +317,35 @@ public:
                         }
 
                         desc.next_cached = oversized_block_descriptor_ptr();
+
+                        auto ret =
+                            static_cast<char_ptr>(static_cast<void_ptr>(ptr)) -
+                            desc.size;
+
+                        if (bytes != desc.size) {
+                            desc.current_size = bytes;
+
+                            ptr = static_cast<oversized_block_descriptor_ptr>(
+                                static_cast<void_ptr>(ret + bytes));
+
+                            if (detail::pointer_traits<
+                                    oversized_block_descriptor_ptr>::
+                                    get(desc.prev)) {
+                                thrust::raw_reference_cast(*desc.prev).next = ptr;
+                            } else {
+                                m_oversized = ptr;
+                            }
+
+                            if (detail::pointer_traits<
+                                    oversized_block_descriptor_ptr>::
+                                    get(desc.next)) {
+                                thrust::raw_reference_cast(*desc.next).prev = ptr;
+                            }
+                        }
+
                         *ptr = desc;
 
-                        return static_cast<void_ptr>(
-                            static_cast<char_ptr>(
-                                static_cast<void_ptr>(ptr)
-                            ) - desc.size
-                        );
+                        return static_cast<void_ptr>(ret);
                     }
 
                     previous = &thrust::raw_reference_cast(*ptr).next_cached;
@@ -343,6 +367,7 @@ public:
             desc.prev = oversized_block_descriptor_ptr();
             desc.next = m_oversized;
             desc.next_cached = oversized_block_descriptor_ptr();
+            desc.current_size = bytes;
             *block = desc;
             m_oversized = block;
 
@@ -451,35 +476,47 @@ public:
             );
 
             oversized_block_descriptor desc = *block;
+            assert(desc.current_size == n);
+            assert(desc.alignment == alignment);
 
             if (m_options.cache_oversized)
             {
                 desc.next_cached = m_cached_oversized;
-                *block = desc;
+
+                if (desc.size != n) {
+                    desc.current_size = desc.size;
+                    block = static_cast<oversized_block_descriptor_ptr>(
+                        static_cast<void_ptr>(static_cast<char_ptr>(p) +
+                                              desc.size));
+                    if (detail::pointer_traits<
+                            oversized_block_descriptor_ptr>::get(desc.prev)) {
+                        thrust::raw_reference_cast(*desc.prev).next = block;
+                    } else {
+                        m_oversized = block;
+                    }
+
+                    if (detail::pointer_traits<
+                            oversized_block_descriptor_ptr>::get(desc.next)) {
+                        thrust::raw_reference_cast(*desc.next).prev = block;
+                    }
+                }
+
                 m_cached_oversized = block;
+                *block = desc;
 
                 return;
             }
 
-            if (!detail::pointer_traits<oversized_block_descriptor_ptr>::get(desc.prev))
-            {
-                assert(m_oversized == block);
+            if (detail::pointer_traits<oversized_block_descriptor_ptr>::get(
+                    desc.prev)) {
+                thrust::raw_reference_cast(*desc.prev).next = desc.next;
+            } else {
                 m_oversized = desc.next;
             }
-            else
-            {
-                oversized_block_descriptor prev = *desc.prev;
-                assert(prev.next == block);
-                prev.next = desc.next;
-                *desc.prev = prev;
-            }
 
-            if (detail::pointer_traits<oversized_block_descriptor_ptr>::get(desc.next))
-            {
-                oversized_block_descriptor next = *desc.next;
-                assert(next.prev == block);
-                next.prev = desc.prev;
-                *desc.next = next;
+            if (detail::pointer_traits<oversized_block_descriptor_ptr>::get(
+                    desc.next)) {
+                thrust::raw_reference_cast(*desc.next).prev = desc.prev;
             }
 
             m_upstream->do_deallocate(p, desc.size + sizeof(oversized_block_descriptor), desc.alignment);
