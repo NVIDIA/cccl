@@ -150,9 +150,11 @@ jobs:
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
+  # https://github.com/orgs/community/discussions/26822#discussioncomment-5122101
   ci:
     runs-on: ubuntu-latest
     name: CI
+    if: ${{ !cancelled() }}
     needs:
       - clang-cuda
       - cub
@@ -162,4 +164,11 @@ jobs:
       - cccl-infra
       - verify-devcontainers
     steps:
-      - run: echo "CI success"
+      - name: Check status of all precursor jobs
+        if: >-
+          ${{
+               contains(needs.*.result, 'failure')
+            || contains(needs.*.result, 'cancelled')
+            || contains(needs.*.result, 'skipped')
+          }}
+        run: exit 1
