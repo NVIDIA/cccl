@@ -111,7 +111,7 @@ namespace detail
       fill_arguments(buffer, copy_arg(buffer, offset, arg), args...);
     }
 
-    #ifdef THRUST_RDC_ENABLED
+    #ifdef CUB_RDC_ENABLED
     template<class K, class... Args>
     cudaError_t __device__
     doit_device(K k, Args const&... args) const
