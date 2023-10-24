@@ -412,7 +412,7 @@ _LIBCUDACXX_DECLARE_STRONG_ENUM_EPILOG(launch)
 
 typedef underlying_type<launch>::type __launch_underlying_type;
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr launch
 operator&(launch __x, launch __y)
 {
@@ -420,7 +420,7 @@ operator&(launch __x, launch __y)
                                static_cast<__launch_underlying_type>(__y));
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr launch
 operator|(launch __x, launch __y)
 {
@@ -428,7 +428,7 @@ operator|(launch __x, launch __y)
                                static_cast<__launch_underlying_type>(__y));
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr launch
 operator^(launch __x, launch __y)
 {
@@ -436,28 +436,28 @@ operator^(launch __x, launch __y)
                                static_cast<__launch_underlying_type>(__y));
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr launch
 operator~(launch __x)
 {
     return static_cast<launch>(~static_cast<__launch_underlying_type>(__x) & 3);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 launch&
 operator&=(launch& __x, launch __y)
 {
     __x = __x & __y; return __x;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 launch&
 operator|=(launch& __x, launch __y)
 {
     __x = __x | __y; return __x;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 launch&
 operator^=(launch& __x, launch __y)
 {
@@ -478,14 +478,14 @@ _LIBCUDACXX_DECLARE_STRONG_ENUM_EPILOG(future_status)
 _LIBCUDACXX_FUNC_VIS
 const error_category& future_category() noexcept;
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 error_code
 make_error_code(future_errc __e) noexcept
 {
     return error_code(static_cast<int>(__e), future_category());
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 error_condition
 make_error_condition(future_errc __e) noexcept
 {
@@ -501,13 +501,13 @@ public:
 #if _LIBCUDACXX_STD_VERS > 14
     explicit future_error(future_errc _Ev) : logic_error(), __ec_(make_error_code(_Ev)) {}
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const error_code& code() const noexcept {return __ec_;}
 
     virtual ~future_error() noexcept;
 };
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_NORETURN _LIBCUDACXX_HIDE_FROM_ABI
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
 _LIBCUDACXX_AVAILABILITY_FUTURE_ERROR
 #endif
@@ -541,14 +541,14 @@ public:
         deferred = 8
     };
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __assoc_sub_state() : __state_(0) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool __has_value() const
         {return (__state_ & __constructed) || (__exception_ != nullptr);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __attach_future() {
         lock_guard<mutex> __lk(__mut_);
         bool __has_future_attached = (__state_ & __future_attached) != 0;
@@ -558,11 +558,11 @@ public:
         __state_ |= __future_attached;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __set_deferred() {__state_ |= deferred;}
 
     void __make_ready();
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool __is_ready() const {return (__state_ & ready) != 0;}
 
     void set_value();
@@ -576,7 +576,7 @@ public:
     void wait();
     template <class _Rep, class _Period>
         future_status
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         wait_for(const chrono::duration<_Rep, _Period>& __rel_time) const;
     template <class _Clock, class _Duration>
         _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
@@ -773,7 +773,7 @@ class _LIBCUDACXX_AVAILABILITY_FUTURE __assoc_state_alloc
 
     virtual void __on_zero_shared() noexcept;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __assoc_state_alloc(const _Alloc& __a)
         : __alloc_(__a) {}
 };
@@ -801,7 +801,7 @@ class _LIBCUDACXX_AVAILABILITY_FUTURE __assoc_state_alloc<_Rp&, _Alloc>
 
     virtual void __on_zero_shared() noexcept;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __assoc_state_alloc(const _Alloc& __a)
         : __alloc_(__a) {}
 };
@@ -827,7 +827,7 @@ class _LIBCUDACXX_AVAILABILITY_FUTURE __assoc_sub_state_alloc
 
     virtual void __on_zero_shared() noexcept;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __assoc_sub_state_alloc(const _Alloc& __a)
         : __alloc_(__a) {}
 };
@@ -854,7 +854,7 @@ class _LIBCUDACXX_AVAILABILITY_FUTURE __deferred_assoc_state
 
 public:
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __deferred_assoc_state(_Fp&& __f);
 #endif
 
@@ -901,7 +901,7 @@ class _LIBCUDACXX_AVAILABILITY_FUTURE __deferred_assoc_state<void, _Fp>
 
 public:
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __deferred_assoc_state(_Fp&& __f);
 #endif
 
@@ -950,7 +950,7 @@ class _LIBCUDACXX_AVAILABILITY_FUTURE __async_assoc_state
     virtual void __on_zero_shared() noexcept;
 public:
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __async_assoc_state(_Fp&& __f);
 #endif
 
@@ -1005,7 +1005,7 @@ class _LIBCUDACXX_AVAILABILITY_FUTURE __async_assoc_state<void, _Fp>
     virtual void __on_zero_shared() noexcept;
 public:
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __async_assoc_state(_Fp&& __f);
 #endif
 
@@ -1096,15 +1096,15 @@ class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_AVAILABILITY_FUTURE future
 #endif
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     future() noexcept : __state_(nullptr) {}
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     future(future&& __rhs) noexcept
         : __state_(__rhs.__state_) {__rhs.__state_ = nullptr;}
     future(const future&) = delete;
     future& operator=(const future&) = delete;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     future& operator=(future&& __rhs) noexcept
         {
             future(std::move(__rhs)).swap(*this);
@@ -1117,28 +1117,28 @@ private:
 public:
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
     ~future();
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future<_Rp> share() noexcept;
 
     // retrieving the value
     _Rp get();
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(future& __rhs) noexcept {_CUDA_VSTD::swap(__state_, __rhs.__state_);}
 
     // functions to check state
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool valid() const noexcept {return __state_ != nullptr;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void wait() const {__state_->wait();}
     template <class _Rep, class _Period>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         future_status
         wait_for(const chrono::duration<_Rep, _Period>& __rel_time) const
             {return __state_->wait_for(__rel_time);}
     template <class _Clock, class _Duration>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         future_status
         wait_until(const chrono::time_point<_Clock, _Duration>& __abs_time) const
             {return __state_->wait_until(__abs_time);}
@@ -1196,15 +1196,15 @@ class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_AVAILABILITY_FUTURE future<_Rp&>
 #endif
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     future() noexcept : __state_(nullptr) {}
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     future(future&& __rhs) noexcept
         : __state_(__rhs.__state_) {__rhs.__state_ = nullptr;}
     future(const future&) = delete;
     future& operator=(const future&) = delete;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     future& operator=(future&& __rhs) noexcept
         {
             future(std::move(__rhs)).swap(*this);
@@ -1217,28 +1217,28 @@ private:
 public:
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
     ~future();
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future<_Rp&> share() noexcept;
 
     // retrieving the value
     _Rp& get();
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(future& __rhs) noexcept {_CUDA_VSTD::swap(__state_, __rhs.__state_);}
 
     // functions to check state
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool valid() const noexcept {return __state_ != nullptr;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void wait() const {__state_->wait();}
     template <class _Rep, class _Period>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         future_status
         wait_for(const chrono::duration<_Rep, _Period>& __rel_time) const
             {return __state_->wait_for(__rel_time);}
     template <class _Clock, class _Duration>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         future_status
         wait_until(const chrono::time_point<_Clock, _Duration>& __abs_time) const
             {return __state_->wait_until(__abs_time);}
@@ -1291,15 +1291,15 @@ class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_AVAILABILITY_FUTURE future<void>
 #endif
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     future() noexcept : __state_(nullptr) {}
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     future(future&& __rhs) noexcept
         : __state_(__rhs.__state_) {__rhs.__state_ = nullptr;}
     future(const future&) = delete;
     future& operator=(const future&) = delete;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     future& operator=(future&& __rhs) noexcept
         {
             future(std::move(__rhs)).swap(*this);
@@ -1312,35 +1312,35 @@ private:
 public:
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
     ~future();
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future<void> share() noexcept;
 
     // retrieving the value
     void get();
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(future& __rhs) noexcept {_CUDA_VSTD::swap(__state_, __rhs.__state_);}
 
     // functions to check state
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool valid() const noexcept {return __state_ != nullptr;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void wait() const {__state_->wait();}
     template <class _Rep, class _Period>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         future_status
         wait_for(const chrono::duration<_Rep, _Period>& __rel_time) const
             {return __state_->wait_for(__rel_time);}
     template <class _Clock, class _Duration>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         future_status
         wait_until(const chrono::time_point<_Clock, _Duration>& __abs_time) const
             {return __state_->wait_until(__abs_time);}
 };
 
 template <class _Rp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(future<_Rp>& __x, future<_Rp>& __y) noexcept
 {
@@ -1356,7 +1356,7 @@ class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_AVAILABILITY_FUTURE promise
 {
     __assoc_state<_Rp>* __state_;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit promise(nullptr_t) noexcept : __state_(nullptr) {}
 
     template <class> friend class packaged_task;
@@ -1365,7 +1365,7 @@ public:
     template <class _Alloc>
         promise(allocator_arg_t, const _Alloc& __a);
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     promise(promise&& __rhs) noexcept
         : __state_(__rhs.__state_) {__rhs.__state_ = nullptr;}
     promise(const promise& __rhs) = delete;
@@ -1378,7 +1378,7 @@ public:
 
     // assignment
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     promise& operator=(promise&& __rhs) noexcept
         {
             promise(std::move(__rhs)).swap(*this);
@@ -1390,7 +1390,7 @@ private:
     promise& operator=(const promise& __rhs);
 public:
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(promise& __rhs) noexcept {_CUDA_VSTD::swap(__state_, __rhs.__state_);}
 
     // retrieving the result
@@ -1523,7 +1523,7 @@ class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_AVAILABILITY_FUTURE promise<_Rp&>
 {
     __assoc_state<_Rp&>* __state_;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit promise(nullptr_t) noexcept : __state_(nullptr) {}
 
     template <class> friend class packaged_task;
@@ -1533,7 +1533,7 @@ public:
     template <class _Allocator>
         promise(allocator_arg_t, const _Allocator& __a);
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     promise(promise&& __rhs) noexcept
         : __state_(__rhs.__state_) {__rhs.__state_ = nullptr;}
     promise(const promise& __rhs) = delete;
@@ -1546,7 +1546,7 @@ public:
 
     // assignment
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     promise& operator=(promise&& __rhs) noexcept
         {
             promise(std::move(__rhs)).swap(*this);
@@ -1558,7 +1558,7 @@ private:
     promise& operator=(const promise& __rhs);
 public:
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(promise& __rhs) noexcept {_CUDA_VSTD::swap(__state_, __rhs.__state_);}
 
     // retrieving the result
@@ -1659,7 +1659,7 @@ class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_AVAILABILITY_FUTURE promise<void>
 {
     __assoc_sub_state* __state_;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit promise(nullptr_t) noexcept : __state_(nullptr) {}
 
     template <class> friend class packaged_task;
@@ -1670,7 +1670,7 @@ public:
         _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
         promise(allocator_arg_t, const _Allocator& __a);
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     promise(promise&& __rhs) noexcept
         : __state_(__rhs.__state_) {__rhs.__state_ = nullptr;}
     promise(const promise& __rhs) = delete;
@@ -1683,7 +1683,7 @@ public:
 
     // assignment
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     promise& operator=(promise&& __rhs) noexcept
         {
             promise(std::move(__rhs)).swap(*this);
@@ -1695,7 +1695,7 @@ private:
     promise& operator=(const promise& __rhs);
 public:
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(promise& __rhs) noexcept {_CUDA_VSTD::swap(__state_, __rhs.__state_);}
 
     // retrieving the result
@@ -1723,7 +1723,7 @@ promise<void>::promise(allocator_arg_t, const _Alloc& __a0)
 }
 
 template <class _Rp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(promise<_Rp>& __x, promise<_Rp>& __y) noexcept
 {
@@ -1746,9 +1746,9 @@ class _LIBCUDACXX_AVAILABILITY_FUTURE __packaged_task_base<_Rp(_ArgTypes...)>
     __packaged_task_base(const __packaged_task_base&);
     __packaged_task_base& operator=(const __packaged_task_base&);
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __packaged_task_base() {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     virtual ~__packaged_task_base() {}
     virtual void __move_to(__packaged_task_base*) noexcept = 0;
     virtual void destroy() = 0;
@@ -1764,14 +1764,14 @@ class _LIBCUDACXX_AVAILABILITY_FUTURE __packaged_task_func<_Fp, _Alloc, _Rp(_Arg
 {
     __compressed_pair<_Fp, _Alloc> __f_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __packaged_task_func(const _Fp& __f) : __f_(__f) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __packaged_task_func(_Fp&& __f) : __f_(_CUDA_VSTD::move(__f)) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __packaged_task_func(const _Fp& __f, const _Alloc& __a)
         : __f_(__f, __a) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __packaged_task_func(_Fp&& __f, const _Alloc& __a)
         : __f_(_CUDA_VSTD::move(__f), __a) {}
     virtual void __move_to(__packaged_task_base<_Rp(_ArgTypes...)>*) noexcept;
@@ -1827,7 +1827,7 @@ public:
     typedef _Rp result_type;
 
     // construct/copy/destroy:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __packaged_task_function() noexcept : __f_(nullptr) {}
     template<class _Fp>
       __packaged_task_function(_Fp&& __f);
@@ -1844,7 +1844,7 @@ public:
 
     void swap(__packaged_task_function&) noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Rp operator()(_ArgTypes...) const;
 };
 
@@ -2003,7 +2003,7 @@ private:
 
 public:
     // construction and destruction
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     packaged_task() noexcept : __p_(nullptr) {}
     template <class _Fp,
               class = typename enable_if
@@ -2014,7 +2014,7 @@ public:
                       >::value
                   >::type
              >
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         explicit packaged_task(_Fp&& __f) : __f_(_CUDA_VSTD::forward<_Fp>(__f)) {}
     template <class _Fp, class _Allocator,
               class = typename enable_if
@@ -2025,7 +2025,7 @@ public:
                       >::value
                   >::type
               >
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         packaged_task(allocator_arg_t, const _Allocator& __a, _Fp&& __f)
              : __f_(allocator_arg, __a, _CUDA_VSTD::forward<_Fp>(__f)),
                __p_(allocator_arg, __a) {}
@@ -2036,28 +2036,28 @@ public:
     packaged_task& operator=(const packaged_task&) = delete;
 
     // move support
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     packaged_task(packaged_task&& __other) noexcept
         : __f_(_CUDA_VSTD::move(__other.__f_)), __p_(_CUDA_VSTD::move(__other.__p_)) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     packaged_task& operator=(packaged_task&& __other) noexcept
     {
         __f_ = _CUDA_VSTD::move(__other.__f_);
         __p_ = _CUDA_VSTD::move(__other.__p_);
         return *this;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(packaged_task& __other) noexcept
     {
         __f_.swap(__other.__f_);
         __p_.swap(__other.__p_);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool valid() const noexcept {return __p_.__state_ != nullptr;}
 
     // result retrieval
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     future<result_type> get_future() {return __p_.get_future();}
 
     // execution
@@ -2132,7 +2132,7 @@ private:
 
 public:
     // construction and destruction
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     packaged_task() noexcept : __p_(nullptr) {}
     template <class _Fp,
               class = typename enable_if
@@ -2143,7 +2143,7 @@ public:
                       >::value
                   >::type
               >
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         explicit packaged_task(_Fp&& __f) : __f_(_CUDA_VSTD::forward<_Fp>(__f)) {}
     template <class _Fp, class _Allocator,
               class = typename enable_if
@@ -2154,7 +2154,7 @@ public:
                       >::value
                   >::type
               >
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         packaged_task(allocator_arg_t, const _Allocator& __a, _Fp&& __f)
              : __f_(allocator_arg, __a, _CUDA_VSTD::forward<_Fp>(__f)),
                __p_(allocator_arg, __a) {}
@@ -2165,28 +2165,28 @@ public:
     packaged_task& operator=(const packaged_task&) = delete;
 
     // move support
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     packaged_task(packaged_task&& __other) noexcept
         : __f_(_CUDA_VSTD::move(__other.__f_)), __p_(_CUDA_VSTD::move(__other.__p_)) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     packaged_task& operator=(packaged_task&& __other) noexcept
     {
         __f_ = _CUDA_VSTD::move(__other.__f_);
         __p_ = _CUDA_VSTD::move(__other.__p_);
         return *this;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(packaged_task& __other) noexcept
     {
         __f_.swap(__other.__f_);
         __p_.swap(__other.__p_);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool valid() const noexcept {return __p_.__state_ != nullptr;}
 
     // result retrieval
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     future<result_type> get_future() {return __p_.get_future();}
 
     // execution
@@ -2252,7 +2252,7 @@ packaged_task<void(_ArgTypes...)>::reset()
 }
 
 template <class _Callable>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(packaged_task<_Callable>& __x, packaged_task<_Callable>& __y) noexcept
 {
@@ -2298,11 +2298,11 @@ class __async_func
 public:
     typedef typename __invoke_of<_Fp, _Args...>::type _Rp;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __async_func(_Fp&& __f, _Args&&... __args)
         : __f_(_CUDA_VSTD::move(__f), _CUDA_VSTD::move(__args)...) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __async_func(__async_func&& __f) : __f_(_CUDA_VSTD::move(__f.__f_)) {}
 
     _Rp operator()()
@@ -2319,7 +2319,7 @@ private:
     }
 };
 
-inline _LIBCUDACXX_INLINE_VISIBILITY bool __does_policy_contain(launch __policy, launch __value )
+_LIBCUDACXX_HIDE_FROM_ABI bool __does_policy_contain(launch __policy, launch __value )
 { return (int(__policy) & int(__value)) != 0; }
 
 template <class _Fp, class... _Args>
@@ -2349,7 +2349,7 @@ async(launch __policy, _Fp&& __f, _Args&&... __args)
 }
 
 template <class _Fp, class... _Args>
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI
 future<typename __invoke_of<__decay_t<_Fp>, __decay_t<_Args>...>::type>
 async(_Fp&& __f, _Args&&... __args)
 {
@@ -2367,23 +2367,23 @@ class _LIBCUDACXX_TEMPLATE_VIS shared_future
     __assoc_state<_Rp>* __state_;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future() noexcept : __state_(nullptr) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future(const shared_future& __rhs)  noexcept : __state_(__rhs.__state_)
         {if (__state_) __state_->__add_shared();}
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future(future<_Rp>&& __f) noexcept : __state_(__f.__state_)
         {__f.__state_ = nullptr;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future(shared_future&& __rhs) noexcept : __state_(__rhs.__state_)
         {__rhs.__state_ = nullptr;}
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
     ~shared_future();
     shared_future& operator=(const shared_future& __rhs) noexcept;
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future& operator=(shared_future&& __rhs) noexcept
         {
             shared_future(std::move(__rhs)).swap(*this);
@@ -2392,25 +2392,25 @@ public:
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 
     // retrieving the value
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const _Rp& get() const {return __state_->copy();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(shared_future& __rhs) noexcept {_CUDA_VSTD::swap(__state_, __rhs.__state_);}
 
     // functions to check state
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool valid() const noexcept {return __state_ != nullptr;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void wait() const {__state_->wait();}
     template <class _Rep, class _Period>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         future_status
         wait_for(const chrono::duration<_Rep, _Period>& __rel_time) const
             {return __state_->wait_for(__rel_time);}
     template <class _Clock, class _Duration>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         future_status
         wait_until(const chrono::time_point<_Clock, _Duration>& __abs_time) const
             {return __state_->wait_until(__abs_time);}
@@ -2441,23 +2441,23 @@ class _LIBCUDACXX_TEMPLATE_VIS shared_future<_Rp&>
     __assoc_state<_Rp&>* __state_;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future() noexcept : __state_(nullptr) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future(const shared_future& __rhs) : __state_(__rhs.__state_)
         {if (__state_) __state_->__add_shared();}
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future(future<_Rp&>&& __f) noexcept : __state_(__f.__state_)
         {__f.__state_ = nullptr;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future(shared_future&& __rhs) noexcept : __state_(__rhs.__state_)
         {__rhs.__state_ = nullptr;}
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
     ~shared_future();
     shared_future& operator=(const shared_future& __rhs);
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future& operator=(shared_future&& __rhs) noexcept
         {
             shared_future(std::move(__rhs)).swap(*this);
@@ -2466,25 +2466,25 @@ public:
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 
     // retrieving the value
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Rp& get() const {return __state_->copy();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(shared_future& __rhs) noexcept {_CUDA_VSTD::swap(__state_, __rhs.__state_);}
 
     // functions to check state
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool valid() const noexcept {return __state_ != nullptr;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void wait() const {__state_->wait();}
     template <class _Rep, class _Period>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         future_status
         wait_for(const chrono::duration<_Rep, _Period>& __rel_time) const
             {return __state_->wait_for(__rel_time);}
     template <class _Clock, class _Duration>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         future_status
         wait_until(const chrono::time_point<_Clock, _Duration>& __abs_time) const
             {return __state_->wait_until(__abs_time);}
@@ -2515,23 +2515,23 @@ class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_AVAILABILITY_FUTURE shared_future<void>
     __assoc_sub_state* __state_;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future() noexcept : __state_(nullptr) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future(const shared_future& __rhs) : __state_(__rhs.__state_)
         {if (__state_) __state_->__add_shared();}
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future(future<void>&& __f) noexcept : __state_(__f.__state_)
         {__f.__state_ = nullptr;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future(shared_future&& __rhs) noexcept : __state_(__rhs.__state_)
         {__rhs.__state_ = nullptr;}
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
     ~shared_future();
     shared_future& operator=(const shared_future& __rhs);
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_future& operator=(shared_future&& __rhs) noexcept
         {
             shared_future(std::move(__rhs)).swap(*this);
@@ -2540,32 +2540,32 @@ public:
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 
     // retrieving the value
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void get() const {__state_->copy();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(shared_future& __rhs) noexcept {_CUDA_VSTD::swap(__state_, __rhs.__state_);}
 
     // functions to check state
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool valid() const noexcept {return __state_ != nullptr;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void wait() const {__state_->wait();}
     template <class _Rep, class _Period>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         future_status
         wait_for(const chrono::duration<_Rep, _Period>& __rel_time) const
             {return __state_->wait_for(__rel_time);}
     template <class _Clock, class _Duration>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         future_status
         wait_until(const chrono::time_point<_Clock, _Duration>& __abs_time) const
             {return __state_->wait_until(__abs_time);}
 };
 
 template <class _Rp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(shared_future<_Rp>& __x, shared_future<_Rp>& __y) noexcept
 {

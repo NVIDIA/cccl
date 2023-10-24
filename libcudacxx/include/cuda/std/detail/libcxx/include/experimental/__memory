@@ -74,7 +74,7 @@ struct __lfts_uses_alloc_ctor
 {};
 
 template <class _Tp, class _Alloc, class ..._Args>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void __lfts_user_alloc_construct(
     _Tp * __store, const _Alloc & __a, _Args &&... __args)
 {

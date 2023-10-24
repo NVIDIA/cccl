@@ -43,8 +43,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_move)
 
-_LIBCUDACXX_INLINE_VISIBILITY
-void iter_move();
+_LIBCUDACXX_HOST_DEVICE void iter_move();
 
 #if LIBCUDACXX_STD_VER > 17
 template <class _Tp>
@@ -113,7 +112,7 @@ _LIBCUDACXX_CONCEPT __just_deref = _LIBCUDACXX_FRAGMENT(__just_deref_, _Tp);
 struct __fn {
   _LIBCUDACXX_TEMPLATE(class _Ip)
     _LIBCUDACXX_REQUIRES( __unqualified_iter_move<_Ip>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
     constexpr decltype(auto) operator()(_Ip&& __i) const
     noexcept(noexcept(iter_move(_CUDA_VSTD::forward<_Ip>(__i))))
   {
@@ -122,14 +121,14 @@ struct __fn {
 
   _LIBCUDACXX_TEMPLATE(class _Ip)
     _LIBCUDACXX_REQUIRES( __move_deref<_Ip>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Ip&& __i) const
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const
     noexcept(noexcept(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i))))
     -> decltype(      _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))
     { return          _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)); }
 
   _LIBCUDACXX_TEMPLATE(class _Ip)
     _LIBCUDACXX_REQUIRES( __just_deref<_Ip>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Ip&& __i) const
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const
     noexcept(noexcept(*_CUDA_VSTD::forward<_Ip>(__i)))
     -> decltype(      *_CUDA_VSTD::forward<_Ip>(__i))
     { return          *_CUDA_VSTD::forward<_Ip>(__i); }

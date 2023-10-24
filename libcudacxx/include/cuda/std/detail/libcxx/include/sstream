@@ -210,9 +210,9 @@ private:
 
 public:
     // 27.8.1.1 Constructors:
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_stringbuf(ios_base::openmode __wch = ios_base::in | ios_base::out);
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_stringbuf(const string_type& __s,
                              ios_base::openmode __wch = ios_base::in | ios_base::out);
     basic_stringbuf(basic_stringbuf&& __rhs);
@@ -233,7 +233,7 @@ protected:
     virtual int_type overflow (int_type __c = traits_type::eof());
     virtual pos_type seekoff(off_type __off, ios_base::seekdir __way,
                              ios_base::openmode __wch = ios_base::in | ios_base::out);
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     virtual pos_type seekpos(pos_type __sp,
                              ios_base::openmode __wch = ios_base::in | ios_base::out);
 };
@@ -422,7 +422,7 @@ basic_stringbuf<_CharT, _Traits, _Allocator>::swap(basic_stringbuf& __rhs)
 }
 
 template <class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(basic_stringbuf<_CharT, _Traits, _Allocator>& __x,
      basic_stringbuf<_CharT, _Traits, _Allocator>& __y)
@@ -641,25 +641,25 @@ private:
 
 public:
     // 27.8.2.1 Constructors:
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_istringstream(ios_base::openmode __wch = ios_base::in);
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_istringstream(const string_type& __s,
                                  ios_base::openmode __wch = ios_base::in);
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_istringstream(basic_istringstream&& __rhs);
 
     // 27.8.2.2 Assign and swap:
     basic_istringstream& operator=(basic_istringstream&& __rhs);
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(basic_istringstream& __rhs);
 
     // 27.8.2.3 Members:
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_stringbuf<char_type, traits_type, allocator_type>* rdbuf() const;
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     string_type str() const;
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void str(const string_type& __s);
 };
 
@@ -703,7 +703,7 @@ void basic_istringstream<_CharT, _Traits, _Allocator>::swap(basic_istringstream&
 }
 
 template <class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(basic_istringstream<_CharT, _Traits, _Allocator>& __x,
      basic_istringstream<_CharT, _Traits, _Allocator>& __y)
@@ -752,25 +752,25 @@ private:
 
 public:
     // 27.8.2.1 Constructors:
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_ostringstream(ios_base::openmode __wch = ios_base::out);
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_ostringstream(const string_type& __s,
                                  ios_base::openmode __wch = ios_base::out);
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_ostringstream(basic_ostringstream&& __rhs);
 
     // 27.8.2.2 Assign and swap:
     basic_ostringstream& operator=(basic_ostringstream&& __rhs);
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(basic_ostringstream& __rhs);
 
     // 27.8.2.3 Members:
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_stringbuf<char_type, traits_type, allocator_type>* rdbuf() const;
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     string_type str() const;
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void str(const string_type& __s);
 };
 
@@ -815,7 +815,7 @@ basic_ostringstream<_CharT, _Traits, _Allocator>::swap(basic_ostringstream& __rh
 }
 
 template <class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(basic_ostringstream<_CharT, _Traits, _Allocator>& __x,
      basic_ostringstream<_CharT, _Traits, _Allocator>& __y)
@@ -865,25 +865,25 @@ private:
 
 public:
     // 27.8.2.1 Constructors:
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_stringstream(ios_base::openmode __wch = ios_base::in | ios_base::out);
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_stringstream(const string_type& __s,
                                 ios_base::openmode __wch = ios_base::in | ios_base::out);
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_stringstream(basic_stringstream&& __rhs);
 
     // 27.8.2.2 Assign and swap:
     basic_stringstream& operator=(basic_stringstream&& __rhs);
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(basic_stringstream& __rhs);
 
     // 27.8.2.3 Members:
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_stringbuf<char_type, traits_type, allocator_type>* rdbuf() const;
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     string_type str() const;
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void str(const string_type& __s);
 };
 
@@ -928,7 +928,7 @@ basic_stringstream<_CharT, _Traits, _Allocator>::swap(basic_stringstream& __rhs)
 }
 
 template <class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(basic_stringstream<_CharT, _Traits, _Allocator>& __x,
      basic_stringstream<_CharT, _Traits, _Allocator>& __y)

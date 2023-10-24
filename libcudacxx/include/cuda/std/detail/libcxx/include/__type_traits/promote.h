@@ -30,17 +30,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct __numeric_type
 {
-   _LIBCUDACXX_INLINE_VISIBILITY static void __test(...);
-   _LIBCUDACXX_INLINE_VISIBILITY static float __test(float);
-   _LIBCUDACXX_INLINE_VISIBILITY static double __test(char);
-   _LIBCUDACXX_INLINE_VISIBILITY static double __test(int);
-   _LIBCUDACXX_INLINE_VISIBILITY static double __test(unsigned);
-   _LIBCUDACXX_INLINE_VISIBILITY static double __test(long);
-   _LIBCUDACXX_INLINE_VISIBILITY static double __test(unsigned long);
-   _LIBCUDACXX_INLINE_VISIBILITY static double __test(long long);
-   _LIBCUDACXX_INLINE_VISIBILITY static double __test(unsigned long long);
-   _LIBCUDACXX_INLINE_VISIBILITY static double __test(double);
-   _LIBCUDACXX_INLINE_VISIBILITY static long double __test(long double);
+   _LIBCUDACXX_HIDE_FROM_ABI static void __test(...);
+   _LIBCUDACXX_HIDE_FROM_ABI static float __test(float);
+   _LIBCUDACXX_HIDE_FROM_ABI static double __test(char);
+   _LIBCUDACXX_HIDE_FROM_ABI static double __test(int);
+   _LIBCUDACXX_HIDE_FROM_ABI static double __test(unsigned);
+   _LIBCUDACXX_HIDE_FROM_ABI static double __test(long);
+   _LIBCUDACXX_HIDE_FROM_ABI static double __test(unsigned long);
+   _LIBCUDACXX_HIDE_FROM_ABI static double __test(long long);
+   _LIBCUDACXX_HIDE_FROM_ABI static double __test(unsigned long long);
+   _LIBCUDACXX_HIDE_FROM_ABI static double __test(double);
+   _LIBCUDACXX_HIDE_FROM_ABI static long double __test(long double);
 
    typedef decltype(__test(declval<_Tp>())) type;
    static const bool value = _IsNotSame<type, void>::value;

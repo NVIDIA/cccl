@@ -31,7 +31,7 @@ static constexpr char cDigitsLut[200] = {
     '7', '9', '8', '9', '9'};
 
 template <typename T>
-inline _LIBCUDACXX_INLINE_VISIBILITY char*
+_LIBCUDACXX_HIDE_FROM_ABI char*
 append1(char* buffer, T i)
 {
     *buffer = '0' + static_cast<char>(i);
@@ -39,7 +39,7 @@ append1(char* buffer, T i)
 }
 
 template <typename T>
-inline _LIBCUDACXX_INLINE_VISIBILITY char*
+_LIBCUDACXX_HIDE_FROM_ABI char*
 append2(char* buffer, T i)
 {
     memcpy(buffer, &cDigitsLut[(i)*2], 2);
@@ -47,21 +47,21 @@ append2(char* buffer, T i)
 }
 
 template <typename T>
-inline _LIBCUDACXX_INLINE_VISIBILITY char*
+_LIBCUDACXX_HIDE_FROM_ABI char*
 append3(char* buffer, T i)
 {
     return append2(append1(buffer, (i) / 100), (i) % 100);
 }
 
 template <typename T>
-inline _LIBCUDACXX_INLINE_VISIBILITY char*
+_LIBCUDACXX_HIDE_FROM_ABI char*
 append4(char* buffer, T i)
 {
     return append2(append2(buffer, (i) / 100), (i) % 100);
 }
 
 template <typename T>
-inline _LIBCUDACXX_INLINE_VISIBILITY char*
+_LIBCUDACXX_HIDE_FROM_ABI char*
 append2_no_zeros(char* buffer, T v)
 {
     if (v < 10)
@@ -71,7 +71,7 @@ append2_no_zeros(char* buffer, T v)
 }
 
 template <typename T>
-inline _LIBCUDACXX_INLINE_VISIBILITY char*
+_LIBCUDACXX_HIDE_FROM_ABI char*
 append4_no_zeros(char* buffer, T v)
 {
     if (v < 100)
@@ -83,7 +83,7 @@ append4_no_zeros(char* buffer, T v)
 }
 
 template <typename T>
-inline _LIBCUDACXX_INLINE_VISIBILITY char*
+_LIBCUDACXX_HIDE_FROM_ABI char*
 append8_no_zeros(char* buffer, T v)
 {
     if (v < 10000)

@@ -71,26 +71,26 @@ class unexpected {
 
 public:
   // [expected.un.ctor]
-  _LIBCUDACXX_HIDE_FROM_ABI unexpected(const unexpected&) = default;
-  _LIBCUDACXX_HIDE_FROM_ABI unexpected(unexpected&&)      = default;
+  _LIBCUDACXX_HIDE_FROM_ABI_DEFAULTED unexpected(const unexpected&) = default;
+  _LIBCUDACXX_HIDE_FROM_ABI_DEFAULTED unexpected(unexpected&&)      = default;
 
   _LIBCUDACXX_TEMPLATE(class _Error = _Err)
     _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_same, remove_cvref_t<_Error>, unexpected) &&
                !_LIBCUDACXX_TRAIT(is_same, remove_cvref_t<_Error>, in_place_t) &&
                _LIBCUDACXX_TRAIT(is_constructible, _Err, _Error)))
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr explicit unexpected(_Error&& __error) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Error))
     : __unex_(_CUDA_VSTD::forward<_Error>(__error)) {}
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
     _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_constructible, _Err, _Args...))
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr explicit unexpected(in_place_t, _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
     : __unex_(_CUDA_VSTD::forward<_Args>(__args)...) {}
 
   _LIBCUDACXX_TEMPLATE(class _Up, class... _Args)
     _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr explicit unexpected(in_place_t, initializer_list<_Up> __il, _Args&&... __args) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, initializer_list<_Up>&, _Args...))
     : __unex_(__il, _CUDA_VSTD::forward<_Args>(__args)...) {}
@@ -99,28 +99,28 @@ public:
   constexpr unexpected& operator=(unexpected&&)      = default;
 
   // [expected.un.obs]
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
   constexpr const _Err& error() const& noexcept {
     return __unex_;
   }
 
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
   constexpr _Err& error() & noexcept {
     return __unex_;
   }
 
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
   constexpr const _Err&& error() const&& noexcept {
     return _CUDA_VSTD::move(__unex_);
   }
 
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
   constexpr _Err&& error() && noexcept {
     return _CUDA_VSTD::move(__unex_);
   }
 
   // [expected.un.swap]
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr void swap(unexpected& __other) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err)) {
     static_assert(_LIBCUDACXX_TRAIT(is_swappable, _Err), "E must be swappable");
     using _CUDA_VSTD::swap;
@@ -129,7 +129,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
     _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_swappable, _Err2))
-  friend _LIBCUDACXX_INLINE_VISIBILITY constexpr
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr
   void swap(unexpected& __lhs, unexpected& __rhs) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
   {
     __lhs.swap(__rhs);
@@ -138,14 +138,14 @@ public:
 
   // [expected.un.eq]
   template <class _UErr>
-  friend _LIBCUDACXX_INLINE_VISIBILITY constexpr
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr
   _LIBCUDACXX_NODISCARD_EXT bool operator==(const unexpected& __lhs, const unexpected<_UErr>& __rhs) noexcept(
     noexcept(static_cast<bool>(__lhs.error() == __rhs.error()))) {
     return __lhs.error() == __rhs.error();
   }
 #if _LIBCUDACXX_STD_VER < 20
   template <class _UErr>
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   _LIBCUDACXX_NODISCARD_EXT friend constexpr bool operator!=(const unexpected& __lhs, const unexpected<_UErr>& __rhs) noexcept(
     noexcept(static_cast<bool>(__lhs.error() != __rhs.error()))) {
     return __lhs.error() != __rhs.error();

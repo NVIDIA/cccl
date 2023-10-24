@@ -87,7 +87,7 @@ public:
     typedef char      extern_type;
     typedef mbstate_t state_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __codecvt_utf8(size_t __refs, unsigned long _Maxcode,
                             codecvt_mode _Mode)
         : codecvt<wchar_t, char, mbstate_t>(__refs), _Maxcode_(_Maxcode),
@@ -122,7 +122,7 @@ public:
     typedef char      extern_type;
     typedef mbstate_t state_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __codecvt_utf8(size_t __refs, unsigned long _Maxcode,
                             codecvt_mode _Mode)
         : codecvt<char16_t, char, mbstate_t>(__refs), _Maxcode_(_Maxcode),
@@ -157,7 +157,7 @@ public:
     typedef char      extern_type;
     typedef mbstate_t state_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __codecvt_utf8(size_t __refs, unsigned long _Maxcode,
                             codecvt_mode _Mode)
         : codecvt<char32_t, char, mbstate_t>(__refs), _Maxcode_(_Maxcode),
@@ -187,11 +187,11 @@ class _LIBCUDACXX_TEMPLATE_VIS codecvt_utf8
     : public __codecvt_utf8<_Elem>
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit codecvt_utf8(size_t __refs = 0)
         : __codecvt_utf8<_Elem>(__refs, _Maxcode, _Mode) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~codecvt_utf8() {}
 };
 
@@ -210,7 +210,7 @@ public:
     typedef char      extern_type;
     typedef mbstate_t state_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __codecvt_utf16(size_t __refs, unsigned long _Maxcode,
                             codecvt_mode _Mode)
         : codecvt<wchar_t, char, mbstate_t>(__refs), _Maxcode_(_Maxcode),
@@ -245,7 +245,7 @@ public:
     typedef char      extern_type;
     typedef mbstate_t state_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __codecvt_utf16(size_t __refs, unsigned long _Maxcode,
                             codecvt_mode _Mode)
         : codecvt<wchar_t, char, mbstate_t>(__refs), _Maxcode_(_Maxcode),
@@ -280,7 +280,7 @@ public:
     typedef char      extern_type;
     typedef mbstate_t state_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __codecvt_utf16(size_t __refs, unsigned long _Maxcode,
                             codecvt_mode _Mode)
         : codecvt<char16_t, char, mbstate_t>(__refs), _Maxcode_(_Maxcode),
@@ -315,7 +315,7 @@ public:
     typedef char      extern_type;
     typedef mbstate_t state_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __codecvt_utf16(size_t __refs, unsigned long _Maxcode,
                             codecvt_mode _Mode)
         : codecvt<char16_t, char, mbstate_t>(__refs), _Maxcode_(_Maxcode),
@@ -350,7 +350,7 @@ public:
     typedef char      extern_type;
     typedef mbstate_t state_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __codecvt_utf16(size_t __refs, unsigned long _Maxcode,
                             codecvt_mode _Mode)
         : codecvt<char32_t, char, mbstate_t>(__refs), _Maxcode_(_Maxcode),
@@ -385,7 +385,7 @@ public:
     typedef char      extern_type;
     typedef mbstate_t state_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __codecvt_utf16(size_t __refs, unsigned long _Maxcode,
                             codecvt_mode _Mode)
         : codecvt<char32_t, char, mbstate_t>(__refs), _Maxcode_(_Maxcode),
@@ -415,11 +415,11 @@ class _LIBCUDACXX_TEMPLATE_VIS codecvt_utf16
     : public __codecvt_utf16<_Elem, _Mode & little_endian>
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit codecvt_utf16(size_t __refs = 0)
         : __codecvt_utf16<_Elem, _Mode & little_endian>(__refs, _Maxcode, _Mode) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~codecvt_utf16() {}
 };
 
@@ -438,7 +438,7 @@ public:
     typedef char      extern_type;
     typedef mbstate_t state_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __codecvt_utf8_utf16(size_t __refs, unsigned long _Maxcode,
                             codecvt_mode _Mode)
         : codecvt<wchar_t, char, mbstate_t>(__refs), _Maxcode_(_Maxcode),
@@ -473,7 +473,7 @@ public:
     typedef char      extern_type;
     typedef mbstate_t state_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __codecvt_utf8_utf16(size_t __refs, unsigned long _Maxcode,
                             codecvt_mode _Mode)
         : codecvt<char32_t, char, mbstate_t>(__refs), _Maxcode_(_Maxcode),
@@ -508,7 +508,7 @@ public:
     typedef char      extern_type;
     typedef mbstate_t state_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __codecvt_utf8_utf16(size_t __refs, unsigned long _Maxcode,
                             codecvt_mode _Mode)
         : codecvt<char16_t, char, mbstate_t>(__refs), _Maxcode_(_Maxcode),
@@ -538,11 +538,11 @@ class _LIBCUDACXX_TEMPLATE_VIS codecvt_utf8_utf16
     : public __codecvt_utf8_utf16<_Elem>
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit codecvt_utf8_utf16(size_t __refs = 0)
         : __codecvt_utf8_utf16<_Elem>(__refs, _Maxcode, _Mode) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~codecvt_utf8_utf16() {}
 };
 

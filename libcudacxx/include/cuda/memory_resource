@@ -154,14 +154,14 @@ struct __fn {
   _LIBCUDACXX_DISABLE_EXEC_CHECK
   _LIBCUDACXX_TEMPLATE(class _Property)
     _LIBCUDACXX_REQUIRES( (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
-  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr void get_property(const _Derived&, _Property) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void get_property(const _Derived&, _Property) noexcept {}
 
   // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
   _LIBCUDACXX_DISABLE_EXEC_CHECK
   _LIBCUDACXX_TEMPLATE(class _Property, class _Derived2 = _Derived)
     _LIBCUDACXX_REQUIRES( property_with_value<_Property> _LIBCUDACXX_AND has_property<_Upstream, _Property> _LIBCUDACXX_AND
               __has_upstream_resource<_Derived2, _Upstream>)
-  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr __property_value_t<_Property> get_property(
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __property_value_t<_Property> get_property(
     const _Derived& __res, _Property __prop) {
     return get_property(__res.upstream_resource(), __prop);
   }
@@ -179,12 +179,12 @@ struct __fn {
   _LIBCUDACXX_DISABLE_EXEC_CHECK
   _LIBCUDACXX_TEMPLATE(class _Upstream, class _Property)
     _LIBCUDACXX_REQUIRES( (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(const _Upstream&, _Property) const noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(const _Upstream&, _Property) const noexcept {}
 
   _LIBCUDACXX_DISABLE_EXEC_CHECK
   _LIBCUDACXX_TEMPLATE(class _Upstream, class _Property)
     _LIBCUDACXX_REQUIRES( (property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __property_value_t<_Property> operator()(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __property_value_t<_Property> operator()(
     const _Upstream& __res, _Property __prop) const {
     return get_property(__res, __prop);
   }

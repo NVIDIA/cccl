@@ -25,7 +25,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 _ForwardIterator2 swap_ranges(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2)
 {
     for(; __first1 != __last1; ++__first1, (void) ++__first2)

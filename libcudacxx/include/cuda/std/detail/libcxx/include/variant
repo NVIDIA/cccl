@@ -231,7 +231,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _LIBCUDACXX_STD_VER > 14
 
 _LIBCUDACXX_NORETURN
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS
 void __throw_bad_variant_access() {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -315,7 +315,7 @@ constexpr _IndexType __variant_npos = static_cast<_IndexType>(-1);
 namespace __find_detail {
 
 template <class _Tp, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr size_t __find_index() {
   constexpr bool __matches[] = {is_same_v<_Tp, _Types>...};
   size_t __result = __not_found;
@@ -360,7 +360,7 @@ constexpr _Trait __trait =
         ? _Trait::_TriviallyAvailable
         : _IsAvailable<_Tp>::value ? _Trait::_Available : _Trait::_Unavailable;
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr _Trait __common_trait(initializer_list<_Trait> __traits) {
   _Trait __result = _Trait::_TriviallyAvailable;
   for (_Trait __t : __traits) {
@@ -399,13 +399,13 @@ namespace __access {
 
 struct __union {
   template <class _Vp>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto&& __get_alt(_Vp&& __v, in_place_index_t<0>) {
     return _CUDA_VSTD::forward<_Vp>(__v).__head;
   }
 
   template <class _Vp, size_t _Ip>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto&& __get_alt(_Vp&& __v, in_place_index_t<_Ip>) {
     return __get_alt(_CUDA_VSTD::forward<_Vp>(__v).__tail, in_place_index<_Ip - 1>);
   }
@@ -413,7 +413,7 @@ struct __union {
 
 struct __base {
   template <size_t _Ip, class _Vp>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto&& __get_alt(_Vp&& __v) {
     return __union::__get_alt(_CUDA_VSTD::forward<_Vp>(__v).__data,
                               in_place_index<_Ip>);
@@ -422,7 +422,7 @@ struct __base {
 
 struct __variant {
   template <size_t _Ip, class _Vp>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto&& __get_alt(_Vp&& __v) {
     return __base::__get_alt<_Ip>(_CUDA_VSTD::forward<_Vp>(__v).__impl);
   }
@@ -434,7 +434,7 @@ namespace __visitation {
 
 struct __base {
   template <class _Visitor, class... _Vs>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr decltype(auto)
   __visit_alt_at(size_t __index, _Visitor&& __visitor, _Vs&&... __vs) {
     constexpr auto __fdiagonal =
@@ -445,7 +445,7 @@ struct __base {
   }
 
   template <class _Visitor, class... _Vs>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr decltype(auto) __visit_alt(_Visitor&& __visitor,
                                               _Vs&&... __vs) {
     constexpr auto __fmatrix =
@@ -458,11 +458,11 @@ struct __base {
 
 private:
   template <class _Tp>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr const _Tp& __at(const _Tp& __elem) { return __elem; }
 
   template <class _Tp, size_t _Np, typename... _Indices>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto&& __at(const array<_Tp, _Np>& __elems,
                                size_t __index, _Indices... __indices) {
     return __at(__elems[__index], __indices...);
@@ -476,7 +476,7 @@ private:
   }
 
   template <class... _Fs>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto __make_farray(_Fs&&... __fs) {
     __std_visit_visitor_return_type_check<__remove_cvref_t<_Fs>...>();
     using __result = array<common_type_t<__remove_cvref_t<_Fs>...>, sizeof...(_Fs)>;
@@ -486,7 +486,7 @@ private:
   template <std::size_t... _Is>
   struct __dispatcher {
     template <class _Fp, class... _Vs>
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static constexpr decltype(auto) __dispatch(_Fp __f, _Vs... __vs) {
         return __invoke(
             static_cast<_Fp>(__f),
@@ -495,26 +495,26 @@ private:
   };
 
   template <class _Fp, class... _Vs, size_t... _Is>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto __make_dispatch(index_sequence<_Is...>) {
     return __dispatcher<_Is...>::template __dispatch<_Fp, _Vs...>;
   }
 
   template <size_t _Ip, class _Fp, class... _Vs>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto __make_fdiagonal_impl() {
     return __make_dispatch<_Fp, _Vs...>(
         index_sequence<((void)__type_identity<_Vs>{}, _Ip)...>{});
   }
 
   template <class _Fp, class... _Vs, size_t... _Is>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto __make_fdiagonal_impl(index_sequence<_Is...>) {
     return __base::__make_farray(__make_fdiagonal_impl<_Is, _Fp, _Vs...>()...);
   }
 
   template <class _Fp, class _Vp, class... _Vs>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto __make_fdiagonal() {
     constexpr size_t _Np = __remove_cvref_t<_Vp>::__size();
     static_assert(__all<(_Np == __remove_cvref_t<_Vs>::__size())...>::value);
@@ -522,13 +522,13 @@ private:
   }
 
   template <class _Fp, class... _Vs, size_t... _Is>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto __make_fmatrix_impl(index_sequence<_Is...> __is) {
     return __make_dispatch<_Fp, _Vs...>(__is);
   }
 
   template <class _Fp, class... _Vs, size_t... _Is, size_t... _Js, class... _Ls>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto __make_fmatrix_impl(index_sequence<_Is...>,
                                             index_sequence<_Js...>,
                                             _Ls... __ls) {
@@ -537,7 +537,7 @@ private:
   }
 
   template <class _Fp, class... _Vs>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto __make_fmatrix() {
     return __make_fmatrix_impl<_Fp, _Vs...>(
         index_sequence<>{}, make_index_sequence<__remove_cvref_t<_Vs>::__size()>{}...);
@@ -546,7 +546,7 @@ private:
 
 struct __variant {
   template <class _Visitor, class... _Vs>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr decltype(auto)
   __visit_alt_at(size_t __index, _Visitor&& __visitor, _Vs&&... __vs) {
     return __base::__visit_alt_at(__index,
@@ -555,7 +555,7 @@ struct __variant {
   }
 
   template <class _Visitor, class... _Vs>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr decltype(auto) __visit_alt(_Visitor&& __visitor,
                                               _Vs&&... __vs) {
     return __base::__visit_alt(_CUDA_VSTD::forward<_Visitor>(__visitor),
@@ -563,7 +563,7 @@ struct __variant {
   }
 
   template <class _Visitor, class... _Vs>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr decltype(auto)
   __visit_value_at(size_t __index, _Visitor&& __visitor, _Vs&&... __vs) {
     return __visit_alt_at(
@@ -573,7 +573,7 @@ struct __variant {
   }
 
   template <class _Visitor, class... _Vs>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr decltype(auto) __visit_value(_Visitor&& __visitor,
                                                 _Vs&&... __vs) {
     return __visit_alt(
@@ -591,7 +591,7 @@ private:
   template <class _Visitor>
   struct __value_visitor {
     template <class... _Alts>
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr decltype(auto) operator()(_Alts&&... __alts) const {
       __std_visit_exhaustive_visitor_check<
           _Visitor,
@@ -603,7 +603,7 @@ private:
   };
 
   template <class _Visitor>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr auto __make_value_visitor(_Visitor&& __visitor) {
     return __value_visitor<_Visitor>{_CUDA_VSTD::forward<_Visitor>(__visitor)};
   }
@@ -616,7 +616,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS __alt {
   using __value_type = _Tp;
 
   template <class... _Args>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   explicit constexpr __alt(in_place_t, _Args&&... __args)
       : __value(_CUDA_VSTD::forward<_Args>(__args)...) {}
 
@@ -636,16 +636,16 @@ union _LIBCUDACXX_TEMPLATE_VIS __union<_DestructibleTrait, _Index> {};
                                       _Tp,                                     \
                                       _Types...> {                             \
   public:                                                                      \
-    inline _LIBCUDACXX_INLINE_VISIBILITY                                           \
+    _LIBCUDACXX_HIDE_FROM_ABI                                           \
     explicit constexpr __union(__valueless_t) noexcept : __dummy{} {}          \
                                                                                \
     template <class... _Args>                                                  \
-    inline _LIBCUDACXX_INLINE_VISIBILITY                                           \
+    _LIBCUDACXX_HIDE_FROM_ABI                                           \
     explicit constexpr __union(in_place_index_t<0>, _Args&&... __args)         \
         : __head(in_place, _CUDA_VSTD::forward<_Args>(__args)...) {}                \
                                                                                \
     template <size_t _Ip, class... _Args>                                      \
-    inline _LIBCUDACXX_INLINE_VISIBILITY                                           \
+    _LIBCUDACXX_HIDE_FROM_ABI                                           \
     explicit constexpr __union(in_place_index_t<_Ip>, _Args&&... __args)       \
         : __tail(in_place_index<_Ip - 1>, _CUDA_VSTD::forward<_Args>(__args)...) {} \
                                                                                \
@@ -676,41 +676,41 @@ class _LIBCUDACXX_TEMPLATE_VIS __base {
 public:
   using __index_t = __variant_index_t<sizeof...(_Types)>;
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   explicit constexpr __base(__valueless_t tag) noexcept
       : __data(tag), __index(__variant_npos<__index_t>) {}
 
   template <size_t _Ip, class... _Args>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   explicit constexpr __base(in_place_index_t<_Ip>, _Args&&... __args)
       :
         __data(in_place_index<_Ip>, _CUDA_VSTD::forward<_Args>(__args)...),
         __index(_Ip) {}
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr bool valueless_by_exception() const noexcept {
     return index() == variant_npos;
   }
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr size_t index() const noexcept {
     return __index == __variant_npos<__index_t> ? variant_npos : __index;
   }
 
 protected:
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr auto&& __as_base() & { return *this; }
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr auto&& __as_base() && { return _CUDA_VSTD::move(*this); }
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr auto&& __as_base() const & { return *this; }
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr auto&& __as_base() const && { return _CUDA_VSTD::move(*this); }
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr size_t __size() { return sizeof...(_Types); }
 
   __union<_DestructibleTrait, 0, _Types...> __data;
@@ -742,7 +742,7 @@ class _LIBCUDACXX_TEMPLATE_VIS __destructor;
     __destructor& operator=(__destructor&&) = default;                         \
                                                                                \
   protected:                                                                   \
-    inline _LIBCUDACXX_INLINE_VISIBILITY                                           \
+    _LIBCUDACXX_HIDE_FROM_ABI                                           \
     destroy                                                                    \
   }
 
@@ -783,7 +783,7 @@ public:
 
 protected:
   template <size_t _Ip, class _Tp, class... _Args>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static _Tp& __construct_alt(__alt<_Ip, _Tp>& __a, _Args&&... __args) {
     ::new ((void*)_CUDA_VSTD::addressof(__a))
         __alt<_Ip, _Tp>(in_place, _CUDA_VSTD::forward<_Args>(__args)...);
@@ -791,7 +791,7 @@ protected:
   }
 
   template <class _Rhs>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static void __generic_construct(__constructor& __lhs, _Rhs&& __rhs) {
     __lhs.__destroy();
     if (!__rhs.valueless_by_exception()) {
@@ -896,7 +896,7 @@ public:
   using __base_type::operator=;
 
   template <size_t _Ip, class... _Args>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   auto& __emplace(_Args&&... __args) {
     this->__destroy();
     auto& __res = this->__construct_alt(__access::__base::__get_alt<_Ip>(*this),
@@ -907,7 +907,7 @@ public:
 
 protected:
   template <size_t _Ip, class _Tp, class _Arg>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void __assign_alt(__alt<_Ip, _Tp>& __a, _Arg&& __arg) {
     if (this->index() == _Ip) {
       __a.__value = _CUDA_VSTD::forward<_Arg>(__arg);
@@ -928,7 +928,7 @@ protected:
   }
 
   template <class _That>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void __generic_assign(_That&& __that) {
     if (this->valueless_by_exception() && __that.valueless_by_exception()) {
       // do nothing.
@@ -1037,13 +1037,13 @@ public:
   using __base_type::operator=;
 
   template <size_t _Ip, class _Arg>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void __assign(_Arg&& __arg) {
     this->__assign_alt(__access::__base::__get_alt<_Ip>(*this),
                        _CUDA_VSTD::forward<_Arg>(__arg));
   }
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void __swap(__impl& __that)  {
     if (this->valueless_by_exception() && __that.valueless_by_exception()) {
       // do nothing.
@@ -1083,7 +1083,7 @@ public:
   }
 
 private:
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   bool __move_nothrow() const {
     constexpr bool __results[] = {is_nothrow_move_constructible_v<_Types>...};
     return this->valueless_by_exception() || __results[this->index()];
@@ -1189,7 +1189,7 @@ public:
             enable_if_t<__dependent_type<is_default_constructible<__first_type>,
                                          _Dummy>::value,
                         int> = 0>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr variant() noexcept(is_nothrow_default_constructible_v<__first_type>)
       : __impl(in_place_index<0>) {}
 
@@ -1205,7 +1205,7 @@ public:
       size_t _Ip =
           __find_detail::__find_unambiguous_index_sfinae<_Tp, _Types...>::value,
       enable_if_t<is_constructible_v<_Tp, _Arg>, int> = 0>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr variant(_Arg&& __arg) noexcept(
       is_nothrow_constructible_v<_Tp, _Arg>)
       : __impl(in_place_index<_Ip>, _CUDA_VSTD::forward<_Arg>(__arg)) {}
@@ -1214,7 +1214,7 @@ public:
             class = enable_if_t<(_Ip < sizeof...(_Types)), int>,
             class _Tp = variant_alternative_t<_Ip, variant<_Types...>>,
             enable_if_t<is_constructible_v<_Tp, _Args...>, int> = 0>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   explicit constexpr variant(
       in_place_index_t<_Ip>,
       _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
@@ -1228,7 +1228,7 @@ public:
       class _Tp = variant_alternative_t<_Ip, variant<_Types...>>,
       enable_if_t<is_constructible_v<_Tp, initializer_list<_Up>&, _Args...>,
                   int> = 0>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   explicit constexpr variant(
       in_place_index_t<_Ip>,
       initializer_list<_Up> __il,
@@ -1242,7 +1242,7 @@ public:
       size_t _Ip =
           __find_detail::__find_unambiguous_index_sfinae<_Tp, _Types...>::value,
       enable_if_t<is_constructible_v<_Tp, _Args...>, int> = 0>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   explicit constexpr variant(in_place_type_t<_Tp>, _Args&&... __args) noexcept(
       is_nothrow_constructible_v<_Tp, _Args...>)
       : __impl(in_place_index<_Ip>, _CUDA_VSTD::forward<_Args>(__args)...) {}
@@ -1255,7 +1255,7 @@ public:
           __find_detail::__find_unambiguous_index_sfinae<_Tp, _Types...>::value,
       enable_if_t<is_constructible_v<_Tp, initializer_list<_Up>&, _Args...>,
                   int> = 0>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   explicit constexpr variant(
       in_place_type_t<_Tp>,
       initializer_list<_Up> __il,
@@ -1276,7 +1276,7 @@ public:
           __find_detail::__find_unambiguous_index_sfinae<_Tp, _Types...>::value,
       enable_if_t<is_assignable_v<_Tp&, _Arg> && is_constructible_v<_Tp, _Arg>,
                   int> = 0>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   variant& operator=(_Arg&& __arg) noexcept(
       is_nothrow_assignable_v<_Tp&, _Arg> &&
       is_nothrow_constructible_v<_Tp, _Arg>) {
@@ -1290,7 +1290,7 @@ public:
       enable_if_t<(_Ip < sizeof...(_Types)), int> = 0,
       class _Tp = variant_alternative_t<_Ip, variant<_Types...>>,
       enable_if_t<is_constructible_v<_Tp, _Args...>, int> = 0>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   _Tp& emplace(_Args&&... __args) {
     return __impl.template __emplace<_Ip>(_CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -1303,7 +1303,7 @@ public:
       class _Tp = variant_alternative_t<_Ip, variant<_Types...>>,
       enable_if_t<is_constructible_v<_Tp, initializer_list<_Up>&, _Args...>,
                   int> = 0>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   _Tp& emplace(initializer_list<_Up> __il, _Args&&... __args) {
     return __impl.template __emplace<_Ip>(__il, _CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -1314,7 +1314,7 @@ public:
       size_t _Ip =
           __find_detail::__find_unambiguous_index_sfinae<_Tp, _Types...>::value,
       enable_if_t<is_constructible_v<_Tp, _Args...>, int> = 0>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   _Tp& emplace(_Args&&... __args) {
     return __impl.template __emplace<_Ip>(_CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -1327,17 +1327,17 @@ public:
           __find_detail::__find_unambiguous_index_sfinae<_Tp, _Types...>::value,
       enable_if_t<is_constructible_v<_Tp, initializer_list<_Up>&, _Args...>,
                   int> = 0>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   _Tp& emplace(initializer_list<_Up> __il, _Args&&... __args) {
     return __impl.template __emplace<_Ip>(__il, _CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr bool valueless_by_exception() const noexcept {
     return __impl.valueless_by_exception();
   }
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr size_t index() const noexcept { return __impl.index(); }
 
   template <
@@ -1347,7 +1347,7 @@ public:
               __dependent_type<is_move_constructible<_Types>, _Dummy>::value &&
               __dependent_type<is_swappable<_Types>, _Dummy>::value)...>::value,
           int> = 0>
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void swap(variant& __that) noexcept(
       __all<(is_nothrow_move_constructible_v<_Types> &&
              is_nothrow_swappable_v<_Types>)...>::value) {
@@ -1362,19 +1362,19 @@ private:
 };
 
 template <size_t _Ip, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool __holds_alternative(const variant<_Types...>& __v) noexcept {
   return __v.index() == _Ip;
 }
 
 template <class _Tp, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool holds_alternative(const variant<_Types...>& __v) noexcept {
   return __holds_alternative<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <size_t _Ip, class _Vp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS
 constexpr auto&& __generic_get(_Vp&& __v) {
   using __variant_detail::__access::__variant;
@@ -1385,7 +1385,7 @@ constexpr auto&& __generic_get(_Vp&& __v) {
 }
 
 template <size_t _Ip, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS
 constexpr variant_alternative_t<_Ip, variant<_Types...>>& get(
     variant<_Types...>& __v) {
@@ -1395,7 +1395,7 @@ constexpr variant_alternative_t<_Ip, variant<_Types...>>& get(
 }
 
 template <size_t _Ip, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS
 constexpr variant_alternative_t<_Ip, variant<_Types...>>&& get(
     variant<_Types...>&& __v) {
@@ -1405,7 +1405,7 @@ constexpr variant_alternative_t<_Ip, variant<_Types...>>&& get(
 }
 
 template <size_t _Ip, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS
 constexpr const variant_alternative_t<_Ip, variant<_Types...>>& get(
     const variant<_Types...>& __v) {
@@ -1415,7 +1415,7 @@ constexpr const variant_alternative_t<_Ip, variant<_Types...>>& get(
 }
 
 template <size_t _Ip, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS
 constexpr const variant_alternative_t<_Ip, variant<_Types...>>&& get(
     const variant<_Types...>&& __v) {
@@ -1425,7 +1425,7 @@ constexpr const variant_alternative_t<_Ip, variant<_Types...>>&& get(
 }
 
 template <class _Tp, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS
 constexpr _Tp& get(variant<_Types...>& __v) {
   static_assert(!is_void_v<_Tp>);
@@ -1433,7 +1433,7 @@ constexpr _Tp& get(variant<_Types...>& __v) {
 }
 
 template <class _Tp, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS
 constexpr _Tp&& get(variant<_Types...>&& __v) {
   static_assert(!is_void_v<_Tp>);
@@ -1442,7 +1442,7 @@ constexpr _Tp&& get(variant<_Types...>&& __v) {
 }
 
 template <class _Tp, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS
 constexpr const _Tp& get(const variant<_Types...>& __v) {
   static_assert(!is_void_v<_Tp>);
@@ -1450,7 +1450,7 @@ constexpr const _Tp& get(const variant<_Types...>& __v) {
 }
 
 template <class _Tp, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS
 constexpr const _Tp&& get(const variant<_Types...>&& __v) {
   static_assert(!is_void_v<_Tp>);
@@ -1459,7 +1459,7 @@ constexpr const _Tp&& get(const variant<_Types...>&& __v) {
 }
 
 template <size_t _Ip, class _Vp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr auto* __generic_get_if(_Vp* __v) noexcept {
   using __variant_detail::__access::__variant;
   return __v && __holds_alternative<_Ip>(*__v)
@@ -1468,7 +1468,7 @@ constexpr auto* __generic_get_if(_Vp* __v) noexcept {
 }
 
 template <size_t _Ip, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr add_pointer_t<variant_alternative_t<_Ip, variant<_Types...>>>
 get_if(variant<_Types...>* __v) noexcept {
   static_assert(_Ip < sizeof...(_Types));
@@ -1477,7 +1477,7 @@ get_if(variant<_Types...>* __v) noexcept {
 }
 
 template <size_t _Ip, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr add_pointer_t<const variant_alternative_t<_Ip, variant<_Types...>>>
 get_if(const variant<_Types...>* __v) noexcept {
   static_assert(_Ip < sizeof...(_Types));
@@ -1486,7 +1486,7 @@ get_if(const variant<_Types...>* __v) noexcept {
 }
 
 template <class _Tp, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr add_pointer_t<_Tp>
 get_if(variant<_Types...>* __v) noexcept {
   static_assert(!is_void_v<_Tp>);
@@ -1494,7 +1494,7 @@ get_if(variant<_Types...>* __v) noexcept {
 }
 
 template <class _Tp, class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr add_pointer_t<const _Tp>
 get_if(const variant<_Types...>* __v) noexcept {
   static_assert(!is_void_v<_Tp>);
@@ -1504,7 +1504,7 @@ get_if(const variant<_Types...>* __v) noexcept {
 template <class _Operator>
 struct __convert_to_bool {
   template <class _T1, class _T2>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator()(_T1 && __t1, _T2&& __t2) const {
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(_T1 && __t1, _T2&& __t2) const {
     static_assert(std::is_convertible<decltype(_Operator{}(_CUDA_VSTD::forward<_T1>(__t1), _CUDA_VSTD::forward<_T2>(__t2))), bool>::value,
         "the relational operator does not return a type which is implicitly convertible to bool");
     return _Operator{}(_CUDA_VSTD::forward<_T1>(__t1), _CUDA_VSTD::forward<_T2>(__t2));
@@ -1512,7 +1512,7 @@ struct __convert_to_bool {
 };
 
 template <class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool operator==(const variant<_Types...>& __lhs,
                           const variant<_Types...>& __rhs) {
   using __variant_detail::__visitation::__variant;
@@ -1522,7 +1522,7 @@ constexpr bool operator==(const variant<_Types...>& __lhs,
 }
 
 template <class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool operator!=(const variant<_Types...>& __lhs,
                           const variant<_Types...>& __rhs) {
   using __variant_detail::__visitation::__variant;
@@ -1533,7 +1533,7 @@ constexpr bool operator!=(const variant<_Types...>& __lhs,
 }
 
 template <class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool operator<(const variant<_Types...>& __lhs,
                          const variant<_Types...>& __rhs) {
   using __variant_detail::__visitation::__variant;
@@ -1545,7 +1545,7 @@ constexpr bool operator<(const variant<_Types...>& __lhs,
 }
 
 template <class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool operator>(const variant<_Types...>& __lhs,
                          const variant<_Types...>& __rhs) {
   using __variant_detail::__visitation::__variant;
@@ -1557,7 +1557,7 @@ constexpr bool operator>(const variant<_Types...>& __lhs,
 }
 
 template <class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool operator<=(const variant<_Types...>& __lhs,
                           const variant<_Types...>& __rhs) {
   using __variant_detail::__visitation::__variant;
@@ -1570,7 +1570,7 @@ constexpr bool operator<=(const variant<_Types...>& __lhs,
 }
 
 template <class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool operator>=(const variant<_Types...>& __lhs,
                           const variant<_Types...>& __rhs) {
   using __variant_detail::__visitation::__variant;
@@ -1583,7 +1583,7 @@ constexpr bool operator>=(const variant<_Types...>& __lhs,
 }
 
 template <class _Visitor, class... _Vs>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS
 constexpr decltype(auto) visit(_Visitor&& __visitor, _Vs&&... __vs) {
   using __variant_detail::__visitation::__variant;
@@ -1599,26 +1599,26 @@ constexpr decltype(auto) visit(_Visitor&& __visitor, _Vs&&... __vs) {
 
 struct _LIBCUDACXX_TEMPLATE_VIS monostate {};
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool operator<(monostate, monostate) noexcept { return false; }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool operator>(monostate, monostate) noexcept { return false; }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool operator<=(monostate, monostate) noexcept { return true; }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool operator>=(monostate, monostate) noexcept { return true; }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool operator==(monostate, monostate) noexcept { return true; }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool operator!=(monostate, monostate) noexcept { return false; }
 
 template <class... _Types>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 auto swap(variant<_Types...>& __lhs,
           variant<_Types...>& __rhs) noexcept(noexcept(__lhs.swap(__rhs)))
     -> decltype(__lhs.swap(__rhs)) {
@@ -1631,7 +1631,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<
   using argument_type = variant<_Types...>;
   using result_type = size_t;
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   result_type operator()(const argument_type& __v) const {
     using __variant_detail::__visitation::__variant;
     size_t __res =
@@ -1654,7 +1654,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<monostate> {
   using argument_type = monostate;
   using result_type = size_t;
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   result_type operator()(const argument_type&) const noexcept {
     return 66740831; // return a fundamentally attractive random value.
   }

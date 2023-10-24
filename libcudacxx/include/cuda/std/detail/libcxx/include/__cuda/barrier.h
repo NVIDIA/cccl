@@ -44,9 +44,9 @@ template<_CUDA_VSTD::size_t _Alignment>
 struct aligned_size_t {
     static constexpr _CUDA_VSTD::size_t align = _Alignment;
     _CUDA_VSTD::size_t value;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit aligned_size_t(size_t __s) : value(__s) { }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     operator size_t() const { return value; }
 };
 
@@ -79,18 +79,18 @@ public:
     barrier(const barrier &) = delete;
     barrier & operator=(const barrier &) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     barrier(_CUDA_VSTD::ptrdiff_t __expected, _CompletionF __completion = _CompletionF())
         : _CUDA_VSTD::__barrier_base<_CompletionF, _Sco>(__expected, __completion) {
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     friend void init(barrier * __b, _CUDA_VSTD::ptrdiff_t __expected) {
         _LIBCUDACXX_DEBUG_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
         new (__b) barrier(__expected);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     friend void init(barrier * __b, _CUDA_VSTD::ptrdiff_t __expected, _CompletionF __completion) {
         _LIBCUDACXX_DEBUG_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
         new (__b) barrier(__expected, __completion);
@@ -130,13 +130,13 @@ public:
     barrier(const barrier &) = delete;
     barrier & operator=(const barrier &) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     barrier(_CUDA_VSTD::ptrdiff_t __expected, _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion()) {
         static_assert(_LIBCUDACXX_OFFSET_IS_ZERO(barrier<thread_scope_block>, __barrier), "fatal error: bad barrier layout");
         init(this, __expected, __completion);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~barrier() {
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_90, (
@@ -158,7 +158,7 @@ public:
         )
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     friend void init(barrier * __b, _CUDA_VSTD::ptrdiff_t __expected, _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion()) {
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_90, (
@@ -194,7 +194,7 @@ public:
         )
     }
 
-    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
     arrival_token arrive(_CUDA_VSTD::ptrdiff_t __update = 1) {
         _LIBCUDACXX_DEBUG_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
         arrival_token __token = {};
@@ -259,8 +259,7 @@ public:
 
 private:
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline bool __test_wait_sm_80(arrival_token __token) const {
+    _LIBCUDACXX_HIDE_FROM_ABI bool __test_wait_sm_80(arrival_token __token) const {
         int32_t __ready = 0;
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_80, (
@@ -279,7 +278,7 @@ private:
     }
 
     // Document de drop > uint32_t for __nanosec on public for APIs
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool __try_wait(arrival_token __token) const {
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_90, (
@@ -312,7 +311,7 @@ private:
     }
 
     // Document de drop > uint32_t for __nanosec on public for APIs
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool __try_wait(arrival_token __token, _CUDA_VSTD::chrono::nanoseconds __nanosec) const {
         if (__nanosec.count() < 1) {
             return __try_wait(_CUDA_VSTD::move(__token));
@@ -369,8 +368,7 @@ private:
         )
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline bool __test_wait_parity_sm_80(bool __phase_parity) const {
+    _LIBCUDACXX_HIDE_FROM_ABI bool __test_wait_parity_sm_80(bool __phase_parity) const {
         uint16_t __ready = 0;
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_80, (
@@ -388,7 +386,7 @@ private:
         return __ready;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool __try_wait_parity(bool __phase_parity)  const {
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_90, (
@@ -423,7 +421,7 @@ private:
         )
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool __try_wait_parity(bool __phase_parity, _CUDA_VSTD::chrono::nanoseconds __nanosec) const {
         if (__nanosec.count() < 1) {
             return __try_wait_parity(__phase_parity);
@@ -483,22 +481,22 @@ private:
     }
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void wait(arrival_token && __phase) const {
         _CUDA_VSTD::__libcpp_thread_poll_with_backoff(_CUDA_VSTD::__barrier_poll_tester_phase<barrier>(this, _CUDA_VSTD::move(__phase)));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void wait_parity(bool __phase_parity) const {
         _CUDA_VSTD::__libcpp_thread_poll_with_backoff(_CUDA_VSTD::__barrier_poll_tester_parity<barrier>(this, __phase_parity));
     }
 
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void arrive_and_wait() {
         wait(arrive());
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void arrive_and_drop() {
         NV_DISPATCH_TARGET(
             NV_PROVIDES_SM_90, (
@@ -529,13 +527,13 @@ public:
         )
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static constexpr ptrdiff_t max() noexcept {
         return (1 << 20) - 1;
     }
 
     template<class _Rep, class _Period>
-    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
     bool try_wait_for(arrival_token && __token, const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __dur) {
         auto __nanosec = _CUDA_VSTD::chrono::duration_cast<_CUDA_VSTD::chrono::nanoseconds>(__dur);
 
@@ -543,13 +541,13 @@ public:
     }
 
     template<class _Clock, class _Duration>
-    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
     bool try_wait_until(arrival_token && __token, const _CUDA_VSTD::chrono::time_point<_Clock, _Duration>& __time) {
         return try_wait_for(_CUDA_VSTD::move(__token), (__time - _Clock::now()));
     }
 
     template<class _Rep, class _Period>
-    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
     bool try_wait_parity_for(bool __phase_parity, const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __dur) {
         auto __nanosec = _CUDA_VSTD::chrono::duration_cast<_CUDA_VSTD::chrono::nanoseconds>(__dur);
 
@@ -557,7 +555,7 @@ public:
     }
 
     template<class _Clock, class _Duration>
-    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
     bool try_wait_parity_until(bool __phase_parity, const _CUDA_VSTD::chrono::time_point<_Clock, _Duration>& __time) {
         return try_wait_parity_for(__phase_parity, (__time - _Clock::now()));
     }
@@ -708,7 +706,7 @@ class barrier<thread_scope_thread, _CUDA_VSTD::__empty_completion> : private bar
 public:
     using __base::__base;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     friend void init(barrier * __b, _CUDA_VSTD::ptrdiff_t __expected, _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion()) {
         init(static_cast<__base *>(__b), __expected, __completion);
     }
@@ -721,14 +719,14 @@ public:
 };
 
 template <typename ... _Ty>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool __unused(_Ty...) {return true;}
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __unused(_Ty...) {return true;}
 
 template <typename _Ty>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool __unused(_Ty&) {return true;}
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __unused(_Ty&) {return true;}
 
 // __is_local_smem_barrier returns true if barrier is (1) block-scoped and (2) located in shared memory.
 template<thread_scope _Sco, typename _CompF, bool _Is_mbarrier = (_Sco == thread_scope_block) && _CUDA_VSTD::is_same<_CompF, _CUDA_VSTD::__empty_completion>::value>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool __is_local_smem_barrier(barrier<_Sco, _CompF> & __barrier) {
     NV_IF_ELSE_TARGET(
         NV_IS_DEVICE, (
@@ -741,13 +739,13 @@ bool __is_local_smem_barrier(barrier<_Sco, _CompF> & __barrier) {
 
 // __try_get_barrier_handle returns barrier handle of block-scoped barriers and a nullptr otherwise.
 template<thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_INLINE_VISIBILITY inline
+_LIBCUDACXX_HIDE_FROM_ABI
 _CUDA_VSTD::uint64_t * __try_get_barrier_handle(barrier<_Sco, _CompF> & __barrier) {
     return nullptr;
 }
 
 template<>
-_LIBCUDACXX_INLINE_VISIBILITY inline
+_LIBCUDACXX_HIDE_FROM_ABI
 _CUDA_VSTD::uint64_t * __try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_completion>(barrier<::cuda::thread_scope_block> & __barrier) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -769,7 +767,7 @@ _CUDA_VSTD::uint64_t * __try_get_barrier_handle<::cuda::thread_scope_block, _CUD
 struct __memcpy_completion_impl {
 
     template<typename _Group>
-    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY static
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI static
     async_contract_fulfillment __defer(
         __completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, barrier<::cuda::thread_scope_block> & __barrier) {
         // In principle, this is the overload for shared memory barriers. However, a
@@ -818,14 +816,14 @@ struct __memcpy_completion_impl {
     }
 
     template<typename _Group, thread_scope _Sco, typename _CompF>
-    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY static
+    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI static
     async_contract_fulfillment __defer(
         __completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
         return __defer_non_smem_barrier(__cm, __group, __size, __barrier);
     }
 
     template<typename _Group, thread_scope _Sco, typename _CompF>
-    _LIBCUDACXX_INLINE_VISIBILITY static
+    _LIBCUDACXX_HIDE_FROM_ABI static
     async_contract_fulfillment __defer_non_smem_barrier(
         __completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
         // Overload for non-smem barriers.
@@ -855,7 +853,7 @@ struct __memcpy_completion_impl {
     }
 
     template<typename _Group, thread_scope _Sco>
-    _LIBCUDACXX_INLINE_VISIBILITY static
+    _LIBCUDACXX_HIDE_FROM_ABI static
     async_contract_fulfillment __defer(__completion_mechanism __cm, _Group const & __group, _CUDA_VSTD::size_t __size, pipeline<_Sco> & __pipeline) {
         // pipeline does not sync on memcpy_async, defeat pipeline purpose otherwise
         __unused(__pipeline);
@@ -1105,7 +1103,7 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
 
 // __dispatch_memcpy_async is the internal entry point for dispatching to the correct memcpy_async implementation.
 template<_CUDA_VSTD::size_t _Align, typename _Group>
-_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
 __completion_mechanism __dispatch_memcpy_async(_Group const & __group, char * __dest_char, char const * __src_char, size_t __size, _CUDA_VSTD::uint32_t __allowed_completions, uint64_t* __bar_handle) {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
         // Dispatch based on direction of the copy: global to shared, shared to
@@ -1132,7 +1130,7 @@ __completion_mechanism __dispatch_memcpy_async(_Group const & __group, char * __
 }
 
 template<_CUDA_VSTD::size_t _Align, typename _Group>
-_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
 __completion_mechanism __dispatch_memcpy_async(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, _CUDA_VSTD::uint32_t __allowed_completions) {
     _LIBCUDACXX_DEBUG_ASSERT(! (__allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx)), "Cannot allow mbarrier_complete_tx completion mechanism when not passing a barrier. ");
     return __dispatch_memcpy_async<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, nullptr);
@@ -1141,16 +1139,16 @@ __completion_mechanism __dispatch_memcpy_async(_Group const & __group, char * __
 ////////////////////////////////////////////////////////////////////////////////
 
 struct __single_thread_group {
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void sync() const {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr _CUDA_VSTD::size_t size() const { return 1; };
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr _CUDA_VSTD::size_t thread_rank() const { return 0; };
 };
 
 template<typename _Group, class _Tp, typename _Size, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 async_contract_fulfillment __memcpy_async_barrier(_Group const & __group, _Tp * __destination, _Tp const * __source, _Size __size, barrier<_Sco, _CompF> & __barrier) {
     static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async requires a trivially copyable type");
 
@@ -1180,38 +1178,38 @@ async_contract_fulfillment __memcpy_async_barrier(_Group const & __group, _Tp * 
 }
 
 template<typename _Group, class _Tp, _CUDA_VSTD::size_t _Alignment, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 async_contract_fulfillment memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, aligned_size_t<_Alignment> __size, barrier<_Sco, _CompF> & __barrier) {
     return __memcpy_async_barrier(__group, __destination, __source, __size, __barrier);
 }
 
 template<class _Tp, typename _Size, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 async_contract_fulfillment memcpy_async(_Tp * __destination, _Tp const * __source, _Size __size, barrier<_Sco, _CompF> & __barrier) {
     return __memcpy_async_barrier(__single_thread_group{}, __destination, __source, __size, __barrier);
 }
 
 template<typename _Group, class _Tp, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 async_contract_fulfillment memcpy_async(_Group const & __group, _Tp * __destination, _Tp const * __source, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
 
     return __memcpy_async_barrier(__group, __destination, __source, __size, __barrier);
 }
 
 template<typename _Group, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 async_contract_fulfillment memcpy_async(_Group const & __group, void * __destination, void const * __source, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF> & __barrier) {
     return __memcpy_async_barrier(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
 }
 
 template<typename _Group, _CUDA_VSTD::size_t _Alignment, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 async_contract_fulfillment memcpy_async(_Group const & __group, void * __destination, void const * __source, aligned_size_t<_Alignment> __size, barrier<_Sco, _CompF> & __barrier) {
     return __memcpy_async_barrier(__group, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
 }
 
 template<typename _Size, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 async_contract_fulfillment memcpy_async(void * __destination, void const * __source, _Size __size, barrier<_Sco, _CompF> & __barrier) {
     return __memcpy_async_barrier(__single_thread_group{}, reinterpret_cast<char *>(__destination), reinterpret_cast<char const *>(__source), __size, __barrier);
 }

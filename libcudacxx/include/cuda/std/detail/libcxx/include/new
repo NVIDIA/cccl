@@ -216,16 +216,16 @@ _LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_AVAILABILITY_SIZED_NEW_DELETE void 
 #endif
 #endif
 
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 inline _LIBCUDACXX_INLINE_VISIBILITY void* operator new  (std::size_t, void* __p) noexcept {return __p;}
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 inline _LIBCUDACXX_INLINE_VISIBILITY void* operator new[](std::size_t, void* __p) noexcept {return __p;}
-inline _LIBCUDACXX_INLINE_VISIBILITY void  operator delete  (void*, void*) noexcept {}
-inline _LIBCUDACXX_INLINE_VISIBILITY void  operator delete[](void*, void*) noexcept {}
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI void* operator new  (std::size_t, void* __p) noexcept {return __p;}
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI void* operator new[](std::size_t, void* __p) noexcept {return __p;}
+_LIBCUDACXX_HIDE_FROM_ABI void  operator delete  (void*, void*) noexcept {}
+_LIBCUDACXX_HIDE_FROM_ABI void  operator delete[](void*, void*) noexcept {}
 
 #endif // !_LIBCUDACXX_ABI_VCRUNTIME
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-constexpr inline _LIBCUDACXX_INLINE_VISIBILITY bool __is_overaligned_for_new(size_t __align) noexcept {
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_overaligned_for_new(size_t __align) noexcept {
 #ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
   return __align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
 #else
@@ -233,7 +233,7 @@ constexpr inline _LIBCUDACXX_INLINE_VISIBILITY bool __is_overaligned_for_new(siz
 #endif
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY void *__libcpp_allocate(size_t __size, size_t __align) {
+_LIBCUDACXX_HIDE_FROM_ABI void *__libcpp_allocate(size_t __size, size_t __align) {
 #ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
   if (__is_overaligned_for_new(__align)) {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
@@ -254,7 +254,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY void *__libcpp_allocate(size_t __size, size
 }
 
 struct _DeallocateCaller {
-  static inline _LIBCUDACXX_INLINE_VISIBILITY
+  static _LIBCUDACXX_HIDE_FROM_ABI
   void __do_deallocate_handle_size_align(void *__ptr, size_t __size, size_t __align) {
 #if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION)
     ((void)__align);
@@ -269,7 +269,7 @@ struct _DeallocateCaller {
 #endif
   }
 
-  static inline _LIBCUDACXX_INLINE_VISIBILITY
+  static _LIBCUDACXX_HIDE_FROM_ABI
   void __do_deallocate_handle_align(void *__ptr, size_t __align) {
 #if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION)
     ((void)__align);
@@ -335,11 +335,11 @@ private:
   }
 };
 
-inline _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_deallocate(void* __ptr, size_t __size, size_t __align) {
+_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_deallocate(void* __ptr, size_t __size, size_t __align) {
   _DeallocateCaller::__do_deallocate_handle_size_align(__ptr, __size, __align);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_deallocate_unsized(void* __ptr, size_t __align) {
+_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_deallocate_unsized(void* __ptr, size_t __align) {
   _DeallocateCaller::__do_deallocate_handle_align(__ptr, __align);
 }
 
@@ -359,7 +359,7 @@ constexpr _Tp* __launder(_Tp* __p) noexcept
 
 #if _LIBCUDACXX_STD_VER > 14
 template <class _Tp>
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI
 constexpr _Tp* launder(_Tp* __p) noexcept
 {
     return _CUDA_VSTD::__launder(__p);

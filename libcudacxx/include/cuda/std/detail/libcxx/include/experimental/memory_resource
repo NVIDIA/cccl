@@ -89,7 +89,7 @@ _LIBCUDACXX_PUSH_MACROS
 _LIBCUDACXX_BEGIN_NAMESPACE_LFTS_PMR
 
 // Round __s up to next multiple of __a.
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 size_t __aligned_allocation_size(size_t __s, size_t __a) noexcept
 {
     _LIBCUDACXX_ASSERT(__s + __a > __s, "aligned allocation size overflows");
@@ -105,15 +105,15 @@ class _LIBCUDACXX_TYPE_VIS memory_resource
 public:
     virtual ~memory_resource() = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void* allocate(size_t __bytes, size_t __align = __max_align)
         { return do_allocate(__bytes, __align); }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void deallocate(void * __p, size_t __bytes, size_t __align = __max_align)
         { do_deallocate(__p, __bytes, __align); }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool is_equal(memory_resource const & __other) const noexcept
         { return do_is_equal(__other); }
 
@@ -125,14 +125,14 @@ protected:
 };
 
 // 8.5.4, memory.resource.eq
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator==(memory_resource const & __lhs,
                 memory_resource const & __rhs) noexcept
 {
     return &__lhs == &__rhs || __lhs.is_equal(__rhs);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator!=(memory_resource const & __lhs,
                 memory_resource const & __rhs) noexcept
 {
@@ -161,12 +161,12 @@ public:
     typedef _ValueType value_type;
 
     // 8.6.2, memory.polymorphic.allocator.ctor
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     polymorphic_allocator() noexcept
       : __res_(_CUDA_VSTD_LFTS_PMR::get_default_resource())
     {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     polymorphic_allocator(memory_resource * __r) noexcept
       : __res_(__r)
     {}
@@ -174,7 +174,7 @@ public:
     polymorphic_allocator(polymorphic_allocator const &) = default;
 
     template <class _Tp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     polymorphic_allocator(polymorphic_allocator<_Tp> const & __other) noexcept
       : __res_(__other.resource())
     {}
@@ -183,7 +183,7 @@ public:
     operator=(polymorphic_allocator const &) = delete;
 
     // 8.6.3, memory.polymorphic.allocator.mem
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _ValueType* allocate(size_t __n) {
         if (__n > __max_size()) {
             __throw_length_error(
@@ -195,7 +195,7 @@ public:
         );
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void deallocate(_ValueType * __p, size_t __n) noexcept {
         _LIBCUDACXX_ASSERT(__n <= __max_size(),
                        "deallocate called for size which exceeds max_size()");
@@ -203,7 +203,7 @@ public:
     }
 
     template <class _Tp, class ..._Ts>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void construct(_Tp* __p, _Ts &&... __args)
     {
         _CUDA_VSTD_LFTS::__lfts_user_alloc_construct(
@@ -212,7 +212,7 @@ public:
     }
 
     template <class _T1, class _T2, class ..._Args1, class ..._Args2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void construct(pair<_T1, _T2>* __p, piecewise_construct_t,
                    tuple<_Args1...> __x, tuple<_Args2...> __y)
     {
@@ -235,13 +235,13 @@ public:
     }
 
     template <class _T1, class _T2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void construct(pair<_T1, _T2>* __p) {
         construct(__p, piecewise_construct, tuple<>(), tuple<>());
     }
 
     template <class _T1, class _T2, class _Up, class _Vp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void construct(pair<_T1, _T2> * __p, _Up && __u, _Vp && __v) {
         construct(__p, piecewise_construct
           , _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Up>(__u))
@@ -249,7 +249,7 @@ public:
     }
 
     template <class _T1, class _T2, class _U1, class _U2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void construct(pair<_T1, _T2> * __p, pair<_U1, _U2> const & __pr) {
         construct(__p, piecewise_construct
             , _CUDA_VSTD::forward_as_tuple(__pr.first)
@@ -257,7 +257,7 @@ public:
     }
 
     template <class _T1, class _T2, class _U1, class _U2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void construct(pair<_T1, _T2> * __p, pair<_U1, _U2> && __pr){
         construct(__p, piecewise_construct
             , _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_U1>(__pr.first))
@@ -265,22 +265,22 @@ public:
     }
 
     template <class _Tp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void destroy(_Tp * __p) noexcept
         { __p->~_Tp(); }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     polymorphic_allocator
     select_on_container_copy_construction() const noexcept
         { return polymorphic_allocator(); }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     memory_resource * resource() const noexcept
         { return __res_; }
 
 private:
     template <class ..._Args, size_t ..._Idx>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     tuple<_Args&&...>
     __transform_tuple(integral_constant<int, 0>, tuple<_Args...>&& __t,
                       __tuple_indices<_Idx...>) const
@@ -289,7 +289,7 @@ private:
     }
 
     template <class ..._Args, size_t ..._Idx>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     tuple<allocator_arg_t const&, polymorphic_allocator&, _Args&&...>
     __transform_tuple(integral_constant<int, 1>, tuple<_Args...> && __t,
                       __tuple_indices<_Idx...>)
@@ -300,7 +300,7 @@ private:
     }
 
     template <class ..._Args, size_t ..._Idx>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     tuple<_Args&&..., polymorphic_allocator&>
     __transform_tuple(integral_constant<int, 2>, tuple<_Args...> && __t,
                       __tuple_indices<_Idx...>)
@@ -309,7 +309,7 @@ private:
         return _Tup(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__t))..., *this);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t __max_size() const noexcept
         { return numeric_limits<size_t>::max() / sizeof(value_type); }
 
@@ -319,7 +319,7 @@ private:
 // 8.6.4, memory.polymorphic.allocator.eq
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator==(polymorphic_allocator<_Tp> const & __lhs,
                 polymorphic_allocator<_Up> const & __rhs) noexcept
 {
@@ -327,7 +327,7 @@ bool operator==(polymorphic_allocator<_Tp> const & __lhs,
 }
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator!=(polymorphic_allocator<_Tp> const & __lhs,
                 polymorphic_allocator<_Up> const & __rhs) noexcept
 {
@@ -365,12 +365,12 @@ public:
 
     // 8.7.2, memory.resource.adaptor.ctor
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __resource_adaptor_imp(allocator_type const & __a)
       : __alloc_(__a)
     {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __resource_adaptor_imp(allocator_type && __a)
       : __alloc_(_CUDA_VSTD::move(__a))
     {}
@@ -378,7 +378,7 @@ public:
     __resource_adaptor_imp &
     operator=(__resource_adaptor_imp const &) = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     allocator_type get_allocator() const
     { return __alloc_; }
 
@@ -410,7 +410,7 @@ protected:
     }
 
 private:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t __max_size() const noexcept {
         return numeric_limits<size_t>::max() - _MaxAlign;
     }

@@ -48,7 +48,7 @@ private:
 public:
   _LIBCUDACXX_TEMPLATE(class... _Args)
     _LIBCUDACXX_REQUIRES( is_constructible_v<tuple<_BoundArgs...>, _Args&&...>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   explicit constexpr __perfect_forward_impl(_Args&&... __bound_args)
     noexcept(is_nothrow_constructible_v<tuple<_BoundArgs...>, _Args&&...>)
     : __bound_args_(_CUDA_VSTD::forward<_Args>(__bound_args)...) {}
@@ -61,47 +61,47 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
     _LIBCUDACXX_REQUIRES( is_invocable_v<_Op, _BoundArgs&..., _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) &
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Args&&... __args) &
     noexcept(noexcept(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...)))
     -> decltype(      _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...))
     { return          _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...); }
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
     _LIBCUDACXX_REQUIRES( (!is_invocable_v<_Op, _BoundArgs&..., _Args...>))
-  _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Args&&...) & = delete;
+  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Args&&...) & = delete;
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
     _LIBCUDACXX_REQUIRES( is_invocable_v<_Op, _BoundArgs const&..., _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) const&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Args&&... __args) const&
     noexcept(noexcept(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...)))
     -> decltype(      _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...))
     { return          _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...); }
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
     _LIBCUDACXX_REQUIRES( (!is_invocable_v<_Op, _BoundArgs const&..., _Args...>))
-  _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Args&&...) const& = delete;
+  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Args&&...) const& = delete;
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
     _LIBCUDACXX_REQUIRES( is_invocable_v<_Op, _BoundArgs..., _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) &&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Args&&... __args) &&
     noexcept(noexcept(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...)))
     -> decltype(      _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...))
     { return          _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...); }
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
     _LIBCUDACXX_REQUIRES( (!is_invocable_v<_Op, _BoundArgs..., _Args...>))
-  _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Args&&...) && = delete;
+  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Args&&...) && = delete;
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
     _LIBCUDACXX_REQUIRES( is_invocable_v<_Op, _BoundArgs const..., _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) const&&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Args&&... __args) const&&
     noexcept(noexcept(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...)))
     -> decltype(      _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...))
     { return          _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...); }
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
     _LIBCUDACXX_REQUIRES( (!is_invocable_v<_Op, _BoundArgs const..., _Args...>))
-  _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Args&&...) const&& = delete;
+  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Args&&...) const&& = delete;
 };
 
 // __perfect_forward implements a perfect-forwarding call wrapper as explained in [func.require].

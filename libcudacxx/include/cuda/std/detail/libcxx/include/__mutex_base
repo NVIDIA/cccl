@@ -45,7 +45,7 @@ class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(capability("mute
     __libcpp_mutex_t __m_ = _LIBCUDACXX_MUTEX_INITIALIZER;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr mutex() = default;
 
     mutex(const mutex&) = delete;
@@ -62,7 +62,7 @@ public:
     void unlock() noexcept _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(release_capability());
 
     typedef __libcpp_mutex_t* native_handle_type;
-    _LIBCUDACXX_INLINE_VISIBILITY native_handle_type native_handle() {return &__m_;}
+    _LIBCUDACXX_HIDE_FROM_ABI native_handle_type native_handle() {return &__m_;}
 };
 
 static_assert(is_nothrow_default_constructible<mutex>::value,
@@ -97,14 +97,14 @@ private:
     mutex_type& __m_;
 public:
 
-    _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_HIDE_FROM_ABI
     explicit lock_guard(mutex_type& __m) _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(acquire_capability(__m))
         : __m_(__m) {__m_.lock();}
 
-    _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_HIDE_FROM_ABI
     lock_guard(mutex_type& __m, adopt_lock_t) _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(requires_capability(__m))
         : __m_(__m) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~lock_guard() _LIBCUDACXX_THREAD_SAFETY_ANNOTATION(release_capability()) {__m_.unlock();}
 
 private:
@@ -123,29 +123,29 @@ private:
     bool __owns_;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unique_lock() noexcept : __m_(nullptr), __owns_(false) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit unique_lock(mutex_type& __m)
         : __m_(_CUDA_VSTD::addressof(__m)), __owns_(true) {__m_->lock();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unique_lock(mutex_type& __m, defer_lock_t) noexcept
         : __m_(_CUDA_VSTD::addressof(__m)), __owns_(false) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unique_lock(mutex_type& __m, try_to_lock_t)
         : __m_(_CUDA_VSTD::addressof(__m)), __owns_(__m.try_lock()) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unique_lock(mutex_type& __m, adopt_lock_t)
         : __m_(_CUDA_VSTD::addressof(__m)), __owns_(true) {}
     template <class _Clock, class _Duration>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
         unique_lock(mutex_type& __m, const chrono::time_point<_Clock, _Duration>& __t)
             : __m_(_CUDA_VSTD::addressof(__m)), __owns_(__m.try_lock_until(__t)) {}
     template <class _Rep, class _Period>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
         unique_lock(mutex_type& __m, const chrono::duration<_Rep, _Period>& __d)
             : __m_(_CUDA_VSTD::addressof(__m)), __owns_(__m.try_lock_for(__d)) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~unique_lock()
     {
         if (__owns_)
@@ -157,11 +157,11 @@ private:
     unique_lock& operator=(unique_lock const&); // = delete;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unique_lock(unique_lock&& __u) noexcept
         : __m_(__u.__m_), __owns_(__u.__owns_)
         {__u.__m_ = nullptr; __u.__owns_ = false;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unique_lock& operator=(unique_lock&& __u) noexcept
         {
             if (__owns_)
@@ -183,13 +183,13 @@ public:
 
     void unlock();
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(unique_lock& __u) noexcept
     {
         _CUDA_VSTD::swap(__m_, __u.__m_);
         _CUDA_VSTD::swap(__owns_, __u.__owns_);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     mutex_type* release() noexcept
     {
         mutex_type* __m = __m_;
@@ -198,12 +198,12 @@ public:
         return __m;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool owns_lock() const noexcept {return __owns_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _LIBCUDACXX_EXPLICIT
         operator bool () const noexcept {return __owns_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     mutex_type* mutex() const noexcept {return __m_;}
 };
 
@@ -268,7 +268,7 @@ unique_lock<_Mutex>::unlock()
 }
 
 template <class _Mutex>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(unique_lock<_Mutex>& __x, unique_lock<_Mutex>& __y) noexcept
     {__x.swap(__y);}
@@ -285,7 +285,7 @@ class _LIBCUDACXX_TYPE_VIS condition_variable
 {
     __libcpp_condvar_t __cv_ = _LIBCUDACXX_CONDVAR_INITIALIZER;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr condition_variable() noexcept = default;
 
 #ifdef _LIBCUDACXX_HAS_TRIVIAL_CONDVAR_DESTRUCTION
@@ -326,13 +326,13 @@ public:
 
     template <class _Rep, class _Period, class _Predicate>
         bool
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         wait_for(unique_lock<mutex>& __lk,
                  const chrono::duration<_Rep, _Period>& __d,
                  _Predicate __pred);
 
     typedef __libcpp_condvar_t* native_handle_type;
-    _LIBCUDACXX_INLINE_VISIBILITY native_handle_type native_handle() {return &__cv_;}
+    _LIBCUDACXX_HIDE_FROM_ABI native_handle_type native_handle() {return &__cv_;}
 
 private:
     void __do_timed_wait(unique_lock<mutex>& __lk,
@@ -348,7 +348,7 @@ private:
 #endif // !_LIBCUDACXX_HAS_NO_THREADS
 
 template <class _Rep, class _Period>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename enable_if
 <
     is_floating_point<_Rep>::value,
@@ -375,7 +375,7 @@ __safe_nanosecond_cast(chrono::duration<_Rep, _Period> __d)
 }
 
 template <class _Rep, class _Period>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename enable_if
 <
     !is_floating_point<_Rep>::value,

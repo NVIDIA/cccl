@@ -110,7 +110,7 @@ struct is_placeholder<placeholders::__ph<_Np> >
 
 
 template <class _Tp, class _Uj>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp&
 __mu(reference_wrapper<_Tp> __t, _Uj&)
 {
@@ -118,7 +118,7 @@ __mu(reference_wrapper<_Tp> __t, _Uj&)
 }
 
 template <class _Ti, class ..._Uj, size_t ..._Indx>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename __invoke_of<_Ti&, _Uj...>::type
 __mu_expand(_Ti& __ti, tuple<_Uj...>& __uj, __tuple_indices<_Indx...>)
 {
@@ -126,7 +126,7 @@ __mu_expand(_Ti& __ti, tuple<_Uj...>& __uj, __tuple_indices<_Indx...>)
 }
 
 template <class _Ti, class ..._Uj>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_bind_expression<_Ti>::value,
@@ -148,7 +148,7 @@ struct __mu_return2<true, _Ti, _Uj>
 };
 
 template <class _Ti, class _Uj>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     0 < is_placeholder<_Ti>::value,
@@ -161,7 +161,7 @@ __mu(_Ti&, _Uj& __uj)
 }
 
 template <class _Ti, class _Uj>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     !is_bind_expression<_Ti>::value &&
@@ -281,7 +281,7 @@ template <class _Fp, class _BoundArgs, class _TupleUj>
 using __bind_return_t = typename __bind_return<_Fp, _BoundArgs, _TupleUj>::type;
 
 template <class _Fp, class _BoundArgs, size_t ..._Indx, class _Args>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __bind_return_t<_Fp, _BoundArgs, _Args>
 __apply_functor(_Fp& __f, _BoundArgs& __bound_args, __tuple_indices<_Indx...>,
                 _Args&& __args)
@@ -308,13 +308,13 @@ public:
                                   !is_same<__libcpp_remove_reference_t<_Gp>,
                                            __bind>::value
                                >>
-      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+      _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
       explicit __bind(_Gp&& __f, _BA&& ...__bound_args)
         : __f_(_CUDA_VSTD::forward<_Gp>(__f)),
           __bound_args_(_CUDA_VSTD::forward<_BA>(__bound_args)...) {}
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
         __bind_return_t<_Fd, _Td, tuple<_Args&&...>>
         operator()(_Args&& ...__args)
         {
@@ -323,7 +323,7 @@ public:
         }
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
         __bind_return_t<const _Fd, const _Td, tuple<_Args&&...>>
         operator()(_Args&& ...__args) const
         {
@@ -353,13 +353,13 @@ public:
                                   !is_same<__libcpp_remove_reference_t<_Gp>,
                                            __bind_r>::value
                                >>
-      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+      _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
       explicit __bind_r(_Gp&& __f, _BA&& ...__bound_args)
         : base(_CUDA_VSTD::forward<_Gp>(__f),
                _CUDA_VSTD::forward<_BA>(__bound_args)...) {}
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
         __enable_if_t
         <
             is_convertible<__bind_return_t<_Fd, _Td, tuple<_Args&&...>>,
@@ -373,7 +373,7 @@ public:
         }
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
         __enable_if_t
         <
             is_convertible<__bind_return_t<const _Fd, const _Td, tuple<_Args&&...>>,
@@ -391,7 +391,7 @@ template<class _Rp, class _Fp, class ..._BoundArgs>
 struct is_bind_expression<__bind_r<_Rp, _Fp, _BoundArgs...> > : public true_type {};
 
 template<class _Fp, class ..._BoundArgs>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 __bind<_Fp, _BoundArgs...>
 bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {
@@ -400,7 +400,7 @@ bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 }
 
 template<class _Rp, class _Fp, class ..._BoundArgs>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
 __bind_r<_Rp, _Fp, _BoundArgs...>
 bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {

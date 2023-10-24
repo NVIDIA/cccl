@@ -28,13 +28,13 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp&&
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&&
 forward(__libcpp_remove_reference_t<_Tp>& __t) noexcept {
   return static_cast<_Tp&&>(__t);
 }
 
 template <class _Tp>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp&&
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&&
 forward(__libcpp_remove_reference_t<_Tp>&& __t) noexcept {
   static_assert(!is_lvalue_reference<_Tp>::value, "cannot forward an rvalue as an lvalue");
   return static_cast<_Tp&&>(__t);

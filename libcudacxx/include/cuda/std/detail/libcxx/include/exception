@@ -101,7 +101,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION  // purposefully not using versioning 
 class _LIBCUDACXX_EXCEPTION_ABI exception
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY exception() noexcept {}
+    _LIBCUDACXX_HIDE_FROM_ABI exception() noexcept {}
     _LIBCUDACXX_HOST_DEVICE virtual ~exception() noexcept;
     _LIBCUDACXX_HOST_DEVICE virtual const char* what() const noexcept;
 };
@@ -110,7 +110,7 @@ class _LIBCUDACXX_EXCEPTION_ABI bad_exception
     : public exception
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY bad_exception() noexcept {}
+    _LIBCUDACXX_HIDE_FROM_ABI bad_exception() noexcept {}
     _LIBCUDACXX_HOST_DEVICE virtual ~bad_exception() noexcept;
     _LIBCUDACXX_HOST_DEVICE virtual const char* what() const noexcept;
 };
@@ -144,21 +144,21 @@ class _LIBCUDACXX_TYPE_VIS exception_ptr
 {
     void* __ptr_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr() noexcept : __ptr_() {}
-    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr(nullptr_t) noexcept : __ptr_() {}
+    _LIBCUDACXX_HIDE_FROM_ABI exception_ptr() noexcept : __ptr_() {}
+    _LIBCUDACXX_HIDE_FROM_ABI exception_ptr(nullptr_t) noexcept : __ptr_() {}
 
     exception_ptr(const exception_ptr&) noexcept;
     exception_ptr& operator=(const exception_ptr&) noexcept;
     ~exception_ptr() noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_EXPLICIT operator bool() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_EXPLICIT operator bool() const noexcept
     {return __ptr_ != nullptr;}
 
-    friend _LIBCUDACXX_INLINE_VISIBILITY
+    friend _LIBCUDACXX_HIDE_FROM_ABI
     bool operator==(const exception_ptr& __x, const exception_ptr& __y) noexcept
         {return __x.__ptr_ == __y.__ptr_;}
 
-    friend _LIBCUDACXX_INLINE_VISIBILITY
+    friend _LIBCUDACXX_HIDE_FROM_ABI
     bool operator!=(const exception_ptr& __x, const exception_ptr& __y) noexcept
         {return !(__x == __y);}
 
@@ -167,7 +167,7 @@ public:
 };
 
 template<class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY exception_ptr
+_LIBCUDACXX_HIDE_FROM_ABI exception_ptr
 make_exception_ptr(_Ep __e) noexcept
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -211,7 +211,7 @@ public:
 _LIBCUDACXX_FUNC_VIS
 bool operator==(const exception_ptr& __x, const exception_ptr& __y) noexcept;
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator!=(const exception_ptr& __x, const exception_ptr& __y) noexcept
     {return !(__x == __y);}
 
@@ -226,7 +226,7 @@ _LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void rethrow_exception(exception_ptr p
 template <class _E> void *__GetExceptionInfo(_E);
 
 template<class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY exception_ptr
+_LIBCUDACXX_HIDE_FROM_ABI exception_ptr
 make_exception_ptr(_Ep __e) noexcept
 {
   return __copy_exception_ptr(_CUDA_VSTD::addressof(__e), __GetExceptionInfo(__e));
@@ -246,7 +246,7 @@ public:
 
     // access functions
     _LIBCUDACXX_NORETURN void rethrow_nested() const;
-    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr nested_ptr() const noexcept {return __ptr_;}
+    _LIBCUDACXX_HIDE_FROM_ABI exception_ptr nested_ptr() const noexcept {return __ptr_;}
 };
 
 template <class _Tp>
@@ -254,7 +254,7 @@ struct __nested
     : public _Tp,
       public nested_exception
 {
-    _LIBCUDACXX_INLINE_VISIBILITY explicit __nested(const _Tp& __t) : _Tp(__t) {}
+    _LIBCUDACXX_HIDE_FROM_ABI explicit __nested(const _Tp& __t) : _Tp(__t) {}
 };
 
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -263,7 +263,7 @@ struct __throw_with_nested;
 
 template <class _Tp, class _Up>
 struct __throw_with_nested<_Tp, _Up, true> {
-    _LIBCUDACXX_NORETURN static inline _LIBCUDACXX_INLINE_VISIBILITY void
+    _LIBCUDACXX_NORETURN static _LIBCUDACXX_HIDE_FROM_ABI void
     __do_throw(_Tp&& __t)
     {
         throw __nested<_Up>(_CUDA_VSTD::forward<_Tp>(__t));
@@ -272,7 +272,7 @@ struct __throw_with_nested<_Tp, _Up, true> {
 
 template <class _Tp, class _Up>
 struct __throw_with_nested<_Tp, _Up, false> {
-    _LIBCUDACXX_NORETURN static inline _LIBCUDACXX_INLINE_VISIBILITY void
+    _LIBCUDACXX_NORETURN static _LIBCUDACXX_HIDE_FROM_ABI void
     __do_throw(_Tp&& __t)
     {
         throw _CUDA_VSTD::forward<_Tp>(__t);
@@ -306,7 +306,7 @@ struct __can_dynamic_cast : public _LIBCUDACXX_BOOL_CONSTANT(
                    is_convertible<const _From*, const _To*>::value)) {};
 
 template <class _Ep>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 rethrow_if_nested(const _Ep& __e,
                   typename enable_if< __can_dynamic_cast<_Ep, nested_exception>::value>::type* = 0)
@@ -317,7 +317,7 @@ rethrow_if_nested(const _Ep& __e,
 }
 
 template <class _Ep>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 rethrow_if_nested(const _Ep&,
                   typename enable_if<!__can_dynamic_cast<_Ep, nested_exception>::value>::type* = 0)

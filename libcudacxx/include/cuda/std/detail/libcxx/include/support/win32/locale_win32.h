@@ -139,14 +139,14 @@ decltype(MB_CUR_MAX) MB_CUR_MAX_L( locale_t __l );
 float strtof_l(const char*, char**, locale_t);
 long double strtold_l(const char*, char**, locale_t);
 #endif
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 int
 islower_l(int c, _locale_t loc)
 {
  return _islower_l((int)c, loc);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 int
 isupper_l(int c, _locale_t loc)
 {

@@ -93,28 +93,28 @@ class _LIBCUDACXX_TEMPLATE_VIS coroutine_handle;
 template <>
 class _LIBCUDACXX_TEMPLATE_VIS coroutine_handle<void> {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr coroutine_handle() noexcept : __handle_(nullptr) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr coroutine_handle(nullptr_t) noexcept : __handle_(nullptr) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     coroutine_handle& operator=(nullptr_t) noexcept {
         __handle_ = nullptr;
         return *this;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr void* address() const noexcept { return __handle_; }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr explicit operator bool() const noexcept { return __handle_; }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void operator()() { resume(); }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void resume() {
       _LIBCUDACXX_ASSERT(__is_suspended(),
                      "resume() can only be called on suspended coroutines");
@@ -123,14 +123,14 @@ public:
       __builtin_coro_resume(__handle_);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void destroy() {
       _LIBCUDACXX_ASSERT(__is_suspended(),
                      "destroy() can only be called on suspended coroutines");
       __builtin_coro_destroy(__handle_);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool done() const {
       _LIBCUDACXX_ASSERT(__is_suspended(),
                      "done() can only be called on suspended coroutines");
@@ -138,7 +138,7 @@ public:
     }
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static coroutine_handle from_address(void* __addr) noexcept {
         coroutine_handle __tmp;
         __tmp.__handle_ = __addr;
@@ -146,7 +146,7 @@ public:
     }
 
     // FIXME: Should from_address(nullptr) be allowed?
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static coroutine_handle from_address(nullptr_t) noexcept {
       return coroutine_handle(nullptr);
     }
@@ -169,27 +169,27 @@ private:
 };
 
 // 18.11.2.7 comparison operators:
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator==(coroutine_handle<> __x, coroutine_handle<> __y) noexcept {
     return __x.address() == __y.address();
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator!=(coroutine_handle<> __x, coroutine_handle<> __y) noexcept {
     return !(__x == __y);
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator<(coroutine_handle<> __x, coroutine_handle<> __y) noexcept {
     return less<void*>()(__x.address(), __y.address());
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator>(coroutine_handle<> __x, coroutine_handle<> __y) noexcept {
     return __y < __x;
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator<=(coroutine_handle<> __x, coroutine_handle<> __y) noexcept {
     return !(__x > __y);
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator>=(coroutine_handle<> __x, coroutine_handle<> __y) noexcept {
     return !(__x < __y);
 }
@@ -201,20 +201,20 @@ public:
     // 18.11.2.1 construct/reset
     using coroutine_handle<>::coroutine_handle;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     coroutine_handle& operator=(nullptr_t) noexcept {
         _Base::operator=(nullptr);
         return *this;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Promise& promise() const {
         return *static_cast<_Promise*>(
             __builtin_coro_promise(this->__handle_, _LIBCUDACXX_ALIGNOF(_Promise), false));
     }
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static coroutine_handle from_address(void* __addr) noexcept {
         coroutine_handle __tmp;
         __tmp.__handle_ = __addr;
@@ -225,7 +225,7 @@ public:
     // the deleted _Promise* overload doesn't make from_address(nullptr)
     // ambiguous.
     // FIXME: should from_address work with nullptr?
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static coroutine_handle from_address(nullptr_t) noexcept {
       return coroutine_handle(nullptr);
     }
@@ -244,7 +244,7 @@ public:
         "pointers to the coroutine's promise type; use 'from_promise' instead");
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static coroutine_handle from_promise(_Promise& __promise) noexcept {
         typedef __remove_cv_t<_Promise> _RawPromise;
         coroutine_handle __tmp;
@@ -265,7 +265,7 @@ class _LIBCUDACXX_TEMPLATE_VIS coroutine_handle<noop_coroutine_promise>
   using _Promise = noop_coroutine_promise;
 public:
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   _Promise& promise() const {
     return *static_cast<_Promise*>(
       __builtin_coro_promise(this->__handle_, _LIBCUDACXX_ALIGNOF(_Promise), false));
@@ -279,37 +279,37 @@ public:
   _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void destroy() const noexcept {}
 
 private:
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   friend coroutine_handle<noop_coroutine_promise> noop_coroutine() noexcept;
 
-  _LIBCUDACXX_INLINE_VISIBILITY coroutine_handle() noexcept {
+  _LIBCUDACXX_HIDE_FROM_ABI coroutine_handle() noexcept {
     this->__handle_ = __builtin_coro_noop();
   }
 };
 
 using noop_coroutine_handle = coroutine_handle<noop_coroutine_promise>;
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 noop_coroutine_handle noop_coroutine() noexcept {
   return noop_coroutine_handle();
 }
 #endif // __has_builtin(__builtin_coro_noop)
 
 struct suspend_never {
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   bool await_ready() const noexcept { return true; }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void await_suspend(coroutine_handle<>) const noexcept {}
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void await_resume() const noexcept {}
 };
 
 struct suspend_always {
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   bool await_ready() const noexcept { return false; }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void await_suspend(coroutine_handle<>) const noexcept {}
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void await_resume() const noexcept {}
 };
 
@@ -320,7 +320,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct hash<_CUDA_VSTD_CORO::coroutine_handle<_Tp> > {
     using __arg_type = _CUDA_VSTD_CORO::coroutine_handle<_Tp>;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t operator()(__arg_type const& __v) const noexcept
     {return hash<void*>()(__v.address());}
 };

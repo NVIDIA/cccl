@@ -43,30 +43,26 @@ struct __unreachable_base
 {
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
-  _LIBCUDACXX_HIDE_FROM_ABI
-      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_NODISCARD_FRIEND constexpr bool
+  _LIBCUDACXX_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
       operator==(const unreachable_sentinel_t &, const _Iter &) noexcept {
     return false;
   }
 #if _LIBCUDACXX_STD_VER < 20
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
-  _LIBCUDACXX_HIDE_FROM_ABI
-      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_NODISCARD_FRIEND constexpr bool
+  _LIBCUDACXX_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
       operator==(const _Iter &, const unreachable_sentinel_t &) noexcept {
     return false;
   }
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
-  _LIBCUDACXX_HIDE_FROM_ABI
-      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_NODISCARD_FRIEND constexpr bool
+  _LIBCUDACXX_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
       operator!=(const unreachable_sentinel_t &, const _Iter &) noexcept {
     return true;
   }
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
-  _LIBCUDACXX_HIDE_FROM_ABI
-      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_NODISCARD_FRIEND constexpr bool
+  _LIBCUDACXX_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
       operator!=(const _Iter &, const unreachable_sentinel_t &) noexcept {
     return true;
   }

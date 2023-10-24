@@ -32,7 +32,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __swap_result_t<_Tp>
 swap(_Tp& __x, _Tp& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp)
                                && _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Tp)) {
@@ -42,7 +42,7 @@ swap(_Tp& __x, _Tp& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructibl
 }
 
 template <class _Tp, size_t _Np>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __enable_if_t<__is_swappable<_Tp>::value>
 swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value) {
   for (size_t __i = 0; __i != _Np; ++__i) {

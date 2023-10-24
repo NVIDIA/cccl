@@ -40,7 +40,7 @@ template<> struct __scope_enum_to_tag<(int)thread_scope_system> {
     using type = __thread_scope_system_tag; };
 
 template <int _Scope>
-_LIBCUDACXX_INLINE_VISIBILITY auto constexpr __scope_tag() ->
+_LIBCUDACXX_HIDE_FROM_ABI auto constexpr __scope_tag() ->
         typename __scope_enum_to_tag<_Scope>::type {
     return typename __scope_enum_to_tag<_Scope>::type();
 }

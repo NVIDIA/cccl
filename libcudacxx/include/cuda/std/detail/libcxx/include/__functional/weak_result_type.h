@@ -33,8 +33,8 @@ template <class _Tp>
 struct __has_result_type
 {
 private:
-    template <class _Up> _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
-    template <class _Up> _LIBCUDACXX_INLINE_VISIBILITY static true_type __test(typename _Up::result_type* = 0);
+    template <class _Up> _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
+    template <class _Up> _LIBCUDACXX_HIDE_FROM_ABI static true_type __test(typename _Up::result_type* = 0);
 public:
     static const bool value = decltype(__test<_Tp>(0))::value;
 };
@@ -46,9 +46,9 @@ struct __derives_from_unary_function
 {
 private:
     struct __two {char __lx; char __lxx;};
-    static _LIBCUDACXX_INLINE_VISIBILITY __two __test(...);
+    static _LIBCUDACXX_HIDE_FROM_ABI __two __test(...);
     template <class _Ap, class _Rp>
-        static _LIBCUDACXX_INLINE_VISIBILITY __unary_function<_Ap, _Rp>
+        static _LIBCUDACXX_HIDE_FROM_ABI __unary_function<_Ap, _Rp>
         __test(const volatile __unary_function<_Ap, _Rp>*);
 
 public:
@@ -61,9 +61,9 @@ struct __derives_from_binary_function
 {
 private:
     struct __two {char __lx; char __lxx;};
-    static __two _LIBCUDACXX_INLINE_VISIBILITY __test(...);
+    static __two _LIBCUDACXX_HIDE_FROM_ABI __test(...);
     template <class _A1, class _A2, class _Rp>
-        static _LIBCUDACXX_INLINE_VISIBILITY __binary_function<_A1, _A2, _Rp>
+        static _LIBCUDACXX_HIDE_FROM_ABI __binary_function<_A1, _A2, _Rp>
         __test(const volatile __binary_function<_A1, _A2, _Rp>*);
 
 public:

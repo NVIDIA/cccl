@@ -29,18 +29,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _LIBCUDACXX_STD_VER > 11
 
 template <class _Cont>
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI
 constexpr auto empty(const _Cont& __c)
 noexcept(noexcept(__c.empty()))
 -> decltype        (__c.empty())
 { return            __c.empty(); }
 
 template <class _Tp, size_t _Sz>
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool empty(const _Tp (&)[_Sz]) noexcept { return false; }
 
 template <class _Ep>
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool empty(initializer_list<_Ep> __il) noexcept { return __il.size() == 0; }
 
 #endif // _LIBCUDACXX_STD_VER > 17

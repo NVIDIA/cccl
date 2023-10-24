@@ -26,7 +26,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void* __voidify(_Tp& __from) {
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void* __voidify(_Tp& __from) {
   // Cast away cv-qualifiers to allow modifying elements of a range through const iterators.
   return const_cast<void*>(static_cast<const volatile void*>(_CUDA_VSTD::addressof(__from)));
 }

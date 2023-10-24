@@ -73,12 +73,12 @@ class __return_type_wrapper {
 
   template <class _Fn,
             class = _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::is_same<_CUDA_VSTD::__decay_t<_Fn>, _DecayFn>::value>>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
   explicit __return_type_wrapper(_Fn &&__fn) noexcept
     : __fn_(_CUDA_VSTD::forward<_Fn>(__fn)) {}
 
   template <class... _As>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
   _Ret operator()(_As&&... __as) & noexcept {
 #if !defined(__NVCC__) || defined(__CUDA_ARCH__)
     static_assert(
@@ -93,7 +93,7 @@ class __return_type_wrapper {
   }
 
   template <class... _As>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
   _Ret operator()(_As&&... __as) && noexcept {
 #if !defined(__NVCC__) || defined(__CUDA_ARCH__)
     static_assert(
@@ -109,7 +109,7 @@ class __return_type_wrapper {
   }
 
   template <class... _As>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
   _Ret operator()(_As&&... __as) const& noexcept {
 #if !defined(__NVCC__) || defined(__CUDA_ARCH__)
     static_assert(
@@ -124,7 +124,7 @@ class __return_type_wrapper {
   }
 
   template <class... _As>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
   _Ret operator()(_As&&... __as) const&& noexcept {
 #if !defined(__NVCC__) || defined(__CUDA_ARCH__)
     static_assert(
@@ -143,7 +143,7 @@ class __return_type_wrapper {
 }  // __detail
 
 template <class _Ret, class _Fn>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::__decay_t<_Fn>>
 proclaim_return_type(_Fn&& __fn) noexcept {
   return __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::__decay_t<_Fn>>(

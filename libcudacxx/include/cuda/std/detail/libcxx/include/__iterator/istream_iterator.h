@@ -45,39 +45,39 @@ private:
     istream_type* __in_stream_;
     _Tp __value_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr istream_iterator() : __in_stream_(0), __value_() {}
-    _LIBCUDACXX_INLINE_VISIBILITY istream_iterator(istream_type& __s) : __in_stream_(_CUDA_VSTD::addressof(__s))
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr istream_iterator() : __in_stream_(0), __value_() {}
+    _LIBCUDACXX_HIDE_FROM_ABI istream_iterator(istream_type& __s) : __in_stream_(_CUDA_VSTD::addressof(__s))
         {
             if (!(*__in_stream_ >> __value_))
                 __in_stream_ = 0;
         }
 
-    _LIBCUDACXX_INLINE_VISIBILITY const _Tp& operator*() const {return __value_;}
-    _LIBCUDACXX_INLINE_VISIBILITY const _Tp* operator->() const {return _CUDA_VSTD::addressof((operator*()));}
-    _LIBCUDACXX_INLINE_VISIBILITY istream_iterator& operator++()
+    _LIBCUDACXX_HIDE_FROM_ABI const _Tp& operator*() const {return __value_;}
+    _LIBCUDACXX_HIDE_FROM_ABI const _Tp* operator->() const {return _CUDA_VSTD::addressof((operator*()));}
+    _LIBCUDACXX_HIDE_FROM_ABI istream_iterator& operator++()
         {
             if (!(*__in_stream_ >> __value_))
                 __in_stream_ = 0;
             return *this;
         }
-    _LIBCUDACXX_INLINE_VISIBILITY istream_iterator  operator++(int)
+    _LIBCUDACXX_HIDE_FROM_ABI istream_iterator  operator++(int)
         {istream_iterator __t(*this); ++(*this); return __t;}
 
     template <class _Up, class _CharU, class _TraitsU, class _DistanceU>
-    friend _LIBCUDACXX_INLINE_VISIBILITY
+    friend _LIBCUDACXX_HIDE_FROM_ABI
     bool
     operator==(const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __x,
                const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __y);
 
     template <class _Up, class _CharU, class _TraitsU, class _DistanceU>
-    friend _LIBCUDACXX_INLINE_VISIBILITY
+    friend _LIBCUDACXX_HIDE_FROM_ABI
     bool
     operator==(const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __x,
                const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __y);
 };
 
 template <class _Tp, class _CharT, class _Traits, class _Distance>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator==(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
            const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
@@ -86,7 +86,7 @@ operator==(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
 }
 
 template <class _Tp, class _CharT, class _Traits, class _Distance>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
            const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)

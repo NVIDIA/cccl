@@ -58,7 +58,7 @@ enum __libcpp_atomic_order {
 };
 
 template <class _ValueType, class _FromType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void __libcpp_atomic_store(_ValueType* __dest, _FromType __val,
                            int __order = _AO_Seq)
 {
@@ -66,14 +66,14 @@ void __libcpp_atomic_store(_ValueType* __dest, _FromType __val,
 }
 
 template <class _ValueType, class _FromType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void __libcpp_relaxed_store(_ValueType* __dest, _FromType __val)
 {
     __atomic_store_n(__dest, __val, _AO_Relaxed);
 }
 
 template <class _ValueType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _ValueType __libcpp_atomic_load(_ValueType const* __val,
                                 int __order = _AO_Seq)
 {
@@ -81,7 +81,7 @@ _ValueType __libcpp_atomic_load(_ValueType const* __val,
 }
 
 template <class _ValueType, class _AddType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _ValueType __libcpp_atomic_add(_ValueType* __val, _AddType __a,
                                int __order = _AO_Seq)
 {
@@ -89,7 +89,7 @@ _ValueType __libcpp_atomic_add(_ValueType* __val, _AddType __a,
 }
 
 template <class _ValueType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _ValueType __libcpp_atomic_exchange(_ValueType* __target,
                                     _ValueType __value, int __order = _AO_Seq)
 {
@@ -97,7 +97,7 @@ _ValueType __libcpp_atomic_exchange(_ValueType* __target,
 }
 
 template <class _ValueType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool __libcpp_atomic_compare_exchange(_ValueType* __val,
     _ValueType* __expected, _ValueType __after,
     int __success_order = _AO_Seq,
@@ -119,7 +119,7 @@ enum __libcpp_atomic_order {
 };
 
 template <class _ValueType, class _FromType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void __libcpp_atomic_store(_ValueType* __dest, _FromType __val,
                            int = 0)
 {
@@ -127,14 +127,14 @@ void __libcpp_atomic_store(_ValueType* __dest, _FromType __val,
 }
 
 template <class _ValueType, class _FromType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void __libcpp_relaxed_store(_ValueType* __dest, _FromType __val)
 {
     *__dest = __val;
 }
 
 template <class _ValueType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _ValueType __libcpp_atomic_load(_ValueType const* __val,
                                 int = 0)
 {
@@ -142,7 +142,7 @@ _ValueType __libcpp_atomic_load(_ValueType const* __val,
 }
 
 template <class _ValueType, class _AddType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _ValueType __libcpp_atomic_add(_ValueType* __val, _AddType __a,
                                int = 0)
 {
@@ -150,7 +150,7 @@ _ValueType __libcpp_atomic_add(_ValueType* __val, _AddType __a,
 }
 
 template <class _ValueType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _ValueType __libcpp_atomic_exchange(_ValueType* __target,
                                     _ValueType __value, int  = _AO_Seq)
 {
@@ -160,7 +160,7 @@ _ValueType __libcpp_atomic_exchange(_ValueType* __target,
 }
 
 template <class _ValueType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool __libcpp_atomic_compare_exchange(_ValueType* __val,
     _ValueType* __expected, _ValueType __after,
     int = 0, int = 0)

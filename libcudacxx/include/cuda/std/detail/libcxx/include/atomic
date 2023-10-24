@@ -684,7 +684,7 @@ typedef enum memory_order {
 
 #endif // _LIBCUDACXX_STD_VER > 17
 
-template <typename _Tp> _LIBCUDACXX_INLINE_VISIBILITY
+template <typename _Tp> _LIBCUDACXX_HIDE_FROM_ABI
 bool __cxx_nonatomic_compare_equal(_Tp const& __lhs, _Tp const& __rhs) {
 #if defined(_LIBCUDACXX_COMPILER_NVCC) \
  || defined(_LIBCUDACXX_COMPILER_NVRTC) \
@@ -704,12 +704,12 @@ static_assert((is_same<underlying_type<memory_order>::type, __memory_order_under
 // [atomics.types.generic]p1 guarantees _Tp is trivially copyable. Because
 // the default operator= in an object is not volatile, a byte-by-byte copy
 // is required.
-template <typename _Tp, typename _Tv> _LIBCUDACXX_INLINE_VISIBILITY
+template <typename _Tp, typename _Tv> _LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t<is_assignable<_Tp&, _Tv>::value>
 __cxx_atomic_assign_volatile(_Tp& __a_value, _Tv const& __val) {
   __a_value = __val;
 }
-template <typename _Tp, typename _Tv> _LIBCUDACXX_INLINE_VISIBILITY
+template <typename _Tp, typename _Tv> _LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t<is_assignable<_Tp&, _Tv>::value>
 __cxx_atomic_assign_volatile(_Tp volatile& __a_value, _Tv volatile const& __val) {
   volatile char* __to = reinterpret_cast<volatile char*>(&__a_value);
@@ -755,7 +755,7 @@ using __detail::__cxx_atomic_fetch_and;
 using __detail::__cxx_atomic_fetch_xor;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp kill_dependency(_Tp __y) noexcept
 {
     return __y;
@@ -790,38 +790,38 @@ _Tp kill_dependency(_Tp __y) noexcept
 template<typename _Tp, int _Sco>
 struct __cxx_atomic_lock_impl {
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   __cxx_atomic_lock_impl() noexcept
     : __a_value(), __a_lock(0) {}
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit
   __cxx_atomic_lock_impl(_Tp value) noexcept
     : __a_value(value), __a_lock(0) {}
 
   _Tp __a_value;
   mutable __cxx_atomic_base_impl<_LIBCUDACXX_ATOMIC_FLAG_TYPE, _Sco> __a_lock;
 
-  _LIBCUDACXX_INLINE_VISIBILITY void __lock() const volatile {
+  _LIBCUDACXX_HIDE_FROM_ABI void __lock() const volatile {
     while(1 == __cxx_atomic_exchange(&__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), memory_order_acquire))
         /*spin*/;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY void __lock() const {
+  _LIBCUDACXX_HIDE_FROM_ABI void __lock() const {
     while(1 == __cxx_atomic_exchange(&__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), memory_order_acquire))
         /*spin*/;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY void __unlock() const volatile {
+  _LIBCUDACXX_HIDE_FROM_ABI void __unlock() const volatile {
     __cxx_atomic_store(&__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), memory_order_release);
   }
-  _LIBCUDACXX_INLINE_VISIBILITY void __unlock() const {
+  _LIBCUDACXX_HIDE_FROM_ABI void __unlock() const {
     __cxx_atomic_store(&__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), memory_order_release);
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _Tp __read() const volatile {
+  _LIBCUDACXX_HIDE_FROM_ABI _Tp __read() const volatile {
     __lock();
     _Tp __old;
     __cxx_atomic_assign_volatile(__old, __a_value);
     __unlock();
     return __old;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _Tp __read() const {
+  _LIBCUDACXX_HIDE_FROM_ABI _Tp __read() const {
     __lock();
     _Tp __old = __a_value;
     __unlock();
@@ -830,25 +830,25 @@ struct __cxx_atomic_lock_impl {
 };
 
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void __cxx_atomic_init(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,  _Tp __val) {
   __cxx_atomic_assign_volatile(__a->__a_value, __val);
 }
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void __cxx_atomic_init(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,  _Tp __val) {
   __a->__a_value = __val;
 }
 
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void __cxx_atomic_store(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,  _Tp __val, memory_order) {
   __a->__lock();
   __cxx_atomic_assign_volatile(__a->__a_value, __val);
   __a->__unlock();
 }
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void __cxx_atomic_store(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,  _Tp __val, memory_order) {
   __a->__lock();
   __a->__a_value = __val;
@@ -856,18 +856,18 @@ void __cxx_atomic_store(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,  _Tp __val, memo
 }
 
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_load(const volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a, memory_order) {
   return __a->__read();
 }
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_load(const __cxx_atomic_lock_impl<_Tp, _Sco>* __a, memory_order) {
   return __a->__read();
 }
 
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_exchange(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a, _Tp __value, memory_order) {
   __a->__lock();
   _Tp __old;
@@ -877,7 +877,7 @@ _Tp __cxx_atomic_exchange(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a, _Tp _
   return __old;
 }
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_exchange(__cxx_atomic_lock_impl<_Tp, _Sco>* __a, _Tp __value, memory_order) {
   __a->__lock();
   _Tp __old = __a->__a_value;
@@ -887,7 +887,7 @@ _Tp __cxx_atomic_exchange(__cxx_atomic_lock_impl<_Tp, _Sco>* __a, _Tp __value, m
 }
 
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool __cxx_atomic_compare_exchange_strong(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                                           _Tp* __expected, _Tp __value, memory_order, memory_order) {
   __a->__lock();
@@ -902,7 +902,7 @@ bool __cxx_atomic_compare_exchange_strong(volatile __cxx_atomic_lock_impl<_Tp, _
   return __ret;
 }
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool __cxx_atomic_compare_exchange_strong(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                                           _Tp* __expected, _Tp __value, memory_order, memory_order) {
   __a->__lock();
@@ -916,7 +916,7 @@ bool __cxx_atomic_compare_exchange_strong(__cxx_atomic_lock_impl<_Tp, _Sco>* __a
 }
 
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool __cxx_atomic_compare_exchange_weak(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                                         _Tp* __expected, _Tp __value, memory_order, memory_order) {
   __a->__lock();
@@ -931,7 +931,7 @@ bool __cxx_atomic_compare_exchange_weak(volatile __cxx_atomic_lock_impl<_Tp, _Sc
   return __ret;
 }
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool __cxx_atomic_compare_exchange_weak(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                                         _Tp* __expected, _Tp __value, memory_order, memory_order) {
   __a->__lock();
@@ -945,7 +945,7 @@ bool __cxx_atomic_compare_exchange_weak(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,
 }
 
 template <typename _Tp, typename _Td, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_fetch_add(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                            _Td __delta, memory_order) {
   __a->__lock();
@@ -956,7 +956,7 @@ _Tp __cxx_atomic_fetch_add(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,
   return __old;
 }
 template <typename _Tp, typename _Td, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_fetch_add(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                            _Td __delta, memory_order) {
   __a->__lock();
@@ -967,7 +967,7 @@ _Tp __cxx_atomic_fetch_add(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,
 }
 
 template <typename _Tp, typename _Td, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp* __cxx_atomic_fetch_add(volatile __cxx_atomic_lock_impl<_Tp*, _Sco>* __a,
                            ptrdiff_t __delta, memory_order) {
   __a->__lock();
@@ -978,7 +978,7 @@ _Tp* __cxx_atomic_fetch_add(volatile __cxx_atomic_lock_impl<_Tp*, _Sco>* __a,
   return __old;
 }
 template <typename _Tp, typename _Td, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp* __cxx_atomic_fetch_add(__cxx_atomic_lock_impl<_Tp*, _Sco>* __a,
                             ptrdiff_t __delta, memory_order) {
   __a->__lock();
@@ -989,7 +989,7 @@ _Tp* __cxx_atomic_fetch_add(__cxx_atomic_lock_impl<_Tp*, _Sco>* __a,
 }
 
 template <typename _Tp, typename _Td, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_fetch_sub(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                            _Td __delta, memory_order) {
   __a->__lock();
@@ -1000,7 +1000,7 @@ _Tp __cxx_atomic_fetch_sub(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,
   return __old;
 }
 template <typename _Tp, typename _Td, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_fetch_sub(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                            _Td __delta, memory_order) {
   __a->__lock();
@@ -1011,7 +1011,7 @@ _Tp __cxx_atomic_fetch_sub(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,
 }
 
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_fetch_and(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                            _Tp __pattern, memory_order) {
   __a->__lock();
@@ -1022,7 +1022,7 @@ _Tp __cxx_atomic_fetch_and(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,
   return __old;
 }
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_fetch_and(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                            _Tp __pattern, memory_order) {
   __a->__lock();
@@ -1033,7 +1033,7 @@ _Tp __cxx_atomic_fetch_and(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,
 }
 
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_fetch_or(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                           _Tp __pattern, memory_order) {
   __a->__lock();
@@ -1044,7 +1044,7 @@ _Tp __cxx_atomic_fetch_or(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,
   return __old;
 }
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_fetch_or(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                           _Tp __pattern, memory_order) {
   __a->__lock();
@@ -1055,7 +1055,7 @@ _Tp __cxx_atomic_fetch_or(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,
 }
 
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_fetch_xor(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                            _Tp __pattern, memory_order) {
   __a->__lock();
@@ -1066,7 +1066,7 @@ _Tp __cxx_atomic_fetch_xor(volatile __cxx_atomic_lock_impl<_Tp, _Sco>* __a,
   return __old;
 }
 template <typename _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __cxx_atomic_fetch_xor(__cxx_atomic_lock_impl<_Tp, _Sco>* __a,
                            _Tp __pattern, memory_order) {
   __a->__lock();
@@ -1103,13 +1103,13 @@ template <typename _Tp, int _Sco,
 #endif //_LIBCUDACXX_ATOMIC_ONLY_USE_BUILTINS
 struct __cxx_atomic_impl : public _Base {
   __cxx_atomic_impl() noexcept = default;
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __cxx_atomic_impl(_Tp value) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __cxx_atomic_impl(_Tp value) noexcept
     : _Base(value) {}
 };
 
 
 template<int _Sco, typename _Tp = int>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __cxx_atomic_impl<_Tp, _Sco>* __cxx_atomic_rebind(_Tp* __inst) {
     static_assert(sizeof(__cxx_atomic_impl<_Tp, _Sco>) == sizeof(_Tp),"");
     static_assert(alignof(__cxx_atomic_impl<_Tp, _Sco>) == alignof(_Tp),"");
@@ -1127,19 +1127,19 @@ struct __cxx_atomic_poll_tester {
     _Tp __val;
     memory_order __order;
 
-    _LIBCUDACXX_INLINE_VISIBILITY __cxx_atomic_poll_tester(_Ty const volatile* __a_, _Tp __val_, memory_order __order_)
+    _LIBCUDACXX_HIDE_FROM_ABI __cxx_atomic_poll_tester(_Ty const volatile* __a_, _Tp __val_, memory_order __order_)
       : __a(__a_)
       , __val(__val_)
       , __order(__order_)
     {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY bool operator()() const {
+    _LIBCUDACXX_HIDE_FROM_ABI bool operator()() const {
       return !(__cxx_atomic_load(__a, __order) == __val);
     }
 };
 
 template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>, int _Sco = _Ty::__sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow_fallback(_Ty const volatile* __a, _Tp __val, memory_order __order) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_try_wait_slow_fallback(_Ty const volatile* __a, _Tp __val, memory_order __order) {
     __libcpp_thread_poll_with_backoff(__cxx_atomic_poll_tester<_Ty>(__a, __val, __order));
 }
 
@@ -1148,7 +1148,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow_fallback(_Ty const
 #ifdef _LIBCUDACXX_HAS_PLATFORM_WAIT
 
 template <class _Tp, int _Sco, __enable_if_t<!__libcpp_platform_wait_uses_type<_Tp>::__value, int> = 1>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
     auto * const __c = __libcpp_contention_state(__a);
     __cxx_atomic_fetch_add(__cxx_atomic_rebind<_Sco>(&__c->__version), (__libcpp_platform_wait_t)1, memory_order_relaxed);
@@ -1158,11 +1158,11 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp
 #endif
 }
 template <class _Tp, int _Sco, __enable_if_t<!__libcpp_platform_wait_uses_type<_Tp>::__value, int> = 1>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_one(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_notify_one(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
     __cxx_atomic_notify_all(__a);
 }
 template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>, int _Sco = _Ty::__sco, __enable_if_t<!__libcpp_platform_wait_uses_type<_Tp>::__value, int> = 1>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(_Ty const volatile* __a, _Tp const __val, memory_order __order) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_try_wait_slow(_Ty const volatile* __a, _Tp const __val, memory_order __order) {
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
     auto * const __c = __libcpp_contention_state(__a);
     __cxx_atomic_store(__cxx_atomic_rebind<_Sco>(&__c->__waiters), (ptrdiff_t)1, memory_order_relaxed);
@@ -1182,7 +1182,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(_Ty const volatile
 }
 
 template <class _Tp, int _Sco, __enable_if_t<__libcpp_platform_wait_uses_type<_Tp>::__value, int> = 1>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a, _Tp __val, memory_order) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_try_wait_slow(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a, _Tp __val, memory_order) {
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
     auto * const __c = __libcpp_contention_state(__a);
     __cxx_atomic_fetch_add(__cxx_atomic_rebind<_Sco>(&__c->__waiters), (ptrdiff_t)1, memory_order_relaxed);
@@ -1194,7 +1194,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(__cxx_atomic_impl<
 #endif
 }
 template <class _Tp, int _Sco, __enable_if_t<__libcpp_platform_wait_uses_type<_Tp>::__value, int> = 1>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
     auto * const __c = __libcpp_contention_state(__a);
     __cxx_atomic_thread_fence(memory_order_seq_cst);
@@ -1203,7 +1203,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp
         __libcpp_platform_wake((_Tp*)__a, true);
 }
 template <class _Tp, int _Sco, __enable_if_t<__libcpp_platform_wait_uses_type<_Tp>::__value, int> = 1>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_one(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_notify_one(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
     auto * const __c = __libcpp_contention_state(__a);
     __cxx_atomic_thread_fence(memory_order_seq_cst);
@@ -1215,7 +1215,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_one(__cxx_atomic_impl<_Tp
 #elif !defined(_LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE)
 
 template <class _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
     auto * const __c = __libcpp_contention_state(__a);
     __cxx_atomic_thread_fence(memory_order_seq_cst);
     if(0 == __cxx_atomic_load(__cxx_atomic_rebind<_Sco>(&__c->__credit), memory_order_relaxed))
@@ -1227,11 +1227,11 @@ _LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(__cxx_atomic_impl<_Tp
     }
 }
 template <class _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_one(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_notify_one(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a) {
     __cxx_atomic_notify_all(__a);
 }
 template <class _Tp, int _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a, _Tp const __val, memory_order __order) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_try_wait_slow(__cxx_atomic_impl<_Tp, _Sco> const volatile* __a, _Tp const __val, memory_order __order) {
     auto * const __c = __libcpp_contention_state(__a);
     __libcpp_mutex_lock(&__c->__mutex);
     __cxx_atomic_store(__cxx_atomic_rebind<_Sco>(&__c->__credit), (ptrdiff_t)1, memory_order_relaxed);
@@ -1253,25 +1253,25 @@ struct __atomic_wait_and_notify_supported
 {};
 
 template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_try_wait_slow(_Ty const volatile* __a, _Tp __val, memory_order __order) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_try_wait_slow(_Ty const volatile* __a, _Tp __val, memory_order __order) {
     static_assert(__atomic_wait_and_notify_supported<_Tp>::value, "atomic wait operations are unsupported on Pascal");
     __cxx_atomic_try_wait_slow_fallback(__a, __val, __order);
 }
 
 template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_one(_Ty const volatile*) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_notify_one(_Ty const volatile*) {
     static_assert(__atomic_wait_and_notify_supported<_Tp>::value, "atomic notify-one operations are unsupported on Pascal");
 }
 
 template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_notify_all(_Ty const volatile*) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_notify_all(_Ty const volatile*) {
     static_assert(__atomic_wait_and_notify_supported<_Tp>::value, "atomic notify-all operations are unsupported on Pascal");
 }
 
 #endif // _LIBCUDACXX_HAS_PLATFORM_WAIT || !defined(_LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE)
 
 template <class _Ty, class _Tp = __detail::__cxx_atomic_underlying_t<_Ty>>
-_LIBCUDACXX_INLINE_VISIBILITY void __cxx_atomic_wait(_Ty const volatile* __a, _Tp const __val, memory_order __order) {
+_LIBCUDACXX_HIDE_FROM_ABI void __cxx_atomic_wait(_Ty const volatile* __a, _Tp const __val, memory_order __order) {
     for(int __i = 0; __i < _LIBCUDACXX_POLLING_COUNT; ++__i) {
         if(!__cxx_nonatomic_compare_equal(__cxx_atomic_load(__a, __order), __val))
             return;
@@ -1295,7 +1295,7 @@ struct __atomic_base_storage {
     __atomic_base_storage& operator=(const __atomic_base_storage&) = default;
     __atomic_base_storage& operator=(__atomic_base_storage&&) = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     __atomic_base_storage(_Storage&& __a) noexcept : __a_(_CUDA_VSTD::forward<_Storage>(__a)) {}
 };
 
@@ -1308,68 +1308,68 @@ struct __atomic_base_core : public __atomic_base_storage<_Tp, _Storage>{
     __atomic_base_core& operator=(const __atomic_base_core&) = delete;
     __atomic_base_core& operator=(__atomic_base_core&&) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     __atomic_base_core(_Storage&& __a) noexcept : __atomic_base_storage<_Tp, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
     static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
 #endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool is_lock_free() const volatile noexcept
         {return _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(sizeof(_Tp));}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool is_lock_free() const noexcept
         {return static_cast<__atomic_base_core const volatile*>(this)->is_lock_free();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
 
     void store(_Tp __d, memory_order __m = memory_order_seq_cst) volatile noexcept
       _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)
         {__cxx_atomic_store(&this->__a_, __d, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void store(_Tp __d, memory_order __m = memory_order_seq_cst) noexcept
       _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)
         {__cxx_atomic_store(&this->__a_, __d, __m);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp load(memory_order __m = memory_order_seq_cst) const volatile noexcept
       _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)
         {return __cxx_atomic_load(&this->__a_, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp load(memory_order __m = memory_order_seq_cst) const noexcept
       _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)
         {return __cxx_atomic_load(&this->__a_, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     operator _Tp() const volatile noexcept {return load();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     operator _Tp() const noexcept          {return load();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp exchange(_Tp __d, memory_order __m = memory_order_seq_cst) volatile noexcept
         {return __cxx_atomic_exchange(&this->__a_, __d, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp exchange(_Tp __d, memory_order __m = memory_order_seq_cst) noexcept
         {return __cxx_atomic_exchange(&this->__a_, __d, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_weak(_Tp& __e, _Tp __d,
                                memory_order __s, memory_order __f) volatile noexcept
       _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__s, __f)
         {return __cxx_atomic_compare_exchange_weak(&this->__a_, &__e, __d, __s, __f);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_weak(_Tp& __e, _Tp __d,
                                memory_order __s, memory_order __f) noexcept
       _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__s, __f)
         {return __cxx_atomic_compare_exchange_weak(&this->__a_, &__e, __d, __s, __f);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_strong(_Tp& __e, _Tp __d,
                                  memory_order __s, memory_order __f) volatile noexcept
       _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__s, __f)
         {return __cxx_atomic_compare_exchange_strong(&this->__a_, &__e, __d, __s, __f);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_strong(_Tp& __e, _Tp __d,
                                  memory_order __s, memory_order __f) noexcept
       _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__s, __f)
         {return __cxx_atomic_compare_exchange_strong(&this->__a_, &__e, __d, __s, __f);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_weak(_Tp& __e, _Tp __d,
                               memory_order __m = memory_order_seq_cst) volatile noexcept {
         if (memory_order_acq_rel == __m)
@@ -1379,7 +1379,7 @@ struct __atomic_base_core : public __atomic_base_storage<_Tp, _Storage>{
         else
             return __cxx_atomic_compare_exchange_weak(&this->__a_, &__e, __d, __m, __m);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_weak(_Tp& __e, _Tp __d,
                                memory_order __m = memory_order_seq_cst) noexcept {
         if(memory_order_acq_rel == __m)
@@ -1389,7 +1389,7 @@ struct __atomic_base_core : public __atomic_base_storage<_Tp, _Storage>{
         else
             return __cxx_atomic_compare_exchange_weak(&this->__a_, &__e, __d, __m, __m);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_strong(_Tp& __e, _Tp __d,
                               memory_order __m = memory_order_seq_cst) volatile noexcept {
         if (memory_order_acq_rel == __m)
@@ -1399,7 +1399,7 @@ struct __atomic_base_core : public __atomic_base_storage<_Tp, _Storage>{
         else
             return __cxx_atomic_compare_exchange_strong(&this->__a_, &__e, __d, __m, __m);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_strong(_Tp& __e, _Tp __d,
                                  memory_order __m = memory_order_seq_cst) noexcept {
         if (memory_order_acq_rel == __m)
@@ -1410,17 +1410,17 @@ struct __atomic_base_core : public __atomic_base_storage<_Tp, _Storage>{
             return __cxx_atomic_compare_exchange_strong(&this->__a_, &__e, __d, __m, __m);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY void wait(_Tp __v, memory_order __m = memory_order_seq_cst) const volatile noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void wait(_Tp __v, memory_order __m = memory_order_seq_cst) const volatile noexcept
         {__cxx_atomic_wait(&this->__a_, __v, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY void wait(_Tp __v, memory_order __m = memory_order_seq_cst) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void wait(_Tp __v, memory_order __m = memory_order_seq_cst) const noexcept
         {__cxx_atomic_wait(&this->__a_, __v, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY void notify_one() volatile noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void notify_one() volatile noexcept
         {__cxx_atomic_notify_one(&this->__a_);}
-    _LIBCUDACXX_INLINE_VISIBILITY void notify_one() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void notify_one() noexcept
         {__cxx_atomic_notify_one(&this->__a_);}
-    _LIBCUDACXX_INLINE_VISIBILITY void notify_all() volatile noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void notify_all() volatile noexcept
         {__cxx_atomic_notify_all(&this->__a_);}
-    _LIBCUDACXX_INLINE_VISIBILITY void notify_all() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void notify_all() noexcept
         {__cxx_atomic_notify_all(&this->__a_);}
 };
 
@@ -1433,68 +1433,68 @@ struct __atomic_base_core<_Tp, true, _Storage> : public __atomic_base_storage<_T
     __atomic_base_core& operator=(const __atomic_base_core&) = default;
     __atomic_base_core& operator=(__atomic_base_core&&) = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     __atomic_base_core(_Storage&& __a) noexcept : __atomic_base_storage<_Tp, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
     static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
 #endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool is_lock_free() const volatile noexcept
         {return _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(sizeof(_Tp));}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool is_lock_free() const noexcept
         {return static_cast<__atomic_base_core const volatile*>(this)->is_lock_free();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
 
     void store(_Tp __d, memory_order __m = memory_order_seq_cst) const volatile noexcept
       _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)
         {__cxx_atomic_store(&this->__a_, __d, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void store(_Tp __d, memory_order __m = memory_order_seq_cst) const noexcept
       _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)
         {__cxx_atomic_store(&this->__a_, __d, __m);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp load(memory_order __m = memory_order_seq_cst) const volatile noexcept
       _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)
         {return __cxx_atomic_load(&this->__a_, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp load(memory_order __m = memory_order_seq_cst) const noexcept
       _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)
         {return __cxx_atomic_load(&this->__a_, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     operator _Tp() const volatile noexcept {return load();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     operator _Tp() const noexcept          {return load();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp exchange(_Tp __d, memory_order __m = memory_order_seq_cst) const volatile noexcept
         {return __cxx_atomic_exchange(&this->__a_, __d, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp exchange(_Tp __d, memory_order __m = memory_order_seq_cst) const noexcept
         {return __cxx_atomic_exchange(&this->__a_, __d, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_weak(_Tp& __e, _Tp __d,
                                memory_order __s, memory_order __f) const volatile noexcept
       _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__s, __f)
         {return __cxx_atomic_compare_exchange_weak(&this->__a_, &__e, __d, __s, __f);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_weak(_Tp& __e, _Tp __d,
                                memory_order __s, memory_order __f) const noexcept
       _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__s, __f)
         {return __cxx_atomic_compare_exchange_weak(&this->__a_, &__e, __d, __s, __f);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_strong(_Tp& __e, _Tp __d,
                                  memory_order __s, memory_order __f) const volatile noexcept
       _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__s, __f)
         {return __cxx_atomic_compare_exchange_strong(&this->__a_, &__e, __d, __s, __f);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_strong(_Tp& __e, _Tp __d,
                                  memory_order __s, memory_order __f) const noexcept
       _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__s, __f)
         {return __cxx_atomic_compare_exchange_strong(&this->__a_, &__e, __d, __s, __f);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_weak(_Tp& __e, _Tp __d,
                               memory_order __m = memory_order_seq_cst) const volatile noexcept {
         if (memory_order_acq_rel == __m)
@@ -1504,7 +1504,7 @@ struct __atomic_base_core<_Tp, true, _Storage> : public __atomic_base_storage<_T
         else
             return __cxx_atomic_compare_exchange_weak(&this->__a_, &__e, __d, __m, __m);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_weak(_Tp& __e, _Tp __d,
                                memory_order __m = memory_order_seq_cst) const noexcept {
         if(memory_order_acq_rel == __m)
@@ -1514,7 +1514,7 @@ struct __atomic_base_core<_Tp, true, _Storage> : public __atomic_base_storage<_T
         else
             return __cxx_atomic_compare_exchange_weak(&this->__a_, &__e, __d, __m, __m);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_strong(_Tp& __e, _Tp __d,
                               memory_order __m = memory_order_seq_cst) const volatile noexcept {
         if (memory_order_acq_rel == __m)
@@ -1524,7 +1524,7 @@ struct __atomic_base_core<_Tp, true, _Storage> : public __atomic_base_storage<_T
         else
             return __cxx_atomic_compare_exchange_strong(&this->__a_, &__e, __d, __m, __m);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool compare_exchange_strong(_Tp& __e, _Tp __d,
                                  memory_order __m = memory_order_seq_cst) const noexcept {
         if (memory_order_acq_rel == __m)
@@ -1535,17 +1535,17 @@ struct __atomic_base_core<_Tp, true, _Storage> : public __atomic_base_storage<_T
             return __cxx_atomic_compare_exchange_strong(&this->__a_, &__e, __d, __m, __m);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY void wait(_Tp __v, memory_order __m = memory_order_seq_cst) const volatile noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void wait(_Tp __v, memory_order __m = memory_order_seq_cst) const volatile noexcept
         {__cxx_atomic_wait(&this->__a_, __v, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY void wait(_Tp __v, memory_order __m = memory_order_seq_cst) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void wait(_Tp __v, memory_order __m = memory_order_seq_cst) const noexcept
         {__cxx_atomic_wait(&this->__a_, __v, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY void notify_one() const volatile noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void notify_one() const volatile noexcept
         {__cxx_atomic_notify_one(&this->__a_);}
-    _LIBCUDACXX_INLINE_VISIBILITY void notify_one() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void notify_one() const noexcept
         {__cxx_atomic_notify_one(&this->__a_);}
-    _LIBCUDACXX_INLINE_VISIBILITY void notify_all() const volatile noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void notify_all() const volatile noexcept
         {__cxx_atomic_notify_all(&this->__a_);}
-    _LIBCUDACXX_INLINE_VISIBILITY void notify_all() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void notify_all() const noexcept
         {__cxx_atomic_notify_all(&this->__a_);}
 };
 
@@ -1558,45 +1558,45 @@ struct __atomic_base_arithmetic : public __atomic_base_core<_Tp, _Cq, _Storage> 
     __atomic_base_arithmetic& operator=(const __atomic_base_arithmetic&) = delete;
     __atomic_base_arithmetic& operator=(__atomic_base_arithmetic&&) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     __atomic_base_arithmetic(_Storage&& __a) noexcept : __atomic_base_core<_Tp, _Cq, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_add(_Tp __op, memory_order __m = memory_order_seq_cst) volatile noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_add(_Tp __op, memory_order __m = memory_order_seq_cst) noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_sub(_Tp __op, memory_order __m = memory_order_seq_cst) volatile noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_sub(_Tp __op, memory_order __m = memory_order_seq_cst) noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator++(int) volatile noexcept      {return fetch_add(_Tp(1));}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator++(int) noexcept               {return fetch_add(_Tp(1));}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator--(int) volatile noexcept      {return fetch_sub(_Tp(1));}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator--(int) noexcept               {return fetch_sub(_Tp(1));}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator++() volatile noexcept         {return fetch_add(_Tp(1)) + _Tp(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator++() noexcept                  {return fetch_add(_Tp(1)) + _Tp(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator--() volatile noexcept         {return fetch_sub(_Tp(1)) - _Tp(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator--() noexcept                  {return fetch_sub(_Tp(1)) - _Tp(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator+=(_Tp __op) volatile noexcept {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator+=(_Tp __op) noexcept          {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator-=(_Tp __op) volatile noexcept {return fetch_sub(__op) - __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator-=(_Tp __op) noexcept          {return fetch_sub(__op) - __op;}
 };
 
@@ -1609,45 +1609,45 @@ struct __atomic_base_arithmetic<_Tp, true, _Storage> : public __atomic_base_core
     __atomic_base_arithmetic& operator=(const __atomic_base_arithmetic&) = default;
     __atomic_base_arithmetic& operator=(__atomic_base_arithmetic&&) = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     __atomic_base_arithmetic(_Storage&& __a) noexcept : __atomic_base_core<_Tp, true, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_add(_Tp __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_add(_Tp __op, memory_order __m = memory_order_seq_cst) const noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_sub(_Tp __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_sub(_Tp __op, memory_order __m = memory_order_seq_cst) const noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator++(int) const volatile noexcept      {return fetch_add(_Tp(1));}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator++(int) const noexcept               {return fetch_add(_Tp(1));}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator--(int) const volatile noexcept      {return fetch_sub(_Tp(1));}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator--(int) const noexcept               {return fetch_sub(_Tp(1));}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator++() const volatile noexcept         {return fetch_add(_Tp(1)) + _Tp(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator++() const noexcept                  {return fetch_add(_Tp(1)) + _Tp(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator--() const volatile noexcept         {return fetch_sub(_Tp(1)) - _Tp(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator--() const noexcept                  {return fetch_sub(_Tp(1)) - _Tp(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator+=(_Tp __op) const volatile noexcept {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator+=(_Tp __op) const noexcept          {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator-=(_Tp __op) const volatile noexcept {return fetch_sub(__op) - __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator-=(_Tp __op) const noexcept          {return fetch_sub(__op) - __op;}
 };
 
@@ -1660,39 +1660,39 @@ struct __atomic_base_bitwise : public __atomic_base_arithmetic<_Tp, _Cq, _Storag
     __atomic_base_bitwise& operator=(const __atomic_base_bitwise&) = delete;
     __atomic_base_bitwise& operator=(__atomic_base_bitwise&&) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     __atomic_base_bitwise(_Storage&& __a) noexcept : __atomic_base_arithmetic<_Tp, _Cq, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_and(_Tp __op, memory_order __m = memory_order_seq_cst) volatile noexcept
         {return __cxx_atomic_fetch_and(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_and(_Tp __op, memory_order __m = memory_order_seq_cst) noexcept
         {return __cxx_atomic_fetch_and(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_or(_Tp __op, memory_order __m = memory_order_seq_cst) volatile noexcept
         {return __cxx_atomic_fetch_or(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_or(_Tp __op, memory_order __m = memory_order_seq_cst) noexcept
         {return __cxx_atomic_fetch_or(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_xor(_Tp __op, memory_order __m = memory_order_seq_cst) volatile noexcept
         {return __cxx_atomic_fetch_xor(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_xor(_Tp __op, memory_order __m = memory_order_seq_cst) noexcept
         {return __cxx_atomic_fetch_xor(&this->__a_, __op, __m);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator&=(_Tp __op) volatile noexcept {return fetch_and(__op) & __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator&=(_Tp __op) noexcept          {return fetch_and(__op) & __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator|=(_Tp __op) volatile noexcept {return fetch_or(__op) | __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator|=(_Tp __op) noexcept          {return fetch_or(__op) | __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator^=(_Tp __op) volatile noexcept {return fetch_xor(__op) ^ __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator^=(_Tp __op) noexcept          {return fetch_xor(__op) ^ __op;}
 };
 
@@ -1705,39 +1705,39 @@ struct __atomic_base_bitwise<_Tp, true, _Storage> : public __atomic_base_arithme
     __atomic_base_bitwise& operator=(const __atomic_base_bitwise&) = default;
     __atomic_base_bitwise& operator=(__atomic_base_bitwise&&) = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     __atomic_base_bitwise(_Storage&& __a) noexcept : __atomic_base_arithmetic<_Tp, true, _Storage>(_CUDA_VSTD::forward<_Storage>(__a)) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_and(_Tp __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
         {return __cxx_atomic_fetch_and(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_and(_Tp __op, memory_order __m = memory_order_seq_cst) const noexcept
         {return __cxx_atomic_fetch_and(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_or(_Tp __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
         {return __cxx_atomic_fetch_or(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_or(_Tp __op, memory_order __m = memory_order_seq_cst) const noexcept
         {return __cxx_atomic_fetch_or(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_xor(_Tp __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
         {return __cxx_atomic_fetch_xor(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp fetch_xor(_Tp __op, memory_order __m = memory_order_seq_cst) const noexcept
         {return __cxx_atomic_fetch_xor(&this->__a_, __op, __m);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator&=(_Tp __op) const volatile noexcept {return fetch_and(__op) & __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator&=(_Tp __op) const noexcept          {return fetch_and(__op) & __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator|=(_Tp __op) const volatile noexcept {return fetch_or(__op) | __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator|=(_Tp __op) const noexcept          {return fetch_or(__op) | __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator^=(_Tp __op) const volatile noexcept {return fetch_xor(__op) ^ __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator^=(_Tp __op) const noexcept          {return fetch_xor(__op) ^ __op;}
 };
 
@@ -1757,7 +1757,7 @@ struct __atomic_base : public _Base {
     __atomic_base& operator=(const __atomic_base&) = delete;
     __atomic_base& operator=(__atomic_base&&) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     __atomic_base(const _Tp& __a) noexcept :
         _Base(__cxx_atomic_impl<_Tp, _Sco>(__a)) {}
 };
@@ -1771,7 +1771,7 @@ struct __atomic_base_ref : public _Base {
     __atomic_base_ref& operator=(const __atomic_base_ref&) = default;
     __atomic_base_ref& operator=(__atomic_base_ref&&) = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     __atomic_base_ref(_Tp& __a) noexcept :
         _Base(__cxx_atomic_ref_impl<_Tp, _Sco>(__a)) {}
 };
@@ -1790,13 +1790,13 @@ struct atomic
     using value_type = _Tp;
 
     atomic() noexcept = default;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr atomic(_Tp __d) noexcept : __base(__d) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator=(_Tp __d) volatile noexcept
         {__base::store(__d); return __d;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator=(_Tp __d) noexcept
         {__base::store(__d); return __d;}
 };
@@ -1811,56 +1811,56 @@ struct atomic<_Tp*>
     using value_type = _Tp*;
 
     atomic() noexcept = default;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr atomic(_Tp* __d) noexcept : __base(__d) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator=(_Tp* __d) volatile noexcept
         {__base::store(__d); return __d;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator=(_Tp* __d) noexcept
         {__base::store(__d); return __d;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
                                                                         volatile noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
                                                                         noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
                                                                         volatile noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
                                                                         noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator++(int) volatile noexcept            {return fetch_add(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator++(int) noexcept                     {return fetch_add(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator--(int) volatile noexcept            {return fetch_sub(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator--(int) noexcept                     {return fetch_sub(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator++() volatile noexcept               {return fetch_add(1) + 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator++() noexcept                        {return fetch_add(1) + 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator--() volatile noexcept               {return fetch_sub(1) - 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator--() noexcept                        {return fetch_sub(1) - 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator+=(ptrdiff_t __op) volatile noexcept {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator+=(ptrdiff_t __op) noexcept          {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator-=(ptrdiff_t __op) volatile noexcept {return fetch_sub(__op) - __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator-=(ptrdiff_t __op) noexcept          {return fetch_sub(__op) - __op;}
 };
 
@@ -1877,12 +1877,12 @@ template <class _Tp>
 
     static constexpr bool is_always_lock_free = sizeof(_Tp) <= 8;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit atomic_ref(_Tp& __ref) : __base(__ref) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator=(_Tp __v) const noexcept {__base::store(__v); return __v;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp operator=(_Tp __v) const volatile noexcept {__base::store(__v); return __v;}
 };
 
@@ -1899,61 +1899,61 @@ template <class _Tp>
 
     static constexpr bool is_always_lock_free = sizeof(_Tp*) <= 8;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit atomic_ref(_Tp*& __ref) : __base(__ref) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator=(_Tp* __v) const noexcept {__base::store(__v); return __v;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator=(_Tp* __v) const volatile noexcept {__base::store(__v); return __v;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
                                                                         const volatile noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
                                                                         const noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
                                                                         const volatile noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
                                                                         const noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator++(int) const volatile noexcept            {return fetch_add(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator++(int) const noexcept                     {return fetch_add(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator--(int) const volatile noexcept            {return fetch_sub(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator--(int) const noexcept                     {return fetch_sub(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator++() const volatile noexcept               {return fetch_add(1) + 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator++() const noexcept                        {return fetch_add(1) + 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator--() const volatile noexcept               {return fetch_sub(1) - 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator--() const noexcept                        {return fetch_sub(1) - 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator+=(ptrdiff_t __op) const volatile noexcept {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator+=(ptrdiff_t __op) const noexcept          {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator-=(ptrdiff_t __op) const volatile noexcept {return fetch_sub(__op) - __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* operator-=(ptrdiff_t __op) const noexcept          {return fetch_sub(__op) - __op;}
 };
 
 // atomic_is_lock_free
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_is_lock_free(const volatile atomic<_Tp>* __o) noexcept
 {
@@ -1961,7 +1961,7 @@ atomic_is_lock_free(const volatile atomic<_Tp>* __o) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_is_lock_free(const atomic<_Tp>* __o) noexcept
 {
@@ -1971,7 +1971,7 @@ atomic_is_lock_free(const atomic<_Tp>* __o) noexcept
 // atomic_init
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_init(volatile atomic<_Tp>* __o, _Tp __d) noexcept
 {
@@ -1979,7 +1979,7 @@ atomic_init(volatile atomic<_Tp>* __o, _Tp __d) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_init(atomic<_Tp>* __o, _Tp __d) noexcept
 {
@@ -1989,7 +1989,7 @@ atomic_init(atomic<_Tp>* __o, _Tp __d) noexcept
 // atomic_store
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_store(volatile atomic<_Tp>* __o, _Tp __d) noexcept
 {
@@ -1997,7 +1997,7 @@ atomic_store(volatile atomic<_Tp>* __o, _Tp __d) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_store(atomic<_Tp>* __o, _Tp __d) noexcept
 {
@@ -2007,7 +2007,7 @@ atomic_store(atomic<_Tp>* __o, _Tp __d) noexcept
 // atomic_store_explicit
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_store_explicit(volatile atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
   _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)
@@ -2016,7 +2016,7 @@ atomic_store_explicit(volatile atomic<_Tp>* __o, _Tp __d, memory_order __m) noex
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_store_explicit(atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
   _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)
@@ -2027,7 +2027,7 @@ atomic_store_explicit(atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
 // atomic_load
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 atomic_load(const volatile atomic<_Tp>* __o) noexcept
 {
@@ -2035,7 +2035,7 @@ atomic_load(const volatile atomic<_Tp>* __o) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 atomic_load(const atomic<_Tp>* __o) noexcept
 {
@@ -2045,7 +2045,7 @@ atomic_load(const atomic<_Tp>* __o) noexcept
 // atomic_load_explicit
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 atomic_load_explicit(const volatile atomic<_Tp>* __o, memory_order __m) noexcept
   _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)
@@ -2054,7 +2054,7 @@ atomic_load_explicit(const volatile atomic<_Tp>* __o, memory_order __m) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 atomic_load_explicit(const atomic<_Tp>* __o, memory_order __m) noexcept
   _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)
@@ -2065,7 +2065,7 @@ atomic_load_explicit(const atomic<_Tp>* __o, memory_order __m) noexcept
 // atomic_exchange
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 atomic_exchange(volatile atomic<_Tp>* __o, _Tp __d) noexcept
 {
@@ -2073,7 +2073,7 @@ atomic_exchange(volatile atomic<_Tp>* __o, _Tp __d) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 atomic_exchange(atomic<_Tp>* __o, _Tp __d) noexcept
 {
@@ -2083,7 +2083,7 @@ atomic_exchange(atomic<_Tp>* __o, _Tp __d) noexcept
 // atomic_exchange_explicit
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 atomic_exchange_explicit(volatile atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
 {
@@ -2091,7 +2091,7 @@ atomic_exchange_explicit(volatile atomic<_Tp>* __o, _Tp __d, memory_order __m) n
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 atomic_exchange_explicit(atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
 {
@@ -2101,7 +2101,7 @@ atomic_exchange_explicit(atomic<_Tp>* __o, _Tp __d, memory_order __m) noexcept
 // atomic_compare_exchange_weak
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_compare_exchange_weak(volatile atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
 {
@@ -2109,7 +2109,7 @@ atomic_compare_exchange_weak(volatile atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexc
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_compare_exchange_weak(atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
 {
@@ -2119,7 +2119,7 @@ atomic_compare_exchange_weak(atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
 // atomic_compare_exchange_strong
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_compare_exchange_strong(volatile atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
 {
@@ -2127,7 +2127,7 @@ atomic_compare_exchange_strong(volatile atomic<_Tp>* __o, _Tp* __e, _Tp __d) noe
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_compare_exchange_strong(atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
 {
@@ -2137,7 +2137,7 @@ atomic_compare_exchange_strong(atomic<_Tp>* __o, _Tp* __e, _Tp __d) noexcept
 // atomic_compare_exchange_weak_explicit
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_compare_exchange_weak_explicit(volatile atomic<_Tp>* __o, _Tp* __e,
                                       _Tp __d,
@@ -2148,7 +2148,7 @@ atomic_compare_exchange_weak_explicit(volatile atomic<_Tp>* __o, _Tp* __e,
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_compare_exchange_weak_explicit(atomic<_Tp>* __o, _Tp* __e, _Tp __d,
                                       memory_order __s, memory_order __f) noexcept
@@ -2160,7 +2160,7 @@ atomic_compare_exchange_weak_explicit(atomic<_Tp>* __o, _Tp* __e, _Tp __d,
 // atomic_compare_exchange_strong_explicit
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_compare_exchange_strong_explicit(volatile atomic<_Tp>* __o,
                                         _Tp* __e, _Tp __d,
@@ -2171,7 +2171,7 @@ atomic_compare_exchange_strong_explicit(volatile atomic<_Tp>* __o,
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_compare_exchange_strong_explicit(atomic<_Tp>* __o, _Tp* __e,
                                         _Tp __d,
@@ -2184,7 +2184,7 @@ atomic_compare_exchange_strong_explicit(atomic<_Tp>* __o, _Tp* __e,
 // atomic_wait
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void atomic_wait(const volatile atomic<_Tp>* __o,
                     typename atomic<_Tp>::value_type __v) noexcept
 {
@@ -2192,7 +2192,7 @@ void atomic_wait(const volatile atomic<_Tp>* __o,
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void atomic_wait(const atomic<_Tp>* __o,
                     typename atomic<_Tp>::value_type __v) noexcept
 {
@@ -2202,7 +2202,7 @@ void atomic_wait(const atomic<_Tp>* __o,
 // atomic_wait_explicit
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void atomic_wait_explicit(const volatile atomic<_Tp>* __o,
                             typename atomic<_Tp>::value_type __v,
                             memory_order __m) noexcept
@@ -2212,7 +2212,7 @@ void atomic_wait_explicit(const volatile atomic<_Tp>* __o,
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void atomic_wait_explicit(const atomic<_Tp>* __o,
                             typename atomic<_Tp>::value_type __v,
                             memory_order __m) noexcept
@@ -2224,13 +2224,13 @@ void atomic_wait_explicit(const atomic<_Tp>* __o,
 // atomic_notify_one
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void atomic_notify_one(volatile atomic<_Tp>* __o) noexcept
 {
     __o->notify_one();
 }
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void atomic_notify_one(atomic<_Tp>* __o) noexcept
 {
     __o->notify_one();
@@ -2239,13 +2239,13 @@ void atomic_notify_one(atomic<_Tp>* __o) noexcept
 // atomic_notify_one
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void atomic_notify_all(volatile atomic<_Tp>* __o) noexcept
 {
     __o->notify_all();
 }
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void atomic_notify_all(atomic<_Tp>* __o) noexcept
 {
     __o->notify_all();
@@ -2254,7 +2254,7 @@ void atomic_notify_all(atomic<_Tp>* __o) noexcept
 // atomic_fetch_add
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
@@ -2266,7 +2266,7 @@ atomic_fetch_add(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
@@ -2278,7 +2278,7 @@ atomic_fetch_add(atomic<_Tp>* __o, _Tp __op) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp*
 atomic_fetch_add(volatile atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
 {
@@ -2286,7 +2286,7 @@ atomic_fetch_add(volatile atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp*
 atomic_fetch_add(atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
 {
@@ -2296,7 +2296,7 @@ atomic_fetch_add(atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
 // atomic_fetch_add_explicit
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
@@ -2308,7 +2308,7 @@ atomic_fetch_add_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m)
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
@@ -2320,7 +2320,7 @@ atomic_fetch_add_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp*
 atomic_fetch_add_explicit(volatile atomic<_Tp*>* __o, ptrdiff_t __op,
                           memory_order __m) noexcept
@@ -2329,7 +2329,7 @@ atomic_fetch_add_explicit(volatile atomic<_Tp*>* __o, ptrdiff_t __op,
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp*
 atomic_fetch_add_explicit(atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) noexcept
 {
@@ -2339,7 +2339,7 @@ atomic_fetch_add_explicit(atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) n
 // atomic_fetch_sub
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
@@ -2351,7 +2351,7 @@ atomic_fetch_sub(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
@@ -2363,7 +2363,7 @@ atomic_fetch_sub(atomic<_Tp>* __o, _Tp __op) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp*
 atomic_fetch_sub(volatile atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
 {
@@ -2371,7 +2371,7 @@ atomic_fetch_sub(volatile atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp*
 atomic_fetch_sub(atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
 {
@@ -2381,7 +2381,7 @@ atomic_fetch_sub(atomic<_Tp*>* __o, ptrdiff_t __op) noexcept
 // atomic_fetch_sub_explicit
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
@@ -2393,7 +2393,7 @@ atomic_fetch_sub_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m)
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     (is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value,
@@ -2405,7 +2405,7 @@ atomic_fetch_sub_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp*
 atomic_fetch_sub_explicit(volatile atomic<_Tp*>* __o, ptrdiff_t __op,
                           memory_order __m) noexcept
@@ -2414,7 +2414,7 @@ atomic_fetch_sub_explicit(volatile atomic<_Tp*>* __o, ptrdiff_t __op,
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp*
 atomic_fetch_sub_explicit(atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) noexcept
 {
@@ -2424,7 +2424,7 @@ atomic_fetch_sub_explicit(atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) n
 // atomic_fetch_and
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
@@ -2436,7 +2436,7 @@ atomic_fetch_and(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
@@ -2450,7 +2450,7 @@ atomic_fetch_and(atomic<_Tp>* __o, _Tp __op) noexcept
 // atomic_fetch_and_explicit
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
@@ -2462,7 +2462,7 @@ atomic_fetch_and_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m)
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
@@ -2476,7 +2476,7 @@ atomic_fetch_and_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 // atomic_fetch_or
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
@@ -2488,7 +2488,7 @@ atomic_fetch_or(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
@@ -2502,7 +2502,7 @@ atomic_fetch_or(atomic<_Tp>* __o, _Tp __op) noexcept
 // atomic_fetch_or_explicit
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
@@ -2514,7 +2514,7 @@ atomic_fetch_or_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) 
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
@@ -2528,7 +2528,7 @@ atomic_fetch_or_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 // atomic_fetch_xor
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
@@ -2540,7 +2540,7 @@ atomic_fetch_xor(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
@@ -2554,7 +2554,7 @@ atomic_fetch_xor(atomic<_Tp>* __o, _Tp __op) noexcept
 // atomic_fetch_xor_explicit
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
@@ -2566,7 +2566,7 @@ atomic_fetch_xor_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m)
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t
 <
     is_integral<_Tp>::value && !is_same<_Tp, bool>::value,
@@ -2583,50 +2583,50 @@ typedef struct atomic_flag
 {
     __cxx_atomic_impl<_LIBCUDACXX_ATOMIC_FLAG_TYPE, 0> __a_;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool test(memory_order __m = memory_order_seq_cst) const volatile noexcept
         {return _LIBCUDACXX_ATOMIC_FLAG_TYPE(true)==__cxx_atomic_load(&__a_, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool test(memory_order __m = memory_order_seq_cst) const noexcept
         {return _LIBCUDACXX_ATOMIC_FLAG_TYPE(true)==__cxx_atomic_load(&__a_, __m);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool test_and_set(memory_order __m = memory_order_seq_cst) volatile noexcept
         {return __cxx_atomic_exchange(&__a_, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool test_and_set(memory_order __m = memory_order_seq_cst) noexcept
         {return __cxx_atomic_exchange(&__a_, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void clear(memory_order __m = memory_order_seq_cst) volatile noexcept
         {__cxx_atomic_store(&__a_, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void clear(memory_order __m = memory_order_seq_cst) noexcept
         {__cxx_atomic_store(&__a_, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), __m);}
 
 #if !defined(__CUDA_MINIMUM_ARCH__) || __CUDA_MINIMUM_ARCH__ >= 700
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void wait(bool __v, memory_order __m = memory_order_seq_cst) const volatile noexcept
         {__cxx_atomic_wait(&__a_, _LIBCUDACXX_ATOMIC_FLAG_TYPE(__v), __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void wait(bool __v, memory_order __m = memory_order_seq_cst) const noexcept
         {__cxx_atomic_wait(&__a_, _LIBCUDACXX_ATOMIC_FLAG_TYPE(__v), __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void notify_one() volatile noexcept
         {__cxx_atomic_notify_one(&__a_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void notify_one() noexcept
         {__cxx_atomic_notify_one(&__a_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void notify_all() volatile noexcept
         {__cxx_atomic_notify_all(&__a_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void notify_all() noexcept
         {__cxx_atomic_notify_all(&__a_);}
 #endif
 
     atomic_flag() noexcept = default;
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     atomic_flag(bool __b) noexcept : __a_(__b) {} // EXTENSION
 
     atomic_flag(const atomic_flag&) = delete;
@@ -2635,84 +2635,84 @@ typedef struct atomic_flag
 } atomic_flag;
 
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_flag_test(const volatile atomic_flag* __o) noexcept
 {
     return __o->test();
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_flag_test(const atomic_flag* __o) noexcept
 {
     return __o->test();
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_flag_test_explicit(const volatile atomic_flag* __o, memory_order __m) noexcept
 {
     return __o->test(__m);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_flag_test_explicit(const atomic_flag* __o, memory_order __m) noexcept
 {
     return __o->test(__m);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_flag_test_and_set(volatile atomic_flag* __o) noexcept
 {
     return __o->test_and_set();
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_flag_test_and_set(atomic_flag* __o) noexcept
 {
     return __o->test_and_set();
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_flag_test_and_set_explicit(volatile atomic_flag* __o, memory_order __m) noexcept
 {
     return __o->test_and_set(__m);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_flag_test_and_set_explicit(atomic_flag* __o, memory_order __m) noexcept
 {
     return __o->test_and_set(__m);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_flag_clear(volatile atomic_flag* __o) noexcept
 {
     __o->clear();
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_flag_clear(atomic_flag* __o) noexcept
 {
     __o->clear();
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_flag_clear_explicit(volatile atomic_flag* __o, memory_order __m) noexcept
 {
     __o->clear(__m);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_flag_clear_explicit(atomic_flag* __o, memory_order __m) noexcept
 {
@@ -2721,21 +2721,21 @@ atomic_flag_clear_explicit(atomic_flag* __o, memory_order __m) noexcept
 
 #if !defined(__CUDA_MINIMUM_ARCH__) || __CUDA_MINIMUM_ARCH__ >= 700
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_flag_wait(const volatile atomic_flag* __o, bool __v) noexcept
 {
     __o->wait(__v);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_flag_wait(const atomic_flag* __o, bool __v) noexcept
 {
     __o->wait(__v);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_flag_wait_explicit(const volatile atomic_flag* __o,
                           bool __v, memory_order __m) noexcept
@@ -2743,7 +2743,7 @@ atomic_flag_wait_explicit(const volatile atomic_flag* __o,
     __o->wait(__v, __m);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_flag_wait_explicit(const atomic_flag* __o,
                           bool __v, memory_order __m) noexcept
@@ -2751,28 +2751,28 @@ atomic_flag_wait_explicit(const atomic_flag* __o,
     __o->wait(__v, __m);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_flag_notify_one(volatile atomic_flag* __o) noexcept
 {
     __o->notify_one();
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_flag_notify_one(atomic_flag* __o) noexcept
 {
     __o->notify_one();
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_flag_notify_all(volatile atomic_flag* __o) noexcept
 {
     __o->notify_all();
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_flag_notify_all(atomic_flag* __o) noexcept
 {
@@ -2783,14 +2783,14 @@ atomic_flag_notify_all(atomic_flag* __o) noexcept
 
 // fences
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_thread_fence(memory_order __m) noexcept
 {
     __cxx_atomic_thread_fence(__m);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 atomic_signal_fence(memory_order __m) noexcept
 {

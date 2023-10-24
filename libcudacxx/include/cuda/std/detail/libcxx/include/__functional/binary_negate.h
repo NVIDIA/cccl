@@ -35,18 +35,18 @@ class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX17 binary_negate
 {
     _Predicate __pred_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY explicit _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HIDE_FROM_ABI explicit _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     binary_negate(const _Predicate& __pred) : __pred_(__pred) {}
 
     _LIBCUDACXX_DISABLE_EXEC_CHECK
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     bool operator()(const typename _Predicate::first_argument_type& __x,
                     const typename _Predicate::second_argument_type& __y) const
         {return !__pred_(__x, __y);}
 };
 
 template <class _Predicate>
-_LIBCUDACXX_DEPRECATED_IN_CXX17 inline _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 binary_negate<_Predicate>
 not2(const _Predicate& __pred) {return binary_negate<_Predicate>(__pred);}
 

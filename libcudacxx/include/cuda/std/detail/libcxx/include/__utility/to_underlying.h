@@ -26,14 +26,14 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr typename underlying_type<_Tp>::type
+_LIBCUDACXX_HIDE_FROM_ABI constexpr typename underlying_type<_Tp>::type
 __to_underlying(_Tp __val) noexcept {
   return static_cast<typename underlying_type<_Tp>::type>(__val);
 }
 
 #if _LIBCUDACXX_STD_VER > 20
 template <class _Tp>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY constexpr underlying_type_t<_Tp>
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_HIDE_FROM_ABI constexpr underlying_type_t<_Tp>
 to_underlying(_Tp __val) noexcept {
   return _CUDA_VSTD::__to_underlying(__val);
 }

@@ -37,55 +37,55 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Iter> class __wrap_iter;
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator==(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) noexcept;
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator<(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) noexcept;
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator!=(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) noexcept;
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator>(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) noexcept;
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator>=(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) noexcept;
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator<=(const __wrap_iter<_Iter1>&, const __wrap_iter<_Iter2>&) noexcept;
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 auto
 operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 -> decltype(__x.base() - __y.base());
 
 template <class _Iter>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 __wrap_iter<_Iter>
 operator+(typename __wrap_iter<_Iter>::difference_type, __wrap_iter<_Iter>) noexcept;
 
-template <class _Ip, class _Op> _Op _LIBCUDACXX_INLINE_VISIBILITY copy(_Ip, _Ip, _Op);
-template <class _B1, class _B2> _B2 _LIBCUDACXX_INLINE_VISIBILITY copy_backward(_B1, _B1, _B2);
-template <class _Ip, class _Op> _Op _LIBCUDACXX_INLINE_VISIBILITY move(_Ip, _Ip, _Op);
-template <class _B1, class _B2> _B2 _LIBCUDACXX_INLINE_VISIBILITY move_backward(_B1, _B1, _B2);
+template <class _Ip, class _Op> _Op _LIBCUDACXX_HIDE_FROM_ABI copy(_Ip, _Ip, _Op);
+template <class _B1, class _B2> _B2 _LIBCUDACXX_HIDE_FROM_ABI copy_backward(_B1, _B1, _B2);
+template <class _Ip, class _Op> _Op _LIBCUDACXX_HIDE_FROM_ABI move(_Ip, _Ip, _Op);
+template <class _B1, class _B2> _B2 _LIBCUDACXX_HIDE_FROM_ABI move_backward(_B1, _B1, _B2);
 
 #if _LIBCUDACXX_DEBUG_LEVEL < 2
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 __enable_if_t
 <
     is_trivially_copy_assignable<_Tp>::value,
@@ -96,7 +96,7 @@ __unwrap_iter(__wrap_iter<_Tp*>);
 #else
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 __enable_if_t
 <
     is_trivially_copy_assignable<_Tp>::value,
@@ -119,7 +119,7 @@ public:
 private:
     iterator_type __i;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter() noexcept
 #if _LIBCUDACXX_STD_VER > 11
                 : __i{}
 #endif
@@ -128,7 +128,7 @@ public:
         __get_db()->__insert_i(this);
 #endif
     }
-    template <class _Up> _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+    template <class _Up> _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
         __wrap_iter(const __wrap_iter<_Up>& __u,
             __enable_if_t<is_convertible<_Up, iterator_type>::value>* = 0) noexcept
             : __i(__u.base())
@@ -138,13 +138,13 @@ public:
 #endif
     }
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
     __wrap_iter(const __wrap_iter& __x)
         : __i(__x.base())
     {
         __get_db()->__iterator_copy(this, &__x);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
     __wrap_iter& operator=(const __wrap_iter& __x)
     {
         if (this != &__x)
@@ -154,13 +154,13 @@ public:
         }
         return *this;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
     ~__wrap_iter()
     {
         __get_db()->__erase_i(this);
     }
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG reference operator*() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG reference operator*() const noexcept
     {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__dereferenceable(this),
@@ -168,7 +168,7 @@ public:
 #endif
         return *__i;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG pointer  operator->() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG pointer  operator->() const noexcept
     {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__dereferenceable(this),
@@ -176,7 +176,7 @@ public:
 #endif
         return (pointer)_CUDA_VSTD::addressof(*__i);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter& operator++() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter& operator++() noexcept
     {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__dereferenceable(this),
@@ -185,10 +185,10 @@ public:
         ++__i;
         return *this;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter  operator++(int) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter  operator++(int) noexcept
         {__wrap_iter __tmp(*this); ++(*this); return __tmp;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter& operator--() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter& operator--() noexcept
     {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__decrementable(this),
@@ -197,11 +197,11 @@ public:
         --__i;
         return *this;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter  operator--(int) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter  operator--(int) noexcept
         {__wrap_iter __tmp(*this); --(*this); return __tmp;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter  operator+ (difference_type __n) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter  operator+ (difference_type __n) const noexcept
         {__wrap_iter __w(*this); __w += __n; return __w;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter& operator+=(difference_type __n) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter& operator+=(difference_type __n) noexcept
     {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__addable(this, __n),
@@ -210,11 +210,11 @@ public:
         __i += __n;
         return *this;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter  operator- (difference_type __n) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter  operator- (difference_type __n) const noexcept
         {return *this + (-__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter& operator-=(difference_type __n) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter& operator-=(difference_type __n) noexcept
         {*this += -__n; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG reference    operator[](difference_type __n) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG reference    operator[](difference_type __n) const noexcept
     {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__subscriptable(this, __n),
@@ -223,16 +223,16 @@ public:
         return __i[__n];
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG iterator_type base() const noexcept {return __i;}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG iterator_type base() const noexcept {return __i;}
 
 private:
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter(const void* __p, iterator_type __x) : __i(__x)
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter(const void* __p, iterator_type __x) : __i(__x)
     {
         __get_db()->__insert_ic(this, __p);
     }
 #else
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter(iterator_type __x) noexcept : __i(__x) {}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter(iterator_type __x) noexcept : __i(__x) {}
 #endif
 
     template <class _Up> friend class __wrap_iter;
@@ -297,7 +297,7 @@ private:
     __unwrap_iter(__wrap_iter<_Tp*>);
 #else
   template <class _Tp>
-  inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
   __enable_if_t
   <
       is_trivially_copy_assignable<_Tp>::value,
@@ -308,7 +308,7 @@ private:
 };
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator==(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
@@ -316,7 +316,7 @@ operator==(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexc
 }
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
@@ -328,7 +328,7 @@ operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexce
 }
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator!=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
@@ -336,7 +336,7 @@ operator!=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexc
 }
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator>(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
@@ -344,7 +344,7 @@ operator>(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexce
 }
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator>=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
@@ -352,7 +352,7 @@ operator>=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexc
 }
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator<=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
@@ -360,7 +360,7 @@ operator<=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexc
 }
 
 template <class _Iter1>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator!=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
@@ -368,7 +368,7 @@ operator!=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexc
 }
 
 template <class _Iter1>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator>(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
@@ -376,7 +376,7 @@ operator>(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexce
 }
 
 template <class _Iter1>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator>=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
@@ -384,7 +384,7 @@ operator>=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexc
 }
 
 template <class _Iter1>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 bool
 operator<=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
@@ -392,7 +392,7 @@ operator<=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexc
 }
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 auto
 operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 -> decltype(__x.base() - __y.base())
@@ -405,7 +405,7 @@ operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexce
 }
 
 template <class _Iter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 __wrap_iter<_Iter>
 operator+(typename __wrap_iter<_Iter>::difference_type __n,
           __wrap_iter<_Iter> __x) noexcept

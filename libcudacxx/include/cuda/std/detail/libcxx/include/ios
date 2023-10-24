@@ -282,16 +282,16 @@ public:
     class _LIBCUDACXX_TYPE_VIS Init;
 
     // 27.5.2.2 fmtflags state:
-    _LIBCUDACXX_INLINE_VISIBILITY fmtflags flags() const;
-    _LIBCUDACXX_INLINE_VISIBILITY fmtflags flags(fmtflags __fmtfl);
-    _LIBCUDACXX_INLINE_VISIBILITY fmtflags setf(fmtflags __fmtfl);
-    _LIBCUDACXX_INLINE_VISIBILITY fmtflags setf(fmtflags __fmtfl, fmtflags __mask);
-    _LIBCUDACXX_INLINE_VISIBILITY void unsetf(fmtflags __mask);
+    _LIBCUDACXX_HIDE_FROM_ABI fmtflags flags() const;
+    _LIBCUDACXX_HIDE_FROM_ABI fmtflags flags(fmtflags __fmtfl);
+    _LIBCUDACXX_HIDE_FROM_ABI fmtflags setf(fmtflags __fmtfl);
+    _LIBCUDACXX_HIDE_FROM_ABI fmtflags setf(fmtflags __fmtfl, fmtflags __mask);
+    _LIBCUDACXX_HIDE_FROM_ABI void unsetf(fmtflags __mask);
 
-    _LIBCUDACXX_INLINE_VISIBILITY streamsize precision() const;
-    _LIBCUDACXX_INLINE_VISIBILITY streamsize precision(streamsize __prec);
-    _LIBCUDACXX_INLINE_VISIBILITY streamsize width() const;
-    _LIBCUDACXX_INLINE_VISIBILITY streamsize width(streamsize __wide);
+    _LIBCUDACXX_HIDE_FROM_ABI streamsize precision() const;
+    _LIBCUDACXX_HIDE_FROM_ABI streamsize precision(streamsize __prec);
+    _LIBCUDACXX_HIDE_FROM_ABI streamsize width() const;
+    _LIBCUDACXX_HIDE_FROM_ABI streamsize width(streamsize __wide);
 
     // 27.5.2.3 locales:
     locale imbue(const locale& __loc);
@@ -317,22 +317,22 @@ private:
 public:
     static bool sync_with_stdio(bool __sync = true);
 
-    _LIBCUDACXX_INLINE_VISIBILITY iostate rdstate() const;
+    _LIBCUDACXX_HIDE_FROM_ABI iostate rdstate() const;
     void clear(iostate __state = goodbit);
-    _LIBCUDACXX_INLINE_VISIBILITY void setstate(iostate __state);
+    _LIBCUDACXX_HIDE_FROM_ABI void setstate(iostate __state);
 
-    _LIBCUDACXX_INLINE_VISIBILITY bool good() const;
-    _LIBCUDACXX_INLINE_VISIBILITY bool eof() const;
-    _LIBCUDACXX_INLINE_VISIBILITY bool fail() const;
-    _LIBCUDACXX_INLINE_VISIBILITY bool bad() const;
+    _LIBCUDACXX_HIDE_FROM_ABI bool good() const;
+    _LIBCUDACXX_HIDE_FROM_ABI bool eof() const;
+    _LIBCUDACXX_HIDE_FROM_ABI bool fail() const;
+    _LIBCUDACXX_HIDE_FROM_ABI bool bad() const;
 
-    _LIBCUDACXX_INLINE_VISIBILITY iostate exceptions() const;
-    _LIBCUDACXX_INLINE_VISIBILITY void exceptions(iostate __iostate);
+    _LIBCUDACXX_HIDE_FROM_ABI iostate exceptions() const;
+    _LIBCUDACXX_HIDE_FROM_ABI void exceptions(iostate __iostate);
 
     void __set_badbit_and_consider_rethrow();
     void __set_failbit_and_consider_rethrow();
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __setstate_nothrow(iostate __state)
     {
         if (__rdbuf_)
@@ -342,14 +342,14 @@ public:
     }
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ios_base() {// purposefully does no initialization
                }
 
     void init(void* __sb);
-    _LIBCUDACXX_INLINE_VISIBILITY void* rdbuf() const {return __rdbuf_;}
+    _LIBCUDACXX_HIDE_FROM_ABI void* rdbuf() const {return __rdbuf_;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void rdbuf(void* __sb)
     {
         __rdbuf_ = __sb;
@@ -361,7 +361,7 @@ protected:
     void move(ios_base&);
     void swap(ios_base&) noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void set_rdbuf(void* __sb)
     {
         __rdbuf_ = __sb;
@@ -413,14 +413,14 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_error_code_enum<io_errc::__lx> : public true_
 _LIBCUDACXX_FUNC_VIS
 const error_category& iostream_category() noexcept;
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 error_code
 make_error_code(io_errc __e) noexcept
 {
     return error_code(static_cast<int>(__e), iostream_category());
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 error_condition
 make_error_condition(io_errc __e) noexcept
 {
@@ -436,7 +436,7 @@ public:
     virtual ~failure() throw();
 };
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_NORETURN _LIBCUDACXX_HIDE_FROM_ABI
 void __throw_failure(char const* __msg) {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
     throw ios_base::failure(__msg);
@@ -455,14 +455,14 @@ public:
 
 // fmtflags
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base::fmtflags
 ios_base::flags() const
 {
     return __fmtflags_;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base::fmtflags
 ios_base::flags(fmtflags __fmtfl)
 {
@@ -471,7 +471,7 @@ ios_base::flags(fmtflags __fmtfl)
     return __r;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base::fmtflags
 ios_base::setf(fmtflags __fmtfl)
 {
@@ -480,14 +480,14 @@ ios_base::setf(fmtflags __fmtfl)
     return __r;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 ios_base::unsetf(fmtflags __mask)
 {
     __fmtflags_ &= ~__mask;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base::fmtflags
 ios_base::setf(fmtflags __fmtfl, fmtflags __mask)
 {
@@ -499,14 +499,14 @@ ios_base::setf(fmtflags __fmtfl, fmtflags __mask)
 
 // precision
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 streamsize
 ios_base::precision() const
 {
     return __precision_;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 streamsize
 ios_base::precision(streamsize __prec)
 {
@@ -517,14 +517,14 @@ ios_base::precision(streamsize __prec)
 
 // width
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 streamsize
 ios_base::width() const
 {
     return __width_;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 streamsize
 ios_base::width(streamsize __wide)
 {
@@ -535,56 +535,56 @@ ios_base::width(streamsize __wide)
 
 // iostate
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base::iostate
 ios_base::rdstate() const
 {
     return __rdstate_;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 ios_base::setstate(iostate __state)
 {
     clear(__rdstate_ | __state);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 ios_base::good() const
 {
     return __rdstate_ == 0;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 ios_base::eof() const
 {
     return (__rdstate_ & eofbit) != 0;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 ios_base::fail() const
 {
     return (__rdstate_ & (failbit | badbit)) != 0;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 ios_base::bad() const
 {
     return (__rdstate_ & badbit) != 0;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base::iostate
 ios_base::exceptions() const
 {
     return __exceptions_;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 ios_base::exceptions(iostate __iostate)
 {
@@ -611,65 +611,65 @@ public:
   // __true_value will generate undefined references when linking unless
   // we give it internal linkage.
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _LIBCUDACXX_EXPLICIT operator bool() const {return !fail();}
-    _LIBCUDACXX_INLINE_VISIBILITY bool operator!() const    {return  fail();}
-    _LIBCUDACXX_INLINE_VISIBILITY iostate rdstate() const   {return ios_base::rdstate();}
-    _LIBCUDACXX_INLINE_VISIBILITY void clear(iostate __state = goodbit) {ios_base::clear(__state);}
-    _LIBCUDACXX_INLINE_VISIBILITY void setstate(iostate __state) {ios_base::setstate(__state);}
-    _LIBCUDACXX_INLINE_VISIBILITY bool good() const {return ios_base::good();}
-    _LIBCUDACXX_INLINE_VISIBILITY bool eof() const  {return ios_base::eof();}
-    _LIBCUDACXX_INLINE_VISIBILITY bool fail() const {return ios_base::fail();}
-    _LIBCUDACXX_INLINE_VISIBILITY bool bad() const  {return ios_base::bad();}
+    _LIBCUDACXX_HIDE_FROM_ABI bool operator!() const    {return  fail();}
+    _LIBCUDACXX_HIDE_FROM_ABI iostate rdstate() const   {return ios_base::rdstate();}
+    _LIBCUDACXX_HIDE_FROM_ABI void clear(iostate __state = goodbit) {ios_base::clear(__state);}
+    _LIBCUDACXX_HIDE_FROM_ABI void setstate(iostate __state) {ios_base::setstate(__state);}
+    _LIBCUDACXX_HIDE_FROM_ABI bool good() const {return ios_base::good();}
+    _LIBCUDACXX_HIDE_FROM_ABI bool eof() const  {return ios_base::eof();}
+    _LIBCUDACXX_HIDE_FROM_ABI bool fail() const {return ios_base::fail();}
+    _LIBCUDACXX_HIDE_FROM_ABI bool bad() const  {return ios_base::bad();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY iostate exceptions() const {return ios_base::exceptions();}
-    _LIBCUDACXX_INLINE_VISIBILITY void exceptions(iostate __iostate) {ios_base::exceptions(__iostate);}
+    _LIBCUDACXX_HIDE_FROM_ABI iostate exceptions() const {return ios_base::exceptions();}
+    _LIBCUDACXX_HIDE_FROM_ABI void exceptions(iostate __iostate) {ios_base::exceptions(__iostate);}
 
     // 27.5.4.1 Constructor/destructor:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_ios(basic_streambuf<char_type,traits_type>* __sb);
     virtual ~basic_ios();
 
     // 27.5.4.2 Members:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_ostream<char_type, traits_type>* tie() const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_ostream<char_type, traits_type>* tie(basic_ostream<char_type, traits_type>* __tiestr);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_streambuf<char_type, traits_type>* rdbuf() const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_streambuf<char_type, traits_type>* rdbuf(basic_streambuf<char_type, traits_type>* __sb);
 
     basic_ios& copyfmt(const basic_ios& __rhs);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     char_type fill() const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     char_type fill(char_type __ch);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     locale imbue(const locale& __loc);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     char narrow(char_type __c, char __dfault) const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     char_type widen(char __c) const;
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_ios() {// purposefully does no initialization
                 }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void init(basic_streambuf<char_type, traits_type>* __sb);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void move(basic_ios& __rhs);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void move(basic_ios&& __rhs) {move(__rhs);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(basic_ios& __rhs) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void set_rdbuf(basic_streambuf<char_type, traits_type>* __sb);
 private:
     basic_ostream<char_type, traits_type>* __tie_;
@@ -677,7 +677,7 @@ private:
 };
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_ios<_CharT, _Traits>::basic_ios(basic_streambuf<char_type,traits_type>* __sb)
 {
     init(__sb);
@@ -689,7 +689,7 @@ basic_ios<_CharT, _Traits>::~basic_ios()
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 basic_ios<_CharT, _Traits>::init(basic_streambuf<char_type, traits_type>* __sb)
 {
@@ -699,7 +699,7 @@ basic_ios<_CharT, _Traits>::init(basic_streambuf<char_type, traits_type>* __sb)
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_ostream<_CharT, _Traits>*
 basic_ios<_CharT, _Traits>::tie() const
 {
@@ -707,7 +707,7 @@ basic_ios<_CharT, _Traits>::tie() const
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_ostream<_CharT, _Traits>*
 basic_ios<_CharT, _Traits>::tie(basic_ostream<char_type, traits_type>* __tiestr)
 {
@@ -717,7 +717,7 @@ basic_ios<_CharT, _Traits>::tie(basic_ostream<char_type, traits_type>* __tiestr)
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_streambuf<_CharT, _Traits>*
 basic_ios<_CharT, _Traits>::rdbuf() const
 {
@@ -725,7 +725,7 @@ basic_ios<_CharT, _Traits>::rdbuf() const
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_streambuf<_CharT, _Traits>*
 basic_ios<_CharT, _Traits>::rdbuf(basic_streambuf<char_type, traits_type>* __sb)
 {
@@ -735,7 +735,7 @@ basic_ios<_CharT, _Traits>::rdbuf(basic_streambuf<char_type, traits_type>* __sb)
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 locale
 basic_ios<_CharT, _Traits>::imbue(const locale& __loc)
 {
@@ -747,7 +747,7 @@ basic_ios<_CharT, _Traits>::imbue(const locale& __loc)
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 char
 basic_ios<_CharT, _Traits>::narrow(char_type __c, char __dfault) const
 {
@@ -755,7 +755,7 @@ basic_ios<_CharT, _Traits>::narrow(char_type __c, char __dfault) const
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _CharT
 basic_ios<_CharT, _Traits>::widen(char __c) const
 {
@@ -763,7 +763,7 @@ basic_ios<_CharT, _Traits>::widen(char __c) const
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _CharT
 basic_ios<_CharT, _Traits>::fill() const
 {
@@ -773,7 +773,7 @@ basic_ios<_CharT, _Traits>::fill() const
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _CharT
 basic_ios<_CharT, _Traits>::fill(char_type __ch)
 {
@@ -799,7 +799,7 @@ basic_ios<_CharT, _Traits>::copyfmt(const basic_ios& __rhs)
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 basic_ios<_CharT, _Traits>::move(basic_ios& __rhs)
 {
@@ -810,7 +810,7 @@ basic_ios<_CharT, _Traits>::move(basic_ios& __rhs)
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 basic_ios<_CharT, _Traits>::swap(basic_ios& __rhs) noexcept
 {
@@ -820,14 +820,14 @@ basic_ios<_CharT, _Traits>::swap(basic_ios& __rhs) noexcept
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 basic_ios<_CharT, _Traits>::set_rdbuf(basic_streambuf<char_type, traits_type>* __sb)
 {
     ios_base::set_rdbuf(__sb);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 boolalpha(ios_base& __str)
 {
@@ -835,7 +835,7 @@ boolalpha(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 noboolalpha(ios_base& __str)
 {
@@ -843,7 +843,7 @@ noboolalpha(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 showbase(ios_base& __str)
 {
@@ -851,7 +851,7 @@ showbase(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 noshowbase(ios_base& __str)
 {
@@ -859,7 +859,7 @@ noshowbase(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 showpoint(ios_base& __str)
 {
@@ -867,7 +867,7 @@ showpoint(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 noshowpoint(ios_base& __str)
 {
@@ -875,7 +875,7 @@ noshowpoint(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 showpos(ios_base& __str)
 {
@@ -883,7 +883,7 @@ showpos(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 noshowpos(ios_base& __str)
 {
@@ -891,7 +891,7 @@ noshowpos(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 skipws(ios_base& __str)
 {
@@ -899,7 +899,7 @@ skipws(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 noskipws(ios_base& __str)
 {
@@ -907,7 +907,7 @@ noskipws(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 uppercase(ios_base& __str)
 {
@@ -915,7 +915,7 @@ uppercase(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 nouppercase(ios_base& __str)
 {
@@ -923,7 +923,7 @@ nouppercase(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 unitbuf(ios_base& __str)
 {
@@ -931,7 +931,7 @@ unitbuf(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 nounitbuf(ios_base& __str)
 {
@@ -939,7 +939,7 @@ nounitbuf(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 internal(ios_base& __str)
 {
@@ -947,7 +947,7 @@ internal(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 left(ios_base& __str)
 {
@@ -955,7 +955,7 @@ left(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 right(ios_base& __str)
 {
@@ -963,7 +963,7 @@ right(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 dec(ios_base& __str)
 {
@@ -971,7 +971,7 @@ dec(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 hex(ios_base& __str)
 {
@@ -979,7 +979,7 @@ hex(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 oct(ios_base& __str)
 {
@@ -987,7 +987,7 @@ oct(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 fixed(ios_base& __str)
 {
@@ -995,7 +995,7 @@ fixed(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 scientific(ios_base& __str)
 {
@@ -1003,7 +1003,7 @@ scientific(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 hexfloat(ios_base& __str)
 {
@@ -1011,7 +1011,7 @@ hexfloat(ios_base& __str)
     return __str;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 ios_base&
 defaultfloat(ios_base& __str)
 {
@@ -1032,13 +1032,13 @@ class __save_flags
     __save_flags(const __save_flags&);
     __save_flags& operator=(const __save_flags&);
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __save_flags(__stream_type& __stream)
         : __stream_(__stream),
           __fmtflags_(__stream.flags()),
           __fill_(__stream.fill())
         {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~__save_flags()
     {
         __stream_.flags(__fmtflags_);

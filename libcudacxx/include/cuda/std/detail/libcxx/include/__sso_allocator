@@ -42,14 +42,14 @@ public:
     typedef _Tp*              pointer;
     typedef _Tp               value_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY __sso_allocator() throw() : __allocated_(false) {}
-    _LIBCUDACXX_INLINE_VISIBILITY __sso_allocator(const __sso_allocator&) throw() : __allocated_(false) {}
-    template <class _Up> _LIBCUDACXX_INLINE_VISIBILITY __sso_allocator(const __sso_allocator<_Up, _Np>&) throw()
+    _LIBCUDACXX_HIDE_FROM_ABI __sso_allocator() throw() : __allocated_(false) {}
+    _LIBCUDACXX_HIDE_FROM_ABI __sso_allocator(const __sso_allocator&) throw() : __allocated_(false) {}
+    template <class _Up> _LIBCUDACXX_HIDE_FROM_ABI __sso_allocator(const __sso_allocator<_Up, _Np>&) throw()
          : __allocated_(false) {}
 private:
     __sso_allocator& operator=(const __sso_allocator&);
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY pointer allocate(size_type __n, typename __sso_allocator<void, _Np>::const_pointer = 0)
+    _LIBCUDACXX_HIDE_FROM_ABI pointer allocate(size_type __n, typename __sso_allocator<void, _Np>::const_pointer = 0)
     {
         if (!__allocated_ && __n <= _Np)
         {
@@ -58,18 +58,18 @@ public:
         }
         return static_cast<pointer>(_CUDA_VSTD::__libcpp_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
     }
-    _LIBCUDACXX_INLINE_VISIBILITY void deallocate(pointer __p, size_type __n)
+    _LIBCUDACXX_HIDE_FROM_ABI void deallocate(pointer __p, size_type __n)
     {
         if (__p == (pointer)&buf_)
             __allocated_ = false;
         else
             _CUDA_VSTD::__libcpp_deallocate(__p, __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
     }
-    _LIBCUDACXX_INLINE_VISIBILITY size_type max_size() const throw() {return size_type(~0) / sizeof(_Tp);}
+    _LIBCUDACXX_HIDE_FROM_ABI size_type max_size() const throw() {return size_type(~0) / sizeof(_Tp);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator==(__sso_allocator& __a) const {return &buf_ == &__a.buf_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator!=(__sso_allocator& __a) const {return &buf_ != &__a.buf_;}
 };
 

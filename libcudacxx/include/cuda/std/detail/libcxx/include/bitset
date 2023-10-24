@@ -168,45 +168,45 @@ protected:
     typedef __bit_iterator<__bitset, false>            iterator;
     typedef __bit_iterator<__bitset, true>             const_iterator;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr __bitset() noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit constexpr __bitset(unsigned long long __v) noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY reference __make_ref(size_t __pos) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI reference __make_ref(size_t __pos) noexcept
         {return reference(__first_ + __pos / __bits_per_word, __storage_type(1) << __pos % __bits_per_word);}
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference __make_ref(size_t __pos) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference __make_ref(size_t __pos) const noexcept
         {return const_reference(__first_ + __pos / __bits_per_word, __storage_type(1) << __pos % __bits_per_word);}
-    _LIBCUDACXX_INLINE_VISIBILITY iterator __make_iter(size_t __pos) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI iterator __make_iter(size_t __pos) noexcept
         {return iterator(__first_ + __pos / __bits_per_word, __pos % __bits_per_word);}
-    _LIBCUDACXX_INLINE_VISIBILITY const_iterator __make_iter(size_t __pos) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI const_iterator __make_iter(size_t __pos) const noexcept
         {return const_iterator(__first_ + __pos / __bits_per_word, __pos % __bits_per_word);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void operator&=(const __bitset& __v) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void operator|=(const __bitset& __v) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void operator^=(const __bitset& __v) noexcept;
 
     void flip() noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY unsigned long to_ulong() const
+    _LIBCUDACXX_HIDE_FROM_ABI unsigned long to_ulong() const
         {return to_ulong(integral_constant<bool, _Size < sizeof(unsigned long) * CHAR_BIT>());}
-    _LIBCUDACXX_INLINE_VISIBILITY unsigned long long to_ullong() const
+    _LIBCUDACXX_HIDE_FROM_ABI unsigned long long to_ullong() const
         {return to_ullong(integral_constant<bool, _Size < sizeof(unsigned long long) * CHAR_BIT>());}
 
     bool all() const noexcept;
     bool any() const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t __hash_code() const noexcept;
 private:
     unsigned long to_ulong(false_type) const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unsigned long to_ulong(true_type) const;
     unsigned long long to_ullong(false_type) const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unsigned long long to_ullong(true_type) const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unsigned long long to_ullong(true_type, false_type) const;
     unsigned long long to_ullong(true_type, true_type) const;
 };
@@ -413,41 +413,41 @@ protected:
     typedef __bit_iterator<__bitset, false>            iterator;
     typedef __bit_iterator<__bitset, true>             const_iterator;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr __bitset() noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit constexpr __bitset(unsigned long long __v) noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY reference __make_ref(size_t __pos) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI reference __make_ref(size_t __pos) noexcept
         {return reference(&__first_, __storage_type(1) << __pos);}
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference __make_ref(size_t __pos) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference __make_ref(size_t __pos) const noexcept
         {return const_reference(&__first_, __storage_type(1) << __pos);}
-    _LIBCUDACXX_INLINE_VISIBILITY iterator __make_iter(size_t __pos) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI iterator __make_iter(size_t __pos) noexcept
         {return iterator(&__first_ + __pos / __bits_per_word, __pos % __bits_per_word);}
-    _LIBCUDACXX_INLINE_VISIBILITY const_iterator __make_iter(size_t __pos) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI const_iterator __make_iter(size_t __pos) const noexcept
         {return const_iterator(&__first_ + __pos / __bits_per_word, __pos % __bits_per_word);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void operator&=(const __bitset& __v) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void operator|=(const __bitset& __v) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void operator^=(const __bitset& __v) noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void flip() noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unsigned long to_ulong() const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unsigned long long to_ullong() const;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool all() const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool any() const noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t __hash_code() const noexcept;
 };
 
@@ -568,33 +568,33 @@ protected:
     typedef __bit_iterator<__bitset, false>            iterator;
     typedef __bit_iterator<__bitset, true>             const_iterator;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr __bitset() noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit constexpr __bitset(unsigned long long) noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY reference __make_ref(size_t) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI reference __make_ref(size_t) noexcept
         {return reference(0, 1);}
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference __make_ref(size_t) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference __make_ref(size_t) const noexcept
         {return const_reference(0, 1);}
-    _LIBCUDACXX_INLINE_VISIBILITY iterator __make_iter(size_t) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI iterator __make_iter(size_t) noexcept
         {return iterator(0, 0);}
-    _LIBCUDACXX_INLINE_VISIBILITY const_iterator __make_iter(size_t) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI const_iterator __make_iter(size_t) const noexcept
         {return const_iterator(0, 0);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY void operator&=(const __bitset&) noexcept {}
-    _LIBCUDACXX_INLINE_VISIBILITY void operator|=(const __bitset&) noexcept {}
-    _LIBCUDACXX_INLINE_VISIBILITY void operator^=(const __bitset&) noexcept {}
+    _LIBCUDACXX_HIDE_FROM_ABI void operator&=(const __bitset&) noexcept {}
+    _LIBCUDACXX_HIDE_FROM_ABI void operator|=(const __bitset&) noexcept {}
+    _LIBCUDACXX_HIDE_FROM_ABI void operator^=(const __bitset&) noexcept {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY void flip() noexcept {}
+    _LIBCUDACXX_HIDE_FROM_ABI void flip() noexcept {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY unsigned long to_ulong() const {return 0;}
-    _LIBCUDACXX_INLINE_VISIBILITY unsigned long long to_ullong() const {return 0;}
+    _LIBCUDACXX_HIDE_FROM_ABI unsigned long to_ulong() const {return 0;}
+    _LIBCUDACXX_HIDE_FROM_ABI unsigned long long to_ullong() const {return 0;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY bool all() const noexcept {return true;}
-    _LIBCUDACXX_INLINE_VISIBILITY bool any() const noexcept {return false;}
+    _LIBCUDACXX_HIDE_FROM_ABI bool all() const noexcept {return true;}
+    _LIBCUDACXX_HIDE_FROM_ABI bool any() const noexcept {return false;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY size_t __hash_code() const noexcept {return 0;}
+    _LIBCUDACXX_HIDE_FROM_ABI size_t __hash_code() const noexcept {return 0;}
 };
 
 inline
@@ -625,8 +625,8 @@ public:
     typedef typename base::const_reference const_reference;
 
     // 23.3.5.1 constructors:
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr bitset() noexcept {}
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr bitset() noexcept {}
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
         bitset(unsigned long long __v) noexcept : base(__v) {}
     template<class _CharT, class = _EnableIf<_IsCharLikeType<_CharT>::value> >
         explicit bitset(const _CharT* __str,
@@ -640,69 +640,69 @@ public:
                         _CharT __zero = _CharT('0'), _CharT __one = _CharT('1'));
 
     // 23.3.5.2 bitset operations:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bitset& operator&=(const bitset& __rhs) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bitset& operator|=(const bitset& __rhs) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bitset& operator^=(const bitset& __rhs) noexcept;
     bitset& operator<<=(size_t __pos) noexcept;
     bitset& operator>>=(size_t __pos) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bitset& set() noexcept;
     bitset& set(size_t __pos, bool __val = true);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bitset& reset() noexcept;
     bitset& reset(size_t __pos);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bitset  operator~() const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bitset& flip() noexcept;
     bitset& flip(size_t __pos);
 
     // element access:
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
                               const_reference operator[](size_t __p) const {return base::__make_ref(__p);}
-    _LIBCUDACXX_INLINE_VISIBILITY       reference operator[](size_t __p)       {return base::__make_ref(__p);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI       reference operator[](size_t __p)       {return base::__make_ref(__p);}
+    _LIBCUDACXX_HIDE_FROM_ABI
     unsigned long to_ulong() const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unsigned long long to_ullong() const;
     template <class _CharT, class _Traits, class _Allocator>
         basic_string<_CharT, _Traits, _Allocator> to_string(_CharT __zero = _CharT('0'),
                                                             _CharT __one = _CharT('1')) const;
     template <class _CharT, class _Traits>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         basic_string<_CharT, _Traits, allocator<_CharT> > to_string(_CharT __zero = _CharT('0'),
                                                                     _CharT __one = _CharT('1')) const;
     template <class _CharT>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         basic_string<_CharT, char_traits<_CharT>, allocator<_CharT> > to_string(_CharT __zero = _CharT('0'),
                                                                                 _CharT __one = _CharT('1')) const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string<char, char_traits<char>, allocator<char> > to_string(char __zero = '0',
                                                                       char __one = '1') const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t count() const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr size_t size() const noexcept {return _Size;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size() const noexcept {return _Size;}
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator==(const bitset& __rhs) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator!=(const bitset& __rhs) const noexcept;
     bool test(size_t __pos) const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool all() const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool any() const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY bool none() const noexcept {return !any();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI bool none() const noexcept {return !any();}
+    _LIBCUDACXX_HIDE_FROM_ABI
     bitset operator<<(size_t __pos) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bitset operator>>(size_t __pos) const noexcept;
 
 private:
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t __hash_code() const noexcept {return base::__hash_code();}
 
     friend struct hash<bitset>;
@@ -1005,7 +1005,7 @@ bitset<_Size>::operator>>(size_t __pos) const noexcept
 }
 
 template <size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bitset<_Size>
 operator&(const bitset<_Size>& __x, const bitset<_Size>& __y) noexcept
 {
@@ -1015,7 +1015,7 @@ operator&(const bitset<_Size>& __x, const bitset<_Size>& __y) noexcept
 }
 
 template <size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bitset<_Size>
 operator|(const bitset<_Size>& __x, const bitset<_Size>& __y) noexcept
 {
@@ -1025,7 +1025,7 @@ operator|(const bitset<_Size>& __x, const bitset<_Size>& __y) noexcept
 }
 
 template <size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bitset<_Size>
 operator^(const bitset<_Size>& __x, const bitset<_Size>& __y) noexcept
 {
@@ -1038,7 +1038,7 @@ template <size_t _Size>
 struct _LIBCUDACXX_TEMPLATE_VIS hash<bitset<_Size> >
     : public __unary_function<bitset<_Size>, size_t>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t operator()(const bitset<_Size>& __bs) const noexcept
         {return __bs.__hash_code();}
 };

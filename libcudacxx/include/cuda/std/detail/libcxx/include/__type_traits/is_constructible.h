@@ -80,7 +80,7 @@ struct __is_invalid_lvalue_to_rvalue_cast<_ToRef&&, _FromRef&> {
 struct __is_constructible_helper
 {
     template <class _To>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static void __eat(_To);
 
     // This overload is needed to work around a Clang bug that disallows
@@ -90,34 +90,34 @@ struct __is_constructible_helper
     //  classes with explicit conversion operators.
     template <class _To, class _From,
               class = decltype(__eat<_To>(_CUDA_VSTD::declval<_From>()))>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static true_type __test_cast(int);
 
     template <class _To, class _From,
               class = decltype(static_cast<_To>(_CUDA_VSTD::declval<_From>()))>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static integral_constant<bool,
         !__is_invalid_base_to_derived_cast<_To, _From>::value &&
         !__is_invalid_lvalue_to_rvalue_cast<_To, _From>::value
     > __test_cast(long);
 
     template <class, class>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static false_type __test_cast(...);
 
     template <class _Tp, class ..._Args,
         class = decltype(_Tp(_CUDA_VSTD::declval<_Args>()...))>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static true_type __test_nary(int);
     template <class _Tp, class...>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static false_type __test_nary(...);
 
     template <class _Tp, class _A0, class = decltype(::new _Tp(_CUDA_VSTD::declval<_A0>()))>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static is_destructible<_Tp> __test_unary(int);
     template <class, class>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static false_type __test_unary(...);
 };
 

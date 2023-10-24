@@ -44,20 +44,20 @@ public:
 private:
     streambuf_type* __sbuf_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator(ostream_type& __s) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator(ostream_type& __s) noexcept
         : __sbuf_(__s.rdbuf()) {}
-    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator(streambuf_type* __s) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator(streambuf_type* __s) noexcept
         : __sbuf_(__s) {}
-    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator& operator=(_CharT __c)
+    _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator& operator=(_CharT __c)
         {
             if (__sbuf_ && traits_type::eq_int_type(__sbuf_->sputc(__c), traits_type::eof()))
                 __sbuf_ = 0;
             return *this;
         }
-    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator& operator*()     {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator& operator++()    {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY ostreambuf_iterator& operator++(int) {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY bool failed() const noexcept {return __sbuf_ == 0;}
+    _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator& operator*()     {return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator& operator++()    {return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI ostreambuf_iterator& operator++(int) {return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI bool failed() const noexcept {return __sbuf_ == 0;}
 
     template <class _Ch, class _Tr>
     friend

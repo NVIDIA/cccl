@@ -54,7 +54,7 @@ struct _LIBCUDACXX_TYPE_VIS __i_node
     __i_node(const __i_node&) = delete;
     __i_node& operator=(const __i_node&) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __i_node(void* __i, __i_node* __next, __c_node* __c)
         : __i_(__i), __next_(__next), __c_(__c) {}
     ~__i_node();
@@ -71,7 +71,7 @@ struct _LIBCUDACXX_TYPE_VIS __c_node
     __c_node(const __c_node&) = delete;
     __c_node& operator=(const __c_node&) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __c_node(void* __c, __c_node* __next)
         : __c_(__c), __next_(__next), beg_(nullptr), end_(nullptr), cap_(nullptr) {}
     virtual ~__c_node();
@@ -165,12 +165,12 @@ public:
     typedef __c_node*(_InsertConstruct)(void*, void*, __c_node*);
 
     template <class _Cont>
-    _LIBCUDACXX_INLINE_VISIBILITY static __c_node* __create_C_node(void *__mem, void *__c, __c_node *__next) {
+    _LIBCUDACXX_HIDE_FROM_ABI static __c_node* __create_C_node(void *__mem, void *__c, __c_node *__next) {
         return ::new (__mem) _C_node<_Cont>(__c, __next);
     }
 
     template <class _Cont>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __insert_c(_Cont* __c)
     {
         __insert_c(static_cast<void*>(__c), &__create_C_node<_Cont>);
@@ -217,8 +217,7 @@ _LIBCUDACXX_END_NAMESPACE_STD
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_insert_c(_Tp* __c) {
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void __debug_db_insert_c(_Tp* __c) {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     if (!__libcpp_is_constant_evaluated())
         __get_db()->__insert_c(__c);
@@ -228,8 +227,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_insert_c(_Tp* __c) {
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_insert_i(_Tp* __i) {
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void __debug_db_insert_i(_Tp* __i) {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     if (!__libcpp_is_constant_evaluated())
         __get_db()->__insert_i(__i);
@@ -239,8 +237,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_insert_i(_Tp* __i) {
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_erase_c(_Tp* __c) {
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void __debug_db_erase_c(_Tp* __c) {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     if (!__libcpp_is_constant_evaluated())
         __get_db()->__erase_c(__c);
@@ -250,8 +247,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_erase_c(_Tp* __c) {
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_swap(_Tp* __lhs, _Tp* __rhs) {
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void __debug_db_swap(_Tp* __lhs, _Tp* __rhs) {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     if (!__libcpp_is_constant_evaluated())
         __get_db()->swap(__lhs, __rhs);
@@ -262,8 +258,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_swap(_Tp* __lhs, _Tp* _
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_invalidate_all(_Tp* __c) {
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void __debug_db_invalidate_all(_Tp* __c) {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     if (!__libcpp_is_constant_evaluated())
         __get_db()->__invalidate_all(__c);

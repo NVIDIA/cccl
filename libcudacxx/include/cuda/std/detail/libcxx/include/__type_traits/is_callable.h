@@ -26,9 +26,9 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template<class _Func, class... _Args, class = decltype(std::declval<_Func>()(std::declval<_Args>()...))>
-_LIBCUDACXX_INLINE_VISIBILITY true_type __is_callable_helper(int);
+_LIBCUDACXX_HIDE_FROM_ABI true_type __is_callable_helper(int);
 template<class...>
-_LIBCUDACXX_INLINE_VISIBILITY false_type __is_callable_helper(...);
+_LIBCUDACXX_HIDE_FROM_ABI false_type __is_callable_helper(...);
 
 template<class _Func, class... _Args>
 struct __is_callable : decltype(__is_callable_helper<_Func, _Args...>(0)) {};

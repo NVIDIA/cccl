@@ -33,7 +33,7 @@ class _LIBCUDACXX_TYPE_VIS mutex
     __libcpp_mutex_t __m_ = _LIBCUDACXX_MUTEX_INITIALIZER;
 
 public:
-    _LIBCUDACXX_ALWAYS_INLINE _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_ALWAYS_INLINE _LIBCUDACXX_HIDE_FROM_ABI
     constexpr mutex() = default;
     mutex(const mutex&) = delete;
     mutex& operator=(const mutex&) = delete;

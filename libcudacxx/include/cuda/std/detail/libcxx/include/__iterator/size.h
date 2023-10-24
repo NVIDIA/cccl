@@ -29,20 +29,20 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class _Cont>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr auto size(const _Cont& __c)
 noexcept(noexcept(__c.size()))
 -> decltype        (__c.size())
 { return            __c.size(); }
 
 template <class _Tp, size_t _Sz>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr size_t size(const _Tp (&)[_Sz]) noexcept { return _Sz; }
 #endif // _LIBCUDACXX_STD_VER > 11
 
 #if _LIBCUDACXX_STD_VER > 17
 template <class _Cont>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr auto ssize(const _Cont& __c)
 noexcept(noexcept(static_cast<common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>>(__c.size())))
 ->                              common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>
@@ -55,7 +55,7 @@ noexcept(noexcept(static_cast<common_type_t<ptrdiff_t, make_signed_t<decltype(__
 #   pragma GCC diagnostic ignored "-Wsign-conversion"
 # endif // _LIBCUDACXX_COMPILER_GCC
 template <class _Tp, ptrdiff_t _Sz>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr ptrdiff_t ssize(const _Tp (&)[_Sz]) noexcept { return _Sz; }
 # if defined(_LIBCUDACXX_COMPILER_GCC)
 #   pragma GCC diagnostic pop

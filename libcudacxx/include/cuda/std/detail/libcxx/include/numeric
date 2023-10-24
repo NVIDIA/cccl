@@ -171,7 +171,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef __cuda_std__
 template <class _InputIterator, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 accumulate(_InputIterator __first, _InputIterator __last, _Tp __init)
 {
@@ -181,7 +181,7 @@ accumulate(_InputIterator __first, _InputIterator __last, _Tp __init)
 }
 
 template <class _InputIterator, class _Tp, class _BinaryOperation>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 accumulate(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOperation __binary_op)
 {
@@ -192,7 +192,7 @@ accumulate(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOpe
 
 #if _LIBCUDACXX_STD_VER > 14
 template <class _InputIterator, class _Tp, class _BinaryOp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOp __b)
 {
@@ -202,7 +202,7 @@ reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOp __b)
 }
 
 template <class _InputIterator, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 reduce(_InputIterator __first, _InputIterator __last, _Tp __init)
 {
@@ -210,7 +210,7 @@ reduce(_InputIterator __first, _InputIterator __last, _Tp __init)
 }
 
 template <class _InputIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename iterator_traits<_InputIterator>::value_type
 reduce(_InputIterator __first, _InputIterator __last)
 {
@@ -220,7 +220,7 @@ reduce(_InputIterator __first, _InputIterator __last)
 #endif
 
 template <class _InputIterator1, class _InputIterator2, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 inner_product(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _Tp __init)
 {
@@ -230,7 +230,7 @@ inner_product(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2
 }
 
 template <class _InputIterator1, class _InputIterator2, class _Tp, class _BinaryOperation1, class _BinaryOperation2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 inner_product(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2,
               _Tp __init, _BinaryOperation1 __binary_op1, _BinaryOperation2 __binary_op2)
@@ -242,7 +242,7 @@ inner_product(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2
 
 #if _LIBCUDACXX_STD_VER > 14
 template <class _InputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 transform_reduce(_InputIterator __first, _InputIterator __last,
            _Tp __init,  _BinaryOp __b, _UnaryOp __u)
@@ -254,7 +254,7 @@ transform_reduce(_InputIterator __first, _InputIterator __last,
 
 template <class _InputIterator1, class _InputIterator2,
           class _Tp, class _BinaryOp1, class _BinaryOp2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1,
                  _InputIterator2 __first2, _Tp __init,  _BinaryOp1 __b1, _BinaryOp2 __b2)
@@ -265,7 +265,7 @@ transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1,
 }
 
 template <class _InputIterator1, class _InputIterator2, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp
 transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1,
                  _InputIterator2 __first2, _Tp __init)
@@ -276,7 +276,7 @@ transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1,
 #endif
 
 template <class _InputIterator, class _OutputIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _OutputIterator
 partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
@@ -294,7 +294,7 @@ partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __res
 }
 
 template <class _InputIterator, class _OutputIterator, class _BinaryOperation>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _OutputIterator
 partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result,
               _BinaryOperation __binary_op)
@@ -314,7 +314,7 @@ partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __res
 
 #if _LIBCUDACXX_STD_VER > 14
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _OutputIterator
 exclusive_scan(_InputIterator __first, _InputIterator __last,
                _OutputIterator __result, _Tp __init, _BinaryOp __b)
@@ -334,7 +334,7 @@ exclusive_scan(_InputIterator __first, _InputIterator __last,
 }
 
 template <class _InputIterator, class _OutputIterator, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _OutputIterator
 exclusive_scan(_InputIterator __first, _InputIterator __last,
                _OutputIterator __result, _Tp __init)
@@ -376,7 +376,7 @@ _OutputIterator inclusive_scan(_InputIterator __first, _InputIterator __last,
 
 template <class _InputIterator, class _OutputIterator, class _Tp,
           class _BinaryOp, class _UnaryOp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _OutputIterator
 transform_exclusive_scan(_InputIterator __first, _InputIterator __last,
                            _OutputIterator __result, _Tp __init,
@@ -424,7 +424,7 @@ _OutputIterator transform_inclusive_scan(_InputIterator __first, _InputIterator 
 #endif
 
 template <class _InputIterator, class _OutputIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _OutputIterator
 adjacent_difference(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
@@ -443,7 +443,7 @@ adjacent_difference(_InputIterator __first, _InputIterator __last, _OutputIterat
 }
 
 template <class _InputIterator, class _OutputIterator, class _BinaryOperation>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _OutputIterator
 adjacent_difference(_InputIterator __first, _InputIterator __last, _OutputIterator __result,
                       _BinaryOperation __binary_op)
@@ -464,7 +464,7 @@ adjacent_difference(_InputIterator __first, _InputIterator __last, _OutputIterat
 #endif // __cuda_std__
 
 template <class _ForwardIterator, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 iota(_ForwardIterator __first, _ForwardIterator __last, _Tp __value_)
 {
@@ -479,7 +479,7 @@ template <typename _Result, typename _Source, bool _IsSigned = is_signed<_Source
 
 template <typename _Result, typename _Source>
 struct __ct_abs<_Result, _Source, true> {
-    constexpr _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     _Result operator()(_Source __t) const noexcept
     {
     if (__t >= 0) return __t;
@@ -490,7 +490,7 @@ struct __ct_abs<_Result, _Source, true> {
 
 template <typename _Result, typename _Source>
 struct __ct_abs<_Result, _Source, false> {
-    constexpr _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     _Result operator()(_Source __t) const noexcept { return __t; }
 };
 
@@ -505,7 +505,7 @@ _Tp __gcd(_Tp __m, _Tp __n)
 
 
 template<class _Tp, class _Up>
-constexpr _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 common_type_t<_Tp,_Up>
 gcd(_Tp __m, _Up __n)
 {
@@ -520,7 +520,7 @@ gcd(_Tp __m, _Up __n)
 }
 
 template<class _Tp, class _Up>
-constexpr _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 common_type_t<_Tp,_Up>
 lcm(_Tp __m, _Up __n)
 {
@@ -541,7 +541,7 @@ lcm(_Tp __m, _Up __n)
 
 #if _LIBCUDACXX_STD_VER > 17
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 enable_if_t<is_integral_v<_Tp> && !is_same_v<bool, _Tp> && !is_null_pointer_v<_Tp>, _Tp>
 midpoint(_Tp __a, _Tp __b) noexcept
 _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
@@ -562,7 +562,7 @@ _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
 
 
 template <class _TPtr>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 enable_if_t<is_pointer_v<_TPtr>
              && is_object_v<remove_pointer_t<_TPtr>>
              && ! is_void_v<remove_pointer_t<_TPtr>>
@@ -582,7 +582,7 @@ template <typename _Fp>
 constexpr _Fp __fp_abs(_Fp __f) { return __f >= 0 ? __f : -__f; }
 
 template <class _Fp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 enable_if_t<is_floating_point_v<_Fp>, _Fp>
 midpoint(_Fp __a, _Fp __b) noexcept
 {

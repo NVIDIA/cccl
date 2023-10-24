@@ -29,25 +29,25 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _LIBCUDACXX_STD_VER > 11
 
 template <class _Cont> constexpr
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 auto data(_Cont& __c)
 noexcept(noexcept(__c.data()))
 -> decltype        (__c.data())
 { return            __c.data(); }
 
 template <class _Cont> constexpr
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 auto data(const _Cont& __c)
 noexcept(noexcept(__c.data()))
 -> decltype        (__c.data())
 { return            __c.data(); }
 
 template <class _Tp, size_t _Sz>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr _Tp* data(_Tp (&__array)[_Sz]) noexcept { return __array; }
 
 template <class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr const _Ep* data(initializer_list<_Ep> __il) noexcept { return __il.begin(); }
 
 #endif

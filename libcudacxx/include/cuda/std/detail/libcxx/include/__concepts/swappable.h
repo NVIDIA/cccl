@@ -119,7 +119,7 @@ _LIBCUDACXX_NV_DIAG_DEFAULT(2642)
     // *The name `swap` is used here unqualified.
     _LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
       _LIBCUDACXX_REQUIRES( __unqualified_swappable_with<_Tp, _Up>)
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp&& __t, _Up&& __u) const
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Tp&& __t, _Up&& __u) const
       noexcept(noexcept(swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u))))
     {
       swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u));
@@ -128,7 +128,7 @@ _LIBCUDACXX_NV_DIAG_DEFAULT(2642)
     // 2.2   Otherwise, if `E1` and `E2` are lvalues of array types with equal extent and...
     _LIBCUDACXX_TEMPLATE(class _Tp, class _Up, size_t _Size)
       _LIBCUDACXX_REQUIRES( __swappable_arrays<_Tp, _Up, _Size>)
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp(& __t)[_Size], _Up(& __u)[_Size]) const
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Tp(& __t)[_Size], _Up(& __u)[_Size]) const
       noexcept(__noexcept_swappable_arrays<_Tp, _Up>)
     {
       // TODO(cjdb): replace with `_CUDA_VRANGES::swap_ranges`.
@@ -140,7 +140,7 @@ _LIBCUDACXX_NV_DIAG_DEFAULT(2642)
     // 2.3   Otherwise, if `E1` and `E2` are lvalues of the same type `T` that models...
     _LIBCUDACXX_TEMPLATE(class _Tp)
       _LIBCUDACXX_REQUIRES( __exchangeable<_Tp>)
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp& __x, _Tp& __y) const
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Tp& __x, _Tp& __y) const
       noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp) && _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Tp))
     {
       __y = _CUDA_VSTD::exchange(__x, _CUDA_VSTD::move(__y));

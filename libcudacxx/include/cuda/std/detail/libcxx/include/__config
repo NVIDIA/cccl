@@ -1439,11 +1439,20 @@ typedef __char32_t char32_t;
 #endif
 #endif
 
+// We want to hide defaulted SMF but those cannot be marked as __host__ __device__
+#ifndef _LIBCUDACXX_HIDE_FROM_ABI_DEFAULTED
+#  if _LIBCUDACXX_HIDE_FROM_ABI_PER_TU
+#    define _LIBCUDACXX_HIDE_FROM_ABI_DEFAULTED inline _CCCL_ATTRIBUTE_HIDDEN _LIBCUDACXX_INTERNAL_LINKAGE
+#  else
+#    define _LIBCUDACXX_HIDE_FROM_ABI_DEFAULTED inline _CCCL_ATTRIBUTE_HIDDEN _LIBCUDACXX_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  endif
+#endif
+
 #ifndef _LIBCUDACXX_HIDE_FROM_ABI
 #  if _LIBCUDACXX_HIDE_FROM_ABI_PER_TU
-#    define _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_HIDDEN _LIBCUDACXX_INTERNAL_LINKAGE
+#    define _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_HIDE_FROM_ABI_DEFAULTED _LIBCUDACXX_HOST_DEVICE
 #  else
-#    define _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_HIDDEN _LIBCUDACXX_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#    define _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_HIDE_FROM_ABI_DEFAULTED _LIBCUDACXX_HOST_DEVICE
 #  endif
 #endif
 
@@ -1470,12 +1479,6 @@ typedef __char32_t char32_t;
 #endif // !_LIBCUDACXX_CUDACC
 
 // Just so we can migrate to the new macros gradually.
-
-#ifdef __cuda_std__
-#  define _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_HOST_DEVICE
-#else
-#  define _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI
-#endif // __cuda_std__
 
 #define _LIBCUDACXX_CONCAT1(_LIBCUDACXX_X,_LIBCUDACXX_Y) _LIBCUDACXX_X##_LIBCUDACXX_Y
 #define _LIBCUDACXX_CONCAT(_LIBCUDACXX_X,_LIBCUDACXX_Y) _LIBCUDACXX_CONCAT1(_LIBCUDACXX_X,_LIBCUDACXX_Y)
@@ -1582,9 +1585,9 @@ typedef unsigned int   char32_t;
 #  define _LIBCUDACXX_DECLARE_STRONG_ENUM(x) struct _LIBCUDACXX_TYPE_VIS x { enum __lx
 #  define _LIBCUDACXX_DECLARE_STRONG_ENUM_EPILOG(x) \
      __lx __v_; \
-     _LIBCUDACXX_INLINE_VISIBILITY x(__lx __v) : __v_(__v) {} \
-     _LIBCUDACXX_INLINE_VISIBILITY explicit x(int __v) : __v_(static_cast<__lx>(__v)) {} \
-     _LIBCUDACXX_INLINE_VISIBILITY operator int() const {return __v_;} \
+     _LIBCUDACXX_HIDE_FROM_ABI x(__lx __v) : __v_(__v) {} \
+     _LIBCUDACXX_HIDE_FROM_ABI explicit x(int __v) : __v_(static_cast<__lx>(__v)) {} \
+     _LIBCUDACXX_HIDE_FROM_ABI operator int() const {return __v_;} \
      };
 #else  // _LIBCUDACXX_HAS_NO_STRONG_ENUMS
 #  define _LIBCUDACXX_DECLARE_STRONG_ENUM(x) enum class _LIBCUDACXX_ENUM_VIS x
@@ -1842,7 +1845,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 // Redefine some macros for internal use
 #if defined(__cuda_std__)
 #  undef _LIBCUDACXX_FUNC_VIS
-#  define _LIBCUDACXX_FUNC_VIS _LIBCUDACXX_INLINE_VISIBILITY
+#  define _LIBCUDACXX_FUNC_VIS _LIBCUDACXX_HIDE_FROM_ABI
 #  undef _LIBCUDACXX_TYPE_VIS
 #  define _LIBCUDACXX_TYPE_VIS
 #endif // __cuda_std__

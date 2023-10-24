@@ -100,7 +100,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
   struct __fn {
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
     _LIBCUDACXX_REQUIRES( __unqualified_iter_swap<_T1, _T2>)
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr void operator()(_T1&& __x, _T2&& __y) const
       noexcept(noexcept(iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y))))
     {
@@ -109,7 +109,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
     _LIBCUDACXX_REQUIRES( __readable_swappable<_T1, _T2>)
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr void operator()(_T1&& __x, _T2&& __y) const
       noexcept(noexcept(_CUDA_VRANGES::swap(*_CUDA_VSTD::forward<_T1>(__x), *_CUDA_VSTD::forward<_T2>(__y))))
     {
@@ -118,7 +118,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
     _LIBCUDACXX_REQUIRES( __moveable_storable<_T2, _T1>)
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr void operator()(_T1&& __x, _T2&& __y) const
       noexcept(noexcept(iter_value_t<_T2>(_CUDA_VRANGES::iter_move(__y))) &&
                noexcept(*__y = _CUDA_VRANGES::iter_move(__x)) &&

@@ -30,10 +30,10 @@ template <class...>
 using __expand_to_true = true_type;
 
 template <class... _Pred>
-_LIBCUDACXX_INLINE_VISIBILITY __expand_to_true<__enable_if_t<_Pred::value>...> __and_helper(int);
+_LIBCUDACXX_HIDE_FROM_ABI __expand_to_true<__enable_if_t<_Pred::value>...> __and_helper(int);
 
 template <class...>
-_LIBCUDACXX_INLINE_VISIBILITY false_type __and_helper(...);
+_LIBCUDACXX_HIDE_FROM_ABI false_type __and_helper(...);
 
 // _And always performs lazy evaluation of its arguments.
 //

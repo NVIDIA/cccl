@@ -713,7 +713,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ValueType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _ValueType __libcpp_relaxed_load(_ValueType const* __value) {
 #if !defined(_LIBCUDACXX_HAS_NO_THREADS) && \
     defined(__ATOMIC_RELAXED) &&        \
@@ -725,7 +725,7 @@ _ValueType __libcpp_relaxed_load(_ValueType const* __value) {
 }
 
 template <class _ValueType>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _ValueType __libcpp_acquire_load(_ValueType const* __value) {
 #if !defined(_LIBCUDACXX_HAS_NO_THREADS) && \
     defined(__ATOMIC_ACQUIRE) &&        \
@@ -852,7 +852,7 @@ struct __const_void_pointer<_Ptr, _Alloc, false>
 };
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 _Tp*
 __to_raw_pointer(_Tp* __p) noexcept
 {
@@ -861,7 +861,7 @@ __to_raw_pointer(_Tp* __p) noexcept
 
 #if _LIBCUDACXX_STD_VER <= 17
 template <class _Pointer>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename pointer_traits<_Pointer>::element_type*
 __to_raw_pointer(_Pointer __p) noexcept
 {
@@ -869,7 +869,7 @@ __to_raw_pointer(_Pointer __p) noexcept
 }
 #else
 template <class _Pointer>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 auto
 __to_raw_pointer(const _Pointer& __p) noexcept
 -> decltype(pointer_traits<_Pointer>::to_address(__p))
@@ -878,7 +878,7 @@ __to_raw_pointer(const _Pointer& __p) noexcept
 }
 
 template <class _Pointer, class... _None>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 auto
 __to_raw_pointer(const _Pointer& __p, _None...) noexcept
 {
@@ -1248,47 +1248,47 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
                   typename __allocator_traits_rebind<allocator_type, _Tp>::type;
     template <class _Tp> using rebind_traits = allocator_traits<rebind_alloc<_Tp> >;
 
-    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI
     static pointer allocate(allocator_type& __a, size_type __n)
         {return __a.allocate(__n);}
-    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI
     static pointer allocate(allocator_type& __a, size_type __n, const_void_pointer __hint)
         {return __allocate(__a, __n, __hint,
             __has_allocate_hint<allocator_type, size_type, const_void_pointer>());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static void deallocate(allocator_type& __a, pointer __p, size_type __n) noexcept
         {__a.deallocate(__p, __n);}
 
 #ifndef _LIBCUDACXX_HAS_NO_VARIADICS
     template <class _Tp, class... _Args>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static void construct(allocator_type& __a, _Tp* __p, _Args&&... __args)
             {__construct(__has_construct<allocator_type, _Tp*, _Args...>(),
                          __a, __p, _CUDA_VSTD::forward<_Args>(__args)...);}
 #else  // _LIBCUDACXX_HAS_NO_VARIADICS
     template <class _Tp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static void construct(allocator_type&, _Tp* __p)
             {
                 ::new ((void*)__p) _Tp();
             }
     template <class _Tp, class _A0>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static void construct(allocator_type& __a, _Tp* __p, const _A0& __a0)
             {
                 __construct(__has_construct<allocator_type, _Tp*, const _A0&>(),
                             __a, __p, __a0);
             }
     template <class _Tp, class _A0, class _A1>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static void construct(allocator_type&, _Tp* __p, const _A0& __a0,
                               const _A1& __a1)
             {
                 ::new ((void*)__p) _Tp(__a0, __a1);
             }
     template <class _Tp, class _A0, class _A1, class _A2>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static void construct(allocator_type&, _Tp* __p, const _A0& __a0,
                               const _A1& __a1, const _A2& __a2)
             {
@@ -1297,15 +1297,15 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
 #endif  // _LIBCUDACXX_HAS_NO_VARIADICS
 
     template <class _Tp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static void destroy(allocator_type& __a, _Tp* __p)
             {__destroy(__has_destroy<allocator_type, _Tp*>(), __a, __p);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static size_type max_size(const allocator_type& __a) noexcept
         {return __max_size(__has_max_size<const allocator_type>(), __a);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static allocator_type
         select_on_container_copy_construction(const allocator_type& __a)
             {return __select_on_container_copy_construction(
@@ -1313,7 +1313,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
                 __a);}
 
     template <class _Ptr>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static
         void
         __construct_forward_with_exception_guarantees(allocator_type& __a, _Ptr __begin1, _Ptr __end1, _Ptr& __begin2)
@@ -1331,7 +1331,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
         }
 
     template <class _Tp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static
         typename enable_if
         <
@@ -1351,7 +1351,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
         }
 
     template <class _Iter, class _Ptr>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static
         void
         __construct_range_forward(allocator_type& __a, _Iter __begin1, _Iter __end1, _Ptr& __begin2)
@@ -1363,7 +1363,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
     template <class _SourceTp, class _DestTp,
               class _RawSourceTp = __remove_const_t<_SourceTp>,
               class _RawDestTp = __remove_const_t<_DestTp>>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static
         typename enable_if
         <
@@ -1384,7 +1384,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
         }
 
     template <class _Ptr>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static
         void
         __construct_backward_with_exception_guarantees(allocator_type& __a, _Ptr __begin1, _Ptr __end1, _Ptr& __end2)
@@ -1405,7 +1405,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
         }
 
     template <class _Tp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static
         typename enable_if
         <
@@ -1424,34 +1424,34 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
 
 private:
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static pointer __allocate(allocator_type& __a, size_type __n,
         const_void_pointer __hint, true_type)
         {return __a.allocate(__n, __hint);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static pointer __allocate(allocator_type& __a, size_type __n,
         const_void_pointer, false_type)
         {return __a.allocate(__n);}
 
 #ifndef _LIBCUDACXX_HAS_NO_VARIADICS
     template <class _Tp, class... _Args>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static void __construct(true_type, allocator_type& __a, _Tp* __p, _Args&&... __args)
             {__a.construct(__p, _CUDA_VSTD::forward<_Args>(__args)...);}
     template <class _Tp, class... _Args>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static void __construct(false_type, allocator_type&, _Tp* __p, _Args&&... __args)
             {
                 ::new ((void*)__p) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
             }
 #else  // _LIBCUDACXX_HAS_NO_VARIADICS
     template <class _Tp, class _A0>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static void __construct(true_type, allocator_type& __a, _Tp* __p,
                                 const _A0& __a0)
             {__a.construct(__p, __a0);}
     template <class _Tp, class _A0>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static void __construct(false_type, allocator_type&, _Tp* __p,
                                 const _A0& __a0)
             {
@@ -1460,28 +1460,28 @@ private:
 #endif  // _LIBCUDACXX_HAS_NO_VARIADICS
 
     template <class _Tp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static void __destroy(true_type, allocator_type& __a, _Tp* __p)
             {__a.destroy(__p);}
     template <class _Tp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         static void __destroy(false_type, allocator_type&, _Tp* __p)
             {
                 __p->~_Tp();
             }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static size_type __max_size(true_type, const allocator_type& __a) noexcept
             {return __a.max_size();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static size_type __max_size(false_type, const allocator_type&) noexcept
             {return numeric_limits<size_type>::max() / sizeof(value_type);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static allocator_type
         __select_on_container_copy_construction(true_type, const allocator_type& __a)
             {return __a.select_on_container_copy_construction();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static allocator_type
         __select_on_container_copy_construction(false_type, const allocator_type& __a)
             {return __a;}
@@ -1512,18 +1512,18 @@ public:
 
     template <class _Up> struct rebind {typedef allocator<_Up> other;};
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     allocator() noexcept {}
 
     template <class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     allocator(const allocator<_Up>&) noexcept {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY pointer address(reference __x) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI pointer address(reference __x) const noexcept
         {return _CUDA_VSTD::addressof(__x);}
-    _LIBCUDACXX_INLINE_VISIBILITY const_pointer address(const_reference __x) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI const_pointer address(const_reference __x) const noexcept
         {return _CUDA_VSTD::addressof(__x);}
-    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI
     pointer allocate(size_type __n, allocator<void>::const_pointer = 0)
         {
         if (__n > max_size())
@@ -1531,20 +1531,20 @@ public:
                                  " 'n' exceeds maximum supported size");
         return static_cast<pointer>(_CUDA_VSTD::__libcpp_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
         }
-    _LIBCUDACXX_INLINE_VISIBILITY void deallocate(pointer __p, size_type __n) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void deallocate(pointer __p, size_type __n) noexcept
         {_CUDA_VSTD::__libcpp_deallocate((void*)__p, __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));}
-    _LIBCUDACXX_INLINE_VISIBILITY size_type max_size() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI size_type max_size() const noexcept
         {return size_type(~0) / sizeof(_Tp);}
 #if !defined(_LIBCUDACXX_HAS_NO_RVALUE_REFERENCES) && !defined(_LIBCUDACXX_HAS_NO_VARIADICS)
     template <class _Up, class... _Args>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(_Up* __p, _Args&&... __args)
         {
             ::new((void*)__p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
         }
 #else  // !defined(_LIBCUDACXX_HAS_NO_RVALUE_REFERENCES) && !defined(_LIBCUDACXX_HAS_NO_VARIADICS)
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p)
         {
@@ -1553,14 +1553,14 @@ public:
 # if defined(_LIBCUDACXX_HAS_NO_RVALUE_REFERENCES)
 
     template <class _A0>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p, _A0& __a0)
         {
             ::new((void*)__p) _Tp(__a0);
         }
     template <class _A0>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p, const _A0& __a0)
         {
@@ -1568,35 +1568,35 @@ public:
         }
 # endif  // defined(_LIBCUDACXX_HAS_NO_RVALUE_REFERENCES)
     template <class _A0, class _A1>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p, _A0& __a0, _A1& __a1)
         {
             ::new((void*)__p) _Tp(__a0, __a1);
         }
     template <class _A0, class _A1>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p, const _A0& __a0, _A1& __a1)
         {
             ::new((void*)__p) _Tp(__a0, __a1);
         }
     template <class _A0, class _A1>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p, _A0& __a0, const _A1& __a1)
         {
             ::new((void*)__p) _Tp(__a0, __a1);
         }
     template <class _A0, class _A1>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p, const _A0& __a0, const _A1& __a1)
         {
             ::new((void*)__p) _Tp(__a0, __a1);
         }
 #endif  // !defined(_LIBCUDACXX_HAS_NO_RVALUE_REFERENCES) && !defined(_LIBCUDACXX_HAS_NO_VARIADICS)
-    _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p) {__p->~_Tp();}
+    _LIBCUDACXX_HIDE_FROM_ABI void destroy(pointer __p) {__p->~_Tp();}
 };
 
 template <class _Tp>
@@ -1616,36 +1616,36 @@ public:
 
     template <class _Up> struct rebind {typedef allocator<_Up> other;};
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     allocator() noexcept {}
 
     template <class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     allocator(const allocator<_Up>&) noexcept {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY const_pointer address(const_reference __x) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI const_pointer address(const_reference __x) const noexcept
         {return _CUDA_VSTD::addressof(__x);}
-    _LIBCUDACXX_INLINE_VISIBILITY pointer allocate(size_type __n, allocator<void>::const_pointer = 0)
+    _LIBCUDACXX_HIDE_FROM_ABI pointer allocate(size_type __n, allocator<void>::const_pointer = 0)
     {
         if (__n > max_size())
             __throw_length_error("allocator<const T>::allocate(size_t n)"
                                  " 'n' exceeds maximum supported size");
         return static_cast<pointer>(_CUDA_VSTD::__libcpp_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
     }
-    _LIBCUDACXX_INLINE_VISIBILITY void deallocate(pointer __p, size_type __n) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void deallocate(pointer __p, size_type __n) noexcept
         {_CUDA_VSTD::__libcpp_deallocate((void*) const_cast<_Tp *>(__p), __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));}
-    _LIBCUDACXX_INLINE_VISIBILITY size_type max_size() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI size_type max_size() const noexcept
         {return size_type(~0) / sizeof(_Tp);}
 #if !defined(_LIBCUDACXX_HAS_NO_RVALUE_REFERENCES) && !defined(_LIBCUDACXX_HAS_NO_VARIADICS)
     template <class _Up, class... _Args>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(_Up* __p, _Args&&... __args)
         {
             ::new((void*)__p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
         }
 #else  // !defined(_LIBCUDACXX_HAS_NO_RVALUE_REFERENCES) && !defined(_LIBCUDACXX_HAS_NO_VARIADICS)
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p)
         {
@@ -1654,14 +1654,14 @@ public:
 # if defined(_LIBCUDACXX_HAS_NO_RVALUE_REFERENCES)
 
     template <class _A0>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p, _A0& __a0)
         {
             ::new((void*) const_cast<_Tp *>(__p)) _Tp(__a0);
         }
     template <class _A0>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p, const _A0& __a0)
         {
@@ -1669,43 +1669,43 @@ public:
         }
 # endif  // defined(_LIBCUDACXX_HAS_NO_RVALUE_REFERENCES)
     template <class _A0, class _A1>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p, _A0& __a0, _A1& __a1)
         {
             ::new((void*) const_cast<_Tp *>(__p)) _Tp(__a0, __a1);
         }
     template <class _A0, class _A1>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p, const _A0& __a0, _A1& __a1)
         {
             ::new((void*) const_cast<_Tp *>(__p)) _Tp(__a0, __a1);
         }
     template <class _A0, class _A1>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p, _A0& __a0, const _A1& __a1)
         {
             ::new((void*) const_cast<_Tp *>(__p)) _Tp(__a0, __a1);
         }
     template <class _A0, class _A1>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void
         construct(pointer __p, const _A0& __a0, const _A1& __a1)
         {
             ::new((void*) const_cast<_Tp *>(__p)) _Tp(__a0, __a1);
         }
 #endif  // !defined(_LIBCUDACXX_HAS_NO_RVALUE_REFERENCES) && !defined(_LIBCUDACXX_HAS_NO_VARIADICS)
-    _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p) {__p->~_Tp();}
+    _LIBCUDACXX_HIDE_FROM_ABI void destroy(pointer __p) {__p->~_Tp();}
 };
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator==(const allocator<_Tp>&, const allocator<_Up>&) noexcept {return true;}
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator!=(const allocator<_Tp>&, const allocator<_Up>&) noexcept {return false;}
 
 template <class _OutputIterator, class _Tp>
@@ -1719,19 +1719,19 @@ class _LIBCUDACXX_TEMPLATE_VIS raw_storage_iterator
 private:
     _OutputIterator __x_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY explicit raw_storage_iterator(_OutputIterator __x) : __x_(__x) {}
-    _LIBCUDACXX_INLINE_VISIBILITY raw_storage_iterator& operator*() {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY raw_storage_iterator& operator=(const _Tp& __element)
+    _LIBCUDACXX_HIDE_FROM_ABI explicit raw_storage_iterator(_OutputIterator __x) : __x_(__x) {}
+    _LIBCUDACXX_HIDE_FROM_ABI raw_storage_iterator& operator*() {return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI raw_storage_iterator& operator=(const _Tp& __element)
         {::new(_CUDA_VSTD::addressof(*__x_)) _Tp(__element); return *this;}
 #if _LIBCUDACXX_STD_VER >= 14
-    _LIBCUDACXX_INLINE_VISIBILITY raw_storage_iterator& operator=(_Tp&& __element)
+    _LIBCUDACXX_HIDE_FROM_ABI raw_storage_iterator& operator=(_Tp&& __element)
         {::new(_CUDA_VSTD::addressof(*__x_)) _Tp(_CUDA_VSTD::move(__element)); return *this;}
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY raw_storage_iterator& operator++() {++__x_; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY raw_storage_iterator  operator++(int)
+    _LIBCUDACXX_HIDE_FROM_ABI raw_storage_iterator& operator++() {++__x_; return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI raw_storage_iterator  operator++(int)
         {raw_storage_iterator __t(*this); ++__x_; return __t;}
 #if _LIBCUDACXX_STD_VER >= 14
-    _LIBCUDACXX_INLINE_VISIBILITY _OutputIterator base() const { return __x_; }
+    _LIBCUDACXX_HIDE_FROM_ABI _OutputIterator base() const { return __x_; }
 #endif
 };
 
@@ -1781,7 +1781,7 @@ get_temporary_buffer(ptrdiff_t __n) noexcept
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void return_temporary_buffer(_Tp* __p) noexcept
 {
   _CUDA_VSTD::__libcpp_deallocate_unsized((void*)__p, _LIBCUDACXX_ALIGNOF(_Tp));
@@ -1802,39 +1802,39 @@ private:
 public:
     typedef _Tp element_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY explicit auto_ptr(_Tp* __p = 0) throw() : __ptr_(__p) {}
-    _LIBCUDACXX_INLINE_VISIBILITY auto_ptr(auto_ptr& __p) throw() : __ptr_(__p.release()) {}
-    template<class _Up> _LIBCUDACXX_INLINE_VISIBILITY auto_ptr(auto_ptr<_Up>& __p) throw()
+    _LIBCUDACXX_HIDE_FROM_ABI explicit auto_ptr(_Tp* __p = 0) throw() : __ptr_(__p) {}
+    _LIBCUDACXX_HIDE_FROM_ABI auto_ptr(auto_ptr& __p) throw() : __ptr_(__p.release()) {}
+    template<class _Up> _LIBCUDACXX_HIDE_FROM_ABI auto_ptr(auto_ptr<_Up>& __p) throw()
         : __ptr_(__p.release()) {}
-    _LIBCUDACXX_INLINE_VISIBILITY auto_ptr& operator=(auto_ptr& __p) throw()
+    _LIBCUDACXX_HIDE_FROM_ABI auto_ptr& operator=(auto_ptr& __p) throw()
         {reset(__p.release()); return *this;}
-    template<class _Up> _LIBCUDACXX_INLINE_VISIBILITY auto_ptr& operator=(auto_ptr<_Up>& __p) throw()
+    template<class _Up> _LIBCUDACXX_HIDE_FROM_ABI auto_ptr& operator=(auto_ptr<_Up>& __p) throw()
         {reset(__p.release()); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY auto_ptr& operator=(auto_ptr_ref<_Tp> __p) throw()
+    _LIBCUDACXX_HIDE_FROM_ABI auto_ptr& operator=(auto_ptr_ref<_Tp> __p) throw()
         {reset(__p.__ptr_); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY ~auto_ptr() throw() {delete __ptr_;}
+    _LIBCUDACXX_HIDE_FROM_ABI ~auto_ptr() throw() {delete __ptr_;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _Tp& operator*() const throw()
+    _LIBCUDACXX_HIDE_FROM_ABI _Tp& operator*() const throw()
         {return *__ptr_;}
-    _LIBCUDACXX_INLINE_VISIBILITY _Tp* operator->() const throw() {return __ptr_;}
-    _LIBCUDACXX_INLINE_VISIBILITY _Tp* get() const throw() {return __ptr_;}
-    _LIBCUDACXX_INLINE_VISIBILITY _Tp* release() throw()
+    _LIBCUDACXX_HIDE_FROM_ABI _Tp* operator->() const throw() {return __ptr_;}
+    _LIBCUDACXX_HIDE_FROM_ABI _Tp* get() const throw() {return __ptr_;}
+    _LIBCUDACXX_HIDE_FROM_ABI _Tp* release() throw()
     {
         _Tp* __t = __ptr_;
         __ptr_ = 0;
         return __t;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY void reset(_Tp* __p = 0) throw()
+    _LIBCUDACXX_HIDE_FROM_ABI void reset(_Tp* __p = 0) throw()
     {
         if (__ptr_ != __p)
             delete __ptr_;
         __ptr_ = __p;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY auto_ptr(auto_ptr_ref<_Tp> __p) throw() : __ptr_(__p.__ptr_) {}
-    template<class _Up> _LIBCUDACXX_INLINE_VISIBILITY operator auto_ptr_ref<_Up>() throw()
+    _LIBCUDACXX_HIDE_FROM_ABI auto_ptr(auto_ptr_ref<_Tp> __p) throw() : __ptr_(__p.__ptr_) {}
+    template<class _Up> _LIBCUDACXX_HIDE_FROM_ABI operator auto_ptr_ref<_Up>() throw()
         {auto_ptr_ref<_Up> __t; __t.__ptr_ = release(); return __t;}
-    template<class _Up> _LIBCUDACXX_INLINE_VISIBILITY operator auto_ptr<_Up>() throw()
+    template<class _Up> _LIBCUDACXX_HIDE_FROM_ABI operator auto_ptr<_Up>() throw()
         {return auto_ptr<_Up>(release());}
 };
 
@@ -1854,12 +1854,12 @@ struct __compressed_pair_elem {
   typedef _Tp& reference;
   typedef const _Tp& const_reference;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __compressed_pair_elem() : __value_() {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __compressed_pair_elem() : __value_() {}
 
   template <class _Up, class = typename enable_if<
       !is_same<__compressed_pair_elem, __decay_t<_Up>>::value
   >::type>
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr explicit
   __compressed_pair_elem(_Up&& __u)
       : __value_(_CUDA_VSTD::forward<_Up>(__u))
@@ -1867,13 +1867,13 @@ struct __compressed_pair_elem {
     }
 
   template <class... _Args, size_t... _Indexes>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
   __compressed_pair_elem(piecewise_construct_t, tuple<_Args...> __args,
                          __tuple_indices<_Indexes...>)
       : __value_(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indexes>(__args))...) {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY reference __get() noexcept { return __value_; }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI reference __get() noexcept { return __value_; }
+  _LIBCUDACXX_HIDE_FROM_ABI
   const_reference __get() const noexcept { return __value_; }
 
 private:
@@ -1887,25 +1887,25 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp {
   typedef const _Tp& const_reference;
   typedef _Tp __value_type;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __compressed_pair_elem() = default;
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __compressed_pair_elem() = default;
 
   template <class _Up, class = typename enable_if<
         !is_same<__compressed_pair_elem, __decay_t<_Up>>::value
   >::type>
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr explicit
   __compressed_pair_elem(_Up&& __u)
       : __value_type(_CUDA_VSTD::forward<_Up>(__u))
   {}
 
   template <class... _Args, size_t... _Indexes>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
   __compressed_pair_elem(piecewise_construct_t, tuple<_Args...> __args,
                          __tuple_indices<_Indexes...>)
       : __value_type(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indexes>(__args))...) {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY reference __get() noexcept { return *this; }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI reference __get() noexcept { return *this; }
+  _LIBCUDACXX_HIDE_FROM_ABI
   const_reference __get() const noexcept { return *this; }
 };
 
@@ -1934,28 +1934,28 @@ public:
           __dependent_type<is_default_constructible<_T2>, _Dummy>::value
       >::type
   >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr __compressed_pair() {}
 
   template <class _Tp, typename enable_if<!is_same<__decay_t<_Tp>,
                                                    __compressed_pair>::value,
                                           bool>::type = true>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit
   __compressed_pair(_Tp&& __t)
       : _Base1(std::forward<_Tp>(__t)), _Base2() {}
 
   template <class _Tp>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr
   __compressed_pair(__second_tag, _Tp&& __t)
       : _Base1(), _Base2(std::forward<_Tp>(__t)) {}
 
   template <class _U1, class _U2>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr
   __compressed_pair(_U1&& __t1, _U2&& __t2)
       : _Base1(std::forward<_U1>(__t1)), _Base2(std::forward<_U2>(__t2)) {}
 
   template <class... _Args1, class... _Args2>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
   __compressed_pair(piecewise_construct_t __pc, tuple<_Args1...> __first_args,
                     tuple<_Args2...> __second_args)
       : _Base1(__pc, _CUDA_VSTD::move(__first_args),
@@ -1963,27 +1963,27 @@ public:
         _Base2(__pc, _CUDA_VSTD::move(__second_args),
                typename __make_tuple_indices<sizeof...(_Args2)>::type()) {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   typename _Base1::reference first() noexcept {
     return static_cast<_Base1&>(*this).__get();
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   typename _Base1::const_reference first() const noexcept {
     return static_cast<_Base1 const&>(*this).__get();
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   typename _Base2::reference second() noexcept {
     return static_cast<_Base2&>(*this).__get();
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   typename _Base2::const_reference second() const noexcept {
     return static_cast<_Base2 const&>(*this).__get();
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void swap(__compressed_pair& __x)
     noexcept(__is_nothrow_swappable<_T1>::value &&
                __is_nothrow_swappable<_T2>::value)
@@ -1995,7 +1995,7 @@ public:
 };
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void swap(__compressed_pair<_T1, _T2>& __x, __compressed_pair<_T1, _T2>& __y)
     noexcept(__is_nothrow_swappable<_T1>::value &&
                __is_nothrow_swappable<_T2>::value) {
@@ -2008,15 +2008,15 @@ template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS default_delete {
     static_assert(!is_function<_Tp>::value,
                   "default_delete cannot be instantiated for function types");
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr default_delete() noexcept = default;
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr default_delete() noexcept = default;
 
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   default_delete(const default_delete<_Up>&,
                  typename enable_if<is_convertible<_Up*, _Tp*>::value>::type* =
                      0) noexcept {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY void operator()(_Tp* __ptr) const noexcept {
+  _LIBCUDACXX_HIDE_FROM_ABI void operator()(_Tp* __ptr) const noexcept {
     static_assert(sizeof(_Tp) > 0,
                   "default_delete can not delete incomplete type");
     static_assert(!is_void<_Tp>::value,
@@ -2033,15 +2033,15 @@ private:
       : enable_if<is_convertible<_Up(*)[], _Tp(*)[]>::value> {};
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr default_delete() noexcept = default;
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr default_delete() noexcept = default;
 
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   default_delete(const default_delete<_Up[]>&,
                  typename _EnableIfConvertible<_Up>::type* = 0) noexcept {}
 
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   typename _EnableIfConvertible<_Up>::type
   operator()(_Up* __ptr) const noexcept {
     static_assert(sizeof(_Tp) > 0,
@@ -2133,28 +2133,28 @@ private:
 public:
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr unique_ptr() noexcept : __ptr_(pointer()) {}
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr unique_ptr(nullptr_t) noexcept : __ptr_(pointer()) {}
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   explicit unique_ptr(pointer __p) noexcept : __ptr_(__p) {}
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterConstructible<_LValRefType<_Dummy> > >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(pointer __p, _LValRefType<_Dummy> __d) noexcept
       : __ptr_(__p, __d) {}
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterConstructible<_GoodRValRefType<_Dummy> > >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(pointer __p, _GoodRValRefType<_Dummy> __d) noexcept
       : __ptr_(__p, _CUDA_VSTD::move(__d)) {
     static_assert(!is_reference<deleter_type>::value,
@@ -2163,10 +2163,10 @@ public:
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterConstructible<_BadRValRefType<_Dummy> > >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(pointer __p, _BadRValRefType<_Dummy> __d) = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(unique_ptr&& __u) noexcept
       : __ptr_(__u.release(), _CUDA_VSTD::forward<deleter_type>(__u.get_deleter())) {
   }
@@ -2175,13 +2175,13 @@ public:
       class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
       class = _EnableIfDeleterConvertible<_Ep>
   >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
       : __ptr_(__u.release(), _CUDA_VSTD::forward<_Ep>(__u.get_deleter())) {}
 
 #if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(auto_ptr<_Up>&& __p,
              typename enable_if<is_convertible<_Up*, _Tp*>::value &&
                                     is_same<_Dp, default_delete<_Tp> >::value,
@@ -2189,7 +2189,7 @@ public:
       : __ptr_(__p.release()) {}
 #endif
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr& operator=(unique_ptr&& __u) noexcept {
     reset(__u.release());
     __ptr_.second() = _CUDA_VSTD::forward<deleter_type>(__u.get_deleter());
@@ -2200,7 +2200,7 @@ public:
       class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
       class = _EnableIfDeleterAssignable<_Ep>
   >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr& operator=(unique_ptr<_Up, _Ep>&& __u) noexcept {
     reset(__u.release());
     __ptr_.second() = _CUDA_VSTD::forward<_Ep>(__u.get_deleter());
@@ -2209,7 +2209,7 @@ public:
 
 #if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
       typename enable_if<is_convertible<_Up*, _Tp*>::value &&
                              is_same<_Dp, default_delete<_Tp> >::value,
                          unique_ptr&>::type
@@ -2219,49 +2219,49 @@ public:
   }
 #endif
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   ~unique_ptr() { reset(); }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr& operator=(nullptr_t) noexcept {
     reset();
     return *this;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   __add_lvalue_reference_t<_Tp>
   operator*() const {
     return *__ptr_.first();
   }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   pointer operator->() const noexcept {
     return __ptr_.first();
   }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   pointer get() const noexcept {
     return __ptr_.first();
   }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   deleter_type& get_deleter() noexcept {
     return __ptr_.second();
   }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   const deleter_type& get_deleter() const noexcept {
     return __ptr_.second();
   }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   _LIBCUDACXX_EXPLICIT operator bool() const noexcept {
     return __ptr_.first() != nullptr;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   pointer release() noexcept {
     pointer __t = __ptr_.first();
     __ptr_.first() = pointer();
     return __t;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void reset(pointer __p = pointer()) noexcept {
     pointer __tmp = __ptr_.first();
     __ptr_.first() = __p;
@@ -2269,7 +2269,7 @@ public:
       __ptr_.second()(__tmp);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void swap(unique_ptr& __u) noexcept {
     __ptr_.swap(__u.__ptr_);
   }
@@ -2350,38 +2350,38 @@ private:
 public:
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr unique_ptr() noexcept : __ptr_(pointer()) {}
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy> >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr unique_ptr(nullptr_t) noexcept : __ptr_(pointer()) {}
 
   template <class _Pp, bool _Dummy = true,
             class = _EnableIfDeleterDefaultConstructible<_Dummy>,
             class = _EnableIfPointerConvertible<_Pp> >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   explicit unique_ptr(_Pp __p) noexcept
       : __ptr_(__p) {}
 
   template <class _Pp, bool _Dummy = true,
             class = _EnableIfDeleterConstructible<_LValRefType<_Dummy> >,
             class = _EnableIfPointerConvertible<_Pp> >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(_Pp __p, _LValRefType<_Dummy> __d) noexcept
       : __ptr_(__p, __d) {}
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterConstructible<_LValRefType<_Dummy> > >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(nullptr_t, _LValRefType<_Dummy> __d) noexcept
       : __ptr_(nullptr, __d) {}
 
   template <class _Pp, bool _Dummy = true,
             class = _EnableIfDeleterConstructible<_GoodRValRefType<_Dummy> >,
             class = _EnableIfPointerConvertible<_Pp> >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(_Pp __p, _GoodRValRefType<_Dummy> __d) noexcept
       : __ptr_(__p, _CUDA_VSTD::move(__d)) {
     static_assert(!is_reference<deleter_type>::value,
@@ -2390,7 +2390,7 @@ public:
 
   template <bool _Dummy = true,
             class = _EnableIfDeleterConstructible<_GoodRValRefType<_Dummy> > >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(nullptr_t, _GoodRValRefType<_Dummy> __d) noexcept
       : __ptr_(nullptr, _CUDA_VSTD::move(__d)) {
     static_assert(!is_reference<deleter_type>::value,
@@ -2400,15 +2400,15 @@ public:
   template <class _Pp, bool _Dummy = true,
             class = _EnableIfDeleterConstructible<_BadRValRefType<_Dummy> >,
             class = _EnableIfPointerConvertible<_Pp> >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(_Pp __p, _BadRValRefType<_Dummy> __d) = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(unique_ptr&& __u) noexcept
       : __ptr_(__u.release(), _CUDA_VSTD::forward<deleter_type>(__u.get_deleter())) {
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr& operator=(unique_ptr&& __u) noexcept {
     reset(__u.release());
     __ptr_.second() = _CUDA_VSTD::forward<deleter_type>(__u.get_deleter());
@@ -2419,7 +2419,7 @@ public:
       class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
       class = _EnableIfDeleterConvertible<_Ep>
   >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
       : __ptr_(__u.release(), _CUDA_VSTD::forward<_Ep>(__u.get_deleter())) {
   }
@@ -2428,7 +2428,7 @@ public:
       class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
       class = _EnableIfDeleterAssignable<_Ep>
   >
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr&
   operator=(unique_ptr<_Up, _Ep>&& __u) noexcept {
     reset(__u.release());
@@ -2437,40 +2437,40 @@ public:
   }
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   ~unique_ptr() { reset(); }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   unique_ptr& operator=(nullptr_t) noexcept {
     reset();
     return *this;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   __add_lvalue_reference_t<_Tp>
   operator[](size_t __i) const {
     return __ptr_.first()[__i];
   }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   pointer get() const noexcept {
     return __ptr_.first();
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   deleter_type& get_deleter() noexcept {
     return __ptr_.second();
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   const deleter_type& get_deleter() const noexcept {
     return __ptr_.second();
   }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   _LIBCUDACXX_EXPLICIT operator bool() const noexcept {
     return __ptr_.first() != nullptr;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   pointer release() noexcept {
     pointer __t = __ptr_.first();
     __ptr_.first() = pointer();
@@ -2478,7 +2478,7 @@ public:
   }
 
   template <class _Pp>
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   typename enable_if<
       _CheckArrayPointerConversion<_Pp>::value
   >::type
@@ -2489,7 +2489,7 @@ public:
       __ptr_.second()(__tmp);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void reset(nullptr_t = nullptr) noexcept {
     pointer __tmp = __ptr_.first();
     __ptr_.first() = nullptr;
@@ -2497,7 +2497,7 @@ public:
       __ptr_.second()(__tmp);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   void swap(unique_ptr& __u) noexcept {
     __ptr_.swap(__u.__ptr_);
   }
@@ -2505,7 +2505,7 @@ public:
 };
 
 template <class _Tp, class _Dp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename enable_if<
     __is_swappable<_Dp>::value,
     void
@@ -2513,17 +2513,17 @@ typename enable_if<
 swap(unique_ptr<_Tp, _Dp>& __x, unique_ptr<_Tp, _Dp>& __y) noexcept {__x.swap(__y);}
 
 template <class _T1, class _Dest1, class _T2, class _Dest2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator==(const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __y) {return __x.get() == __y.get();}
 
 template <class _T1, class _Dest1, class _T2, class _Dest2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __y) {return !(__x == __y);}
 
 template <class _T1, class _Dest1, class _T2, class _Dest2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator< (const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __y)
 {
@@ -2534,22 +2534,22 @@ operator< (const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __
 }
 
 template <class _T1, class _Dest1, class _T2, class _Dest2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator> (const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __y) {return __y < __x;}
 
 template <class _T1, class _Dest1, class _T2, class _Dest2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<=(const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __y) {return !(__y < __x);}
 
 template <class _T1, class _Dest1, class _T2, class _Dest2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>=(const unique_ptr<_T1, _Dest1>& __x, const unique_ptr<_T2, _Dest2>& __y) {return !(__x < __y);}
 
 template <class _T1, class _Dest1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator==(const unique_ptr<_T1, _Dest1>& __x, nullptr_t) noexcept
 {
@@ -2557,7 +2557,7 @@ operator==(const unique_ptr<_T1, _Dest1>& __x, nullptr_t) noexcept
 }
 
 template <class _T1, class _Dest1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator==(nullptr_t, const unique_ptr<_T1, _Dest1>& __x) noexcept
 {
@@ -2565,7 +2565,7 @@ operator==(nullptr_t, const unique_ptr<_T1, _Dest1>& __x) noexcept
 }
 
 template <class _T1, class _Dest1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(const unique_ptr<_T1, _Dest1>& __x, nullptr_t) noexcept
 {
@@ -2573,7 +2573,7 @@ operator!=(const unique_ptr<_T1, _Dest1>& __x, nullptr_t) noexcept
 }
 
 template <class _T1, class _Dest1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(nullptr_t, const unique_ptr<_T1, _Dest1>& __x) noexcept
 {
@@ -2581,7 +2581,7 @@ operator!=(nullptr_t, const unique_ptr<_T1, _Dest1>& __x) noexcept
 }
 
 template <class _T1, class _Dest1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<(const unique_ptr<_T1, _Dest1>& __x, nullptr_t)
 {
@@ -2590,7 +2590,7 @@ operator<(const unique_ptr<_T1, _Dest1>& __x, nullptr_t)
 }
 
 template <class _T1, class _Dest1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<(nullptr_t, const unique_ptr<_T1, _Dest1>& __x)
 {
@@ -2599,7 +2599,7 @@ operator<(nullptr_t, const unique_ptr<_T1, _Dest1>& __x)
 }
 
 template <class _T1, class _Dest1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>(const unique_ptr<_T1, _Dest1>& __x, nullptr_t)
 {
@@ -2607,7 +2607,7 @@ operator>(const unique_ptr<_T1, _Dest1>& __x, nullptr_t)
 }
 
 template <class _T1, class _Dest1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>(nullptr_t, const unique_ptr<_T1, _Dest1>& __x)
 {
@@ -2615,7 +2615,7 @@ operator>(nullptr_t, const unique_ptr<_T1, _Dest1>& __x)
 }
 
 template <class _T1, class _Dest1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<=(const unique_ptr<_T1, _Dest1>& __x, nullptr_t)
 {
@@ -2623,7 +2623,7 @@ operator<=(const unique_ptr<_T1, _Dest1>& __x, nullptr_t)
 }
 
 template <class _T1, class _Dest1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<=(nullptr_t, const unique_ptr<_T1, _Dest1>& __x)
 {
@@ -2631,7 +2631,7 @@ operator<=(nullptr_t, const unique_ptr<_T1, _Dest1>& __x)
 }
 
 template <class _T1, class _Dest1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>=(const unique_ptr<_T1, _Dest1>& __x, nullptr_t)
 {
@@ -2639,7 +2639,7 @@ operator>=(const unique_ptr<_T1, _Dest1>& __x, nullptr_t)
 }
 
 template <class _T1, class _Dest1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>=(nullptr_t, const unique_ptr<_T1, _Dest1>& __x)
 {
@@ -2667,7 +2667,7 @@ struct __unique_if<_Tp[_Np]>
 };
 
 template<class _Tp, class... _Args>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename __unique_if<_Tp>::__unique_single
 make_unique(_Args&&... __args)
 {
@@ -2675,7 +2675,7 @@ make_unique(_Args&&... __args)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename __unique_if<_Tp>::__unique_array_unknown_bound
 make_unique(size_t __n)
 {
@@ -2695,7 +2695,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<__enable_hash_helper<
 {
     typedef unique_ptr<_Tp, _Dp> argument_type;
     typedef size_t               result_type;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     result_type operator()(const argument_type& __ptr) const
     {
         typedef typename argument_type::pointer pointer;
@@ -2709,36 +2709,36 @@ private:
     size_t __size_;
 
     template <class _Tp>
-    _LIBCUDACXX_INLINE_VISIBILITY void __process(_Tp* __p, false_type) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void __process(_Tp* __p, false_type) noexcept
         {for (size_t __i = 0; __i < __size_; ++__i, ++__p) __p->~_Tp();}
 
     template <class _Tp>
-    _LIBCUDACXX_INLINE_VISIBILITY void __process(_Tp*, true_type) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void __process(_Tp*, true_type) noexcept
         {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY void __incr(false_type) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void __incr(false_type) noexcept
         {++__size_;}
-    _LIBCUDACXX_INLINE_VISIBILITY void __incr(true_type) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void __incr(true_type) noexcept
         {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY void __set(size_t __s, false_type) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void __set(size_t __s, false_type) noexcept
         {__size_ = __s;}
-    _LIBCUDACXX_INLINE_VISIBILITY void __set(size_t, true_type) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void __set(size_t, true_type) noexcept
         {}
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY explicit __destruct_n(size_t __s) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI explicit __destruct_n(size_t __s) noexcept
         : __size_(__s) {}
 
     template <class _Tp>
-    _LIBCUDACXX_INLINE_VISIBILITY void __incr(_Tp*) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void __incr(_Tp*) noexcept
         {__incr(integral_constant<bool, is_trivially_destructible<_Tp>::value>());}
 
     template <class _Tp>
-    _LIBCUDACXX_INLINE_VISIBILITY void __set(size_t __s, _Tp*) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void __set(size_t __s, _Tp*) noexcept
         {__set(__s, integral_constant<bool, is_trivially_destructible<_Tp>::value>());}
 
     template <class _Tp>
-    _LIBCUDACXX_INLINE_VISIBILITY void operator()(_Tp* __p) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void operator()(_Tp* __p) noexcept
         {__process(__p, integral_constant<bool, is_trivially_destructible<_Tp>::value>());}
 };
 
@@ -2753,10 +2753,10 @@ private:
     _Alloc& __alloc_;
     size_type __s_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY __allocator_destructor(_Alloc& __a, size_type __s)
+    _LIBCUDACXX_HIDE_FROM_ABI __allocator_destructor(_Alloc& __a, size_type __s)
              noexcept
         : __alloc_(__a), __s_(__s) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void operator()(pointer __p) noexcept
         {__alloc_traits::deallocate(__alloc_, __p, __s_);}
 };
@@ -2859,7 +2859,7 @@ uninitialized_fill_n(_ForwardIterator __f, _Size __n, const _Tp& __x)
 #if _LIBCUDACXX_STD_VER > 14
 
 template <class _ForwardIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void uninitialized_default_construct(_ForwardIterator __first, _ForwardIterator __last) {
     using _Vt = typename iterator_traits<_ForwardIterator>::value_type;
     auto __idx = __first;
@@ -2877,7 +2877,7 @@ void uninitialized_default_construct(_ForwardIterator __first, _ForwardIterator 
 }
 
 template <class _ForwardIterator, class _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _ForwardIterator uninitialized_default_construct_n(_ForwardIterator __first, _Size __n) {
     using _Vt = typename iterator_traits<_ForwardIterator>::value_type;
     auto __idx = __first;
@@ -2897,7 +2897,7 @@ _ForwardIterator uninitialized_default_construct_n(_ForwardIterator __first, _Si
 
 
 template <class _ForwardIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void uninitialized_value_construct(_ForwardIterator __first, _ForwardIterator __last) {
     using _Vt = typename iterator_traits<_ForwardIterator>::value_type;
     auto __idx = __first;
@@ -2915,7 +2915,7 @@ void uninitialized_value_construct(_ForwardIterator __first, _ForwardIterator __
 }
 
 template <class _ForwardIterator, class _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _ForwardIterator uninitialized_value_construct_n(_ForwardIterator __first, _Size __n) {
     using _Vt = typename iterator_traits<_ForwardIterator>::value_type;
     auto __idx = __first;
@@ -2935,7 +2935,7 @@ _ForwardIterator uninitialized_value_construct_n(_ForwardIterator __first, _Size
 
 
 template <class _InputIt, class _ForwardIt>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _ForwardIt uninitialized_move(_InputIt __first, _InputIt __last, _ForwardIt __first_res) {
     using _Vt = typename iterator_traits<_ForwardIt>::value_type;
     auto __idx = __first_res;
@@ -2954,7 +2954,7 @@ _ForwardIt uninitialized_move(_InputIt __first, _InputIt __last, _ForwardIt __fi
 }
 
 template <class _InputIt, class _Size, class _ForwardIt>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 pair<_InputIt, _ForwardIt>
 uninitialized_move_n(_InputIt __first, _Size __n, _ForwardIt __first_res) {
     using _Vt = typename iterator_traits<_ForwardIt>::value_type;
@@ -2989,7 +2989,7 @@ uninitialized_move_n(_InputIt __first, _Size __n, _ForwardIt __first_res) {
 #endif
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _Tp
+_LIBCUDACXX_HIDE_FROM_ABI _Tp
 __libcpp_atomic_refcount_increment(_Tp& __t) noexcept
 {
 #if defined(_LIBCUDACXX_HAS_BUILTIN_ATOMIC_SUPPORT) && !defined(_LIBCUDACXX_HAS_NO_THREADS)
@@ -3000,7 +3000,7 @@ __libcpp_atomic_refcount_increment(_Tp& __t) noexcept
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _Tp
+_LIBCUDACXX_HIDE_FROM_ABI _Tp
 __libcpp_atomic_refcount_decrement(_Tp& __t) noexcept
 {
 #if defined(_LIBCUDACXX_HAS_BUILTIN_ATOMIC_SUPPORT) && !defined(_LIBCUDACXX_HAS_NO_THREADS)
@@ -3018,7 +3018,7 @@ public:
     virtual const char* what() const  noexcept;
 };
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_NORETURN _LIBCUDACXX_HIDE_FROM_ABI
 void __throw_bad_weak_ptr()
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -3042,7 +3042,7 @@ private:
     virtual void __on_zero_shared() noexcept = 0;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __shared_count(long __refs = 0) noexcept
         : __shared_owners_(__refs) {}
 
@@ -3051,11 +3051,11 @@ public:
     void __add_shared() noexcept;
     bool __release_shared() noexcept;
 #else
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __add_shared() noexcept {
       __libcpp_atomic_refcount_increment(__shared_owners_);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool __release_shared() noexcept {
       if (__libcpp_atomic_refcount_decrement(__shared_owners_) == -1) {
         __on_zero_shared();
@@ -3064,7 +3064,7 @@ public:
       return false;
     }
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     long use_count() const noexcept {
         return __libcpp_relaxed_load(&__shared_owners_) + 1;
     }
@@ -3076,7 +3076,7 @@ class _LIBCUDACXX_TYPE_VIS __shared_weak_count
     long __shared_weak_owners_;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __shared_weak_count(long __refs = 0) noexcept
         : __shared_count(__refs),
           __shared_weak_owners_(__refs) {}
@@ -3090,22 +3090,22 @@ public:
     void __add_weak() noexcept;
     void __release_shared() noexcept;
 #else
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __add_shared() noexcept {
       __shared_count::__add_shared();
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __add_weak() noexcept {
       __libcpp_atomic_refcount_increment(__shared_weak_owners_);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __release_shared() noexcept {
       if (__shared_count::__release_shared())
         __release_weak();
     }
 #endif
     void __release_weak() noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     long use_count() const noexcept {return __shared_count::use_count();}
     __shared_weak_count* lock() noexcept;
 
@@ -3126,7 +3126,7 @@ class __shared_ptr_pointer
 {
     __compressed_pair<__compressed_pair<_Tp, _Dp>, _Alloc> __data_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __shared_ptr_pointer(_Tp __p, _Dp __d, _Alloc __a)
         :  __data_(__compressed_pair<_Tp, _Dp>(__p, _CUDA_VSTD::move(__d)), _CUDA_VSTD::move(__a)) {}
 
@@ -3179,34 +3179,34 @@ class __shared_ptr_emplace
 public:
 #ifndef _LIBCUDACXX_HAS_NO_VARIADICS
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __shared_ptr_emplace(_Alloc __a)
         :  __data_(_CUDA_VSTD::move(__a)) {}
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         __shared_ptr_emplace(_Alloc __a, _Args&& ...__args)
             :  __data_(piecewise_construct, _CUDA_VSTD::forward_as_tuple(__a),
                    _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Args>(__args)...)) {}
 
 #else  // _LIBCUDACXX_HAS_NO_VARIADICS
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __shared_ptr_emplace(_Alloc __a)
         :  __data_(__a) {}
 
     template <class _A0>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         __shared_ptr_emplace(_Alloc __a, _A0& __a0)
             :  __data_(__a, _Tp(__a0)) {}
 
     template <class _A0, class _A1>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         __shared_ptr_emplace(_Alloc __a, _A0& __a0, _A1& __a1)
             :  __data_(__a, _Tp(__a0, __a1)) {}
 
     template <class _A0, class _A1, class _A2>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         __shared_ptr_emplace(_Alloc __a, _A0& __a0, _A1& __a1, _A2& __a2)
             :  __data_(__a, _Tp(__a0, __a1, __a2)) {}
 
@@ -3216,7 +3216,7 @@ private:
     virtual void __on_zero_shared() noexcept;
     virtual void __on_zero_shared_weak() noexcept;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _Tp* get() noexcept {return _CUDA_VSTD::addressof(__data_.second());}
 };
 
@@ -3268,9 +3268,9 @@ private:
 
     struct __nat {int __for_bool_;};
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr shared_ptr() noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr shared_ptr(nullptr_t) noexcept;
     template<class _Yp>
         explicit shared_ptr(_Yp* __p,
@@ -3283,18 +3283,18 @@ public:
                    typename enable_if<is_convertible<_Yp*, element_type*>::value, __nat>::type = __nat());
     template <class _Dp> shared_ptr(nullptr_t __p, _Dp __d);
     template <class _Dp, class _Alloc> shared_ptr(nullptr_t __p, _Dp __d, _Alloc __a);
-    template<class _Yp> _LIBCUDACXX_INLINE_VISIBILITY shared_ptr(const shared_ptr<_Yp>& __r, element_type* __p) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    template<class _Yp> _LIBCUDACXX_HIDE_FROM_ABI shared_ptr(const shared_ptr<_Yp>& __r, element_type* __p) noexcept;
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_ptr(const shared_ptr& __r) noexcept;
     template<class _Yp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         shared_ptr(const shared_ptr<_Yp>& __r,
                    typename enable_if<is_convertible<_Yp*, element_type*>::value, __nat>::type = __nat())
                        noexcept;
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_ptr(shared_ptr&& __r) noexcept;
-    template<class _Yp> _LIBCUDACXX_INLINE_VISIBILITY  shared_ptr(shared_ptr<_Yp>&& __r,
+    template<class _Yp> _LIBCUDACXX_HIDE_FROM_ABI  shared_ptr(shared_ptr<_Yp>&& __r,
                    typename enable_if<is_convertible<_Yp*, element_type*>::value, __nat>::type = __nat())
                        noexcept;
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
@@ -3353,7 +3353,7 @@ public:
 
     ~shared_ptr();
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_ptr& operator=(const shared_ptr& __r) noexcept;
     template<class _Yp>
         typename enable_if
@@ -3361,10 +3361,10 @@ public:
             is_convertible<_Yp*, element_type*>::value,
             shared_ptr&
         >::type
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         operator=(const shared_ptr<_Yp>& __r) noexcept;
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_ptr& operator=(shared_ptr&& __r) noexcept;
     template<class _Yp>
         typename enable_if
@@ -3372,11 +3372,11 @@ public:
             is_convertible<_Yp*, element_type*>::value,
             shared_ptr<_Tp>&
         >::type
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         operator=(shared_ptr<_Yp>&& __r);
 #if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
     template<class _Yp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         typename enable_if
         <
             !is_array<_Yp>::value &&
@@ -3388,7 +3388,7 @@ public:
 #else  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 #if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
     template<class _Yp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         typename enable_if
         <
             !is_array<_Yp>::value &&
@@ -3406,16 +3406,16 @@ public:
             shared_ptr&
         >::type
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         operator=(unique_ptr<_Yp, _Dp>&& __r);
 #else  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         operator=(unique_ptr<_Yp, _Dp> __r);
 #endif
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(shared_ptr& __r) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void reset() noexcept;
     template<class _Yp>
         typename enable_if
@@ -3423,7 +3423,7 @@ public:
             is_convertible<_Yp*, element_type*>::value,
             void
         >::type
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         reset(_Yp* __p);
     template<class _Yp, class _Dp>
         typename enable_if
@@ -3431,7 +3431,7 @@ public:
             is_convertible<_Yp*, element_type*>::value,
             void
         >::type
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         reset(_Yp* __p, _Dp __d);
     template<class _Yp, class _Dp, class _Alloc>
         typename enable_if
@@ -3439,38 +3439,38 @@ public:
             is_convertible<_Yp*, element_type*>::value,
             void
         >::type
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         reset(_Yp* __p, _Dp __d, _Alloc __a);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     element_type* get() const noexcept {return __ptr_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __add_lvalue_reference_t<element_type> operator*() const noexcept
         {return *__ptr_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     element_type* operator->() const noexcept {return __ptr_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     long use_count() const noexcept {return __cntrl_ ? __cntrl_->use_count() : 0;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool unique() const noexcept {return use_count() == 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _LIBCUDACXX_EXPLICIT operator bool() const noexcept {return get() != 0;}
     template <class _Up>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         bool owner_before(shared_ptr<_Up> const& __p) const noexcept
         {return __cntrl_ < __p.__cntrl_;}
     template <class _Up>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         bool owner_before(weak_ptr<_Up> const& __p) const noexcept
         {return __cntrl_ < __p.__cntrl_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool
     __owner_equivalent(const shared_ptr& __p) const
         {return __cntrl_ == __p.__cntrl_;}
 
 #ifndef _LIBCUDACXX_NO_RTTI
     template <class _Dp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         _Dp* __get_deleter() const noexcept
             {return static_cast<_Dp*>(__cntrl_
                     ? const_cast<void *>(__cntrl_->__get_deleter(typeid(_Dp)))
@@ -3501,7 +3501,7 @@ private:
         };
 
     template <class _Yp, class _OrigPtr>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         typename enable_if<is_convertible<_OrigPtr*,
                                           const enable_shared_from_this<_Yp>*
         >::value,
@@ -3517,7 +3517,7 @@ private:
             }
         }
 
-    _LIBCUDACXX_INLINE_VISIBILITY void __enable_weak_this(...) noexcept {}
+    _LIBCUDACXX_HIDE_FROM_ABI void __enable_weak_this(...) noexcept {}
 
     template <class _Up> friend class _LIBCUDACXX_TEMPLATE_VIS shared_ptr;
     template <class _Up> friend class _LIBCUDACXX_TEMPLATE_VIS weak_ptr;
@@ -3929,7 +3929,7 @@ shared_ptr<_Tp>::operator=(unique_ptr<_Yp, _Dp>&& __r)
 #if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
 template<class _Tp>
 template<class _Yp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename enable_if
 <
     !is_array<_Yp>::value &&
@@ -3945,7 +3945,7 @@ shared_ptr<_Tp>::operator=(auto_ptr<_Yp> __r)
 
 template<class _Tp>
 template <class _Yp, class _Dp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename enable_if
 <
     !is_array<_Yp>::value &&
@@ -4020,7 +4020,7 @@ shared_ptr<_Tp>::reset(_Yp* __p, _Dp __d, _Alloc __a)
 #ifndef _LIBCUDACXX_HAS_NO_VARIADICS
 
 template<class _Tp, class ..._Args>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename enable_if
 <
     !is_array<_Tp>::value,
@@ -4032,7 +4032,7 @@ make_shared(_Args&& ...__args)
 }
 
 template<class _Tp, class _Alloc, class ..._Args>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename enable_if
 <
     !is_array<_Tp>::value,
@@ -4046,7 +4046,7 @@ allocate_shared(const _Alloc& __a, _Args&& ...__args)
 #else  // _LIBCUDACXX_HAS_NO_VARIADICS
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 shared_ptr<_Tp>
 make_shared()
 {
@@ -4054,7 +4054,7 @@ make_shared()
 }
 
 template<class _Tp, class _A0>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 shared_ptr<_Tp>
 make_shared(_A0& __a0)
 {
@@ -4062,7 +4062,7 @@ make_shared(_A0& __a0)
 }
 
 template<class _Tp, class _A0, class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 shared_ptr<_Tp>
 make_shared(_A0& __a0, _A1& __a1)
 {
@@ -4070,7 +4070,7 @@ make_shared(_A0& __a0, _A1& __a1)
 }
 
 template<class _Tp, class _A0, class _A1, class _A2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 shared_ptr<_Tp>
 make_shared(_A0& __a0, _A1& __a1, _A2& __a2)
 {
@@ -4078,7 +4078,7 @@ make_shared(_A0& __a0, _A1& __a1, _A2& __a2)
 }
 
 template<class _Tp, class _Alloc>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 shared_ptr<_Tp>
 allocate_shared(const _Alloc& __a)
 {
@@ -4086,7 +4086,7 @@ allocate_shared(const _Alloc& __a)
 }
 
 template<class _Tp, class _Alloc, class _A0>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 shared_ptr<_Tp>
 allocate_shared(const _Alloc& __a, _A0& __a0)
 {
@@ -4094,7 +4094,7 @@ allocate_shared(const _Alloc& __a, _A0& __a0)
 }
 
 template<class _Tp, class _Alloc, class _A0, class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 shared_ptr<_Tp>
 allocate_shared(const _Alloc& __a, _A0& __a0, _A1& __a1)
 {
@@ -4102,7 +4102,7 @@ allocate_shared(const _Alloc& __a, _A0& __a0, _A1& __a1)
 }
 
 template<class _Tp, class _Alloc, class _A0, class _A1, class _A2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 shared_ptr<_Tp>
 allocate_shared(const _Alloc& __a, _A0& __a0, _A1& __a1, _A2& __a2)
 {
@@ -4112,7 +4112,7 @@ allocate_shared(const _Alloc& __a, _A0& __a0, _A1& __a1, _A2& __a2)
 #endif  // _LIBCUDACXX_HAS_NO_VARIADICS
 
 template<class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator==(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 {
@@ -4120,7 +4120,7 @@ operator==(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 }
 
 template<class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 {
@@ -4128,7 +4128,7 @@ operator!=(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 }
 
 template<class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 {
@@ -4142,7 +4142,7 @@ operator<(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 }
 
 template<class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 {
@@ -4150,7 +4150,7 @@ operator>(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 }
 
 template<class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<=(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 {
@@ -4158,7 +4158,7 @@ operator<=(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 }
 
 template<class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>=(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 {
@@ -4166,7 +4166,7 @@ operator>=(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator==(const shared_ptr<_Tp>& __x, nullptr_t) noexcept
 {
@@ -4174,7 +4174,7 @@ operator==(const shared_ptr<_Tp>& __x, nullptr_t) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator==(nullptr_t, const shared_ptr<_Tp>& __x) noexcept
 {
@@ -4182,7 +4182,7 @@ operator==(nullptr_t, const shared_ptr<_Tp>& __x) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(const shared_ptr<_Tp>& __x, nullptr_t) noexcept
 {
@@ -4190,7 +4190,7 @@ operator!=(const shared_ptr<_Tp>& __x, nullptr_t) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(nullptr_t, const shared_ptr<_Tp>& __x) noexcept
 {
@@ -4198,7 +4198,7 @@ operator!=(nullptr_t, const shared_ptr<_Tp>& __x) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<(const shared_ptr<_Tp>& __x, nullptr_t) noexcept
 {
@@ -4206,7 +4206,7 @@ operator<(const shared_ptr<_Tp>& __x, nullptr_t) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<(nullptr_t, const shared_ptr<_Tp>& __x) noexcept
 {
@@ -4214,7 +4214,7 @@ operator<(nullptr_t, const shared_ptr<_Tp>& __x) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>(const shared_ptr<_Tp>& __x, nullptr_t) noexcept
 {
@@ -4222,7 +4222,7 @@ operator>(const shared_ptr<_Tp>& __x, nullptr_t) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>(nullptr_t, const shared_ptr<_Tp>& __x) noexcept
 {
@@ -4230,7 +4230,7 @@ operator>(nullptr_t, const shared_ptr<_Tp>& __x) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<=(const shared_ptr<_Tp>& __x, nullptr_t) noexcept
 {
@@ -4238,7 +4238,7 @@ operator<=(const shared_ptr<_Tp>& __x, nullptr_t) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<=(nullptr_t, const shared_ptr<_Tp>& __x) noexcept
 {
@@ -4246,7 +4246,7 @@ operator<=(nullptr_t, const shared_ptr<_Tp>& __x) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>=(const shared_ptr<_Tp>& __x, nullptr_t) noexcept
 {
@@ -4254,7 +4254,7 @@ operator>=(const shared_ptr<_Tp>& __x, nullptr_t) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>=(nullptr_t, const shared_ptr<_Tp>& __x) noexcept
 {
@@ -4262,7 +4262,7 @@ operator>=(nullptr_t, const shared_ptr<_Tp>& __x) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(shared_ptr<_Tp>& __x, shared_ptr<_Tp>& __y) noexcept
 {
@@ -4270,7 +4270,7 @@ swap(shared_ptr<_Tp>& __x, shared_ptr<_Tp>& __y) noexcept
 }
 
 template<class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename enable_if
 <
     !is_array<_Tp>::value && !is_array<_Up>::value,
@@ -4282,7 +4282,7 @@ static_pointer_cast(const shared_ptr<_Up>& __r) noexcept
 }
 
 template<class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename enable_if
 <
     !is_array<_Tp>::value && !is_array<_Up>::value,
@@ -4309,7 +4309,7 @@ const_pointer_cast(const shared_ptr<_Up>& __r) noexcept
 #ifndef _LIBCUDACXX_NO_RTTI
 
 template<class _Dp, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Dp*
 get_deleter(const shared_ptr<_Tp>& __p) noexcept
 {
@@ -4328,27 +4328,27 @@ private:
     __shared_weak_count* __cntrl_;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr weak_ptr() noexcept;
-    template<class _Yp> _LIBCUDACXX_INLINE_VISIBILITY weak_ptr(shared_ptr<_Yp> const& __r,
+    template<class _Yp> _LIBCUDACXX_HIDE_FROM_ABI weak_ptr(shared_ptr<_Yp> const& __r,
                    typename enable_if<is_convertible<_Yp*, _Tp*>::value, __nat*>::type = 0)
                         noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     weak_ptr(weak_ptr const& __r) noexcept;
-    template<class _Yp> _LIBCUDACXX_INLINE_VISIBILITY weak_ptr(weak_ptr<_Yp> const& __r,
+    template<class _Yp> _LIBCUDACXX_HIDE_FROM_ABI weak_ptr(weak_ptr<_Yp> const& __r,
                    typename enable_if<is_convertible<_Yp*, _Tp*>::value, __nat*>::type = 0)
                          noexcept;
 
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     weak_ptr(weak_ptr&& __r) noexcept;
-    template<class _Yp> _LIBCUDACXX_INLINE_VISIBILITY weak_ptr(weak_ptr<_Yp>&& __r,
+    template<class _Yp> _LIBCUDACXX_HIDE_FROM_ABI weak_ptr(weak_ptr<_Yp>&& __r,
                    typename enable_if<is_convertible<_Yp*, _Tp*>::value, __nat*>::type = 0)
                          noexcept;
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
     ~weak_ptr();
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     weak_ptr& operator=(weak_ptr const& __r) noexcept;
     template<class _Yp>
         typename enable_if
@@ -4356,12 +4356,12 @@ public:
             is_convertible<_Yp*, element_type*>::value,
             weak_ptr&
         >::type
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         operator=(weak_ptr<_Yp> const& __r) noexcept;
 
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     weak_ptr& operator=(weak_ptr&& __r) noexcept;
     template<class _Yp>
         typename enable_if
@@ -4369,7 +4369,7 @@ public:
             is_convertible<_Yp*, element_type*>::value,
             weak_ptr&
         >::type
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         operator=(weak_ptr<_Yp>&& __r) noexcept;
 
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
@@ -4380,27 +4380,27 @@ public:
             is_convertible<_Yp*, element_type*>::value,
             weak_ptr&
         >::type
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         operator=(shared_ptr<_Yp> const& __r) noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(weak_ptr& __r) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void reset() noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     long use_count() const noexcept
         {return __cntrl_ ? __cntrl_->use_count() : 0;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool expired() const noexcept
         {return __cntrl_ == 0 || __cntrl_->use_count() == 0;}
     shared_ptr<_Tp> lock() const noexcept;
     template<class _Up>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         bool owner_before(const shared_ptr<_Up>& __r) const noexcept
         {return __cntrl_ < __r.__cntrl_;}
     template<class _Up>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         bool owner_before(const weak_ptr<_Up>& __r) const noexcept
         {return __cntrl_ < __r.__cntrl_;}
 
@@ -4560,7 +4560,7 @@ weak_ptr<_Tp>::swap(weak_ptr& __r) noexcept
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(weak_ptr<_Tp>& __x, weak_ptr<_Tp>& __y) noexcept
 {
@@ -4608,13 +4608,13 @@ struct _LIBCUDACXX_TEMPLATE_VIS owner_less<shared_ptr<_Tp> >
     : __binary_function<shared_ptr<_Tp>, shared_ptr<_Tp>, bool>
 {
     typedef bool result_type;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(shared_ptr<_Tp> const& __x, shared_ptr<_Tp> const& __y) const noexcept
         {return __x.owner_before(__y);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(shared_ptr<_Tp> const& __x,   weak_ptr<_Tp> const& __y) const noexcept
         {return __x.owner_before(__y);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(  weak_ptr<_Tp> const& __x, shared_ptr<_Tp> const& __y) const noexcept
         {return __x.owner_before(__y);}
 };
@@ -4624,13 +4624,13 @@ struct _LIBCUDACXX_TEMPLATE_VIS owner_less<weak_ptr<_Tp> >
     : __binary_function<weak_ptr<_Tp>, weak_ptr<_Tp>, bool>
 {
     typedef bool result_type;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(  weak_ptr<_Tp> const& __x,   weak_ptr<_Tp> const& __y) const noexcept
         {return __x.owner_before(__y);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(shared_ptr<_Tp> const& __x,   weak_ptr<_Tp> const& __y) const noexcept
         {return __x.owner_before(__y);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(  weak_ptr<_Tp> const& __x, shared_ptr<_Tp> const& __y) const noexcept
         {return __x.owner_before(__y);}
 };
@@ -4640,19 +4640,19 @@ template <>
 struct _LIBCUDACXX_TEMPLATE_VIS owner_less<void>
 {
     template <class _Tp, class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()( shared_ptr<_Tp> const& __x, shared_ptr<_Up> const& __y) const noexcept
         {return __x.owner_before(__y);}
     template <class _Tp, class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()( shared_ptr<_Tp> const& __x,   weak_ptr<_Up> const& __y) const noexcept
         {return __x.owner_before(__y);}
     template <class _Tp, class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(   weak_ptr<_Tp> const& __x, shared_ptr<_Up> const& __y) const noexcept
         {return __x.owner_before(__y);}
     template <class _Tp, class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(   weak_ptr<_Tp> const& __x,   weak_ptr<_Up> const& __y) const noexcept
         {return __x.owner_before(__y);}
     typedef void is_transparent;
@@ -4664,29 +4664,29 @@ class _LIBCUDACXX_TEMPLATE_VIS enable_shared_from_this
 {
     mutable weak_ptr<_Tp> __weak_this_;
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     enable_shared_from_this() noexcept {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     enable_shared_from_this(enable_shared_from_this const&) noexcept {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     enable_shared_from_this& operator=(enable_shared_from_this const&) noexcept
         {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~enable_shared_from_this() {}
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_ptr<_Tp> shared_from_this()
         {return shared_ptr<_Tp>(__weak_this_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_ptr<_Tp const> shared_from_this() const
         {return shared_ptr<const _Tp>(__weak_this_);}
 
 #if _LIBCUDACXX_STD_VER > 14
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     weak_ptr<_Tp> weak_from_this() noexcept
        { return __weak_this_; }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     weak_ptr<const _Tp> weak_from_this() const noexcept
         { return __weak_this_; }
 #endif // _LIBCUDACXX_STD_VER > 14
@@ -4700,7 +4700,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<shared_ptr<_Tp> >
     typedef shared_ptr<_Tp>      argument_type;
     typedef size_t               result_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     result_type operator()(const argument_type& __ptr) const noexcept
     {
         return hash<_Tp*>()(__ptr.get());
@@ -4708,7 +4708,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<shared_ptr<_Tp> >
 };
 
 template<class _CharT, class _Traits, class _Yp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_ostream<_CharT, _Traits>&
 operator<<(basic_ostream<_CharT, _Traits>& __os, shared_ptr<_Yp> const& __p);
 
@@ -4734,7 +4734,7 @@ _LIBCUDACXX_FUNC_VIS _LIBCUDACXX_AVAILABILITY_ATOMIC_SHARED_PTR
 __sp_mut& __get_sp_mut(const void*);
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 atomic_is_lock_free(const shared_ptr<_Tp>*)
 {
@@ -4754,7 +4754,7 @@ atomic_load(const shared_ptr<_Tp>* __p)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_ATOMIC_SHARED_PTR
 shared_ptr<_Tp>
 atomic_load_explicit(const shared_ptr<_Tp>* __p, memory_order)
@@ -4774,7 +4774,7 @@ atomic_store(shared_ptr<_Tp>* __p, shared_ptr<_Tp> __r)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_ATOMIC_SHARED_PTR
 void
 atomic_store_explicit(shared_ptr<_Tp>* __p, shared_ptr<_Tp> __r, memory_order)
@@ -4795,7 +4795,7 @@ atomic_exchange(shared_ptr<_Tp>* __p, shared_ptr<_Tp> __r)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_ATOMIC_SHARED_PTR
 shared_ptr<_Tp>
 atomic_exchange_explicit(shared_ptr<_Tp>* __p, shared_ptr<_Tp> __r, memory_order)
@@ -4825,7 +4825,7 @@ atomic_compare_exchange_strong(shared_ptr<_Tp>* __p, shared_ptr<_Tp>* __v, share
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_ATOMIC_SHARED_PTR
 bool
 atomic_compare_exchange_weak(shared_ptr<_Tp>* __p, shared_ptr<_Tp>* __v, shared_ptr<_Tp> __w)
@@ -4834,7 +4834,7 @@ atomic_compare_exchange_weak(shared_ptr<_Tp>* __p, shared_ptr<_Tp>* __v, shared_
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_ATOMIC_SHARED_PTR
 bool
 atomic_compare_exchange_strong_explicit(shared_ptr<_Tp>* __p, shared_ptr<_Tp>* __v,
@@ -4844,7 +4844,7 @@ atomic_compare_exchange_strong_explicit(shared_ptr<_Tp>* __p, shared_ptr<_Tp>* _
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_AVAILABILITY_ATOMIC_SHARED_PTR
 bool
 atomic_compare_exchange_weak_explicit(shared_ptr<_Tp>* __p, shared_ptr<_Tp>* __v,
@@ -4874,12 +4874,12 @@ struct _LIBCUDACXX_TYPE_VIS pointer_safety
 
     __lx __v_;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pointer_safety() : __v_() {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pointer_safety(__lx __v) : __v_(__v) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     operator int() const {return __v_;}
 };
 #endif
@@ -4889,7 +4889,7 @@ struct _LIBCUDACXX_TYPE_VIS pointer_safety
 _LIBCUDACXX_FUNC_VIS pointer_safety get_pointer_safety() noexcept;
 #else
 // This function is only offered in C++03 under ABI v1.
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 pointer_safety get_pointer_safety() noexcept {
   return pointer_safety::relaxed;
 }
@@ -4902,7 +4902,7 @@ _LIBCUDACXX_FUNC_VIS void undeclare_no_pointers(char* __p, size_t __n);
 _LIBCUDACXX_FUNC_VIS void* __undeclare_reachable(void* __p);
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp*
 undeclare_reachable(_Tp* __p)
 {
@@ -4913,7 +4913,7 @@ _LIBCUDACXX_FUNC_VIS void* align(size_t __align, size_t __sz, void*& __ptr, size
 
 // --- Helper for container swap --
 template <typename _Alloc>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void __swap_allocator(_Alloc & __a1, _Alloc & __a2)
 #if _LIBCUDACXX_STD_VER >= 14
     noexcept
@@ -4926,7 +4926,7 @@ void __swap_allocator(_Alloc & __a1, _Alloc & __a2)
 }
 
 template <typename _Alloc>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void __swap_allocator(_Alloc & __a1, _Alloc & __a2, true_type)
 #if _LIBCUDACXX_STD_VER >= 14
     noexcept
@@ -4939,7 +4939,7 @@ void __swap_allocator(_Alloc & __a1, _Alloc & __a2, true_type)
 }
 
 template <typename _Alloc>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void __swap_allocator(_Alloc &, _Alloc &, false_type) noexcept {}
 
 template <typename _Alloc, typename _Traits=allocator_traits<_Alloc> >

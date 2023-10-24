@@ -45,11 +45,11 @@ private:
     ostream_type* __out_stream_;
     const char_type* __delim_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator(ostream_type& __s) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator(ostream_type& __s) noexcept
         : __out_stream_(_CUDA_VSTD::addressof(__s)), __delim_(0) {}
-    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
         : __out_stream_(_CUDA_VSTD::addressof(__s)), __delim_(__delimiter) {}
-    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator=(const _Tp& __value_)
+    _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator& operator=(const _Tp& __value_)
         {
             *__out_stream_ << __value_;
             if (__delim_)
@@ -57,9 +57,9 @@ public:
             return *this;
         }
 
-    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator*()     {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator++()    {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator++(int) {return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator& operator*()     {return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator& operator++()    {return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI ostream_iterator& operator++(int) {return *this;}
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD

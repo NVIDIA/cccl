@@ -217,34 +217,33 @@ public:
     virtual ~basic_filebuf();
 
     // 27.9.1.3 Assign/swap:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_filebuf& operator=(basic_filebuf&& __rhs);
     void swap(basic_filebuf& __rhs);
 
     // 27.9.1.4 Members:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool is_open() const;
 #ifndef _LIBCUDACXX_HAS_NO_GLOBAL_FILESYSTEM_NAMESPACE
     basic_filebuf* open(const char* __s, ios_base::openmode __mode);
 #ifdef _LIBCUDACXX_HAS_OPEN_WITH_WCHAR
     basic_filebuf* open(const wchar_t* __s, ios_base::openmode __mode);
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_filebuf* open(const string& __s, ios_base::openmode __mode);
 
 #if _LIBCUDACXX_STD_VER >= 17
-    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_HIDE_FROM_ABI
     basic_filebuf* open(const _CUDA_VSTD_FS::path& __p, ios_base::openmode __mode) {
       return open(__p.c_str(), __mode);
     }
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_filebuf* __open(int __fd, ios_base::openmode __mode);
 #endif
     basic_filebuf* close();
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline static const char*
+    _LIBCUDACXX_HIDE_FROM_ABI static const char*
     __make_mdstring(ios_base::openmode __mode) noexcept;
 
   protected:
@@ -481,7 +480,7 @@ basic_filebuf<_CharT, _Traits>::swap(basic_filebuf& __rhs)
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(basic_filebuf<_CharT, _Traits>& __x, basic_filebuf<_CharT, _Traits>& __y)
 {
@@ -564,7 +563,7 @@ basic_filebuf<_CharT, _Traits>::open(const char* __s, ios_base::openmode __mode)
 }
 
 template <class _CharT, class _Traits>
-_LIBCUDACXX_INLINE_VISIBILITY basic_filebuf<_CharT, _Traits>*
+_LIBCUDACXX_HIDE_FROM_ABI basic_filebuf<_CharT, _Traits>*
 basic_filebuf<_CharT, _Traits>::__open(int __fd, ios_base::openmode __mode) {
   basic_filebuf<_CharT, _Traits>* __rt = 0;
   if (__file_ == 0) {
@@ -1132,34 +1131,34 @@ public:
     typedef typename traits_type::pos_type pos_type;
     typedef typename traits_type::off_type off_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_ifstream();
 #ifndef _LIBCUDACXX_HAS_NO_GLOBAL_FILESYSTEM_NAMESPACE
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_ifstream(const char* __s, ios_base::openmode __mode = ios_base::in);
 #ifdef _LIBCUDACXX_HAS_OPEN_WITH_WCHAR
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_ifstream(const wchar_t* __s, ios_base::openmode __mode = ios_base::in);
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_ifstream(const string& __s, ios_base::openmode __mode = ios_base::in);
 #if _LIBCUDACXX_STD_VER >= 17
-    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_ifstream(const filesystem::path& __p, ios_base::openmode __mode = ios_base::in)
       : basic_ifstream(__p.c_str(), __mode) {}
 #endif // _LIBCUDACXX_STD_VER >= 17
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_ifstream(basic_ifstream&& __rhs);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_ifstream& operator=(basic_ifstream&& __rhs);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(basic_ifstream& __rhs);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_filebuf<char_type, traits_type>* rdbuf() const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool is_open() const;
 #ifndef _LIBCUDACXX_HAS_NO_GLOBAL_FILESYSTEM_NAMESPACE
     void open(const char* __s, ios_base::openmode __mode = ios_base::in);
@@ -1168,17 +1167,17 @@ public:
 #endif
     void open(const string& __s, ios_base::openmode __mode = ios_base::in);
 #if _LIBCUDACXX_STD_VER >= 17
-    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_HIDE_FROM_ABI
     void open(const filesystem::path& __p,
               ios_base::openmode __mode = ios_base::in) {
       return open(__p.c_str(), __mode);
     }
 #endif // _LIBCUDACXX_STD_VER >= 17
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __open(int __fd, ios_base::openmode __mode);
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void close();
 
 private:
@@ -1252,7 +1251,7 @@ basic_ifstream<_CharT, _Traits>::swap(basic_ifstream& __rhs)
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(basic_ifstream<_CharT, _Traits>& __x, basic_ifstream<_CharT, _Traits>& __y)
 {
@@ -1340,35 +1339,35 @@ public:
     typedef typename traits_type::pos_type pos_type;
     typedef typename traits_type::off_type off_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_ofstream();
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_ofstream(const char* __s, ios_base::openmode __mode = ios_base::out);
 #ifdef _LIBCUDACXX_HAS_OPEN_WITH_WCHAR
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_ofstream(const wchar_t* __s, ios_base::openmode __mode = ios_base::out);
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_ofstream(const string& __s, ios_base::openmode __mode = ios_base::out);
 
 #if _LIBCUDACXX_STD_VER >= 17
-    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_ofstream(const filesystem::path& __p, ios_base::openmode __mode = ios_base::out)
       : basic_ofstream(__p.c_str(), __mode) {}
 #endif // _LIBCUDACXX_STD_VER >= 17
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_ofstream(basic_ofstream&& __rhs);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_ofstream& operator=(basic_ofstream&& __rhs);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(basic_ofstream& __rhs);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_filebuf<char_type, traits_type>* rdbuf() const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool is_open() const;
 #ifndef _LIBCUDACXX_HAS_NO_GLOBAL_FILESYSTEM_NAMESPACE
     void open(const char* __s, ios_base::openmode __mode = ios_base::out);
@@ -1378,15 +1377,15 @@ public:
     void open(const string& __s, ios_base::openmode __mode = ios_base::out);
 
 #if _LIBCUDACXX_STD_VER >= 17
-    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_HIDE_FROM_ABI
     void open(const filesystem::path& __p, ios_base::openmode __mode = ios_base::out)
     { return open(__p.c_str(), __mode); }
 #endif // _LIBCUDACXX_STD_VER >= 17
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __open(int __fd, ios_base::openmode __mode);
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void close();
 
 private:
@@ -1460,7 +1459,7 @@ basic_ofstream<_CharT, _Traits>::swap(basic_ofstream& __rhs)
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(basic_ofstream<_CharT, _Traits>& __x, basic_ofstream<_CharT, _Traits>& __y)
 {
@@ -1548,37 +1547,37 @@ public:
     typedef typename traits_type::pos_type pos_type;
     typedef typename traits_type::off_type off_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_fstream();
 #ifndef _LIBCUDACXX_HAS_NO_GLOBAL_FILESYSTEM_NAMESPACE
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_fstream(const char* __s, ios_base::openmode __mode = ios_base::in | ios_base::out);
 #ifdef _LIBCUDACXX_HAS_OPEN_WITH_WCHAR
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_fstream(const wchar_t* __s, ios_base::openmode __mode = ios_base::in | ios_base::out);
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_fstream(const string& __s, ios_base::openmode __mode = ios_base::in | ios_base::out);
 
 #if _LIBCUDACXX_STD_VER >= 17
-    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_HIDE_FROM_ABI
     explicit basic_fstream(const filesystem::path& __p, ios_base::openmode __mode = ios_base::in | ios_base::out)
       : basic_fstream(__p.c_str(), __mode) {}
 #endif // _LIBCUDACXX_STD_VER >= 17
 
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_fstream(basic_fstream&& __rhs);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_fstream& operator=(basic_fstream&& __rhs);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(basic_fstream& __rhs);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_filebuf<char_type, traits_type>* rdbuf() const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool is_open() const;
 #ifndef _LIBCUDACXX_HAS_NO_GLOBAL_FILESYSTEM_NAMESPACE
     void open(const char* __s, ios_base::openmode __mode = ios_base::in | ios_base::out);
@@ -1588,13 +1587,13 @@ public:
     void open(const string& __s, ios_base::openmode __mode = ios_base::in | ios_base::out);
 
 #if _LIBCUDACXX_STD_VER >= 17
-    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_HIDE_FROM_ABI
     void open(const filesystem::path& __p, ios_base::openmode __mode = ios_base::in|ios_base::out)
     { return open(__p.c_str(), __mode); }
 #endif // _LIBCUDACXX_STD_VER >= 17
 
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void close();
 
 private:
@@ -1668,7 +1667,7 @@ basic_fstream<_CharT, _Traits>::swap(basic_fstream& __rhs)
 }
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(basic_fstream<_CharT, _Traits>& __x, basic_fstream<_CharT, _Traits>& __y)
 {

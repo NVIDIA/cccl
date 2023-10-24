@@ -305,22 +305,22 @@ public:
     typedef random_access_iterator_tag  iterator_category;
     typedef _Reference                  reference;
 
-    _LIBCUDACXX_INLINE_VISIBILITY __deque_iterator() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI __deque_iterator() noexcept
 #if _LIBCUDACXX_STD_VER > 11
      : __m_iter_(nullptr), __ptr_(nullptr)
 #endif
      {}
 
     template <class _Pp, class _Rp, class _MP>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __deque_iterator(const __deque_iterator<value_type, _Pp, _Rp, _MP, difference_type, _BS>& __it,
                 typename enable_if<is_convertible<_Pp, pointer>::value>::type* = 0) noexcept
         : __m_iter_(__it.__m_iter_), __ptr_(__it.__ptr_) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY reference operator*() const {return *__ptr_;}
-    _LIBCUDACXX_INLINE_VISIBILITY pointer operator->() const {return __ptr_;}
+    _LIBCUDACXX_HIDE_FROM_ABI reference operator*() const {return *__ptr_;}
+    _LIBCUDACXX_HIDE_FROM_ABI pointer operator->() const {return __ptr_;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY __deque_iterator& operator++()
+    _LIBCUDACXX_HIDE_FROM_ABI __deque_iterator& operator++()
     {
         if (++__ptr_ - *__m_iter_ == __block_size)
         {
@@ -330,14 +330,14 @@ public:
         return *this;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY __deque_iterator operator++(int)
+    _LIBCUDACXX_HIDE_FROM_ABI __deque_iterator operator++(int)
     {
         __deque_iterator __tmp = *this;
         ++(*this);
         return __tmp;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY __deque_iterator& operator--()
+    _LIBCUDACXX_HIDE_FROM_ABI __deque_iterator& operator--()
     {
         if (__ptr_ == *__m_iter_)
         {
@@ -348,14 +348,14 @@ public:
         return *this;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY __deque_iterator operator--(int)
+    _LIBCUDACXX_HIDE_FROM_ABI __deque_iterator operator--(int)
     {
         __deque_iterator __tmp = *this;
         --(*this);
         return __tmp;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY __deque_iterator& operator+=(difference_type __n)
+    _LIBCUDACXX_HIDE_FROM_ABI __deque_iterator& operator+=(difference_type __n)
     {
         if (__n != 0)
         {
@@ -375,30 +375,30 @@ public:
         return *this;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY __deque_iterator& operator-=(difference_type __n)
+    _LIBCUDACXX_HIDE_FROM_ABI __deque_iterator& operator-=(difference_type __n)
     {
         return *this += -__n;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY __deque_iterator operator+(difference_type __n) const
+    _LIBCUDACXX_HIDE_FROM_ABI __deque_iterator operator+(difference_type __n) const
     {
         __deque_iterator __t(*this);
         __t += __n;
         return __t;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY __deque_iterator operator-(difference_type __n) const
+    _LIBCUDACXX_HIDE_FROM_ABI __deque_iterator operator-(difference_type __n) const
     {
         __deque_iterator __t(*this);
         __t -= __n;
         return __t;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     friend __deque_iterator operator+(difference_type __n, const __deque_iterator& __it)
         {return __it + __n;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     friend difference_type operator-(const __deque_iterator& __x, const __deque_iterator& __y)
     {
         if (__x != __y)
@@ -408,36 +408,36 @@ public:
         return 0;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY reference operator[](difference_type __n) const
+    _LIBCUDACXX_HIDE_FROM_ABI reference operator[](difference_type __n) const
         {return *(*this + __n);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY friend
+    _LIBCUDACXX_HIDE_FROM_ABI friend
         bool operator==(const __deque_iterator& __x, const __deque_iterator& __y)
         {return __x.__ptr_ == __y.__ptr_;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY friend
+    _LIBCUDACXX_HIDE_FROM_ABI friend
         bool operator!=(const __deque_iterator& __x, const __deque_iterator& __y)
         {return !(__x == __y);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY friend
+    _LIBCUDACXX_HIDE_FROM_ABI friend
         bool operator<(const __deque_iterator& __x, const __deque_iterator& __y)
         {return __x.__m_iter_ < __y.__m_iter_ ||
                (__x.__m_iter_ == __y.__m_iter_ && __x.__ptr_ < __y.__ptr_);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY friend
+    _LIBCUDACXX_HIDE_FROM_ABI friend
         bool operator>(const __deque_iterator& __x, const __deque_iterator& __y)
         {return __y < __x;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY friend
+    _LIBCUDACXX_HIDE_FROM_ABI friend
         bool operator<=(const __deque_iterator& __x, const __deque_iterator& __y)
         {return !(__y < __x);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY friend
+    _LIBCUDACXX_HIDE_FROM_ABI friend
         bool operator>=(const __deque_iterator& __x, const __deque_iterator& __y)
         {return !(__x < __y);}
 
 private:
-    _LIBCUDACXX_INLINE_VISIBILITY __deque_iterator(__map_iterator __m, pointer __p) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI __deque_iterator(__map_iterator __m, pointer __p) noexcept
         : __m_iter_(__m), __ptr_(__p) {}
 
     template <class _Tp, class _Ap> friend class __deque_base;
@@ -1036,17 +1036,17 @@ protected:
     iterator       end() noexcept;
     const_iterator end() const noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY size_type&            size()          {return __size_.first();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI size_type&            size()          {return __size_.first();}
+    _LIBCUDACXX_HIDE_FROM_ABI
     const size_type& size() const noexcept {return __size_.first();}
-    _LIBCUDACXX_INLINE_VISIBILITY allocator_type&       __alloc()       {return __size_.second();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI allocator_type&       __alloc()       {return __size_.second();}
+    _LIBCUDACXX_HIDE_FROM_ABI
     const allocator_type& __alloc() const noexcept {return __size_.second();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __deque_base()
         noexcept(is_nothrow_default_constructible<allocator_type>::value);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __deque_base(const allocator_type& __a);
 public:
     ~__deque_base();
@@ -1067,7 +1067,7 @@ protected:
 
     bool __invariants() const;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __move_assign(__deque_base& __c)
         noexcept(__alloc_traits::propagate_on_container_move_assignment::value &&
                    is_nothrow_move_assignable<allocator_type>::value)
@@ -1079,7 +1079,7 @@ protected:
         __c.__start_ = __c.size() = 0;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __move_assign_alloc(__deque_base& __c)
         noexcept(!__alloc_traits::propagate_on_container_move_assignment::value ||
                    is_nothrow_move_assignable<allocator_type>::value)
@@ -1087,14 +1087,14 @@ protected:
                       __alloc_traits::propagate_on_container_move_assignment::value>());}
 
 private:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __move_assign_alloc(__deque_base& __c, true_type)
         noexcept(is_nothrow_move_assignable<allocator_type>::value)
         {
             __alloc() = _CUDA_VSTD::move(__c.__alloc());
         }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __move_assign_alloc(__deque_base&, false_type) noexcept
         {}
 };
@@ -1291,11 +1291,11 @@ public:
     using typename __base::_ConstructTransaction;
 
     // construct/copy/destroy:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     deque()
         noexcept(is_nothrow_default_constructible<allocator_type>::value)
         {}
-    _LIBCUDACXX_INLINE_VISIBILITY explicit deque(const allocator_type& __a) : __base(__a) {}
+    _LIBCUDACXX_HIDE_FROM_ABI explicit deque(const allocator_type& __a) : __base(__a) {}
     explicit deque(size_type __n);
 #if _LIBCUDACXX_STD_VER > 11
     explicit deque(size_type __n, const _Allocator& __a);
@@ -1316,19 +1316,19 @@ public:
     deque(initializer_list<value_type> __il);
     deque(initializer_list<value_type> __il, const allocator_type& __a);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     deque& operator=(initializer_list<value_type> __il) {assign(__il); return *this;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     deque(deque&& __c) noexcept(is_nothrow_move_constructible<__base>::value);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     deque(deque&& __c, const allocator_type& __a);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     deque& operator=(deque&& __c)
         noexcept(__alloc_traits::propagate_on_container_move_assignment::value &&
                    is_nothrow_move_assignable<allocator_type>::value);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void assign(initializer_list<value_type> __il) {assign(__il.begin(), __il.end());}
 
     template <class _InputIter>
@@ -1340,50 +1340,50 @@ public:
                     typename enable_if<__is_cpp17_random_access_iterator<_RAIter>::value>::type* = 0);
     void assign(size_type __n, const value_type& __v);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     allocator_type get_allocator() const noexcept;
 
     // iterators:
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator       begin() noexcept       {return __base::begin();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator begin() const noexcept {return __base::begin();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator       end() noexcept         {return __base::end();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator end()   const noexcept {return __base::end();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     reverse_iterator       rbegin() noexcept
         {return       reverse_iterator(__base::end());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_reverse_iterator rbegin() const noexcept
         {return const_reverse_iterator(__base::end());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     reverse_iterator       rend() noexcept
         {return       reverse_iterator(__base::begin());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_reverse_iterator rend()   const noexcept
         {return const_reverse_iterator(__base::begin());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator         cbegin()  const noexcept
         {return __base::begin();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator         cend()    const noexcept
         {return __base::end();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_reverse_iterator crbegin() const noexcept
         {return const_reverse_iterator(__base::end());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_reverse_iterator crend()   const noexcept
         {return const_reverse_iterator(__base::begin());}
 
     // capacity:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type size() const noexcept {return __base::size();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type max_size() const noexcept
         {return std::min<size_type>(
             __alloc_traits::max_size(__base::__alloc()),
@@ -1391,25 +1391,25 @@ public:
     void resize(size_type __n);
     void resize(size_type __n, const value_type& __v);
     void shrink_to_fit() noexcept;
-    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI
     bool empty() const noexcept {return __base::size() == 0;}
 
     // element access:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     reference operator[](size_type __i) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_reference operator[](size_type __i) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     reference at(size_type __i);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_reference at(size_type __i) const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     reference front() noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_reference front() const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     reference back() noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_reference back() const noexcept;
 
     // 23.2.2.3 modifiers:
@@ -1428,7 +1428,7 @@ public:
     void push_back(value_type&& __v);
     iterator insert(const_iterator __p, value_type&& __v);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator insert(const_iterator __p, initializer_list<value_type> __il)
         {return insert(__p, __il.begin(), __il.end());}
     iterator insert(const_iterator __p, const value_type& __v);
@@ -1450,7 +1450,7 @@ public:
     iterator erase(const_iterator __p);
     iterator erase(const_iterator __f, const_iterator __l);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(deque& __c)
 #if _LIBCUDACXX_STD_VER >= 14
         noexcept;
@@ -1458,51 +1458,51 @@ public:
         noexcept(!__alloc_traits::propagate_on_container_swap::value ||
                    __is_nothrow_swappable<allocator_type>::value);
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void clear() noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool __invariants() const {return __base::__invariants();}
 
     typedef typename __base::__map_const_pointer __map_const_pointer;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static size_type __recommend_blocks(size_type __n)
     {
         return __n / __base::__block_size + (__n % __base::__block_size != 0);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type __capacity() const
     {
         return __base::__map_.size() == 0 ? 0 : __base::__map_.size() * __base::__block_size - 1;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type __block_count() const
     {
         return __base::__map_.size();
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type __front_spare() const
     {
         return __base::__start_;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type __front_spare_blocks() const {
       return __front_spare() / __base::__block_size;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type __back_spare() const
     {
         return __capacity() - (__base::__start_ + __base::size());
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type __back_spare_blocks() const {
       return __back_spare() / __base::__block_size;
     }
 
  private:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool __maybe_remove_front_spare(bool __keep_one = true) {
       if (__front_spare_blocks() >= 2 || (!__keep_one && __front_spare_blocks())) {
         __alloc_traits::deallocate(__base::__alloc(), __base::__map_.front(),
@@ -1514,7 +1514,7 @@ public:
       return false;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool __maybe_remove_back_spare(bool __keep_one = true) {
       if (__back_spare_blocks() >= 2 || (!__keep_one && __back_spare_blocks())) {
         __alloc_traits::deallocate(__base::__alloc(), __base::__map_.back(),
@@ -1548,12 +1548,12 @@ public:
     void __move_construct_backward_and_check(iterator __f, iterator __l,
                                              iterator __r, const_pointer& __vt);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __copy_assign_alloc(const deque& __c)
         {__copy_assign_alloc(__c, integral_constant<bool,
                       __alloc_traits::propagate_on_container_copy_assignment::value>());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __copy_assign_alloc(const deque& __c, true_type)
         {
             if (__base::__alloc() != __c.__alloc())
@@ -1565,7 +1565,7 @@ public:
             __base::__map_.__alloc() = __c.__map_.__alloc();
         }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __copy_assign_alloc(const deque&, false_type)
         {}
 
@@ -2943,7 +2943,7 @@ deque<_Tp, _Allocator>::clear() noexcept
 }
 
 template <class _Tp, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator==(const deque<_Tp, _Allocator>& __x, const deque<_Tp, _Allocator>& __y)
 {
@@ -2952,7 +2952,7 @@ operator==(const deque<_Tp, _Allocator>& __x, const deque<_Tp, _Allocator>& __y)
 }
 
 template <class _Tp, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(const deque<_Tp, _Allocator>& __x, const deque<_Tp, _Allocator>& __y)
 {
@@ -2960,7 +2960,7 @@ operator!=(const deque<_Tp, _Allocator>& __x, const deque<_Tp, _Allocator>& __y)
 }
 
 template <class _Tp, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator< (const deque<_Tp, _Allocator>& __x, const deque<_Tp, _Allocator>& __y)
 {
@@ -2968,7 +2968,7 @@ operator< (const deque<_Tp, _Allocator>& __x, const deque<_Tp, _Allocator>& __y)
 }
 
 template <class _Tp, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator> (const deque<_Tp, _Allocator>& __x, const deque<_Tp, _Allocator>& __y)
 {
@@ -2976,7 +2976,7 @@ operator> (const deque<_Tp, _Allocator>& __x, const deque<_Tp, _Allocator>& __y)
 }
 
 template <class _Tp, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>=(const deque<_Tp, _Allocator>& __x, const deque<_Tp, _Allocator>& __y)
 {
@@ -2984,7 +2984,7 @@ operator>=(const deque<_Tp, _Allocator>& __x, const deque<_Tp, _Allocator>& __y)
 }
 
 template <class _Tp, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<=(const deque<_Tp, _Allocator>& __x, const deque<_Tp, _Allocator>& __y)
 {
@@ -2992,7 +2992,7 @@ operator<=(const deque<_Tp, _Allocator>& __x, const deque<_Tp, _Allocator>& __y)
 }
 
 template <class _Tp, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(deque<_Tp, _Allocator>& __x, deque<_Tp, _Allocator>& __y)
     noexcept(noexcept(__x.swap(__y)))
@@ -3002,12 +3002,12 @@ swap(deque<_Tp, _Allocator>& __x, deque<_Tp, _Allocator>& __y)
 
 #if _LIBCUDACXX_STD_VER > 17
 template <class _Tp, class _Allocator, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void erase(deque<_Tp, _Allocator>& __c, const _Up& __v)
 { __c.erase(_CUDA_VSTD::remove(__c.begin(), __c.end(), __v), __c.end()); }
 
 template <class _Tp, class _Allocator, class _Predicate>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void erase_if(deque<_Tp, _Allocator>& __c, _Predicate __pred)
 { __c.erase(_CUDA_VSTD::remove_if(__c.begin(), __c.end(), __pred), __c.end()); }
 #endif

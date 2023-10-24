@@ -76,7 +76,7 @@ __root, have a non-null __parent_ field.
 // Returns:  true if __x is a left child of its parent, else false
 // Precondition:  __x != nullptr.
 template <class _NodePtr>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 __tree_is_left_child(_NodePtr __x) noexcept
 {
@@ -142,7 +142,7 @@ __tree_invariant(_NodePtr __root)
 // Returns:  pointer to the left-most node under __x.
 // Precondition:  __x != nullptr.
 template <class _NodePtr>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _NodePtr
 __tree_min(_NodePtr __x) noexcept
 {
@@ -154,7 +154,7 @@ __tree_min(_NodePtr __x) noexcept
 // Returns:  pointer to the right-most node under __x.
 // Precondition:  __x != nullptr.
 template <class _NodePtr>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _NodePtr
 __tree_max(_NodePtr __x) noexcept
 {
@@ -177,7 +177,7 @@ __tree_next(_NodePtr __x) noexcept
 }
 
 template <class _EndNodePtr, class _NodePtr>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _EndNodePtr
 __tree_next_iter(_NodePtr __x) noexcept
 {
@@ -192,7 +192,7 @@ __tree_next_iter(_NodePtr __x) noexcept
 // Precondition:  __x != nullptr.
 // Note: __x may be the end node.
 template <class _NodePtr, class _EndNodePtr>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _NodePtr
 __tree_prev_iter(_EndNodePtr __x) noexcept
 {
@@ -554,19 +554,19 @@ struct __tree_key_value_types {
   typedef _Tp __container_value_type;
   static const bool __is_map = false;
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static key_type const& __get_key(_Tp const& __v) {
     return __v;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static __container_value_type const& __get_value(__node_value_type const& __v) {
     return __v;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static __container_value_type* __get_ptr(__node_value_type& __n) {
     return _CUDA_VSTD::addressof(__n);
   }
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static __container_value_type&& __move(__node_value_type& __v) {
     return _CUDA_VSTD::move(__v);
   }
@@ -581,40 +581,40 @@ struct __tree_key_value_types<__value_type<_Key, _Tp> > {
   typedef __container_value_type                       __map_value_type;
   static const bool __is_map = true;
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static key_type const&
   __get_key(__node_value_type const& __t) {
     return __t.__get_value().first;
   }
 
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static typename enable_if<__is_same_uncvref<_Up, __container_value_type>::value,
       key_type const&>::type
   __get_key(_Up& __t) {
     return __t.first;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static __container_value_type const&
   __get_value(__node_value_type const& __t) {
     return __t.__get_value();
   }
 
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static typename enable_if<__is_same_uncvref<_Up, __container_value_type>::value,
       __container_value_type const&>::type
   __get_value(_Up& __t) {
     return __t;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static __container_value_type* __get_ptr(__node_value_type& __n) {
     return _CUDA_VSTD::addressof(__n.__get_value());
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static pair<key_type&&, mapped_type&&> __move(__node_value_type& __v) {
     return __v.__move();
   }
@@ -711,7 +711,7 @@ public:
     typedef _Pointer pointer;
     pointer __left_;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __tree_end_node() noexcept : __left_() {}
 };
 
@@ -729,10 +729,10 @@ public:
     __parent_pointer __parent_;
     bool __is_black_;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pointer __parent_unsafe() const { return static_cast<pointer>(__parent_);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __set_parent(pointer __p) {
         __parent_ = static_cast<__parent_pointer>(__p);
     }
@@ -777,13 +777,13 @@ public:
     __tree_node_destructor(const __tree_node_destructor &) = default;
     __tree_node_destructor& operator=(const __tree_node_destructor&) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __tree_node_destructor(allocator_type& __na, bool __val = false) noexcept
         : __na_(__na),
           __value_constructed(__val)
         {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void operator()(pointer __p) noexcept
     {
         if (__value_constructed)
@@ -825,50 +825,50 @@ public:
     typedef value_type&                                    reference;
     typedef typename _NodeTypes::__node_value_type_pointer pointer;
 
-    _LIBCUDACXX_INLINE_VISIBILITY __tree_iterator() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI __tree_iterator() noexcept
 #if _LIBCUDACXX_STD_VER > 11
     : __ptr_(nullptr)
 #endif
     {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY reference operator*() const
+    _LIBCUDACXX_HIDE_FROM_ABI reference operator*() const
         {return __get_np()->__value_;}
-    _LIBCUDACXX_INLINE_VISIBILITY pointer operator->() const
+    _LIBCUDACXX_HIDE_FROM_ABI pointer operator->() const
         {return pointer_traits<pointer>::pointer_to(__get_np()->__value_);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __tree_iterator& operator++() {
       __ptr_ = static_cast<__iter_pointer>(
           __tree_next_iter<__end_node_pointer>(static_cast<__node_base_pointer>(__ptr_)));
       return *this;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __tree_iterator operator++(int)
         {__tree_iterator __t(*this); ++(*this); return __t;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __tree_iterator& operator--() {
       __ptr_ = static_cast<__iter_pointer>(__tree_prev_iter<__node_base_pointer>(
           static_cast<__end_node_pointer>(__ptr_)));
       return *this;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __tree_iterator operator--(int)
         {__tree_iterator __t(*this); --(*this); return __t;}
 
-    friend _LIBCUDACXX_INLINE_VISIBILITY
+    friend _LIBCUDACXX_HIDE_FROM_ABI
         bool operator==(const __tree_iterator& __x, const __tree_iterator& __y)
         {return __x.__ptr_ == __y.__ptr_;}
-    friend _LIBCUDACXX_INLINE_VISIBILITY
+    friend _LIBCUDACXX_HIDE_FROM_ABI
         bool operator!=(const __tree_iterator& __x, const __tree_iterator& __y)
         {return !(__x == __y);}
 
 private:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __tree_iterator(__node_pointer __p) noexcept : __ptr_(__p) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __tree_iterator(__end_node_pointer __p) noexcept : __ptr_(__p) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __node_pointer __get_np() const { return static_cast<__node_pointer>(__ptr_); }
     template <class, class, class> friend class __tree;
     template <class, class, class> friend class _LIBCUDACXX_TEMPLATE_VIS __tree_const_iterator;
@@ -898,7 +898,7 @@ public:
     typedef const value_type&                                    reference;
     typedef typename _NodeTypes::__const_node_value_type_pointer pointer;
 
-    _LIBCUDACXX_INLINE_VISIBILITY __tree_const_iterator() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI __tree_const_iterator() noexcept
 #if _LIBCUDACXX_STD_VER > 11
     : __ptr_(nullptr)
 #endif
@@ -908,52 +908,52 @@ private:
     typedef __tree_iterator<value_type, __node_pointer, difference_type>
                                                            __non_const_iterator;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __tree_const_iterator(__non_const_iterator __p) noexcept
         : __ptr_(__p.__ptr_) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY reference operator*() const
+    _LIBCUDACXX_HIDE_FROM_ABI reference operator*() const
         {return __get_np()->__value_;}
-    _LIBCUDACXX_INLINE_VISIBILITY pointer operator->() const
+    _LIBCUDACXX_HIDE_FROM_ABI pointer operator->() const
         {return pointer_traits<pointer>::pointer_to(__get_np()->__value_);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __tree_const_iterator& operator++() {
       __ptr_ = static_cast<__iter_pointer>(
           __tree_next_iter<__end_node_pointer>(static_cast<__node_base_pointer>(__ptr_)));
       return *this;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __tree_const_iterator operator++(int)
         {__tree_const_iterator __t(*this); ++(*this); return __t;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __tree_const_iterator& operator--() {
       __ptr_ = static_cast<__iter_pointer>(__tree_prev_iter<__node_base_pointer>(
           static_cast<__end_node_pointer>(__ptr_)));
       return *this;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __tree_const_iterator operator--(int)
         {__tree_const_iterator __t(*this); --(*this); return __t;}
 
-    friend _LIBCUDACXX_INLINE_VISIBILITY
+    friend _LIBCUDACXX_HIDE_FROM_ABI
         bool operator==(const __tree_const_iterator& __x, const __tree_const_iterator& __y)
         {return __x.__ptr_ == __y.__ptr_;}
-    friend _LIBCUDACXX_INLINE_VISIBILITY
+    friend _LIBCUDACXX_HIDE_FROM_ABI
         bool operator!=(const __tree_const_iterator& __x, const __tree_const_iterator& __y)
         {return !(__x == __y);}
 
 private:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __tree_const_iterator(__node_pointer __p) noexcept
         : __ptr_(__p) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __tree_const_iterator(__end_node_pointer __p) noexcept
         : __ptr_(__p) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __node_pointer __get_np() const { return static_cast<__node_pointer>(__ptr_); }
 
     template <class, class, class> friend class __tree;
@@ -1029,14 +1029,14 @@ private:
     __compressed_pair<size_type, value_compare>        __pair3_;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __iter_pointer __end_node() noexcept
     {
         return static_cast<__iter_pointer>(
                 pointer_traits<__end_node_ptr>::pointer_to(__pair1_.first())
         );
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __iter_pointer __end_node() const noexcept
     {
         return static_cast<__iter_pointer>(
@@ -1045,34 +1045,34 @@ public:
             )
         );
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
           __node_allocator& __node_alloc() noexcept {return __pair1_.second();}
 private:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const __node_allocator& __node_alloc() const noexcept
         {return __pair1_.second();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
           __iter_pointer& __begin_node() noexcept {return __begin_node_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const __iter_pointer& __begin_node() const noexcept {return __begin_node_;}
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     allocator_type __alloc() const noexcept
         {return allocator_type(__node_alloc());}
 private:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
           size_type& size() noexcept {return __pair3_.first();}
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const size_type& size() const noexcept {return __pair3_.first();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
           value_compare& value_comp() noexcept {return __pair3_.second();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const value_compare& value_comp() const noexcept
         {return __pair3_.second();}
 public:
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __node_pointer __root() const noexcept
         {return static_cast<__node_pointer>(__end_node()->__left_);}
 
@@ -1108,16 +1108,16 @@ public:
 
     ~__tree();
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
           iterator begin()  noexcept {return       iterator(__begin_node());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator begin() const noexcept {return const_iterator(__begin_node());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
           iterator end() noexcept {return       iterator(__end_node());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator end() const noexcept {return const_iterator(__end_node());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type max_size() const noexcept
         {return std::min<size_type>(
                 __node_traits::max_size(__node_alloc()),
@@ -1156,14 +1156,14 @@ public:
     iterator __emplace_hint_multi(const_iterator __p, _Args&&... __args);
 
     template <class _Pp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, bool> __emplace_unique(_Pp&& __x) {
         return __emplace_unique_extract_key(_CUDA_VSTD::forward<_Pp>(__x),
                                             __can_extract_key<_Pp, key_type>());
     }
 
     template <class _First, class _Second>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     typename enable_if<
         __can_extract_map_key<_First, key_type, __container_value_type>::value,
         pair<iterator, bool>
@@ -1173,41 +1173,41 @@ public:
     }
 
     template <class... _Args>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, bool> __emplace_unique(_Args&&... __args) {
         return __emplace_unique_impl(_CUDA_VSTD::forward<_Args>(__args)...);
     }
 
     template <class _Pp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, bool>
     __emplace_unique_extract_key(_Pp&& __x, __extract_key_fail_tag) {
       return __emplace_unique_impl(_CUDA_VSTD::forward<_Pp>(__x));
     }
 
     template <class _Pp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, bool>
     __emplace_unique_extract_key(_Pp&& __x, __extract_key_self_tag) {
       return __emplace_unique_key_args(__x, _CUDA_VSTD::forward<_Pp>(__x));
     }
 
     template <class _Pp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, bool>
     __emplace_unique_extract_key(_Pp&& __x, __extract_key_first_tag) {
       return __emplace_unique_key_args(__x.first, _CUDA_VSTD::forward<_Pp>(__x));
     }
 
     template <class _Pp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __emplace_hint_unique(const_iterator __p, _Pp&& __x) {
         return __emplace_hint_unique_extract_key(__p, _CUDA_VSTD::forward<_Pp>(__x),
                                             __can_extract_key<_Pp, key_type>());
     }
 
     template <class _First, class _Second>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     typename enable_if<
         __can_extract_map_key<_First, key_type, __container_value_type>::value,
         iterator
@@ -1218,48 +1218,48 @@ public:
     }
 
     template <class... _Args>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __emplace_hint_unique(const_iterator __p, _Args&&... __args) {
         return __emplace_hint_unique_impl(__p, _CUDA_VSTD::forward<_Args>(__args)...);
     }
 
     template <class _Pp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator
     __emplace_hint_unique_extract_key(const_iterator __p, _Pp&& __x, __extract_key_fail_tag) {
       return __emplace_hint_unique_impl(__p, _CUDA_VSTD::forward<_Pp>(__x));
     }
 
     template <class _Pp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator
     __emplace_hint_unique_extract_key(const_iterator __p, _Pp&& __x, __extract_key_self_tag) {
       return __emplace_hint_unique_key_args(__p, __x, _CUDA_VSTD::forward<_Pp>(__x));
     }
 
     template <class _Pp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator
     __emplace_hint_unique_extract_key(const_iterator __p, _Pp&& __x, __extract_key_first_tag) {
       return __emplace_hint_unique_key_args(__p, __x.first, _CUDA_VSTD::forward<_Pp>(__x));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, bool> __insert_unique(const __container_value_type& __v) {
         return __emplace_unique_key_args(_NodeTypes::__get_key(__v), __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __insert_unique(const_iterator __p, const __container_value_type& __v) {
         return __emplace_hint_unique_key_args(__p, _NodeTypes::__get_key(__v), __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, bool> __insert_unique(__container_value_type&& __v) {
         return __emplace_unique_key_args(_NodeTypes::__get_key(__v), _CUDA_VSTD::move(__v));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __insert_unique(const_iterator __p, __container_value_type&& __v) {
         return __emplace_hint_unique_key_args(__p, _NodeTypes::__get_key(__v), _CUDA_VSTD::move(__v));
     }
@@ -1269,7 +1269,7 @@ public:
                      __container_value_type
             >::value
         >::type>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, bool> __insert_unique(_Vp&& __v) {
         return __emplace_unique(_CUDA_VSTD::forward<_Vp>(__v));
     }
@@ -1279,72 +1279,72 @@ public:
                      __container_value_type
             >::value
         >::type>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __insert_unique(const_iterator __p, _Vp&& __v) {
         return __emplace_hint_unique(__p, _CUDA_VSTD::forward<_Vp>(__v));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __insert_multi(__container_value_type&& __v) {
         return __emplace_multi(_CUDA_VSTD::move(__v));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __insert_multi(const_iterator __p, __container_value_type&& __v) {
         return __emplace_hint_multi(__p, _CUDA_VSTD::move(__v));
     }
 
     template <class _Vp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __insert_multi(_Vp&& __v) {
         return __emplace_multi(_CUDA_VSTD::forward<_Vp>(__v));
     }
 
     template <class _Vp>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __insert_multi(const_iterator __p, _Vp&& __v) {
         return __emplace_hint_multi(__p, _CUDA_VSTD::forward<_Vp>(__v));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, bool> __node_assign_unique(const __container_value_type& __v, __node_pointer __dest);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __node_insert_multi(__node_pointer __nd);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __node_insert_multi(const_iterator __p, __node_pointer __nd);
 
 
-    _LIBCUDACXX_INLINE_VISIBILITY iterator
+    _LIBCUDACXX_HIDE_FROM_ABI iterator
     __remove_node_pointer(__node_pointer) noexcept;
 
 #if _LIBCUDACXX_STD_VER > 14
     template <class _NodeHandle, class _InsertReturnType>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _InsertReturnType __node_handle_insert_unique(_NodeHandle&&);
     template <class _NodeHandle>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __node_handle_insert_unique(const_iterator, _NodeHandle&&);
     template <class _Tree>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __node_handle_merge_unique(_Tree& __source);
 
     template <class _NodeHandle>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __node_handle_insert_multi(_NodeHandle&&);
     template <class _NodeHandle>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator __node_handle_insert_multi(const_iterator, _NodeHandle&&);
     template <class _Tree>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __node_handle_merge_multi(_Tree& __source);
 
 
     template <class _NodeHandle>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _NodeHandle __node_handle_extract(key_type const&);
     template <class _NodeHandle>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _NodeHandle __node_handle_extract(const_iterator);
 #endif
 
@@ -1370,7 +1370,7 @@ public:
         size_type __count_multi(const _Key& __k) const;
 
     template <class _Key>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         iterator lower_bound(const _Key& __v)
             {return __lower_bound(__v, __root(), __end_node());}
     template <class _Key>
@@ -1378,7 +1378,7 @@ public:
                                __node_pointer __root,
                                __iter_pointer __result);
     template <class _Key>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         const_iterator lower_bound(const _Key& __v) const
             {return __lower_bound(__v, __root(), __end_node());}
     template <class _Key>
@@ -1386,7 +1386,7 @@ public:
                                      __node_pointer __root,
                                      __iter_pointer __result) const;
     template <class _Key>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         iterator upper_bound(const _Key& __v)
             {return __upper_bound(__v, __root(), __end_node());}
     template <class _Key>
@@ -1394,7 +1394,7 @@ public:
                                __node_pointer __root,
                                __iter_pointer __result);
     template <class _Key>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         const_iterator upper_bound(const _Key& __v) const
             {return __upper_bound(__v, __root(), __end_node());}
     template <class _Key>
@@ -1433,7 +1433,7 @@ private:
     __node_base_pointer&
         __find_equal(__parent_pointer& __parent, const _Key& __v);
     template <class _Key>
-    _LIBCUDACXX_INLINE_VISIBILITY __node_base_pointer&
+    _LIBCUDACXX_HIDE_FROM_ABI __node_base_pointer&
     __find_equal(__parent_pointer& __parent, const _Key& __v) const {
       return const_cast<__tree*>(this)->__find_equal(__parent, __v);
     }
@@ -1448,19 +1448,19 @@ private:
 
     void destroy(__node_pointer __nd) noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __copy_assign_alloc(const __tree& __t)
         {__copy_assign_alloc(__t, integral_constant<bool,
              __node_traits::propagate_on_container_copy_assignment::value>());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __copy_assign_alloc(const __tree& __t, true_type)
         {
         if (__node_alloc() != __t.__node_alloc())
             clear();
         __node_alloc() = __t.__node_alloc();
         }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __copy_assign_alloc(const __tree&, false_type) {}
 
     void __move_assign(__tree& __t, false_type);
@@ -1468,7 +1468,7 @@ private:
         noexcept(is_nothrow_move_assignable<value_compare>::value &&
                    is_nothrow_move_assignable<__node_allocator>::value);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __move_assign_alloc(__tree& __t)
         noexcept(
             !__node_traits::propagate_on_container_move_assignment::value ||
@@ -1476,26 +1476,26 @@ private:
         {__move_assign_alloc(__t, integral_constant<bool,
              __node_traits::propagate_on_container_move_assignment::value>());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __move_assign_alloc(__tree& __t, true_type)
         noexcept(is_nothrow_move_assignable<__node_allocator>::value)
         {__node_alloc() = _CUDA_VSTD::move(__t.__node_alloc());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __move_assign_alloc(__tree&, false_type) noexcept {}
 
     struct _DetachedTreeCache {
-      _LIBCUDACXX_INLINE_VISIBILITY
+      _LIBCUDACXX_HIDE_FROM_ABI
       explicit _DetachedTreeCache(__tree *__t) noexcept : __t_(__t),
         __cache_root_(__detach_from_tree(__t)) {
           __advance();
         }
 
-      _LIBCUDACXX_INLINE_VISIBILITY
+      _LIBCUDACXX_HIDE_FROM_ABI
       __node_pointer __get() const noexcept {
         return __cache_elem_;
       }
 
-      _LIBCUDACXX_INLINE_VISIBILITY
+      _LIBCUDACXX_HIDE_FROM_ABI
       void __advance() noexcept {
         __cache_elem_ = __cache_root_;
         if (__cache_root_) {
@@ -1503,7 +1503,7 @@ private:
         }
       }
 
-      _LIBCUDACXX_INLINE_VISIBILITY
+      _LIBCUDACXX_HIDE_FROM_ABI
       ~_DetachedTreeCache() {
         __t_->destroy(__cache_elem_);
         if (__cache_root_) {
@@ -1517,9 +1517,9 @@ private:
        _DetachedTreeCache& operator=(_DetachedTreeCache const&) = delete;
 
     private:
-      _LIBCUDACXX_INLINE_VISIBILITY
+      _LIBCUDACXX_HIDE_FROM_ABI
       static __node_pointer __detach_from_tree(__tree *__t) noexcept;
-      _LIBCUDACXX_INLINE_VISIBILITY
+      _LIBCUDACXX_HIDE_FROM_ABI
       static __node_pointer __detach_next(__node_pointer) noexcept;
 
       __tree *__t_;
@@ -2255,7 +2255,7 @@ __tree<_Tp, _Compare, _Allocator>::__remove_node_pointer(__node_pointer __ptr) n
 #if _LIBCUDACXX_STD_VER > 14
 template <class _Tp, class _Compare, class _Allocator>
 template <class _NodeHandle, class _InsertReturnType>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _InsertReturnType
 __tree<_Tp, _Compare, _Allocator>::__node_handle_insert_unique(
     _NodeHandle&& __nh)
@@ -2280,7 +2280,7 @@ __tree<_Tp, _Compare, _Allocator>::__node_handle_insert_unique(
 
 template <class _Tp, class _Compare, class _Allocator>
 template <class _NodeHandle>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename __tree<_Tp, _Compare, _Allocator>::iterator
 __tree<_Tp, _Compare, _Allocator>::__node_handle_insert_unique(
     const_iterator __hint, _NodeHandle&& __nh)
@@ -2306,7 +2306,7 @@ __tree<_Tp, _Compare, _Allocator>::__node_handle_insert_unique(
 
 template <class _Tp, class _Compare, class _Allocator>
 template <class _NodeHandle>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _NodeHandle
 __tree<_Tp, _Compare, _Allocator>::__node_handle_extract(key_type const& __key)
 {
@@ -2318,7 +2318,7 @@ __tree<_Tp, _Compare, _Allocator>::__node_handle_extract(key_type const& __key)
 
 template <class _Tp, class _Compare, class _Allocator>
 template <class _NodeHandle>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _NodeHandle
 __tree<_Tp, _Compare, _Allocator>::__node_handle_extract(const_iterator __p)
 {
@@ -2329,7 +2329,7 @@ __tree<_Tp, _Compare, _Allocator>::__node_handle_extract(const_iterator __p)
 
 template <class _Tp, class _Compare, class _Allocator>
 template <class _Tree>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 __tree<_Tp, _Compare, _Allocator>::__node_handle_merge_unique(_Tree& __source)
 {
@@ -2353,7 +2353,7 @@ __tree<_Tp, _Compare, _Allocator>::__node_handle_merge_unique(_Tree& __source)
 
 template <class _Tp, class _Compare, class _Allocator>
 template <class _NodeHandle>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename __tree<_Tp, _Compare, _Allocator>::iterator
 __tree<_Tp, _Compare, _Allocator>::__node_handle_insert_multi(_NodeHandle&& __nh)
 {
@@ -2370,7 +2370,7 @@ __tree<_Tp, _Compare, _Allocator>::__node_handle_insert_multi(_NodeHandle&& __nh
 
 template <class _Tp, class _Compare, class _Allocator>
 template <class _NodeHandle>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename __tree<_Tp, _Compare, _Allocator>::iterator
 __tree<_Tp, _Compare, _Allocator>::__node_handle_insert_multi(
     const_iterator __hint, _NodeHandle&& __nh)
@@ -2389,7 +2389,7 @@ __tree<_Tp, _Compare, _Allocator>::__node_handle_insert_multi(
 
 template <class _Tp, class _Compare, class _Allocator>
 template <class _Tree>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 __tree<_Tp, _Compare, _Allocator>::__node_handle_merge_multi(_Tree& __source)
 {
@@ -2729,7 +2729,7 @@ __tree<_Tp, _Compare, _Allocator>::remove(const_iterator __p) noexcept
 }
 
 template <class _Tp, class _Compare, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(__tree<_Tp, _Compare, _Allocator>& __x,
      __tree<_Tp, _Compare, _Allocator>& __y)

@@ -28,7 +28,7 @@ class _LIBCUDACXX_TYPE_VIS condition_variable
 {
     __libcpp_condvar_t __cv_ = _LIBCUDACXX_CONDVAR_INITIALIZER;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr condition_variable() noexcept = default;
 
     ~condition_variable();

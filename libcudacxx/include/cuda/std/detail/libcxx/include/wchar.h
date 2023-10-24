@@ -136,39 +136,39 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 #if defined(__cplusplus) && !defined(_LIBCUDACXX_WCHAR_H_HAS_CONST_OVERLOADS) && defined(_LIBCUDACXX_PREFERRED_OVERLOAD)
 extern "C++" {
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 wchar_t* __libcpp_wcschr(const wchar_t* __s, wchar_t __c) {return (wchar_t*)wcschr(__s, __c);}
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_PREFERRED_OVERLOAD
 const wchar_t* wcschr(const wchar_t* __s, wchar_t __c) {return __libcpp_wcschr(__s, __c);}
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_PREFERRED_OVERLOAD
       wchar_t* wcschr(      wchar_t* __s, wchar_t __c) {return __libcpp_wcschr(__s, __c);}
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 wchar_t* __libcpp_wcspbrk(const wchar_t* __s1, const wchar_t* __s2) {return (wchar_t*)wcspbrk(__s1, __s2);}
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_PREFERRED_OVERLOAD
 const wchar_t* wcspbrk(const wchar_t* __s1, const wchar_t* __s2) {return __libcpp_wcspbrk(__s1, __s2);}
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_PREFERRED_OVERLOAD
       wchar_t* wcspbrk(      wchar_t* __s1, const wchar_t* __s2) {return __libcpp_wcspbrk(__s1, __s2);}
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 wchar_t* __libcpp_wcsrchr(const wchar_t* __s, wchar_t __c) {return (wchar_t*)wcsrchr(__s, __c);}
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_PREFERRED_OVERLOAD
 const wchar_t* wcsrchr(const wchar_t* __s, wchar_t __c) {return __libcpp_wcsrchr(__s, __c);}
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_PREFERRED_OVERLOAD
       wchar_t* wcsrchr(      wchar_t* __s, wchar_t __c) {return __libcpp_wcsrchr(__s, __c);}
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 wchar_t* __libcpp_wcsstr(const wchar_t* __s1, const wchar_t* __s2) {return (wchar_t*)wcsstr(__s1, __s2);}
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_PREFERRED_OVERLOAD
 const wchar_t* wcsstr(const wchar_t* __s1, const wchar_t* __s2) {return __libcpp_wcsstr(__s1, __s2);}
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_PREFERRED_OVERLOAD
       wchar_t* wcsstr(      wchar_t* __s1, const wchar_t* __s2) {return __libcpp_wcsstr(__s1, __s2);}
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 wchar_t* __libcpp_wmemchr(const wchar_t* __s, wchar_t __c, size_t __n) {return (wchar_t*)wmemchr(__s, __c, __n);}
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_PREFERRED_OVERLOAD
 const wchar_t* wmemchr(const wchar_t* __s, wchar_t __c, size_t __n) {return __libcpp_wmemchr(__s, __c, __n);}
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_PREFERRED_OVERLOAD
       wchar_t* wmemchr(      wchar_t* __s, wchar_t __c, size_t __n) {return __libcpp_wmemchr(__s, __c, __n);}
 }
 #endif

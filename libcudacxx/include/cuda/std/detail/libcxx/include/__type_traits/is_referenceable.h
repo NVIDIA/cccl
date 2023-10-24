@@ -35,9 +35,9 @@ struct __libcpp_is_referenceable
 #else
 struct __libcpp_is_referenceable_impl {
   template <class _Tp>
-  _LIBCUDACXX_INLINE_VISIBILITY static _Tp& __test(int);
+  _LIBCUDACXX_HIDE_FROM_ABI static _Tp& __test(int);
   template <class _Tp>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
 };
 
 template <class _Tp>

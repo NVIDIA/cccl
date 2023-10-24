@@ -93,14 +93,14 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits
 
     static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     int compare(const char_type* __s1, const char_type* __s2, size_t __n);
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+    _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     size_t length(const char_type* __s);
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+    _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a);
     static char_type*       move(char_type* __s1, const char_type* __s2, size_t __n);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static char_type*       copy(char_type* __s1, const char_type* __s2, size_t __n);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static char_type*       assign(char_type* __s, size_t __n, char_type __a);
 
     static inline constexpr int_type  not_eof(int_type __c) noexcept
@@ -357,8 +357,7 @@ char_traits<wchar_t>::compare(const char_type* __s1, const char_type* __s2, size
 
 
 template <class _Traits>
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr size_t __char_traits_length_checked(const typename _Traits::char_type* __s) noexcept {
+_LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __char_traits_length_checked(const typename _Traits::char_type* __s) noexcept {
 #if _LIBCUDACXX_DEBUG_LEVEL >= 1
   return __s ? _Traits::length(__s) : (_CUDA_VSTD::__libcpp_debug_function(_CUDA_VSTD::__libcpp_debug_info(__FILE__, __LINE__, "p == nullptr", "null pointer pass to non-null argument of char_traits<...>::length")), 0);
 #else
@@ -428,7 +427,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char8_t>
     static constexpr
     size_t           length(const char_type* __s) noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY static constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
 
     static char_type*       move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
@@ -518,17 +517,17 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char16_t>
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+    _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     int              compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+    _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     size_t           length(const char_type* __s) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+    _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static char_type*       move(char_type* __s1, const char_type* __s2, size_t __n) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static char_type*       copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static char_type*       assign(char_type* __s, size_t __n, char_type __a) noexcept;
 
     static inline constexpr int_type  not_eof(int_type __c) noexcept
@@ -637,17 +636,17 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char32_t>
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+    _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     int              compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+    _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     size_t           length(const char_type* __s) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+    _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static char_type*       move(char_type* __s1, const char_type* __s2, size_t __n) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static char_type*       copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static char_type*       assign(char_type* __s, size_t __n, char_type __a) noexcept;
 
     static inline constexpr int_type  not_eof(int_type __c) noexcept
@@ -746,7 +745,7 @@ char_traits<char32_t>::assign(char_type* __s, size_t __n, char_type __a) noexcep
 
 // __str_find
 template<class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-inline _SizeT _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+inline _SizeT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __str_find(const _CharT *__p, _SizeT __sz,
              _CharT __c, _SizeT __pos) noexcept
 {
@@ -798,7 +797,7 @@ __search_substring(const _CharT *__first1, const _CharT *__last1,
 }
 
 template<class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-inline _SizeT _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+inline _SizeT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __str_find(const _CharT *__p, _SizeT __sz,
        const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
@@ -820,7 +819,7 @@ __str_find(const _CharT *__p, _SizeT __sz,
 // __str_rfind
 
 template<class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-inline _SizeT _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+inline _SizeT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __str_rfind(const _CharT *__p, _SizeT __sz,
               _CharT __c, _SizeT __pos) noexcept
 {
@@ -839,7 +838,7 @@ __str_rfind(const _CharT *__p, _SizeT __sz,
 }
 
 template<class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-inline _SizeT _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+inline _SizeT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __str_rfind(const _CharT *__p, _SizeT __sz,
         const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
@@ -858,7 +857,7 @@ __str_rfind(const _CharT *__p, _SizeT __sz,
 
 // __str_find_first_of
 template<class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-inline _SizeT _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+inline _SizeT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __str_find_first_of(const _CharT *__p, _SizeT __sz,
                 const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
@@ -874,7 +873,7 @@ __str_find_first_of(const _CharT *__p, _SizeT __sz,
 
 // __str_find_last_of
 template<class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-inline _SizeT _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+inline _SizeT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __str_find_last_of(const _CharT *__p, _SizeT __sz,
                const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
     {
@@ -897,7 +896,7 @@ __str_find_last_of(const _CharT *__p, _SizeT __sz,
 
 // __str_find_first_not_of
 template<class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-inline _SizeT _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+inline _SizeT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __str_find_first_not_of(const _CharT *__p, _SizeT __sz,
                     const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
@@ -913,7 +912,7 @@ __str_find_first_not_of(const _CharT *__p, _SizeT __sz,
 
 
 template<class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-inline _SizeT _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+inline _SizeT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __str_find_first_not_of(const _CharT *__p, _SizeT __sz,
                           _CharT __c, _SizeT __pos) noexcept
 {
@@ -930,7 +929,7 @@ __str_find_first_not_of(const _CharT *__p, _SizeT __sz,
 
 // __str_find_last_not_of
 template<class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-inline _SizeT _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+inline _SizeT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __str_find_last_not_of(const _CharT *__p, _SizeT __sz,
                    const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
@@ -946,7 +945,7 @@ __str_find_last_not_of(const _CharT *__p, _SizeT __sz,
 
 
 template<class _CharT, class _SizeT, class _Traits, _SizeT __npos>
-inline _SizeT _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+inline _SizeT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __str_find_last_not_of(const _CharT *__p, _SizeT __sz,
                          _CharT __c, _SizeT __pos) noexcept
 {
@@ -961,7 +960,7 @@ __str_find_last_not_of(const _CharT *__p, _SizeT __sz,
 }
 
 template<class _Ptr>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 size_t __do_string_hash(_Ptr __p, _Ptr __e)
 {
     typedef typename iterator_traits<_Ptr>::value_type value_type;

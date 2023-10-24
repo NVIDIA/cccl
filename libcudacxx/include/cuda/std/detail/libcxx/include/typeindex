@@ -60,31 +60,31 @@ class _LIBCUDACXX_TEMPLATE_VIS type_index
 {
     const type_info* __t_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     type_index(const type_info& __y) noexcept : __t_(&__y) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator==(const type_index& __y) const noexcept
         {return *__t_ == *__y.__t_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator!=(const type_index& __y) const noexcept
         {return *__t_ != *__y.__t_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator< (const type_index& __y) const noexcept
         {return  __t_->before(*__y.__t_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator<=(const type_index& __y) const noexcept
         {return !__y.__t_->before(*__t_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator> (const type_index& __y) const noexcept
         {return  __y.__t_->before(*__t_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator>=(const type_index& __y) const noexcept
         {return !__t_->before(*__y.__t_);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t hash_code() const noexcept {return __t_->hash_code();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const char* name() const noexcept {return __t_->name();}
 };
 
@@ -94,7 +94,7 @@ template <>
 struct _LIBCUDACXX_TEMPLATE_VIS hash<type_index>
     : public __unary_function<type_index, size_t>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t operator()(type_index __index) const noexcept
         {return __index.hash_code();}
 };

@@ -24,7 +24,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Container, class _Predicate>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename _Container::size_type
 __libcpp_erase_if_container(_Container& __c, _Predicate& __pred) {
   typename _Container::size_type __old_size = __c.size();

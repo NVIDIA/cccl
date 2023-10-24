@@ -160,19 +160,19 @@ struct _LIBCUDACXX_HIDDEN __traits_base
     using type = uint64_t;
 
 #if !defined(_LIBCUDACXX_COMPILER_MSVC)
-    static _LIBCUDACXX_INLINE_VISIBILITY int __width(_Tp __v)
+    static _LIBCUDACXX_HIDE_FROM_ABI int __width(_Tp __v)
     {
         auto __t = (64 - __builtin_clzll(__v | 1)) * 1233 >> 12;
         return __t - (__v < __pow10_64[__t]) + 1;
     }
 #endif
 
-    static _LIBCUDACXX_INLINE_VISIBILITY char* __convert(_Tp __v, char* __p)
+    static _LIBCUDACXX_HIDE_FROM_ABI char* __convert(_Tp __v, char* __p)
     {
         return __u64toa(__v, __p);
     }
 
-    static _LIBCUDACXX_INLINE_VISIBILITY decltype(__pow10_64)& __pow() { return __pow10_64; }
+    static _LIBCUDACXX_HIDE_FROM_ABI decltype(__pow10_64)& __pow() { return __pow10_64; }
 };
 
 template <typename _Tp>
@@ -182,23 +182,23 @@ struct _LIBCUDACXX_HIDDEN
     using type = uint32_t;
 
 #if !defined(_LIBCUDACXX_COMPILER_MSVC)
-    static _LIBCUDACXX_INLINE_VISIBILITY int __width(_Tp __v)
+    static _LIBCUDACXX_HIDE_FROM_ABI int __width(_Tp __v)
     {
         auto __t = (32 - __builtin_clz(__v | 1)) * 1233 >> 12;
         return __t - (__v < __pow10_32[__t]) + 1;
     }
 #endif
 
-    static _LIBCUDACXX_INLINE_VISIBILITY char* __convert(_Tp __v, char* __p)
+    static _LIBCUDACXX_HIDE_FROM_ABI char* __convert(_Tp __v, char* __p)
     {
         return __u32toa(__v, __p);
     }
 
-    static _LIBCUDACXX_INLINE_VISIBILITY decltype(__pow10_32)& __pow() { return __pow10_32; }
+    static _LIBCUDACXX_HIDE_FROM_ABI decltype(__pow10_32)& __pow() { return __pow10_32; }
 };
 
 template <typename _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY bool
+_LIBCUDACXX_HIDE_FROM_ABI bool
 __mul_overflowed(unsigned char __a, _Tp __b, unsigned char& __r)
 {
     auto __c = __a * __b;
@@ -207,7 +207,7 @@ __mul_overflowed(unsigned char __a, _Tp __b, unsigned char& __r)
 }
 
 template <typename _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY bool
+_LIBCUDACXX_HIDE_FROM_ABI bool
 __mul_overflowed(unsigned short __a, _Tp __b, unsigned short& __r)
 {
     auto __c = __a * __b;
@@ -216,7 +216,7 @@ __mul_overflowed(unsigned short __a, _Tp __b, unsigned short& __r)
 }
 
 template <typename _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY bool
+_LIBCUDACXX_HIDE_FROM_ABI bool
 __mul_overflowed(_Tp __a, _Tp __b, _Tp& __r)
 {
     static_assert(is_unsigned<_Tp>::value, "");
@@ -230,7 +230,7 @@ __mul_overflowed(_Tp __a, _Tp __b, _Tp& __r)
 }
 
 template <typename _Tp, typename _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY bool
+_LIBCUDACXX_HIDE_FROM_ABI bool
 __mul_overflowed(_Tp __a, _Up __b, _Tp& __r)
 {
     return __mul_overflowed(__a, static_cast<_Tp>(__b), __r);
@@ -244,7 +244,7 @@ struct _LIBCUDACXX_HIDDEN __traits : __traits_base<_Tp>
     using typename __traits_base<_Tp>::type;
 
     // precondition: at least one non-zero character available
-    static _LIBCUDACXX_INLINE_VISIBILITY char const*
+    static _LIBCUDACXX_HIDE_FROM_ABI char const*
     __read(char const* __p, char const* __ep, type& __a, type& __b)
     {
         type __cprod[digits];
@@ -265,7 +265,7 @@ struct _LIBCUDACXX_HIDDEN __traits : __traits_base<_Tp>
     }
 
     template <typename _It1, typename _It2, class _Up>
-    static _LIBCUDACXX_INLINE_VISIBILITY _Up
+    static _LIBCUDACXX_HIDE_FROM_ABI _Up
     __inner_product(_It1 __first1, _It1 __last1, _It2 __first2, _Up __init)
     {
         for (; __first1 < __last1; ++__first1, ++__first2)
@@ -277,7 +277,7 @@ struct _LIBCUDACXX_HIDDEN __traits : __traits_base<_Tp>
 }  // namespace __itoa
 
 template <typename _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _Tp
+_LIBCUDACXX_HIDE_FROM_ABI _Tp
 __complement(_Tp __x)
 {
     static_assert(is_unsigned<_Tp>::value, "cast to unsigned first");
@@ -285,14 +285,14 @@ __complement(_Tp __x)
 }
 
 template <typename _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY typename make_unsigned<_Tp>::type
+_LIBCUDACXX_HIDE_FROM_ABI typename make_unsigned<_Tp>::type
 __to_unsigned(_Tp __x)
 {
     return static_cast<typename make_unsigned<_Tp>::type>(__x);
 }
 
 template <typename _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY to_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI to_chars_result
 __to_chars_itoa(char* __first, char* __last, _Tp __value, true_type)
 {
     auto __x = __to_unsigned(__value);
@@ -306,7 +306,7 @@ __to_chars_itoa(char* __first, char* __last, _Tp __value, true_type)
 }
 
 template <typename _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY to_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI to_chars_result
 __to_chars_itoa(char* __first, char* __last, _Tp __value, false_type)
 {
     using __tx = __itoa::__traits<_Tp>;
@@ -337,7 +337,7 @@ __to_chars_itoa(char* __first, char* __last, _Tp __value, false_type)
 }
 
 template <typename _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY to_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI to_chars_result
 __to_chars_integral(char* __first, char* __last, _Tp __value, int __base,
                     true_type)
 {
@@ -352,7 +352,7 @@ __to_chars_integral(char* __first, char* __last, _Tp __value, int __base,
 }
 
 template <typename _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY to_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI to_chars_result
 __to_chars_integral(char* __first, char* __last, _Tp __value, int __base,
                     false_type)
 {
@@ -380,14 +380,14 @@ __to_chars_integral(char* __first, char* __last, _Tp __value, int __base,
 }
 
 template <typename _Tp, typename enable_if<is_integral<_Tp>::value, int>::type = 0>
-inline _LIBCUDACXX_INLINE_VISIBILITY to_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI to_chars_result
 to_chars(char* __first, char* __last, _Tp __value)
 {
     return __to_chars_itoa(__first, __last, __value, is_signed<_Tp>());
 }
 
 template <typename _Tp, typename enable_if<is_integral<_Tp>::value, int>::type = 0>
-inline _LIBCUDACXX_INLINE_VISIBILITY to_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI to_chars_result
 to_chars(char* __first, char* __last, _Tp __value, int __base)
 {
     _LIBCUDACXX_ASSERT(2 <= __base && __base <= 36, "base not in [2, 36]");
@@ -396,7 +396,7 @@ to_chars(char* __first, char* __last, _Tp __value, int __base)
 }
 
 template <typename _It, typename _Tp, typename _Fn, typename... _Ts>
-inline _LIBCUDACXX_INLINE_VISIBILITY from_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI from_chars_result
 __sign_combinator(_It __first, _It __last, _Tp& __value, _Fn __f, _Ts... __args)
 {
     using __tl = numeric_limits<_Tp>;
@@ -436,7 +436,7 @@ __sign_combinator(_It __first, _It __last, _Tp& __value, _Fn __f, _Ts... __args)
 }
 
 template <typename _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY bool
+_LIBCUDACXX_HIDE_FROM_ABI bool
 __in_pattern(_Tp __c)
 {
     return '0' <= __c && __c <= '9';
@@ -447,11 +447,11 @@ struct _LIBCUDACXX_HIDDEN __in_pattern_result
     bool __ok;
     int __val;
 
-    explicit _LIBCUDACXX_INLINE_VISIBILITY operator bool() const { return __ok; }
+    explicit _LIBCUDACXX_HIDE_FROM_ABI operator bool() const { return __ok; }
 };
 
 template <typename _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __in_pattern_result
+_LIBCUDACXX_HIDE_FROM_ABI __in_pattern_result
 __in_pattern(_Tp __c, int __base)
 {
     if (__base <= 10)
@@ -465,7 +465,7 @@ __in_pattern(_Tp __c, int __base)
 }
 
 template <typename _It, typename _Tp, typename _Fn, typename... _Ts>
-inline _LIBCUDACXX_INLINE_VISIBILITY from_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI from_chars_result
 __subject_seq_combinator(_It __first, _It __last, _Tp& __value, _Fn __f,
                          _Ts... __args)
 {
@@ -502,7 +502,7 @@ __subject_seq_combinator(_It __first, _It __last, _Tp& __value, _Fn __f,
 }
 
 template <typename _Tp, typename enable_if<is_unsigned<_Tp>::value, int>::type = 0>
-inline _LIBCUDACXX_INLINE_VISIBILITY from_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI from_chars_result
 __from_chars_atoi(const char* __first, const char* __last, _Tp& __value)
 {
     using __tx = __itoa::__traits<_Tp>;
@@ -528,7 +528,7 @@ __from_chars_atoi(const char* __first, const char* __last, _Tp& __value)
 }
 
 template <typename _Tp, typename enable_if<is_signed<_Tp>::value, int>::type = 0>
-inline _LIBCUDACXX_INLINE_VISIBILITY from_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI from_chars_result
 __from_chars_atoi(const char* __first, const char* __last, _Tp& __value)
 {
     using __t = decltype(__to_unsigned(__value));
@@ -536,7 +536,7 @@ __from_chars_atoi(const char* __first, const char* __last, _Tp& __value)
 }
 
 template <typename _Tp, typename enable_if<is_unsigned<_Tp>::value, int>::type = 0>
-inline _LIBCUDACXX_INLINE_VISIBILITY from_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI from_chars_result
 __from_chars_integral(const char* __first, const char* __last, _Tp& __value,
                       int __base)
 {
@@ -583,7 +583,7 @@ __from_chars_integral(const char* __first, const char* __last, _Tp& __value,
 }
 
 template <typename _Tp, typename enable_if<is_signed<_Tp>::value, int>::type = 0>
-inline _LIBCUDACXX_INLINE_VISIBILITY from_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI from_chars_result
 __from_chars_integral(const char* __first, const char* __last, _Tp& __value,
                       int __base)
 {
@@ -593,14 +593,14 @@ __from_chars_integral(const char* __first, const char* __last, _Tp& __value,
 }
 
 template <typename _Tp, typename enable_if<is_integral<_Tp>::value, int>::type = 0>
-inline _LIBCUDACXX_INLINE_VISIBILITY from_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI from_chars_result
 from_chars(const char* __first, const char* __last, _Tp& __value)
 {
     return __from_chars_atoi(__first, __last, __value);
 }
 
 template <typename _Tp, typename enable_if<is_integral<_Tp>::value, int>::type = 0>
-inline _LIBCUDACXX_INLINE_VISIBILITY from_chars_result
+_LIBCUDACXX_HIDE_FROM_ABI from_chars_result
 from_chars(const char* __first, const char* __last, _Tp& __value, int __base)
 {
     _LIBCUDACXX_ASSERT(2 <= __base && __base <= 36, "base not in [2, 36]");

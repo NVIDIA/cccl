@@ -575,81 +575,81 @@ public:
     typedef _CharT char_type;
     typedef _InputIterator iter_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit num_get(size_t __refs = 0)
         : locale::facet(__refs) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, ios_base& __iob,
                   ios_base::iostate& __err, bool& __v) const
     {
         return do_get(__b, __e, __iob, __err, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, ios_base& __iob,
                   ios_base::iostate& __err, long& __v) const
     {
         return do_get(__b, __e, __iob, __err, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, ios_base& __iob,
                   ios_base::iostate& __err, long long& __v) const
     {
         return do_get(__b, __e, __iob, __err, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, ios_base& __iob,
                   ios_base::iostate& __err, unsigned short& __v) const
     {
         return do_get(__b, __e, __iob, __err, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, ios_base& __iob,
                   ios_base::iostate& __err, unsigned int& __v) const
     {
         return do_get(__b, __e, __iob, __err, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, ios_base& __iob,
                   ios_base::iostate& __err, unsigned long& __v) const
     {
         return do_get(__b, __e, __iob, __err, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, ios_base& __iob,
                   ios_base::iostate& __err, unsigned long long& __v) const
     {
         return do_get(__b, __e, __iob, __err, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, ios_base& __iob,
                   ios_base::iostate& __err, float& __v) const
     {
         return do_get(__b, __e, __iob, __err, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, ios_base& __iob,
                   ios_base::iostate& __err, double& __v) const
     {
         return do_get(__b, __e, __iob, __err, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, ios_base& __iob,
                   ios_base::iostate& __err, long double& __v) const
     {
         return do_get(__b, __e, __iob, __err, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, ios_base& __iob,
                   ios_base::iostate& __err, void*& __v) const
     {
@@ -659,7 +659,7 @@ public:
     static locale::id id;
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~num_get() {}
 
     template <class _Fp>
@@ -801,23 +801,23 @@ __num_get_unsigned_integral(const char* __a, const char* __a_end,
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 _Tp __do_strtod(const char* __a, char** __p2);
 
 template <>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 float __do_strtod<float>(const char* __a, char** __p2) {
     return strtof_l(__a, __p2, _LIBCUDACXX_GET_C_LOCALE);
 }
 
 template <>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 double __do_strtod<double>(const char* __a, char** __p2) {
     return strtod_l(__a, __p2, _LIBCUDACXX_GET_C_LOCALE);
 }
 
 template <>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 long double __do_strtod<long double>(const char* __a, char** __p2) {
     return strtold_l(__a, __p2, _LIBCUDACXX_GET_C_LOCALE);
 }
@@ -1263,60 +1263,60 @@ public:
     typedef _CharT char_type;
     typedef _OutputIterator iter_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit num_put(size_t __refs = 0)
         : locale::facet(__refs) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type put(iter_type __s, ios_base& __iob, char_type __fl,
                   bool __v) const
     {
         return do_put(__s, __iob, __fl, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type put(iter_type __s, ios_base& __iob, char_type __fl,
                   long __v) const
     {
         return do_put(__s, __iob, __fl, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type put(iter_type __s, ios_base& __iob, char_type __fl,
                   long long __v) const
     {
         return do_put(__s, __iob, __fl, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type put(iter_type __s, ios_base& __iob, char_type __fl,
                   unsigned long __v) const
     {
         return do_put(__s, __iob, __fl, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type put(iter_type __s, ios_base& __iob, char_type __fl,
                   unsigned long long __v) const
     {
         return do_put(__s, __iob, __fl, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type put(iter_type __s, ios_base& __iob, char_type __fl,
                   double __v) const
     {
         return do_put(__s, __iob, __fl, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type put(iter_type __s, ios_base& __iob, char_type __fl,
                   long double __v) const
     {
         return do_put(__s, __iob, __fl, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type put(iter_type __s, ios_base& __iob, char_type __fl,
                   const void* __v) const
     {
@@ -1326,7 +1326,7 @@ public:
     static locale::id id;
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~num_put() {}
 
     virtual iter_type do_put(iter_type __s, ios_base& __iob, char_type __fl,
@@ -1734,7 +1734,7 @@ protected:
     virtual const string_type& __x() const;
     virtual const string_type& __X() const;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~__time_get_c_storage() {}
 };
 
@@ -1766,52 +1766,52 @@ public:
     typedef time_base::dateorder    dateorder;
     typedef basic_string<char_type> string_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit time_get(size_t __refs = 0)
         : locale::facet(__refs) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     dateorder date_order() const
     {
         return this->do_date_order();
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get_time(iter_type __b, iter_type __e, ios_base& __iob,
                        ios_base::iostate& __err, tm* __tm) const
     {
         return do_get_time(__b, __e, __iob, __err, __tm);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get_date(iter_type __b, iter_type __e, ios_base& __iob,
                        ios_base::iostate& __err, tm* __tm) const
     {
         return do_get_date(__b, __e, __iob, __err, __tm);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get_weekday(iter_type __b, iter_type __e, ios_base& __iob,
                           ios_base::iostate& __err, tm* __tm) const
     {
         return do_get_weekday(__b, __e, __iob, __err, __tm);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get_monthname(iter_type __b, iter_type __e, ios_base& __iob,
                             ios_base::iostate& __err, tm* __tm) const
     {
         return do_get_monthname(__b, __e, __iob, __err, __tm);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get_year(iter_type __b, iter_type __e, ios_base& __iob,
                        ios_base::iostate& __err, tm* __tm) const
     {
         return do_get_year(__b, __e, __iob, __err, __tm);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, ios_base& __iob,
                   ios_base::iostate& __err, tm *__tm,
                   char __fmt, char __mod = 0) const
@@ -1826,7 +1826,7 @@ public:
     static locale::id id;
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~time_get() {}
 
     virtual dateorder do_date_order() const;
@@ -2395,7 +2395,7 @@ protected:
     explicit __time_get_storage(const char* __nm);
     explicit __time_get_storage(const string& __nm);
 
-    _LIBCUDACXX_INLINE_VISIBILITY ~__time_get_storage() {}
+    _LIBCUDACXX_HIDE_FROM_ABI ~__time_get_storage() {}
 
     time_base::dateorder __do_date_order() const;
 
@@ -2432,35 +2432,35 @@ public:
     typedef _CharT                  char_type;
     typedef basic_string<char_type> string_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit time_get_byname(const char* __nm, size_t __refs = 0)
         : time_get<_CharT, _InputIterator>(__refs),
           __time_get_storage<_CharT>(__nm) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit time_get_byname(const string& __nm, size_t __refs = 0)
         : time_get<_CharT, _InputIterator>(__refs),
           __time_get_storage<_CharT>(__nm) {}
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~time_get_byname() {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     virtual dateorder do_date_order() const {return this->__do_date_order();}
 private:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     virtual const string_type* __weeks() const  {return this->__weeks_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     virtual const string_type* __months() const {return this->__months_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     virtual const string_type* __am_pm() const  {return this->__am_pm_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     virtual const string_type& __c() const      {return this->__c_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     virtual const string_type& __r() const      {return this->__r_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     virtual const string_type& __x() const      {return this->__x_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     virtual const string_type& __X() const      {return this->__X_;}
 };
 
@@ -2471,7 +2471,7 @@ class _LIBCUDACXX_TYPE_VIS __time_put
 {
     locale_t __loc_;
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY __time_put() : __loc_(_LIBCUDACXX_GET_C_LOCALE) {}
+    _LIBCUDACXX_HIDE_FROM_ABI __time_put() : __loc_(_LIBCUDACXX_GET_C_LOCALE) {}
     __time_put(const char* __nm);
     __time_put(const string& __nm);
     ~__time_put();
@@ -2490,14 +2490,14 @@ public:
     typedef _CharT char_type;
     typedef _OutputIterator iter_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit time_put(size_t __refs = 0)
         : locale::facet(__refs) {}
 
     iter_type put(iter_type __s, ios_base& __iob, char_type __fl, const tm* __tm,
                   const char_type* __pb, const char_type* __pe) const;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type put(iter_type __s, ios_base& __iob, char_type __fl,
                   const tm* __tm, char __fmt, char __mod = 0) const
     {
@@ -2507,16 +2507,16 @@ public:
     static locale::id id;
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~time_put() {}
     virtual iter_type do_put(iter_type __s, ios_base&, char_type, const tm* __tm,
                              char __fmt, char __mod) const;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit time_put(const char* __nm, size_t __refs)
         : locale::facet(__refs),
           __time_put(__nm) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit time_put(const string& __nm, size_t __refs)
         : locale::facet(__refs),
           __time_put(__nm) {}
@@ -2585,16 +2585,16 @@ class _LIBCUDACXX_TEMPLATE_VIS time_put_byname
     : public time_put<_CharT, _OutputIterator>
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit time_put_byname(const char* __nm, size_t __refs = 0)
         : time_put<_CharT, _OutputIterator>(__nm, __refs) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit time_put_byname(const string& __nm, size_t __refs = 0)
         : time_put<_CharT, _OutputIterator>(__nm, __refs) {}
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~time_put_byname() {}
 };
 
@@ -2609,7 +2609,7 @@ public:
     enum part {none, space, symbol, sign, value};
     struct pattern {char field[4];};
 
-    _LIBCUDACXX_INLINE_VISIBILITY money_base() {}
+    _LIBCUDACXX_HIDE_FROM_ABI money_base() {}
 };
 
 // moneypunct
@@ -2623,25 +2623,25 @@ public:
     typedef _CharT                  char_type;
     typedef basic_string<char_type> string_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit moneypunct(size_t __refs = 0)
         : locale::facet(__refs) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY char_type   decimal_point() const {return do_decimal_point();}
-    _LIBCUDACXX_INLINE_VISIBILITY char_type   thousands_sep() const {return do_thousands_sep();}
-    _LIBCUDACXX_INLINE_VISIBILITY string      grouping()      const {return do_grouping();}
-    _LIBCUDACXX_INLINE_VISIBILITY string_type curr_symbol()   const {return do_curr_symbol();}
-    _LIBCUDACXX_INLINE_VISIBILITY string_type positive_sign() const {return do_positive_sign();}
-    _LIBCUDACXX_INLINE_VISIBILITY string_type negative_sign() const {return do_negative_sign();}
-    _LIBCUDACXX_INLINE_VISIBILITY int         frac_digits()   const {return do_frac_digits();}
-    _LIBCUDACXX_INLINE_VISIBILITY pattern     pos_format()    const {return do_pos_format();}
-    _LIBCUDACXX_INLINE_VISIBILITY pattern     neg_format()    const {return do_neg_format();}
+    _LIBCUDACXX_HIDE_FROM_ABI char_type   decimal_point() const {return do_decimal_point();}
+    _LIBCUDACXX_HIDE_FROM_ABI char_type   thousands_sep() const {return do_thousands_sep();}
+    _LIBCUDACXX_HIDE_FROM_ABI string      grouping()      const {return do_grouping();}
+    _LIBCUDACXX_HIDE_FROM_ABI string_type curr_symbol()   const {return do_curr_symbol();}
+    _LIBCUDACXX_HIDE_FROM_ABI string_type positive_sign() const {return do_positive_sign();}
+    _LIBCUDACXX_HIDE_FROM_ABI string_type negative_sign() const {return do_negative_sign();}
+    _LIBCUDACXX_HIDE_FROM_ABI int         frac_digits()   const {return do_frac_digits();}
+    _LIBCUDACXX_HIDE_FROM_ABI pattern     pos_format()    const {return do_pos_format();}
+    _LIBCUDACXX_HIDE_FROM_ABI pattern     neg_format()    const {return do_neg_format();}
 
     static locale::id id;
     static const bool intl = _International;
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~moneypunct() {}
 
     virtual char_type   do_decimal_point() const {return numeric_limits<char_type>::max();}
@@ -2681,16 +2681,16 @@ public:
     typedef _CharT                  char_type;
     typedef basic_string<char_type> string_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit moneypunct_byname(const char* __nm, size_t __refs = 0)
         : moneypunct<_CharT, _International>(__refs) {init(__nm);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit moneypunct_byname(const string& __nm, size_t __refs = 0)
         : moneypunct<_CharT, _International>(__refs) {init(__nm.c_str());}
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~moneypunct_byname() {}
 
     virtual char_type   do_decimal_point() const {return __decimal_point_;}
@@ -2736,7 +2736,7 @@ protected:
     typedef _CharT                  char_type;
     typedef basic_string<char_type> string_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY __money_get() {}
+    _LIBCUDACXX_HIDE_FROM_ABI __money_get() {}
 
     static void __gather_info(bool __intl, const locale& __loc,
                               money_base::pattern& __pat, char_type& __dp,
@@ -2794,18 +2794,18 @@ public:
     typedef _InputIterator          iter_type;
     typedef basic_string<char_type> string_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit money_get(size_t __refs = 0)
         : locale::facet(__refs) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, bool __intl, ios_base& __iob,
                   ios_base::iostate& __err, long double& __v) const
     {
         return do_get(__b, __e, __intl, __iob, __err, __v);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type get(iter_type __b, iter_type __e, bool __intl, ios_base& __iob,
                   ios_base::iostate& __err, string_type& __v) const
     {
@@ -2816,7 +2816,7 @@ public:
 
 protected:
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~money_get() {}
 
     virtual iter_type do_get(iter_type __b, iter_type __e, bool __intl,
@@ -3176,7 +3176,7 @@ protected:
     typedef _CharT                  char_type;
     typedef basic_string<char_type> string_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY __money_put() {}
+    _LIBCUDACXX_HIDE_FROM_ABI __money_put() {}
 
     static void __gather_info(bool __intl, bool __neg, const locale& __loc,
                               money_base::pattern& __pat, char_type& __dp,
@@ -3352,18 +3352,18 @@ public:
     typedef _OutputIterator         iter_type;
     typedef basic_string<char_type> string_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit money_put(size_t __refs = 0)
         : locale::facet(__refs) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type put(iter_type __s, bool __intl, ios_base& __iob, char_type __fl,
                   long double __units) const
     {
         return do_put(__s, __intl, __iob, __fl, __units);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iter_type put(iter_type __s, bool __intl, ios_base& __iob, char_type __fl,
                   const string_type& __digits) const
     {
@@ -3373,7 +3373,7 @@ public:
     static locale::id id;
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~money_put() {}
 
     virtual iter_type do_put(iter_type __s, bool __intl, ios_base& __iob,
@@ -3502,7 +3502,7 @@ class _LIBCUDACXX_TYPE_VIS messages_base
 public:
     typedef ptrdiff_t catalog;
 
-    _LIBCUDACXX_INLINE_VISIBILITY messages_base() {}
+    _LIBCUDACXX_HIDE_FROM_ABI messages_base() {}
 };
 
 template <class _CharT>
@@ -3514,24 +3514,24 @@ public:
     typedef _CharT               char_type;
     typedef basic_string<_CharT> string_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit messages(size_t __refs = 0)
         : locale::facet(__refs) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     catalog open(const basic_string<char>& __nm, const locale& __loc) const
     {
         return do_open(__nm, __loc);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     string_type get(catalog __c, int __set, int __msgid,
                     const string_type& __dflt) const
     {
         return do_get(__c, __set, __msgid, __dflt);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void close(catalog __c) const
     {
         do_close(__c);
@@ -3540,7 +3540,7 @@ public:
     static locale::id id;
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~messages() {}
 
     virtual catalog do_open(const basic_string<char>&, const locale&) const;
@@ -3619,16 +3619,16 @@ public:
     typedef messages_base::catalog catalog;
     typedef basic_string<_CharT> string_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit messages_byname(const char*, size_t __refs = 0)
         : messages<_CharT>(__refs) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit messages_byname(const string&, size_t __refs = 0)
         : messages<_CharT>(__refs) {}
 
 protected:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~messages_byname() {}
 };
 
@@ -3656,41 +3656,41 @@ private:
     wstring_convert(const wstring_convert& __wc);
     wstring_convert& operator=(const wstring_convert& __wc);
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _LIBCUDACXX_EXPLICIT_AFTER_CXX11 wstring_convert(_Codecvt* __pcvt = new _Codecvt);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     wstring_convert(_Codecvt* __pcvt, state_type __state);
     _LIBCUDACXX_EXPLICIT_AFTER_CXX11 wstring_convert(const byte_string& __byte_err,
                     const wide_string& __wide_err = wide_string());
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     wstring_convert(wstring_convert&& __wc);
     ~wstring_convert();
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     wide_string from_bytes(char __byte)
         {return from_bytes(&__byte, &__byte+1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     wide_string from_bytes(const char* __ptr)
         {return from_bytes(__ptr, __ptr + char_traits<char>::length(__ptr));}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     wide_string from_bytes(const byte_string& __str)
         {return from_bytes(__str.data(), __str.data() + __str.size());}
     wide_string from_bytes(const char* __first, const char* __last);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     byte_string to_bytes(_Elem __wchar)
         {return to_bytes(&__wchar, &__wchar+1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     byte_string to_bytes(const _Elem* __wptr)
         {return to_bytes(__wptr, __wptr + char_traits<_Elem>::length(__wptr));}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     byte_string to_bytes(const wide_string& __wstr)
         {return to_bytes(__wstr.data(), __wstr.data() + __wstr.size());}
     byte_string to_bytes(const _Elem* __first, const _Elem* __last);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t converted() const noexcept {return __cvtcount_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     state_type state() const {return __cvtstate_;}
 };
 
@@ -3923,9 +3923,9 @@ public:
             _Codecvt* __pcvt = new _Codecvt, state_type __state = state_type());
     ~wbuffer_convert();
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     streambuf* rdbuf() const {return __bufptr_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     streambuf* rdbuf(streambuf* __bytebuf)
     {
         streambuf* __r = __bufptr_;
@@ -3933,7 +3933,7 @@ public:
         return __r;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     state_type state() const {return __st_;}
 
 protected:

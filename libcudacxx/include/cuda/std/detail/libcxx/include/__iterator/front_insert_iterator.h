@@ -46,18 +46,18 @@ protected:
 public:
     typedef _Container container_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY explicit front_insert_iterator(_Container& __x) : container(_CUDA_VSTD::addressof(__x)) {}
-    _LIBCUDACXX_INLINE_VISIBILITY front_insert_iterator& operator=(const typename _Container::value_type& __value_)
+    _LIBCUDACXX_HIDE_FROM_ABI explicit front_insert_iterator(_Container& __x) : container(_CUDA_VSTD::addressof(__x)) {}
+    _LIBCUDACXX_HIDE_FROM_ABI front_insert_iterator& operator=(const typename _Container::value_type& __value_)
         {container->push_front(__value_); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY front_insert_iterator& operator=(typename _Container::value_type&& __value_)
+    _LIBCUDACXX_HIDE_FROM_ABI front_insert_iterator& operator=(typename _Container::value_type&& __value_)
         {container->push_front(_CUDA_VSTD::move(__value_)); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY front_insert_iterator& operator*()     {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY front_insert_iterator& operator++()    {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY front_insert_iterator  operator++(int) {return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI front_insert_iterator& operator*()     {return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI front_insert_iterator& operator++()    {return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI front_insert_iterator  operator++(int) {return *this;}
 };
 
 template <class _Container>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 front_insert_iterator<_Container>
 front_inserter(_Container& __x)
 {

@@ -44,13 +44,13 @@ using __swap_result_t = __enable_if_t<_LIBCUDACXX_TRAIT(is_move_constructible, _
                                    && _LIBCUDACXX_TRAIT(is_move_assignable, _Tp)>;
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __swap_result_t<_Tp>
 swap(_Tp& __x, _Tp& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp)
                                && _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Tp));
 
 template<class _Tp, size_t _Np>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __enable_if_t<__is_swappable<_Tp>::value>
 swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value);
 
@@ -63,10 +63,10 @@ template <class _Tp, class _Up = _Tp,
 struct __swappable_with
 {
     template <class _LHS, class _RHS>
-    _LIBCUDACXX_INLINE_VISIBILITY static decltype(swap(_CUDA_VSTD::declval<_LHS>(), _CUDA_VSTD::declval<_RHS>()))
+    _LIBCUDACXX_HIDE_FROM_ABI static decltype(swap(_CUDA_VSTD::declval<_LHS>(), _CUDA_VSTD::declval<_RHS>()))
     __test_swap(int);
     template <class, class>
-    _LIBCUDACXX_INLINE_VISIBILITY static __nat __test_swap(long);
+    _LIBCUDACXX_HIDE_FROM_ABI static __nat __test_swap(long);
 
     // Extra parens are needed for the C++03 definition of decltype.
     typedef decltype((__test_swap<_Tp, _Up>(0))) __swap1;

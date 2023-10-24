@@ -157,7 +157,7 @@ __shared_mutex_base
     static const unsigned __n_readers_ = ~__write_entered_;
 
     __shared_mutex_base();
-    _LIBCUDACXX_INLINE_VISIBILITY ~__shared_mutex_base() = default;
+    _LIBCUDACXX_HIDE_FROM_ABI ~__shared_mutex_base() = default;
 
     __shared_mutex_base(const __shared_mutex_base&) = delete;
     __shared_mutex_base& operator=(const __shared_mutex_base&) = delete;
@@ -182,24 +182,24 @@ class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_AVAILABILITY_SHARED_MUTEX shared_mutex
 {
     __shared_mutex_base __base;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY shared_mutex() : __base() {}
-    _LIBCUDACXX_INLINE_VISIBILITY ~shared_mutex() = default;
+    _LIBCUDACXX_HIDE_FROM_ABI shared_mutex() : __base() {}
+    _LIBCUDACXX_HIDE_FROM_ABI ~shared_mutex() = default;
 
     shared_mutex(const shared_mutex&) = delete;
     shared_mutex& operator=(const shared_mutex&) = delete;
 
     // Exclusive ownership
-    _LIBCUDACXX_INLINE_VISIBILITY void lock()     { return __base.lock(); }
-    _LIBCUDACXX_INLINE_VISIBILITY bool try_lock() { return __base.try_lock(); }
-    _LIBCUDACXX_INLINE_VISIBILITY void unlock()   { return __base.unlock(); }
+    _LIBCUDACXX_HIDE_FROM_ABI void lock()     { return __base.lock(); }
+    _LIBCUDACXX_HIDE_FROM_ABI bool try_lock() { return __base.try_lock(); }
+    _LIBCUDACXX_HIDE_FROM_ABI void unlock()   { return __base.unlock(); }
 
     // Shared ownership
-    _LIBCUDACXX_INLINE_VISIBILITY void lock_shared()     { return __base.lock_shared(); }
-    _LIBCUDACXX_INLINE_VISIBILITY bool try_lock_shared() { return __base.try_lock_shared(); }
-    _LIBCUDACXX_INLINE_VISIBILITY void unlock_shared()   { return __base.unlock_shared(); }
+    _LIBCUDACXX_HIDE_FROM_ABI void lock_shared()     { return __base.lock_shared(); }
+    _LIBCUDACXX_HIDE_FROM_ABI bool try_lock_shared() { return __base.try_lock_shared(); }
+    _LIBCUDACXX_HIDE_FROM_ABI void unlock_shared()   { return __base.unlock_shared(); }
 
 //     typedef __shared_mutex_base::native_handle_type native_handle_type;
-//     _LIBCUDACXX_INLINE_VISIBILITY native_handle_type native_handle() { return __base::unlock_shared(); }
+//     _LIBCUDACXX_HIDE_FROM_ABI native_handle_type native_handle() { return __base::unlock_shared(); }
 };
 #endif
 
@@ -209,7 +209,7 @@ class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_AVAILABILITY_SHARED_MUTEX shared_timed_mu
     __shared_mutex_base __base;
 public:
     shared_timed_mutex();
-    _LIBCUDACXX_INLINE_VISIBILITY ~shared_timed_mutex() = default;
+    _LIBCUDACXX_HIDE_FROM_ABI ~shared_timed_mutex() = default;
 
     shared_timed_mutex(const shared_timed_mutex&) = delete;
     shared_timed_mutex& operator=(const shared_timed_mutex&) = delete;
@@ -218,7 +218,7 @@ public:
     void lock();
     bool try_lock();
     template <class _Rep, class _Period>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         bool
         try_lock_for(const chrono::duration<_Rep, _Period>& __rel_time)
         {
@@ -234,7 +234,7 @@ public:
     void lock_shared();
     bool try_lock_shared();
     template <class _Rep, class _Period>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         bool
         try_lock_shared_for(const chrono::duration<_Rep, _Period>& __rel_time)
         {
@@ -318,38 +318,38 @@ private:
     bool __owns_;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_lock() noexcept
         : __m_(nullptr),
           __owns_(false)
         {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit shared_lock(mutex_type& __m)
         : __m_(_CUDA_VSTD::addressof(__m)),
           __owns_(true)
         {__m_->lock_shared();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_lock(mutex_type& __m, defer_lock_t) noexcept
         : __m_(_CUDA_VSTD::addressof(__m)),
           __owns_(false)
         {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_lock(mutex_type& __m, try_to_lock_t)
         : __m_(_CUDA_VSTD::addressof(__m)),
           __owns_(__m.try_lock_shared())
         {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_lock(mutex_type& __m, adopt_lock_t)
         : __m_(_CUDA_VSTD::addressof(__m)),
           __owns_(true)
         {}
 
     template <class _Clock, class _Duration>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         shared_lock(mutex_type& __m,
                     const chrono::time_point<_Clock, _Duration>& __abs_time)
             : __m_(_CUDA_VSTD::addressof(__m)),
@@ -357,14 +357,14 @@ public:
             {}
 
     template <class _Rep, class _Period>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         shared_lock(mutex_type& __m,
                     const chrono::duration<_Rep, _Period>& __rel_time)
             : __m_(_CUDA_VSTD::addressof(__m)),
               __owns_(__m.try_lock_shared_for(__rel_time))
             {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~shared_lock()
     {
         if (__owns_)
@@ -374,7 +374,7 @@ public:
     shared_lock(shared_lock const&) = delete;
     shared_lock& operator=(shared_lock const&) = delete;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_lock(shared_lock&& __u) noexcept
         : __m_(__u.__m_),
           __owns_(__u.__owns_)
@@ -383,7 +383,7 @@ public:
             __u.__owns_ = false;
         }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     shared_lock& operator=(shared_lock&& __u) noexcept
     {
         if (__owns_)
@@ -406,14 +406,14 @@ public:
     void unlock();
 
     // Setters
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(shared_lock& __u) noexcept
     {
         _CUDA_VSTD::swap(__m_, __u.__m_);
         _CUDA_VSTD::swap(__owns_, __u.__owns_);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     mutex_type* release() noexcept
     {
         mutex_type* __m = __m_;
@@ -423,13 +423,13 @@ public:
     }
 
     // Getters
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool owns_lock() const noexcept {return __owns_;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit operator bool () const noexcept {return __owns_;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     mutex_type* mutex() const noexcept {return __m_;}
 };
 
@@ -494,7 +494,7 @@ shared_lock<_Mutex>::unlock()
 }
 
 template <class _Mutex>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(shared_lock<_Mutex>& __x, shared_lock<_Mutex>& __y) noexcept
     {__x.swap(__y);}

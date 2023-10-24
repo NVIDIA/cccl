@@ -149,7 +149,7 @@ const unsigned indices[] =
 // against.
 
 template <size_t _Sz = sizeof(size_t)>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename enable_if<_Sz == 4, void>::type
 __check_for_overflow(size_t N)
 {
@@ -158,7 +158,7 @@ __check_for_overflow(size_t N)
 }
 
 template <size_t _Sz = sizeof(size_t)>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 typename enable_if<_Sz == 8, void>::type
 __check_for_overflow(size_t N)
 {

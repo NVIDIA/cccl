@@ -33,10 +33,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _LIBCUDACXX_STD_VER > 11
 
 template <typename _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY static void __test_noexcept(_Tp) noexcept;
+_LIBCUDACXX_HOST_DEVICE static void __test_noexcept(_Tp) noexcept;
 
 template<typename _Fm, typename _To>
-_LIBCUDACXX_INLINE_VISIBILITY static bool_constant<noexcept(_CUDA_VSTD::__test_noexcept<_To>(_CUDA_VSTD::declval<_Fm>()))>
+_LIBCUDACXX_HOST_DEVICE static bool_constant<noexcept(_CUDA_VSTD::__test_noexcept<_To>(_CUDA_VSTD::declval<_Fm>()))>
 __is_nothrow_convertible_test();
 
 template <typename _Fm, typename _To>

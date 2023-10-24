@@ -544,31 +544,31 @@ private:
     _StateT __st_;
     streamoff __off_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY fpos(streamoff __off = streamoff()) : __st_(), __off_(__off) {}
+    _LIBCUDACXX_HIDE_FROM_ABI fpos(streamoff __off = streamoff()) : __st_(), __off_(__off) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY operator streamoff() const {return __off_;}
+    _LIBCUDACXX_HIDE_FROM_ABI operator streamoff() const {return __off_;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _StateT state() const {return __st_;}
-    _LIBCUDACXX_INLINE_VISIBILITY void state(_StateT __st) {__st_ = __st;}
+    _LIBCUDACXX_HIDE_FROM_ABI _StateT state() const {return __st_;}
+    _LIBCUDACXX_HIDE_FROM_ABI void state(_StateT __st) {__st_ = __st;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY fpos& operator+=(streamoff __off) {__off_ += __off; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY fpos  operator+ (streamoff __off) const {fpos __t(*this); __t += __off; return __t;}
-    _LIBCUDACXX_INLINE_VISIBILITY fpos& operator-=(streamoff __off) {__off_ -= __off; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY fpos  operator- (streamoff __off) const {fpos __t(*this); __t -= __off; return __t;}
+    _LIBCUDACXX_HIDE_FROM_ABI fpos& operator+=(streamoff __off) {__off_ += __off; return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI fpos  operator+ (streamoff __off) const {fpos __t(*this); __t += __off; return __t;}
+    _LIBCUDACXX_HIDE_FROM_ABI fpos& operator-=(streamoff __off) {__off_ -= __off; return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI fpos  operator- (streamoff __off) const {fpos __t(*this); __t -= __off; return __t;}
 };
 
 template <class _StateT>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 streamoff operator-(const fpos<_StateT>& __x, const fpos<_StateT>& __y)
     {return streamoff(__x) - streamoff(__y);}
 
 template <class _StateT>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator==(const fpos<_StateT>& __x, const fpos<_StateT>& __y)
     {return streamoff(__x) == streamoff(__y);}
 
 template <class _StateT>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool operator!=(const fpos<_StateT>& __x, const fpos<_StateT>& __y)
     {return streamoff(__x) != streamoff(__y);}
 
@@ -588,7 +588,7 @@ basic_string<_CharT, _Traits, _Allocator>
 operator+(_CharT __x, const basic_string<_CharT,_Traits,_Allocator>& __y);
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_string<_CharT, _Traits, _Allocator>
 operator+(const basic_string<_CharT, _Traits, _Allocator>& __x, const _CharT* __y);
 
@@ -790,10 +790,10 @@ private:
 public:
     static const size_type npos = static_cast<size_type>(-1);
 
-    _LIBCUDACXX_INLINE_VISIBILITY basic_string()
+    _LIBCUDACXX_HIDE_FROM_ABI basic_string()
         noexcept(is_nothrow_default_constructible<allocator_type>::value);
 
-    _LIBCUDACXX_INLINE_VISIBILITY explicit basic_string(const allocator_type& __a)
+    _LIBCUDACXX_HIDE_FROM_ABI explicit basic_string(const allocator_type& __a)
 #if _LIBCUDACXX_STD_VER <= 14
         noexcept(is_nothrow_copy_constructible<allocator_type>::value);
 #else
@@ -803,7 +803,7 @@ public:
     basic_string(const basic_string& __str);
     basic_string(const basic_string& __str, const allocator_type& __a);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string(basic_string&& __str)
 #if _LIBCUDACXX_STD_VER <= 14
         noexcept(is_nothrow_move_constructible<allocator_type>::value);
@@ -811,11 +811,11 @@ public:
         noexcept;
 #endif
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string(basic_string&& __str, const allocator_type& __a);
 
     template <class = typename enable_if<__is_allocator<_Allocator>::value, nullptr_t>::type>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string(const _CharT* __s) {
       _LIBCUDACXX_ASSERT(__s != nullptr, "basic_string(const char*) detected nullptr");
       __init(__s, traits_type::length(__s));
@@ -825,23 +825,23 @@ public:
     }
 
     template <class = typename enable_if<__is_allocator<_Allocator>::value, nullptr_t>::type>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         basic_string(const _CharT* __s, const _Allocator& __a);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string(const _CharT* __s, size_type __n);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string(const _CharT* __s, size_type __n, const _Allocator& __a);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string(size_type __n, _CharT __c);
 
     template <class = typename enable_if<__is_allocator<_Allocator>::value, nullptr_t>::type>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         basic_string(size_type __n, _CharT __c, const _Allocator& __a);
 
     basic_string(const basic_string& __str, size_type __pos, size_type __n,
                  const _Allocator& __a = _Allocator());
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string(const basic_string& __str, size_type __pos,
                  const _Allocator& __a = _Allocator());
 
@@ -859,20 +859,20 @@ public:
         explicit basic_string(const _Tp& __t, const allocator_type& __a);
 
     template<class _InputIterator, class = typename enable_if<__is_cpp17_input_iterator<_InputIterator>::value>::type>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         basic_string(_InputIterator __first, _InputIterator __last);
     template<class _InputIterator, class = typename enable_if<__is_cpp17_input_iterator<_InputIterator>::value>::type>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         basic_string(_InputIterator __first, _InputIterator __last, const allocator_type& __a);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string(initializer_list<_CharT> __il);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string(initializer_list<_CharT> __il, const _Allocator& __a);
 
     inline ~basic_string();
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     operator __self_view() const noexcept { return __self_view(data(), size()); }
 
     basic_string& operator=(const basic_string& __str);
@@ -881,97 +881,97 @@ public:
     basic_string& operator=(const _Tp& __t)
         {__self_view __sv = __t; return assign(__sv);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& operator=(basic_string&& __str)
         noexcept((__noexcept_move_assign_container<_Allocator, __alloc_traits>::value));
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& operator=(initializer_list<value_type> __il) {return assign(__il.begin(), __il.size());}
-    _LIBCUDACXX_INLINE_VISIBILITY basic_string& operator=(const value_type* __s) {return assign(__s);}
+    _LIBCUDACXX_HIDE_FROM_ABI basic_string& operator=(const value_type* __s) {return assign(__s);}
     basic_string& operator=(value_type __c);
 
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator begin() noexcept
         {return iterator(this, __get_pointer());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator begin() const noexcept
         {return const_iterator(this, __get_pointer());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator end() noexcept
         {return iterator(this, __get_pointer() + size());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator end() const noexcept
         {return const_iterator(this, __get_pointer() + size());}
 #else
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator begin() noexcept
         {return iterator(__get_pointer());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator begin() const noexcept
         {return const_iterator(__get_pointer());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator end() noexcept
         {return iterator(__get_pointer() + size());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator end() const noexcept
         {return const_iterator(__get_pointer() + size());}
 #endif  // _LIBCUDACXX_ENABLE_DEBUG_MODE
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     reverse_iterator rbegin() noexcept
         {return reverse_iterator(end());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_reverse_iterator rbegin() const noexcept
         {return const_reverse_iterator(end());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     reverse_iterator rend() noexcept
         {return reverse_iterator(begin());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_reverse_iterator rend() const noexcept
         {return const_reverse_iterator(begin());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator cbegin() const noexcept
         {return begin();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator cend() const noexcept
         {return end();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_reverse_iterator crbegin() const noexcept
         {return rbegin();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_reverse_iterator crend() const noexcept
         {return rend();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY size_type size() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI size_type size() const noexcept
         {return __is_long() ? __get_long_size() : __get_short_size();}
-    _LIBCUDACXX_INLINE_VISIBILITY size_type length() const noexcept {return size();}
-    _LIBCUDACXX_INLINE_VISIBILITY size_type max_size() const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY size_type capacity() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI size_type length() const noexcept {return size();}
+    _LIBCUDACXX_HIDE_FROM_ABI size_type max_size() const noexcept;
+    _LIBCUDACXX_HIDE_FROM_ABI size_type capacity() const noexcept
         {return (__is_long() ? __get_long_cap()
                              : static_cast<size_type>(__min_cap)) - 1;}
 
     void resize(size_type __n, value_type __c);
-    _LIBCUDACXX_INLINE_VISIBILITY void resize(size_type __n) {resize(__n, value_type());}
+    _LIBCUDACXX_HIDE_FROM_ABI void resize(size_type __n) {resize(__n, value_type());}
 
     void reserve(size_type __res_arg);
-    _LIBCUDACXX_INLINE_VISIBILITY void __resize_default_init(size_type __n);
+    _LIBCUDACXX_HIDE_FROM_ABI void __resize_default_init(size_type __n);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void reserve() noexcept {reserve(0);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void shrink_to_fit() noexcept {reserve();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void clear() noexcept;
-    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI
     bool empty() const noexcept {return size() == 0;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY const_reference operator[](size_type __pos) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY reference       operator[](size_type __pos)       noexcept;
+    _LIBCUDACXX_HIDE_FROM_ABI const_reference operator[](size_type __pos) const noexcept;
+    _LIBCUDACXX_HIDE_FROM_ABI reference       operator[](size_type __pos)       noexcept;
 
     const_reference at(size_type __n) const;
     reference       at(size_type __n);
 
-    _LIBCUDACXX_INLINE_VISIBILITY basic_string& operator+=(const basic_string& __str) {return append(__str);}
+    _LIBCUDACXX_HIDE_FROM_ABI basic_string& operator+=(const basic_string& __str) {return append(__str);}
 
     template <class _Tp>
     _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
@@ -981,11 +981,11 @@ public:
             basic_string&
         >::type
                                             operator+=(const _Tp& __t)            {__self_view __sv = __t; return append(__sv);}
-    _LIBCUDACXX_INLINE_VISIBILITY basic_string& operator+=(const value_type* __s)     {return append(__s);}
-    _LIBCUDACXX_INLINE_VISIBILITY basic_string& operator+=(value_type __c)            {push_back(__c); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY basic_string& operator+=(initializer_list<value_type> __il) {return append(__il);}
+    _LIBCUDACXX_HIDE_FROM_ABI basic_string& operator+=(const value_type* __s)     {return append(__s);}
+    _LIBCUDACXX_HIDE_FROM_ABI basic_string& operator+=(value_type __c)            {push_back(__c); return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI basic_string& operator+=(initializer_list<value_type> __il) {return append(__il);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& append(const basic_string& __str);
 
     template <class _Tp>
@@ -1010,7 +1010,7 @@ public:
     basic_string& append(const value_type* __s);
     basic_string& append(size_type __n, value_type __c);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __append_default_init(size_type __n);
 
     template <class _ForwardIterator>
@@ -1024,7 +1024,7 @@ public:
                 || !__libcpp_string_gets_noexcept_iterator<_InputIterator>::value,
             basic_string&
         >::type
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     append(_InputIterator __first, _InputIterator __last) {
       const basic_string __temp (__first, __last, __alloc());
       append(__temp.data(), __temp.size());
@@ -1038,21 +1038,21 @@ public:
                 && __libcpp_string_gets_noexcept_iterator<_ForwardIterator>::value,
             basic_string&
         >::type
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     append(_ForwardIterator __first, _ForwardIterator __last) {
       return __append_forward_unsafe(__first, __last);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& append(initializer_list<value_type> __il) {return append(__il.begin(), __il.size());}
 
     void push_back(value_type __c);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void pop_back();
-    _LIBCUDACXX_INLINE_VISIBILITY reference       front() noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY const_reference front() const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY reference       back() noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY const_reference back() const noexcept;
+    _LIBCUDACXX_HIDE_FROM_ABI reference       front() noexcept;
+    _LIBCUDACXX_HIDE_FROM_ABI const_reference front() const noexcept;
+    _LIBCUDACXX_HIDE_FROM_ABI reference       back() noexcept;
+    _LIBCUDACXX_HIDE_FROM_ABI const_reference back() const noexcept;
 
     template <class _Tp>
     _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
@@ -1062,9 +1062,9 @@ public:
             basic_string&
         >::type
                  assign(const _Tp & __t) { __self_view __sv = __t; return assign(__sv.data(), __sv.size()); }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& assign(const basic_string& __str) { return *this = __str; }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& assign(basic_string&& __str)
         noexcept((__noexcept_move_assign_container<_Allocator, __alloc_traits>::value))
         {*this = _CUDA_VSTD::move(__str); return *this;}
@@ -1098,10 +1098,10 @@ public:
             basic_string&
         >::type
         assign(_ForwardIterator __first, _ForwardIterator __last);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& assign(initializer_list<value_type> __il) {return assign(__il.begin(), __il.size());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& insert(size_type __pos1, const basic_string& __str);
 
     template <class _Tp>
@@ -1127,7 +1127,7 @@ public:
     basic_string& insert(size_type __pos, const value_type* __s);
     basic_string& insert(size_type __pos, size_type __n, value_type __c);
     iterator      insert(const_iterator __pos, value_type __c);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator      insert(const_iterator __pos, size_type __n, value_type __c);
     template<class _InputIterator>
     _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
@@ -1147,17 +1147,17 @@ public:
             iterator
         >::type
         insert(const_iterator __pos, _ForwardIterator __first, _ForwardIterator __last);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator insert(const_iterator __pos, initializer_list<value_type> __il)
                     {return insert(__pos, __il.begin(), __il.end());}
 
     basic_string& erase(size_type __pos = 0, size_type __n = npos);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator      erase(const_iterator __pos);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator      erase(const_iterator __first, const_iterator __last);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& replace(size_type __pos1, size_type __n1, const basic_string& __str);
 
     template <class _Tp>
@@ -1180,7 +1180,7 @@ public:
     basic_string& replace(size_type __pos, size_type __n1, const value_type* __s, size_type __n2);
     basic_string& replace(size_type __pos, size_type __n1, const value_type* __s);
     basic_string& replace(size_type __pos, size_type __n1, size_type __n2, value_type __c);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& replace(const_iterator __i1, const_iterator __i2, const basic_string& __str);
 
     template <class _Tp>
@@ -1192,11 +1192,11 @@ public:
         >::type
                   replace(const_iterator __i1, const_iterator __i2, const _Tp& __t) { __self_view __sv = __t; return replace(__i1 - begin(), __i2 - __i1, __sv); }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& replace(const_iterator __i1, const_iterator __i2, const value_type* __s, size_type __n);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& replace(const_iterator __i1, const_iterator __i2, const value_type* __s);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& replace(const_iterator __i1, const_iterator __i2, size_type __n, value_type __c);
     template<class _InputIterator>
     _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
@@ -1206,15 +1206,15 @@ public:
             basic_string&
         >::type
         replace(const_iterator __i1, const_iterator __i2, _InputIterator __j1, _InputIterator __j2);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string& replace(const_iterator __i1, const_iterator __i2, initializer_list<value_type> __il)
         {return replace(__i1, __i2, __il.begin(), __il.end());}
 
     size_type copy(value_type* __s, size_type __n, size_type __pos = 0) const;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string substr(size_type __pos = 0, size_type __n = npos) const;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(basic_string& __str)
 #if _LIBCUDACXX_STD_VER >= 14
         noexcept;
@@ -1223,19 +1223,19 @@ public:
                     __is_nothrow_swappable<allocator_type>::value);
 #endif
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const value_type* c_str() const noexcept {return data();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const value_type* data() const noexcept  {return _CUDA_VSTD::__to_raw_pointer(__get_pointer());}
 #if _LIBCUDACXX_STD_VER > 14 || defined(_LIBCUDACXX_BUILDING_LIBRARY)
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     value_type* data()             noexcept  {return _CUDA_VSTD::__to_raw_pointer(__get_pointer());}
 #endif
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     allocator_type get_allocator() const noexcept {return __alloc();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find(const basic_string& __str, size_type __pos = 0) const noexcept;
 
     template <class _Tp>
@@ -1247,11 +1247,11 @@ public:
         >::type
               find(const _Tp& __t, size_type __pos = 0) const;
     size_type find(const value_type* __s, size_type __pos, size_type __n) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find(const value_type* __s, size_type __pos = 0) const noexcept;
     size_type find(value_type __c, size_type __pos = 0) const noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type rfind(const basic_string& __str, size_type __pos = npos) const noexcept;
 
     template <class _Tp>
@@ -1263,11 +1263,11 @@ public:
         >::type
               rfind(const _Tp& __t, size_type __pos = npos) const;
     size_type rfind(const value_type* __s, size_type __pos, size_type __n) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type rfind(const value_type* __s, size_type __pos = npos) const noexcept;
     size_type rfind(value_type __c, size_type __pos = npos) const noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find_first_of(const basic_string& __str, size_type __pos = 0) const noexcept;
 
     template <class _Tp>
@@ -1279,12 +1279,12 @@ public:
         >::type
               find_first_of(const _Tp& __t, size_type __pos = 0) const;
     size_type find_first_of(const value_type* __s, size_type __pos, size_type __n) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find_first_of(const value_type* __s, size_type __pos = 0) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find_first_of(value_type __c, size_type __pos = 0) const noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find_last_of(const basic_string& __str, size_type __pos = npos) const noexcept;
 
     template <class _Tp>
@@ -1296,12 +1296,12 @@ public:
         >::type
               find_last_of(const _Tp& __t, size_type __pos = npos) const;
     size_type find_last_of(const value_type* __s, size_type __pos, size_type __n) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find_last_of(const value_type* __s, size_type __pos = npos) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find_last_of(value_type __c, size_type __pos = npos) const noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find_first_not_of(const basic_string& __str, size_type __pos = 0) const noexcept;
 
     template <class _Tp>
@@ -1313,12 +1313,12 @@ public:
         >::type
               find_first_not_of(const _Tp &__t, size_type __pos = 0) const;
     size_type find_first_not_of(const value_type* __s, size_type __pos, size_type __n) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find_first_not_of(const value_type* __s, size_type __pos = 0) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find_first_not_of(value_type __c, size_type __pos = 0) const noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find_last_not_of(const basic_string& __str, size_type __pos = npos) const noexcept;
 
     template <class _Tp>
@@ -1330,12 +1330,12 @@ public:
         >::type
               find_last_not_of(const _Tp& __t, size_type __pos = npos) const;
     size_type find_last_not_of(const value_type* __s, size_type __pos, size_type __n) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find_last_not_of(const value_type* __s, size_type __pos = npos) const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type find_last_not_of(value_type __c, size_type __pos = npos) const noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     int compare(const basic_string& __str) const noexcept;
 
     template <class _Tp>
@@ -1356,12 +1356,12 @@ public:
         >::type
          compare(size_type __pos1, size_type __n1, const _Tp& __t) const;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     int compare(size_type __pos1, size_type __n1, const basic_string& __str) const;
     int compare(size_type __pos1, size_type __n1, const basic_string& __str, size_type __pos2, size_type __n2=npos) const;
 
     template <class _Tp>
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
         typename enable_if
         <
             __can_be_converted_to_string_view<_CharT, _Traits, _Tp>::value,
@@ -1373,36 +1373,36 @@ public:
     int compare(size_type __pos1, size_type __n1, const value_type* __s, size_type __n2) const;
 
 #if _LIBCUDACXX_STD_VER > 17
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     bool starts_with(__self_view __sv) const noexcept
     { return __self_view(data(), size()).starts_with(__sv); }
 
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     bool starts_with(value_type __c) const noexcept
     { return !empty() && _Traits::eq(front(), __c); }
 
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     bool starts_with(const value_type* __s) const noexcept
     { return starts_with(__self_view(__s)); }
 
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     bool ends_with(__self_view __sv) const noexcept
     { return __self_view(data(), size()).ends_with( __sv); }
 
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     bool ends_with(value_type __c) const noexcept
     { return !empty() && _Traits::eq(back(), __c); }
 
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     bool ends_with(const value_type* __s) const noexcept
     { return ends_with(__self_view(__s)); }
 #endif
 
-    _LIBCUDACXX_INLINE_VISIBILITY bool __invariants() const;
+    _LIBCUDACXX_HIDE_FROM_ABI bool __invariants() const;
 
-    _LIBCUDACXX_INLINE_VISIBILITY void __clear_and_shrink() noexcept;
+    _LIBCUDACXX_HIDE_FROM_ABI void __clear_and_shrink() noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool __is_long() const noexcept
         {return bool(__r_.first().__s.__size_ & __short_mask);}
 
@@ -1416,16 +1416,16 @@ public:
 #endif  // _LIBCUDACXX_ENABLE_DEBUG_MODE
 
 private:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     allocator_type& __alloc() noexcept
         {return __r_.second();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const allocator_type& __alloc() const noexcept
         {return __r_.second();}
 
 #ifdef _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __set_short_size(size_type __s) noexcept
 #   ifdef _LIBCUDACXX_BIG_ENDIAN
         {__r_.first().__s.__size_ = (unsigned char)(__s << 1);}
@@ -1433,7 +1433,7 @@ private:
         {__r_.first().__s.__size_ = (unsigned char)(__s);}
 #   endif
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type __get_short_size() const noexcept
 #   ifdef _LIBCUDACXX_BIG_ENDIAN
         {return __r_.first().__s.__size_ >> 1;}
@@ -1443,7 +1443,7 @@ private:
 
 #else  // _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __set_short_size(size_type __s) noexcept
 #   ifdef _LIBCUDACXX_BIG_ENDIAN
         {__r_.first().__s.__size_ = (unsigned char)(__s);}
@@ -1451,7 +1451,7 @@ private:
         {__r_.first().__s.__size_ = (unsigned char)(__s << 1);}
 #   endif
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type __get_short_size() const noexcept
 #   ifdef _LIBCUDACXX_BIG_ENDIAN
         {return __r_.first().__s.__size_;}
@@ -1461,46 +1461,46 @@ private:
 
 #endif  // _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __set_long_size(size_type __s) noexcept
         {__r_.first().__l.__size_ = __s;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type __get_long_size() const noexcept
         {return __r_.first().__l.__size_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __set_size(size_type __s) noexcept
         {if (__is_long()) __set_long_size(__s); else __set_short_size(__s);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __set_long_cap(size_type __s) noexcept
         {__r_.first().__l.__cap_  = __long_mask | __s;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type __get_long_cap() const noexcept
         {return __r_.first().__l.__cap_ & size_type(~__long_mask);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __set_long_pointer(pointer __p) noexcept
         {__r_.first().__l.__data_ = __p;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pointer __get_long_pointer() noexcept
         {return __r_.first().__l.__data_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_pointer __get_long_pointer() const noexcept
         {return __r_.first().__l.__data_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pointer __get_short_pointer() noexcept
         {return pointer_traits<pointer>::pointer_to(__r_.first().__s.__data_[0]);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_pointer __get_short_pointer() const noexcept
         {return pointer_traits<const_pointer>::pointer_to(__r_.first().__s.__data_[0]);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pointer __get_pointer() noexcept
         {return __is_long() ? __get_long_pointer() : __get_short_pointer();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_pointer __get_pointer() const noexcept
         {return __is_long() ? __get_long_pointer() : __get_short_pointer();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __zero() noexcept
         {
             size_type (&__a)[__n_words] = __r_.first().__r.__words;
@@ -1509,11 +1509,11 @@ private:
         }
 
     template <size_type __a> static
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         size_type __align_it(size_type __s) noexcept
             {return (__s + (__a-1)) & ~(__a-1);}
     enum {__alignment = 16};
-    static _LIBCUDACXX_INLINE_VISIBILITY
+    static _LIBCUDACXX_HIDE_FROM_ABI
     size_type __recommend(size_type __s) noexcept
         {
         if (__s < __min_cap) return static_cast<size_type>(__min_cap) - 1;
@@ -1554,15 +1554,15 @@ private:
                                size_type __n_copy,  size_type __n_del,
                                size_type __n_add, const value_type* __p_new_stuff);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __erase_to_end(size_type __pos);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __copy_assign_alloc(const basic_string& __str)
         {__copy_assign_alloc(__str, integral_constant<bool,
                       __alloc_traits::propagate_on_container_copy_assignment::value>());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __copy_assign_alloc(const basic_string& __str, true_type)
         {
             if (__alloc() == __str.__alloc())
@@ -1587,14 +1587,14 @@ private:
             }
         }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __copy_assign_alloc(const basic_string&, false_type) noexcept
         {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __move_assign(basic_string& __str, false_type)
         noexcept(__alloc_traits::is_always_equal::value);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __move_assign(basic_string& __str, true_type)
 #if _LIBCUDACXX_STD_VER > 14
         noexcept;
@@ -1602,7 +1602,7 @@ private:
         noexcept(is_nothrow_move_assignable<allocator_type>::value);
 #endif
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void
     __move_assign_alloc(basic_string& __str)
         noexcept(
@@ -1611,20 +1611,20 @@ private:
     {__move_assign_alloc(__str, integral_constant<bool,
                       __alloc_traits::propagate_on_container_move_assignment::value>());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __move_assign_alloc(basic_string& __c, true_type)
         noexcept(is_nothrow_move_assignable<allocator_type>::value)
         {
             __alloc() = _CUDA_VSTD::move(__c.__alloc());
         }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void __move_assign_alloc(basic_string&, false_type)
         noexcept
         {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY void __invalidate_all_iterators();
-    _LIBCUDACXX_INLINE_VISIBILITY void __invalidate_iterators_past(size_type);
+    _LIBCUDACXX_HIDE_FROM_ABI void __invalidate_all_iterators();
+    _LIBCUDACXX_HIDE_FROM_ABI void __invalidate_iterators_past(size_type);
 
     friend basic_string operator+<>(const basic_string&, const basic_string&);
     friend basic_string operator+<>(const value_type*, const basic_string&);
@@ -3286,7 +3286,7 @@ template <class _Traits>
 struct _LIBCUDACXX_HIDDEN __traits_eq
 {
     typedef typename _Traits::char_type char_type;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(const char_type& __x, const char_type& __y) noexcept
         {return _Traits::eq(__x, __y);}
 };
@@ -3803,7 +3803,7 @@ basic_string<_CharT, _Traits, _Allocator>::__clear_and_shrink() noexcept
 // operator==
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator==(const basic_string<_CharT, _Traits, _Allocator>& __lhs,
            const basic_string<_CharT, _Traits, _Allocator>& __rhs) noexcept
@@ -3815,7 +3815,7 @@ operator==(const basic_string<_CharT, _Traits, _Allocator>& __lhs,
 }
 
 template<class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator==(const basic_string<char, char_traits<char>, _Allocator>& __lhs,
            const basic_string<char, char_traits<char>, _Allocator>& __rhs) noexcept
@@ -3834,7 +3834,7 @@ operator==(const basic_string<char, char_traits<char>, _Allocator>& __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator==(const _CharT* __lhs,
            const basic_string<_CharT, _Traits, _Allocator>& __rhs) noexcept
@@ -3847,7 +3847,7 @@ operator==(const _CharT* __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator==(const basic_string<_CharT,_Traits,_Allocator>& __lhs,
            const _CharT* __rhs) noexcept
@@ -3860,7 +3860,7 @@ operator==(const basic_string<_CharT,_Traits,_Allocator>& __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(const basic_string<_CharT,_Traits,_Allocator>& __lhs,
            const basic_string<_CharT, _Traits, _Allocator>& __rhs) noexcept
@@ -3869,7 +3869,7 @@ operator!=(const basic_string<_CharT,_Traits,_Allocator>& __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(const _CharT* __lhs,
            const basic_string<_CharT, _Traits, _Allocator>& __rhs) noexcept
@@ -3878,7 +3878,7 @@ operator!=(const _CharT* __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(const basic_string<_CharT, _Traits, _Allocator>& __lhs,
            const _CharT* __rhs) noexcept
@@ -3889,7 +3889,7 @@ operator!=(const basic_string<_CharT, _Traits, _Allocator>& __lhs,
 // operator<
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator< (const basic_string<_CharT, _Traits, _Allocator>& __lhs,
            const basic_string<_CharT, _Traits, _Allocator>& __rhs) noexcept
@@ -3898,7 +3898,7 @@ operator< (const basic_string<_CharT, _Traits, _Allocator>& __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator< (const basic_string<_CharT, _Traits, _Allocator>& __lhs,
            const _CharT* __rhs) noexcept
@@ -3907,7 +3907,7 @@ operator< (const basic_string<_CharT, _Traits, _Allocator>& __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator< (const _CharT* __lhs,
            const basic_string<_CharT, _Traits, _Allocator>& __rhs) noexcept
@@ -3918,7 +3918,7 @@ operator< (const _CharT* __lhs,
 // operator>
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator> (const basic_string<_CharT, _Traits, _Allocator>& __lhs,
            const basic_string<_CharT, _Traits, _Allocator>& __rhs) noexcept
@@ -3927,7 +3927,7 @@ operator> (const basic_string<_CharT, _Traits, _Allocator>& __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator> (const basic_string<_CharT, _Traits, _Allocator>& __lhs,
            const _CharT* __rhs) noexcept
@@ -3936,7 +3936,7 @@ operator> (const basic_string<_CharT, _Traits, _Allocator>& __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator> (const _CharT* __lhs,
            const basic_string<_CharT, _Traits, _Allocator>& __rhs) noexcept
@@ -3947,7 +3947,7 @@ operator> (const _CharT* __lhs,
 // operator<=
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<=(const basic_string<_CharT, _Traits, _Allocator>& __lhs,
            const basic_string<_CharT, _Traits, _Allocator>& __rhs) noexcept
@@ -3956,7 +3956,7 @@ operator<=(const basic_string<_CharT, _Traits, _Allocator>& __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<=(const basic_string<_CharT, _Traits, _Allocator>& __lhs,
            const _CharT* __rhs) noexcept
@@ -3965,7 +3965,7 @@ operator<=(const basic_string<_CharT, _Traits, _Allocator>& __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator<=(const _CharT* __lhs,
            const basic_string<_CharT, _Traits, _Allocator>& __rhs) noexcept
@@ -3976,7 +3976,7 @@ operator<=(const _CharT* __lhs,
 // operator>=
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>=(const basic_string<_CharT, _Traits, _Allocator>& __lhs,
            const basic_string<_CharT, _Traits, _Allocator>& __rhs) noexcept
@@ -3985,7 +3985,7 @@ operator>=(const basic_string<_CharT, _Traits, _Allocator>& __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>=(const basic_string<_CharT, _Traits, _Allocator>& __lhs,
            const _CharT* __rhs) noexcept
@@ -3994,7 +3994,7 @@ operator>=(const basic_string<_CharT, _Traits, _Allocator>& __lhs,
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator>=(const _CharT* __lhs,
            const basic_string<_CharT, _Traits, _Allocator>& __rhs) noexcept
@@ -4065,7 +4065,7 @@ operator+(const basic_string<_CharT, _Traits, _Allocator>& __lhs, _CharT __rhs)
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_string<_CharT, _Traits, _Allocator>
 operator+(basic_string<_CharT, _Traits, _Allocator>&& __lhs, const basic_string<_CharT, _Traits, _Allocator>& __rhs)
 {
@@ -4073,7 +4073,7 @@ operator+(basic_string<_CharT, _Traits, _Allocator>&& __lhs, const basic_string<
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_string<_CharT, _Traits, _Allocator>
 operator+(const basic_string<_CharT, _Traits, _Allocator>& __lhs, basic_string<_CharT, _Traits, _Allocator>&& __rhs)
 {
@@ -4081,7 +4081,7 @@ operator+(const basic_string<_CharT, _Traits, _Allocator>& __lhs, basic_string<_
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_string<_CharT, _Traits, _Allocator>
 operator+(basic_string<_CharT, _Traits, _Allocator>&& __lhs, basic_string<_CharT, _Traits, _Allocator>&& __rhs)
 {
@@ -4089,7 +4089,7 @@ operator+(basic_string<_CharT, _Traits, _Allocator>&& __lhs, basic_string<_CharT
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_string<_CharT, _Traits, _Allocator>
 operator+(const _CharT* __lhs , basic_string<_CharT,_Traits,_Allocator>&& __rhs)
 {
@@ -4097,7 +4097,7 @@ operator+(const _CharT* __lhs , basic_string<_CharT,_Traits,_Allocator>&& __rhs)
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_string<_CharT, _Traits, _Allocator>
 operator+(_CharT __lhs, basic_string<_CharT,_Traits,_Allocator>&& __rhs)
 {
@@ -4106,7 +4106,7 @@ operator+(_CharT __lhs, basic_string<_CharT,_Traits,_Allocator>&& __rhs)
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_string<_CharT, _Traits, _Allocator>
 operator+(basic_string<_CharT, _Traits, _Allocator>&& __lhs, const _CharT* __rhs)
 {
@@ -4114,7 +4114,7 @@ operator+(basic_string<_CharT, _Traits, _Allocator>&& __lhs, const _CharT* __rhs
 }
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_string<_CharT, _Traits, _Allocator>
 operator+(basic_string<_CharT, _Traits, _Allocator>&& __lhs, _CharT __rhs)
 {
@@ -4125,7 +4125,7 @@ operator+(basic_string<_CharT, _Traits, _Allocator>&& __lhs, _CharT __rhs)
 // swap
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(basic_string<_CharT, _Traits, _Allocator>& __lhs,
      basic_string<_CharT, _Traits, _Allocator>& __rhs)
@@ -4215,31 +4215,31 @@ getline(basic_istream<_CharT, _Traits>& __is,
         basic_string<_CharT, _Traits, _Allocator>& __str, _CharT __dlm);
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_istream<_CharT, _Traits>&
 getline(basic_istream<_CharT, _Traits>& __is,
         basic_string<_CharT, _Traits, _Allocator>& __str);
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_istream<_CharT, _Traits>&
 getline(basic_istream<_CharT, _Traits>&& __is,
         basic_string<_CharT, _Traits, _Allocator>& __str, _CharT __dlm);
 
 template<class _CharT, class _Traits, class _Allocator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 basic_istream<_CharT, _Traits>&
 getline(basic_istream<_CharT, _Traits>&& __is,
         basic_string<_CharT, _Traits, _Allocator>& __str);
 
 #if _LIBCUDACXX_STD_VER > 17
 template<class _CharT, class _Traits, class _Allocator, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void erase(basic_string<_CharT, _Traits, _Allocator>& __str, const _Up& __v)
 { __str.erase(_CUDA_VSTD::remove(__str.begin(), __str.end(), __v), __str.end()); }
 
 template<class _CharT, class _Traits, class _Allocator, class _Predicate>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void erase_if(basic_string<_CharT, _Traits, _Allocator>& __str, _Predicate __pred)
 { __str.erase(_CUDA_VSTD::remove_if(__str.begin(), __str.end(), __pred), __str.end()); }
 #endif
@@ -4289,33 +4289,33 @@ inline namespace literals
 {
   inline namespace string_literals
   {
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string<char> operator "" s( const char *__str, size_t __len )
     {
         return basic_string<char> (__str, __len);
     }
 
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string<wchar_t> operator "" s( const wchar_t *__str, size_t __len )
     {
         return basic_string<wchar_t> (__str, __len);
     }
 
 #ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string<char8_t> operator "" s(const char8_t *__str, size_t __len) noexcept
     {
         return basic_string<char8_t> (__str, __len);
     }
 #endif
 
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string<char16_t> operator "" s( const char16_t *__str, size_t __len )
     {
         return basic_string<char16_t> (__str, __len);
     }
 
-    inline _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     basic_string<char32_t> operator "" s( const char32_t *__str, size_t __len )
     {
         return basic_string<char32_t> (__str, __len);

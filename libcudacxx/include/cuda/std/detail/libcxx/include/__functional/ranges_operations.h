@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 struct equal_to {
   _LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
     _LIBCUDACXX_REQUIRES( equality_comparable_with<_Tp, _Up>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
   constexpr bool operator()(_Tp &&__t, _Up &&__u) const
       noexcept(noexcept(bool(_CUDA_VSTD::forward<_Tp>(__t) == _CUDA_VSTD::forward<_Up>(__u)))) {
     return _CUDA_VSTD::forward<_Tp>(__t) == _CUDA_VSTD::forward<_Up>(__u);
@@ -44,7 +44,7 @@ struct equal_to {
 struct not_equal_to {
   _LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
     _LIBCUDACXX_REQUIRES( equality_comparable_with<_Tp, _Up>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
   constexpr bool operator()(_Tp &&__t, _Up &&__u) const
       noexcept(noexcept(bool(!(_CUDA_VSTD::forward<_Tp>(__t) == _CUDA_VSTD::forward<_Up>(__u))))) {
     return !(_CUDA_VSTD::forward<_Tp>(__t) == _CUDA_VSTD::forward<_Up>(__u));
@@ -56,7 +56,7 @@ struct not_equal_to {
 struct less {
   _LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
     _LIBCUDACXX_REQUIRES( totally_ordered_with<_Tp, _Up>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
   constexpr bool operator()(_Tp &&__t, _Up &&__u) const
       noexcept(noexcept(bool(_CUDA_VSTD::forward<_Tp>(__t) < _CUDA_VSTD::forward<_Up>(__u)))) {
     return _CUDA_VSTD::forward<_Tp>(__t) < _CUDA_VSTD::forward<_Up>(__u);
@@ -68,7 +68,7 @@ struct less {
 struct less_equal {
   _LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
     _LIBCUDACXX_REQUIRES( totally_ordered_with<_Tp, _Up>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
   constexpr bool operator()(_Tp &&__t, _Up &&__u) const
       noexcept(noexcept(bool(!(_CUDA_VSTD::forward<_Up>(__u) < _CUDA_VSTD::forward<_Tp>(__t))))) {
     return !(_CUDA_VSTD::forward<_Up>(__u) < _CUDA_VSTD::forward<_Tp>(__t));
@@ -80,7 +80,7 @@ struct less_equal {
 struct greater {
   _LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
     _LIBCUDACXX_REQUIRES( totally_ordered_with<_Tp, _Up>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
   constexpr bool operator()(_Tp &&__t, _Up &&__u) const
       noexcept(noexcept(bool(_CUDA_VSTD::forward<_Up>(__u) < _CUDA_VSTD::forward<_Tp>(__t)))) {
     return _CUDA_VSTD::forward<_Up>(__u) < _CUDA_VSTD::forward<_Tp>(__t);
@@ -92,7 +92,7 @@ struct greater {
 struct greater_equal {
   _LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
     _LIBCUDACXX_REQUIRES( totally_ordered_with<_Tp, _Up>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
   constexpr bool operator()(_Tp &&__t, _Up &&__u) const
       noexcept(noexcept(bool(!(_CUDA_VSTD::forward<_Tp>(__t) < _CUDA_VSTD::forward<_Up>(__u))))) {
     return !(_CUDA_VSTD::forward<_Tp>(__t) < _CUDA_VSTD::forward<_Up>(__u));

@@ -429,20 +429,20 @@ class __unordered_map_hasher
     : private _Hash
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __unordered_map_hasher()
         noexcept(is_nothrow_default_constructible<_Hash>::value)
         : _Hash() {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __unordered_map_hasher(const _Hash& __h)
         noexcept(is_nothrow_copy_constructible<_Hash>::value)
         : _Hash(__h) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const _Hash& hash_function() const noexcept {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t operator()(const _Cp& __x) const
         {return static_cast<const _Hash&>(*this)(__x.__get_value().first);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t operator()(const _Key& __x) const
         {return static_cast<const _Hash&>(*this)(__x);}
     void swap(__unordered_map_hasher&__y)
@@ -458,20 +458,20 @@ class __unordered_map_hasher<_Key, _Cp, _Hash, false>
 {
     _Hash __hash_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __unordered_map_hasher()
         noexcept(is_nothrow_default_constructible<_Hash>::value)
         : __hash_() {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __unordered_map_hasher(const _Hash& __h)
         noexcept(is_nothrow_copy_constructible<_Hash>::value)
         : __hash_(__h) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const _Hash& hash_function() const noexcept {return __hash_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t operator()(const _Cp& __x) const
         {return __hash_(__x.__get_value().first);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_t operator()(const _Key& __x) const
         {return __hash_(__x);}
     void swap(__unordered_map_hasher&__y)
@@ -483,7 +483,7 @@ public:
 };
 
 template <class _Key, class _Cp, class _Hash, bool __b>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(__unordered_map_hasher<_Key, _Cp, _Hash, __b>& __x,
      __unordered_map_hasher<_Key, _Cp, _Hash, __b>& __y)
@@ -498,23 +498,23 @@ class __unordered_map_equal
     : private _Pred
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __unordered_map_equal()
         noexcept(is_nothrow_default_constructible<_Pred>::value)
         : _Pred() {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __unordered_map_equal(const _Pred& __p)
         noexcept(is_nothrow_copy_constructible<_Pred>::value)
         : _Pred(__p) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const _Pred& key_eq() const noexcept {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(const _Cp& __x, const _Cp& __y) const
         {return static_cast<const _Pred&>(*this)(__x.__get_value().first, __y.__get_value().first);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(const _Cp& __x, const _Key& __y) const
         {return static_cast<const _Pred&>(*this)(__x.__get_value().first, __y);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(const _Key& __x, const _Cp& __y) const
         {return static_cast<const _Pred&>(*this)(__x, __y.__get_value().first);}
     void swap(__unordered_map_equal&__y)
@@ -530,23 +530,23 @@ class __unordered_map_equal<_Key, _Cp, _Pred, false>
 {
     _Pred __pred_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __unordered_map_equal()
         noexcept(is_nothrow_default_constructible<_Pred>::value)
         : __pred_() {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __unordered_map_equal(const _Pred& __p)
         noexcept(is_nothrow_copy_constructible<_Pred>::value)
         : __pred_(__p) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const _Pred& key_eq() const noexcept {return __pred_;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(const _Cp& __x, const _Cp& __y) const
         {return __pred_(__x.__get_value().first, __y.__get_value().first);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(const _Cp& __x, const _Key& __y) const
         {return __pred_(__x.__get_value().first, __y);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     bool operator()(const _Key& __x, const _Cp& __y) const
         {return __pred_(__x, __y.__get_value().first);}
     void swap(__unordered_map_equal&__y)
@@ -558,7 +558,7 @@ public:
 };
 
 template <class _Key, class _Cp, class _Pred, bool __b>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(__unordered_map_equal<_Key, _Cp, _Pred, __b>& __x,
      __unordered_map_equal<_Key, _Cp, _Pred, __b>& __y)
@@ -586,14 +586,14 @@ public:
     bool __first_constructed;
     bool __second_constructed;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit __hash_map_node_destructor(allocator_type& __na) noexcept
         : __na_(__na),
           __first_constructed(false),
           __second_constructed(false)
         {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_map_node_destructor(__hash_node_destructor<allocator_type>&& __x)
         noexcept
         : __na_(__x.__na_),
@@ -603,7 +603,7 @@ public:
             __x.__value_constructed = false;
         }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void operator()(pointer __p) noexcept
     {
         if (__second_constructed)
@@ -628,7 +628,7 @@ private:
     value_type __cc;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     value_type& __get_value()
     {
 #if _LIBCUDACXX_STD_VER > 14
@@ -638,7 +638,7 @@ public:
 #endif
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const value_type& __get_value() const
     {
 #if _LIBCUDACXX_STD_VER > 14
@@ -648,14 +648,14 @@ public:
 #endif
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __nc_ref_pair_type __ref()
     {
         value_type& __v = __get_value();
         return __nc_ref_pair_type(const_cast<key_type&>(__v.first), __v.second);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __nc_rref_pair_type __move()
     {
         value_type& __v = __get_value();
@@ -664,14 +664,14 @@ public:
             _CUDA_VSTD::move(__v.second));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_value_type& operator=(const __hash_value_type& __v)
     {
         __ref() = __v.__get_value();
         return *this;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_value_type& operator=(__hash_value_type&& __v)
     {
         __ref() = __v.__move();
@@ -683,7 +683,7 @@ public:
                     __is_same_uncvref<_ValueTp, value_type>::value
                  >::type
              >
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_value_type& operator=(_ValueTp&& __v)
     {
         __ref() = _CUDA_VSTD::forward<_ValueTp>(__v);
@@ -713,20 +713,20 @@ public:
     typedef value_type&                                          reference;
     typedef typename _NodeTypes::__map_value_type_pointer       pointer;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_map_iterator() noexcept {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_map_iterator(_HashIterator __i) noexcept : __i_(__i) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     reference operator*() const {return __i_->__get_value();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pointer operator->() const {return pointer_traits<pointer>::pointer_to(__i_->__get_value());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_map_iterator& operator++() {++__i_; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_map_iterator operator++(int)
     {
         __hash_map_iterator __t(*this);
@@ -734,10 +734,10 @@ public:
         return __t;
     }
 
-    friend _LIBCUDACXX_INLINE_VISIBILITY
+    friend _LIBCUDACXX_HIDE_FROM_ABI
         bool operator==(const __hash_map_iterator& __x, const __hash_map_iterator& __y)
         {return __x.__i_ == __y.__i_;}
-    friend _LIBCUDACXX_INLINE_VISIBILITY
+    friend _LIBCUDACXX_HIDE_FROM_ABI
         bool operator!=(const __hash_map_iterator& __x, const __hash_map_iterator& __y)
         {return __x.__i_ != __y.__i_;}
 
@@ -762,25 +762,25 @@ public:
     typedef const value_type&                                    reference;
     typedef typename _NodeTypes::__const_map_value_type_pointer  pointer;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_map_const_iterator() noexcept {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_map_const_iterator(_HashIterator __i) noexcept : __i_(__i) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_map_const_iterator(
             __hash_map_iterator<typename _HashIterator::__non_const_iterator> __i)
                  noexcept
                 : __i_(__i.__i_) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     reference operator*() const {return __i_->__get_value();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pointer operator->() const {return pointer_traits<pointer>::pointer_to(__i_->__get_value());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_map_const_iterator& operator++() {++__i_; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     __hash_map_const_iterator operator++(int)
     {
         __hash_map_const_iterator __t(*this);
@@ -788,10 +788,10 @@ public:
         return __t;
     }
 
-    friend _LIBCUDACXX_INLINE_VISIBILITY
+    friend _LIBCUDACXX_HIDE_FROM_ABI
         bool operator==(const __hash_map_const_iterator& __x, const __hash_map_const_iterator& __y)
         {return __x.__i_ == __y.__i_;}
-    friend _LIBCUDACXX_INLINE_VISIBILITY
+    friend _LIBCUDACXX_HIDE_FROM_ABI
         bool operator!=(const __hash_map_const_iterator& __x, const __hash_map_const_iterator& __y)
         {return __x.__i_ != __y.__i_;}
 
@@ -866,7 +866,7 @@ public:
     template <class _Key2, class _Tp2, class _Hash2, class _Pred2, class _Alloc2>
         friend class _LIBCUDACXX_TEMPLATE_VIS unordered_multimap;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_map()
         noexcept(is_nothrow_default_constructible<__table>::value)
         {
@@ -890,11 +890,11 @@ public:
                       size_type __n, const hasher& __hf,
                       const key_equal& __eql,
                       const allocator_type& __a);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit unordered_map(const allocator_type& __a);
     unordered_map(const unordered_map& __u);
     unordered_map(const unordered_map& __u, const allocator_type& __a);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_map(unordered_map&& __u)
         noexcept(is_nothrow_move_constructible<__table>::value);
     unordered_map(unordered_map&& __u, const allocator_type& __a);
@@ -905,71 +905,71 @@ public:
                   const hasher& __hf, const key_equal& __eql,
                   const allocator_type& __a);
 #if _LIBCUDACXX_STD_VER > 11
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_map(size_type __n, const allocator_type& __a)
       : unordered_map(__n, hasher(), key_equal(), __a) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_map(size_type __n, const hasher& __hf, const allocator_type& __a)
       : unordered_map(__n, __hf, key_equal(), __a) {}
     template <class _InputIterator>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
       unordered_map(_InputIterator __first, _InputIterator __last, size_type __n, const allocator_type& __a)
       : unordered_map(__first, __last, __n, hasher(), key_equal(), __a) {}
     template <class _InputIterator>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
       unordered_map(_InputIterator __first, _InputIterator __last, size_type __n, const hasher& __hf,
         const allocator_type& __a)
       : unordered_map(__first, __last, __n, __hf, key_equal(), __a) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_map(initializer_list<value_type> __il, size_type __n, const allocator_type& __a)
       : unordered_map(__il, __n, hasher(), key_equal(), __a) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_map(initializer_list<value_type> __il, size_type __n, const hasher& __hf,
       const allocator_type& __a)
       : unordered_map(__il, __n, __hf, key_equal(), __a) {}
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~unordered_map() {
         static_assert(sizeof(__diagnose_unordered_container_requirements<_Key, _Hash, _Pred>(0)), "");
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_map& operator=(const unordered_map& __u)
     {
         __table_ = __u.__table_;
         return *this;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_map& operator=(unordered_map&& __u)
         noexcept(is_nothrow_move_assignable<__table>::value);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_map& operator=(initializer_list<value_type> __il);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     allocator_type get_allocator() const noexcept
         {return allocator_type(__table_.__node_alloc());}
 
-    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI
     bool      empty() const noexcept {return __table_.size() == 0;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type size() const noexcept  {return __table_.size();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type max_size() const noexcept {return __table_.max_size();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator       begin() noexcept        {return __table_.begin();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator       end() noexcept          {return __table_.end();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator begin()  const noexcept {return __table_.begin();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator end()    const noexcept {return __table_.end();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator cbegin() const noexcept {return __table_.begin();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator cend()   const noexcept {return __table_.end();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, bool> insert(const value_type& __x)
         {return __table_.__insert_unique(__x);}
 
@@ -985,14 +985,14 @@ public:
     }
 
     template <class _InputIterator>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         void insert(_InputIterator __first, _InputIterator __last);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void insert(initializer_list<value_type> __il)
         {insert(__il.begin(), __il.end());}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, bool> insert(value_type&& __x)
         {return __table_.__insert_unique(_CUDA_VSTD::move(__x));}
 
@@ -1009,13 +1009,13 @@ public:
 
     template <class _Pp,
               class = typename enable_if<is_constructible<value_type, _Pp>::value>::type>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         pair<iterator, bool> insert(_Pp&& __x)
             {return __table_.__insert_unique(_CUDA_VSTD::forward<_Pp>(__x));}
 
     template <class _Pp,
               class = typename enable_if<is_constructible<value_type, _Pp>::value>::type>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         iterator insert(const_iterator __p, _Pp&& __x)
         {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
@@ -1029,13 +1029,13 @@ public:
         }
 
     template <class... _Args>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, bool> emplace(_Args&&... __args) {
         return __table_.__emplace_unique(_CUDA_VSTD::forward<_Args>(__args)...);
     }
 
     template <class... _Args>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator emplace_hint(const_iterator __p, _Args&&... __args) {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
         _LIBCUDACXX_ASSERT(__get_const_db()->__find_c_from_i(&__p) == this,
@@ -1049,7 +1049,7 @@ public:
 
 #if _LIBCUDACXX_STD_VER > 14
     template <class... _Args>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         pair<iterator, bool> try_emplace(const key_type& __k, _Args&&... __args)
     {
         return __table_.__emplace_unique_key_args(__k, _CUDA_VSTD::piecewise_construct,
@@ -1058,7 +1058,7 @@ public:
     }
 
     template <class... _Args>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         pair<iterator, bool> try_emplace(key_type&& __k, _Args&&... __args)
     {
         return __table_.__emplace_unique_key_args(__k, _CUDA_VSTD::piecewise_construct,
@@ -1067,7 +1067,7 @@ public:
     }
 
     template <class... _Args>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         iterator try_emplace(const_iterator __h, const key_type& __k, _Args&&... __args)
     {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
@@ -1081,7 +1081,7 @@ public:
     }
 
     template <class... _Args>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         iterator try_emplace(const_iterator __h, key_type&& __k, _Args&&... __args)
     {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
@@ -1095,7 +1095,7 @@ public:
     }
 
     template <class _Vp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         pair<iterator, bool> insert_or_assign(const key_type& __k, _Vp&& __v)
     {
         pair<iterator, bool> __res = __table_.__emplace_unique_key_args(__k,
@@ -1107,7 +1107,7 @@ public:
     }
 
     template <class _Vp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         pair<iterator, bool> insert_or_assign(key_type&& __k, _Vp&& __v)
     {
         pair<iterator, bool> __res = __table_.__emplace_unique_key_args(__k,
@@ -1119,7 +1119,7 @@ public:
     }
 
     template <class _Vp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         iterator insert_or_assign(const_iterator, const key_type& __k, _Vp&& __v)
      {
           // FIXME: Add debug mode checking for the iterator input
@@ -1127,7 +1127,7 @@ public:
      }
 
     template <class _Vp>
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         iterator insert_or_assign(const_iterator, key_type&& __k, _Vp&& __v)
      {
         // FIXME: Add debug mode checking for the iterator input
@@ -1135,20 +1135,20 @@ public:
      }
 #endif // _LIBCUDACXX_STD_VER > 14
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator erase(const_iterator __p) {return __table_.erase(__p.__i_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator erase(iterator __p)       {return __table_.erase(__p.__i_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type erase(const key_type& __k) {return __table_.__erase_unique(__k);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator erase(const_iterator __first, const_iterator __last)
         {return __table_.erase(__first.__i_, __last.__i_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
         void clear() noexcept {__table_.clear();}
 
 #if _LIBCUDACXX_STD_VER > 14
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     insert_return_type insert(node_type&& __nh)
     {
         _LIBCUDACXX_ASSERT(__nh.empty() || __nh.get_allocator() == get_allocator(),
@@ -1156,7 +1156,7 @@ public:
         return __table_.template __node_handle_insert_unique<
             node_type, insert_return_type>(_CUDA_VSTD::move(__nh));
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator insert(const_iterator __hint, node_type&& __nh)
     {
         _LIBCUDACXX_ASSERT(__nh.empty() || __nh.get_allocator() == get_allocator(),
@@ -1164,12 +1164,12 @@ public:
         return __table_.template __node_handle_insert_unique<node_type>(
             __hint.__i_, _CUDA_VSTD::move(__nh));
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     node_type extract(key_type const& __key)
     {
         return __table_.template __node_handle_extract<node_type>(__key);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     node_type extract(const_iterator __it)
     {
         return __table_.template __node_handle_extract<node_type>(
@@ -1177,7 +1177,7 @@ public:
     }
 
     template <class _H2, class _P2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void merge(unordered_map<key_type, mapped_type, _H2, _P2, allocator_type>& __source)
     {
         _LIBCUDACXX_ASSERT(__source.get_allocator() == get_allocator(),
@@ -1185,7 +1185,7 @@ public:
         return __table_.__node_handle_merge_unique(__source.__table_);
     }
     template <class _H2, class _P2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void merge(unordered_map<key_type, mapped_type, _H2, _P2, allocator_type>&& __source)
     {
         _LIBCUDACXX_ASSERT(__source.get_allocator() == get_allocator(),
@@ -1193,7 +1193,7 @@ public:
         return __table_.__node_handle_merge_unique(__source.__table_);
     }
     template <class _H2, class _P2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void merge(unordered_multimap<key_type, mapped_type, _H2, _P2, allocator_type>& __source)
     {
         _LIBCUDACXX_ASSERT(__source.get_allocator() == get_allocator(),
@@ -1201,7 +1201,7 @@ public:
         return __table_.__node_handle_merge_unique(__source.__table_);
     }
     template <class _H2, class _P2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void merge(unordered_multimap<key_type, mapped_type, _H2, _P2, allocator_type>&& __source)
     {
         _LIBCUDACXX_ASSERT(__source.get_allocator() == get_allocator(),
@@ -1210,32 +1210,32 @@ public:
     }
 #endif
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(unordered_map& __u)
         noexcept(__is_nothrow_swappable<__table>::value)
         { __table_.swap(__u.__table_);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     hasher hash_function() const
         {return __table_.hash_function().hash_function();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     key_equal key_eq() const
         {return __table_.key_eq().key_eq();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator       find(const key_type& __k)       {return __table_.find(__k);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator find(const key_type& __k) const {return __table_.find(__k);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type count(const key_type& __k) const {return __table_.__count_unique(__k);}
     #if _LIBCUDACXX_STD_VER > 17
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         bool contains(const key_type& __k) const {return find(__k) != end();}
     #endif // _LIBCUDACXX_STD_VER > 17
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, iterator>             equal_range(const key_type& __k)
         {return __table_.__equal_range_unique(__k);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<const_iterator, const_iterator> equal_range(const key_type& __k) const
         {return __table_.__equal_range_unique(__k);}
 
@@ -1245,39 +1245,39 @@ public:
     mapped_type&       at(const key_type& __k);
     const mapped_type& at(const key_type& __k) const;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type bucket_count() const noexcept {return __table_.bucket_count();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type max_bucket_count() const noexcept {return __table_.max_bucket_count();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type bucket_size(size_type __n) const
         {return __table_.bucket_size(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type bucket(const key_type& __k) const {return __table_.bucket(__k);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     local_iterator       begin(size_type __n)        {return __table_.begin(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     local_iterator       end(size_type __n)          {return __table_.end(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_local_iterator begin(size_type __n) const  {return __table_.cbegin(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_local_iterator end(size_type __n) const    {return __table_.cend(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_local_iterator cbegin(size_type __n) const {return __table_.cbegin(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_local_iterator cend(size_type __n) const   {return __table_.cend(__n);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     float load_factor() const noexcept {return __table_.load_factor();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     float max_load_factor() const noexcept {return __table_.max_load_factor();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void max_load_factor(float __mlf) {__table_.max_load_factor(__mlf);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void rehash(size_type __n) {__table_.rehash(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void reserve(size_type __n) {__table_.reserve(__n);}
 
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
@@ -1603,7 +1603,7 @@ unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>::at(const key_type& __k) const
 }
 
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
      unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>& __y)
@@ -1614,7 +1614,7 @@ swap(unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
 
 #if _LIBCUDACXX_STD_VER > 17
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc, class _Predicate>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void erase_if(unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>& __c, _Predicate __pred)
 { __libcpp_erase_if_container(__c, __pred); }
 #endif
@@ -1639,7 +1639,7 @@ operator==(const unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
 }
 
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(const unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
            const unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>& __y)
@@ -1706,7 +1706,7 @@ public:
     template <class _Key2, class _Tp2, class _Hash2, class _Pred2, class _Alloc2>
         friend class _LIBCUDACXX_TEMPLATE_VIS unordered_multimap;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_multimap()
         noexcept(is_nothrow_default_constructible<__table>::value)
         {
@@ -1730,11 +1730,11 @@ public:
                       size_type __n, const hasher& __hf,
                       const key_equal& __eql,
                       const allocator_type& __a);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit unordered_multimap(const allocator_type& __a);
     unordered_multimap(const unordered_multimap& __u);
     unordered_multimap(const unordered_multimap& __u, const allocator_type& __a);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_multimap(unordered_multimap&& __u)
         noexcept(is_nothrow_move_constructible<__table>::value);
     unordered_multimap(unordered_multimap&& __u, const allocator_type& __a);
@@ -1746,100 +1746,100 @@ public:
                        const hasher& __hf, const key_equal& __eql,
                        const allocator_type& __a);
 #if _LIBCUDACXX_STD_VER > 11
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_multimap(size_type __n, const allocator_type& __a)
       : unordered_multimap(__n, hasher(), key_equal(), __a) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_multimap(size_type __n, const hasher& __hf, const allocator_type& __a)
       : unordered_multimap(__n, __hf, key_equal(), __a) {}
     template <class _InputIterator>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
       unordered_multimap(_InputIterator __first, _InputIterator __last, size_type __n, const allocator_type& __a)
       : unordered_multimap(__first, __last, __n, hasher(), key_equal(), __a) {}
     template <class _InputIterator>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
       unordered_multimap(_InputIterator __first, _InputIterator __last, size_type __n, const hasher& __hf,
         const allocator_type& __a)
       : unordered_multimap(__first, __last, __n, __hf, key_equal(), __a) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_multimap(initializer_list<value_type> __il, size_type __n, const allocator_type& __a)
       : unordered_multimap(__il, __n, hasher(), key_equal(), __a) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_multimap(initializer_list<value_type> __il, size_type __n, const hasher& __hf,
       const allocator_type& __a)
       : unordered_multimap(__il, __n, __hf, key_equal(), __a) {}
 #endif
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     ~unordered_multimap() {
         static_assert(sizeof(__diagnose_unordered_container_requirements<_Key, _Hash, _Pred>(0)), "");
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_multimap& operator=(const unordered_multimap& __u)
     {
         __table_ = __u.__table_;
         return *this;
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_multimap& operator=(unordered_multimap&& __u)
         noexcept(is_nothrow_move_assignable<__table>::value);
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     unordered_multimap& operator=(initializer_list<value_type> __il);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     allocator_type get_allocator() const noexcept
         {return allocator_type(__table_.__node_alloc());}
 
-    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_HIDE_FROM_ABI
     bool      empty() const noexcept {return __table_.size() == 0;}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type size() const noexcept  {return __table_.size();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type max_size() const noexcept {return __table_.max_size();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator       begin() noexcept        {return __table_.begin();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator       end() noexcept          {return __table_.end();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator begin()  const noexcept {return __table_.begin();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator end()    const noexcept {return __table_.end();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator cbegin() const noexcept {return __table_.begin();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator cend()   const noexcept {return __table_.end();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator insert(const value_type& __x) {return __table_.__insert_multi(__x);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator insert(const_iterator __p, const value_type& __x)
         {return __table_.__insert_multi(__p.__i_, __x);}
 
     template <class _InputIterator>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void insert(_InputIterator __first, _InputIterator __last);
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void insert(initializer_list<value_type> __il)
         {insert(__il.begin(), __il.end());}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator insert(value_type&& __x) {return __table_.__insert_multi(_CUDA_VSTD::move(__x));}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator insert(const_iterator __p, value_type&& __x)
         {return __table_.__insert_multi(__p.__i_, _CUDA_VSTD::move(__x));}
 
     template <class _Pp,
               class = typename enable_if<is_constructible<value_type, _Pp>::value>::type>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator insert(_Pp&& __x)
         {return __table_.__insert_multi(_CUDA_VSTD::forward<_Pp>(__x));}
 
     template <class _Pp,
               class = typename enable_if<is_constructible<value_type, _Pp>::value>::type>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator insert(const_iterator __p, _Pp&& __x)
         {return __table_.__insert_multi(__p.__i_, _CUDA_VSTD::forward<_Pp>(__x));}
 
@@ -1853,20 +1853,20 @@ public:
         return __table_.__emplace_hint_multi(__p.__i_, _CUDA_VSTD::forward<_Args>(__args)...);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator erase(const_iterator __p) {return __table_.erase(__p.__i_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator erase(iterator __p)       {return __table_.erase(__p.__i_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type erase(const key_type& __k) {return __table_.__erase_multi(__k);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator erase(const_iterator __first, const_iterator __last)
         {return __table_.erase(__first.__i_, __last.__i_);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void clear() noexcept {__table_.clear();}
 
 #if _LIBCUDACXX_STD_VER > 14
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator insert(node_type&& __nh)
     {
         _LIBCUDACXX_ASSERT(__nh.empty() || __nh.get_allocator() == get_allocator(),
@@ -1874,7 +1874,7 @@ public:
         return __table_.template __node_handle_insert_multi<node_type>(
             _CUDA_VSTD::move(__nh));
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator insert(const_iterator __hint, node_type&& __nh)
     {
         _LIBCUDACXX_ASSERT(__nh.empty() || __nh.get_allocator() == get_allocator(),
@@ -1882,12 +1882,12 @@ public:
         return __table_.template __node_handle_insert_multi<node_type>(
             __hint.__i_, _CUDA_VSTD::move(__nh));
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     node_type extract(key_type const& __key)
     {
         return __table_.template __node_handle_extract<node_type>(__key);
     }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     node_type extract(const_iterator __it)
     {
         return __table_.template __node_handle_extract<node_type>(
@@ -1895,7 +1895,7 @@ public:
     }
 
     template <class _H2, class _P2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void merge(unordered_multimap<key_type, mapped_type, _H2, _P2, allocator_type>& __source)
     {
         _LIBCUDACXX_ASSERT(__source.get_allocator() == get_allocator(),
@@ -1903,7 +1903,7 @@ public:
         return __table_.__node_handle_merge_multi(__source.__table_);
     }
     template <class _H2, class _P2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void merge(unordered_multimap<key_type, mapped_type, _H2, _P2, allocator_type>&& __source)
     {
         _LIBCUDACXX_ASSERT(__source.get_allocator() == get_allocator(),
@@ -1911,7 +1911,7 @@ public:
         return __table_.__node_handle_merge_multi(__source.__table_);
     }
     template <class _H2, class _P2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void merge(unordered_map<key_type, mapped_type, _H2, _P2, allocator_type>& __source)
     {
         _LIBCUDACXX_ASSERT(__source.get_allocator() == get_allocator(),
@@ -1919,7 +1919,7 @@ public:
         return __table_.__node_handle_merge_multi(__source.__table_);
     }
     template <class _H2, class _P2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void merge(unordered_map<key_type, mapped_type, _H2, _P2, allocator_type>&& __source)
     {
         _LIBCUDACXX_ASSERT(__source.get_allocator() == get_allocator(),
@@ -1928,69 +1928,69 @@ public:
     }
 #endif
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void swap(unordered_multimap& __u)
         noexcept(__is_nothrow_swappable<__table>::value)
         {__table_.swap(__u.__table_);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     hasher hash_function() const
         {return __table_.hash_function().hash_function();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     key_equal key_eq() const
         {return __table_.key_eq().key_eq();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     iterator       find(const key_type& __k)       {return __table_.find(__k);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_iterator find(const key_type& __k) const {return __table_.find(__k);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type count(const key_type& __k) const {return __table_.__count_multi(__k);}
     #if _LIBCUDACXX_STD_VER > 17
-        _LIBCUDACXX_INLINE_VISIBILITY
+        _LIBCUDACXX_HIDE_FROM_ABI
         bool contains(const key_type& __k) const {return find(__k) != end();}
     #endif // _LIBCUDACXX_STD_VER > 17
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<iterator, iterator>             equal_range(const key_type& __k)
         {return __table_.__equal_range_multi(__k);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<const_iterator, const_iterator> equal_range(const key_type& __k) const
         {return __table_.__equal_range_multi(__k);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type bucket_count() const noexcept {return __table_.bucket_count();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type max_bucket_count() const noexcept
         {return __table_.max_bucket_count();}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type bucket_size(size_type __n) const
         {return __table_.bucket_size(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     size_type bucket(const key_type& __k) const {return __table_.bucket(__k);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     local_iterator       begin(size_type __n)        {return __table_.begin(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     local_iterator       end(size_type __n)          {return __table_.end(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_local_iterator begin(size_type __n) const  {return __table_.cbegin(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_local_iterator end(size_type __n) const    {return __table_.cend(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_local_iterator cbegin(size_type __n) const {return __table_.cbegin(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     const_local_iterator cend(size_type __n) const   {return __table_.cend(__n);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     float load_factor() const noexcept {return __table_.load_factor();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     float max_load_factor() const noexcept {return __table_.max_load_factor();}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void max_load_factor(float __mlf) {__table_.max_load_factor(__mlf);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void rehash(size_type __n) {__table_.rehash(__n);}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void reserve(size_type __n) {__table_.reserve(__n);}
 
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
@@ -2278,7 +2278,7 @@ unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>::insert(_InputIterator __fir
 }
 
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void
 swap(unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
      unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>& __y)
@@ -2289,7 +2289,7 @@ swap(unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
 
 #if _LIBCUDACXX_STD_VER > 17
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc, class _Predicate>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 void erase_if(unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>& __c, _Predicate __pred)
 { __libcpp_erase_if_container(__c, __pred); }
 #endif
@@ -2318,7 +2318,7 @@ operator==(const unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
 }
 
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 bool
 operator!=(const unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
            const unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>& __y)

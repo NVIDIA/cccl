@@ -113,13 +113,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_LFTS
 template<class _ForwardIterator, class _BinaryPredicate = equal_to<>>
 class _LIBCUDACXX_TYPE_VIS default_searcher {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     default_searcher(_ForwardIterator __f, _ForwardIterator __l,
                        _BinaryPredicate __p = _BinaryPredicate())
         : __first_(__f), __last_(__l), __pred_(__p) {}
 
     template <typename _ForwardIterator2>
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     pair<_ForwardIterator2, _ForwardIterator2>
     operator () (_ForwardIterator2 __f, _ForwardIterator2 __l) const
     {
@@ -135,7 +135,7 @@ private:
     };
 
 template<class _ForwardIterator, class _BinaryPredicate = equal_to<>>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 default_searcher<_ForwardIterator, _BinaryPredicate>
 make_default_searcher( _ForwardIterator __f, _ForwardIterator __l, _BinaryPredicate __p = _BinaryPredicate ())
 {
@@ -155,17 +155,17 @@ public: // TODO private:
     std::unordered_map<_Key, _Value, _Hash, _BinaryPredicate> __table;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _BMSkipTable(std::size_t __sz, _Value __default, _Hash __hf, _BinaryPredicate __pred)
         : __default_value_(__default), __table(__sz, __hf, __pred) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void insert(const key_type &__key, value_type __val)
     {
         __table [__key] = __val;    // Would skip_.insert (val) be better here?
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     value_type operator [](const key_type & __key) const
     {
         auto __it = __table.find (__key);
@@ -186,19 +186,19 @@ private:
     skip_map __table;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     _BMSkipTable(std::size_t /*__sz*/, _Value __default, _Hash /*__hf*/, _BinaryPredicate /*__pred*/)
     {
         std::fill_n(__table.begin(), __table.size(), __default);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     void insert(key_type __key, value_type __val)
     {
         __table[static_cast<unsigned_key_type>(__key)] = __val;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     value_type operator [](key_type __key) const
     {
         return __table[static_cast<unsigned_key_type>(__key)];
@@ -348,7 +348,7 @@ public: // TODO private:
 template<class _RandomAccessIterator,
          class _Hash = hash<typename iterator_traits<_RandomAccessIterator>::value_type>,
          class _BinaryPredicate = equal_to<>>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 boyer_moore_searcher<_RandomAccessIterator, _Hash, _BinaryPredicate>
 make_boyer_moore_searcher( _RandomAccessIterator __f, _RandomAccessIterator __l,
                     _Hash __hf = _Hash(), _BinaryPredicate __p = _BinaryPredicate ())
@@ -443,7 +443,7 @@ private:
 template<class _RandomAccessIterator,
          class _Hash = hash<typename iterator_traits<_RandomAccessIterator>::value_type>,
          class _BinaryPredicate = equal_to<>>
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 boyer_moore_horspool_searcher<_RandomAccessIterator, _Hash, _BinaryPredicate>
 make_boyer_moore_horspool_searcher( _RandomAccessIterator __f, _RandomAccessIterator __l,
                     _Hash __hf = _Hash(), _BinaryPredicate __p = _BinaryPredicate ())

@@ -920,7 +920,7 @@ struct __duration_cast;
 template <class _FromDuration, class _ToDuration, class _Period>
 struct __duration_cast<_FromDuration, _ToDuration, _Period, true, true>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     _ToDuration operator()(const _FromDuration& __fd) const
     {
         return _ToDuration(static_cast<typename _ToDuration::rep>(__fd.count()));
@@ -930,7 +930,7 @@ struct __duration_cast<_FromDuration, _ToDuration, _Period, true, true>
 template <class _FromDuration, class _ToDuration, class _Period>
 struct __duration_cast<_FromDuration, _ToDuration, _Period, true, false>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     _ToDuration operator()(const _FromDuration& __fd) const
     {
         typedef typename common_type<typename _ToDuration::rep, typename _FromDuration::rep, intmax_t>::type _Ct;
@@ -942,7 +942,7 @@ struct __duration_cast<_FromDuration, _ToDuration, _Period, true, false>
 template <class _FromDuration, class _ToDuration, class _Period>
 struct __duration_cast<_FromDuration, _ToDuration, _Period, false, true>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     _ToDuration operator()(const _FromDuration& __fd) const
     {
         typedef typename common_type<typename _ToDuration::rep, typename _FromDuration::rep, intmax_t>::type _Ct;
@@ -954,7 +954,7 @@ struct __duration_cast<_FromDuration, _ToDuration, _Period, false, true>
 template <class _FromDuration, class _ToDuration, class _Period>
 struct __duration_cast<_FromDuration, _ToDuration, _Period, false, false>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     _ToDuration operator()(const _FromDuration& __fd) const
     {
         typedef typename common_type<typename _ToDuration::rep, typename _FromDuration::rep, intmax_t>::type _Ct;
@@ -965,7 +965,7 @@ struct __duration_cast<_FromDuration, _ToDuration, _Period, false, false>
 };
 
 template <class _ToDuration, class _Rep, class _Period>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr
 __enable_if_t
 <
@@ -990,14 +990,14 @@ template <class _Rep>
 struct _LIBCUDACXX_TEMPLATE_VIS duration_values
 {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY static constexpr _Rep zero() noexcept {return _Rep(0);}
-    _LIBCUDACXX_INLINE_VISIBILITY static constexpr _Rep max()  noexcept {return numeric_limits<_Rep>::max();}
-    _LIBCUDACXX_INLINE_VISIBILITY static constexpr _Rep min()  noexcept {return numeric_limits<_Rep>::lowest();}
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Rep zero() noexcept {return _Rep(0);}
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Rep max()  noexcept {return numeric_limits<_Rep>::max();}
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Rep min()  noexcept {return numeric_limits<_Rep>::lowest();}
 };
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class _ToDuration, class _Rep, class _Period>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -1012,7 +1012,7 @@ floor(const duration<_Rep, _Period>& __d)
 }
 
 template <class _ToDuration, class _Rep, class _Period>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -1027,7 +1027,7 @@ ceil(const duration<_Rep, _Period>& __d)
 }
 
 template <class _ToDuration, class _Rep, class _Period>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -1096,7 +1096,7 @@ public:
     constexpr duration() = default;
 
     template <class _Rep2>
-        _LIBCUDACXX_INLINE_VISIBILITY constexpr
+        _LIBCUDACXX_HIDE_FROM_ABI constexpr
         explicit duration(const _Rep2& __r,
             __enable_if_t
             <
@@ -1108,7 +1108,7 @@ public:
 
     // conversions
     template <class _Rep2, class _Period2>
-        _LIBCUDACXX_INLINE_VISIBILITY constexpr
+        _LIBCUDACXX_HIDE_FROM_ABI constexpr
         duration(const duration<_Rep2, _Period2>& __d,
             __enable_if_t
             <
@@ -1121,30 +1121,30 @@ public:
 
     // observer
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr rep count() const {return __rep_;}
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr rep count() const {return __rep_;}
 
     // arithmetic
 
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr typename common_type<duration>::type operator+() const {return typename common_type<duration>::type(*this);}
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr typename common_type<duration>::type operator-() const {return typename common_type<duration>::type(-__rep_);}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator++()      {++__rep_; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration  operator++(int)   {return duration(__rep_++);}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator--()      {--__rep_; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration  operator--(int)   {return duration(__rep_--);}
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr typename common_type<duration>::type operator+() const {return typename common_type<duration>::type(*this);}
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr typename common_type<duration>::type operator-() const {return typename common_type<duration>::type(-__rep_);}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator++()      {++__rep_; return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration  operator++(int)   {return duration(__rep_++);}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator--()      {--__rep_; return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration  operator--(int)   {return duration(__rep_--);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator+=(const duration& __d) {__rep_ += __d.count(); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator-=(const duration& __d) {__rep_ -= __d.count(); return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator+=(const duration& __d) {__rep_ += __d.count(); return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator-=(const duration& __d) {__rep_ -= __d.count(); return *this;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator*=(const rep& rhs) {__rep_ *= rhs; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator/=(const rep& rhs) {__rep_ /= rhs; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator%=(const rep& rhs) {__rep_ %= rhs; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator%=(const duration& rhs) {__rep_ %= rhs.count(); return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator*=(const rep& rhs) {__rep_ *= rhs; return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator/=(const rep& rhs) {__rep_ /= rhs; return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator%=(const rep& rhs) {__rep_ %= rhs; return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator%=(const duration& rhs) {__rep_ %= rhs.count(); return *this;}
 
     // special values
 
-    _LIBCUDACXX_INLINE_VISIBILITY static constexpr duration zero() noexcept {return duration(duration_values<rep>::zero());}
-    _LIBCUDACXX_INLINE_VISIBILITY static constexpr duration min()  noexcept {return duration(duration_values<rep>::min());}
-    _LIBCUDACXX_INLINE_VISIBILITY static constexpr duration max()  noexcept {return duration(duration_values<rep>::max());}
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr duration zero() noexcept {return duration(duration_values<rep>::zero());}
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr duration min()  noexcept {return duration(duration_values<rep>::min());}
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr duration max()  noexcept {return duration(duration_values<rep>::max());}
 };
 
 typedef duration<long long,         nano> nanoseconds;
@@ -1164,7 +1164,7 @@ typedef duration<     int, ratio_divide<years::period, ratio<12>>>           mon
 template <class _LhsDuration, class _RhsDuration>
 struct __duration_eq
 {
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     bool operator()(const _LhsDuration& __lhs, const _RhsDuration& __rhs) const
         {
             typedef typename common_type<_LhsDuration, _RhsDuration>::type _Ct;
@@ -1175,13 +1175,13 @@ struct __duration_eq
 template <class _LhsDuration>
 struct __duration_eq<_LhsDuration, _LhsDuration>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     bool operator()(const _LhsDuration& __lhs, const _LhsDuration& __rhs) const
         {return __lhs.count() == __rhs.count();}
 };
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool
 operator==(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1191,7 +1191,7 @@ operator==(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period
 // Duration !=
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool
 operator!=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1203,7 +1203,7 @@ operator!=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period
 template <class _LhsDuration, class _RhsDuration>
 struct __duration_lt
 {
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     bool operator()(const _LhsDuration& __lhs, const _RhsDuration& __rhs) const
         {
             typedef typename common_type<_LhsDuration, _RhsDuration>::type _Ct;
@@ -1214,13 +1214,13 @@ struct __duration_lt
 template <class _LhsDuration>
 struct __duration_lt<_LhsDuration, _LhsDuration>
 {
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr
     bool operator()(const _LhsDuration& __lhs, const _LhsDuration& __rhs) const
         {return __lhs.count() < __rhs.count();}
 };
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool
 operator< (const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1230,7 +1230,7 @@ operator< (const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period
 // Duration >
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool
 operator> (const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1240,7 +1240,7 @@ operator> (const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period
 // Duration <=
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool
 operator<=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1250,7 +1250,7 @@ operator<=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period
 // Duration >=
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool
 operator>=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1260,7 +1260,7 @@ operator>=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period
 // Duration +
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr
 typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2> >::type
 operator+(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
@@ -1272,7 +1272,7 @@ operator+(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2
 // Duration -
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr
 typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2> >::type
 operator-(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
@@ -1284,7 +1284,7 @@ operator-(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2
 // Duration *
 
 template <class _Rep1, class _Period, class _Rep2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr
 __enable_if_t
 <
@@ -1299,7 +1299,7 @@ operator*(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
 }
 
 template <class _Rep1, class _Period, class _Rep2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr
 __enable_if_t
 <
@@ -1314,7 +1314,7 @@ operator*(const _Rep1& __s, const duration<_Rep2, _Period>& __d)
 // Duration /
 
 template <class _Rep1, class _Period, class _Rep2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr
 __enable_if_t
 <
@@ -1330,7 +1330,7 @@ operator/(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
 }
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr
 typename common_type<_Rep1, _Rep2>::type
 operator/(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
@@ -1342,7 +1342,7 @@ operator/(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2
 // Duration %
 
 template <class _Rep1, class _Period, class _Rep2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr
 __enable_if_t
 <
@@ -1358,7 +1358,7 @@ operator%(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
 }
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr
 typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2> >::type
 operator%(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
@@ -1386,12 +1386,12 @@ private:
     duration __d_;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 time_point() : __d_(duration::zero()) {}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 explicit time_point(const duration& __d) : __d_(__d) {}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 time_point() : __d_(duration::zero()) {}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 explicit time_point(const duration& __d) : __d_(__d) {}
 
     // conversions
     template <class _Duration2>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     time_point(const time_point<clock, _Duration2>& t,
         __enable_if_t
         <
@@ -1401,17 +1401,17 @@ public:
 
     // observer
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 duration time_since_epoch() const {return __d_;}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 duration time_since_epoch() const {return __d_;}
 
     // arithmetic
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 time_point& operator+=(const duration& __d) {__d_ += __d; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 time_point& operator-=(const duration& __d) {__d_ -= __d; return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 time_point& operator+=(const duration& __d) {__d_ += __d; return *this;}
+    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 time_point& operator-=(const duration& __d) {__d_ -= __d; return *this;}
 
     // special values
 
-    _LIBCUDACXX_INLINE_VISIBILITY static constexpr time_point min() noexcept {return time_point(duration::min());}
-    _LIBCUDACXX_INLINE_VISIBILITY static constexpr time_point max() noexcept {return time_point(duration::max());}
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr time_point min() noexcept {return time_point(duration::min());}
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr time_point max() noexcept {return time_point(duration::max());}
 };
 
 } // chrono
@@ -1426,7 +1426,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS common_type<chrono::time_point<_Clock, _Duration
 namespace chrono {
 
 template <class _ToDuration, class _Clock, class _Duration>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 time_point<_Clock, _ToDuration>
 time_point_cast(const time_point<_Clock, _Duration>& __t)
 {
@@ -1435,7 +1435,7 @@ time_point_cast(const time_point<_Clock, _Duration>& __t)
 
 #if _LIBCUDACXX_STD_VER > 11
 template <class _ToDuration, class _Clock, class _Duration>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -1447,7 +1447,7 @@ floor(const time_point<_Clock, _Duration>& __t)
 }
 
 template <class _ToDuration, class _Clock, class _Duration>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -1459,7 +1459,7 @@ ceil(const time_point<_Clock, _Duration>& __t)
 }
 
 template <class _ToDuration, class _Clock, class _Duration>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -1471,7 +1471,7 @@ round(const time_point<_Clock, _Duration>& __t)
 }
 
 template <class _Rep, class _Period>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 __enable_if_t
 <
     numeric_limits<_Rep>::is_signed,
@@ -1486,7 +1486,7 @@ abs(duration<_Rep, _Period> __d)
 // time_point ==
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 bool
 operator==(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1496,7 +1496,7 @@ operator==(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point !=
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 bool
 operator!=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1506,7 +1506,7 @@ operator!=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point <
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 bool
 operator<(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1516,7 +1516,7 @@ operator<(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, 
 // time_point >
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 bool
 operator>(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1526,7 +1526,7 @@ operator>(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, 
 // time_point <=
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 bool
 operator<=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1536,7 +1536,7 @@ operator<=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point >=
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 bool
 operator>=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1546,7 +1546,7 @@ operator>=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point operator+(time_point x, duration y);
 
 template <class _Clock, class _Duration1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2> >::type>
 operator+(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1557,7 +1557,7 @@ operator+(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Pe
 // time_point operator+(duration x, time_point y);
 
 template <class _Rep1, class _Period1, class _Clock, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 time_point<_Clock, typename common_type<duration<_Rep1, _Period1>, _Duration2>::type>
 operator+(const duration<_Rep1, _Period1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1567,7 +1567,7 @@ operator+(const duration<_Rep1, _Period1>& __lhs, const time_point<_Clock, _Dura
 // time_point operator-(time_point x, duration y);
 
 template <class _Clock, class _Duration1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2> >::type>
 operator-(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1578,7 +1578,7 @@ operator-(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Pe
 // duration operator-(time_point x, time_point y);
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 typename common_type<_Duration1, _Duration2>::type
 operator-(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1650,84 +1650,67 @@ private:
     unsigned char __d;
 public:
     day() = default;
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit inline constexpr day(unsigned __val) noexcept : __d(static_cast<unsigned char>(__val)) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr day& operator++()    noexcept { ++__d; return *this; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr day  operator++(int) noexcept { day __tmp = *this; ++(*this); return __tmp; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr day& operator--()    noexcept { --__d; return *this; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr day  operator--(int) noexcept { day __tmp = *this; --(*this); return __tmp; }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
+    explicit constexpr day(unsigned __val) noexcept : __d(static_cast<unsigned char>(__val)) {}
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr day& operator++()    noexcept { ++__d; return *this; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr day  operator++(int) noexcept { day __tmp = *this; ++(*this); return __tmp; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr day& operator--()    noexcept { --__d; return *this; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr day  operator--(int) noexcept { day __tmp = *this; --(*this); return __tmp; }
+    _LIBCUDACXX_HIDE_FROM_ABI
            constexpr day& operator+=(const days& __dd) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
            constexpr day& operator-=(const days& __dd) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit inline constexpr operator unsigned() const noexcept { return __d; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr bool ok() const noexcept { return __d >= 1 && __d <= 31; }
+    _LIBCUDACXX_HIDE_FROM_ABI
+    explicit constexpr operator unsigned() const noexcept { return __d; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr bool ok() const noexcept { return __d >= 1 && __d <= 31; }
   };
 
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const day& __lhs, const day& __rhs) noexcept
 { return static_cast<unsigned>(__lhs) == static_cast<unsigned>(__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const day& __lhs, const day& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator< (const day& __lhs, const day& __rhs) noexcept
 { return static_cast<unsigned>(__lhs) <  static_cast<unsigned>(__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator> (const day& __lhs, const day& __rhs) noexcept
 { return __rhs < __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator<=(const day& __lhs, const day& __rhs) noexcept
 { return !(__rhs < __lhs);}
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator>=(const day& __lhs, const day& __rhs) noexcept
 { return !(__lhs < __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 day operator+ (const day& __lhs, const days& __rhs) noexcept
 { return day(static_cast<unsigned>(__lhs) + static_cast<unsigned>(__rhs.count())); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 day operator+ (const days& __lhs, const day& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 day operator- (const day& __lhs, const days& __rhs) noexcept
 { return __lhs + -__rhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 days operator-(const day& __lhs, const day& __rhs) noexcept
 { return days(static_cast<int>(static_cast<unsigned>(__lhs)) -
               static_cast<int>(static_cast<unsigned>(__rhs))); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr day& day::operator+=(const days& __dd) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr day& day::operator+=(const days& __dd) noexcept
 { *this = *this + __dd; return *this; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr day& day::operator-=(const days& __dd) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr day& day::operator-=(const days& __dd) noexcept
 { *this = *this - __dd; return *this; }
 
 
@@ -1736,59 +1719,47 @@ private:
     unsigned char __m;
 public:
     month() = default;
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit inline constexpr month(unsigned __val) noexcept : __m(static_cast<unsigned char>(__val)) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr month& operator++()    noexcept { ++__m; return *this; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr month  operator++(int) noexcept { month __tmp = *this; ++(*this); return __tmp; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr month& operator--()    noexcept { --__m; return *this; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr month  operator--(int) noexcept { month __tmp = *this; --(*this); return __tmp; }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
+    explicit constexpr month(unsigned __val) noexcept : __m(static_cast<unsigned char>(__val)) {}
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr month& operator++()    noexcept { ++__m; return *this; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr month  operator++(int) noexcept { month __tmp = *this; ++(*this); return __tmp; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr month& operator--()    noexcept { --__m; return *this; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr month  operator--(int) noexcept { month __tmp = *this; --(*this); return __tmp; }
+    _LIBCUDACXX_HIDE_FROM_ABI
            constexpr month& operator+=(const months& __m1) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
            constexpr month& operator-=(const months& __m1) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit inline constexpr operator unsigned() const noexcept { return __m; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr bool ok() const noexcept { return __m >= 1 && __m <= 12; }
+    _LIBCUDACXX_HIDE_FROM_ABI
+    explicit constexpr operator unsigned() const noexcept { return __m; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr bool ok() const noexcept { return __m >= 1 && __m <= 12; }
 };
 
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const month& __lhs, const month& __rhs) noexcept
 { return static_cast<unsigned>(__lhs) == static_cast<unsigned>(__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const month& __lhs, const month& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator< (const month& __lhs, const month& __rhs) noexcept
 { return static_cast<unsigned>(__lhs)  < static_cast<unsigned>(__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator> (const month& __lhs, const month& __rhs) noexcept
 { return __rhs < __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator<=(const month& __lhs, const month& __rhs) noexcept
 { return !(__rhs < __lhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator>=(const month& __lhs, const month& __rhs) noexcept
 { return !(__lhs < __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month operator+ (const month& __lhs, const months& __rhs) noexcept
 {
     auto const __mu = static_cast<long long>(static_cast<unsigned>(__lhs)) + (__rhs.count() - 1);
@@ -1796,30 +1767,25 @@ month operator+ (const month& __lhs, const months& __rhs) noexcept
     return month{static_cast<unsigned>(__mu - __yr * 12 + 1)};
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month operator+ (const months& __lhs, const month& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month operator- (const month& __lhs, const months& __rhs) noexcept
 { return __lhs + -__rhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 months operator-(const month& __lhs, const month& __rhs) noexcept
 {
     auto const __dm = static_cast<unsigned>(__lhs) - static_cast<unsigned>(__rhs);
     return months(__dm <= 11 ? __dm : __dm + 12);
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr month& month::operator+=(const months& __dm) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr month& month::operator+=(const months& __dm) noexcept
 { *this = *this + __dm; return *this; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr month& month::operator-=(const months& __dm) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr month& month::operator-=(const months& __dm) noexcept
 { *this = *this - __dm; return *this; }
 
 
@@ -1828,100 +1794,80 @@ private:
     short __y;
 public:
     year() = default;
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit inline constexpr year(int __val) noexcept : __y(static_cast<short>(__val)) {}
+    _LIBCUDACXX_HIDE_FROM_ABI
+    explicit constexpr year(int __val) noexcept : __y(static_cast<short>(__val)) {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr year& operator++()    noexcept { ++__y; return *this; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr year  operator++(int) noexcept { year __tmp = *this; ++(*this); return __tmp; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr year& operator--()    noexcept { --__y; return *this; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr year  operator--(int) noexcept { year __tmp = *this; --(*this); return __tmp; }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr year& operator++()    noexcept { ++__y; return *this; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr year  operator++(int) noexcept { year __tmp = *this; ++(*this); return __tmp; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr year& operator--()    noexcept { --__y; return *this; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr year  operator--(int) noexcept { year __tmp = *this; --(*this); return __tmp; }
+    _LIBCUDACXX_HIDE_FROM_ABI
            constexpr year& operator+=(const years& __dy) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
            constexpr year& operator-=(const years& __dy) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr year operator+() const noexcept { return *this; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr year operator-() const noexcept { return year{-__y}; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr year operator+() const noexcept { return *this; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr year operator-() const noexcept { return year{-__y}; }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr bool is_leap() const noexcept { return __y % 4 == 0 && (__y % 100 != 0 || __y % 400 == 0); }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit inline constexpr operator int() const noexcept { return __y; }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_leap() const noexcept { return __y % 4 == 0 && (__y % 100 != 0 || __y % 400 == 0); }
+    _LIBCUDACXX_HIDE_FROM_ABI
+    explicit constexpr operator int() const noexcept { return __y; }
+    _LIBCUDACXX_HIDE_FROM_ABI
            constexpr bool ok() const noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
-    static inline constexpr year min() noexcept { return year{-32767}; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    static inline constexpr year max() noexcept { return year{ 32767}; }
+    _LIBCUDACXX_HIDE_FROM_ABI
+    static constexpr year min() noexcept { return year{-32767}; }
+    _LIBCUDACXX_HIDE_FROM_ABI
+    static constexpr year max() noexcept { return year{ 32767}; }
 };
 
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const year& __lhs, const year& __rhs) noexcept
 { return static_cast<int>(__lhs) == static_cast<int>(__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const year& __lhs, const year& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator< (const year& __lhs, const year& __rhs) noexcept
 { return static_cast<int>(__lhs)  < static_cast<int>(__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator> (const year& __lhs, const year& __rhs) noexcept
 { return __rhs < __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator<=(const year& __lhs, const year& __rhs) noexcept
 { return !(__rhs < __lhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator>=(const year& __lhs, const year& __rhs) noexcept
 { return !(__lhs < __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year operator+ (const year& __lhs, const years& __rhs) noexcept
 { return year(static_cast<int>(__lhs) + __rhs.count()); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year operator+ (const years& __lhs, const year& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year operator- (const year& __lhs, const years& __rhs) noexcept
 { return __lhs + -__rhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 years operator-(const year& __lhs, const year& __rhs) noexcept
 { return years{static_cast<int>(__lhs) - static_cast<int>(__rhs)}; }
 
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year& year::operator+=(const years& __dy) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year& year::operator+=(const years& __dy) noexcept
 { *this = *this + __dy; return *this; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year& year::operator-=(const years& __dy) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year& year::operator-=(const years& __dy) noexcept
 { *this = *this - __dy; return *this; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr bool year::ok() const noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool year::ok() const noexcept
 { return static_cast<int>(min()) <= __y && __y <= static_cast<int>(max()); }
 
 class weekday_indexed;
@@ -1932,46 +1878,31 @@ private:
     unsigned char __wd;
 public:
   weekday() = default;
-  _LIBCUDACXX_INLINE_VISIBILITY
-  inline explicit constexpr weekday(unsigned __val) noexcept : __wd(static_cast<unsigned char>(__val == 7 ? 0 : __val)) {}
-  _LIBCUDACXX_INLINE_VISIBILITY
-  inline constexpr          weekday(const sys_days& __sysd) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr weekday(unsigned __val) noexcept : __wd(static_cast<unsigned char>(__val == 7 ? 0 : __val)) {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr          weekday(const sys_days& __sysd) noexcept
           : __wd(__weekday_from_days(__sysd.time_since_epoch().count())) {}
-  _LIBCUDACXX_INLINE_VISIBILITY
-  inline explicit constexpr weekday(const local_days& __locd) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr weekday(const local_days& __locd) noexcept
           : __wd(__weekday_from_days(__locd.time_since_epoch().count())) {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  inline constexpr weekday& operator++()    noexcept { __wd = (__wd == 6 ? 0 : __wd + 1); return *this; }
-  _LIBCUDACXX_INLINE_VISIBILITY
-  inline constexpr weekday  operator++(int) noexcept { weekday __tmp = *this; ++(*this); return __tmp; }
-  _LIBCUDACXX_INLINE_VISIBILITY
-  inline constexpr weekday& operator--()    noexcept { __wd = (__wd == 0 ? 6 : __wd - 1); return *this; }
-  _LIBCUDACXX_INLINE_VISIBILITY
-  inline constexpr weekday  operator--(int) noexcept { weekday __tmp = *this; --(*this); return __tmp; }
-  _LIBCUDACXX_INLINE_VISIBILITY
-         constexpr weekday& operator+=(const days& __dd) noexcept;
-  _LIBCUDACXX_INLINE_VISIBILITY
-         constexpr weekday& operator-=(const days& __dd) noexcept;
-  _LIBCUDACXX_INLINE_VISIBILITY
-  inline constexpr unsigned c_encoding()   const noexcept { return __wd; }
-  _LIBCUDACXX_INLINE_VISIBILITY
-  inline constexpr unsigned iso_encoding() const noexcept { return __wd == 0u ? 7 : __wd; }
-  _LIBCUDACXX_INLINE_VISIBILITY
-  inline constexpr bool ok() const noexcept { return __wd <= 6; }
-  _LIBCUDACXX_INLINE_VISIBILITY
-         constexpr weekday_indexed operator[](unsigned __index) const noexcept;
-  _LIBCUDACXX_INLINE_VISIBILITY
-         constexpr weekday_last    operator[](last_spec) const noexcept;
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr weekday& operator++()    noexcept { __wd = (__wd == 6 ? 0 : __wd + 1); return *this; }
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr weekday  operator++(int) noexcept { weekday __tmp = *this; ++(*this); return __tmp; }
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr weekday& operator--()    noexcept { __wd = (__wd == 0 ? 6 : __wd - 1); return *this; }
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr weekday  operator--(int) noexcept { weekday __tmp = *this; --(*this); return __tmp; }
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr weekday& operator+=(const days& __dd) noexcept;
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr weekday& operator-=(const days& __dd) noexcept;
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr unsigned c_encoding()   const noexcept { return __wd; }
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr unsigned iso_encoding() const noexcept { return __wd == 0u ? 7 : __wd; }
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool ok() const noexcept { return __wd <= 6; }
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr weekday_indexed operator[](unsigned __index) const noexcept;
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr weekday_last    operator[](last_spec) const noexcept;
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static constexpr unsigned char __weekday_from_days(int __days) noexcept;
 };
 
 
 // https://howardhinnant.github.io/date_algorithms.html#weekday_from_days
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 unsigned char weekday::__weekday_from_days(int __days) noexcept
 {
     return static_cast<unsigned char>(
@@ -1979,37 +1910,31 @@ unsigned char weekday::__weekday_from_days(int __days) noexcept
            );
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const weekday& __lhs, const weekday& __rhs) noexcept
 { return __lhs.c_encoding() == __rhs.c_encoding(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const weekday& __lhs, const weekday& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator< (const weekday& __lhs, const weekday& __rhs) noexcept
 { return __lhs.c_encoding() < __rhs.c_encoding(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator> (const weekday& __lhs, const weekday& __rhs) noexcept
 { return __rhs < __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator<=(const weekday& __lhs, const weekday& __rhs) noexcept
 { return !(__rhs < __lhs);}
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator>=(const weekday& __lhs, const weekday& __rhs) noexcept
 { return !(__lhs < __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr weekday operator+(const weekday& __lhs, const days& __rhs) noexcept
 {
     auto const __mu = static_cast<long long>(__lhs.c_encoding()) + __rhs.count();
@@ -2017,15 +1942,15 @@ constexpr weekday operator+(const weekday& __lhs, const days& __rhs) noexcept
     return weekday{static_cast<unsigned>(__mu - __yr * 7)};
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr weekday operator+(const days& __lhs, const weekday& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr weekday operator-(const weekday& __lhs, const days& __rhs) noexcept
 { return __lhs + -__rhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr days operator-(const weekday& __lhs, const weekday& __rhs) noexcept
 {
     // casts are required to work around nvcc bug 3145483
@@ -2034,12 +1959,10 @@ constexpr days operator-(const weekday& __lhs, const weekday& __rhs) noexcept
     return days{__wdu - __wk * 7};
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr weekday& weekday::operator+=(const days& __dd) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr weekday& weekday::operator+=(const days& __dd) noexcept
 { *this = *this + __dd; return *this; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr weekday& weekday::operator-=(const days& __dd) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr weekday& weekday::operator-=(const days& __dd) noexcept
 { *this = *this - __dd; return *this; }
 
 
@@ -2049,24 +1972,18 @@ private:
     unsigned char          __idx;
 public:
     weekday_indexed() = default;
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr weekday_indexed(const _CUDA_VSTD::chrono::weekday& __wdval, unsigned __idxval) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr weekday_indexed(const _CUDA_VSTD::chrono::weekday& __wdval, unsigned __idxval) noexcept
         : __wd{__wdval}, __idx(static_cast<unsigned char>(__idxval)) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr _CUDA_VSTD::chrono::weekday weekday() const noexcept { return __wd; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr unsigned                 index() const noexcept { return __idx; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr bool ok() const noexcept { return __wd.ok() && __idx >= 1 && __idx <= 5; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::chrono::weekday weekday() const noexcept { return __wd; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr unsigned                 index() const noexcept { return __idx; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr bool ok() const noexcept { return __wd.ok() && __idx >= 1 && __idx <= 5; }
 };
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const weekday_indexed& __lhs, const weekday_indexed& __rhs) noexcept
 { return __lhs.weekday() == __rhs.weekday() && __lhs.index() == __rhs.index(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const weekday_indexed& __lhs, const weekday_indexed& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
@@ -2075,31 +1992,27 @@ class weekday_last {
 private:
     _CUDA_VSTD::chrono::weekday __wd;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit constexpr weekday_last(const _CUDA_VSTD::chrono::weekday& __val) noexcept
         : __wd{__val} {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr _CUDA_VSTD::chrono::weekday weekday() const noexcept { return __wd; }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr bool ok() const noexcept { return __wd.ok(); }
 };
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const weekday_last& __lhs, const weekday_last& __rhs) noexcept
 { return __lhs.weekday() == __rhs.weekday(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const weekday_last& __lhs, const weekday_last& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 weekday_indexed weekday::operator[](unsigned __index) const noexcept { return weekday_indexed{*this, __index}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 weekday_last    weekday::operator[](last_spec) const noexcept { return weekday_last{*this}; }
 
 
@@ -2132,19 +2045,16 @@ private:
    chrono::day   __d;
 public:
     month_day() = default;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr month_day(const chrono::month& __mval, const chrono::day& __dval) noexcept
         : __m{__mval}, __d{__dval} {}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::month month() const noexcept { return __m; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::day   day()   const noexcept { return __d; }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::month month() const noexcept { return __m; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::day   day()   const noexcept { return __d; }
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr bool ok() const noexcept;
 };
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool month_day::ok() const noexcept
 {
     if (!__m.ok()) return false;
@@ -2159,59 +2069,51 @@ bool month_day::ok() const noexcept
     return true;
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const month_day& __lhs, const month_day& __rhs) noexcept
 { return __lhs.month() == __rhs.month() && __lhs.day() == __rhs.day(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const month_day& __lhs, const month_day& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_day operator/(const month& __lhs, const day& __rhs) noexcept
 { return month_day{__lhs, __rhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr
 month_day operator/(const day& __lhs, const month& __rhs) noexcept
 { return __rhs / __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_day operator/(const month& __lhs, int __rhs) noexcept
 { return __lhs / day(__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr
 month_day operator/(int __lhs, const day& __rhs) noexcept
 { return month(__lhs) / __rhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr
 month_day operator/(const day& __lhs, int __rhs) noexcept
 { return month(__rhs) / __lhs; }
 
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator< (const month_day& __lhs, const month_day& __rhs) noexcept
 { return __lhs.month() != __rhs.month() ? __lhs.month() < __rhs.month() : __lhs.day() < __rhs.day(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator> (const month_day& __lhs, const month_day& __rhs) noexcept
 { return __rhs < __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator<=(const month_day& __lhs, const month_day& __rhs) noexcept
 { return !(__rhs < __lhs);}
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator>=(const month_day& __lhs, const month_day& __rhs) noexcept
 { return !(__lhs < __rhs); }
 
@@ -2221,62 +2123,50 @@ class month_day_last {
 private:
     chrono::month __m;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     explicit constexpr month_day_last(const chrono::month& __val) noexcept
         : __m{__val} {}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::month month() const noexcept { return __m; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr bool ok() const noexcept { return __m.ok(); }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::month month() const noexcept { return __m; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr bool ok() const noexcept { return __m.ok(); }
 };
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const month_day_last& __lhs, const month_day_last& __rhs) noexcept
 { return __lhs.month() == __rhs.month(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const month_day_last& __lhs, const month_day_last& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator< (const month_day_last& __lhs, const month_day_last& __rhs) noexcept
 { return __lhs.month() < __rhs.month(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator> (const month_day_last& __lhs, const month_day_last& __rhs) noexcept
 { return __rhs < __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator<=(const month_day_last& __lhs, const month_day_last& __rhs) noexcept
 { return !(__rhs < __lhs);}
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator>=(const month_day_last& __lhs, const month_day_last& __rhs) noexcept
 { return !(__lhs < __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_day_last operator/(const month& __lhs, last_spec) noexcept
 { return month_day_last{__lhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_day_last operator/(last_spec, const month& __rhs) noexcept
 { return month_day_last{__rhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_day_last operator/(int __lhs, last_spec) noexcept
 { return month_day_last{month(__lhs)}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_day_last operator/(last_spec, int __rhs) noexcept
 { return month_day_last{month(__rhs)}; }
 
@@ -2287,44 +2177,35 @@ private:
     chrono::weekday_indexed __wdi;
 public:
     month_weekday() = default;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr month_weekday(const chrono::month& __mval, const chrono::weekday_indexed& __wdival) noexcept
         : __m{__mval}, __wdi{__wdival} {}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::month                     month() const noexcept { return __m; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::weekday_indexed weekday_indexed() const noexcept { return __wdi; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr bool                                 ok() const noexcept { return __m.ok() && __wdi.ok(); }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::month                     month() const noexcept { return __m; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::weekday_indexed weekday_indexed() const noexcept { return __wdi; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr bool                                 ok() const noexcept { return __m.ok() && __wdi.ok(); }
 };
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const month_weekday& __lhs, const month_weekday& __rhs) noexcept
 { return __lhs.month() == __rhs.month() && __lhs.weekday_indexed() == __rhs.weekday_indexed(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const month_weekday& __lhs, const month_weekday& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_weekday operator/(const month& __lhs, const weekday_indexed& __rhs) noexcept
 { return month_weekday{__lhs, __rhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_weekday operator/(int __lhs, const weekday_indexed& __rhs) noexcept
 { return month_weekday{month(__lhs), __rhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_weekday operator/(const weekday_indexed& __lhs, const month& __rhs) noexcept
 { return month_weekday{__rhs, __lhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_weekday operator/(const weekday_indexed& __lhs, int __rhs) noexcept
 { return month_weekday{month(__rhs), __lhs}; }
 
@@ -2333,45 +2214,36 @@ class month_weekday_last {
     chrono::month        __m;
     chrono::weekday_last __wdl;
   public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr month_weekday_last(const chrono::month& __mval, const chrono::weekday_last& __wdlval) noexcept
         : __m{__mval}, __wdl{__wdlval} {}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::month               month() const noexcept { return __m; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::weekday_last weekday_last() const noexcept { return __wdl; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr bool                           ok() const noexcept { return __m.ok() && __wdl.ok(); }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::month               month() const noexcept { return __m; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::weekday_last weekday_last() const noexcept { return __wdl; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr bool                           ok() const noexcept { return __m.ok() && __wdl.ok(); }
 };
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const month_weekday_last& __lhs, const month_weekday_last& __rhs) noexcept
 { return __lhs.month() == __rhs.month() && __lhs.weekday_last() == __rhs.weekday_last(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const month_weekday_last& __lhs, const month_weekday_last& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_weekday_last operator/(const month& __lhs, const weekday_last& __rhs) noexcept
 { return month_weekday_last{__lhs, __rhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_weekday_last operator/(int __lhs, const weekday_last& __rhs) noexcept
 { return month_weekday_last{month(__lhs), __rhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_weekday_last operator/(const weekday_last& __lhs, const month& __rhs) noexcept
 { return month_weekday_last{__rhs, __lhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 month_weekday_last operator/(const weekday_last& __lhs, int __rhs) noexcept
 { return month_weekday_last{month(__rhs), __lhs}; }
 
@@ -2381,64 +2253,49 @@ class year_month {
     chrono::month __m;
 public:
     year_month() = default;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr year_month(const chrono::year& __yval, const chrono::month& __mval) noexcept
         : __y{__yval}, __m{__mval} {}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::year  year()  const noexcept { return __y; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::month month() const noexcept { return __m; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr year_month& operator+=(const months& __dm) noexcept { this->__m += __dm; return *this; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr year_month& operator-=(const months& __dm) noexcept { this->__m -= __dm; return *this; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr year_month& operator+=(const years& __dy)  noexcept { this->__y += __dy; return *this; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr year_month& operator-=(const years& __dy)  noexcept { this->__y -= __dy; return *this; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr bool ok() const noexcept { return __y.ok() && __m.ok(); }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::year  year()  const noexcept { return __y; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::month month() const noexcept { return __m; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr year_month& operator+=(const months& __dm) noexcept { this->__m += __dm; return *this; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr year_month& operator-=(const months& __dm) noexcept { this->__m -= __dm; return *this; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr year_month& operator+=(const years& __dy)  noexcept { this->__y += __dy; return *this; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr year_month& operator-=(const years& __dy)  noexcept { this->__y -= __dy; return *this; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr bool ok() const noexcept { return __y.ok() && __m.ok(); }
 };
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month operator/(const year& __y, const month& __m) noexcept { return year_month{__y, __m}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month operator/(const year& __y, int __m) noexcept { return year_month{__y, month(__m)}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const year_month& __lhs, const year_month& __rhs) noexcept
 { return __lhs.year() == __rhs.year() && __lhs.month() == __rhs.month(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const year_month& __lhs, const year_month& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator< (const year_month& __lhs, const year_month& __rhs) noexcept
 { return __lhs.year() != __rhs.year() ? __lhs.year() < __rhs.year() : __lhs.month() < __rhs.month(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator> (const year_month& __lhs, const year_month& __rhs) noexcept
 { return __rhs < __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator<=(const year_month& __lhs, const year_month& __rhs) noexcept
 { return !(__rhs < __lhs);}
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator>=(const year_month& __lhs, const year_month& __rhs) noexcept
 { return !(__lhs < __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr year_month operator+(const year_month& __lhs, const months& __rhs) noexcept
 {
     int __dmi = static_cast<int>(static_cast<unsigned>(__lhs.month())) - 1 + __rhs.count();
@@ -2447,27 +2304,27 @@ constexpr year_month operator+(const year_month& __lhs, const months& __rhs) noe
     return (__lhs.year() + years(__dy)) / month(static_cast<unsigned>(__dmi));
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr year_month operator+(const months& __lhs, const year_month& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr year_month operator+(const year_month& __lhs, const years& __rhs) noexcept
 { return (__lhs.year() + __rhs) / __lhs.month(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr year_month operator+(const years& __lhs, const year_month& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr months     operator-(const year_month& __lhs, const year_month& __rhs) noexcept
 { return (__lhs.year() - __rhs.year()) + months(static_cast<unsigned>(__lhs.month()) - static_cast<unsigned>(__rhs.month())); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr year_month operator-(const year_month& __lhs, const months& __rhs) noexcept
 { return __lhs + -__rhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr year_month operator-(const year_month& __lhs, const years& __rhs) noexcept
 { return __lhs + -__rhs; }
 
@@ -2480,52 +2337,43 @@ private:
     chrono::day   __d;
 public:
      year_month_day() = default;
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline constexpr year_month_day(
+     _LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day(
             const chrono::year& __yval, const chrono::month& __mval, const chrono::day& __dval) noexcept
             : __y{__yval}, __m{__mval}, __d{__dval} {}
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
             constexpr year_month_day(const year_month_day_last& __ymdl) noexcept;
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline constexpr year_month_day(const sys_days& __sysd) noexcept
+     _LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day(const sys_days& __sysd) noexcept
             : year_month_day(__from_days(__sysd.time_since_epoch())) {}
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline explicit constexpr year_month_day(const local_days& __locd) noexcept
+     _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr year_month_day(const local_days& __locd) noexcept
             : year_month_day(__from_days(__locd.time_since_epoch())) {}
 
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
             constexpr year_month_day& operator+=(const months& __dm) noexcept;
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
             constexpr year_month_day& operator-=(const months& __dm) noexcept;
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
             constexpr year_month_day& operator+=(const years& __dy)  noexcept;
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
             constexpr year_month_day& operator-=(const years& __dy)  noexcept;
 
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline constexpr chrono::year   year() const noexcept { return __y; }
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline constexpr chrono::month month() const noexcept { return __m; }
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline constexpr chrono::day     day() const noexcept { return __d; }
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline constexpr operator   sys_days() const noexcept          { return   sys_days{__to_days()}; }
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline explicit constexpr operator local_days() const noexcept { return local_days{__to_days()}; }
+     _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::year   year() const noexcept { return __y; }
+     _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::month month() const noexcept { return __m; }
+     _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::day     day() const noexcept { return __d; }
+     _LIBCUDACXX_HIDE_FROM_ABI constexpr operator   sys_days() const noexcept          { return   sys_days{__to_days()}; }
+     _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr operator local_days() const noexcept { return local_days{__to_days()}; }
 
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
             constexpr bool             ok() const noexcept;
 
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
      static constexpr year_month_day __from_days(days __d) noexcept;
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
      constexpr days __to_days() const noexcept;
 };
 
 
 // https://howardhinnant.github.io/date_algorithms.html#civil_from_days
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day
 year_month_day::__from_days(days __d) noexcept
 {
@@ -2544,8 +2392,7 @@ year_month_day::__from_days(days __d) noexcept
 }
 
 // https://howardhinnant.github.io/date_algorithms.html#days_from_civil
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr days year_month_day::__to_days() const noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr days year_month_day::__to_days() const noexcept
 {
     static_assert(std::numeric_limits<unsigned>::digits >= 18, "");
     static_assert(std::numeric_limits<int>::digits >= 20     , "");
@@ -2565,18 +2412,15 @@ inline constexpr days year_month_day::__to_days() const noexcept
     return days{__era * 146097 + static_cast<int>(__doe) - 719468};
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const year_month_day& __lhs, const year_month_day& __rhs) noexcept
 { return __lhs.year() == __rhs.year() && __lhs.month() == __rhs.month() && __lhs.day() == __rhs.day(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const year_month_day& __lhs, const year_month_day& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator< (const year_month_day& __lhs, const year_month_day& __rhs) noexcept
 {
     if (__lhs.year() < __rhs.year()) return true;
@@ -2586,127 +2430,101 @@ bool operator< (const year_month_day& __lhs, const year_month_day& __rhs) noexce
     return __lhs.day() < __rhs.day();
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator> (const year_month_day& __lhs, const year_month_day& __rhs) noexcept
 { return __rhs < __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator<=(const year_month_day& __lhs, const year_month_day& __rhs) noexcept
 { return !(__rhs < __lhs);}
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator>=(const year_month_day& __lhs, const year_month_day& __rhs) noexcept
 { return !(__lhs < __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day operator/(const year_month& __lhs, const day& __rhs) noexcept
 { return year_month_day{__lhs.year(), __lhs.month(), __rhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day operator/(const year_month& __lhs, int __rhs) noexcept
 { return __lhs / day(__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day operator/(const year& __lhs, const month_day& __rhs) noexcept
 { return __lhs / __rhs.month() / __rhs.day(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day operator/(int __lhs, const month_day& __rhs) noexcept
 { return year(__lhs) / __rhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day operator/(const month_day& __lhs, const year& __rhs) noexcept
 { return __rhs / __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day operator/(const month_day& __lhs, int __rhs) noexcept
 { return year(__rhs) / __lhs; }
 
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day operator+(const year_month_day& __lhs, const months& __rhs) noexcept
 { return (__lhs.year()/__lhs.month() + __rhs)/__lhs.day(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day operator+(const months& __lhs, const year_month_day& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day operator-(const year_month_day& __lhs, const months& __rhs) noexcept
 { return __lhs + -__rhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day operator+(const year_month_day& __lhs, const years& __rhs) noexcept
 { return (__lhs.year() + __rhs) / __lhs.month() / __lhs.day(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day operator+(const years& __lhs, const year_month_day& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day operator-(const year_month_day& __lhs, const years& __rhs) noexcept
 { return __lhs + -__rhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day& year_month_day::operator+=(const months& __dm) noexcept { *this = *this + __dm; return *this; }
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day& year_month_day::operator-=(const months& __dm) noexcept { *this = *this - __dm; return *this; }
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day& year_month_day::operator+=(const years& __dy)  noexcept { *this = *this + __dy; return *this; }
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day& year_month_day::operator-=(const years& __dy)  noexcept { *this = *this - __dy; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day& year_month_day::operator+=(const months& __dm) noexcept { *this = *this + __dm; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day& year_month_day::operator-=(const months& __dm) noexcept { *this = *this - __dm; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day& year_month_day::operator+=(const years& __dy)  noexcept { *this = *this + __dy; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day& year_month_day::operator-=(const years& __dy)  noexcept { *this = *this - __dy; return *this; }
 
 class year_month_day_last {
 private:
     chrono::year           __y;
     chrono::month_day_last __mdl;
 public:
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
      constexpr year_month_day_last(const year& __yval, const month_day_last& __mdlval) noexcept
         : __y{__yval}, __mdl{__mdlval} {}
 
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
      constexpr year_month_day_last& operator+=(const months& __m) noexcept;
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
      constexpr year_month_day_last& operator-=(const months& __m) noexcept;
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
      constexpr year_month_day_last& operator+=(const years& __y)  noexcept;
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI
      constexpr year_month_day_last& operator-=(const years& __y)  noexcept;
 
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline constexpr chrono::year                     year() const noexcept { return __y; }
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline constexpr chrono::month                   month() const noexcept { return __mdl.month(); }
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline constexpr chrono::month_day_last month_day_last() const noexcept { return __mdl; }
-     _LIBCUDACXX_INLINE_VISIBILITY
+     _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::year                     year() const noexcept { return __y; }
+     _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::month                   month() const noexcept { return __mdl.month(); }
+     _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::month_day_last month_day_last() const noexcept { return __mdl; }
+     _LIBCUDACXX_HIDE_FROM_ABI
             constexpr chrono::day                       day() const noexcept;
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline constexpr operator                     sys_days() const noexcept { return   sys_days{year()/month()/day()}; }
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline explicit constexpr operator          local_days() const noexcept { return local_days{year()/month()/day()}; }
-     _LIBCUDACXX_INLINE_VISIBILITY
-     inline constexpr bool                               ok() const noexcept { return __y.ok() && __mdl.ok(); }
+     _LIBCUDACXX_HIDE_FROM_ABI constexpr operator                     sys_days() const noexcept { return   sys_days{year()/month()/day()}; }
+     _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr operator          local_days() const noexcept { return local_days{year()/month()/day()}; }
+     _LIBCUDACXX_HIDE_FROM_ABI constexpr bool                               ok() const noexcept { return __y.ok() && __mdl.ok(); }
 };
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 chrono::day year_month_day_last::day() const noexcept
 {
     constexpr chrono::day __d[] =
@@ -2724,18 +2542,15 @@ chrono::day year_month_day_last::day() const noexcept
         __d[static_cast<unsigned>(month()) - 1] : chrono::day{29};
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const year_month_day_last& __lhs, const year_month_day_last& __rhs) noexcept
 { return __lhs.year() == __rhs.year() && __lhs.month_day_last() == __rhs.month_day_last(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const year_month_day_last& __lhs, const year_month_day_last& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator< (const year_month_day_last& __lhs, const year_month_day_last& __rhs) noexcept
 {
     if (__lhs.year() < __rhs.year()) return true;
@@ -2743,87 +2558,67 @@ bool operator< (const year_month_day_last& __lhs, const year_month_day_last& __r
     return __lhs.month_day_last() < __rhs.month_day_last();
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator> (const year_month_day_last& __lhs, const year_month_day_last& __rhs) noexcept
 { return __rhs < __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator<=(const year_month_day_last& __lhs, const year_month_day_last& __rhs) noexcept
 { return !(__rhs < __lhs);}
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator>=(const year_month_day_last& __lhs, const year_month_day_last& __rhs) noexcept
 { return !(__lhs < __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day_last operator/(const year_month& __lhs, last_spec) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day_last operator/(const year_month& __lhs, last_spec) noexcept
 { return year_month_day_last{__lhs.year(), month_day_last{__lhs.month()}}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day_last operator/(const year& __lhs, const month_day_last& __rhs) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day_last operator/(const year& __lhs, const month_day_last& __rhs) noexcept
 { return year_month_day_last{__lhs, __rhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day_last operator/(int __lhs, const month_day_last& __rhs) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day_last operator/(int __lhs, const month_day_last& __rhs) noexcept
 { return year_month_day_last{year{__lhs}, __rhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day_last operator/(const month_day_last& __lhs, const year& __rhs) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day_last operator/(const month_day_last& __lhs, const year& __rhs) noexcept
 { return __rhs / __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day_last operator/(const month_day_last& __lhs, int __rhs) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day_last operator/(const month_day_last& __lhs, int __rhs) noexcept
 { return year{__rhs} / __lhs; }
 
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day_last operator+(const year_month_day_last& __lhs, const months& __rhs) noexcept
 { return (__lhs.year() / __lhs.month() + __rhs) / last; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day_last operator+(const months& __lhs, const year_month_day_last& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day_last operator-(const year_month_day_last& __lhs, const months& __rhs) noexcept
 { return __lhs + (-__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day_last operator+(const year_month_day_last& __lhs, const years& __rhs) noexcept
 { return year_month_day_last{__lhs.year() + __rhs, __lhs.month_day_last()}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day_last operator+(const years& __lhs, const year_month_day_last& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_day_last operator-(const year_month_day_last& __lhs, const years& __rhs) noexcept
 { return __lhs + (-__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day_last& year_month_day_last::operator+=(const months& __dm) noexcept { *this = *this + __dm; return *this; }
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day_last& year_month_day_last::operator-=(const months& __dm) noexcept { *this = *this - __dm; return *this; }
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day_last& year_month_day_last::operator+=(const years& __dy)  noexcept { *this = *this + __dy; return *this; }
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day_last& year_month_day_last::operator-=(const years& __dy)  noexcept { *this = *this - __dy; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day_last& year_month_day_last::operator+=(const months& __dm) noexcept { *this = *this + __dm; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day_last& year_month_day_last::operator-=(const months& __dm) noexcept { *this = *this - __dm; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day_last& year_month_day_last::operator+=(const years& __dy)  noexcept { *this = *this + __dy; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day_last& year_month_day_last::operator-=(const years& __dy)  noexcept { *this = *this - __dy; return *this; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_day::year_month_day(const year_month_day_last& __ymdl) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_day::year_month_day(const year_month_day_last& __ymdl) noexcept
     : __y{__ymdl.year()}, __m{__ymdl.month()}, __d{__ymdl.day()} {}
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr bool year_month_day::ok() const noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool year_month_day::ok() const noexcept
 {
     if (!__y.ok() || !__m.ok()) return false;
     return chrono::day{1} <= __d && __d <= (__y / __m / last).day();
@@ -2835,56 +2630,46 @@ class year_month_weekday {
     chrono::weekday_indexed __wdi;
 public:
     year_month_weekday() = default;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr year_month_weekday(const chrono::year& __yval, const chrono::month& __mval,
                                const chrono::weekday_indexed& __wdival) noexcept
         : __y{__yval}, __m{__mval}, __wdi{__wdival} {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr year_month_weekday(const sys_days& __sysd) noexcept
             : year_month_weekday(__from_days(__sysd.time_since_epoch())) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline explicit constexpr year_month_weekday(const local_days& __locd) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr year_month_weekday(const local_days& __locd) noexcept
             : year_month_weekday(__from_days(__locd.time_since_epoch())) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr year_month_weekday& operator+=(const months& m) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr year_month_weekday& operator-=(const months& m) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr year_month_weekday& operator+=(const years& y)  noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr year_month_weekday& operator-=(const years& y)  noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::year                       year() const noexcept { return __y; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::month                     month() const noexcept { return __m; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::weekday                 weekday() const noexcept { return __wdi.weekday(); }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr unsigned                          index() const noexcept { return __wdi.index(); }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::weekday_indexed weekday_indexed() const noexcept { return __wdi; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::year                       year() const noexcept { return __y; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::month                     month() const noexcept { return __m; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::weekday                 weekday() const noexcept { return __wdi.weekday(); }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr unsigned                          index() const noexcept { return __wdi.index(); }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::weekday_indexed weekday_indexed() const noexcept { return __wdi; }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr                       operator sys_days() const noexcept { return   sys_days{__to_days()}; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline explicit constexpr operator            local_days() const noexcept { return local_days{__to_days()}; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr bool ok() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr                       operator sys_days() const noexcept { return   sys_days{__to_days()}; }
+    _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr operator            local_days() const noexcept { return local_days{__to_days()}; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr bool ok() const noexcept
     {
         if (!__y.ok() || !__m.ok() || !__wdi.ok()) return false;
     //  TODO: make sure it's a valid date
         return true;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static constexpr year_month_weekday __from_days(days __d) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr days __to_days() const noexcept;
 };
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday year_month_weekday::__from_days(days __d) noexcept
 {
     const sys_days      __sysd{__d};
@@ -2894,8 +2679,7 @@ year_month_weekday year_month_weekday::__from_days(days __d) noexcept
                               __wd[(static_cast<unsigned>(__ymd.day())-1)/7+1]};
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 days year_month_weekday::__to_days() const noexcept
 {
     const sys_days __sysd = sys_days(__y/__m/1);
@@ -2903,81 +2687,64 @@ days year_month_weekday::__to_days() const noexcept
                 .time_since_epoch();
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const year_month_weekday& __lhs, const year_month_weekday& __rhs) noexcept
 { return __lhs.year() == __rhs.year() && __lhs.month() == __rhs.month() && __lhs.weekday_indexed() == __rhs.weekday_indexed(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const year_month_weekday& __lhs, const year_month_weekday& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday operator/(const year_month& __lhs, const weekday_indexed& __rhs) noexcept
 { return year_month_weekday{__lhs.year(), __lhs.month(), __rhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday operator/(const year& __lhs, const month_weekday& __rhs) noexcept
 { return year_month_weekday{__lhs, __rhs.month(), __rhs.weekday_indexed()}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday operator/(int __lhs, const month_weekday& __rhs) noexcept
 { return year(__lhs) / __rhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday operator/(const month_weekday& __lhs, const year& __rhs) noexcept
 { return __rhs / __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday operator/(const month_weekday& __lhs, int __rhs) noexcept
 { return year(__rhs) / __lhs; }
 
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday operator+(const year_month_weekday& __lhs, const months& __rhs) noexcept
 { return (__lhs.year() / __lhs.month() + __rhs) / __lhs.weekday_indexed(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday operator+(const months& __lhs, const year_month_weekday& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday operator-(const year_month_weekday& __lhs, const months& __rhs) noexcept
 { return __lhs + (-__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday operator+(const year_month_weekday& __lhs, const years& __rhs) noexcept
 { return year_month_weekday{__lhs.year() + __rhs, __lhs.month(), __lhs.weekday_indexed()}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday operator+(const years& __lhs, const year_month_weekday& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday operator-(const year_month_weekday& __lhs, const years& __rhs) noexcept
 { return __lhs + (-__rhs); }
 
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_weekday& year_month_weekday::operator+=(const months& __dm) noexcept { *this = *this + __dm; return *this; }
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_weekday& year_month_weekday::operator-=(const months& __dm) noexcept { *this = *this - __dm; return *this; }
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_weekday& year_month_weekday::operator+=(const years& __dy)  noexcept { *this = *this + __dy; return *this; }
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_weekday& year_month_weekday::operator-=(const years& __dy)  noexcept { *this = *this - __dy; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_weekday& year_month_weekday::operator+=(const months& __dm) noexcept { *this = *this + __dm; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_weekday& year_month_weekday::operator-=(const months& __dm) noexcept { *this = *this - __dm; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_weekday& year_month_weekday::operator+=(const years& __dy)  noexcept { *this = *this + __dy; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_weekday& year_month_weekday::operator-=(const years& __dy)  noexcept { *this = *this - __dy; return *this; }
 
 class year_month_weekday_last {
 private:
@@ -2985,41 +2752,33 @@ private:
     chrono::month        __m;
     chrono::weekday_last __wdl;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr year_month_weekday_last(const chrono::year& __yval, const chrono::month& __mval,
                                       const chrono::weekday_last& __wdlval) noexcept
                 : __y{__yval}, __m{__mval}, __wdl{__wdlval} {}
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr year_month_weekday_last& operator+=(const months& __dm) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr year_month_weekday_last& operator-=(const months& __dm) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr year_month_weekday_last& operator+=(const years& __dy)  noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr year_month_weekday_last& operator-=(const years& __dy)  noexcept;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::year                 year() const noexcept { return __y; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::month               month() const noexcept { return __m; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::weekday           weekday() const noexcept { return __wdl.weekday(); }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr chrono::weekday_last weekday_last() const noexcept { return __wdl; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr operator                 sys_days() const noexcept { return   sys_days{__to_days()}; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline explicit constexpr operator      local_days() const noexcept { return local_days{__to_days()}; }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    inline constexpr bool ok() const noexcept { return __y.ok() && __m.ok() && __wdl.ok(); }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::year                 year() const noexcept { return __y; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::month               month() const noexcept { return __m; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::weekday           weekday() const noexcept { return __wdl.weekday(); }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::weekday_last weekday_last() const noexcept { return __wdl; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr operator                 sys_days() const noexcept { return   sys_days{__to_days()}; }
+    _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr operator      local_days() const noexcept { return local_days{__to_days()}; }
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr bool ok() const noexcept { return __y.ok() && __m.ok() && __wdl.ok(); }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr days __to_days() const noexcept;
 
 };
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 days year_month_weekday_last::__to_days() const noexcept
 {
     const sys_days __last = sys_days{__y/__m/last};
@@ -3027,83 +2786,66 @@ days year_month_weekday_last::__to_days() const noexcept
 
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator==(const year_month_weekday_last& __lhs, const year_month_weekday_last& __rhs) noexcept
 { return __lhs.year() == __rhs.year() && __lhs.month() == __rhs.month() && __lhs.weekday_last() == __rhs.weekday_last(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 bool operator!=(const year_month_weekday_last& __lhs, const year_month_weekday_last& __rhs) noexcept
 { return !(__lhs == __rhs); }
 
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday_last operator/(const year_month& __lhs, const weekday_last& __rhs) noexcept
 { return year_month_weekday_last{__lhs.year(), __lhs.month(), __rhs}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday_last operator/(const year& __lhs, const month_weekday_last& __rhs) noexcept
 { return year_month_weekday_last{__lhs, __rhs.month(), __rhs.weekday_last()}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday_last operator/(int __lhs, const month_weekday_last& __rhs) noexcept
 { return year(__lhs) / __rhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday_last operator/(const month_weekday_last& __lhs, const year& __rhs) noexcept
 { return __rhs / __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday_last operator/(const month_weekday_last& __lhs, int __rhs) noexcept
 { return year(__rhs) / __lhs; }
 
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday_last operator+(const year_month_weekday_last& __lhs, const months& __rhs) noexcept
 { return (__lhs.year() / __lhs.month() + __rhs) / __lhs.weekday_last(); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday_last operator+(const months& __lhs, const year_month_weekday_last& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday_last operator-(const year_month_weekday_last& __lhs, const months& __rhs) noexcept
 { return __lhs + (-__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday_last operator+(const year_month_weekday_last& __lhs, const years& __rhs) noexcept
 { return year_month_weekday_last{__lhs.year() + __rhs, __lhs.month(), __lhs.weekday_last()}; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday_last operator+(const years& __lhs, const year_month_weekday_last& __rhs) noexcept
 { return __rhs + __lhs; }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr
+_LIBCUDACXX_HIDE_FROM_ABI constexpr
 year_month_weekday_last operator-(const year_month_weekday_last& __lhs, const years& __rhs) noexcept
 { return __lhs + (-__rhs); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_weekday_last& year_month_weekday_last::operator+=(const months& __dm) noexcept { *this = *this + __dm; return *this; }
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_weekday_last& year_month_weekday_last::operator-=(const months& __dm) noexcept { *this = *this - __dm; return *this; }
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_weekday_last& year_month_weekday_last::operator+=(const years& __dy)  noexcept { *this = *this + __dy; return *this; }
-_LIBCUDACXX_INLINE_VISIBILITY
-inline constexpr year_month_weekday_last& year_month_weekday_last::operator-=(const years& __dy)  noexcept { *this = *this - __dy; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_weekday_last& year_month_weekday_last::operator+=(const months& __dm) noexcept { *this = *this + __dm; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_weekday_last& year_month_weekday_last::operator-=(const months& __dm) noexcept { *this = *this - __dm; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_weekday_last& year_month_weekday_last::operator+=(const years& __dy)  noexcept { *this = *this + __dy; return *this; }
+_LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_weekday_last& year_month_weekday_last::operator-=(const years& __dy)  noexcept { *this = *this - __dy; return *this; }
 
-_LIBCUDACXX_NODISCARD_ATTRIBUTE inline _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI
 constexpr unsigned __hh_mm_ss_width(uint64_t __n, uint64_t __d = 10, unsigned __w = 0)
 {
     if (__n >= 2 && __d != 0 && __w < 19)
@@ -3118,7 +2860,7 @@ private:
     static_assert(__is_duration<_Duration>::value, "template parameter of hh_mm_ss must be a std::chrono::duration");
     using __CommonType = typename common_type<_Duration, chrono::seconds>::type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     static constexpr uint64_t __pow10(unsigned __exp)
     {
         uint64_t __ret = 1;
@@ -3131,10 +2873,10 @@ public:
                                                  __hh_mm_ss_width(__CommonType::period::den) : 6u;
     using precision = duration<typename __CommonType::rep, ratio<1, __pow10(fractional_width)>>;
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr hh_mm_ss() noexcept : hh_mm_ss{_Duration::zero()} {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr explicit hh_mm_ss(_Duration __d) noexcept :
         __is_neg(__d < _Duration(0)),
         __h(duration_cast<chrono::hours>  (abs(__d))),
@@ -3143,25 +2885,25 @@ public:
         __f(duration_cast<precision>      (abs(__d) - hours() - minutes() - seconds()))
         {}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr bool is_negative()        const noexcept { return __is_neg; }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::hours hours()     const noexcept { return __h; }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::minutes minutes() const noexcept { return __m; }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::seconds seconds() const noexcept { return __s; }
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr precision subseconds()    const noexcept { return __f; }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr precision to_duration() const noexcept
     {
         auto __dur = __h + __m + __s + __f;
         return __is_neg ? -__dur : __dur;
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr explicit operator precision() const noexcept { return to_duration(); }
 
 private:
@@ -3172,12 +2914,12 @@ private:
     precision       __f;
 };
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool is_am(const hours& __h) noexcept { return __h >= hours( 0) && __h < hours(12); }
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr bool is_pm(const hours& __h) noexcept { return __h >= hours(12) && __h < hours(24); }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr hours make12(const hours& __h) noexcept
 {
     if      (__h == hours( 0)) return hours(12);
@@ -3185,7 +2927,7 @@ constexpr hours make12(const hours& __h) noexcept
     else                       return __h - hours(12);
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_HIDE_FROM_ABI
 constexpr hours make24(const hours& __h, bool __is_pm) noexcept
 {
     if (__is_pm)
@@ -3214,86 +2956,86 @@ inline namespace literals
   inline namespace chrono_literals
   {
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::hours operator""h(unsigned long long __h)
     {
         return chrono::hours(static_cast<chrono::hours::rep>(__h));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, ratio<3600,1>> operator""h(long double __h)
     {
         return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, ratio<3600,1>>(__h);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::minutes operator""min(unsigned long long __m)
     {
         return chrono::minutes(static_cast<chrono::minutes::rep>(__m));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, ratio<60,1>> operator""min(long double __m)
     {
         return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, ratio<60,1>> (__m);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::seconds operator""s(unsigned long long __s)
     {
         return chrono::seconds(static_cast<chrono::seconds::rep>(__s));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T> operator""s(long double __s)
     {
         return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T> (__s);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::milliseconds operator""ms(unsigned long long __ms)
     {
         return chrono::milliseconds(static_cast<chrono::milliseconds::rep>(__ms));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, milli> operator""ms(long double __ms)
     {
         return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, milli>(__ms);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::microseconds operator""us(unsigned long long __us)
     {
         return chrono::microseconds(static_cast<chrono::microseconds::rep>(__us));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, micro> operator""us(long double __us)
     {
         return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, micro> (__us);
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::nanoseconds operator""ns(unsigned long long __ns)
     {
         return chrono::nanoseconds(static_cast<chrono::nanoseconds::rep>(__ns));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, nano> operator""ns(long double __ns)
     {
         return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, nano> (__ns);
     }
 
 #if _LIBCUDACXX_STD_VER > 17 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::day operator""d(unsigned long long __d) noexcept
     {
         return chrono::day(static_cast<unsigned>(__d));
     }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
+    _LIBCUDACXX_HIDE_FROM_ABI
     constexpr chrono::year operator""y(unsigned long long __y) noexcept
     {
         return chrono::year(static_cast<int>(__y));
@@ -3330,14 +3072,14 @@ struct _FilesystemClock {
 
   _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_FUNC_VIS static time_point now() noexcept;
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static time_t to_time_t(const time_point& __t) noexcept {
       typedef chrono::duration<rep> __secs;
       return time_t(
           chrono::duration_cast<__secs>(__t.time_since_epoch()).count());
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   static time_point from_time_t(time_t __t) noexcept {
       typedef chrono::duration<rep> __secs;
       return time_point(__secs(__t));
