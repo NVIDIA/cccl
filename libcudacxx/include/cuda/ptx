@@ -16,6 +16,11 @@
 #include "std/type_traits" // std::integral_constant
 #include "../nv/target" // __CUDA_MINIMUM_ARCH__ and friends
 
+#include "cuda/std/detail/libcxx/include/__cuda/ptx/ptx_isa_target_macros.h"
+#include "cuda/std/detail/libcxx/include/__cuda/ptx/ptx_dot_variants.h"
+#include "cuda/std/detail/libcxx/include/__cuda/ptx/ptx_helper_functions.h"
+#include "cuda/std/detail/libcxx/include/__cuda/ptx/parallel_synchronization_and_communication_instructions_mbarrier.h"
+
 /*
  * The cuda::ptx namespace intends to provide PTX wrappers for new hardware
  * features and new PTX instructions so that they can be experimented with
@@ -58,373 +63,647 @@
  *   more easily than in other parts of libcu++.
  */
 
-
-/*
- * Targeting macros
- *
- */
-
-#if (defined(__CUDA_MINIMUM_ARCH__) && 800 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
-#  define _LIBCUDACXX_PTX_SM_80_AVAILABLE
-#endif
-
-#if (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
-#  define _LIBCUDACXX_PTX_SM_90_AVAILABLE
-#endif
-
-// PTX ISA 7.8 is available from CTK 11.8, driver r520
-#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 11 && __CUDACC_VER_MINOR__ >= 8)) || (!defined(__CUDACC_VER_MAJOR__))
-#  define _LIBCUDACXX_PTX_ISA_78_AVAILABLE
-#endif
-
-// PTX ISA 7.8 is available from CTK 11.8, driver r520 (so also from CTK 12.0 onwards)
-#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 0)) || (!defined(__CUDACC_VER_MAJOR__))
-#  define _LIBCUDACXX_PTX_ISA_78_AVAILABLE
-#endif
-
-// PTX ISA 8.0 is available from CTK 12.0, driver r525
-#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 0)) || (!defined(__CUDACC_VER_MAJOR__))
-#  define _LIBCUDACXX_PTX_ISA_80_AVAILABLE
-#endif
-
-// PTX ISA 8.1 is available from CTK 12.1, driver r530
-#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 1)) || (!defined(__CUDACC_VER_MAJOR__))
-#  define _LIBCUDACXX_PTX_ISA_81_AVAILABLE
-#endif
-
-// PTX ISA 8.2 is available from CTK 12.2, driver r535
-#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 2)) || (!defined(__CUDACC_VER_MAJOR__))
-#  define _LIBCUDACXX_PTX_ISA_82_AVAILABLE
-#endif
-
-// PTX ISA 8.3 is available from CTK 12.3, driver r545
-#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 3)) || (!defined(__CUDACC_VER_MAJOR__))
-#  define _LIBCUDACXX_PTX_ISA_83_AVAILABLE
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 /*
- * Public integral constant types and values for
+ *  Instructions
  *
- * - .sem
- * - .space
- * - .scope
+ *  The organization of the instructions below follows that of the PTX ISA documentation:
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#instructions
  *
- * Skipping some steps in my reasoning: If we want to keep the PTX bindings
- * relatively stable, and also be able to adapt to additions of semantics,
- * space, and scope variants of a PTX instruction, then we must be able to add
- * new overloads of an instruction with .sem, .space, or .scope as type-level
- * parameters.
+ *  To improve code organization, some sections are separated into their own
+ *  header. For instance, the mbarrier instructions are found in:
+ *  __cuda/ptx/parallel_synchronization_and_communication_instructions_mbarrier.h
  *
  */
-
-enum class dot_sem
-{
-  acq_rel,
-  acquire,
-  relaxed,
-  release,
-  sc,
-  weak
-  // mmio?
-  // volatile?
-};
-
-enum class dot_space
-{
-  reg,
-  sreg,
-  const_mem, // Using const_mem as `const` is reserved in C++.
-  global,
-  local,
-  param,
-  shared, // The PTX spelling is shared::cta
-  shared_cluster, // The PTX spelling is shared::cluster, but we might want to go for cluster here.
-  tex // deprecated
-  // generic?
-};
-
-enum class dot_scope
-{
-  cta,
-  cluster,
-  gpu,
-  sys
-};
-
-template <dot_sem sem>
-using sem_t         = _CUDA_VSTD::integral_constant<dot_sem, sem>;
-using sem_acq_rel_t = sem_t<dot_sem::acq_rel>;
-using sem_acquire_t = sem_t<dot_sem::acquire>;
-using sem_relaxed_t = sem_t<dot_sem::relaxed>;
-using sem_release_t = sem_t<dot_sem::release>;
-using sem_sc_t      = sem_t<dot_sem::sc>;
-using sem_weak_t    = sem_t<dot_sem::weak>;
-
-static constexpr sem_acq_rel_t sem_acq_rel{};
-static constexpr sem_acquire_t sem_acquire{};
-static constexpr sem_relaxed_t sem_relaxed{};
-static constexpr sem_release_t sem_release{};
-static constexpr sem_sc_t sem_sc{};
-static constexpr sem_weak_t sem_weak{};
-
-template <dot_space spc>
-using space_t                = _CUDA_VSTD::integral_constant<dot_space, spc>;
-using space_const_mem_t      = space_t<dot_space::const_mem>;
-using space_global_t         = space_t<dot_space::global>;
-using space_local_t          = space_t<dot_space::local>;
-using space_param_t          = space_t<dot_space::param>;
-using space_reg_t            = space_t<dot_space::reg>;
-using space_shared_t         = space_t<dot_space::shared>;
-using space_shared_cluster_t = space_t<dot_space::shared_cluster>;
-using space_sreg_t           = space_t<dot_space::sreg>;
-using space_tex_t            = space_t<dot_space::tex>;
-
-static constexpr space_const_mem_t space_const_mem{};
-static constexpr space_global_t space_global{};
-static constexpr space_local_t space_local{};
-static constexpr space_param_t space_param{};
-static constexpr space_reg_t space_reg{};
-static constexpr space_shared_t space_shared{};
-static constexpr space_shared_cluster_t space_shared_cluster{};
-static constexpr space_sreg_t space_sreg{};
-static constexpr space_tex_t space_tex{};
-
-template <dot_scope scope>
-using scope_t         = _CUDA_VSTD::integral_constant<dot_scope, scope>;
-using scope_cluster_t = scope_t<dot_scope::cluster>;
-using scope_cta_t     = scope_t<dot_scope::cta>;
-using scope_gpu_t     = scope_t<dot_scope::gpu>;
-using scope_sys_t     = scope_t<dot_scope::sys>;
-
-static constexpr scope_cluster_t scope_cluster{};
-static constexpr scope_cta_t scope_cta{};
-static constexpr scope_gpu_t scope_gpu{};
-static constexpr scope_sys_t scope_sys{};
-
-// Private helper functions
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_smem_ptr(const void* __ptr)
-{
-  return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
-}
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_remote_dsmem_ptr(const void* __ptr)
-{
-  return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
-}
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_gmem_ptr(const void* __ptr)
-{
-  return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr));
-}
-
-template <typename _Tp>
-inline _LIBCUDACXX_DEVICE int __as_b32(_Tp __val) {
-    static_assert(sizeof(_Tp) == 4, "");
-    return *reinterpret_cast<int*>(&__val);
-}
-
-template <typename _Tp>
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val) {
-    static_assert(sizeof(_Tp) == 8, "");
-    return *reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__val);
-}
-
-// SM 90 features
-// --------------
 
 /*
- *  TMA / cp.async.bulk
+ *  9.7.1. Integer Arithmetic Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions
  *
  */
 
-// cp.async.bulk
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
+// 9.7.1.7. Integer Arithmetic Instructions: sad
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-sad
 
-// cp.reduce.async.bulk
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk
+// 9.7.1.8. Integer Arithmetic Instructions: div
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-div
 
-// cp.async.bulk.tensor
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
+// 9.7.1.9. Integer Arithmetic Instructions: rem
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-rem
 
-// cp.reduce.async.bulk.tensor
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk-tensor
+// 9.7.1.10. Integer Arithmetic Instructions: abs
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-abs
 
-// cp.async.bulk.commit_group
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-commit-group
+// 9.7.1.11. Integer Arithmetic Instructions: neg
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-neg
 
-// cp.async.bulk.wait_group
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group
+// 9.7.1.12. Integer Arithmetic Instructions: min
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-min
 
-// Lower priority:
+// 9.7.1.13. Integer Arithmetic Instructions: max
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-max
 
-// prefetch{.tensormap_space}.tensormap [a];  // prefetch the tensormap
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prefetch-prefetchu
+// 9.7.1.14. Integer Arithmetic Instructions: popc
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-popc
 
-// cp.async.bulk.prefetch
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
+// 9.7.1.15. Integer Arithmetic Instructions: clz
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-clz
 
-// cp.async.bulk.prefetch.tensor
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch-tensor
+// 9.7.1.16. Integer Arithmetic Instructions: bfind
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-bfind
+
+// 9.7.1.17. Integer Arithmetic Instructions: fns
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-fns
+
+// 9.7.1.18. Integer Arithmetic Instructions: brev
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-brev
+
+// 9.7.1.19. Integer Arithmetic Instructions: bfe
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-bfe
+
+// 9.7.1.20. Integer Arithmetic Instructions: bfi
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-bfi
+
+// 9.7.1.21. Integer Arithmetic Instructions: szext
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-szext
+
+// 9.7.1.22. Integer Arithmetic Instructions: bmsk
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-bmsk
+
+// 9.7.1.23. Integer Arithmetic Instructions: dp4a
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-dp4a
+
+// 9.7.1.24. Integer Arithmetic Instructions: dp2a
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-dp2a
+
 
 /*
- *  Shared memory barrier
+ *  9.7.2. Extended-Precision Integer Arithmetic Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-integer-arithmetic-instructions
  *
  */
 
-// mbarrier.expect_tx
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-expect-tx
+// 9.7.2.1. Extended-Precision Arithmetic Instructions: add.cc
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-add-cc
 
-// mbarrier.complete_tx
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-complete-tx
+// 9.7.2.2. Extended-Precision Arithmetic Instructions: addc
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-addc
 
-// mbarrier.arrive.expect_tx
-// Support for count argument without the modifier .noComplete requires sm_90 or higher.
-// Qualifier .expect_tx requires sm_90 or higher.
-// Sub-qualifier ::cluster requires sm_90 or higher.
-// Support for .cluster scope requires sm_90 or higher.
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive
+// 9.7.2.3. Extended-Precision Arithmetic Instructions: sub.cc
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-sub-cc
 
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive
-#if (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
-template <dot_scope _Sco>
-_LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
-  sem_release_t __sem,
-  scope_t<_Sco> __scope,
-  space_shared_t __spc,
-  _CUDA_VSTD::uint64_t* __addr,
-  _CUDA_VSTD::uint32_t __tx_count)
-{
-  // Arrive on local shared memory barrier
-  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-  _CUDA_VSTD::uint64_t __token;
+// 9.7.2.4. Extended-Precision Arithmetic Instructions: subc
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-subc
 
-  if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta)
-  {
-    asm("mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
-        : "=l"(__token)
-        : "r"(__as_smem_ptr(__addr)), "r"(__tx_count)
-        : "memory");
-  }
-  else
-  {
-    asm("mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2;"
-        : "=l"(__token)
-        : "r"(__as_smem_ptr(__addr)), "r"(__tx_count)
-        : "memory");
-  }
-  return __token;
-}
+// 9.7.2.5. Extended-Precision Arithmetic Instructions: mad.cc
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-mad-cc
 
-template <dot_scope _Sco>
-_LIBCUDACXX_DEVICE inline void mbarrier_arrive_expect_tx(
-  sem_release_t __sem,
-  scope_t<_Sco> __scope,
-  space_shared_cluster_t __spc,
-  _CUDA_VSTD::uint64_t* __addr,
-  _CUDA_VSTD::uint32_t __tx_count)
-{
-  // Arrive on remote cluster barrier
-  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-  if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta)
-  {
-    asm("mbarrier.arrive.expect_tx.release.cta.shared::cluster.b64 _, [%0], %1;"
-        :
-        : "r"(__as_smem_ptr(__addr)), "r"(__tx_count)
-        : "memory");
-  }
-  else
-  {
-    asm("mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64 _, [%0], %1;"
-        :
-        : "r"(__as_smem_ptr(__addr)), "r"(__tx_count)
-        : "memory");
-  }
-}
-#endif // __CUDA_MINIMUM_ARCH__
+// 9.7.2.6. Extended-Precision Arithmetic Instructions: madc
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-madc
 
-// mbarrier.test_wait/mbarrier.try_wait
-// mbarrier.try_wait requires sm_90 or higher.
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-mbarrier-try-wait
 
 /*
- *  Cluster Basics:
+ *  9.7.3. Floating-Point Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions
  *
- *  These instructions are already exposed at a higher level, so may not be necessary.
  */
 
-// mapa{.space}.type          d, a, b;
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mapa
+// 9.7.3.1. Floating Point Instructions: testp
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-testp
 
-// getctarank{.space}.type d, a;
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank
+// 9.7.3.2. Floating Point Instructions: copysign
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-copysign
 
-// barrier.cluster
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster
+// 9.7.3.3. Floating Point Instructions: add
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-add
 
-// atom .cluster
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom
+// 9.7.3.4. Floating Point Instructions: sub
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-sub
 
-// red .cluster
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red
+// 9.7.3.5. Floating Point Instructions: mul
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-mul
+
+// 9.7.3.6. Floating Point Instructions: fma
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-fma
+
+// 9.7.3.7. Floating Point Instructions: mad
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-mad
+
+// 9.7.3.8. Floating Point Instructions: div
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-div
+
+// 9.7.3.9. Floating Point Instructions: abs
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-abs
+
+// 9.7.3.10. Floating Point Instructions: neg
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-neg
+
+// 9.7.3.11. Floating Point Instructions: min
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-min
+
+// 9.7.3.12. Floating Point Instructions: max
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-max
+
+// 9.7.3.13. Floating Point Instructions: rcp
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-rcp
+
+// 9.7.3.14. Floating Point Instructions: rcp.approx.ftz.f64
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-rcp-approx-ftz-f64
+
+// 9.7.3.15. Floating Point Instructions: sqrt
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-sqrt
+
+// 9.7.3.16. Floating Point Instructions: rsqrt
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-rsqrt
+
+// 9.7.3.17. Floating Point Instructions: rsqrt.approx.ftz.f64
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-rsqrt-approx-ftz-f64
+
+// 9.7.3.18. Floating Point Instructions: sin
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-sin
+
+// 9.7.3.19. Floating Point Instructions: cos
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-cos
+
+// 9.7.3.20. Floating Point Instructions: lg2
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-lg2
+
+// 9.7.3.21. Floating Point Instructions: ex2
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-ex2
+
+// 9.7.3.22. Floating Point Instructions: tanh
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-tanh
+
 
 /*
- *   Cluster async
+ *  9.7.4. Half Precision Floating-Point Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions
  *
  */
 
-// st.async
+// 9.7.4.1. Half Precision Floating Point Instructions: add
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-add
+
+// 9.7.4.2. Half Precision Floating Point Instructions: sub
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-sub
+
+// 9.7.4.3. Half Precision Floating Point Instructions: mul
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-mul
+
+// 9.7.4.4. Half Precision Floating Point Instructions: fma
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-fma
+
+// 9.7.4.5. Half Precision Floating Point Instructions: neg
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-neg
+
+// 9.7.4.6. Half Precision Floating Point Instructions: abs
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-abs
+
+// 9.7.4.7. Half Precision Floating Point Instructions: min
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-min
+
+// 9.7.4.8. Half Precision Floating Point Instructions: max
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-max
+
+// 9.7.4.9. Half Precision Floating Point Instructions: tanh
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-tanh
+
+// 9.7.4.10. Half Precision Floating Point Instructions: ex2
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-ex2
+
+
+/*
+ *  9.7.5. Comparison and Selection Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions
+ *
+ */
+
+// 9.7.5.1. Comparison and Selection Instructions: set
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions-set
+
+// 9.7.5.2. Comparison and Selection Instructions: setp
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions-setp
+
+// 9.7.5.3. Comparison and Selection Instructions: selp
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions-selp
+
+// 9.7.5.4. Comparison and Selection Instructions: slct
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions-slct
+
+
+/*
+ *  9.7.6. Half Precision Comparison Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-comparison-instructions
+ *
+ */
+
+// 9.7.6.1. Half Precision Comparison Instructions: set
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-comparison-instructions-set
+
+// 9.7.6.2. Half Precision Comparison Instructions: setp
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-comparison-instructions-setp
+
+
+/*
+ *  9.7.7. Logic and Shift Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions
+ *
+ */
+
+// 9.7.7.1. Logic and Shift Instructions: and
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-and
+
+// 9.7.7.2. Logic and Shift Instructions: or
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-or
+
+// 9.7.7.3. Logic and Shift Instructions: xor
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-xor
+
+// 9.7.7.4. Logic and Shift Instructions: not
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-not
+
+// 9.7.7.5. Logic and Shift Instructions: cnot
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-cnot
+
+// 9.7.7.6. Logic and Shift Instructions: lop3
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-lop3
+
+// 9.7.7.7. Logic and Shift Instructions: shf
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shf
+
+// 9.7.7.8. Logic and Shift Instructions: shl
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shl
+
+// 9.7.7.9. Logic and Shift Instructions: shr
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shr
+
+
+/*
+ *  9.7.8. Data Movement and Conversion Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions
+ *
+ */
+
+// 9.7.8.3. Data Movement and Conversion Instructions: mov
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mov
+
+// 9.7.8.4. Data Movement and Conversion Instructions: mov
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mov-2
+
+// 9.7.8.5. Data Movement and Conversion Instructions: shfl (deprecated)
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-deprecated
+
+// 9.7.8.6. Data Movement and Conversion Instructions: shfl.sync
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-sync
+
+// 9.7.8.7. Data Movement and Conversion Instructions: prmt
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prmt
+
+// 9.7.8.8. Data Movement and Conversion Instructions: ld
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld
+
+// 9.7.8.9. Data Movement and Conversion Instructions: ld.global.nc
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld-global-nc
+
+// 9.7.8.10. Data Movement and Conversion Instructions: ldu
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ldu
+
+// 9.7.8.11. Data Movement and Conversion Instructions: st
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st
+
+// 9.7.8.12. Data Movement and Conversion Instructions: st.async
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st-async
 
-// red.async
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red-async
-
-/*
- *
- *   Other instructions
- */
-
-// fence.proxy.async.{global, shared::{cta, cluster}}
-// fence.mbarrier_init.release.cluster (may be a bit overkill??)
-// fence.{sc, acq_rel}.cluster
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence
-
-// multimem.ld_reduce, multimem.st, multimem.red
+// 9.7.8.13. Data Movement and Conversion Instructions: multimem.ld_reduce, multimem.st, multimem.red
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-multimem-ld-reduce-multimem-st-multimem-red
 
-// griddepcontrol
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-griddepcontrol
+// 9.7.8.14. Data Movement and Conversion Instructions: prefetch, prefetchu
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prefetch-prefetchu
 
-// elect.sync
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-elect-sync
+// 9.7.8.15. Data Movement and Conversion Instructions: applypriority
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-applypriority
 
-// stmatrix
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-store-instruction-stmatrix
+// 9.7.8.16. Data Movement and Conversion Instructions: discard
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-discard
+
+// 9.7.8.17. Data Movement and Conversion Instructions: createpolicy
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-createpolicy
+
+// 9.7.8.18. Data Movement and Conversion Instructions: isspacep
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-isspacep
+
+// 9.7.8.19. Data Movement and Conversion Instructions: cvta
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvta
+
+// 9.7.8.20. Data Movement and Conversion Instructions: cvt
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt
+
+// 9.7.8.21. Data Movement and Conversion Instructions: cvt.pack
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt-pack
+
+// 9.7.8.22. Data Movement and Conversion Instructions: mapa
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mapa
+
+// 9.7.8.23. Data Movement and Conversion Instructions: getctarank
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank
+
 
 /*
- *  Special registers (cluster-related)
+ *  9.7.8.24. Data Movement and Conversion Instructions: Asynchronous copy
+ *   https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-asynchronous-copy
  *
  */
 
-//  10.12. Special Registers: %clusterid
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-clusterid
+// 9.7.8.24.3. Data Movement and Conversion Instructions: cp.async
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
 
-//  10.13. Special Registers: %nclusterid
-//  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-nclusterid
+// 9.7.8.24.4. Data Movement and Conversion Instructions: cp.async.commit_group
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-commit-group
 
-//  10.14. Special Registers: %cluster_ctaid
-//  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-ctaid
+// 9.7.8.24.5. Data Movement and Conversion Instructions: cp.async.wait_group / cp.async.wait_all
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-wait-group-cp-async-wait-all
 
-// 10.15. Special Registers: %cluster_nctaid
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-nctaid
+// 9.7.8.24.6. Data Movement and Conversion Instructions: cp.async.bulk
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
 
-//  10.16. Special Registers: %cluster_ctarank
-//  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-ctarank
+// 9.7.8.24.7. Data Movement and Conversion Instructions: cp.reduce.async.bulk
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk
 
-//  10.17. Special Registers: %cluster_nctarank
-//  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-nctarank
+// 9.7.8.24.8. Data Movement and Conversion Instructions: cp.async.bulk.prefetch
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch
 
-//  10.31. Special Registers: %aggr_smem_size
-//  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-aggr-smem-size
+// 9.7.8.24.9. Data Movement and Conversion Instructions: cp.async.bulk.tensor
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
+
+// 9.7.8.24.10. Data Movement and Conversion Instructions: cp.reduce.async.bulk.tensor
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk-tensor
+
+// 9.7.8.24.11. Data Movement and Conversion Instructions: cp.async.bulk.prefetch.tensor
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch-tensor
+
+// 9.7.8.24.12. Data Movement and Conversion Instructions: cp.async.bulk.commit_group
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-commit-group
+
+// 9.7.8.24.13. Data Movement and Conversion Instructions: cp.async.bulk.wait_group
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group
+
+// 9.7.8.25. Data Movement and Conversion Instructions: tensormap.replace
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-tensormap-replace
+
+
+/*
+ *  9.7.9. Texture Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions
+ *
+ */
+
+// 9.7.9.3. Texture Instructions: tex
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions-tex
+
+// 9.7.9.4. Texture Instructions: tld4
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions-tld4
+
+// 9.7.9.5. Texture Instructions: txq
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions-txq
+
+// 9.7.9.6. Texture Instructions: istypep
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions-istypep
+
+
+/*
+ *  9.7.10. Surface Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions
+ *
+ */
+
+// 9.7.10.1. Surface Instructions: suld
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions-suld
+
+// 9.7.10.2. Surface Instructions: sust
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions-sust
+
+// 9.7.10.3. Surface Instructions: sured
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions-sured
+
+// 9.7.10.4. Surface Instructions: suq
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions-suq
+
+
+/*
+ *  9.7.11. Control Flow Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions
+ *
+ */
+
+// 9.7.11.1. Control Flow Instructions: {}
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-curly-braces
+
+// 9.7.11.2. Control Flow Instructions: @
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-at
+
+// 9.7.11.3. Control Flow Instructions: bra
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-bra
+
+// 9.7.11.4. Control Flow Instructions: brx.idx
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-brx-idx
+
+// 9.7.11.5. Control Flow Instructions: call
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-call
+
+// 9.7.11.6. Control Flow Instructions: ret
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-ret
+
+// 9.7.11.7. Control Flow Instructions: exit
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-exit
+
+
+/*
+ *  9.7.12. Parallel Synchronization and Communication Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions
+ *
+ */
+
+// 9.7.12.1. Parallel Synchronization and Communication Instructions: bar, barrier
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-barrier
+
+// 9.7.12.2. Parallel Synchronization and Communication Instructions: bar.warp.sync
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-warp-sync
+
+// 9.7.12.3. Parallel Synchronization and Communication Instructions: barrier.cluster
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster
+
+// 9.7.12.4. Parallel Synchronization and Communication Instructions: membar/fence
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence
+
+// 9.7.12.5. Parallel Synchronization and Communication Instructions: atom
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom
+
+// 9.7.12.6. Parallel Synchronization and Communication Instructions: red
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red
+
+// 9.7.12.7. Parallel Synchronization and Communication Instructions: red.async
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red-async
+
+// 9.7.12.8. Parallel Synchronization and Communication Instructions: vote (deprecated)
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-vote-deprecated
+
+// 9.7.12.9. Parallel Synchronization and Communication Instructions: vote.sync
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-vote-sync
+
+// 9.7.12.10. Parallel Synchronization and Communication Instructions: match.sync
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-match-sync
+
+// 9.7.12.11. Parallel Synchronization and Communication Instructions: activemask
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-activemask
+
+// 9.7.12.12. Parallel Synchronization and Communication Instructions: redux.sync
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-redux-sync
+
+// 9.7.12.13. Parallel Synchronization and Communication Instructions: griddepcontrol
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-griddepcontrol
+
+// 9.7.12.14. Parallel Synchronization and Communication Instructions: elect.sync
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-elect-sync
+
+/*
+ *  9.7.12.15. Parallel Synchronization and Communication Instructions: mbarrier
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier
+ *
+ *  Contained in: __cuda/ptx/parallel_synchronization_and_communication_instructions_mbarrier.h
+ */
+
+// 9.7.12.15.18. Parallel Synchronization and Communication Instructions: tensormap.cp_fenceproxy
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-tensormap-cp-fenceproxy
+
+
+/*
+ *  9.7.13. Warp Level Matrix Multiply-Accumulate Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-multiply-accumulate-instructions
+ *
+ */
+
+// 9.7.13.3.3. Warp-level Matrix Load Instruction: wmma.load
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-load-instruction-wmma-load
+
+// 9.7.13.3.4. Warp-level Matrix Store Instruction: wmma.store
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-store-instruction-wmma-store
+
+// 9.7.13.3.5. Warp-level Matrix Multiply-and-Accumulate Instruction: wmma.mma
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-multiply-and-accumulate-instruction-wmma-mma
+
+// 9.7.13.4.14. Multiply-and-Accumulate Instruction: mma
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#multiply-and-accumulate-instruction-mma
+
+// 9.7.13.4.15. Warp-level matrix load instruction: ldmatrix
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-load-instruction-ldmatrix
+
+// 9.7.13.4.16. Warp-level matrix store instruction: stmatrix
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-store-instruction-stmatrix
+
+// 9.7.13.4.17. Warp-level matrix transpose instruction: movmatrix
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-transpose-instruction-movmatrix
+
+// 9.7.13.5.3. Multiply-and-Accumulate Instruction: mma.sp
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#multiply-and-accumulate-instruction-mma-sp
+
+
+/*
+ *  9.7.14. Asynchronous Warpgroup Level Matrix Multiply-Accumulate Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions
+ *
+ */
+
+// 9.7.14.5.2. Asynchronous Multiply-and-Accumulate Instruction: wgmma.mma_async
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-mma-async
+
+// 9.7.14.6.4. Asynchronous Multiply-and-Accumulate Instruction: wgmma.mma_async.sp
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-mma-async-sp
+
+// 9.7.14.7.1. Asynchronous Multiply-and-Accumulate Instruction: wgmma.fence
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-fence
+
+// 9.7.14.7.2. Asynchronous Multiply-and-Accumulate Instruction: wgmma.commit_group
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-commit-group
+
+// 9.7.14.7.3. Asynchronous Multiply-and-Accumulate Instruction: wgmma.wait_group
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-wait-group
+
+
+/*
+ *  9.7.15. Stack Manipulation Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#stack-manipulation-instructions
+ *
+ */
+
+// 9.7.15.1. Stack Manipulation Instructions: stacksave
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#stack-manipulation-instructions-stacksave
+
+// 9.7.15.2. Stack Manipulation Instructions: stackrestore
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#stack-manipulation-instructions-stackrestore
+
+// 9.7.15.3. Stack Manipulation Instructions: alloca
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#stack-manipulation-instructions-alloca
+
+
+/*
+ *  9.7.16. Video Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#video-instructions
+ *
+ */
+
+// 9.7.16.1.1. Scalar Video Instructions: vadd, vsub, vabsdiff, vmin, vmax
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scalar-video-instructions-vadd-vsub-vabsdiff-vmin-vmax
+
+// 9.7.16.1.2. Scalar Video Instructions: vshl, vshr
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scalar-video-instructions-vshl-vshr
+
+// 9.7.16.1.3. Scalar Video Instructions: vmad
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scalar-video-instructions-vmad
+
+// 9.7.16.1.4. Scalar Video Instructions: vset
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scalar-video-instructions-vset
+
+
+/*
+ *  9.7.16.2. SIMD Video Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions
+ *
+ */
+
+// 9.7.16.2.1. SIMD Video Instructions: vadd2, vsub2, vavrg2, vabsdiff2, vmin2, vmax2
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions-vadd2-vsub2-vavrg2-vabsdiff2-vmin2-vmax2
+
+// 9.7.16.2.2. SIMD Video Instructions: vset2
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions-vset2
+
+// 9.7.16.2.3. SIMD Video Instructions: vadd4, vsub4, vavrg4, vabsdiff4, vmin4, vmax4
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions-vadd4-vsub4-vavrg4-vabsdiff4-vmin4-vmax4
+
+// 9.7.16.2.4. SIMD Video Instructions: vset4
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions-vset4
+
+
+/*
+ *  9.7.17. Miscellaneous Instructions
+ *  https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions
+ *
+ */
+
+// 9.7.17.1. Miscellaneous Instructions: brkpt
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-brkpt
+
+// 9.7.17.2. Miscellaneous Instructions: nanosleep
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-nanosleep
+
+// 9.7.17.3. Miscellaneous Instructions: pmevent
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-pmevent
+
+// 9.7.17.4. Miscellaneous Instructions: trap
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-trap
+
+// 9.7.17.5. Miscellaneous Instructions: setmaxnreg
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-setmaxnreg
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
