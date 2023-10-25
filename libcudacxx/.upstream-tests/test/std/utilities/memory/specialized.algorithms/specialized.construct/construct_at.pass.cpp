@@ -21,6 +21,10 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
+#if defined(TEST_COMPILER_MSVC)
+#pragma warning(disable:4244)
+#endif // TEST_COMPILER_MSVC
+
 struct Foo {
     __host__ __device__ constexpr Foo() { }
     __host__ __device__ constexpr Foo(int a, char b, double c) : a_(a), b_(b), c_(c) { }
