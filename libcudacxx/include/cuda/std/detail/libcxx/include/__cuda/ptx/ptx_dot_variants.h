@@ -13,6 +13,8 @@
 #ifndef _CUDA_PTX_DOT_VARIANTS_H_
 #define _CUDA_PTX_DOT_VARIANTS_H_
 
+#include "../../type_traits" // std::integral_constant
+
 /*
  * Public integral constant types and values for ".variant"s:
  *
