@@ -12,6 +12,8 @@
 #ifndef _CUDA_PTX_HELPER_FUNCTIONS_H_
 #define _CUDA_PTX_HELPER_FUNCTIONS_H_
 
+#include "../../cstdint"        // uint32_t
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // Private helper functions
@@ -32,6 +34,7 @@ template <typename _Tp>
 inline _LIBCUDACXX_DEVICE int __as_b32(_Tp __val)
 {
   static_assert(sizeof(_Tp) == 4, "");
+  // Consider using std::bitcast
   return *reinterpret_cast<int*>(&__val);
 }
 
@@ -39,6 +42,7 @@ template <typename _Tp>
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val)
 {
   static_assert(sizeof(_Tp) == 8, "");
+  // Consider using std::bitcast
   return *reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__val);
 }
 
