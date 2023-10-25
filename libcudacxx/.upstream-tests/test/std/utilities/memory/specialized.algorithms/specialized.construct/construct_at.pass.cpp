@@ -121,6 +121,14 @@ __host__ __device__ constexpr bool test()
         assert(res == &with_special_move_assignment);
     }
 
+    // ensure that we can construct despite narrowing conversions
+    {
+        int i = 0;
+        int* res = cuda::std::construct_at(&i, 2.0);
+        assert(res == &i);
+        assert(*res == 2);
+    }
+
 #if 0 // we do not support std::allocator
     {
         cuda::std::allocator<Counted> a;
