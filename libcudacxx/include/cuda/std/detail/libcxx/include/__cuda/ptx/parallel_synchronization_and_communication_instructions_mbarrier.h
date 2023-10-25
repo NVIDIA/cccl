@@ -36,54 +36,62 @@
 
 #if defined(_LIBCUDACXX_PTX_ISA_78_AVAILABLE) && defined(_LIBCUDACXX_PTX_SM_90_AVAILABLE)
 template <dot_scope _Sco>
-_LIBCUDACXX_DEVICE inline
-_CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(sem_release_t __sem, scope_t<_Sco> __scope, space_shared_t __spc, _CUDA_VSTD::uint64_t* __addr, _CUDA_VSTD::uint32_t __tx_count)
+_LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
+  sem_release_t __sem,
+  scope_t<_Sco> __scope,
+  space_shared_t __spc,
+  _CUDA_VSTD::uint64_t* __addr,
+  _CUDA_VSTD::uint32_t __tx_count)
 {
-    // Arrive on local shared memory barrier
-    static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-    _CUDA_VSTD::uint64_t __token;
+  // Arrive on local shared memory barrier
+  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+  _CUDA_VSTD::uint64_t __token;
 
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
-        asm (
-            "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
-            : "=l"(__token)
-            : "r"(__as_smem_ptr(__addr)),
-              "r"(__tx_count)
-            : "memory");
+  if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
+      asm (
+        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
+        : "=l"(__token)
+        : "r"(__as_smem_ptr(__addr)),
+          "r"(__tx_count)
+        : "memory");
     } else {
-        asm (
-            "mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2;"
-            : "=l"(__token)
-            : "r"(__as_smem_ptr(__addr)),
-              "r"(__tx_count)
-            : "memory");
-    }
-    return __token;
+    asm (
+      "mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2;"
+      : "=l"(__token)
+      : "r"(__as_smem_ptr(__addr)),
+        "r"(__tx_count)
+      : "memory");
+  }
+  return __token;
 }
 #ifdef // _LIBCUDACXX_PTX_ISA_78_AVAILABLE
 
 #if defined(_LIBCUDACXX_PTX_ISA_78_AVAILABLE) && defined(_LIBCUDACXX_PTX_SM_90_AVAILABLE)
 template <dot_scope _Sco>
-_LIBCUDACXX_DEVICE inline
-void mbarrier_arrive_expect_tx(sem_release_t __sem, scope_t<_Sco> __scope, space_shared_cluster_t __spc, _CUDA_VSTD::uint64_t* __addr, _CUDA_VSTD::uint32_t __tx_count)
+_LIBCUDACXX_DEVICE inline void mbarrier_arrive_expect_tx(
+  sem_release_t __sem,
+  scope_t<_Sco> __scope,
+  space_shared_cluster_t __spc,
+  _CUDA_VSTD::uint64_t* __addr,
+  _CUDA_VSTD::uint32_t __tx_count)
 {
-    // Arrive on remote cluster barrier
-    static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
-        asm (
-            "mbarrier.arrive.expect_tx.release.cta.shared::cluster.b64 _, [%0], %1;"
-            :
-            : "r"(__as_smem_ptr(__addr)),
-              "r"(__tx_count)
-            : "memory");
+  // Arrive on remote cluster barrier
+  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+  if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
+      asm (
+        "mbarrier.arrive.expect_tx.release.cta.shared::cluster.b64 _, [%0], %1;"
+        :
+        : "r"(__as_smem_ptr(__addr)),
+          "r"(__tx_count)
+        : "memory");
     } else {
-        asm (
-            "mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64 _, [%0], %1;"
-            :
-            : "r"(__as_smem_ptr(__addr)),
-              "r"(__tx_count)
-            : "memory");
-    }
+    asm (
+      "mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64 _, [%0], %1;"
+      :
+      : "r"(__as_smem_ptr(__addr)),
+        "r"(__tx_count)
+      : "memory");
+  }
 }
 #ifdef // _LIBCUDACXX_PTX_ISA_78_AVAILABLE
 

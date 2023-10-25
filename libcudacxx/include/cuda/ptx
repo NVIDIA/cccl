@@ -16,6 +16,7 @@
 #include "std/type_traits" // std::integral_constant
 #include "../nv/target" // __CUDA_MINIMUM_ARCH__ and friends
 
+// The following includes depend on the includes above:
 #include "cuda/std/detail/libcxx/include/__cuda/ptx/ptx_isa_target_macros.h"
 #include "cuda/std/detail/libcxx/include/__cuda/ptx/ptx_dot_variants.h"
 #include "cuda/std/detail/libcxx/include/__cuda/ptx/ptx_helper_functions.h"

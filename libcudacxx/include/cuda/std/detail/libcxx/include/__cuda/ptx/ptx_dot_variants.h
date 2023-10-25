@@ -48,47 +48,50 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#operation-types
-enum class dot_sem {
-    acq_rel,
-    acquire,
-    relaxed,
-    release,
-    sc,
-    weak
-    // mmio?
-    // volatile?
+enum class dot_sem
+{
+  acq_rel,
+  acquire,
+  relaxed,
+  release,
+  sc,
+  weak
+  // mmio?
+  // volatile?
 };
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#state-spaces
-enum class dot_space {
-    reg,
-    sreg,
-    const_mem,                 // Using const_mem as `const` is reserved in C++.
-    global,
-    local,
-    param,
-    shared,                    // The PTX spelling is shared::cta
-    shared_cluster,            // The PTX spelling is shared::cluster, but we might want to go for cluster here.
-    tex // deprecated
-    // generic?
+enum class dot_space
+{
+  reg,
+  sreg,
+  const_mem, // Using const_mem as `const` is reserved in C++.
+  global,
+  local,
+  param,
+  shared, // The PTX spelling is shared::cta
+  shared_cluster, // The PTX spelling is shared::cluster, but we might want to go for cluster here.
+  tex // deprecated
+  // generic?
 };
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scope
-enum class dot_scope {
-    cta,
-    cluster,
-    gpu,
-    sys
+enum class dot_scope
+{
+  cta,
+  cluster,
+  gpu,
+  sys
 };
 
 template <dot_sem sem>
-using sem_t = _CUDA_VSTD::integral_constant<dot_sem, sem>;
+using sem_t         = _CUDA_VSTD::integral_constant<dot_sem, sem>;
 using sem_acq_rel_t = sem_t<dot_sem::acq_rel>;
 using sem_acquire_t = sem_t<dot_sem::acquire>;
 using sem_relaxed_t = sem_t<dot_sem::relaxed>;
 using sem_release_t = sem_t<dot_sem::release>;
-using sem_sc_t = sem_t<dot_sem::sc>;
-using sem_weak_t = sem_t<dot_sem::weak>;
+using sem_sc_t      = sem_t<dot_sem::sc>;
+using sem_weak_t    = sem_t<dot_sem::weak>;
 
 static constexpr sem_acq_rel_t sem_acq_rel{};
 static constexpr sem_acquire_t sem_acquire{};
@@ -98,16 +101,16 @@ static constexpr sem_sc_t sem_sc{};
 static constexpr sem_weak_t sem_weak{};
 
 template <dot_space spc>
-using space_t = _CUDA_VSTD::integral_constant<dot_space, spc>;
-using space_const_mem_t = space_t<dot_space::const_mem>;
-using space_global_t = space_t<dot_space::global>;
-using space_local_t = space_t<dot_space::local>;
-using space_param_t = space_t<dot_space::param>;
-using space_reg_t = space_t<dot_space::reg>;
-using space_shared_t = space_t<dot_space::shared>;
+using space_t                = _CUDA_VSTD::integral_constant<dot_space, spc>;
+using space_const_mem_t      = space_t<dot_space::const_mem>;
+using space_global_t         = space_t<dot_space::global>;
+using space_local_t          = space_t<dot_space::local>;
+using space_param_t          = space_t<dot_space::param>;
+using space_reg_t            = space_t<dot_space::reg>;
+using space_shared_t         = space_t<dot_space::shared>;
 using space_shared_cluster_t = space_t<dot_space::shared_cluster>;
-using space_sreg_t = space_t<dot_space::sreg>;
-using space_tex_t = space_t<dot_space::tex>;
+using space_sreg_t           = space_t<dot_space::sreg>;
+using space_tex_t            = space_t<dot_space::tex>;
 
 static constexpr space_const_mem_t space_const_mem{};
 static constexpr space_global_t space_global{};
@@ -120,11 +123,11 @@ static constexpr space_sreg_t space_sreg{};
 static constexpr space_tex_t space_tex{};
 
 template <dot_scope scope>
-using scope_t = _CUDA_VSTD::integral_constant<dot_scope, scope>;
+using scope_t         = _CUDA_VSTD::integral_constant<dot_scope, scope>;
 using scope_cluster_t = scope_t<dot_scope::cluster>;
-using scope_cta_t = scope_t<dot_scope::cta>;
-using scope_gpu_t = scope_t<dot_scope::gpu>;
-using scope_sys_t = scope_t<dot_scope::sys>;
+using scope_cta_t     = scope_t<dot_scope::cta>;
+using scope_gpu_t     = scope_t<dot_scope::gpu>;
+using scope_sys_t     = scope_t<dot_scope::sys>;
 
 static constexpr scope_cluster_t scope_cluster{};
 static constexpr scope_cta_t scope_cta{};

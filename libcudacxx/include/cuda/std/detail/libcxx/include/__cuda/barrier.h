@@ -27,8 +27,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include "../cstdlib"                // _LIBCUDACXX_UNREACHABLE
 #include "../__type_traits/void_t.h" // _CUDA_VSTD::__void_t
-
-#include <cuda/ptx>             // cuda::ptx::*
+#include <cuda/ptx>                  // cuda::ptx::*
 
 #if defined(_LIBCUDACXX_COMPILER_NVRTC)
 #define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type *)0)->member))
