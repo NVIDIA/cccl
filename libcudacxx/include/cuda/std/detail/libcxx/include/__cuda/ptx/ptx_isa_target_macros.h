@@ -13,7 +13,7 @@
 #ifndef _CUDA_PTX_PTX_ISA_TARGET_MACROS_H_
 #define _CUDA_PTX_PTX_ISA_TARGET_MACROS_H_
 
-#include "../../../../../../../nv/target" // __CUDA_MINIMUM_ARCH__ and friends
+#include <nv/target>            // __CUDA_MINIMUM_ARCH__ and friends
 
 /*
  * Targeting macros
