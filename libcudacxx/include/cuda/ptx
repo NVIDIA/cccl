@@ -97,6 +97,11 @@
 #  define _LIBCUDACXX_PTX_ISA_82_AVAILABLE
 #endif
 
+// PTX ISA 8.3 is available from CTK 12.3, driver r545
+#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 3)) || (!defined(__CUDACC_VER_MAJOR__))
+#  define _LIBCUDACXX_PTX_ISA_83_AVAILABLE
+#endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 /*
