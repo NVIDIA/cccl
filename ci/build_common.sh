@@ -141,7 +141,7 @@ function configure_preset()
     echo "$BUILD_NAME configure complete."
 
     popd > /dev/null
-    echo "::endgroup::
+    echo "::endgroup::"
 }
 
 function build_preset()
