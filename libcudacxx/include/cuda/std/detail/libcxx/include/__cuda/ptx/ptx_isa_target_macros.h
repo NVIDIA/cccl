@@ -10,8 +10,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef PTX_ISA_TARGET_MACROS_H_
-#define PTX_ISA_TARGET_MACROS_H_
+#ifndef _CUDA_PTX_PTX_ISA_TARGET_MACROS_H_
+#define _CUDA_PTX_PTX_ISA_TARGET_MACROS_H_
 
 
 /*
@@ -59,4 +59,4 @@
 #  define __cccl_ptx_isa 0ULL
 #endif
 
-#endif // PTX_ISA_TARGET_MACROS_H_
+#endif // _CUDA_PTX_PTX_ISA_TARGET_MACROS_H_

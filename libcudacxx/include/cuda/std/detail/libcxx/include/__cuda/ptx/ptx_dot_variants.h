@@ -10,8 +10,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef PTX_DOT_VARIANTS_H_
-#define PTX_DOT_VARIANTS_H_
+#ifndef _CUDA_PTX_DOT_VARIANTS_H_
+#define _CUDA_PTX_DOT_VARIANTS_H_
 
 /*
  * Public integral constant types and values for ".variant"s:
@@ -136,4 +136,4 @@ static constexpr scope_sys_t scope_sys{};
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
-#endif // PTX_DOT_VARIANTS_H_
+#endif // _CUDA_PTX_DOT_VARIANTS_H_
