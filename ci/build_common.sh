@@ -130,6 +130,7 @@ echo
 
 function configure_preset()
 {
+    echo "::group::CMake Configure"
     local BUILD_NAME=$1
     local PRESET=$2
     local CMAKE_OPTIONS=$3
@@ -140,10 +141,12 @@ function configure_preset()
     echo "$BUILD_NAME configure complete."
 
     popd > /dev/null
+    echo "::endgroup::
 }
 
 function build_preset()
 {
+    echo "::group::Build"
     local BUILD_NAME=$1
     local PRESET=$2
 
@@ -155,10 +158,12 @@ function build_preset()
 
     popd > /dev/null
     source "./sccache_stats.sh" "end"
+    echo "::endgroup::"
 }
 
 function test_preset()
 {
+    echo "::group::Test"
     local BUILD_NAME=$1
     local PRESET=$2
 
@@ -168,6 +173,7 @@ function test_preset()
     echo "$BUILD_NAME testing complete."
 
     popd > /dev/null
+    echo "::endgroup::"
 }
 
 function configure_and_build_preset()
