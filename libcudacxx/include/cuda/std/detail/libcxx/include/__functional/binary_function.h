@@ -14,9 +14,11 @@
 #include <__config>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -43,6 +45,7 @@ template <class _Arg1, class _Arg2, class _Result> struct __binary_function_keep
 #if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 _LIBCUDACXX_DIAGNOSTIC_PUSH
 _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
+_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
 template <class _Arg1, class _Arg2, class _Result>
 using __binary_function = binary_function<_Arg1, _Arg2, _Result>;
 _LIBCUDACXX_DIAGNOSTIC_POP

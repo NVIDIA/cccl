@@ -22,6 +22,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/execution_policy.h>
 #include <thrust/pair.h>
 
@@ -1246,7 +1252,7 @@ template<typename InputIterator1,
  *      return (x % 2) == 0;
  *    }
  *  };
- *  
+ *
  *  ...
  *
  *  int A[] = {2, 4, 6, 8, 10, 1, 3, 5, 7, 9};
@@ -1298,7 +1304,7 @@ __host__ __device__
  *      return (x % 2) == 0;
  *    }
  *  };
- *  
+ *
  *  ...
  *
  *  int A[] = {2, 4, 6, 8, 10, 1, 3, 5, 7, 9};
@@ -1325,7 +1331,7 @@ template<typename ForwardIterator, typename Predicate>
  */
 
 
-/*! \p is_partitioned returns \c true if the given range 
+/*! \p is_partitioned returns \c true if the given range
  *  is partitioned with respect to a predicate, and \c false otherwise.
  *
  *  Specifically, \p is_partitioned returns \c true if <tt>[first, last)</tt>
@@ -1346,7 +1352,7 @@ template<typename ForwardIterator, typename Predicate>
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Input Iterator</a>,
  *          and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type.
  *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
- *  
+ *
  *  \code
  *  #include <thrust/partition.h>
  *  #include <thrust/execution_policy.h>
@@ -1359,7 +1365,7 @@ template<typename ForwardIterator, typename Predicate>
  *      return (x % 2) == 0;
  *    }
  *  };
- *  
+ *
  *  ...
  *
  *  int A[] = {2, 4, 6, 8, 10, 1, 3, 5, 7, 9};
@@ -1379,7 +1385,7 @@ __host__ __device__
                       Predicate pred);
 
 
-/*! \p is_partitioned returns \c true if the given range 
+/*! \p is_partitioned returns \c true if the given range
  *  is partitioned with respect to a predicate, and \c false otherwise.
  *
  *  Specifically, \p is_partitioned returns \c true if <tt>[first, last)</tt>
@@ -1396,7 +1402,7 @@ __host__ __device__
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Input Iterator</a>,
  *          and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type.
  *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
- *  
+ *
  *  \code
  *  #include <thrust/partition.h>
  *
@@ -1408,7 +1414,7 @@ __host__ __device__
  *      return (x % 2) == 0;
  *    }
  *  };
- *  
+ *
  *  ...
  *
  *  int A[] = {2, 4, 6, 8, 10, 1, 3, 5, 7, 9};

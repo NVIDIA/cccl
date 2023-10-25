@@ -6,6 +6,7 @@ set(files
   __bsd_locale_defaults.h
   __bsd_locale_fallbacks.h
   __errc
+  __cccl_config
   __concepts/__concept_macros.h
   __concepts/_One_of.h
   __concepts/arithmetic.h

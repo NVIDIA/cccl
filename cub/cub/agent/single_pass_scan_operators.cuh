@@ -33,9 +33,16 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <iterator>
 
-#include <cub/config.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
@@ -58,42 +65,46 @@ CUB_NAMESPACE_BEGIN
  * Stateful callback operator type for supplying BlockScan prefixes.
  * Maintains a running prefix that can be applied to consecutive
  * BlockScan operations.
+ *
+ * @tparam T
+ *   BlockScan value type
+ *
+ * @tparam ScanOpT
+ *   Wrapped scan operator type
  */
-template <
-    typename T,                 ///< BlockScan value type
-    typename ScanOpT>            ///< Wrapped scan operator type
+template <typename T, typename ScanOpT>
 struct BlockScanRunningPrefixOp
 {
-    ScanOpT     op;                 ///< Wrapped scan operator
-    T           running_total;      ///< Running block-wide prefix
+  /// Wrapped scan operator
+  ScanOpT op;
 
-    /// Constructor
-    __device__ __forceinline__ BlockScanRunningPrefixOp(ScanOpT op)
-    :
-        op(op)
-    {}
+  /// Running block-wide prefix
+  T running_total;
 
-    /// Constructor
-    __device__ __forceinline__ BlockScanRunningPrefixOp(
-        T starting_prefix,
-        ScanOpT op)
-    :
-        op(op),
-        running_total(starting_prefix)
-    {}
+  /// Constructor
+  __device__ __forceinline__ BlockScanRunningPrefixOp(ScanOpT op)
+      : op(op)
+  {}
 
-    /**
-     * Prefix callback operator.  Returns the block-wide running_total in thread-0.
-     */
-    __device__ __forceinline__ T operator()(
-        const T &block_aggregate)              ///< The aggregate sum of the BlockScan inputs
-    {
-        T retval = running_total;
-        running_total = op(running_total, block_aggregate);
-        return retval;
-    }
+  /// Constructor
+  __device__ __forceinline__ BlockScanRunningPrefixOp(T starting_prefix, ScanOpT op)
+      : op(op)
+      , running_total(starting_prefix)
+  {}
+
+  /**
+   * Prefix callback operator.  Returns the block-wide running_total in thread-0.
+   *
+   * @param block_aggregate
+   *   The aggregate sum of the BlockScan inputs
+   */
+  __device__ __forceinline__ T operator()(const T &block_aggregate)
+  {
+    T retval      = running_total;
+    running_total = op(running_total, block_aggregate);
+    return retval;
+  }
 };
-
 
 /******************************************************************************
  * Generic tile status interface types for block-cooperative scans
@@ -110,22 +121,22 @@ enum ScanTileStatus
     SCAN_TILE_INCLUSIVE,    // Inclusive tile prefix is available
 };
 
-namespace detail 
+namespace detail
 {
 
 template <int Delay, unsigned int GridThreshold = 500>
 __device__ __forceinline__ void delay()
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (if (Delay > 0) 
+               (if (Delay > 0)
                 {
-                  if (gridDim.x < GridThreshold) 
+                  if (gridDim.x < GridThreshold)
                   {
                     __threadfence_block();
                   }
-                  else 
+                  else
                   {
-                    __nanosleep(Delay); 
+                    __nanosleep(Delay);
                   }
                 }));
 }
@@ -134,15 +145,15 @@ template <unsigned int GridThreshold = 500>
 __device__ __forceinline__ void delay(int ns)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (if (ns > 0) 
+               (if (ns > 0)
                 {
-                  if (gridDim.x < GridThreshold) 
+                  if (gridDim.x < GridThreshold)
                   {
                     __threadfence_block();
                   }
-                  else 
+                  else
                   {
-                    __nanosleep(ns); 
+                    __nanosleep(ns);
                   }
                 }));
 }
@@ -194,7 +205,7 @@ struct no_delay_constructor_t
 {
   struct delay_t
   {
-    __device__ __forceinline__ void operator()() 
+    __device__ __forceinline__ void operator()()
     {
       NV_IF_TARGET(NV_PROVIDES_SM_70,
                   (),
@@ -215,7 +226,7 @@ struct reduce_by_key_delay_constructor_t
 {
   struct delay_t
   {
-    __device__ __forceinline__ void operator()() 
+    __device__ __forceinline__ void operator()()
     {
       NV_DISPATCH_TARGET(
         NV_IS_EXACTLY_SM_80, (delay<Delay, GridThreshold>();),
@@ -262,7 +273,7 @@ struct exponential_backoff_constructor_t
     }
   };
 
-  __device__ __forceinline__ exponential_backoff_constructor_t(unsigned int /* seed */) 
+  __device__ __forceinline__ exponential_backoff_constructor_t(unsigned int /* seed */)
   {
     always_delay<L2WriteLatency>();
   }
@@ -437,7 +448,7 @@ struct exponential_backon_constructor_t
 
   unsigned int max_delay = InitialDelay;
 
-  __device__ __forceinline__ exponential_backon_constructor_t(unsigned int /* seed */) 
+  __device__ __forceinline__ exponential_backon_constructor_t(unsigned int /* seed */)
   {
     always_delay<L2WriteLatency>();
   }
@@ -527,31 +538,44 @@ struct ScanTileState<T, true>
         d_tile_descriptors(NULL)
     {}
 
-
-    /// Initializer
-    __host__ __device__ __forceinline__
-    cudaError_t Init(
-        int     /*num_tiles*/,                      ///< [in] Number of tiles
-        void    *d_temp_storage,                    ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-        size_t  /*temp_storage_bytes*/)             ///< [in] Size in bytes of \t d_temp_storage allocation
+    /**
+     * @brief Initializer
+     *
+     * @param[in] num_tiles
+     *   Number of tiles
+     *
+     * @param[in] d_temp_storage
+     *   Device-accessible allocation of temporary storage.
+     *   When NULL, the required allocation size is written to \p temp_storage_bytes and no work is
+     * done.
+     *
+     * @param[in] temp_storage_bytes
+     *   Size in bytes of \t d_temp_storage allocation
+     */
+    __host__ __device__ __forceinline__ cudaError_t Init(int /*num_tiles*/,
+                                                         void *d_temp_storage,
+                                                         size_t /*temp_storage_bytes*/)
     {
-        d_tile_descriptors = reinterpret_cast<TxnWord*>(d_temp_storage);
+        d_tile_descriptors = reinterpret_cast<TxnWord *>(d_temp_storage);
         return cudaSuccess;
     }
-
 
     /**
-     * Compute device memory needed for tile status
+     * @brief Compute device memory needed for tile status
+     *
+     * @param[in] num_tiles
+     *   Number of tiles
+     *
+     * @param[out] temp_storage_bytes
+     *   Size in bytes of \t d_temp_storage allocation
      */
-    __host__ __device__ __forceinline__
-    static cudaError_t AllocationSize(
-        int     num_tiles,                          ///< [in] Number of tiles
-        size_t  &temp_storage_bytes)                ///< [out] Size in bytes of \t d_temp_storage allocation
+    __host__ __device__ __forceinline__ static cudaError_t
+    AllocationSize(int num_tiles, size_t &temp_storage_bytes)
     {
-        temp_storage_bytes = (num_tiles + TILE_STATUS_PADDING) * sizeof(TxnWord);       // bytes needed for tile status descriptors
+        // bytes needed for tile status descriptors
+        temp_storage_bytes = (num_tiles + TILE_STATUS_PADDING) * sizeof(TxnWord);
         return cudaSuccess;
     }
-
 
     /**
      * Initialize (from device)
@@ -613,7 +637,7 @@ struct ScanTileState<T, true>
     /**
      * Wait for the corresponding tile to become non-invalid
      */
-    template <class DelayT = detail::default_delay_t<T>> 
+    template <class DelayT = detail::default_delay_t<T>>
     __device__ __forceinline__ void WaitForValid(
         int             tile_idx,
         StatusWord      &status,
@@ -628,7 +652,7 @@ struct ScanTileState<T, true>
         }
 
         while (WARP_ANY((tile_descriptor.status == SCAN_TILE_INVALID), 0xffffffff))
-        {   
+        {
           delay_or_prevent_hoisting();
           TxnWord alias = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
           tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
@@ -642,11 +666,11 @@ struct ScanTileState<T, true>
      * Loads and returns the tile's value. The returned value is undefined if either (a) the tile's status is invalid or
      * (b) there is no memory fence between reading a non-invalid status and the call to LoadValid.
      */
-     __device__ __forceinline__ T LoadValid(int tile_idx)                        
-    {                                                                           
+     __device__ __forceinline__ T LoadValid(int tile_idx)
+    {
         TxnWord alias = d_tile_descriptors[TILE_STATUS_PADDING + tile_idx];
         TileDescriptor tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
-        return tile_descriptor.value;                                           
+        return tile_descriptor.value;
     }
 };
 
@@ -682,13 +706,24 @@ struct ScanTileState<T, false>
         d_tile_inclusive(NULL)
     {}
 
-
+    /**
+     * @brief Initializer
+     *
+     * @param[in] num_tiles
+     *   Number of tiles
+     *
+     * @param[in] d_temp_storage
+     *   Device-accessible allocation of temporary storage.
+     *   When NULL, the required allocation size is written to \p temp_storage_bytes and no work is
+     *   done.
+     *
+     * @param[in] temp_storage_bytes
+     *   Size in bytes of \t d_temp_storage allocation
+     */
     /// Initializer
-    __host__ __device__ __forceinline__
-    cudaError_t Init(
-        int     num_tiles,                          ///< [in] Number of tiles
-        void    *d_temp_storage,                    ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-        size_t  temp_storage_bytes)                 ///< [in] Size in bytes of \t d_temp_storage allocation
+    __host__ __device__ __forceinline__ cudaError_t Init(int num_tiles,
+                                                         void *d_temp_storage,
+                                                         size_t temp_storage_bytes)
     {
         cudaError_t error = cudaSuccess;
         do
@@ -696,15 +731,20 @@ struct ScanTileState<T, false>
             void*   allocations[3] = {};
             size_t  allocation_sizes[3];
 
-            allocation_sizes[0] = (num_tiles + TILE_STATUS_PADDING) * sizeof(StatusWord);           // bytes needed for tile status descriptors
-            allocation_sizes[1] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);     // bytes needed for partials
-            allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);     // bytes needed for inclusives
+            // bytes needed for tile status descriptors
+            allocation_sizes[0] = (num_tiles + TILE_STATUS_PADDING) * sizeof(StatusWord);           
+
+            // bytes needed for partials
+            allocation_sizes[1] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);     
+
+            // bytes needed for inclusives
+            allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);     
 
             // Compute allocation pointers into the single storage blob
             error = CubDebug(
               AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
 
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -719,20 +759,29 @@ struct ScanTileState<T, false>
         return error;
     }
 
-
     /**
-     * Compute device memory needed for tile status
+     * @brief Compute device memory needed for tile status
+     *
+     * @param[in] num_tiles
+     *   Number of tiles
+     *
+     * @param[out] temp_storage_bytes
+     *   Size in bytes of \t d_temp_storage allocation
      */
-    __host__ __device__ __forceinline__
-    static cudaError_t AllocationSize(
-        int     num_tiles,                          ///< [in] Number of tiles
-        size_t  &temp_storage_bytes)                ///< [out] Size in bytes of \t d_temp_storage allocation
+    __host__ __device__ __forceinline__ static cudaError_t
+    AllocationSize(int num_tiles, size_t &temp_storage_bytes)
     {
         // Specify storage allocation requirements
         size_t  allocation_sizes[3];
-        allocation_sizes[0] = (num_tiles + TILE_STATUS_PADDING) * sizeof(StatusWord);         // bytes needed for tile status descriptors
-        allocation_sizes[1] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);   // bytes needed for partials
-        allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);   // bytes needed for inclusives
+
+        // bytes needed for tile status descriptors
+        allocation_sizes[0] = (num_tiles + TILE_STATUS_PADDING) * sizeof(StatusWord);         
+
+        // bytes needed for partials
+        allocation_sizes[1] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);   
+
+        // bytes needed for inclusives
+        allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);   
 
         // Set the necessary size of the blob
         void* allocations[3] = {};
@@ -784,7 +833,7 @@ struct ScanTileState<T, false>
     /**
      * Wait for the corresponding tile to become non-invalid
      */
-    template <class DelayT = detail::default_no_delay_t> 
+    template <class DelayT = detail::default_no_delay_t>
     __device__ __forceinline__ void WaitForValid(
         int             tile_idx,
         StatusWord      &status,
@@ -798,7 +847,7 @@ struct ScanTileState<T, false>
           __threadfence();
         } while (WARP_ANY((status == SCAN_TILE_INVALID), 0xffffffff));
 
-        if (status == StatusWord(SCAN_TILE_PARTIAL)) 
+        if (status == StatusWord(SCAN_TILE_PARTIAL))
         {
           value = ThreadLoad<LOAD_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx);
         }
@@ -812,9 +861,9 @@ struct ScanTileState<T, false>
      * Loads and returns the tile's value. The returned value is undefined if either (a) the tile's status is invalid or
      * (b) there is no memory fence between reading a non-invalid status and the call to LoadValid.
      */
-    __device__ __forceinline__ T LoadValid(int tile_idx)                        
-    {                                                                           
-        return d_tile_inclusive[TILE_STATUS_PADDING + tile_idx];                                          
+    __device__ __forceinline__ T LoadValid(int tile_idx)
+    {
+        return d_tile_inclusive[TILE_STATUS_PADDING + tile_idx];
     }
 };
 
@@ -921,31 +970,43 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
         d_tile_descriptors(NULL)
     {}
 
-
-    /// Initializer
-    __host__ __device__ __forceinline__
-    cudaError_t Init(
-        int     /*num_tiles*/,                      ///< [in] Number of tiles
-        void    *d_temp_storage,                    ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-        size_t  /*temp_storage_bytes*/)             ///< [in] Size in bytes of \t d_temp_storage allocation
+    /**
+     * @brief Initializer
+     *
+     * @param[in] num_tiles
+     *   Number of tiles
+     *
+     * @param[in] d_temp_storage
+     *   Device-accessible allocation of temporary storage.  When NULL, the required allocation size
+     *   is written to \p temp_storage_bytes and no work is done.
+     *
+     * @param[in] temp_storage_bytes
+     *   Size in bytes of \t d_temp_storage allocation
+     */
+    __host__ __device__ __forceinline__ cudaError_t Init(int /*num_tiles*/,
+                                                         void *d_temp_storage,
+                                                         size_t /*temp_storage_bytes*/)
     {
-        d_tile_descriptors = reinterpret_cast<TxnWord*>(d_temp_storage);
+        d_tile_descriptors = reinterpret_cast<TxnWord *>(d_temp_storage);
         return cudaSuccess;
     }
-
 
     /**
-     * Compute device memory needed for tile status
+     * @brief Compute device memory needed for tile status
+     *
+     * @param[in] num_tiles
+     *   Number of tiles
+     *
+     * @param[out] temp_storage_bytes
+     *   Size in bytes of \t d_temp_storage allocation
      */
-    __host__ __device__ __forceinline__
-    static cudaError_t AllocationSize(
-        int     num_tiles,                          ///< [in] Number of tiles
-        size_t  &temp_storage_bytes)                ///< [out] Size in bytes of \t d_temp_storage allocation
+    __host__ __device__ __forceinline__ static cudaError_t
+    AllocationSize(int num_tiles, size_t &temp_storage_bytes)
     {
-        temp_storage_bytes = (num_tiles + TILE_STATUS_PADDING) * sizeof(TxnWord);       // bytes needed for tile status descriptors
+        // bytes needed for tile status descriptors
+        temp_storage_bytes = (num_tiles + TILE_STATUS_PADDING) * sizeof(TxnWord);
         return cudaSuccess;
     }
-
 
     /**
      * Initialize (from device)
@@ -1008,7 +1069,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     /**
      * Wait for the corresponding tile to become non-invalid
      */
-    template <class DelayT = detail::fixed_delay_constructor_t<350, 450>::delay_t> 
+    template <class DelayT = detail::fixed_delay_constructor_t<350, 450>::delay_t>
     __device__ __forceinline__ void WaitForValid(
         int                     tile_idx,
         StatusWord              &status,
@@ -1058,8 +1119,8 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
  * the current tile by using the call-back warp to wait on on
  * aggregates/prefixes from predecessor tiles to become available.
  *
- * @tparam DelayConstructorT 
- *   Implementation detail, do not specify directly, requirements on the 
+ * @tparam DelayConstructorT
+ *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
 template <
@@ -1089,14 +1150,14 @@ struct TilePrefixCallbackOp
     typedef typename ScanTileStateT::StatusWord StatusWord;
 
     // Fields
-    _TempStorage&               temp_storage;       ///< Reference to a warp-reduction instance
-    ScanTileStateT&             tile_status;        ///< Interface to tile status
-    ScanOpT                     scan_op;            ///< Binary scan operator
-    int                         tile_idx;           ///< The current tile index
-    T                           exclusive_prefix;   ///< Exclusive prefix for the tile
-    T                           inclusive_prefix;   ///< Inclusive prefix for the tile
+    _TempStorage &temp_storage;  ///< Reference to a warp-reduction instance
+    ScanTileStateT &tile_status; ///< Interface to tile status
+    ScanOpT scan_op;             ///< Binary scan operator
+    int tile_idx;                ///< The current tile index
+    T exclusive_prefix;          ///< Exclusive prefix for the tile
+    T inclusive_prefix;          ///< Inclusive prefix for the tile
 
-    // Constructs prefix functor for a given tile index. 
+    // Constructs prefix functor for a given tile index.
     // Precondition: thread blocks processing all of the predecessor tiles were scheduled.
     __device__ __forceinline__ TilePrefixCallbackOp(ScanTileStateT &tile_status,
                                                     TempStorage &temp_storage,
@@ -1116,14 +1177,23 @@ struct TilePrefixCallbackOp
         : TilePrefixCallbackOp(tile_status, temp_storage, scan_op, blockIdx.x)
     {}
 
-    // Block until all predecessors within the warp-wide window have non-invalid status
-    template <class DelayT = detail::default_delay_t<T>> 
-    __device__ __forceinline__
-    void ProcessWindow(
-        int         predecessor_idx,        ///< Preceding tile index to inspect
-        StatusWord  &predecessor_status,    ///< [out] Preceding tile status
-        T           &window_aggregate,      ///< [out] Relevant partial reduction from this window of preceding tiles
-        DelayT      delay = {})
+    /**
+     * @brief Block until all predecessors within the warp-wide window have non-invalid status
+     *
+     * @param predecessor_idx
+     *   Preceding tile index to inspect
+     *
+     * @param[out] predecessor_status
+     *   Preceding tile status
+     *
+     * @param[out] window_aggregate
+     *   Relevant partial reduction from this window of preceding tiles
+     */
+    template <class DelayT = detail::default_delay_t<T>>
+    __device__ __forceinline__ void ProcessWindow(int predecessor_idx,
+                                                  StatusWord &predecessor_status,
+                                                  T &window_aggregate,
+                                                  DelayT delay = {})
     {
         T value;
         tile_status.WaitForValid(predecessor_idx, predecessor_status, value, delay);

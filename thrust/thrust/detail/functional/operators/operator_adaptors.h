@@ -17,6 +17,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/functional/argument.h>
 #include <thrust/detail/type_deduction.h>
 #include <thrust/tuple.h>
@@ -43,7 +49,7 @@ struct transparent_unary_operator
   using argument =
   typename thrust::detail::eval_if<
     thrust::tuple_size<Env>::value != 1,
-    thrust::detail::identity_<thrust::null_type>,
+    thrust::detail::identity_<thrust::tuple<>>,
     thrust::detail::functional::argument_helper<0, Env>
   >::type;
 
@@ -57,8 +63,8 @@ struct transparent_unary_operator
   template <typename Env>
   using result_type =
   typename thrust::detail::eval_if<
-    std::is_same<thrust::null_type, argument<Env>>::value,
-    thrust::detail::identity_<thrust::null_type>,
+    std::is_same<thrust::tuple<>, argument<Env>>::value,
+    thrust::detail::identity_<thrust::tuple<>>,
     result_type_impl<Env>
   >::type;
 
@@ -88,16 +94,16 @@ struct transparent_binary_operator
   using first_argument =
     typename thrust::detail::eval_if<
       thrust::tuple_size<Env>::value != 2,
-      thrust::detail::identity_<thrust::null_type>,
-      thrust::detail::functional::argument_helper<0, Env>
+      thrust::detail::identity_<thrust::tuple<>>,
+    thrust::detail::functional::argument_helper<0, Env>
     >::type;
 
   template <typename Env>
   using second_argument =
     typename thrust::detail::eval_if<
       thrust::tuple_size<Env>::value != 2,
-      thrust::detail::identity_<thrust::null_type>,
-      thrust::detail::functional::argument_helper<1, Env>
+      thrust::detail::identity_<thrust::tuple<>>,
+    thrust::detail::functional::argument_helper<1, Env>
     >::type;
 
   template <typename Env>
@@ -111,9 +117,9 @@ struct transparent_binary_operator
   template <typename Env>
   using result_type =
     typename thrust::detail::eval_if<
-      (std::is_same<thrust::null_type, first_argument<Env>>::value ||
-       std::is_same<thrust::null_type, second_argument<Env>>::value),
-      thrust::detail::identity_<thrust::null_type>,
+      (std::is_same<thrust::tuple<>, first_argument<Env>>::value ||
+       std::is_same<thrust::tuple<>, second_argument<Env>>::value),
+      thrust::detail::identity_<thrust::tuple<>>,
       result_type_impl<Env>
     >::type;
 

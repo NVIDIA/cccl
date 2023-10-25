@@ -20,10 +20,7 @@ struct GetFunctor
 {
   template<typename Tuple>
   __host__ __device__
-  typename thrust::access_traits<
-    typename thrust::tuple_element<N, Tuple>::type
-  >::const_type
-  operator()(const Tuple &t)
+  typename thrust::tuple_element<N, Tuple>::type operator()(const Tuple &t)
   {
     return thrust::get<N>(t);
   }
@@ -64,7 +61,7 @@ struct TestTupleStableSort
 
      // select values
      transform(h_tuples.begin(), h_tuples.end(), h_values.begin(), GetFunctor<1>());
-     
+
      device_vector<T> d_values(h_values.size());
      transform(d_tuples.begin(), d_tuples.end(), d_values.begin(), GetFunctor<1>());
 

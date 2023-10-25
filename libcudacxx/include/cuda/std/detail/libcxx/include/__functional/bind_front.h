@@ -25,9 +25,11 @@
 #include "../__type_traits/is_nothrow_constructible.h"
 #include "../__utility/forward.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -65,7 +67,7 @@ _LIBCUDACXX_CONCEPT __can_bind_front = is_constructible_v<decay_t<_Fn>, _Fn> &&
                                        (is_move_constructible_v<decay_t<_Args>> && ... );
 
 _LIBCUDACXX_TEMPLATE(class _Fn, class... _Args)
-  (requires __can_bind_front<_Fn, _Args...>)
+  _LIBCUDACXX_REQUIRES( __can_bind_front<_Fn, _Args...>)
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 constexpr auto bind_front(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_constructible_v<tuple<decay_t<_Args>...>, _Args&&...>) {
     return __bind_front_t<decay_t<_Fn>, decay_t<_Args>...>(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);

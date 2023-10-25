@@ -23,9 +23,11 @@
 #include "../__type_traits/is_move_constructible.h"
 #include "../__utility/forward.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -47,7 +49,7 @@ struct __not_fn_t : __perfect_forward<__not_fn_op, _Fn> {
     constexpr __not_fn_t() noexcept = default;
 
     _LIBCUDACXX_TEMPLATE(class _OrigFn)
-        (requires _LIBCUDACXX_TRAIT(is_same, _Fn, __decay_t<_OrigFn>))
+        _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_same, _Fn, __decay_t<_OrigFn>))
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __not_fn_t(_OrigFn&& __fn) noexcept(noexcept(__base(_CUDA_VSTD::declval<_OrigFn>())))
         : __base(_CUDA_VSTD::forward<_OrigFn>(__fn))

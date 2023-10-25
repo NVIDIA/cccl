@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,15 +27,22 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Thread utilities for sequential reduction over statically-sized array types
  */
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "../thread/thread_operators.cuh"
 #include "../detail/type_traits.cuh"
-#include "../config.cuh"
 
 CUB_NAMESPACE_BEGIN
 
@@ -43,19 +50,24 @@ CUB_NAMESPACE_BEGIN
 namespace internal {
 
 /**
- * Sequential reduction over statically-sized array types
+ * @brief Sequential reduction over statically-sized array types
+ *
+ * @param[in] input
+ *   Input array
+ *
+ * @param[in] reduction_op
+ *   Binary reduction operator
+ *
+ * @param[in] prefix
+ *   Prefix to seed reduction with
  */
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ReductionOp,
-    typename    PrefixT,
-    typename    AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>> 
-__device__ __forceinline__ AccumT ThreadReduce(
-    T*                  input,                  ///< [in] Input array
-    ReductionOp         reduction_op,           ///< [in] Binary reduction operator
-    PrefixT             prefix,                 ///< [in] Prefix to seed reduction with
-    Int2Type<LENGTH>    /*length*/)
+template <int LENGTH,
+          typename T,
+          typename ReductionOp,
+          typename PrefixT,
+          typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
+__device__ __forceinline__ AccumT
+ThreadReduce(T *input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH> /*length*/)
 {
     AccumT retval = prefix;
 
@@ -66,85 +78,122 @@ __device__ __forceinline__ AccumT ThreadReduce(
     return retval;
 }
 
-
 /**
- * \brief Perform a sequential reduction over \p LENGTH elements of the \p input array, seeded with the specified \p prefix.  The aggregate is returned.
+ * @brief Perform a sequential reduction over @p LENGTH elements of the @p input array,
+ *        seeded with the specified @p prefix. The aggregate is returned.
  *
- * \tparam LENGTH       LengthT of input array
- * \tparam T            <b>[inferred]</b> The data type to be reduced.
- * \tparam ReductionOp  <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * @tparam LENGTH
+ *   LengthT of input array
+ *
+ * @tparam T
+ *   <b>[inferred]</b> The data type to be reduced.
+ *
+ * @tparam ReductionOp
+ *   <b>[inferred]</b> Binary reduction operator type having member
+ *   <tt>T operator()(const T &a, const T &b)</tt>
+ *
+ * @param[in] input
+ *   Input array
+ *
+ * @param[in] reduction_op
+ *   Binary reduction operator
+ *
+ * @param[in] prefix
+ *   Prefix to seed reduction with
  */
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ReductionOp,
-    typename    PrefixT,
-    typename    AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>> 
-__device__ __forceinline__ AccumT ThreadReduce(
-    T*          input,                  ///< [in] Input array
-    ReductionOp reduction_op,           ///< [in] Binary reduction operator
-    PrefixT     prefix)                 ///< [in] Prefix to seed reduction with
+template <int LENGTH,
+          typename T,
+          typename ReductionOp,
+          typename PrefixT,
+          typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
+__device__ __forceinline__ AccumT ThreadReduce(T *input, ReductionOp reduction_op, PrefixT prefix)
 {
     return ThreadReduce(input, reduction_op, prefix, Int2Type<LENGTH>());
 }
 
-
 /**
- * \brief Perform a sequential reduction over \p LENGTH elements of the \p input array.  The aggregate is returned.
+ * @brief Perform a sequential reduction over @p LENGTH elements of the @p input array.
+ *        The aggregate is returned.
  *
- * \tparam LENGTH       LengthT of input array
- * \tparam T            <b>[inferred]</b> The data type to be reduced.
- * \tparam ReductionOp  <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * @tparam LENGTH
+ *   LengthT of input array
+ *
+ * @tparam T
+ *   <b>[inferred]</b> The data type to be reduced.
+ *
+ * @tparam ReductionOp
+ *   <b>[inferred]</b> Binary reduction operator type having member
+ *   <tt>T operator()(const T &a, const T &b)</tt>
+ *
+ * @param[in] input
+ *   Input array
+ *
+ * @param[in] reduction_op
+ *   Binary reduction operator
  */
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ReductionOp>
-__device__ __forceinline__ T ThreadReduce(
-    T*          input,                  ///< [in] Input array
-    ReductionOp reduction_op)           ///< [in] Binary reduction operator
+template <int LENGTH, typename T, typename ReductionOp>
+__device__ __forceinline__ T ThreadReduce(T *input, ReductionOp reduction_op)
 {
     T prefix = input[0];
     return ThreadReduce<LENGTH - 1>(input + 1, reduction_op, prefix);
 }
 
-
 /**
- * \brief Perform a sequential reduction over the statically-sized \p input array, seeded with the specified \p prefix.  The aggregate is returned.
+ * @brief Perform a sequential reduction over the statically-sized @p input array,
+ *        seeded with the specified @p prefix. The aggregate is returned.
  *
- * \tparam LENGTH       <b>[inferred]</b> LengthT of \p input array
- * \tparam T            <b>[inferred]</b> The data type to be reduced.
- * \tparam ReductionOp  <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * @tparam LENGTH
+ *   <b>[inferred]</b> LengthT of @p input array
+ *
+ * @tparam T
+ *   <b>[inferred]</b> The data type to be reduced.
+ *
+ * @tparam ReductionOp
+ *   <b>[inferred]</b> Binary reduction operator type having member
+ *   <tt>T operator()(const T &a, const T &b)</tt>
+ *
+ * @param[in] input
+ *   Input array
+ *
+ * @param[in] reduction_op
+ *   Binary reduction operator
+ *
+ * @param[in] prefix
+ *   Prefix to seed reduction with
  */
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ReductionOp,
-    typename    PrefixT,
-    typename    AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>> 
-__device__ __forceinline__ AccumT ThreadReduce(
-    T           (&input)[LENGTH],       ///< [in] Input array
-    ReductionOp reduction_op,           ///< [in] Binary reduction operator
-    PrefixT     prefix)                 ///< [in] Prefix to seed reduction with
+template <int LENGTH,
+          typename T,
+          typename ReductionOp,
+          typename PrefixT,
+          typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
+__device__ __forceinline__ AccumT ThreadReduce(T (&input)[LENGTH],
+                                               ReductionOp reduction_op,
+                                               PrefixT prefix)
 {
     return ThreadReduce(input, reduction_op, prefix, Int2Type<LENGTH>());
 }
 
-
 /**
- * \brief Serial reduction with the specified operator
+ * @brief Serial reduction with the specified operator
  *
- * \tparam LENGTH       <b>[inferred]</b> LengthT of \p input array
- * \tparam T            <b>[inferred]</b> The data type to be reduced.
- * \tparam ReductionOp  <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
+ * @tparam LENGTH
+ *   <b>[inferred]</b> LengthT of @p input array
+ *
+ * @tparam T
+ *   <b>[inferred]</b> The data type to be reduced.
+ *
+ * @tparam ReductionOp
+ *   <b>[inferred]</b> Binary reduction operator type having member
+ *   <tt>T operator()(const T &a, const T &b)</tt>
+ *
+ * @param[in] input
+ *   Input array
+ *
+ * @param[in] reduction_op
+ *   Binary reduction operator
  */
-template <
-    int         LENGTH,
-    typename    T,
-    typename    ReductionOp>
-__device__ __forceinline__ T ThreadReduce(
-    T           (&input)[LENGTH],       ///< [in] Input array
-    ReductionOp reduction_op)           ///< [in] Binary reduction operator
+template <int LENGTH, typename T, typename ReductionOp>
+__device__ __forceinline__ T ThreadReduce(T (&input)[LENGTH], ReductionOp reduction_op)
 {
     return ThreadReduce<LENGTH>((T*) input, reduction_op);
 }

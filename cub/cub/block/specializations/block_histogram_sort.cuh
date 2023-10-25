@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,32 +27,59 @@
  ******************************************************************************/
 
 /**
- * \file
- * The cub::BlockHistogramSort class provides sorting-based methods for constructing block-wide histograms from data samples partitioned across a CUDA thread block.
+ * @file
+ * The cub::BlockHistogramSort class provides sorting-based methods for constructing block-wide
+ * histograms from data samples partitioned across a CUDA thread block.
  */
 
 #pragma once
 
+#include "../../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include "../../block/block_radix_sort.cuh"
 #include "../../block/block_discontinuity.cuh"
-#include "../../config.cuh"
 #include "../../util_ptx.cuh"
 
 CUB_NAMESPACE_BEGIN
 
-
-
 /**
- * \brief The BlockHistogramSort class provides sorting-based methods for constructing block-wide histograms from data samples partitioned across a CUDA thread block.
+ * @brief The BlockHistogramSort class provides sorting-based methods for constructing block-wide
+ *        histograms from data samples partitioned across a CUDA thread block.
+ *
+ * @tparam T
+ *   Sample type
+ *
+ * @tparam BLOCK_DIM_X
+ *   The thread block length in threads along the X dimension
+ *
+ * @tparam ITEMS_PER_THREAD
+ *   The number of samples per thread
+ *
+ * @tparam BINS
+ *   The number of bins into which histogram samples may fall
+ *
+ * @tparam BLOCK_DIM_Y
+ *   The thread block length in threads along the Y dimension
+ *
+ * @tparam BLOCK_DIM_Z
+ *   The thread block length in threads along the Z dimension
+ *
+ * @tparam LEGACY_PTX_ARCH
+ *   The PTX compute capability for which to to specialize this collective (unused)
  */
-template <
-    typename    T,                  ///< Sample type
-    int         BLOCK_DIM_X,        ///< The thread block length in threads along the X dimension
-    int         ITEMS_PER_THREAD,   ///< The number of samples per thread
-    int         BINS,               ///< The number of bins into which histogram samples may fall
-    int         BLOCK_DIM_Y,        ///< The thread block length in threads along the Y dimension
-    int         BLOCK_DIM_Z,        ///< The thread block length in threads along the Z dimension
-    int         LEGACY_PTX_ARCH = 0> ///< The PTX compute capability for which to to specialize this collective (unused)
+template <typename T,
+          int BLOCK_DIM_X,
+          int ITEMS_PER_THREAD,
+          int BINS,
+          int BLOCK_DIM_Y,
+          int BLOCK_DIM_Z,
+          int LEGACY_PTX_ARCH = 0>
 struct BlockHistogramSort
 {
     /// Constants
@@ -149,13 +176,18 @@ struct BlockHistogramSort
         }
     };
 
-
-    // Composite data onto an existing histogram
-    template <
-        typename            CounterT     >
-    __device__ __forceinline__ void Composite(
-        T                   (&items)[ITEMS_PER_THREAD],     ///< [in] Calling thread's input values to histogram
-        CounterT            histogram[BINS])                 ///< [out] Reference to shared/device-accessible memory histogram
+    /**
+     * @brief Composite data onto an existing histogram
+     *
+     * @param[in] items
+     *   Calling thread's input values to histogram
+     *
+     * @param[out] histogram
+     *   Reference to shared/device-accessible memory histogram
+     */
+    template <typename CounterT>
+    __device__ __forceinline__ void Composite(T (&items)[ITEMS_PER_THREAD],
+                                              CounterT histogram[BINS])
     {
         enum { TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD };
 

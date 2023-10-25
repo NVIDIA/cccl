@@ -18,6 +18,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -44,7 +50,7 @@ OutputType inner_product(thrust::execution_policy<DerivedPolicy> &exec,
                          InputIterator1 first1,
                          InputIterator1 last1,
                          InputIterator2 first2,
-                         OutputType init, 
+                         OutputType init,
                          BinaryFunction1 binary_op1,
                          BinaryFunction2 binary_op2);
 

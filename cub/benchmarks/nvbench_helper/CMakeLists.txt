@@ -1,12 +1,12 @@
 # Fetch nvbench
-CPMAddPackage("gh:NVIDIA/nvbench#main")
+CPMAddPackage("gh:NVIDIA/nvbench#39b2770b62ce1f4e0ebeb9af60d7c6de624633a5")
 
-add_library(nvbench_helper OBJECT nvbench_helper/nvbench_helper.cuh 
+add_library(nvbench_helper OBJECT nvbench_helper/nvbench_helper.cuh
                                   nvbench_helper/nvbench_helper.cu)
 
-target_link_libraries(nvbench_helper PUBLIC CUB::CUB 
-                                            Thrust::Thrust 
-                                            CUB::libcudacxx 
+target_link_libraries(nvbench_helper PUBLIC CUB::CUB
+                                            Thrust::Thrust
+                                            CUB::libcudacxx
                                             nvbench::nvbench
                                      PRIVATE CUDA::curand)
 
@@ -32,7 +32,7 @@ if (CUB_ENABLE_NVBENCH_HELPER_TESTS)
     target_link_libraries(${nvbench_helper_test_target} PRIVATE nvbench_helper Catch2::Catch2 Boost::math)
     if ("${device_system}" STREQUAL "cpp")
       target_compile_definitions(${nvbench_helper_test_target} PRIVATE THRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CPP)
-    endif()   
+    endif()
     set_target_properties(${nvbench_helper_test_target}
            PROPERTIES
                   ARCHIVE_OUTPUT_DIRECTORY "${CUB_LIBRARY_OUTPUT_DIR}"

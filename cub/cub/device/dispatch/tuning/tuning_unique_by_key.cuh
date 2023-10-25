@@ -27,11 +27,18 @@
 
 #pragma once
 
+#include "../../../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/agent/agent_unique_by_key.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/config.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
@@ -716,7 +723,7 @@ struct DeviceUniqueByKeyPolicy
                                                       detail::default_delay_constructor_t<int>>;
   };
 
-  struct DefaultTuning 
+  struct DefaultTuning
   {
     static constexpr int INPUT_SIZE = sizeof(KeyT);
     enum

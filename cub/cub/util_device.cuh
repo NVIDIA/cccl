@@ -37,14 +37,18 @@
 
 #pragma once
 
+#include "config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cuda/std/utility>
 
 #include <cub/detail/device_synchronize.cuh>
-#include <cub/util_arch.cuh>
-#include <cub/util_cpp_dialect.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_macro.cuh>
-#include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
@@ -412,7 +416,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
     {
         int major = 0, minor = 0;
         error = CubDebug(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device));
-        if (cudaSuccess != error) 
+        if (cudaSuccess != error)
         {
             break;
         }
@@ -544,7 +548,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
     cudaError_t error = cudaSuccess;
     int device = -1;
     error = CubDebug(cudaGetDevice(&device));
-    if (cudaSuccess != error) 
+    if (cudaSuccess != error)
     {
         return error;
     }
@@ -562,12 +566,13 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
 } // namespace detail
 
 /**
- * \brief Computes maximum SM occupancy in thread blocks for executing the given kernel function pointer \p kernel_ptr on the current device with \p block_threads per thread block.
+ * @brief Computes maximum SM occupancy in thread blocks for executing the given kernel function
+ *        pointer @p kernel_ptr on the current device with @p block_threads per thread block.
  *
- * \par Snippet
+ * @par Snippet
  * The code snippet below illustrates the use of the MaxSmOccupancy function.
- * \par
- * \code
+ * @par
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/util_device.cuh>
  *
  * template <typename T>
@@ -589,16 +594,25 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
  * // max_sm_occupancy  <-- 8 on SM20
  * // max_sm_occupancy  <-- 12 on SM35
  *
- * \endcode
+ * @endcode
  *
+ * @param[out] max_sm_occupancy
+ *   maximum number of thread blocks that can reside on a single SM
+ *
+ * @param[in] kernel_ptr
+ *   Kernel pointer for which to compute SM occupancy
+ *
+ * @param[in] block_threads
+ *   Number of threads per thread block
+ *
+ * @param[in] dynamic_smem_bytes
+ *   Dynamically allocated shared memory in bytes. Default is 0.
  */
 template <typename KernelPtr>
-CUB_RUNTIME_FUNCTION inline
-cudaError_t MaxSmOccupancy(
-    int&                max_sm_occupancy,          ///< [out] maximum number of thread blocks that can reside on a single SM
-    KernelPtr           kernel_ptr,                 ///< [in] Kernel pointer for which to compute SM occupancy
-    int                 block_threads,              ///< [in] Number of threads per thread block
-    int                 dynamic_smem_bytes = 0)	    ///< [in] Dynamically allocated shared memory in bytes. Default is 0.
+CUB_RUNTIME_FUNCTION inline cudaError_t MaxSmOccupancy(int &max_sm_occupancy,
+                                                       KernelPtr kernel_ptr,
+                                                       int block_threads,
+                                                       int dynamic_smem_bytes = 0)
 {
     return CubDebug(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
         &max_sm_occupancy,

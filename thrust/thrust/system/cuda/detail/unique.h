@@ -28,6 +28,12 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
 #include <thrust/advance.h>
@@ -788,7 +794,7 @@ struct zip_adj_not_predicate {
   bool __host__ __device__ operator()(TupleType&& tuple) {
       return !binary_pred(thrust::get<0>(tuple), thrust::get<1>(tuple));
   }
-  
+
   BinaryPred binary_pred;
 };
 

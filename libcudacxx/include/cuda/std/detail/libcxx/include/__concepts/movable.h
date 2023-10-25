@@ -20,9 +20,11 @@
 #include "../__concepts/swappable.h"
 #include "../__type_traits/is_object.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -41,11 +43,12 @@ concept movable =
 template<class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   _Movable_,
-  requires()
-  (requires(is_object_v<_Tp>),
-   requires(move_constructible<_Tp>),
-   requires(assignable_from<_Tp&, _Tp>),
-   requires(swappable<_Tp>)));
+  requires()(//
+    requires(is_object_v<_Tp>),
+    requires(move_constructible<_Tp>),
+    requires(assignable_from<_Tp&, _Tp>),
+    requires(swappable<_Tp>)
+  ));
 
 template<class _Tp>
 _LIBCUDACXX_CONCEPT movable = _LIBCUDACXX_FRAGMENT(_Movable_, _Tp);

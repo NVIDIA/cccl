@@ -26,6 +26,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/functional/composite.h>
 #include <thrust/detail/functional/operators/assignment_operator.h>
 #include <thrust/functional.h>
@@ -53,18 +59,6 @@ template<typename Eval>
     ::actor(const Eval &base)
       : eval_type(base)
 {}
-
-template<typename Eval>
-  __host__ __device__
-  typename apply_actor<
-    typename actor<Eval>::eval_type,
-    typename thrust::null_type
-  >::type
-    actor<Eval>
-      ::operator()(void) const
-{
-  return eval_type::eval(thrust::null_type());
-} // end basic_environment::operator()
 
 // actor::operator() needs to construct a tuple of references to its
 // arguments. To make this work with thrust::reference<T>, we need to
