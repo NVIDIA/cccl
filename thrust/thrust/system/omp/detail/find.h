@@ -16,12 +16,18 @@
 
 
 /*! \file find.h
- *  \brief OpenMP implementation of find_if. 
+ *  \brief OpenMP implementation of find_if.
  */
 
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/system/detail/generic/find.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 

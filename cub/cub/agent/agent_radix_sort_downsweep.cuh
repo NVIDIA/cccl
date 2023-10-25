@@ -35,6 +35,14 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <stdint.h>
 #include <type_traits>
 
@@ -44,7 +52,6 @@
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/block_exchange.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
-#include <cub/config.cuh>
 #include <cub/util_type.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
@@ -56,30 +63,61 @@ CUB_NAMESPACE_BEGIN
  ******************************************************************************/
 
 /**
- * Parameterizable tuning policy type for AgentRadixSortDownsweep
+ * @brief Parameterizable tuning policy type for AgentRadixSortDownsweep
+ *
+ * @tparam NOMINAL_BLOCK_THREADS_4B
+ *   Threads per thread block
+ *
+ * @tparam NOMINAL_ITEMS_PER_THREAD_4B
+ *   Items per thread (per tile of input)
+ *
+ * @tparam ComputeT
+ *   Dominant compute type
+ *
+ * @tparam _LOAD_ALGORITHM
+ *   The BlockLoad algorithm to use
+ *
+ * @tparam _LOAD_MODIFIER
+ *   Cache load modifier for reading keys (and values)
+ *
+ * @tparam _RANK_ALGORITHM
+ *   The radix ranking algorithm to use
+ *
+ * @tparam _SCAN_ALGORITHM
+ *   The block scan algorithm to use
+ *
+ * @tparam _RADIX_BITS
+ *   The number of radix bits, i.e., log2(bins)
  */
-template <
-    int                 NOMINAL_BLOCK_THREADS_4B,       ///< Threads per thread block
-    int                 NOMINAL_ITEMS_PER_THREAD_4B,    ///< Items per thread (per tile of input)
-    typename            ComputeT,                       ///< Dominant compute type
-    BlockLoadAlgorithm  _LOAD_ALGORITHM,                ///< The BlockLoad algorithm to use
-    CacheLoadModifier   _LOAD_MODIFIER,                 ///< Cache load modifier for reading keys (and values)
-    RadixRankAlgorithm  _RANK_ALGORITHM,                ///< The radix ranking algorithm to use
-    BlockScanAlgorithm  _SCAN_ALGORITHM,                ///< The block scan algorithm to use
-    int                 _RADIX_BITS,                    ///< The number of radix bits, i.e., log2(bins)
-    typename            ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT> >
-struct AgentRadixSortDownsweepPolicy :
-    ScalingType
+template <int NOMINAL_BLOCK_THREADS_4B,
+          int NOMINAL_ITEMS_PER_THREAD_4B,
+          typename ComputeT,
+          BlockLoadAlgorithm _LOAD_ALGORITHM,
+          CacheLoadModifier _LOAD_MODIFIER,
+          RadixRankAlgorithm _RANK_ALGORITHM,
+          BlockScanAlgorithm _SCAN_ALGORITHM,
+          int _RADIX_BITS,
+          typename ScalingType =
+            RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+struct AgentRadixSortDownsweepPolicy : ScalingType
 {
-    enum
-    {
-        RADIX_BITS              = _RADIX_BITS,              ///< The number of radix bits, i.e., log2(bins)
-    };
+  enum
+  {
+    /// The number of radix bits, i.e., log2(bins)
+    RADIX_BITS = _RADIX_BITS,
+  };
 
-    static constexpr BlockLoadAlgorithm  LOAD_ALGORITHM     = _LOAD_ALGORITHM;    ///< The BlockLoad algorithm to use
-    static constexpr CacheLoadModifier   LOAD_MODIFIER      = _LOAD_MODIFIER;     ///< Cache load modifier for reading keys (and values)
-    static constexpr RadixRankAlgorithm  RANK_ALGORITHM     = _RANK_ALGORITHM;    ///< The radix ranking algorithm to use
-    static constexpr BlockScanAlgorithm  SCAN_ALGORITHM     = _SCAN_ALGORITHM;    ///< The BlockScan algorithm to use
+  /// The BlockLoad algorithm to use
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+
+  /// Cache load modifier for reading keys (and values)
+  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+
+  /// The radix ranking algorithm to use
+  static constexpr RadixRankAlgorithm RANK_ALGORITHM = _RANK_ALGORITHM;
+
+  /// The BlockScan algorithm to use
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
 };
 
 
@@ -92,15 +130,30 @@ struct AgentRadixSortDownsweepPolicy :
 
 
 /**
- * \brief AgentRadixSortDownsweep implements a stateful abstraction of CUDA thread blocks for participating in device-wide radix sort downsweep .
+ * @brief AgentRadixSortDownsweep implements a stateful abstraction of CUDA thread blocks for participating in 
+ *        device-wide radix sort downsweep .
+ *
+ * @tparam AgentRadixSortDownsweepPolicy
+ *   Parameterized AgentRadixSortDownsweepPolicy tuning policy type
+ *
+ * @tparam IS_DESCENDING
+ *   Whether or not the sorted-order is high-to-low
+ *
+ * @tparam KeyT
+ *   KeyT type
+ *
+ * @tparam ValueT
+ *   ValueT type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
  */
-template <
-    typename AgentRadixSortDownsweepPolicy,     ///< Parameterized AgentRadixSortDownsweepPolicy tuning policy type
-    bool     IS_DESCENDING,                     ///< Whether or not the sorted-order is high-to-low
-    typename KeyT,                              ///< KeyT type
-    typename ValueT,                            ///< ValueT type
-    typename OffsetT,                           ///< Signed integer type for global offsets
-    typename DecomposerT = detail::identity_decomposer_t>
+template <typename AgentRadixSortDownsweepPolicy,
+          bool IS_DESCENDING,
+          typename KeyT,
+          typename ValueT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
 struct AgentRadixSortDownsweep
 {
     //---------------------------------------------------------------------
@@ -135,7 +188,7 @@ struct AgentRadixSortDownsweep
     using ValuesItr = CacheModifiedInputIterator<LOAD_MODIFIER, ValueT, OffsetT>;
 
     // Radix ranking type to use
-    using BlockRadixRankT = 
+    using BlockRadixRankT =
       cub::detail::block_radix_rank_t<
         RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
 
@@ -202,7 +255,7 @@ struct AgentRadixSortDownsweep
     // The global scatter base offset for each digit (valid in the first RADIX_DIGITS threads)
     OffsetT bin_offset[BINS_TRACKED_PER_THREAD];
 
-    std::uint32_t current_bit; 
+    std::uint32_t current_bit;
     std::uint32_t num_bits;
 
     // Whether to short-cirucit
@@ -488,15 +541,15 @@ struct AgentRadixSortDownsweep
         OffsetT           relative_bin_offsets[ITEMS_PER_THREAD];
 
         // Assign default (min/max) value to all keys
-        bit_ordered_type default_key = IS_DESCENDING 
-                                     ? traits::min_raw_binary_key(decomposer) 
+        bit_ordered_type default_key = IS_DESCENDING
+                                     ? traits::min_raw_binary_key(decomposer)
                                      : traits::max_raw_binary_key(decomposer);
 
         // Load tile of keys
         LoadKeys(
             keys,
             block_offset,
-            valid_items, 
+            valid_items,
             default_key,
             Int2Type<FULL_TILE>(),
             Int2Type<LOAD_WARP_STRIPED>());

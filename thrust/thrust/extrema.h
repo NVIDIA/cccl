@@ -21,6 +21,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/execution_policy.h>
 #include <thrust/pair.h>
 
@@ -220,7 +226,7 @@ __host__ __device__
  *  // *result is 0
  *  \endcode
  *
- *  \see https://en.cppreference.com/w/cpp/algorithm/min_element 
+ *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
  */
 template<typename DerivedPolicy, typename ForwardIterator>
 __host__ __device__
@@ -258,7 +264,7 @@ ForwardIterator min_element(const thrust::detail::execution_policy_base<DerivedP
  *  // *result is 0
  *  \endcode
  *
- *  \see https://en.cppreference.com/w/cpp/algorithm/min_element 
+ *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
  */
 template <typename ForwardIterator>
 ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
@@ -323,7 +329,7 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
  *  // *smallest == {0,7}
  *  \endcode
  *
- *  \see https://en.cppreference.com/w/cpp/algorithm/min_element 
+ *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 __host__ __device__
@@ -383,7 +389,7 @@ ForwardIterator min_element(const thrust::detail::execution_policy_base<DerivedP
  *  // *smallest == {0,7}
  *  \endcode
  *
- *  \see https://en.cppreference.com/w/cpp/algorithm/min_element 
+ *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
  */
 template <typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator min_element(ForwardIterator first, ForwardIterator last,
@@ -425,7 +431,7 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last,
  *  // *result == 3
  *  \endcode
  *
- *  \see https://en.cppreference.com/w/cpp/algorithm/max_element 
+ *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
  */
 template<typename DerivedPolicy, typename ForwardIterator>
 __host__ __device__
@@ -462,7 +468,7 @@ ForwardIterator max_element(const thrust::detail::execution_policy_base<DerivedP
  *  // *result == 3
  *  \endcode
  *
- *  \see https://en.cppreference.com/w/cpp/algorithm/max_element 
+ *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
  */
 template <typename ForwardIterator>
 ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
@@ -527,7 +533,7 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
  *  // *largest == {6,1}
  *  \endcode
  *
- *  \see https://en.cppreference.com/w/cpp/algorithm/max_element 
+ *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 __host__ __device__
@@ -587,7 +593,7 @@ ForwardIterator max_element(const thrust::detail::execution_policy_base<DerivedP
  *  // *largest == {6,1}
  *  \endcode
  *
- *  \see https://en.cppreference.com/w/cpp/algorithm/max_element 
+ *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
  */
 template <typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator max_element(ForwardIterator first, ForwardIterator last,
@@ -665,7 +671,7 @@ thrust::pair<ForwardIterator,ForwardIterator> minmax_element(const thrust::detai
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
  */
 template <typename ForwardIterator>
-thrust::pair<ForwardIterator,ForwardIterator> minmax_element(ForwardIterator first, 
+thrust::pair<ForwardIterator,ForwardIterator> minmax_element(ForwardIterator first,
                                                              ForwardIterator last);
 
 
@@ -787,7 +793,7 @@ thrust::pair<ForwardIterator,ForwardIterator> minmax_element(const thrust::detai
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
  */
 template <typename ForwardIterator, typename BinaryPredicate>
-thrust::pair<ForwardIterator,ForwardIterator> minmax_element(ForwardIterator first, 
+thrust::pair<ForwardIterator,ForwardIterator> minmax_element(ForwardIterator first,
                                                              ForwardIterator last,
                                                              BinaryPredicate comp);
 

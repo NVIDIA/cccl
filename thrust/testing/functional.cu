@@ -7,9 +7,18 @@
 
 THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
 
+// There is a unfortunate miscompilation of the gcc-12 vectorizer leading to OOB writes
+// Adding this attribute suffices that this miscompilation does not appear anymore
+#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) && __GNUC__ >= 12
+#define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
+#else
+#define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
+#endif
+
 const size_t NUM_SAMPLES = 10000;
 
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestUnaryFunctional(void)
 {
     typedef typename InputVector::value_type  InputType;
@@ -28,6 +37,7 @@ void TestUnaryFunctional(void)
 }
 
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestBinaryFunctional(void)
 {
     typedef typename InputVector::value_type  InputType;
@@ -50,8 +60,6 @@ void TestBinaryFunctional(void)
     // Note: FP division is not bit-equal, even when nvcc is invoked with --prec-div
     ASSERT_ALMOST_EQUAL(output, std_output);
 }
-
-
 
 // XXX add bool to list
 // Instantiate a macro for all integer-like data types
@@ -175,6 +183,7 @@ DECLARE_UNARY_LOGICAL_FUNCTIONAL_UNITTEST(logical_not, LogicalNot);
 
 // Ad-hoc testing for other functionals
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestIdentityFunctional(void)
 {
     typedef typename Vector::value_type T;
@@ -191,6 +200,7 @@ void TestIdentityFunctional(void)
 DECLARE_VECTOR_UNITTEST(TestIdentityFunctional);
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestProject1stFunctional(void)
 {
     typedef typename Vector::value_type T;
@@ -211,6 +221,7 @@ void TestProject1stFunctional(void)
 DECLARE_VECTOR_UNITTEST(TestProject1stFunctional);
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestProject2ndFunctional(void)
 {
     typedef typename Vector::value_type T;
@@ -231,6 +242,7 @@ void TestProject2ndFunctional(void)
 DECLARE_VECTOR_UNITTEST(TestProject2ndFunctional);
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestMaximumFunctional(void)
 {
     typedef typename Vector::value_type T;
@@ -255,6 +267,7 @@ void TestMaximumFunctional(void)
 DECLARE_VECTOR_UNITTEST(TestMaximumFunctional);
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestMinimumFunctional(void)
 {
     typedef typename Vector::value_type T;
@@ -279,6 +292,7 @@ void TestMinimumFunctional(void)
 DECLARE_VECTOR_UNITTEST(TestMinimumFunctional);
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestNot1(void)
 {
     typedef typename Vector::value_type T;
@@ -314,6 +328,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestNot1);
       THRUST_CPP_DIALECT == 2011)
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestNot2(void)
 {
     typedef typename Vector::value_type T;

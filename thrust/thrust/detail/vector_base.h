@@ -22,11 +22,18 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <thrust/iterator/detail/normal_iterator.h>
 #include <thrust/iterator/reverse_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/config.h>
 #include <thrust/detail/contiguous_storage.h>
 
 #include <initializer_list>
@@ -134,13 +141,13 @@ template<typename T, typename Alloc>
      *  \param il The intializer_list.
      */
     vector_base(std::initializer_list<T> il);
-      
+
     /*! This constructor builds a \p vector_base from an intializer_list.
      *  \param il The intializer_list.
      *  \param alloc The allocator to use by this device_vector.
      */
     vector_base(std::initializer_list<T> il, const Alloc &alloc);
-    
+
     /*! Assign operator copies from an initializer_list
      *  \param il The initializer_list.
      */
@@ -445,7 +452,7 @@ template<typename T, typename Alloc>
      *  \param x The exemplar element to copy & insert.
      *  \return An iterator pointing to the newly inserted element.
      */
-    iterator insert(iterator position, const T &x); 
+    iterator insert(iterator position, const T &x);
 
     /*! This method inserts a copy of an exemplar value to a range at the
      *  specified position in this vector_base.
@@ -498,10 +505,10 @@ template<typename T, typename Alloc>
   private:
     // these methods resolve the ambiguity of the constructor template of form (Iterator, Iterator)
     template<typename IteratorOrIntegralType>
-      void init_dispatch(IteratorOrIntegralType begin, IteratorOrIntegralType end, false_type); 
+      void init_dispatch(IteratorOrIntegralType begin, IteratorOrIntegralType end, false_type);
 
     template<typename IteratorOrIntegralType>
-      void init_dispatch(IteratorOrIntegralType n, IteratorOrIntegralType value, true_type); 
+      void init_dispatch(IteratorOrIntegralType n, IteratorOrIntegralType value, true_type);
 
     template<typename InputIterator>
       void range_init(InputIterator first, InputIterator last);
@@ -589,7 +596,7 @@ template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
 bool operator==(const detail::vector_base<T1,Alloc1>& lhs,
                 const detail::vector_base<T2,Alloc2>& rhs);
-    
+
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
 bool operator==(const detail::vector_base<T1,Alloc1>& lhs,
@@ -610,7 +617,7 @@ template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
 bool operator!=(const detail::vector_base<T1,Alloc1>& lhs,
                 const detail::vector_base<T2,Alloc2>& rhs);
-    
+
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
 bool operator!=(const detail::vector_base<T1,Alloc1>& lhs,

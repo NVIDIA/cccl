@@ -26,6 +26,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/tuple.h>
 #include <thrust/detail/functional/value.h>
 #include <thrust/detail/functional/composite.h>
@@ -64,10 +70,6 @@ template<typename Eval>
 
   __host__ __device__
   actor(const Eval &base);
-
-  __host__ __device__
-  typename apply_actor<eval_type, thrust::null_type >::type
-  operator()(void) const;
 
   template <typename... Ts>
   __host__ __device__
@@ -122,7 +124,7 @@ template<typename Eval>
 {
   typedef typename thrust::detail::functional::apply_actor<
     thrust::detail::functional::actor<Eval>,
-    thrust::null_type
+    thrust::tuple<>
   >::type type;
 }; // end result_of
 

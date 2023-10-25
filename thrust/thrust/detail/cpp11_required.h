@@ -18,8 +18,14 @@
 
 #include <thrust/detail/config/cpp_dialect.h>
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #ifndef THRUST_CPP11_REQUIRED_NO_ERROR
-#  if THRUST_CPP_DIALECT < 2011 
+#  if THRUST_CPP_DIALECT < 2011
 #    error C++11 is required for this Thrust feature; please upgrade your compiler or pass the appropriate -std=c++XX flag to it.
 #  endif
 #endif

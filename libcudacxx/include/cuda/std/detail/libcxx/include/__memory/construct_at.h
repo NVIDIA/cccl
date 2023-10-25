@@ -27,13 +27,15 @@
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #ifdef _LIBCUDACXX_COMPILER_CLANG_CUDA
 #include <new>
 #endif // _LIBCUDACXX_COMPILER_CLANG_CUDA
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
 
 #if defined(__cuda_std__) && _LIBCUDACXX_STD_VER > 17 // need to backfill ::std::construct_at
 #ifndef _LIBCUDACXX_COMPILER_NVRTC

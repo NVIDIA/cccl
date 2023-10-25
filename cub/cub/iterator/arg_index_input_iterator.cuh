@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -33,10 +33,17 @@
 
 #pragma once
 
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <iterator>
 #include <iostream>
 
-#include "../config.cuh"
 #include "../thread/thread_load.cuh"
 #include "../thread/thread_store.cuh"
 
@@ -51,29 +58,29 @@
 CUB_NAMESPACE_BEGIN
 
 /**
- * \addtogroup UtilIterator
+ * @addtogroup UtilIterator
  * @{
  */
 
-
 /**
- * \brief A random-access input wrapper for pairing dereferenced values with their corresponding indices (forming \p KeyValuePair tuples).
+ * @brief A random-access input wrapper for pairing dereferenced values with their corresponding
+ *        indices (forming \p KeyValuePair tuples).
  *
- * \par Overview
- * - ArgIndexInputIteratorTwraps a random access input iterator \p itr of type \p InputIteratorT.
- *   Dereferencing an ArgIndexInputIteratorTat offset \p i produces a \p KeyValuePair value whose
- *   \p key field is \p i and whose \p value field is <tt>itr[i]</tt>.
+ * @par Overview
+ * - ArgIndexInputIteratorTwraps a random access input iterator @p itr of type @p InputIteratorT.
+ *   Dereferencing an ArgIndexInputIteratorTat offset @p i produces a @p KeyValuePair value whose
+ *   @p key field is @p i and whose @p value field is <tt>itr[i]</tt>.
  * - Can be used with any data type.
  * - Can be constructed, manipulated, and exchanged within and between host and device
  *   functions.  Wrapped host memory can only be dereferenced on the host, and wrapped
  *   device memory can only be dereferenced on the device.
  * - Compatible with Thrust API v1.7 or newer.
  *
- * \par Snippet
- * The code snippet below illustrates the use of \p ArgIndexInputIteratorTto
+ * @par Snippet
+ * The code snippet below illustrates the use of @p ArgIndexInputIteratorTto
  * dereference an array of doubles
- * \par
- * \code
+ * @par
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/iterator/arg_index_input_iterator.cuh>
  *
  * // Declare, allocate, and initialize a device array
@@ -95,11 +102,16 @@ CUB_NAMESPACE_BEGIN
  *   item_offset_pair.value,
  *   item_offset_pair.key);   // 9.0 @ 6
  *
- * \endcode
+ * @endcode
  *
- * \tparam InputIteratorT       The value type of the wrapped input iterator
- * \tparam OffsetT              The difference type of this iterator (Default: \p ptrdiff_t)
- * \tparam OutputValueT         The paired value type of the <offset,value> tuple (Default: value type of input iterator)
+ * @tparam InputIteratorT
+ *   The value type of the wrapped input iterator
+ *
+ * @tparam OffsetT
+ *   The difference type of this iterator (Default: @p ptrdiff_t)
+ *
+ * @tparam OutputValueT
+ *   The paired value type of the <offset,value> tuple (Default: value type of input iterator)
  */
 template <
     typename    InputIteratorT,
@@ -110,22 +122,35 @@ class ArgIndexInputIterator
 public:
 
     // Required iterator traits
-    typedef ArgIndexInputIterator                       self_type;              ///< My own type
-    typedef OffsetT                                     difference_type;        ///< Type to express the result of subtracting one iterator from another
-    typedef KeyValuePair<difference_type, OutputValueT> value_type;             ///< The type of the element the iterator can point to
-    typedef value_type*                                 pointer;                ///< The type of a pointer to an element the iterator can point to
-    typedef value_type                                  reference;              ///< The type of a reference to an element the iterator can point to
+
+    /// My own type
+    typedef ArgIndexInputIterator self_type;
+
+    /// Type to express the result of subtracting one iterator from another
+    typedef OffsetT difference_type;
+
+    /// The type of the element the iterator can point to
+    typedef KeyValuePair<difference_type, OutputValueT> value_type;
+
+    /// The type of a pointer to an element the iterator can point to
+    typedef value_type *pointer;
+
+    /// The type of a reference to an element the iterator can point to
+    typedef value_type reference;
 
 #if (THRUST_VERSION >= 100700)
     // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
+
+    /// The iterator category
     typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
         THRUST_NS_QUALIFIER::any_system_tag,
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        ///< The iterator category
+      >::type iterator_category;                                        
 #else
-    typedef std::random_access_iterator_tag     iterator_category;      ///< The iterator category
+    /// The iterator category
+    typedef std::random_access_iterator_tag     iterator_category;      
 #endif  // THRUST_VERSION
 
 private:
@@ -135,21 +160,25 @@ private:
 
 public:
 
-    /// Constructor
-    __host__ __device__ __forceinline__ ArgIndexInputIterator(
-        InputIteratorT  itr,            ///< Input iterator to wrap
-        difference_type offset = 0)     ///< OffsetT (in items) from \p itr denoting the position of the iterator
-    :
-        itr(itr),
-        offset(offset)
-    {}
+    /**
+     * @param itr 
+     *   Input iterator to wrap
+     *
+     * @param offset 
+     *   OffsetT (in items) from @p itr denoting the position of the iterator
+     */
+  __host__ __device__ __forceinline__ ArgIndexInputIterator(InputIteratorT itr,
+                                                            difference_type offset = 0)
+      : itr(itr)
+      , offset(offset)
+  {}
 
-    /// Postfix increment
-    __host__ __device__ __forceinline__ self_type operator++(int)
-    {
-        self_type retval = *this;
-        offset++;
-        return retval;
+  /// Postfix increment
+  __host__ __device__ __forceinline__ self_type operator++(int)
+  {
+    self_type retval = *this;
+    offset++;
+    return retval;
     }
 
     /// Prefix increment

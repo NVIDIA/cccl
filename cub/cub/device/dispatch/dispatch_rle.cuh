@@ -34,8 +34,15 @@
 
 #pragma once
 
+#include "../../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/agent/agent_rle.cuh>
-#include <cub/config.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
 #include <cub/grid/grid_queue.cuh>
@@ -172,8 +179,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam SelectedPolicy 
- *   Implementation detail, do not specify directly, requirements on the 
+ * @tparam SelectedPolicy
+ *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
 template <typename InputIteratorT,

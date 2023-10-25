@@ -16,13 +16,19 @@
 
 
 /*! \file for_each.h
- *  \brief Defines the interface for a function that executes a 
+ *  \brief Defines the interface for a function that executes a
  *  function or functional for each value in a given range.
  */
 
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/system/omp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN

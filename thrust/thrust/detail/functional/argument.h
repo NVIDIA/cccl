@@ -26,6 +26,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/tuple.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -41,9 +47,9 @@ template<unsigned int i, typename Env>
 };
 
 template<unsigned int i>
-  struct argument_helper<i,thrust::null_type>
+  struct argument_helper<i,thrust::tuple<>>
 {
-  typedef thrust::null_type type;
+  typedef thrust::tuple<> type;
 };
 
 
@@ -52,7 +58,7 @@ template<unsigned int i>
 {
   public:
     template<typename Env>
-      struct result
+    struct result
         : argument_helper<i,Env>
     {
     };

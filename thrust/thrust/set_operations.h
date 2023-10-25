@@ -22,6 +22,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/execution_policy.h>
 #include <thrust/pair.h>
 
@@ -1771,7 +1777,7 @@ template<typename InputIterator1,
  *  ...
  *  int A_keys[6] = {1, 3, 5, 7, 9, 11};
  *  int A_vals[6] = {0, 0, 0, 0, 0,  0};
- *  
+ *
  *  int B_keys[7] = {1, 1, 2, 3, 5,  8, 13};
  *
  *  int keys_result[7];
@@ -1869,7 +1875,7 @@ __host__ __device__
  *  ...
  *  int A_keys[6] = {1, 3, 5, 7, 9, 11};
  *  int A_vals[6] = {0, 0, 0, 0, 0,  0};
- *  
+ *
  *  int B_keys[7] = {1, 1, 2, 3, 5,  8, 13};
  *
  *  int keys_result[7];
@@ -1973,7 +1979,7 @@ template<typename InputIterator1,
  *  ...
  *  int A_keys[6] = {11, 9, 7, 5, 3, 1};
  *  int A_vals[6] = { 0, 0, 0, 0, 0, 0};
- *  
+ *
  *  int B_keys[7] = {13, 8, 5, 3, 2, 1, 1};
  *
  *  int keys_result[7];
@@ -2076,7 +2082,7 @@ __host__ __device__
  *  ...
  *  int A_keys[6] = {11, 9, 7, 5, 3, 1};
  *  int A_vals[6] = { 0, 0, 0, 0, 0, 0};
- *  
+ *
  *  int B_keys[7] = {13, 8, 5, 3, 2, 1, 1};
  *
  *  int keys_result[7];

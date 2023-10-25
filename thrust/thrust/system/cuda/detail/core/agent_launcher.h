@@ -28,6 +28,12 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/detail/device_synchronize.cuh>
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
@@ -35,30 +41,29 @@
 #include <thrust/system/cuda/detail/core/util.h>
 #include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 
-#include <cuda/std/version> // _LIBCUDACXX_HIDDEN, _LIBCUDACXX_{CLANG,GCC}_DIAGNOSTIC_IGNORED
-
 #include <cassert>
 
 #include <nv/target>
-
-THRUST_NAMESPACE_BEGIN
-namespace cuda_cub {
-namespace core {
 
 /**
  * @def THRUST_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
  * If defined, the default suppression of kernel visibility attribute warning is disabled.
  */
 #if !defined(THRUST_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
-_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wattributes")
-_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wattributes")                      
-#if !defined(_LIBCUDACXX_COMPILER_NVHPC_CUDA)
-_LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(attribute_requires_external_linkage)
-#endif
-#endif
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
+#if !defined(_CCCL_CUDA_COMPILER_NVHPC)
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
+#endif // !_LIBCUDACXX_COMPILER_NVHPC_CUDA
+#endif // !THRUST_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
+
+THRUST_NAMESPACE_BEGIN
+
+namespace cuda_cub {
+namespace core {
 
 #ifndef THRUST_DETAIL_KERNEL_ATTRIBUTES
-#define THRUST_DETAIL_KERNEL_ATTRIBUTES __global__ _LIBCUDACXX_HIDDEN
+#define THRUST_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
 #endif
 
 #if defined(__CUDA_ARCH__) || defined(_NVHPC_CUDA)
@@ -541,7 +546,7 @@ _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(attribute_requires_external_linkage)
     THRUST_RUNTIME_FUNCTION
     void print_info(K k) const
     {
-      #if THRUST_DEBUG_SYNC_FLAG 
+      #if THRUST_DEBUG_SYNC_FLAG
       cuda_optional<int> occ = max_sm_occupancy(k);
       const int ptx_version = core::get_ptx_version();
       if (count > 0)
@@ -1159,5 +1164,7 @@ _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(attribute_requires_external_linkage)
 
 } // namespace core
 } // namespace cuda_cub
+
 THRUST_NAMESPACE_END
+
 #endif

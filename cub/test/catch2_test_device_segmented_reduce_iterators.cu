@@ -37,8 +37,6 @@
 
 #include "catch2_test_device_reduce.cuh"
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "c2h/custom_type.cuh"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"

@@ -22,6 +22,12 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/pair.h>
@@ -34,8 +40,8 @@ THRUST_NAMESPACE_BEGIN
 
 
 /*! For each group of consecutive elements in the range <tt>[first, last)</tt>
- *  with the same value, \p unique removes all but the first element of 
- *  the group. The return value is an iterator \c new_last such that 
+ *  with the same value, \p unique removes all but the first element of
+ *  the group. The return value is an iterator \c new_last such that
  *  no two consecutive elements in the range <tt>[first, new_last)</tt> are
  *  equal. The iterators in the range <tt>[new_last, last)</tt> are all still
  *  dereferenceable, but the elements that they point to are unspecified.
@@ -83,8 +89,8 @@ ForwardIterator unique(const thrust::detail::execution_policy_base<DerivedPolicy
 
 
 /*! For each group of consecutive elements in the range <tt>[first, last)</tt>
- *  with the same value, \p unique removes all but the first element of 
- *  the group. The return value is an iterator \c new_last such that 
+ *  with the same value, \p unique removes all but the first element of
+ *  the group. The return value is an iterator \c new_last such that
  *  no two consecutive elements in the range <tt>[first, new_last)</tt> are
  *  equal. The iterators in the range <tt>[new_last, last)</tt> are all still
  *  dereferenceable, but the elements that they point to are unspecified.
@@ -123,8 +129,8 @@ ForwardIterator unique(ForwardIterator first,
 
 
 /*! For each group of consecutive elements in the range <tt>[first, last)</tt>
- *  with the same value, \p unique removes all but the first element of 
- *  the group. The return value is an iterator \c new_last such that 
+ *  with the same value, \p unique removes all but the first element of
+ *  the group. The return value is an iterator \c new_last such that
  *  no two consecutive elements in the range <tt>[first, new_last)</tt> are
  *  equal. The iterators in the range <tt>[new_last, last)</tt> are all still
  *  dereferenceable, but the elements that they point to are unspecified.
@@ -177,8 +183,8 @@ ForwardIterator unique(const thrust::detail::execution_policy_base<DerivedPolicy
 
 
 /*! For each group of consecutive elements in the range <tt>[first, last)</tt>
- *  with the same value, \p unique removes all but the first element of 
- *  the group. The return value is an iterator \c new_last such that 
+ *  with the same value, \p unique removes all but the first element of
+ *  the group. The return value is an iterator \c new_last such that
  *  no two consecutive elements in the range <tt>[first, new_last)</tt> are
  *  equal. The iterators in the range <tt>[new_last, last)</tt> are all still
  *  dereferenceable, but the elements that they point to are unspecified.
@@ -224,14 +230,14 @@ ForwardIterator unique(ForwardIterator first,
 /*! \p unique_copy copies elements from the range <tt>[first, last)</tt>
  * to a range beginning with \p result, except that in a consecutive group
  * of duplicate elements only the first one is copied. The return value
- * is the end of the range to which the elements are copied. 
+ * is the end of the range to which the elements are copied.
  *
  * The reason there are two different versions of unique_copy is that there
  * are two different definitions of what it means for a consecutive group of
  * elements to be duplicates. In the first version, the test is simple
  * equality: the elements in a range <tt>[f, l)</tt> are duplicates if,
- * for every iterator \p i in the range, either <tt>i == f</tt> or else 
- * <tt>*i == *(i-1)</tt>. In the second, the test is an arbitrary 
+ * for every iterator \p i in the range, either <tt>i == f</tt> or else
+ * <tt>*i == *(i-1)</tt>. In the second, the test is an arbitrary
  * \p BinaryPredicate \p binary_pred: the elements in <tt>[f, l)</tt> are
  * duplicates if, for every iterator \p i in the range, either <tt>i == f</tt>
  * or else <tt>binary_pred(*i, *(i-1))</tt> is \p true.
@@ -286,14 +292,14 @@ OutputIterator unique_copy(const thrust::detail::execution_policy_base<DerivedPo
 /*! \p unique_copy copies elements from the range <tt>[first, last)</tt>
  * to a range beginning with \p result, except that in a consecutive group
  * of duplicate elements only the first one is copied. The return value
- * is the end of the range to which the elements are copied. 
+ * is the end of the range to which the elements are copied.
  *
  * The reason there are two different versions of unique_copy is that there
  * are two different definitions of what it means for a consecutive group of
  * elements to be duplicates. In the first version, the test is simple
  * equality: the elements in a range <tt>[f, l)</tt> are duplicates if,
- * for every iterator \p i in the range, either <tt>i == f</tt> or else 
- * <tt>*i == *(i-1)</tt>. In the second, the test is an arbitrary 
+ * for every iterator \p i in the range, either <tt>i == f</tt> or else
+ * <tt>*i == *(i-1)</tt>. In the second, the test is an arbitrary
  * \p BinaryPredicate \p binary_pred: the elements in <tt>[f, l)</tt> are
  * duplicates if, for every iterator \p i in the range, either <tt>i == f</tt>
  * or else <tt>binary_pred(*i, *(i-1))</tt> is \p true.
@@ -339,9 +345,9 @@ OutputIterator unique_copy(InputIterator first,
 /*! \p unique_copy copies elements from the range <tt>[first, last)</tt>
  * to a range beginning with \p result, except that in a consecutive group
  * of duplicate elements only the first one is copied. The return value
- * is the end of the range to which the elements are copied. 
+ * is the end of the range to which the elements are copied.
  *
- * This version of \p unique_copy uses the function object \c binary_pred 
+ * This version of \p unique_copy uses the function object \c binary_pred
  * to test for equality.
  *
  * The algorithm's execution is parallelized as determined by \p exec.
@@ -391,14 +397,14 @@ OutputIterator unique_copy(const thrust::detail::execution_policy_base<DerivedPo
                            InputIterator last,
                            OutputIterator result,
                            BinaryPredicate binary_pred);
-                       
+
 
 /*! \p unique_copy copies elements from the range <tt>[first, last)</tt>
  * to a range beginning with \p result, except that in a consecutive group
  * of duplicate elements only the first one is copied. The return value
- * is the end of the range to which the elements are copied. 
+ * is the end of the range to which the elements are copied.
  *
- * This version of \p unique_copy uses the function object \c binary_pred 
+ * This version of \p unique_copy uses the function object \c binary_pred
  * to test for equality.
  *
  *  \param first The beginning of the input range.
@@ -443,16 +449,16 @@ OutputIterator unique_copy(InputIterator first,
 
 /*! \p unique_by_key is a generalization of \p unique to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p unique_by_key removes all but the first element of 
+ *  that are equal, \p unique_by_key removes all but the first element of
  *  the group.  Similarly, the corresponding values in the range
- *  <tt>[values_first, values_first + (keys_last - keys_first))</tt> 
+ *  <tt>[values_first, values_first + (keys_last - keys_first))</tt>
  *  are also removed.
  *
  *  The return value is a \p pair of iterators <tt>(new_keys_last,new_values_last)</tt>
  *  such that no two consecutive elements in the range <tt>[keys_first, new_keys_last)</tt>
  *  are equal.
  *
- *  This version of \p unique_by_key uses \c operator== to test for equality and 
+ *  This version of \p unique_by_key uses \c operator== to test for equality and
  *  \c project1st to reduce values with equal keys.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
@@ -501,23 +507,23 @@ template<typename DerivedPolicy,
 __host__ __device__
   thrust::pair<ForwardIterator1,ForwardIterator2>
   unique_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                ForwardIterator1 keys_first, 
+                ForwardIterator1 keys_first,
                 ForwardIterator1 keys_last,
                 ForwardIterator2 values_first);
 
 
 /*! \p unique_by_key is a generalization of \p unique to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p unique_by_key removes all but the first element of 
+ *  that are equal, \p unique_by_key removes all but the first element of
  *  the group.  Similarly, the corresponding values in the range
- *  <tt>[values_first, values_first + (keys_last - keys_first))</tt> 
+ *  <tt>[values_first, values_first + (keys_last - keys_first))</tt>
  *  are also removed.
  *
  *  The return value is a \p pair of iterators <tt>(new_keys_last,new_values_last)</tt>
  *  such that no two consecutive elements in the range <tt>[keys_first, new_keys_last)</tt>
  *  are equal.
  *
- *  This version of \p unique_by_key uses \c operator== to test for equality and 
+ *  This version of \p unique_by_key uses \c operator== to test for equality and
  *  \c project1st to reduce values with equal keys.
  *
  *  \param keys_first The beginning of the key range.
@@ -557,16 +563,16 @@ __host__ __device__
 template<typename ForwardIterator1,
          typename ForwardIterator2>
   thrust::pair<ForwardIterator1,ForwardIterator2>
-  unique_by_key(ForwardIterator1 keys_first, 
+  unique_by_key(ForwardIterator1 keys_first,
                 ForwardIterator1 keys_last,
                 ForwardIterator2 values_first);
 
 
 /*! \p unique_by_key is a generalization of \p unique to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p unique_by_key removes all but the first element of 
+ *  that are equal, \p unique_by_key removes all but the first element of
  *  the group.  Similarly, the corresponding values in the range
- *  <tt>[values_first, values_first + (keys_last - keys_first))</tt> 
+ *  <tt>[values_first, values_first + (keys_last - keys_first))</tt>
  *  are also removed.
  *
  *  This version of \p unique_by_key uses the function object \c binary_pred
@@ -622,7 +628,7 @@ template<typename DerivedPolicy,
 __host__ __device__
   thrust::pair<ForwardIterator1,ForwardIterator2>
     unique_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                  ForwardIterator1 keys_first, 
+                  ForwardIterator1 keys_first,
                   ForwardIterator1 keys_last,
                   ForwardIterator2 values_first,
                   BinaryPredicate binary_pred);
@@ -630,9 +636,9 @@ __host__ __device__
 
 /*! \p unique_by_key is a generalization of \p unique to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p unique_by_key removes all but the first element of 
+ *  that are equal, \p unique_by_key removes all but the first element of
  *  the group.  Similarly, the corresponding values in the range
- *  <tt>[values_first, values_first + (keys_last - keys_first))</tt> 
+ *  <tt>[values_first, values_first + (keys_last - keys_first))</tt>
  *  are also removed.
  *
  *  This version of \p unique_by_key uses the function object \c binary_pred
@@ -679,7 +685,7 @@ template<typename ForwardIterator1,
          typename ForwardIterator2,
          typename BinaryPredicate>
   thrust::pair<ForwardIterator1,ForwardIterator2>
-  unique_by_key(ForwardIterator1 keys_first, 
+  unique_by_key(ForwardIterator1 keys_first,
                 ForwardIterator1 keys_last,
                 ForwardIterator2 values_first,
                 BinaryPredicate binary_pred);
@@ -748,7 +754,7 @@ template<typename DerivedPolicy,
 __host__ __device__
   thrust::pair<OutputIterator1,OutputIterator2>
     unique_by_key_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                       InputIterator1 keys_first, 
+                       InputIterator1 keys_first,
                        InputIterator1 keys_last,
                        InputIterator2 values_first,
                        OutputIterator1 keys_result,
@@ -809,7 +815,7 @@ template<typename InputIterator1,
          typename OutputIterator1,
          typename OutputIterator2>
   thrust::pair<OutputIterator1,OutputIterator2>
-  unique_by_key_copy(InputIterator1 keys_first, 
+  unique_by_key_copy(InputIterator1 keys_first,
                      InputIterator1 keys_last,
                      InputIterator2 values_first,
                      OutputIterator1 keys_result,
@@ -883,7 +889,7 @@ template<typename DerivedPolicy,
 __host__ __device__
   thrust::pair<OutputIterator1,OutputIterator2>
     unique_by_key_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                       InputIterator1 keys_first, 
+                       InputIterator1 keys_first,
                        InputIterator1 keys_last,
                        InputIterator2 values_first,
                        OutputIterator1 keys_result,
@@ -949,7 +955,7 @@ template<typename InputIterator1,
          typename OutputIterator2,
          typename BinaryPredicate>
   thrust::pair<OutputIterator1,OutputIterator2>
-  unique_by_key_copy(InputIterator1 keys_first, 
+  unique_by_key_copy(InputIterator1 keys_first,
                      InputIterator1 keys_last,
                      InputIterator2 values_first,
                      OutputIterator1 keys_result,
@@ -958,7 +964,7 @@ template<typename InputIterator1,
 
 
 /*! \p unique_count counts runs of equal elements in the range <tt>[first, last)</tt>
- *  with the same value, 
+ *  with the same value,
  *
  *  This version of \p unique_count uses the function object \p binary_pred to test for equality.
  *
@@ -1005,7 +1011,7 @@ __host__ __device__
 
 
 /*! \p unique_count counts runs of equal elements in the range <tt>[first, last)</tt>
- *  with the same value, 
+ *  with the same value,
  *
  *  This version of \p unique_count uses \c operator== to test for equality.
  *
@@ -1050,7 +1056,7 @@ __host__ __device__
 
 
 /*! \p unique_count counts runs of equal elements in the range <tt>[first, last)</tt>
- *  with the same value, 
+ *  with the same value,
  *
  *  This version of \p unique_count uses the function object \p binary_pred to test for equality.
  *
@@ -1092,7 +1098,7 @@ __host__ __device__
 
 
 /*! \p unique_count counts runs of equal elements in the range <tt>[first, last)</tt>
- *  with the same value, 
+ *  with the same value,
  *
  *  This version of \p unique_count uses \c operator== to test for equality.
  *

@@ -18,6 +18,12 @@
 #include <__config>
 #endif //__cuda_std__
 
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #if _LIBCUDACXX_STD_VER > 11
 
 #define _LIBCUDACXX_PP_CAT_(_Xp, ...) _Xp##__VA_ARGS__
@@ -237,36 +243,28 @@
 // _LIBCUDACXX_TEMPLATE
 // Usage:
 //   _LIBCUDACXX_TEMPLATE(typename A, typename _Bp)
-//     (requires Concept1<A> _LIBCUDACXX_AND Concept2<_Bp>)
+//     _LIBCUDACXX_REQUIRES( Concept1<A> _LIBCUDACXX_AND Concept2<_Bp>)
 //   void foo(A a, _Bp b)
 //   {}
 #if (defined(__cpp_concepts) && _LIBCUDACXX_STD_VER >= 20)
-#define _LIBCUDACXX_TEMPLATE(...)                                              \
-  template <__VA_ARGS__> _LIBCUDACXX_PP_EXPAND /**/
-#define _LIBCUDACXX_AND &&                     /**/
-#define _LIBCUDACXX_TRAILING_REQUIRES(...)                                     \
-  -> __VA_ARGS__ _LIBCUDACXX_PP_EXPAND
+#define _LIBCUDACXX_TEMPLATE(...) template <__VA_ARGS__>
+#define _LIBCUDACXX_REQUIRES(...) requires __VA_ARGS__
+#define _LIBCUDACXX_AND &&
+#define _LIBCUDACXX_TRAILING_REQUIRES(...) -> __VA_ARGS__ requires _LIBCUDACXX_PP_EXPAND
 #else
-#define _LIBCUDACXX_TEMPLATE(...)                                              \
-  template <__VA_ARGS__ _LIBCUDACXX_TEMPLATE_SFINAE_AUX_ /**/
-#define _LIBCUDACXX_AND                                                        \
-  &&_LIBCUDACXX_true_, int > = 0, _Concept::_Enable_if_t < /**/
+#define _LIBCUDACXX_TEMPLATE(...) template <__VA_ARGS__
+#define _LIBCUDACXX_REQUIRES(...)                                              \
+  , bool _LIBCUDACXX_true_ = true,                                             \
+         _Concept::_Enable_if_t <__VA_ARGS__ &&                                \
+             _LIBCUDACXX_true_,                                                \
+         int > = 0 > /**/
+#define _LIBCUDACXX_AND \
+  && _LIBCUDACXX_true_, int > = 0, _Concept::_Enable_if_t <
+#define _LIBCUDACXX_TRAILING_REQUIRES_AUX_(...)                                \
+  , __VA_ARGS__>
 #define _LIBCUDACXX_TRAILING_REQUIRES(...)                                     \
   -> _Concept::_Requires_t<__VA_ARGS__ _LIBCUDACXX_TRAILING_REQUIRES_AUX_
 #endif
-
-#define _LIBCUDACXX_TEMPLATE_SFINAE(...)                                       \
-  template <__VA_ARGS__ _LIBCUDACXX_TEMPLATE_SFINAE_AUX_ /**/
-#define _LIBCUDACXX_TEMPLATE_SFINAE_AUX_(...)                                  \
-  , bool _LIBCUDACXX_true_ = true,                                             \
-         _Concept::_Enable_if_t <                                              \
-                 _LIBCUDACXX_PP_CAT(_LIBCUDACXX_TEMPLATE_SFINAE_AUX_3_,        \
-                                    __VA_ARGS__) &&                            \
-             _LIBCUDACXX_true_,                                                \
-         int > = 0 > /**/
-#define _LIBCUDACXX_TRAILING_REQUIRES_AUX_(...)                                \
-  , _LIBCUDACXX_PP_CAT(_LIBCUDACXX_TEMPLATE_SFINAE_AUX_3_, __VA_ARGS__)> /**/
-#define _LIBCUDACXX_TEMPLATE_SFINAE_AUX_3_requires
 
 namespace _Concept {
 template <bool> struct _Select {};

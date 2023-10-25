@@ -19,9 +19,11 @@
 #include "../__concepts/semiregular.h"
 #include "../__utility/move.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
-#endif
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 #if _LIBCUDACXX_STD_VER > 14
 
@@ -42,12 +44,12 @@ public:
   explicit move_sentinel(_Sent __s) : __last_(_CUDA_VSTD::move(__s)) {}
 
   _LIBCUDACXX_TEMPLATE(class _S2)
-    (requires convertible_to<const _S2&, _Sent>)
+    _LIBCUDACXX_REQUIRES( convertible_to<const _S2&, _Sent>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   move_sentinel(const move_sentinel<_S2>& __s) : __last_(__s.base()) {}
 
   _LIBCUDACXX_TEMPLATE(class _S2)
-    (requires assignable_from<const _S2&, _Sent>)
+    _LIBCUDACXX_REQUIRES( assignable_from<const _S2&, _Sent>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   move_sentinel& operator=(const move_sentinel<_S2>& __s)
     { __last_ = __s.base(); return *this; }

@@ -34,7 +34,14 @@
 
 #pragma once
 
-#include <cub/config.cuh>
+#include "../config.cuh"
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
