@@ -18,9 +18,10 @@
 /*
  * Public integral constant types and values for ".variant"s:
  *
- * - .sem
- * - .space
- * - .scope
+ * - .sem:     acquire, release, ..
+ * - .space:   global, shared, constant, ..
+ * - .scope:   cta, cluster, gpu, ..
+ * - .op:      add, min, cas, ..
  *
  * For each .variant, the code below defines:
  * - An enum `dot_variant` with each possible value
@@ -86,8 +87,22 @@ enum class dot_scope
   sys
 };
 
-template <dot_sem sem>
-using sem_t         = _CUDA_VSTD::integral_constant<dot_sem, sem>;
+enum class dot_op
+{
+  add,
+  dec,
+  inc,
+  max,
+  min,
+  and_op, // Using and_op, as `and, or, xor` are reserved in C++.
+  or_op,
+  xor_op,
+  cas,
+  exch
+};
+
+template <dot_sem __sem>
+using sem_t         = _CUDA_VSTD::integral_constant<dot_sem, __sem>;
 using sem_acq_rel_t = sem_t<dot_sem::acq_rel>;
 using sem_acquire_t = sem_t<dot_sem::acquire>;
 using sem_relaxed_t = sem_t<dot_sem::relaxed>;
@@ -102,8 +117,8 @@ static constexpr sem_release_t sem_release{};
 static constexpr sem_sc_t sem_sc{};
 static constexpr sem_weak_t sem_weak{};
 
-template <dot_space spc>
-using space_t                = _CUDA_VSTD::integral_constant<dot_space, spc>;
+template <dot_space __spc>
+using space_t                = _CUDA_VSTD::integral_constant<dot_space, __spc>;
 using space_const_mem_t      = space_t<dot_space::const_mem>;
 using space_global_t         = space_t<dot_space::global>;
 using space_local_t          = space_t<dot_space::local>;
@@ -124,8 +139,8 @@ static constexpr space_shared_cluster_t space_shared_cluster{};
 static constexpr space_sreg_t space_sreg{};
 static constexpr space_tex_t space_tex{};
 
-template <dot_scope scope>
-using scope_t         = _CUDA_VSTD::integral_constant<dot_scope, scope>;
+template <dot_scope __scope>
+using scope_t         = _CUDA_VSTD::integral_constant<dot_scope, __scope>;
 using scope_cluster_t = scope_t<dot_scope::cluster>;
 using scope_cta_t     = scope_t<dot_scope::cta>;
 using scope_gpu_t     = scope_t<dot_scope::gpu>;
@@ -135,6 +150,30 @@ static constexpr scope_cluster_t scope_cluster{};
 static constexpr scope_cta_t scope_cta{};
 static constexpr scope_gpu_t scope_gpu{};
 static constexpr scope_sys_t scope_sys{};
+
+template <dot_op __op>
+using op_t        = _CUDA_VSTD::integral_constant<dot_op, __op>;
+using op_add_t    = op_t<dot_op::add>;
+using op_dec_t    = op_t<dot_op::dec>;
+using op_inc_t    = op_t<dot_op::inc>;
+using op_max_t    = op_t<dot_op::max>;
+using op_min_t    = op_t<dot_op::min>;
+using op_and_op_t = op_t<dot_op::and_op>;
+using op_or_op_t  = op_t<dot_op::or_op>;
+using op_xor_op_t = op_t<dot_op::xor_op>;
+using op_cas_t    = op_t<dot_op::cas>;
+using op_exch_t   = op_t<dot_op::exch>;
+
+static constexpr op_add_t op_add{};
+static constexpr op_dec_t op_dec{};
+static constexpr op_inc_t op_inc{};
+static constexpr op_max_t op_max{};
+static constexpr op_min_t op_min{};
+static constexpr op_and_op_t op_and_op{};
+static constexpr op_or_op_t op_or_op{};
+static constexpr op_xor_op_t op_xor_op{};
+static constexpr op_cas_t op_cas{};
+static constexpr op_exch_t op_exch{};
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
