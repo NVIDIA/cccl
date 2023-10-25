@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef PTX_HELPER_FUNCTIONS_H_
-#define PTX_HELPER_FUNCTIONS_H_
+#ifndef _CUDA_PTX_HELPER_FUNCTIONS_H_
+#define _CUDA_PTX_HELPER_FUNCTIONS_H_
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
@@ -44,4 +44,4 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val)
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
-#endif // PTX_HELPER_FUNCTIONS_H_
+#endif // _CUDA_PTX_HELPER_FUNCTIONS_H_
