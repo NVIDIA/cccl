@@ -16,7 +16,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
-// Private helper functions
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_smem_ptr(const void* __ptr)
 {
   return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
