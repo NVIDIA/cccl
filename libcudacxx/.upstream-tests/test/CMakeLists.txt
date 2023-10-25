@@ -120,13 +120,17 @@ add_subdirectory(host_only)
 
 find_program(libcudacxx_LIT lit REQUIRED)
 
+set(libcudacxx_LIT_FLAGS_DEFAULT "-vv --no-progress-bar")
+set(libcudacxx_LIT_FLAGS "" CACHE STRING "Flags for libcudacxx's lit test suite.")
+set(libcudacxx_LIT_FLAGS "${libcudacxx_LIT_FLAGS_DEFAULT} ${libcudacxx_LIT_FLAGS}")
+
 if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
   # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
   # Only executed if explicitly requested.
   add_custom_target(libcudacxx.test.lit.precompile
     "${CMAKE_COMMAND}" -E env
       "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-    "${libcudacxx_LIT}" -vv --no-progress-bar
+    "${libcudacxx_LIT}" "${libcudacxx_LIT_FLAGS}"
       "-Dexecutor=\"NoopExecutor()\"" # Don't run the compiled tests.
       "${libcudacxx_SOURCE_DIR}/.upstream-tests/test"
   )
@@ -140,7 +144,7 @@ set(libcudacxx_LIT_PARALLEL_LEVEL 8 CACHE STRING
 add_test(NAME libcudacxx.test.lit COMMAND
   "${CMAKE_COMMAND}" -E env
     "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-  "${libcudacxx_LIT}" -vv --no-progress-bar
+  "${libcudacxx_LIT}" "${libcudacxx_LIT_FLAGS}"
     -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
     "${libcudacxx_SOURCE_DIR}/.upstream-tests/test"
 )
