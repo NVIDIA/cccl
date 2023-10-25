@@ -13,6 +13,8 @@
 #ifndef PARALLEL_SYNCHRONIZATION_AND_COMMUNICATION_INSTRUCTIONS_MBARRIER_H_
 #define PARALLEL_SYNCHRONIZATION_AND_COMMUNICATION_INSTRUCTIONS_MBARRIER_H_
 
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+
 /*
  *  9.7.12.15. Parallel Synchronization and Communication Instructions: mbarrier
  *   https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier
@@ -64,7 +66,7 @@ _LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
   }
   return __token;
 }
-#ifdef // _LIBCUDACXX_PTX_ISA_78_AVAILABLE
+#endif // _LIBCUDACXX_PTX_ISA_78_AVAILABLE
 
 #if defined(_LIBCUDACXX_PTX_ISA_78_AVAILABLE) && defined(_LIBCUDACXX_PTX_SM_90_AVAILABLE)
 template <dot_scope _Sco>
@@ -93,7 +95,7 @@ _LIBCUDACXX_DEVICE inline void mbarrier_arrive_expect_tx(
       : "memory");
   }
 }
-#ifdef // _LIBCUDACXX_PTX_ISA_78_AVAILABLE
+#endif // _LIBCUDACXX_PTX_ISA_78_AVAILABLE
 
 
 // 9.7.12.15.14. Parallel Synchronization and Communication Instructions: mbarrier.arrive_drop
@@ -108,6 +110,6 @@ _LIBCUDACXX_DEVICE inline void mbarrier_arrive_expect_tx(
 // 9.7.12.15.17. Parallel Synchronization and Communication Instructions: mbarrier.pending_count
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-pending-count
 
-
+_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
 #endif // PARALLEL_SYNCHRONIZATION_AND_COMMUNICATION_INSTRUCTIONS_MBARRIER_H_

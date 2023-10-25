@@ -24,7 +24,12 @@ int main(int, char**)
 {
     NV_IF_TARGET(NV_IS_DEVICE, (
         // Do not execute. Just check if below PTX compiles (that is: assembles) without error.
-        if (false) {
+
+        // This condition always evaluates to false, but the compiler does not
+        // reason through it. This avoids dead code elimination.
+        const bool non_eliminated_false = threadIdx.x > 1024;
+
+        if (non_eliminated_false) {
             using cuda::ptx::sem_release;
             using cuda::ptx::space_shared_cluster;
             using cuda::ptx::space_shared;
