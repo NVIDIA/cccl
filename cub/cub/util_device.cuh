@@ -45,11 +45,12 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
-#include <cuda/std/utility>
-
 #include <cub/detail/device_synchronize.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_type.cuh>
+
+#include <cuda/annotated_ptr>
+#include <cuda/std/utility>
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
@@ -69,6 +70,161 @@ CUB_NAMESPACE_BEGIN
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
+namespace detail
+{
+
+/**
+ * @brief Helper class template that allows overwriting the `BLOCK_THREAD` and `ITEMS_PER_THREAD`
+ * configurations of a given policy.
+ */
+template <typename PolicyT, int BLOCK_THREADS_, int ITEMS_PER_THREAD_ = PolicyT::ITEMS_PER_THREAD>
+struct policy_wrapper_t : PolicyT
+{
+  static constexpr int ITEMS_PER_THREAD = ITEMS_PER_THREAD_;
+  static constexpr int BLOCK_THREADS    = BLOCK_THREADS_;
+};
+
+/**
+ * @brief Helper struct to wrap all the information needed to implement virtual shared memory that's passed to a kernel.
+ *
+ */
+struct vsmem_t
+{
+  void* gmem_ptr;
+};
+
+// The maximum amount of shared memory available per thread block
+static constexpr std::size_t max_smem_per_block = 48 * 1024;
+
+/**
+ * @brief Class template that helps to prevent exceeding the available shared memory per thread
+ * block.
+ *
+ * @tparam DefaultAgentPolicyT The default tuning policy that is used
+ * @tparam DefaultAgentT The default agent, instantiated with the given default tuning policy
+ * @tparam FallbackAgentPolicyT A fallback tuning policy that uses a smaller tile size and
+ * therefore exhibits lower shared memory requirements than the default. This fallback policy may be used
+ * before defaulting to global memory-backed virtual shared memory.
+ * @tparam FallbackAgentT The fallback agent, instantiated with the given fallback tuning policy
+ */
+template <typename DefaultAgentPolicyT,
+          typename DefaultAgentT,
+          typename FallbackAgentPolicyT = DefaultAgentPolicyT,
+          typename FallbackAgentT       = DefaultAgentT>
+class vsmem_helper_impl
+{
+public:
+  // True if default agent's shared memory requirements exceed the available shared memory per
+  // thread block but would still suffice for fallback agent's shared memory requirements
+  static constexpr bool uses_fallback_policy =
+    (sizeof(typename DefaultAgentT::TempStorage) > max_smem_per_block)
+    && (sizeof(typename FallbackAgentT::TempStorage) <= max_smem_per_block);
+
+public:
+  // The tuning policy and agent that will be used during algorithm invocation
+  using agent_t        = cub::detail::conditional_t<uses_fallback_policy, FallbackAgentT, DefaultAgentT>;
+  using agent_policy_t = cub::detail::conditional_t<uses_fallback_policy, FallbackAgentPolicyT, DefaultAgentPolicyT>;
+
+private:
+  // The amount of shared memory or virtual shared memory required by the algorithm's agent
+  static constexpr std::size_t required_shmem = sizeof(typename agent_t::TempStorage);
+
+  // Whether we need to allocate global memory-backed virtual shared memory
+  static constexpr bool needs_vsmem = required_shmem > max_smem_per_block;
+
+public:
+  // Type alias to be used for static temporary storage declaration within the algorithm's kernel
+  using static_temp_storage_t = cub::detail::conditional_t<needs_vsmem, cub::NullType, typename agent_t::TempStorage>;
+
+  // The amount of global memory-backed virtual shared memory needed
+  static constexpr std::size_t vsmem_per_block = needs_vsmem ? required_shmem : 0;
+
+  /**
+   * @brief Used from within the device algorithm's kernel to get the temporary storage that can be
+   * passed to the agent, specialized for the case when we can use native shared memory as temporary
+   * storage.
+   */
+  static __device__ __forceinline__ typename agent_t::TempStorage&
+  get_temp_storage(typename agent_t::TempStorage& static_temp_storage, vsmem_t&)
+  {
+    return static_temp_storage;
+  }
+
+  /**
+   * @brief Used from within the device algorithm's kernel to get the temporary storage that can be
+   * passed to the agent, specialized for the case when we have to use global memory-backed
+   * virtual shared memory as temporary storage.
+   */
+  static __device__ __forceinline__ typename agent_t::TempStorage&
+  get_temp_storage(cub::NullType& static_temp_storage, vsmem_t& vsmem)
+  {
+    return *reinterpret_cast<typename agent_t::TempStorage*>(
+      static_cast<char*>(vsmem.gmem_ptr) + (vsmem_per_block * blockIdx.x));
+  }
+
+  /**
+   * @brief Overload for the case when native shared memory can be used. No need to hint to discard
+   * modified cache lines.•
+   */
+  template <bool needs_vsmem_ = needs_vsmem, typename ::cuda::std::enable_if<!needs_vsmem_, int>::type = 0>
+  static __device__ __forceinline__ void discard_temp_storage(typename agent_t::TempStorage& temp_storage)
+  {}
+
+  /**
+   * @brief Overload for the case when virtual shared memory is used. Hints to discard modified
+   * cache lines for vshmem.
+   *
+   * @note Needs to be followed by `__syncthreads()` if the virtual shared memory is reused within the same thread
+   * block.
+   */
+  template <bool needs_vsmem_ = needs_vsmem, typename ::cuda::std::enable_if<needs_vsmem_, int>::type = 0>
+  static __device__ __forceinline__ void discard_temp_storage(typename agent_t::TempStorage& temp_storage)
+  {
+    // Ensure all threads finished using temporary storage
+    __syncthreads();
+
+    constexpr std::size_t line_size = 128;
+    const std::size_t linear_tid    = threadIdx.x;
+    const std::size_t block_stride  = line_size * blockDim.x;
+
+    char* ptr = reinterpret_cast<char*>(&temp_storage);
+
+    const auto size = static_cast<std::size_t>(sizeof(agent_t::TempStorage));
+    auto ptr_end    = ptr + size;
+    ptr_end -= (reinterpret_cast<std::uintptr_t>(ptr_end) % line_size);
+
+    std::size_t misalignment   = reinterpret_cast<std::uintptr_t>(ptr) % line_size;
+    std::size_t aligned_offset = (misalignment == 0) ? 0ULL : (line_size - misalignment);
+    ptr += aligned_offset;
+
+    // 128 byte-aligned virtual shared memory discard
+    for (auto thread_ptr = ptr + (linear_tid * line_size); thread_ptr < ptr_end; thread_ptr += block_stride)
+    {
+      cuda::discard_memory(thread_ptr, line_size);
+    }
+  }
+};
+
+/**
+ * @brief Alias template for the `vsmem_helper_impl` that instantiates the given AgentT template with the respective
+ * policy as first template parameter, followed by the parameters captured by the `AgentParamsT` template paramter pack.
+ */
+template <typename DefaultPolicyT, typename FallbackPolicyT, template <typename...> class AgentT, typename... AgentParamsT>
+using vsmem_helper_t =
+  vsmem_helper_impl<DefaultPolicyT,
+                    AgentT<DefaultPolicyT, AgentParamsT...>,
+                    FallbackPolicyT,
+                    AgentT<FallbackPolicyT, AgentParamsT...> >;
+
+/**
+ * @brief Alias template for the `vsmem_helper_t` by using a simple fallback policy that uses `DefaultPolicyT` as basis,
+ * overwriting `64` threads per block and `1` item per thread.
+ */
+template <typename DefaultPolicyT, template <typename...> class AgentT, typename... AgentParamsT>
+using default_vsmem_helper_t =
+  vsmem_helper_t<DefaultPolicyT, policy_wrapper_t<DefaultPolicyT, 64, 1>, AgentT, AgentParamsT...>;
+
+} // namespace detail
 
 /**
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
