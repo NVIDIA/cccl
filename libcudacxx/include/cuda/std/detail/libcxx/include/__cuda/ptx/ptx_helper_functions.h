@@ -16,16 +16,22 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_smem_ptr(const void* __ptr)
+inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_smem(const void* __ptr)
 {
+  // Consider adding debug asserts here.
   return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
 }
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_remote_dsmem_ptr(const void* __ptr)
+
+inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_remote_dsmem(const void* __ptr)
 {
+  // No difference in implementation to __as_ptr_smem.
+  // Consider adding debug asserts here.
   return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
 }
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_gmem_ptr(const void* __ptr)
+
+inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
 {
+  // Consider adding debug asserts here.
   return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr));
 }
 

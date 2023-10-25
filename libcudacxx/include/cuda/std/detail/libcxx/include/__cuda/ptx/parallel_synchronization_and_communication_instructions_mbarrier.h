@@ -58,14 +58,14 @@ _LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
       asm (
         "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
         : "=l"(__token)
-        : "r"(__as_smem_ptr(__addr)),
+        : "r"(__as_ptr_smem(__addr)),
           "r"(__tx_count)
         : "memory");
     } else {
     asm (
       "mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2;"
       : "=l"(__token)
-      : "r"(__as_smem_ptr(__addr)),
+      : "r"(__as_ptr_smem(__addr)),
         "r"(__tx_count)
       : "memory");
   }
@@ -88,14 +88,14 @@ _LIBCUDACXX_DEVICE inline void mbarrier_arrive_expect_tx(
       asm (
         "mbarrier.arrive.expect_tx.release.cta.shared::cluster.b64 _, [%0], %1;"
         :
-        : "r"(__as_smem_ptr(__addr)),
+        : "r"(__as_ptr_remote_dsmem(__addr)),
           "r"(__tx_count)
         : "memory");
     } else {
     asm (
       "mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64 _, [%0], %1;"
       :
-      : "r"(__as_smem_ptr(__addr)),
+      : "r"(__as_ptr_remote_dsmem(__addr)),
         "r"(__tx_count)
       : "memory");
   }
