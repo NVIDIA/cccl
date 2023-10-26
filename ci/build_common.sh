@@ -105,19 +105,27 @@ function print_var_values() {
     done
 }
 
+
 function begin_group() {
+    # See options for colors here: https://gist.github.com/JBlond/2fea43a3049b38287e5e9cefc87b2124
+    local green="1;32"
+    local name="${1:-}"
+    local color="${2:-$green}"
+
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
-        echo -e "::group::\e[1;32m$1\e[0m"
+        echo -e "::group::\e[${color}m${name}\e[0m"
     else
-        echo "================== ${1} ======================"
+        echo "================== ${name} ======================"
     fi
 }
 
 function end_group() {
+    local name="${1:-}"
+
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo "::endgroup::"
     else
-        echo "================== End ${1} =================="
+        echo "================== End ${name} =================="
     fi
 }
 
