@@ -130,7 +130,7 @@ echo
 
 function begin_group() {
     if [ -n "$GITHUB_ACTIONS" ]; then
-        echo -e "\e[1;34m::group::$1\e[0m"
+        echo -e "::group::\e[1;32m$1\e[0m"
     else
         echo "$1"
     fi
@@ -144,7 +144,7 @@ function end_group() {
 
 function configure_preset()
 {
-    begin_group "CMake Configure"
+    begin_group "🛠️ CMake Configure"
 
     local BUILD_NAME=$1
     local PRESET=$2
@@ -162,7 +162,7 @@ function configure_preset()
 
 function build_preset()
 {
-    begin_group "Build"
+    begin_group "🏗️ Build"
     local BUILD_NAME=$1
     local PRESET=$2
 
@@ -179,7 +179,7 @@ function build_preset()
 
 function test_preset()
 {
-    begin_group "Test"
+    begin_group "🚀 Test"
     local BUILD_NAME=$1
     local PRESET=$2
 
