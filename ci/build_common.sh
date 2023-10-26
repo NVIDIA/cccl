@@ -107,7 +107,23 @@ function print_var_values() {
     done
 }
 
-echo "========================================"
+function begin_group() {
+    if [ -n "$GITHUB_ACTIONS" ]; then
+        echo -e "::group::\e[1;32m$1\e[0m"
+    else
+        echo "==================${1}======================"
+    fi
+}
+
+function end_group() {
+    if [ -n "$GITHUB_ACTIONS" ]; then
+        echo "::endgroup::"
+    else
+        echo "========================================"
+    fi
+}
+
+begin_group "⚙️ Environment Details"
 echo "pwd=$(pwd)"
 print_var_values \
     BUILD_DIR \
@@ -120,27 +136,10 @@ print_var_values \
     CTEST_PARALLEL_LEVEL \
     CCCL_BUILD_INFIX \
     GLOBAL_CMAKE_OPTIONS
-echo "========================================"
-echo
-echo "========================================"
 echo "Current commit is:"
 git log -1 || "Not a repository"
-echo "========================================"
-echo
+end_group
 
-function begin_group() {
-    if [ -n "$GITHUB_ACTIONS" ]; then
-        echo -e "::group::\e[1;32m$1\e[0m"
-    else
-        echo "$1"
-    fi
-}
-
-function end_group() {
-    if [ -n "$GITHUB_ACTIONS" ]; then
-        echo "::endgroup::"
-    fi
-}
 
 function configure_preset()
 {
