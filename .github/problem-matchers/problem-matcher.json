@@ -1,0 +1,43 @@
+{
+    "problemMatcher": [
+      {
+        "owner": "cpp",
+        "pattern": [
+          {
+            "regexp": "^(.*):(\\d+):(\\d+):\\s+(fatal error|error|warning):\\s+(.+)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5
+          },
+          {
+            "regexp": "^\\s*(.*):(\\d+):\\s+(error|warning|note):\\s+(.+)$",
+            "file": 1,
+            "line": 2,
+            "severity": 3,
+            "message": 4
+          },
+          {
+            "regexp": "^nvcc\\s+(fatal\\s+)?(warning|error)\\s+\\(code\\s+\\d+\\)\\s+:(.*)$",
+            "severity": 2,
+            "message": 3
+          },
+          {
+            "regexp": "^CMake Error at (.*):(\\d+) \\(message\\):\\s+(.+)$",
+            "file": 1,
+            "line": 2,
+            "severity": "error",
+            "message": 3
+          },
+          {
+            "regexp": "^CMake Warning (.*):(\\d+) \\(message\\):\\s+(.+)$",
+            "file": 1,
+            "line": 2,
+            "severity": "warning",
+            "message": 3
+          }
+        ]
+      }
+    ]
+  }

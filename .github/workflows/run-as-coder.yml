@@ -37,6 +37,8 @@ jobs:
           chown -R coder:coder /home/coder/
       - name: Configure credentials and environment variables for sccache
         uses: ./cccl/.github/actions/configure_cccl_sccache
+      - name: Add problem matcher
+        run: echo "::add-matcher::${{ github.workspace }}/.github/problem-matchers/problem-matcher.json"
       - name: Run command
         shell: su coder {0}
         run: |
@@ -53,4 +55,7 @@ jobs:
                 echo "::endgroup::"
                 exit $exit_code
             fi
+      - name: Remove problem matcher
+        if: always()
+        run: echo "::remove-matcher owner=cpp::"
 
