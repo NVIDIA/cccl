@@ -31,14 +31,14 @@ jobs:
         with:
           path: cccl
           persist-credentials: false
+      - name: Add problem matcher
+        run: echo "::add-matcher::cccl/.github/problem-matchers/problem-matcher.json"
       - name: Move files to coder user home directory
         run: |
           cp -R cccl /home/coder/cccl
           chown -R coder:coder /home/coder/
       - name: Configure credentials and environment variables for sccache
         uses: ./cccl/.github/actions/configure_cccl_sccache
-      - name: Add problem matcher
-        run: echo "::add-matcher::${{ github.workspace }}/.github/problem-matchers/problem-matcher.json"
       - name: Run command
         shell: su coder {0}
         run: |
