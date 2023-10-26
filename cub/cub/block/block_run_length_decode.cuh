@@ -382,7 +382,10 @@ public:
     {
       decoded_items[i] = val;
       item_offsets[i]  = thread_decoded_offset - assigned_run_begin;
-      if (thread_decoded_offset == assigned_run_end - 1)
+
+      // A thread only needs to fetch the next run if this was not the last loop iteration
+      const bool is_final_loop_iteration = (i + 1 >= DECODED_ITEMS_PER_THREAD);
+      if (!is_final_loop_iteration && (thread_decoded_offset == assigned_run_end - 1))
       {
         // We make sure that a thread is not re-entering this conditional when being assigned to the last run already by
         // extending the last run's length to all the thread's item
