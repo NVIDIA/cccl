@@ -128,9 +128,24 @@ git log -1 || "Not a repository"
 echo "========================================"
 echo
 
+function begin_group() {
+    if [ -n "$GITHUB_ACTIONS" ]; then
+        echo -e "\e[1;34m::group::$1\e[0m"
+    else
+        echo "$1"
+    fi
+}
+
+function end_group() {
+    if [ -n "$GITHUB_ACTIONS" ]; then
+        echo "::endgroup::"
+    fi
+}
+
 function configure_preset()
 {
-    echo "::group::CMake Configure"
+    begin_group "CMake Configure"
+
     local BUILD_NAME=$1
     local PRESET=$2
     local CMAKE_OPTIONS=$3
@@ -141,12 +156,13 @@ function configure_preset()
     echo "$BUILD_NAME configure complete."
 
     popd > /dev/null
-    echo "::endgroup::"
+
+    end_group
 }
 
 function build_preset()
 {
-    echo "::group::Build"
+    begin_group "Build"
     local BUILD_NAME=$1
     local PRESET=$2
 
@@ -158,12 +174,12 @@ function build_preset()
 
     popd > /dev/null
     source "./sccache_stats.sh" "end"
-    echo "::endgroup::"
+    end_group
 }
 
 function test_preset()
 {
-    echo "::group::Test"
+    begin_group "Test"
     local BUILD_NAME=$1
     local PRESET=$2
 
@@ -173,7 +189,7 @@ function test_preset()
     echo "$BUILD_NAME testing complete."
 
     popd > /dev/null
-    echo "::endgroup::"
+    end_group
 }
 
 function configure_and_build_preset()
