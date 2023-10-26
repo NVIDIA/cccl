@@ -41,67 +41,282 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 // 9.7.12.15.13. Parallel Synchronization and Communication Instructions: mbarrier.arrive
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive
 
-#if __cccl_ptx_sm >= 900 && __cccl_ptx_isa >= 780
-template <dot_scope _Sco>
+// mbarrier.arrive{.sem}{.scope}{.shared{::cta}}.b64           state, [addr]{, count};
+// mbarrier.arrive{.sem}{.scope}{.shared::cluster}.b64         _, [addr] {,count}
+// mbarrier.arrive.expect_tx{.sem}{.scope}{.shared{::cta}}.b64 state, [addr], txCount;
+// mbarrier.arrive.expect_tx{.sem}{.scope}{.shared::cluster}.b64   _, [addr], txCount;
+// mbarrier.arrive.noComplete{.sem}{.cta}{.shared{::cta}}.b64  state, [addr], count;
+//
+// .sem   = { .release }
+// .scope = { .cta, .cluster }
+
+/*
+// mbarrier.arrive.shared::cta.b64 state, [addr]; // 1.  PTX ISA 70, SM_80
+__device__ inline uint64_t mbarrier_arrive(
+  cuda::ptx::sem_release_t sem,
+  cuda::ptx::scope_cta_t scope,
+  cuda::ptx::space_shared_t space,
+  uint64_t* addr);
+*/
+#if __cccl_ptx_isa >= 700 && __cccl_ptx_sm >= 800
+_LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive(
+  sem_release_t __sem,
+  scope_cta_t __scope,
+  space_shared_t __space,
+  _CUDA_VSTD::uint64_t* __addr)
+{
+  // __sem == sem_release (due to parameter type constraint)
+  // __scope == scope_cta (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+
+  _CUDA_VSTD::uint64_t __state;
+
+  asm (
+    "mbarrier.arrive.shared::cta.b64 %0, [%1]; // 1. "
+    : "=l"(__state)
+    : "r"(__as_ptr_smem(__addr))
+    : "memory"
+  );
+  return __state;
+}
+#endif // __cccl_ptx_isa >= 700 && __cccl_ptx_sm >= 800
+/*
+// mbarrier.arrive.noComplete.shared::cta.b64 state, [addr], count; // 2.  PTX ISA 70, SM_80
+__device__ inline uint64_t mbarrier_arrive_no_complete(
+  cuda::ptx::sem_release_t sem,
+  cuda::ptx::scope_cta_t scope,
+  cuda::ptx::space_shared_t space,
+  uint64_t* addr,
+  uint32_t count);
+*/
+#if __cccl_ptx_isa >= 700 && __cccl_ptx_sm >= 800
+_LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive_no_complete(
+  sem_release_t __sem,
+  scope_cta_t __scope,
+  space_shared_t __space,
+  _CUDA_VSTD::uint64_t* __addr,
+  _CUDA_VSTD::uint32_t __count)
+{
+  // __sem == sem_release (due to parameter type constraint)
+  // __scope == scope_cta (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+
+  _CUDA_VSTD::uint64_t __state;
+
+  asm (
+    "mbarrier.arrive.noComplete.shared::cta.b64 %0, [%1], %2; // 2. "
+    : "=l"(__state)
+    : "r"(__as_ptr_smem(__addr)),
+      "r"(__count)
+    : "memory"
+  );
+  return __state;
+}
+#endif // __cccl_ptx_isa >= 700 && __cccl_ptx_sm >= 800
+/*
+// mbarrier.arrive.shared::cta.b64 state, [addr], count; // 3. PTX ISA 78, SM_90
+__device__ inline uint64_t mbarrier_arrive(
+  cuda::ptx::sem_release_t sem,
+  cuda::ptx::scope_cta_t scope,
+  cuda::ptx::space_shared_t space,
+  uint64_t* addr,
+  uint32_t count);
+*/
+#if __cccl_ptx_isa >= 780 && __cccl_ptx_sm >= 900
+_LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive(
+  sem_release_t __sem,
+  scope_cta_t __scope,
+  space_shared_t __space,
+  _CUDA_VSTD::uint64_t* __addr,
+  _CUDA_VSTD::uint32_t __count)
+{
+  // __sem == sem_release (due to parameter type constraint)
+  // __scope == scope_cta (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+
+  _CUDA_VSTD::uint64_t __state;
+
+  asm (
+    "mbarrier.arrive.shared::cta.b64 %0, [%1], %2; // 3."
+    : "=l"(__state)
+    : "r"(__as_ptr_smem(__addr)),
+      "r"(__count)
+    : "memory"
+  );
+  return __state;
+}
+#endif // __cccl_ptx_isa >= 780 && __cccl_ptx_sm >= 900
+/*
+// mbarrier.arrive.release.cluster.shared::cta.b64 state,  [addr], count; // 4. PTX ISA 80, SM_90
+__device__ inline uint64_t mbarrier_arrive(
+  cuda::ptx::sem_release_t sem,
+  cuda::ptx::scope_cluster_t scope,
+  cuda::ptx::space_shared_t space,
+  uint64_t* addr,
+  uint32_t count);
+*/
+#if __cccl_ptx_isa >= 800 && __cccl_ptx_sm >= 900
+_LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive(
+  sem_release_t __sem,
+  scope_cluster_t __scope,
+  space_shared_t __space,
+  _CUDA_VSTD::uint64_t* __addr,
+  _CUDA_VSTD::uint32_t __count)
+{
+  // __sem == sem_release (due to parameter type constraint)
+  // __scope == scope_cluster (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+
+  _CUDA_VSTD::uint64_t __state;
+
+  asm (
+    "mbarrier.arrive.release.cluster.shared::cta.b64 %0,  [%1], %2; // 4."
+    : "=l"(__state)
+    : "r"(__as_ptr_smem(__addr)),
+      "r"(__count)
+    : "memory"
+  );
+  return __state;
+}
+#endif // __cccl_ptx_isa >= 800 && __cccl_ptx_sm >= 900
+/*
+// mbarrier.arrive.release{.scope}.shared::cluster.b64 _, [addr], count;   // 5.  PTX ISA 80, SM_90
+// .scope     = { .cta, .cluster }
+template <cuda::ptx::dot_scope Scope>
+__device__ inline void mbarrier_arrive(
+  cuda::ptx::sem_release_t sem,
+  cuda::ptx::scope_t<Scope> scope,
+  cuda::ptx::space_shared_cluster_t space,
+  uint64_t* addr,
+  uint32_t count);
+*/
+#if __cccl_ptx_isa >= 800 && __cccl_ptx_sm >= 900
+template <dot_scope _Scope>
+_LIBCUDACXX_DEVICE inline void mbarrier_arrive(
+  sem_release_t __sem,
+  scope_t<_Scope> __scope,
+  space_shared_cluster_t __space,
+  _CUDA_VSTD::uint64_t* __addr,
+  _CUDA_VSTD::uint32_t __count)
+{
+  // __sem == sem_release (due to parameter type constraint)
+  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+  // __space == space_shared_cluster (due to parameter type constraint)
+
+
+
+  if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
+    asm (
+      "mbarrier.arrive.release.cta.shared::cluster.b64 _, [%0], %1;   // 5. "
+      :
+      : "r"(__as_ptr_smem(__addr)),
+        "r"(__count)
+      : "memory"
+    );
+  } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
+    asm (
+      "mbarrier.arrive.release.cluster.shared::cluster.b64 _, [%0], %1;   // 5. "
+      :
+      : "r"(__as_ptr_smem(__addr)),
+        "r"(__count)
+      : "memory"
+    );
+  }
+
+}
+#endif // __cccl_ptx_isa >= 800 && __cccl_ptx_sm >= 900
+/*
+// mbarrier.arrive.expect_tx.release{.scope}.shared::cta.b64   state, [addr], tx_count; // 6.  PTX ISA 80, SM_90
+// .scope     = { .cta, .cluster }
+template <cuda::ptx::dot_scope Scope>
+__device__ inline uint64_t mbarrier_arrive_expect_tx(
+  cuda::ptx::sem_release_t sem,
+  cuda::ptx::scope_t<Scope> scope,
+  cuda::ptx::space_shared_t space,
+  uint64_t* addr,
+  uint32_t tx_count);
+*/
+#if __cccl_ptx_isa >= 800 && __cccl_ptx_sm >= 900
+template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
   sem_release_t __sem,
-  scope_t<_Sco> __scope,
-  space_shared_t __spc,
+  scope_t<_Scope> __scope,
+  space_shared_t __space,
   _CUDA_VSTD::uint64_t* __addr,
   _CUDA_VSTD::uint32_t __tx_count)
 {
-  // Arrive on local shared memory barrier
+  // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-  _CUDA_VSTD::uint64_t __token;
+  // __space == space_shared (due to parameter type constraint)
+
+  _CUDA_VSTD::uint64_t __state;
 
   if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
-      asm (
-        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
-        : "=l"(__token)
-        : "r"(__as_ptr_smem(__addr)),
-          "r"(__tx_count)
-        : "memory");
-    } else {
     asm (
-      "mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2;"
-      : "=l"(__token)
+      "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64   %0, [%1], %2; // 6. "
+      : "=l"(__state)
       : "r"(__as_ptr_smem(__addr)),
         "r"(__tx_count)
-      : "memory");
+      : "memory"
+    );
+  } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
+    asm (
+      "mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64   %0, [%1], %2; // 6. "
+      : "=l"(__state)
+      : "r"(__as_ptr_smem(__addr)),
+        "r"(__tx_count)
+      : "memory"
+    );
   }
-  return __token;
+  return __state;
 }
-#endif // __cccl_ptx_isa
-
-#if __cccl_ptx_sm >= 900 && __cccl_ptx_isa >= 780
-template <dot_scope _Sco>
+#endif // __cccl_ptx_isa >= 800 && __cccl_ptx_sm >= 900
+/*
+// mbarrier.arrive.expect_tx.release{.scope}.shared::cluster.b64 _, [addr], tx_count; // 7.  PTX ISA 80, SM_90
+// .scope     = { .cta, .cluster }
+template <cuda::ptx::dot_scope Scope>
+__device__ inline void mbarrier_arrive_expect_tx(
+  cuda::ptx::sem_release_t sem,
+  cuda::ptx::scope_t<Scope> scope,
+  cuda::ptx::space_shared_cluster_t space,
+  uint64_t* addr,
+  uint32_t tx_count);
+*/
+#if __cccl_ptx_isa >= 800 && __cccl_ptx_sm >= 900
+template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE inline void mbarrier_arrive_expect_tx(
   sem_release_t __sem,
-  scope_t<_Sco> __scope,
-  space_shared_cluster_t __spc,
+  scope_t<_Scope> __scope,
+  space_shared_cluster_t __space,
   _CUDA_VSTD::uint64_t* __addr,
   _CUDA_VSTD::uint32_t __tx_count)
 {
-  // Arrive on remote cluster barrier
+  // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-  if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
-      asm (
-        "mbarrier.arrive.expect_tx.release.cta.shared::cluster.b64 _, [%0], %1;"
-        :
-        : "r"(__as_ptr_remote_dsmem(__addr)),
-          "r"(__tx_count)
-        : "memory");
-    } else {
-    asm (
-      "mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64 _, [%0], %1;"
-      :
-      : "r"(__as_ptr_remote_dsmem(__addr)),
-        "r"(__tx_count)
-      : "memory");
-  }
-}
-#endif // __cccl_ptx_isa
+  // __space == space_shared_cluster (due to parameter type constraint)
 
+
+
+  if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
+    asm (
+      "mbarrier.arrive.expect_tx.release.cta.shared::cluster.b64 _, [%0], %1; // 7. "
+      :
+      : "r"(__as_ptr_smem(__addr)),
+        "r"(__tx_count)
+      : "memory"
+    );
+  } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
+    asm (
+      "mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64 _, [%0], %1; // 7. "
+      :
+      : "r"(__as_ptr_smem(__addr)),
+        "r"(__tx_count)
+      : "memory"
+    );
+  }
+
+}
+#endif // __cccl_ptx_isa >= 800 && __cccl_ptx_sm >= 900
 
 // 9.7.12.15.14. Parallel Synchronization and Communication Instructions: mbarrier.arrive_drop
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive-drop
