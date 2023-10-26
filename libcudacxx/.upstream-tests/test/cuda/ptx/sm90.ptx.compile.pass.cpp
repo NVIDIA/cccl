@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: libcpp-has-no-threads
-// UNSUPPORTED: pre-sm-90
 
 // <cuda/ptx>
 
@@ -37,11 +36,31 @@ int main(int, char**)
             using cuda::ptx::scope_cta;
 
             __shared__ uint64_t bar;
-            cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta, space_shared, &bar, 1);
-            cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared, &bar, 1);
+            uint64_t state;
 
-            cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta, space_shared_cluster, &bar, 1);
-            cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared_cluster, &bar, 1);
+            // TODO: check PTX ISA version.
+
+            NV_IF_TARGET(NV_PROVIDES_SM_80, (
+              state = cuda::ptx::mbarrier_arrive(sem_release, scope_cta,     space_shared, &bar);              // 1.
+              state = cuda::ptx::mbarrier_arrive_no_complete(sem_release, scope_cta, space_shared, &bar, 1);   // 2.
+            ));
+
+            NV_IF_TARGET(NV_PROVIDES_SM_90, (
+              state = cuda::ptx::mbarrier_arrive(sem_release, scope_cta,     space_shared, &bar, 1);           // 3.
+              state = cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_shared, &bar, 1);           // 4.
+
+              cuda::ptx::mbarrier_arrive(sem_release, scope_cta,     space_shared_cluster, &bar, 1);           // 5.
+              cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_shared_cluster, &bar, 1);           // 5.
+
+              state = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta,     space_shared, &bar, 1); // 6.
+              state = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared, &bar, 1); // 6.
+
+              cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta,     space_shared_cluster, &bar, 1); // 7.
+              cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared_cluster, &bar, 1); // 7.
+            ));
+
+            state += 1;         // "Use" state to prevent compiler warnings
+            (void) state;
         }
     ));
 
