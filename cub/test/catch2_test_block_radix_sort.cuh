@@ -28,6 +28,7 @@
 #pragma once
 
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/detail/cpp_compatibility.cuh>
 
 #include <thrust/gather.h>
 #include <thrust/host_vector.h>
@@ -368,7 +369,6 @@ get_striped_keys(const thrust::host_vector<KeyT> &h_keys,
 
   using traits_t                    = cub::Traits<KeyT>;
   using bit_ordered_t               = typename traits_t::UnsignedBits;
-  const bit_ordered_t negative_zero = bit_ordered_t{1} << bit_ordered_t{sizeof(bit_ordered_t) * 8 - 1};
 
   const int num_bits = end_bit - begin_bit;
 
@@ -376,9 +376,14 @@ get_striped_keys(const thrust::host_vector<KeyT> &h_keys,
   {
     bit_ordered_t key = reinterpret_cast<const bit_ordered_t&>(h_keys[i]);
 
-    if (traits_t::CATEGORY == cub::FLOATING_POINT && key == negative_zero)
+    CUB_IF_CONSTEXPR(traits_t::CATEGORY == cub::FLOATING_POINT)
     {
-      key = 0;
+      const bit_ordered_t negative_zero = bit_ordered_t(1) << bit_ordered_t(sizeof(bit_ordered_t) * 8 - 1);
+
+      if (key == negative_zero)
+      {
+        key = 0;
+      }
     }
 
     key = traits_t::TwiddleIn(key);

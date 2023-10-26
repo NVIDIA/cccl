@@ -175,7 +175,7 @@ thrust::device_vector<T> generate_input()
 
   thrust::device_vector<T> d_input(num_items);
 
-  if (LoadAlgorithm == cub::WarpLoadAlgorithm::WARP_LOAD_STRIPED)
+  CUB_IF_CONSTEXPR(LoadAlgorithm == cub::WarpLoadAlgorithm::WARP_LOAD_STRIPED)
   {
     thrust::host_vector<T> h_input(num_items);
 
