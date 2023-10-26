@@ -105,7 +105,6 @@ function print_var_values() {
     done
 }
 
-
 function begin_group() {
     # See options for colors here: https://gist.github.com/JBlond/2fea43a3049b38287e5e9cefc87b2124
     local green="1;32"
@@ -190,6 +189,13 @@ function build_preset()
 
     # print sccache stats outside of group
     source "./sccache_stats.sh" "end"
+
+    # Only print detailed stats in actions workflow
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        begin_group "💲 sccache stats"
+        sccache -s
+        end_group "💲 sccache stats"
+    else
 }
 
 function test_preset()
