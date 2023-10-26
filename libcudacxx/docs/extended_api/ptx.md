@@ -25,7 +25,7 @@ major version of the CTK on a best effort basis. This means that:
 API stability is not taken to the extreme. Call functions like below to ensure
 forward-compatibility:
 
-```
+```cuda
 // Use arguments to driver overload resolution:
 cuda::ptx::mbarrier_arrive_expect_tx(cuda::ptx::sem_release, cuda::ptx::scope_cta, cuda::ptx::space_shared, &bar, 1);
 
@@ -57,7 +57,7 @@ cuda::ptx::mbarrier_arrive(cuda::ptx::sem_release, cuda::ptx::scope_cta, cuda::p
 
 Ensure that you only call the function when compiling for a recent enough
 compute capability (SM version), like this:
-```
+```cuda
 NV_IF_TARGET(NV_PROVIDES_SM_80,(
   cuda::ptx::mbarrier_arrive(cuda::ptx::sem_release, cuda::ptx::scope_cta, cuda::ptx::space_shared, &bar, 1);
 ));
