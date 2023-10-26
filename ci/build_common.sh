@@ -107,38 +107,51 @@ function print_var_values() {
 }
 
 function begin_group() {
-    if [ -n "$GITHUB_ACTIONS" ]; then
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo -e "::group::\e[1;32m$1\e[0m"
     else
-        echo "==================${1}======================"
+        echo "================== ${1} ======================"
     fi
 }
 
 function end_group() {
-    if [ -n "$GITHUB_ACTIONS" ]; then
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo "::endgroup::"
     else
         echo "========================================"
     fi
 }
 
-begin_group "⚙️ Environment Details"
-echo "pwd=$(pwd)"
-print_var_values \
-    BUILD_DIR \
-    CXX_STANDARD \
-    CXX \
-    CUDACXX \
-    CUDAHOSTCXX \
-    NVCC_VERSION \
-    CMAKE_BUILD_PARALLEL_LEVEL \
-    CTEST_PARALLEL_LEVEL \
-    CCCL_BUILD_INFIX \
-    GLOBAL_CMAKE_OPTIONS
-echo "Current commit is:"
-git log -1 || "Not a repository"
-end_group
+print_environment_details() {
+  begin_group "⚙️ Environment Details"
 
+  echo "pwd=$(pwd)"
+
+  print_var_values \
+      BUILD_DIR \
+      CXX_STANDARD \
+      CXX \
+      CUDACXX \
+      CUDAHOSTCXX \
+      NVCC_VERSION \
+      CMAKE_BUILD_PARALLEL_LEVEL \
+      CTEST_PARALLEL_LEVEL \
+      CCCL_BUILD_INFIX \
+      GLOBAL_CMAKE_OPTIONS
+
+  echo "Current commit is:"
+  git log -1 || echo "Not a repository"
+
+  if command -v nvidia-smi &> /dev/null; then
+    nvidia-smi
+  else
+    echo "nvidia-smi not found"
+  fi
+
+  end_group
+}
+
+print_environment_details
 
 function configure_preset()
 {
