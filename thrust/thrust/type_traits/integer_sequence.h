@@ -22,8 +22,6 @@
 
 #pragma once
 
-#error "Test"
-
 #include <thrust/detail/config.h>
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
