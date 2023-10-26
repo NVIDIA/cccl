@@ -40,7 +40,7 @@ jobs:
       - name: Run command
         shell: su coder {0}
         run: |
-            set -euo pipefail
+            set -eo pipefail
             cd ~/cccl
             echo "Running as 'coder' user in $(pwd):"
             echo "${{inputs.command}}"
