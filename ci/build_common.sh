@@ -89,7 +89,6 @@ export CTEST_PARALLEL_LEVEL="1"
 export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"
-
 export CXX_STANDARD
 
 # Print "ARG=${ARG}" for all args.
@@ -118,7 +117,7 @@ function end_group() {
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo "::endgroup::"
     else
-        echo "========================================"
+        echo "================== End ${1} =================="
     fi
 }
 
@@ -148,62 +147,56 @@ print_environment_details() {
     echo "nvidia-smi not found"
   fi
 
-  end_group
+  end_group "⚙️ Environment Details"
 }
 
 print_environment_details
 
 function configure_preset()
 {
-    begin_group "🛠️ CMake Configure"
-
     local BUILD_NAME=$1
     local PRESET=$2
     local CMAKE_OPTIONS=$3
+    local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
+    begin_group "${GROUP_NAME}"
     pushd .. > /dev/null
-
     cmake --preset=$PRESET --log-level=VERBOSE $GLOBAL_CMAKE_OPTIONS $CMAKE_OPTIONS
-    echo "$BUILD_NAME configure complete."
-
     popd > /dev/null
-
-    end_group
+    end_group "${GROUP_NAME}"
 }
 
 function build_preset()
 {
-    begin_group "🏗️ Build"
     local BUILD_NAME=$1
     local PRESET=$2
+    local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
+
+    begin_group "${GROUP_NAME}"
 
     source "./sccache_stats.sh" "start"
     pushd .. > /dev/null
-
     cmake --build --preset=$PRESET -v
-    echo "$BUILD_NAME build complete."
-
     popd > /dev/null
-    end_group
+    end_group "${GROUP_NAME}"
 
-    begin_group "💲 sccache stats"
+    # print sccache stats outside of group
     source "./sccache_stats.sh" "end"
-    end_group
 }
 
 function test_preset()
 {
-    begin_group "🚀 Test"
     local BUILD_NAME=$1
     local PRESET=$2
+    local GROUP_NAME="🚀  Test ${BUILD_NAME}"
+
+    begin_group "${GROUP_NAME}"
 
     pushd .. > /dev/null
-
     ctest --preset=$PRESET
-    echo "$BUILD_NAME testing complete."
-
     popd > /dev/null
-    end_group
+
+    end_group "${GROUP_NAME}"
 }
 
 function configure_and_build_preset()
