@@ -184,6 +184,9 @@ function build_preset()
     echo "$BUILD_NAME build complete."
 
     popd > /dev/null
+    end_group
+
+    begin_group "💲 sccache stats"
     source "./sccache_stats.sh" "end"
     end_group
 }
