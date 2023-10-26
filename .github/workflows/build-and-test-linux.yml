@@ -35,5 +35,4 @@ jobs:
       runner: linux-${{inputs.cpu}}-gpu-v100-latest-1
       image: ${{inputs.container_image}}
       command: |
-        nvidia-smi
         ${{ inputs.test_script }}
