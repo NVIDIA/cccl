@@ -37,7 +37,6 @@ function usage {
 # Copy the args into a temporary array, since we will modify them and
 # the parent script may still need them.
 args=("$@")
-echo "Args: ${args[@]}"
 while [ "${#args[@]}" -ne 0 ]; do
     case "${args[0]}" in
     -v | --verbose) VERBOSE=1; args=("${args[0]:1}");;
