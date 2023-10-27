@@ -33,7 +33,7 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
@@ -41,8 +41,8 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
-#include "../util_debug.cuh"
-#include "../thread/thread_load.cuh"
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_debug.cuh>
 
 CUB_NAMESPACE_BEGIN
 
