@@ -93,18 +93,21 @@ struct vsmem_t
   void* gmem_ptr;
 };
 
-// The maximum amount of shared memory available per thread block
+// The maximum amount of static shared memory available per thread block
+// Note that in contrast to dynamic shared memory, static shared memory is still limited to 48 KB
 static constexpr std::size_t max_smem_per_block = 48 * 1024;
 
 /**
  * @brief Class template that helps to prevent exceeding the available shared memory per thread
  * block.
  *
- * @tparam DefaultAgentPolicyT The default tuning policy that is used
+ * @tparam DefaultAgentPolicyT The default tuning policy that is used if the default agent's shared memory requirements
+ * fall within the bounds of `max_smem_per_block` or when virtual shared memory is needed
  * @tparam DefaultAgentT The default agent, instantiated with the given default tuning policy
- * @tparam FallbackAgentPolicyT A fallback tuning policy that uses a smaller tile size and
- * therefore exhibits lower shared memory requirements than the default. This fallback policy may be used
- * before defaulting to global memory-backed virtual shared memory.
+ * @tparam FallbackAgentPolicyT A fallback tuning policy that may exhibit lower shared memory requirements, e.g., by
+ * using a smaller tile size, than the default. This fallback policy is used if and only if the shared memory
+ * requirements of the default agent exceed `max_smem_per_block`, yet the shared memory requirements of the fallback
+ * agent falls within the bounds of `max_smem_per_block`.
  * @tparam FallbackAgentT The fallback agent, instantiated with the given fallback tuning policy
  */
 template <typename DefaultAgentPolicyT,
