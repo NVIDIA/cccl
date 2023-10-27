@@ -56,7 +56,14 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #  include <cuda_bf16.h>
 // cuda_fp8.h transitively includes cuda_fp16.h, so we have to include the header under !CUB_DISABLE_BF16_SUPPORT
 #  if CUDA_VERSION >= 11080
+// cuda_fp8.h resets default for C4127, so we have to guard the inclusion
+#    if CUB_HOST_COMPILER == CUB_HOST_COMPILER_MSVC
+#      pragma warning(push)
+#    endif
 #    include <cuda_fp8.h>
+#    if CUB_HOST_COMPILER == CUB_HOST_COMPILER_MSVC
+#      pragma warning(pop)
+#    endif
 #  endif
 #endif
 
