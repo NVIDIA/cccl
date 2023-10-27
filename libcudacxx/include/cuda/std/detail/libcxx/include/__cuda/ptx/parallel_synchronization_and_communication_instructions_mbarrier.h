@@ -97,7 +97,7 @@ __device__ static inline uint64_t mbarrier_arrive_no_complete(
   cuda::ptx::scope_cta_t scope,
   cuda::ptx::space_shared_t space,
   uint64_t* addr,
-  uint32_t count);
+  const uint32_t& count);
 */
 #if __cccl_ptx_isa >= 700
 template <typename=void>
@@ -106,7 +106,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_no_complet
   scope_cta_t __scope,
   space_shared_t __space,
   _CUDA_VSTD::uint64_t* __addr,
-  _CUDA_VSTD::uint32_t __count)
+  const _CUDA_VSTD::uint32_t& __count)
 {
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cta (due to parameter type constraint)
@@ -139,7 +139,7 @@ __device__ static inline uint64_t mbarrier_arrive(
   cuda::ptx::scope_cta_t scope,
   cuda::ptx::space_shared_t space,
   uint64_t* addr,
-  uint32_t count);
+  const uint32_t& count);
 */
 #if __cccl_ptx_isa >= 780
 template <typename=void>
@@ -148,7 +148,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   scope_cta_t __scope,
   space_shared_t __space,
   _CUDA_VSTD::uint64_t* __addr,
-  _CUDA_VSTD::uint32_t __count)
+  const _CUDA_VSTD::uint32_t& __count)
 {
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cta (due to parameter type constraint)
@@ -181,7 +181,7 @@ __device__ static inline uint64_t mbarrier_arrive(
   cuda::ptx::scope_cluster_t scope,
   cuda::ptx::space_shared_t space,
   uint64_t* addr,
-  uint32_t count);
+  const uint32_t& count);
 */
 #if __cccl_ptx_isa >= 800
 template <typename=void>
@@ -190,7 +190,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   scope_cluster_t __scope,
   space_shared_t __space,
   _CUDA_VSTD::uint64_t* __addr,
-  _CUDA_VSTD::uint32_t __count)
+  const _CUDA_VSTD::uint32_t& __count)
 {
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cluster (due to parameter type constraint)
@@ -224,7 +224,7 @@ __device__ static inline void mbarrier_arrive(
   cuda::ptx::scope_t<Scope> scope,
   cuda::ptx::space_shared_cluster_t space,
   uint64_t* addr,
-  uint32_t count);
+  const uint32_t& count);
 */
 #if __cccl_ptx_isa >= 800
 template <dot_scope _Scope>
@@ -233,7 +233,7 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   scope_t<_Scope> __scope,
   space_shared_cluster_t __space,
   _CUDA_VSTD::uint64_t* __addr,
-  _CUDA_VSTD::uint32_t __count)
+  const _CUDA_VSTD::uint32_t& __count)
 {
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
@@ -277,7 +277,7 @@ __device__ static inline uint64_t mbarrier_arrive_expect_tx(
   cuda::ptx::scope_t<Scope> scope,
   cuda::ptx::space_shared_t space,
   uint64_t* addr,
-  uint32_t tx_count);
+  const uint32_t& tx_count);
 */
 #if __cccl_ptx_isa >= 800
 template <dot_scope _Scope>
@@ -286,7 +286,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
   scope_t<_Scope> __scope,
   space_shared_t __space,
   _CUDA_VSTD::uint64_t* __addr,
-  _CUDA_VSTD::uint32_t __tx_count)
+  const _CUDA_VSTD::uint32_t& __tx_count)
 {
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
@@ -330,7 +330,7 @@ __device__ static inline void mbarrier_arrive_expect_tx(
   cuda::ptx::scope_t<Scope> scope,
   cuda::ptx::space_shared_cluster_t space,
   uint64_t* addr,
-  uint32_t tx_count);
+  const uint32_t& tx_count);
 */
 #if __cccl_ptx_isa >= 800
 template <dot_scope _Scope>
@@ -339,7 +339,7 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
   scope_t<_Scope> __scope,
   space_shared_cluster_t __space,
   _CUDA_VSTD::uint64_t* __addr,
-  _CUDA_VSTD::uint32_t __tx_count)
+  const _CUDA_VSTD::uint32_t& __tx_count)
 {
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
