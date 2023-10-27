@@ -51,7 +51,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 // .scope = { .cta, .cluster }
 
 /*
-// mbarrier.arrive.shared::cta.b64 state, [addr]; // 1.  PTX ISA 70, SM_80
+// mbarrier.arrive.shared.b64 state, [addr]; // 1.  PTX ISA 70, SM_80
 __device__ inline uint64_t mbarrier_arrive(
   cuda::ptx::sem_release_t sem,
   cuda::ptx::scope_cta_t scope,
@@ -72,7 +72,7 @@ _LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   _CUDA_VSTD::uint64_t __state;
 
   asm (
-    "mbarrier.arrive.shared::cta.b64 %0, [%1]; // 1. "
+    "mbarrier.arrive.shared.b64 %0, [%1]; // 1. "
     : "=l"(__state)
     : "r"(__as_ptr_smem(__addr))
     : "memory"
@@ -81,7 +81,7 @@ _LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive(
 }
 #endif // __cccl_ptx_isa >= 700 && __cccl_ptx_sm >= 800
 /*
-// mbarrier.arrive.noComplete.shared::cta.b64 state, [addr], count; // 2.  PTX ISA 70, SM_80
+// mbarrier.arrive.noComplete.shared.b64 state, [addr], count; // 2.  PTX ISA 70, SM_80
 __device__ inline uint64_t mbarrier_arrive_no_complete(
   cuda::ptx::sem_release_t sem,
   cuda::ptx::scope_cta_t scope,
@@ -104,7 +104,7 @@ _LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive_no_complete(
   _CUDA_VSTD::uint64_t __state;
 
   asm (
-    "mbarrier.arrive.noComplete.shared::cta.b64 %0, [%1], %2; // 2. "
+    "mbarrier.arrive.noComplete.shared.b64 %0, [%1], %2; // 2. "
     : "=l"(__state)
     : "r"(__as_ptr_smem(__addr)),
       "r"(__count)
@@ -114,7 +114,7 @@ _LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive_no_complete(
 }
 #endif // __cccl_ptx_isa >= 700 && __cccl_ptx_sm >= 800
 /*
-// mbarrier.arrive.shared::cta.b64 state, [addr], count; // 3. PTX ISA 78, SM_90
+// mbarrier.arrive.shared.b64 state, [addr], count; // 3. PTX ISA 78, SM_90
 __device__ inline uint64_t mbarrier_arrive(
   cuda::ptx::sem_release_t sem,
   cuda::ptx::scope_cta_t scope,
@@ -137,7 +137,7 @@ _LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   _CUDA_VSTD::uint64_t __state;
 
   asm (
-    "mbarrier.arrive.shared::cta.b64 %0, [%1], %2; // 3."
+    "mbarrier.arrive.shared.b64 %0, [%1], %2; // 3."
     : "=l"(__state)
     : "r"(__as_ptr_smem(__addr)),
       "r"(__count)
@@ -147,7 +147,7 @@ _LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive(
 }
 #endif // __cccl_ptx_isa >= 780 && __cccl_ptx_sm >= 900
 /*
-// mbarrier.arrive.release.cluster.shared::cta.b64 state,  [addr], count; // 4. PTX ISA 80, SM_90
+// mbarrier.arrive.release.cluster.shared.b64 state,  [addr], count; // 4. PTX ISA 80, SM_90
 __device__ inline uint64_t mbarrier_arrive(
   cuda::ptx::sem_release_t sem,
   cuda::ptx::scope_cluster_t scope,
@@ -170,7 +170,7 @@ _LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   _CUDA_VSTD::uint64_t __state;
 
   asm (
-    "mbarrier.arrive.release.cluster.shared::cta.b64 %0,  [%1], %2; // 4."
+    "mbarrier.arrive.release.cluster.shared.b64 %0,  [%1], %2; // 4."
     : "=l"(__state)
     : "r"(__as_ptr_smem(__addr)),
       "r"(__count)
@@ -226,7 +226,7 @@ _LIBCUDACXX_DEVICE inline void mbarrier_arrive(
 }
 #endif // __cccl_ptx_isa >= 800 && __cccl_ptx_sm >= 900
 /*
-// mbarrier.arrive.expect_tx.release{.scope}.shared::cta.b64   state, [addr], tx_count; // 6.  PTX ISA 80, SM_90
+// mbarrier.arrive.expect_tx.release{.scope}.shared.b64   state, [addr], tx_count; // 6.  PTX ISA 80, SM_90
 // .scope     = { .cta, .cluster }
 template <cuda::ptx::dot_scope Scope>
 __device__ inline uint64_t mbarrier_arrive_expect_tx(
@@ -253,7 +253,7 @@ _LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
 
   if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
     asm (
-      "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64   %0, [%1], %2; // 6. "
+      "mbarrier.arrive.expect_tx.release.cta.shared.b64   %0, [%1], %2; // 6. "
       : "=l"(__state)
       : "r"(__as_ptr_smem(__addr)),
         "r"(__tx_count)
@@ -261,7 +261,7 @@ _LIBCUDACXX_DEVICE inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
     );
   } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
     asm (
-      "mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64   %0, [%1], %2; // 6. "
+      "mbarrier.arrive.expect_tx.release.cluster.shared.b64   %0, [%1], %2; // 6. "
       : "=l"(__state)
       : "r"(__as_ptr_smem(__addr)),
         "r"(__tx_count)
