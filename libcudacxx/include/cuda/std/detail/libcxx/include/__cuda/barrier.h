@@ -607,8 +607,8 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
             auto __native_handle = barrier_native_handle(__b);
             auto __bh = __cvta_generic_to_shared(__native_handle);
             if (__arrive_count_update == 1) {
-                __token = cuda::ptx::mbarrier_arrive_expect_tx(
-                    cuda::ptx::sem_release, cuda::ptx::scope_cta, cuda::ptx::space_shared, __native_handle, __transaction_count_update
+                __token = _CUDA_VPTX::mbarrier_arrive_expect_tx(
+                    _CUDA_VPTX::sem_release, _CUDA_VPTX::scope_cta, _CUDA_VPTX::space_shared, __native_handle, __transaction_count_update
                 );
             } else {
                 asm (
