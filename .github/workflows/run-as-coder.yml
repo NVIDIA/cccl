@@ -55,7 +55,4 @@ jobs:
                 echo "::endgroup::"
                 exit $exit_code
             fi
-      - name: Remove problem matcher
-        if: always()
-        run: echo "::remove-matcher owner=cpp::"
 

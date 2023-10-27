@@ -1,29 +1,35 @@
 {
     "problemMatcher": [
       {
-        "owner": "cpp",
-        "pattern": [
-          {
-            "regexp": "^(.*):(\\d+):(\\d+):\\s+(fatal error|error|warning):\\s+(.+)$",
-            "file": 1,
-            "line": 2,
-            "column": 3,
-            "severity": 4,
-            "message": 5
-          },
-          {
-            "regexp": "^\\s*(.*):(\\d+):\\s+(error|warning|note):\\s+(.+)$",
-            "file": 1,
-            "line": 2,
-            "severity": 3,
-            "message": 4
-          },
-          {
-            "regexp": "^nvcc\\s+(fatal\\s+)?(warning|error)\\s+\\(code\\s+\\d+\\)\\s+:(.*)$",
-            "severity": 2,
-            "message": 3
-          }
-        ]
+        "owner": "gcc",
+        "pattern": {
+          "regexp": "^(.*):(\\d+):(\\d+):\\s+(error|warning):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      },
+      {
+        "owner": "nvcc",
+        "pattern": {
+          "regexp": "^([^\\(]+)\\((\\d+)\\):\\s+(error|warning):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "severity": 3,
+          "message": 4
+        }
+      },
+      {
+        "owner": "cmake",
+        "pattern": {
+          "regexp": "^CMake\\s+(Error|Warning)\\s+at\\s+([^:]+):(\\d+):\\s+(.*)$",
+          "severity": 1,
+          "file": 2,
+          "line": 3,
+          "message": 4
+        }
       }
     ]
   }
