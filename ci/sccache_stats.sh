@@ -46,7 +46,6 @@ case $mode in
     else
       echo ${prefix}"sccache stats: N/A No new compilation requests"
     fi
-    sccache -s
     unset SCCACHE_START_HITS
     unset SCCACHE_START_MISSES
     ;;
