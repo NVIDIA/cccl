@@ -42,18 +42,21 @@ int main(int, char**)
             bar = 1;
             uint64_t state = 1;
 
-            NV_IF_TARGET(NV_PROVIDES_SM_80, (
 #if __cccl_ptx_isa >= 700
+            NV_IF_TARGET(NV_PROVIDES_SM_80, (
               state = cuda::ptx::mbarrier_arrive(sem_release, scope_cta,     space_shared, &bar);              // 1.
               state = cuda::ptx::mbarrier_arrive_no_complete(sem_release, scope_cta, space_shared, &bar, 1);   // 2.
-#endif
             ));
-
-            NV_IF_TARGET(NV_PROVIDES_SM_90, (
-#if __cccl_ptx_isa >= 780 // This guard is redundant: before PTX ISA 7.8, there was no support for SM_90
-              state = cuda::ptx::mbarrier_arrive(sem_release, scope_cta,     space_shared, &bar, 1);           // 3.
 #endif
+
+#if __cccl_ptx_isa >= 780 // This guard is redundant: before PTX ISA 7.8, there was no support for SM_90
+            NV_IF_TARGET(NV_PROVIDES_SM_90, (
+              state = cuda::ptx::mbarrier_arrive(sem_release, scope_cta,     space_shared, &bar, 1);           // 3.
+            ));
+#endif
+
 #if __cccl_ptx_isa >= 800
+            NV_IF_TARGET(NV_PROVIDES_SM_90, (
               state = cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_shared, &bar, 1);           // 4.
 
               cuda::ptx::mbarrier_arrive(sem_release, scope_cta,     space_shared_cluster, &bar, 1);           // 5.
@@ -64,8 +67,8 @@ int main(int, char**)
 
               cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta,     space_shared_cluster, &bar, 1); // 7.
               cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared_cluster, &bar, 1); // 7.
-#endif
             ));
+#endif
 
             __unused(bar, state);
         }
