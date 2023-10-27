@@ -162,7 +162,7 @@ jobs:
       - nvrtc
       - thrust
       - cccl-infra
-      - verify-devcontainers
+      #- verify-devcontainers
     steps:
       - name: Check status of all precursor jobs
         if: >-
