@@ -22,21 +22,6 @@
  * https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release-notes
  */
 
-
-// SM version
-
-#if (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
-#  define __cccl_ptx_sm 900ULL
-#elif (defined(__CUDA_MINIMUM_ARCH__) && 800 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
-#  define __cccl_ptx_sm 800ULL
-// Fallback case. Define the SM version to be zero. This ensures that the macro is always defined.
-#else
-#  define __cccl_ptx_sm 0ULL
-#endif
-
-
-// PTX ISA version
-
 // PTX ISA 8.3 is available from CUDA 12.3, driver r545
 #if   (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 3)) || (!defined(__CUDACC_VER_MAJOR__))
 #  define __cccl_ptx_isa 830ULL
