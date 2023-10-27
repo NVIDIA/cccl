@@ -31,8 +31,6 @@ jobs:
         with:
           path: cccl
           persist-credentials: false
-      - name: Add problem matcher
-        run: echo "::add-matcher::cccl/.github/problem-matchers/problem-matcher.json"
       - name: Move files to coder user home directory
         run: |
           cp -R cccl /home/coder/cccl
