@@ -1,35 +1,12 @@
 {
-    "problemMatcher": [
-      {
-        "owner": "gcc",
-        "pattern": {
-          "regexp": "^(.*):(\\d+):(\\d+):\\s+(error|warning):\\s+(.*)$",
-          "file": 1,
-          "line": 2,
-          "column": 3,
-          "severity": 4,
-          "message": 5
-        }
-      },
-      {
-        "owner": "nvcc",
-        "pattern": {
-          "regexp": "^([^\\(]+)\\((\\d+)\\):\\s+(error|warning):\\s+(.*)$",
-          "file": 1,
-          "line": 2,
-          "severity": 3,
-          "message": 4
-        }
-      },
-      {
-        "owner": "cmake",
-        "pattern": {
-          "regexp": "^CMake\\s+(Error|Warning)\\s+at\\s+([^:]+):(\\d+):\\s+(.*)$",
-          "severity": 1,
-          "file": 2,
-          "line": 3,
-          "message": 4
-        }
-      }
-    ]
+  "problemMatcher": {
+    "owner": "nvcc",
+    "pattern": {
+      "regexp": "^(.*):(\\d+):(\\d+):\\s+error:\\s+(.*)$",
+      "file": 1,
+      "line": 2,
+      "column": 3,
+      "message": 4
+    }
   }
+}
