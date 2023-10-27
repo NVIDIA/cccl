@@ -19,6 +19,9 @@
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 
+template <typename ... _Ty>
+__device__ inline bool __unused(_Ty...) { return true; }
+
 int main(int, char**)
 {
     NV_IF_TARGET(NV_IS_DEVICE, (
@@ -36,7 +39,8 @@ int main(int, char**)
             using cuda::ptx::scope_cta;
 
             __shared__ uint64_t bar;
-            uint64_t state;
+            bar = 1;
+            uint64_t state = 1;
 
             NV_IF_TARGET(NV_PROVIDES_SM_80, (
 #if __cccl_ptx_isa >= 700
@@ -63,8 +67,7 @@ int main(int, char**)
 #endif
             ));
 
-            state += 1;         // "Use" state to prevent compiler warnings
-            (void) state;
+            __unused(bar, state);
         }
     ));
 
