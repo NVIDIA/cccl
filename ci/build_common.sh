@@ -195,7 +195,7 @@ function build_preset()
         begin_group "💲 sccache stats"
         sccache -s
         end_group "💲 sccache stats"
-    else
+    fi
 }
 
 function test_preset()
