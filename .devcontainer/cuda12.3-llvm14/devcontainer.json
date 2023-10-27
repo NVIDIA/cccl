@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:23.12-cpp-llvm10-cuda12.2-ubuntu20.04",
+  "image": "rapidsai/devcontainers:23.12-cpp-llvm14-cuda12.3-ubuntu20.04",
   "hostRequirements": {
     "gpu": true
   },
@@ -14,11 +14,11 @@
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda12.2-llvm10",
-    "CCCL_CUDA_VERSION": "12.2",
+    "DEVCONTAINER_NAME": "cuda12.3-llvm14",
+    "CCCL_CUDA_VERSION": "12.3",
     "CCCL_HOST_COMPILER": "llvm",
-    "CCCL_HOST_COMPILER_VERSION": "10",
-    "CCCL_BUILD_INFIX": "cuda12.2-llvm10",
+    "CCCL_HOST_COMPILER_VERSION": "14",
+    "CCCL_BUILD_INFIX": "cuda12.3-llvm14",
     "CXX": "clang++",
     "CUDAHOSTCXX": "clang++"
   },
@@ -44,5 +44,5 @@
       }
     }
   },
-  "name": "cuda12.2-llvm10"
+  "name": "cuda12.3-llvm14"
 }
