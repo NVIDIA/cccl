@@ -22,20 +22,6 @@
             "regexp": "^nvcc\\s+(fatal\\s+)?(warning|error)\\s+\\(code\\s+\\d+\\)\\s+:(.*)$",
             "severity": 2,
             "message": 3
-          },
-          {
-            "regexp": "^CMake Error at (.*):(\\d+) \\(message\\):\\s+(.+)$",
-            "file": 1,
-            "line": 2,
-            "severity": "error",
-            "message": 3
-          },
-          {
-            "regexp": "^CMake Warning (.*):(\\d+) \\(message\\):\\s+(.+)$",
-            "file": 1,
-            "line": 2,
-            "severity": "warning",
-            "message": 3
           }
         ]
       }
