@@ -36,7 +36,7 @@ jobs:
           cp -R cccl /home/coder/cccl
           chown -R coder:coder /home/coder/
       - name: Add NVCC problem matcher
-        run: echo "::add-matcher::/home/coder/cccl/.github/problem-matchers/nvcc-problem-matcher.json"
+        run: echo "::add-matcher::/home/coder/cccl/.github/problem-matchers/problem-matcher.json"
       - name: Configure credentials and environment variables for sccache
         uses: ./cccl/.github/actions/configure_cccl_sccache
       - name: Run command
