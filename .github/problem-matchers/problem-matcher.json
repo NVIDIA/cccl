@@ -1,12 +1,14 @@
 {
-  "problemMatcher": {
-    "owner": "nvcc",
-    "pattern": {
-      "regexp": "^(.*):(\\d+):(\\d+):\\s+error:\\s+(.*)$",
-      "file": 1,
-      "line": 2,
-      "column": 3,
-      "message": 4
+  "problemMatcher": [
+    {
+      "owner": "nvcc",
+      "pattern": {
+        "regexp": "^(.*):(\\d+):(\\d+):\\s+error:\\s+(.*)$",
+        "file": 1,
+        "line": 2,
+        "column": 3,
+        "message": 4
+      }
     }
-  }
+  ]
 }
