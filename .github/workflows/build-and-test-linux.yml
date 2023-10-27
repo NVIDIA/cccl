@@ -20,7 +20,7 @@ jobs:
     uses: ./.github/workflows/run-as-coder.yml
     with:
       name: Build ${{inputs.test_name}}
-      runner: linux-${{inputs.cpu}}-cpu16
+      runner: linux-${{inputs.cpu}}-cpu16-testing
       image:  ${{ inputs.container_image }}
       command: |
         ${{ inputs.build_script }}
@@ -32,7 +32,7 @@ jobs:
     uses: ./.github/workflows/run-as-coder.yml
     with:
       name: Test ${{inputs.test_name}}
-      runner: linux-${{inputs.cpu}}-gpu-v100-latest-1-testing
+      runner: linux-${{inputs.cpu}}-gpu-v100-latest-1
       image: ${{inputs.container_image}}
       command: |
         nvidia-smi
