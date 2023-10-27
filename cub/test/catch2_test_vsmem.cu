@@ -33,8 +33,6 @@
 
 #include <thrust/device_vector.h>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2/catch.hpp"
 #include "catch2_test_cdp_helper.h"
 #include "catch2_test_helper.h"
@@ -138,12 +136,13 @@ struct agent_dummy_algorithm_t
 //----------------------------------------------------------------------------
 template <typename ChainedPolicyT, typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
 void __global__ __launch_bounds__(
-  cub::detail::vsmem_helper_t<typename ChainedPolicyT::ActivePolicy::DummyAlgorithmPolicy,
-                              typename ChainedPolicyT::ActivePolicy::FallbackDummyAlgorithmPolicy,
-                              agent_dummy_algorithm_t,
-                              InputIteratorT,
-                              OutputIteratorT,
-                              OffsetT>::agent_policy_t::BLOCK_THREADS)
+  cub::detail::vsmem_helper_fallback_policy_t<
+    typename ChainedPolicyT::ActivePolicy::DummyAlgorithmPolicy,
+    typename ChainedPolicyT::ActivePolicy::FallbackDummyAlgorithmPolicy,
+    agent_dummy_algorithm_t,
+    InputIteratorT,
+    OutputIteratorT,
+    OffsetT>::agent_policy_t::BLOCK_THREADS)
   dummy_algorithm_kernel(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -157,8 +156,13 @@ void __global__ __launch_bounds__(
   using fallback_policy_t = typename active_policy_t::FallbackDummyAlgorithmPolicy;
   using fallback_agent_t  = agent_dummy_algorithm_t<fallback_policy_t, InputIteratorT, OutputIteratorT, OffsetT>;
 
-  using vsmem_helper_t = cub::detail::
-    vsmem_helper_t<default_policy_t, fallback_policy_t, agent_dummy_algorithm_t, InputIteratorT, OutputIteratorT, OffsetT>;
+  using vsmem_helper_t = cub::detail::vsmem_helper_fallback_policy_t<
+    default_policy_t,
+    fallback_policy_t,
+    agent_dummy_algorithm_t,
+    InputIteratorT,
+    OutputIteratorT,
+    OffsetT>;
 
   using agent_t = typename vsmem_helper_t::agent_t;
 
@@ -274,13 +278,13 @@ struct dispatch_dummy_algorithm_t : SelectedPolicy
   {
     using max_policy_t = typename dispatch_dummy_algorithm_t::max_policy_t;
 
-    using vsmem_helper_t =
-      cub::detail::vsmem_helper_t<typename ActivePolicyT::DummyAlgorithmPolicy,
-                                  typename ActivePolicyT::FallbackDummyAlgorithmPolicy,
-                                  agent_dummy_algorithm_t,
-                                  InputIteratorT,
-                                  OutputIteratorT,
-                                  OffsetT>;
+    using vsmem_helper_t = cub::detail::vsmem_helper_fallback_policy_t<
+      typename ActivePolicyT::DummyAlgorithmPolicy,
+      typename ActivePolicyT::FallbackDummyAlgorithmPolicy,
+      agent_dummy_algorithm_t,
+      InputIteratorT,
+      OutputIteratorT,
+      OffsetT>;
 
     // Empty problem size
     if (num_items == 0)

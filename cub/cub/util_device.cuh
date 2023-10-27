@@ -48,11 +48,11 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cub/detail/device_synchronize.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_type.cuh>
+// for backward compatibility
+#include <cub/util_temporary_storage.cuh>
 
 #include <cuda/annotated_ptr>
 #include <cuda/std/utility>
-// for backward compatibility
-#include <cub/util_temporary_storage.cuh>
 
 #include <nv/target>
 
@@ -166,22 +166,27 @@ public:
   }
 
   /**
-   * @brief Overload for the case when native shared memory can be used. No need to hint to discard
-   * modified cache lines.•
+   * @brief Hints to discard modified cache lines of the used virtual shared memory.
+   * modified cache lines. 
+   *
+   * @note Needs to be followed by `__syncthreads()` if the function returns true and the virtual shared memory is
+   * supposed to be reused after this function call.
    */
   template <bool needs_vsmem_ = needs_vsmem, typename ::cuda::std::enable_if<!needs_vsmem_, int>::type = 0>
-  static __device__ __forceinline__ void discard_temp_storage(typename agent_t::TempStorage& temp_storage)
-  {}
+  static __device__ __forceinline__ bool discard_temp_storage(typename agent_t::TempStorage& temp_storage)
+  {
+    return false;
+  }
 
   /**
-   * @brief Overload for the case when virtual shared memory is used. Hints to discard modified
-   * cache lines for vshmem.
+   * @brief Hints to discard modified cache lines of the used virtual shared memory.
+   * modified cache lines.
    *
-   * @note Needs to be followed by `__syncthreads()` if the virtual shared memory is reused within the same thread
-   * block.
+   * @note Needs to be followed by `__syncthreads()` if the function returns true and the virtual shared memory is
+   * supposed to be reused after this function call.
    */
   template <bool needs_vsmem_ = needs_vsmem, typename ::cuda::std::enable_if<needs_vsmem_, int>::type = 0>
-  static __device__ __forceinline__ void discard_temp_storage(typename agent_t::TempStorage& temp_storage)
+  static __device__ __forceinline__ bool discard_temp_storage(typename agent_t::TempStorage& temp_storage)
   {
     // Ensure all threads finished using temporary storage
     __syncthreads();
@@ -205,15 +210,18 @@ public:
     {
       cuda::discard_memory(thread_ptr, line_size);
     }
+
+    return true;
   }
 };
 
 /**
  * @brief Alias template for the `vsmem_helper_impl` that instantiates the given AgentT template with the respective
- * policy as first template parameter, followed by the parameters captured by the `AgentParamsT` template paramter pack.
+ * policy as first template parameter, followed by the parameters captured by the `AgentParamsT` template parameter
+ * pack.
  */
 template <typename DefaultPolicyT, typename FallbackPolicyT, template <typename...> class AgentT, typename... AgentParamsT>
-using vsmem_helper_t =
+using vsmem_helper_fallback_policy_t =
   vsmem_helper_impl<DefaultPolicyT,
                     AgentT<DefaultPolicyT, AgentParamsT...>,
                     FallbackPolicyT,
@@ -224,8 +232,8 @@ using vsmem_helper_t =
  * overwriting `64` threads per block and `1` item per thread.
  */
 template <typename DefaultPolicyT, template <typename...> class AgentT, typename... AgentParamsT>
-using default_vsmem_helper_t =
-  vsmem_helper_t<DefaultPolicyT, policy_wrapper_t<DefaultPolicyT, 64, 1>, AgentT, AgentParamsT...>;
+using vsmem_helper_default_fallback_policy_t =
+  vsmem_helper_fallback_policy_t<DefaultPolicyT, policy_wrapper_t<DefaultPolicyT, 64, 1>, AgentT, AgentParamsT...>;
 
 } // namespace detail
 
