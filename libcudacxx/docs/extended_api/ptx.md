@@ -444,68 +444,68 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 
  
 ```cuda
-// mbarrier.arrive.shared.b64 state, [addr]; // 1.  PTX ISA 70, SM_80
+// mbarrier.arrive.shared.b64 state, [addr];                                           // 1.  PTX ISA 70, SM_80
 template <typename=void>
 __device__ static inline uint64_t mbarrier_arrive(
-  cuda::ptx::sem_release_t sem,
-  cuda::ptx::scope_cta_t scope,
-  cuda::ptx::space_shared_t space,
+  cuda::ptx::sem_release_t,
+  cuda::ptx::scope_cta_t,
+  cuda::ptx::space_shared_t,
   uint64_t* addr);
 
-// mbarrier.arrive.noComplete.shared.b64 state, [addr], count; // 2.  PTX ISA 70, SM_80
+// mbarrier.arrive.noComplete.shared.b64 state, [addr], count;                         // 2.  PTX ISA 70, SM_80
 template <typename=void>
 __device__ static inline uint64_t mbarrier_arrive_no_complete(
-  cuda::ptx::sem_release_t sem,
-  cuda::ptx::scope_cta_t scope,
-  cuda::ptx::space_shared_t space,
+  cuda::ptx::sem_release_t,
+  cuda::ptx::scope_cta_t,
+  cuda::ptx::space_shared_t,
   uint64_t* addr,
   const uint32_t& count);
 
-// mbarrier.arrive.shared.b64 state, [addr], count; // 3. PTX ISA 78, SM_90
+// mbarrier.arrive.shared.b64 state, [addr], count;                                    // 3. PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint64_t mbarrier_arrive(
-  cuda::ptx::sem_release_t sem,
-  cuda::ptx::scope_cta_t scope,
-  cuda::ptx::space_shared_t space,
-  uint64_t* addr,
-  const uint32_t& count);
-  
-// mbarrier.arrive.release.cluster.shared.b64 state,  [addr], count; // 4. PTX ISA 80, SM_90
-template <typename=void>
-__device__ static inline uint64_t mbarrier_arrive(
-  cuda::ptx::sem_release_t sem,
-  cuda::ptx::scope_cluster_t scope,
-  cuda::ptx::space_shared_t space,
+  cuda::ptx::sem_release_t,
+  cuda::ptx::scope_cta_t,
+  cuda::ptx::space_shared_t,
   uint64_t* addr,
   const uint32_t& count);
 
-// mbarrier.arrive.release{.scope}.shared::cluster.b64 _, [addr], count;   // 5.  PTX ISA 80, SM_90
+// mbarrier.arrive.release.cluster.shared.b64 state,  [addr], count;                   // 4. PTX ISA 80, SM_90
+template <typename=void>
+__device__ static inline uint64_t mbarrier_arrive(
+  cuda::ptx::sem_release_t,
+  cuda::ptx::scope_cluster_t,
+  cuda::ptx::space_shared_t,
+  uint64_t* addr,
+  const uint32_t& count);
+
+// mbarrier.arrive.release{.scope}.shared::cluster.b64 _, [addr], count;               // 5.  PTX ISA 80, SM_90
 // .scope     = { .cta, .cluster }
 template <cuda::ptx::dot_scope Scope>
 __device__ static inline void mbarrier_arrive(
-  cuda::ptx::sem_release_t sem,
+  cuda::ptx::sem_release_t,
   cuda::ptx::scope_t<Scope> scope,
-  cuda::ptx::space_shared_cluster_t space,
+  cuda::ptx::space_shared_cluster_t,
   uint64_t* addr,
   const uint32_t& count);
 
-// mbarrier.arrive.expect_tx.release{.scope}.shared.b64   state, [addr], tx_count; // 6.  PTX ISA 80, SM_90
+// mbarrier.arrive.expect_tx.release{.scope}.shared.b64   state, [addr], tx_count;     // 6.  PTX ISA 80, SM_90
 // .scope     = { .cta, .cluster }
 template <cuda::ptx::dot_scope Scope>
 __device__ static inline uint64_t mbarrier_arrive_expect_tx(
-  cuda::ptx::sem_release_t sem,
+  cuda::ptx::sem_release_t,
   cuda::ptx::scope_t<Scope> scope,
-  cuda::ptx::space_shared_t space,
+  cuda::ptx::space_shared_t,
   uint64_t* addr,
   const uint32_t& tx_count);
 
-// mbarrier.arrive.expect_tx.release{.scope}.shared::cluster.b64 _, [addr], tx_count; // 7.  PTX ISA 80, SM_90
+// mbarrier.arrive.expect_tx.release{.scope}.shared::cluster.b64 _, [addr], tx_count;  // 7.  PTX ISA 80, SM_90
 // .scope     = { .cta, .cluster }
 template <cuda::ptx::dot_scope Scope>
 __device__ static inline void mbarrier_arrive_expect_tx(
-  cuda::ptx::sem_release_t sem,
+  cuda::ptx::sem_release_t,
   cuda::ptx::scope_t<Scope> scope,
-  cuda::ptx::space_shared_cluster_t space,
+  cuda::ptx::space_shared_cluster_t,
   uint64_t* addr,
   const uint32_t& tx_count);
 ```
