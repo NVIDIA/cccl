@@ -19,7 +19,7 @@ jobs:
     name: ${{inputs.name}}
     runs-on: ${{inputs.runner}}
     container:
-      options: -u coder
+      options: -u root
       image: ${{inputs.image}}
       env:
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
@@ -29,16 +29,22 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
+          path: cccl
           persist-credentials: false
+      - name: Move files to coder user home directory
+        run: |
+          cp -R cccl /home/coder/cccl
+          chown -R coder:coder /home/coder/
       - name: Add NVCC problem matcher
         run: |
           echo "::add-matcher::cccl/.github/problem-matchers/problem-matcher.json"
       - name: Configure credentials and environment variables for sccache
         uses: ./cccl/.github/actions/configure_cccl_sccache
       - name: Run command
-        shell: bash
+        shell: su coder {0}
         run: |
             set -eo pipefail
+            cd ~/cccl
             echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
             echo -e "\e[1;34m${{inputs.command}}\e[0m"
             eval "${{inputs.command}}" || exit_code=$?
