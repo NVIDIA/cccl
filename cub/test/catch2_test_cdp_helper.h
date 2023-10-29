@@ -28,7 +28,7 @@
 #pragma once
 
 #include <thrust/device_vector.h>
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cub/detail/triple_chevron_launch.cuh>
 
 #include "catch2_test_helper.h"
 

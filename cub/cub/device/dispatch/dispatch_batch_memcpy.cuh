@@ -47,7 +47,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_ptx.cuh>
-
+#include <cub/util_device.cuh>
 #include <cub/detail/triple_chevron_launch.cuh>
 
 #include <cuda/std/type_traits>
