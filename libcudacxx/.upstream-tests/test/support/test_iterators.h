@@ -378,6 +378,7 @@ public:
     template <class T>
     void operator,(T const &) = delete;
 };
+static_assert(cuda::std::random_access_iterator<contiguous_iterator<int*>>, "");
 
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
 
