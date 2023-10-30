@@ -4,7 +4,7 @@
       "owner": "nvcc",
       "pattern": [
         {
-          "regexp": "^\\/home\\/coder\\/cccl\\/(.+):(\\d+):(\\d+): (\\w+): \"(.+)\"$",
+          "regexp": "^\\/home\\/coder\\/(.+):(\\d+):(\\d+): (\\w+): \"(.+)\"$",
           "file": 1,
           "line": 2,
           "column": 3,
