@@ -205,7 +205,8 @@ function build_preset() {
 
     # Only print detailed stats in actions workflow
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
-        begin_group "💲 ${minimal_sccache_stats}"
+        begin_group "💲 sccache stats"
+        echo "${minimal_sccache_stats}"
         sccache -s
         end_group
 
