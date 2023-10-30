@@ -40,7 +40,7 @@ jobs:
           source: ./docs/jekyll
           destination: ./_site
 
-      # Build libcudacxx docs
+      # Libcudacxx
       - name: Build libcudacxx docs
         uses: actions/jekyll-build-pages@v1
         with:

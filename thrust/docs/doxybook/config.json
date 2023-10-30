@@ -1,5 +1,5 @@
 {
-  "baseUrl": "{{ site.baseurl }}/api/",
+  "baseUrl": "/{{ site.baseurl }}/api/",
   "copyImages": true,
   "fileExt": "md",
   "filesFilter": [],
