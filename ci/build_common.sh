@@ -186,8 +186,8 @@ function build_preset() {
     pushd .. > /dev/null
     # Temporarily disable exiting on non-zero return
     set +e
-    local cmake_output=$(cmake --build --preset=$PRESET -v 2>&1)
-    local build_status=$?
+    cmake_output=$(cmake --build --preset=$PRESET -v)
+    status=$?
     set -e
     popd > /dev/null
 
