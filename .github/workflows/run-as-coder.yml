@@ -43,16 +43,17 @@ jobs:
       - name: Run command
         shell: su coder {0}
         run: |
-          set -eo pipefail
-          cd ~/cccl
-          echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
-          echo -e "\e[1;34m${{inputs.command}}\e[0m"
-          eval "${{inputs.command}}"
-      - name: Print Repro Instructions Upon Failure
-        if: ${{ failure() }}
-        run: |
-          echo -e "::group::️❗ \e[1;31mInstructions to reproduce failure\e[0m"
-          echo "::error::Error! To checkout the corresponding code and reproduce locally, run the following commands:"
-          echo "git clone --branch $GITHUB_REF_NAME --single-branch --recurse-submodules https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
-          echo "docker run --rm -it --gpus all --pull=always --volume \$PWD:/repo --workdir /repo ${{ inputs.image }} ${{inputs.command}}"
-          echo "::endgroup::"
+            set -eo pipefail
+            cd ~/cccl
+            echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
+            echo -e "\e[1;34m${{inputs.command}}\e[0m"
+            eval "${{inputs.command}}" || exit_code=$?
+            if [ ! -z "$exit_code" ]; then
+                echo -e "::group::️❗ \e[1;31mInstructions to reproduce failure\e[0m"
+                echo "::error::Error! To checkout the corresponding code and reproduce locally, run the following commands:"
+                echo "git clone --branch $GITHUB_REF_NAME --single-branch --recurse-submodules https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+                echo "docker run --rm -it --gpus all --pull=always --volume \$PWD:/repo --workdir /repo ${{ inputs.image }} ${{inputs.command}}"
+                echo "::endgroup::"
+                exit $exit_code
+            fi
+
