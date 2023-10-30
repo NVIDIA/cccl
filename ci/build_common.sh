@@ -184,8 +184,11 @@ function build_preset() {
     source "./sccache_stats.sh" "start"
 
     pushd .. > /dev/null
+    # Temporarily disable exiting on non-zero return
+    set +e
     local cmake_output=$(cmake --build --preset=$PRESET -v 2>&1)
     local build_status=$?
+    set -e
     popd > /dev/null
 
     # Determine group name and color based on build status
