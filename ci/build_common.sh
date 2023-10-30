@@ -220,7 +220,7 @@ function build_preset() {
 
     if [ $build_status -ne 0 ]; then
         exit $build_status
-    else
+    fi
 }
 
 function test_preset()
