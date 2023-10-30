@@ -168,7 +168,7 @@ CUB_TEST("Rough draft of testing Chevron launches successfully ", "[test][utils]
 
 }
 
-CUB_TEST("Triple Chevron with missing configuration returns cudaErrorMissingConfiguration", "[test][utils]") {
+CUB_TEST("Triple chevron returns kernel launch failures", "[test][utils]") {
   int n = 42;
   thrust::device_vector<int> in(n, 21);
   thrust::device_vector<int> out(n);
