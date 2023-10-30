@@ -173,19 +173,30 @@ function configure_preset()
     end_group "${GROUP_NAME}"
 }
 
-function build_preset()
-{
+function build_preset() {
     local BUILD_NAME=$1
     local PRESET=$2
-    local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
-
-    begin_group "${GROUP_NAME}"
+    local green="1;32"
+    local red="1;31"
+    local GROUP_NAME_SUCCESS="🏗️  Build ${BUILD_NAME} - Succeeded"
+    local GROUP_NAME_FAILURE="🏗️  Build ${BUILD_NAME} - Failed"
 
     source "./sccache_stats.sh" "start"
+
     pushd .. > /dev/null
-    cmake --build --preset=$PRESET -v
+    local cmake_output=$(cmake --build --preset=$PRESET -v 2>&1)
     popd > /dev/null
-    end_group "${GROUP_NAME}"
+    local build_status=$?
+
+    # Determine group name and color based on build status
+    if [ $build_status -ne 0 ]; then
+        begin_group "${GROUP_NAME_FAILURE}" "$red"
+    else
+        begin_group "${GROUP_NAME_SUCCESS}" "$green"
+    fi
+
+    echo -e "${cmake_output}"
+    end_group
 
     # print sccache stats outside of group
     source "./sccache_stats.sh" "end"
@@ -197,9 +208,17 @@ function build_preset()
         end_group "💲 sccache stats"
 
         begin_group "🥷 ninja stats"
-        ./ninja_summary.py -C ${BUILD_DIR}
+        echo "The "weighted" time is the elapsed time of each build step divided by the number
+              of tasks that were running in parallel. This makes it an excellent approximation
+              of how "important" a slow step was. A link that is entirely or mostly serialized
+              will have a weighted time that is the same or similar to its elapsed time. A
+              compile that runs in parallel with 999 other compiles will have a weighted time
+              that is tiny."
+        ./ninja_summary.py -C ${BUILD_DIR}/${PRESET}
         end_group "🥷 ninja stats"
     fi
+
+    return $build_status
 }
 
 function test_preset()
