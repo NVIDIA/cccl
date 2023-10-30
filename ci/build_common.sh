@@ -185,8 +185,8 @@ function build_preset() {
 
     pushd .. > /dev/null
     local cmake_output=$(cmake --build --preset=$PRESET -v 2>&1)
-    popd > /dev/null
     local build_status=$?
+    popd > /dev/null
 
     # Determine group name and color based on build status
     if [ $build_status -ne 0 ]; then
