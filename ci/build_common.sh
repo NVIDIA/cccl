@@ -195,6 +195,10 @@ function build_preset()
         begin_group "💲 sccache stats"
         sccache -s
         end_group "💲 sccache stats"
+
+        begin_group "🥷 ninja stats"
+        ./ninja_summary.py -C ${BUILD_DIR}
+        end_group "🥷 ninja stats"
     fi
 }
 
