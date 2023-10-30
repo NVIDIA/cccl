@@ -224,7 +224,6 @@ function build_preset() {
     fi
 
     if [ $build_status -ne 0 ]; then
-        echo "::error:: ${BUILD_NAME} failed."
         exit $build_status
     fi
 }
