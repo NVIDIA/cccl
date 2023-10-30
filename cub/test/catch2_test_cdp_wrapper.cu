@@ -78,8 +78,7 @@ struct cub_api_example_t
       temp_storage_bytes = static_cast<std::size_t>(num_items);
       return cudaSuccess;
     }
-    std::cout << should_be_invoked_on_device << std::endl;
-    std::cout << sentinel << std::endl;
+  
     if (temp_storage_bytes != static_cast<std::size_t>(num_items))
     {
       return cudaErrorInvalidValue;
