@@ -218,7 +218,9 @@ function build_preset() {
         end_group "🥷 ninja stats"
     fi
 
-    return $build_status
+    if [ $build_status -ne 0 ]; then
+        exit $build_status
+    else
 }
 
 function test_preset()
