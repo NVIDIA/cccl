@@ -195,7 +195,7 @@ CUB_TEST("Triple Chevron respects required dynamic shared memory allocation", "[
   const int grid_size = (n * block_size - 1) / block_size;
   auto chevron = cub::detail::triple_chevron(grid_size, block_size, cap); 
   auto err = chevron.doit(mult_two_kernel<int>, d_in, d_out, n);
-  REQUIRE( CubDebug(cudaErrorInvalidConfiguration) == cudaErrorInvalidConfiguration );
+  REQUIRE( err == cudaSuccess );
 }
 
 CUB_TEST("Triple Chevron properly forwards parameters", "[test][utils]") {
