@@ -33,6 +33,45 @@
 
 #include <c2h/custom_type.cuh>
 
+#include <cub/util_type.cuh> // __CUDA_FP8_TYPES_EXIST__
+
+#if defined(__CUDA_FP8_TYPES_EXIST__)
+#  include <cuda_fp8.h>
+
+namespace std
+{
+template <>
+class numeric_limits<__nv_fp8_e4m3>
+{
+public:
+  static __nv_fp8_e4m3 max()
+  {
+    return cub::Traits<__nv_fp8_e4m3>::Max();
+  }
+
+  static __nv_fp8_e4m3 lowest()
+  {
+    return cub::Traits<__nv_fp8_e4m3>::Lowest();
+  }
+};
+
+template <>
+class numeric_limits<__nv_fp8_e5m2>
+{
+public:
+  static __nv_fp8_e5m2 max()
+  {
+    return cub::Traits<__nv_fp8_e5m2>::Max();
+  }
+
+  static __nv_fp8_e5m2 lowest()
+  {
+    return cub::Traits<__nv_fp8_e5m2>::Lowest();
+  }
+};
+} // namespace std
+#endif // defined(__CUDA_FP8_TYPES_EXIST__)
+
 namespace c2h
 {
 
@@ -112,7 +151,7 @@ void gen(seed_t seed,
 template <typename T>
 void gen(seed_t seed,
          thrust::device_vector<T> &data,
-         T min = std::numeric_limits<T>::min(),
+         T min = std::numeric_limits<T>::lowest(),
          T max = std::numeric_limits<T>::max());
 
 template <typename T>

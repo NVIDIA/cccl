@@ -51,6 +51,7 @@
     #include <cuda_bf16.h>
 #endif
 
+#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/detail/device_synchronize.cuh>
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/device_segmented_radix_sort.cuh>
@@ -790,10 +791,13 @@ void InitializeKeysSorted(
         // Fill the array.
         UnsignedBits key = TraitsT::TwiddleOut(twiddled_key);
         // Avoid -0.0 for floating-point keys.
-        UnsignedBits negative_zero = UnsignedBits(1) << UnsignedBits(sizeof(UnsignedBits) * 8 - 1);
-        if (TraitsT::CATEGORY == cub::FLOATING_POINT && key == negative_zero)
+        CUB_IF_CONSTEXPR(TraitsT::CATEGORY == cub::FLOATING_POINT) 
         {
-            key = 0;
+            UnsignedBits negative_zero = UnsignedBits(1) << UnsignedBits(sizeof(UnsignedBits) * 8 - 1);
+            if (key == negative_zero)
+            {
+                key = 0;
+            }
         }
 
         for (; i < run_end; ++i)
@@ -1179,7 +1183,7 @@ void Test(
 
     // If in/out API is used, we are not allowed to overwrite the input. 
     // Let's check that the input buffer is not overwritten by the algorithm.
-    if (BACKEND == CUB_NO_OVERWRITE)
+    CUB_IF_CONSTEXPR(BACKEND == CUB_NO_OVERWRITE) 
     {
         KeyT *d_input_keys = reinterpret_cast<KeyT*>(d_keys.d_buffers[0]);
 
@@ -1522,25 +1526,26 @@ void TestBits(
     EndOffsetIteratorT   d_segment_end_offsets)
 {
     // Don't test partial-word sorting for boolean, fp, or signed types (the bit-flipping techniques get in the way) or pre-sorted keys
-    if ((Traits<KeyT>::CATEGORY == UNSIGNED_INTEGER)
-        && (!std::is_same<KeyT, bool>::value)
-        && !pre_sorted)
+    CUB_IF_CONSTEXPR((cub::Traits<KeyT>::CATEGORY == cub::UNSIGNED_INTEGER) && (!std::is_same<KeyT, bool>::value))
     {
-        // Partial bits
-        int begin_bit = 1;
-        int end_bit = (sizeof(KeyT) * 8) - 1;
-        printf("Testing key bits [%d,%d)\n", begin_bit, end_bit); fflush(stdout);
-        TestDirection(h_keys, num_items, num_segments, pre_sorted, h_segment_offsets, d_segment_begin_offsets, d_segment_end_offsets, begin_bit, end_bit);
+        if (!pre_sorted)
+        {
+            // Partial bits
+            int begin_bit = 1;
+            int end_bit = (sizeof(KeyT) * 8) - 1;
+            printf("Testing key bits [%d,%d)\n", begin_bit, end_bit); fflush(stdout);
+            TestDirection(h_keys, num_items, num_segments, pre_sorted, h_segment_offsets, d_segment_begin_offsets, d_segment_end_offsets, begin_bit, end_bit);
 
-        // Equal bits
-        begin_bit = end_bit = 0;
-        printf("Testing key bits [%d,%d)\n", begin_bit, end_bit); fflush(stdout);
-        TestDirection(h_keys, num_items, num_segments, pre_sorted, h_segment_offsets, d_segment_begin_offsets, d_segment_end_offsets, begin_bit, end_bit);
+            // Equal bits
+            begin_bit = end_bit = 0;
+            printf("Testing key bits [%d,%d)\n", begin_bit, end_bit); fflush(stdout);
+            TestDirection(h_keys, num_items, num_segments, pre_sorted, h_segment_offsets, d_segment_begin_offsets, d_segment_end_offsets, begin_bit, end_bit);
 
-        // Across subword boundaries
-        int mid_bit = sizeof(KeyT) * 4;
-        printf("Testing key bits [%d,%d)\n", mid_bit - 1, mid_bit + 1); fflush(stdout);
-        TestDirection(h_keys, num_items, num_segments, pre_sorted, h_segment_offsets, d_segment_begin_offsets, d_segment_end_offsets, mid_bit - 1, mid_bit + 1);
+            // Across subword boundaries
+            int mid_bit = sizeof(KeyT) * 4;
+            printf("Testing key bits [%d,%d)\n", mid_bit - 1, mid_bit + 1); fflush(stdout);
+            TestDirection(h_keys, num_items, num_segments, pre_sorted, h_segment_offsets, d_segment_begin_offsets, d_segment_end_offsets, mid_bit - 1, mid_bit + 1);
+        }
     }
 
     printf("Testing key bits [%d,%d)\n", 0, int(sizeof(KeyT)) * 8); fflush(stdout);
@@ -1734,7 +1739,7 @@ void TestGen(
         TestSizes(h_keys.get(), max_items, max_segments, false);
     }
 
-    if (cub::Traits<KeyT>::CATEGORY == cub::FLOATING_POINT)
+    CUB_IF_CONSTEXPR(cub::Traits<KeyT>::CATEGORY == cub::FLOATING_POINT)
     {
         printf("\nTesting random %s keys with some replaced with -0.0 or +0.0 \n", typeid(KeyT).name());
         fflush(stdout);

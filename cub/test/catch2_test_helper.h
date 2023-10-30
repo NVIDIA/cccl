@@ -35,10 +35,11 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 
-#include "cub/util_compiler.cuh"
+#include <cub/util_compiler.cuh>
 #include "test_util_vec.h"
 
 #include "catch2_main.cuh"
+#include "test_warning_suppression.cuh"
 
 #ifndef VAR_IDX
 #define VAR_IDX 0
@@ -142,4 +143,3 @@ namespace detail
            random(std::numeric_limits<unsigned long long int>::min(),          \
                   std::numeric_limits<unsigned long long int>::max())))        \
   }
-
