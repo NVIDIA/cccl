@@ -120,7 +120,7 @@ function begin_group() {
 
 function end_group() {
     local name="${1:-}"
-    local build_status="${2:-0}" # Default to 0 (success) if not provided
+    local build_status="${2:-0}"
     local red="31"
     local green="32"
 
@@ -204,7 +204,7 @@ function build_preset() {
     build_status=$?
     set -e
     popd > /dev/null
-    end_group ${GROUP_NAME} $build_status
+    end_group "${GROUP_NAME}" $build_status
 
     minimal_sccache_stats=$(source "./sccache_stats.sh" "end")
 
