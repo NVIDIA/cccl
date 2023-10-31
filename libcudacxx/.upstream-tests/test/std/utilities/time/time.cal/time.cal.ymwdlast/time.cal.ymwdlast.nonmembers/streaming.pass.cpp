@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, c++14, c++17, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11, c++14, c++17
 // XFAIL: *
 
 // <chrono>
@@ -20,7 +20,7 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 #include <iostream>
 
 #include "test_macros.h"

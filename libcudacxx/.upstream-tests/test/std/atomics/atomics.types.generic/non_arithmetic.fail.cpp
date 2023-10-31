@@ -8,7 +8,6 @@
 //
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
-// UNSUPPORTED: nvrtc
 
 // <cuda/std/atomic>
 
@@ -23,7 +22,7 @@
 
 struct non_arithmetic {
     int a;
-}
+};
 
 int main(int, char**)
 {

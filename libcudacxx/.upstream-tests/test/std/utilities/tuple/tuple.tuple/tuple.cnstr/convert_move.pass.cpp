@@ -15,7 +15,7 @@
 // template <class... UTypes> tuple(tuple<UTypes...>&& u);
 
 // UNSUPPORTED: c++98, c++03
-// UNSUPPORTED: nvrtc
+
 
 
 #include <cuda/std/tuple>
@@ -51,12 +51,12 @@ struct D
 
 struct BonkersBananas {
   template <class T>
-  operator T() &&;
+  __host__ __device__ operator T() &&;
   template <class T, class = void>
-  explicit operator T() && = delete;
+  __host__ __device__ explicit operator T() && = delete;
 };
 
-void test_bonkers_bananas_conversion() {
+__host__ __device__ void test_bonkers_bananas_conversion() {
   using ReturnType = cuda::std::tuple<int, int>;
   static_assert(cuda::std::is_convertible<BonkersBananas, ReturnType>(), "");
   //TODO: possibly a compiler bug that allows NVCC to think that it can construct a tuple from this type

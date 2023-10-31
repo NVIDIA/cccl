@@ -9,7 +9,7 @@
 // UNSUPPORTED: c++98, c++03, c++11, c++14
 // UNSUPPORTED: libcpp-no-deduction-guides
 // UNSUPPORTED: msvc
-// UNSUPPORTED: nvrtc
+
 // UNSUPPORTED: nvcc-10.3, nvcc-11.0, nvcc-11.1, nvcc-11.2, nvcc-11.3, nvcc-11.4
 
 // GCC's implementation of class template deduction is still immature and runs

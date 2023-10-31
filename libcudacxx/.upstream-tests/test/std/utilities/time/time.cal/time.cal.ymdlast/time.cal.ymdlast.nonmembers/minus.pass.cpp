@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class year_month_day_last;
@@ -23,7 +23,7 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
@@ -59,8 +59,8 @@ int main(int, char**)
     constexpr month December = cuda::std::chrono::December;
 
     { // year_month_day_last - years
-    ASSERT_NOEXCEPT(                               std::declval<year_month_day_last>() - std::declval<years>());
-    ASSERT_SAME_TYPE(year_month_day_last, decltype(cuda::std::declval<year_month_day_last>() - std::declval<years>()));
+    ASSERT_NOEXCEPT(                               cuda::std::declval<year_month_day_last>() - cuda::std::declval<years>());
+    ASSERT_SAME_TYPE(year_month_day_last, decltype(cuda::std::declval<year_month_day_last>() - cuda::std::declval<years>()));
 
     static_assert(testConstexprYears(year_month_day_last{year{1234}, month_day_last{December}}), "");
     year_month_day_last ym{year{1234}, month_day_last{December}};
@@ -73,8 +73,8 @@ int main(int, char**)
     }
 
     { // year_month_day_last - months
-    ASSERT_NOEXCEPT(                               std::declval<year_month_day_last>() - std::declval<months>());
-    ASSERT_SAME_TYPE(year_month_day_last, decltype(cuda::std::declval<year_month_day_last>() - std::declval<months>()));
+    ASSERT_NOEXCEPT(                               cuda::std::declval<year_month_day_last>() - cuda::std::declval<months>());
+    ASSERT_SAME_TYPE(year_month_day_last, decltype(cuda::std::declval<year_month_day_last>() - cuda::std::declval<months>()));
 
     static_assert(testConstexprMonths(year_month_day_last{year{1234}, month_day_last{December}}), "");
 //  TODO test wrapping

@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // test forward
-// UNSUPPORTED: nvrtc
+
 
 #include <cuda/std/utility>
 

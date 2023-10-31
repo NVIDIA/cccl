@@ -12,7 +12,7 @@
 // defaulted using extensions.
 
 // XFAIL: c++03
-// UNSUPPORTED: nvrtc
+
 
 // test move
 

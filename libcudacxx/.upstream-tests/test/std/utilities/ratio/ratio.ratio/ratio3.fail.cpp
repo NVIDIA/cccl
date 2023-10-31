@@ -9,8 +9,6 @@
 // test ratio:  the absolute values of the template arguments N and D
 //               shall be representable by type intmax_t.
 
-// .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
-// UNSUPPORTED: nvrtc
 
 #include <cuda/std/ratio>
 #include <cuda/std/cstdint>

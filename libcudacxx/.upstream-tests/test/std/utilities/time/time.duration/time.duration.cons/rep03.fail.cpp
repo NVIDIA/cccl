@@ -16,7 +16,7 @@
 // treat_as_floating_point<Rep2>::value shall be false
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
-// UNSUPPORTED: nvrtc
+
 
 #include <cuda/std/chrono>
 
