@@ -182,7 +182,7 @@ function build_preset() {
 
     source "./sccache_stats.sh" "start"
 
-    begin_group "${GROUP_NAME_FAILURE}" "$red"
+    begin_group "${GROUP_NAME}"
     pushd .. > /dev/null
     # Temporarily disable exiting on non-zero return
     set +x
