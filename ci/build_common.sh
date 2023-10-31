@@ -120,13 +120,27 @@ function begin_group() {
 
 function end_group() {
     local name="${1:-}"
+    local build_status="${2:-0}" # Default to 0 (success) if not provided
+    local red="31"
+    local green="32"
 
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo "::endgroup::"
+
+        if [ "$build_status" -ne 0 ]; then
+            echo -e "::error::\e[${red}m ⬆️  ${name} - Failed (click above for full log)⬆️\e[0m"
+        else
+            echo -e "⬆️ \e[${green}m${name} - Succeeded ⬆️\e[0m"
+        fi
     else
-        echo "================== End ${name} =================="
+        if [ "$build_status" -ne 0 ]; then
+            echo -e "\e[${red}m================== End ${name} - Failed ==================\e[0m"
+        else
+            echo -e "\e[${green}m================== End ${name} - Success ==================\n\e[0m"
+        fi
     fi
 }
+
 
 print_environment_details() {
   begin_group "⚙️ Environment Details"
@@ -190,13 +204,7 @@ function build_preset() {
     build_status=$?
     set -e
     popd > /dev/null
-    end_group
-
-    if [ $build_status -ne 0 ]; then
-       echo -e "::error:: ⬆  \e[${red}m ${GROUP_NAME} - Failed (click above for full log)\e[0m ⬆️"
-    else
-       echo -e "⬆️  \e[${green}m${GROUP_NAME} - Succeeded \e[0m ⬆️"
-    fi
+    end_group ${GROUP_NAME} $build_status
 
     minimal_sccache_stats=$(source "./sccache_stats.sh" "end")
 
