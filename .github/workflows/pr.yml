@@ -144,9 +144,9 @@ jobs:
         cmake -S . --preset=cccl-infra -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA}
         ctest --preset=cccl-infra
 
-  #verify-devcontainers:
-  #  name: Verify Dev Containers
-  #  uses: ./.github/workflows/verify-devcontainers.yml
+  verify-devcontainers:
+    name: Verify Dev Containers
+    uses: ./.github/workflows/verify-devcontainers.yml
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
@@ -154,7 +154,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     name: CI
-    if: ${{ always() }} # need to use always() instead of !cancelled() because skipped jobs count as success
+    if: ${{ always() }} # need to use always() instead of !cancelled() because skipped jobs count as success 
     needs:
       - clang-cuda
       - cub
@@ -162,7 +162,7 @@ jobs:
       - nvrtc
       - thrust
       - cccl-infra
-      #- verify-devcontainers
+      - verify-devcontainers
     steps:
       - name: Check status of all precursor jobs
         if: >-
