@@ -128,7 +128,7 @@ function end_group() {
         echo "::endgroup::"
 
         if [ "$build_status" -ne 0 ]; then
-            echo -e "::error::\e[${red}m ⬆️  ${name} - Failed (click above for full log)⬆️\e[0m"
+            echo -e "::error::\e[${red}m ${name} - Failed (⬆️ click above for full log ⬆️)\e[0m"
         fi
     else
         if [ "$build_status" -ne 0 ]; then
