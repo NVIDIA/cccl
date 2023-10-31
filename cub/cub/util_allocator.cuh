@@ -33,7 +33,7 @@
 
 #pragma once
 
-#include "config.cuh"
+#include <cub/config.cuh>
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
@@ -41,12 +41,12 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
-#include "util_namespace.cuh"
-#include "util_debug.cuh"
+#include <cub/util_debug.cuh>
+#include <cub/util_namespace.cuh>
 
-#include <set>
 #include <map>
 #include <mutex>
+#include <set>
 
 #include <math.h>
 
