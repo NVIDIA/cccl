@@ -161,6 +161,7 @@ function run_command() {
     status=$?
     set -e
     end_group "$group_name" $status
+    return $status
 }
 
 
@@ -204,7 +205,9 @@ function configure_preset()
 
     pushd .. > /dev/null
     run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $GLOBAL_CMAKE_OPTIONS $CMAKE_OPTIONS
+    status=$?
     popd > /dev/null
+    return $status
 }
 
 function build_preset() {
@@ -218,6 +221,7 @@ function build_preset() {
 
     pushd .. > /dev/null
     run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v
+    status=$?
     popd > /dev/null
 
     minimal_sccache_stats=$(source "./sccache_stats.sh" "end")
@@ -242,9 +246,7 @@ function build_preset() {
       echo $minimal_sccache_stats
     fi
 
-    if [ $build_status -ne 0 ]; then
-        exit $build_status
-    fi
+    return $status
 }
 
 function test_preset()
@@ -255,7 +257,9 @@ function test_preset()
 
     pushd .. > /dev/null
     run_command "$GROUP_NAME" ctest --preset=$PRESET
+    status=$?
     popd > /dev/null
+    return $status
 }
 
 function configure_and_build_preset()
