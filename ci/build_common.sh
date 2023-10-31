@@ -193,7 +193,7 @@ function build_preset() {
     end_group
 
     if [ $build_status -ne 0 ]; then
-       echo "⬆️ ::error::\e[${red}mBuild ${GROUP_NAME} - Failed \e[0m ⬆️"
+       echo -e "::error::⬆\e[${red}mBuild ${GROUP_NAME} - Failed \e[0m ⬆️"
     else
        echo "⬆️ \e[${green}mBuild ${GROUP_NAME} - Succeeded \e[0m ⬆️"
     fi
