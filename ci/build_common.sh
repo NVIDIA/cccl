@@ -107,9 +107,9 @@ function print_var_values() {
 
 function begin_group() {
     # See options for colors here: https://gist.github.com/JBlond/2fea43a3049b38287e5e9cefc87b2124
-    local green="1;32"
+    local blue="1;34"
     local name="${1:-}"
-    local color="${2:-$green}"
+    local color="${2:-$blue}"
 
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo -e "::group::\e[${color}m${name}\e[0m"
@@ -178,28 +178,25 @@ function build_preset() {
     local PRESET=$2
     local green="1;32"
     local red="1;31"
-    local GROUP_NAME_SUCCESS="🏗️  Build ${BUILD_NAME} - Succeeded"
-    local GROUP_NAME_FAILURE="🏗️  Build ${BUILD_NAME} - Failed"
+    local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
 
     source "./sccache_stats.sh" "start"
 
+    begin_group "${GROUP_NAME_FAILURE}" "$red"
     pushd .. > /dev/null
     # Temporarily disable exiting on non-zero return
-    set +e
-    cmake_output=$(cmake --build --preset=$PRESET -v)
+    set +x
+    cmake --build --preset=$PRESET -v
     build_status=$?
-    set -e
+    set -x
     popd > /dev/null
-
-    # Determine group name and color based on build status
-    if [ $build_status -ne 0 ]; then
-        begin_group "${GROUP_NAME_FAILURE}" "$red"
-    else
-        begin_group "${GROUP_NAME_SUCCESS}" "$green"
-    fi
-
-    echo -e "${cmake_output}"
     end_group
+
+    if [ $build_status -ne 0 ]; then
+       echo "⬆️ ::error::\e[${red}mBuild ${GROUP_NAME} - Failed \e[0m ⬆️"
+    else
+       echo "⬆️ \e[${green}mBuild ${GROUP_NAME} - Succeeded \e[0m ⬆️"
+    fi
 
     minimal_sccache_stats=$(source "./sccache_stats.sh" "end")
 
