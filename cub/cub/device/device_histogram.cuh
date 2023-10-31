@@ -46,8 +46,10 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <iterator>
 #include <limits>
 
+#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/device/dispatch/dispatch_histogram.cuh>
 #include <cub/util_deprecated.cuh>
+
 
 CUB_NAMESPACE_BEGIN
 
@@ -819,29 +821,30 @@ struct DeviceHistogram
     using SampleT = cub::detail::value_t<SampleIteratorT>;
     Int2Type<sizeof(SampleT) == 1> is_byte_sample;
 
-    if ((sizeof(OffsetT) > sizeof(int)) &&
-        ((unsigned long long)(num_rows * row_stride_bytes) <
-         (unsigned long long)INT_MAX))
+    CUB_IF_CONSTEXPR(sizeof(OffsetT) > sizeof(int))
     {
-      // Down-convert OffsetT data type
-      return DispatchHistogram<NUM_CHANNELS,
-                               NUM_ACTIVE_CHANNELS,
-                               SampleIteratorT,
-                               CounterT,
-                               LevelT,
-                               int>::DispatchEven(d_temp_storage,
-                                                  temp_storage_bytes,
-                                                  d_samples,
-                                                  d_histogram,
-                                                  num_levels,
-                                                  lower_level,
-                                                  upper_level,
-                                                  (int)num_row_pixels,
-                                                  (int)num_rows,
-                                                  (int)(row_stride_bytes /
-                                                        sizeof(SampleT)),
-                                                  stream,
-                                                  is_byte_sample);
+      if ((unsigned long long)(num_rows * row_stride_bytes) < (unsigned long long)INT_MAX)
+      {
+        // Down-convert OffsetT data type
+        return DispatchHistogram<NUM_CHANNELS,
+                                NUM_ACTIVE_CHANNELS,
+                                SampleIteratorT,
+                                CounterT,
+                                LevelT,
+                                int>::DispatchEven(d_temp_storage,
+                                                    temp_storage_bytes,
+                                                    d_samples,
+                                                    d_histogram,
+                                                    num_levels,
+                                                    lower_level,
+                                                    upper_level,
+                                                    (int)num_row_pixels,
+                                                    (int)num_rows,
+                                                    (int)(row_stride_bytes /
+                                                          sizeof(SampleT)),
+                                                    stream,
+                                                    is_byte_sample);
+      }
     }
 
     return DispatchHistogram<NUM_CHANNELS,
@@ -1594,28 +1597,29 @@ struct DeviceHistogram
     using SampleT = cub::detail::value_t<SampleIteratorT>;
     Int2Type<sizeof(SampleT) == 1> is_byte_sample;
 
-    if ((sizeof(OffsetT) > sizeof(int)) &&
-        ((unsigned long long)(num_rows * row_stride_bytes) <
-         (unsigned long long)INT_MAX))
+    CUB_IF_CONSTEXPR(sizeof(OffsetT) > sizeof(int))
     {
-      // Down-convert OffsetT data type
-      return DispatchHistogram<NUM_CHANNELS,
-                               NUM_ACTIVE_CHANNELS,
-                               SampleIteratorT,
-                               CounterT,
-                               LevelT,
-                               int>::DispatchRange(d_temp_storage,
-                                                   temp_storage_bytes,
-                                                   d_samples,
-                                                   d_histogram,
-                                                   num_levels,
-                                                   d_levels,
-                                                   (int)num_row_pixels,
-                                                   (int)num_rows,
-                                                   (int)(row_stride_bytes /
-                                                         sizeof(SampleT)),
-                                                   stream,
-                                                   is_byte_sample);
+      if ((unsigned long long)(num_rows * row_stride_bytes) < (unsigned long long)INT_MAX)
+      {
+        // Down-convert OffsetT data type
+        return DispatchHistogram<NUM_CHANNELS,
+                                NUM_ACTIVE_CHANNELS,
+                                SampleIteratorT,
+                                CounterT,
+                                LevelT,
+                                int>::DispatchRange(d_temp_storage,
+                                                    temp_storage_bytes,
+                                                    d_samples,
+                                                    d_histogram,
+                                                    num_levels,
+                                                    d_levels,
+                                                    (int)num_row_pixels,
+                                                    (int)num_rows,
+                                                    (int)(row_stride_bytes /
+                                                          sizeof(SampleT)),
+                                                    stream,
+                                                    is_byte_sample);
+      }
     }
 
     return DispatchHistogram<NUM_CHANNELS,

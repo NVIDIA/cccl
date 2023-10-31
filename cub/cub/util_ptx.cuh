@@ -42,8 +42,9 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
-#include "util_debug.cuh"
-#include "util_type.cuh"
+#include <cub/detail/cpp_compatibility.cuh>
+#include <cub/util_debug.cuh>
+#include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 
@@ -464,7 +465,7 @@ unsigned int WarpMask(unsigned int warp_id)
   unsigned int member_mask = 0xFFFFFFFFu >>
                              (CUB_WARP_THREADS(0) - LOGICAL_WARP_THREADS);
 
-  if (is_pow_of_two && !is_arch_warp)
+  CUB_IF_CONSTEXPR(is_pow_of_two && !is_arch_warp)
   {
     member_mask <<= warp_id * LOGICAL_WARP_THREADS;
   }

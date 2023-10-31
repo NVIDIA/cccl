@@ -51,8 +51,20 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #if !_NVHPC_CUDA
     #include <cuda_fp16.h>
 #endif
+
 #if !_NVHPC_CUDA && !defined(CUB_DISABLE_BF16_SUPPORT)
-    #include <cuda_bf16.h>
+#  include <cuda_bf16.h>
+// cuda_fp8.h transitively includes cuda_fp16.h, so we have to include the header under !CUB_DISABLE_BF16_SUPPORT
+#  if CUDA_VERSION >= 11080
+// cuda_fp8.h resets default for C4127, so we have to guard the inclusion
+#    if CUB_HOST_COMPILER == CUB_HOST_COMPILER_MSVC
+#      pragma warning(push)
+#    endif
+#    include <cuda_fp8.h>
+#    if CUB_HOST_COMPILER == CUB_HOST_COMPILER_MSVC
+#      pragma warning(pop)
+#    endif
+#  endif
 #endif
 
 #include <cub/detail/uninitialized_copy.cuh>
@@ -1160,6 +1172,37 @@ struct FpLimits<__nv_bfloat16>
 };
 #endif
 
+#if defined(__CUDA_FP8_TYPES_EXIST__)
+template <>
+struct FpLimits<__nv_fp8_e4m3>
+{
+    static __host__ __device__ __forceinline__ __nv_fp8_e4m3 Max() {
+        unsigned char max_word = 0x7EU;
+        return reinterpret_cast<__nv_fp8_e4m3&>(max_word);
+    }
+
+    static __host__ __device__ __forceinline__ __nv_fp8_e4m3 Lowest() {
+        unsigned char lowest_word = 0xFEU;
+        return reinterpret_cast<__nv_fp8_e4m3&>(lowest_word);
+    }
+};
+
+template <>
+struct FpLimits<__nv_fp8_e5m2>
+{
+    static __host__ __device__ __forceinline__ __nv_fp8_e5m2 Max() {
+        unsigned char max_word = 0x7BU;
+        return reinterpret_cast<__nv_fp8_e5m2&>(max_word);
+    }
+
+    static __host__ __device__ __forceinline__ __nv_fp8_e5m2 Lowest() {
+        unsigned char lowest_word = 0xFBU;
+        return reinterpret_cast<__nv_fp8_e5m2&>(lowest_word);
+    }
+};
+
+#endif
+
 /**
  * Basic type traits (fp primitive specialization)
  */
@@ -1303,6 +1346,12 @@ template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POIN
 #endif
 #if !_NVHPC_CUDA && !defined(CUB_DISABLE_BF16_SUPPORT)
     template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, false, unsigned short, __nv_bfloat16> {};
+#endif
+
+
+#if defined(__CUDA_FP8_TYPES_EXIST__)
+    template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
+    template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
 #endif
 
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
