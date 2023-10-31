@@ -185,10 +185,10 @@ function build_preset() {
     begin_group "${GROUP_NAME}"
     pushd .. > /dev/null
     # Temporarily disable exiting on non-zero return
-    set +x
+    set +e
     cmake --build --preset=$PRESET -v
     build_status=$?
-    set -x
+    set -e
     popd > /dev/null
     end_group
 
