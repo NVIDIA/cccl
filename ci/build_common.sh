@@ -139,6 +139,20 @@ function end_group() {
     fi
 }
 
+function run_command() {
+    local group_name="${1:-}"
+    shift
+    local command=("$@")
+    local status
+
+    begin_group "$group_name"
+    set +e
+    "${command[@]}"
+    status=$?
+    set -e
+    end_group "$group_name" $status
+}
+
 
 print_environment_details() {
   begin_group "⚙️ Environment Details"
@@ -178,11 +192,9 @@ function configure_preset()
     local CMAKE_OPTIONS=$3
     local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
-    begin_group "${GROUP_NAME}"
     pushd .. > /dev/null
-    cmake --preset=$PRESET --log-level=VERBOSE $GLOBAL_CMAKE_OPTIONS $CMAKE_OPTIONS
+    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $GLOBAL_CMAKE_OPTIONS $CMAKE_OPTIONS
     popd > /dev/null
-    end_group "${GROUP_NAME}"
 }
 
 function build_preset() {
@@ -194,15 +206,9 @@ function build_preset() {
 
     source "./sccache_stats.sh" "start"
 
-    begin_group "${GROUP_NAME}"
     pushd .. > /dev/null
-    # Temporarily disable exiting on non-zero return
-    set +e
-    cmake --build --preset=$PRESET -v
-    build_status=$?
-    set -e
+    run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v
     popd > /dev/null
-    end_group "${GROUP_NAME}" $build_status
 
     minimal_sccache_stats=$(source "./sccache_stats.sh" "end")
 
@@ -237,13 +243,9 @@ function test_preset()
     local PRESET=$2
     local GROUP_NAME="🚀  Test ${BUILD_NAME}"
 
-    begin_group "${GROUP_NAME}"
-
     pushd .. > /dev/null
-    ctest --preset=$PRESET
+    run_command "$GROUP_NAME" ctest --preset=$PRESET
     popd > /dev/null
-
-    end_group "${GROUP_NAME}"
 }
 
 function configure_and_build_preset()
