@@ -193,9 +193,9 @@ function build_preset() {
     end_group
 
     if [ $build_status -ne 0 ]; then
-       echo -e "::error:: ⬆ \e[${red}mBuild ${GROUP_NAME} - Failed (click above for full log)\e[0m ⬆️"
+       echo -e "::error:: ⬆ \e[${red}m ${GROUP_NAME} - Failed (click above for full log)\e[0m ⬆️"
     else
-       echo "⬆️ \e[${green}mBuild ${GROUP_NAME} - Succeeded \e[0m ⬆️"
+       echo -e "⬆️ \e[${green}m${GROUP_NAME} - Succeeded \e[0m ⬆️"
     fi
 
     minimal_sccache_stats=$(source "./sccache_stats.sh" "end")
