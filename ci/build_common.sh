@@ -194,8 +194,6 @@ print_environment_details() {
   end_group "⚙️ Environment Details"
 }
 
-print_environment_details
-
 function configure_preset()
 {
     local BUILD_NAME=$1

@@ -2,6 +2,8 @@
 
 source "$(dirname "$0")/build_common.sh"
 
+print_environment_details
+
 # CUB benchmarks require at least CUDA nvcc 11.5 for int128
 # Returns "true" if the first version is greater than or equal to the second
 version_compare() {
