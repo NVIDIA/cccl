@@ -6,9 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
-// UNSUPPORTED: nvrtc
-
 // UNSUPPORTED: c++98, c++03, c++11
 // type_traits
 

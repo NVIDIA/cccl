@@ -28,12 +28,6 @@ function(cub_build_compiler_targets)
     # Suppress overly-pedantic/unavoidable warnings brought in with /W4:
     # C4324: structure was padded due to alignment specifier
     append_option_if_available("/wd4324" cxx_compile_options)
-    # C4127: conditional expression is constant
-    # This can be fixed with `if constexpr` when available, but there's no way
-    # to silence these pre-C++17.
-    # TODO We should have per-dialect interface targets so we can leave these
-    # warnings enabled on C++17:
-    append_option_if_available("/wd4127" cxx_compile_options)
     # C4505: unreferenced local function has been removed
     # The CUDA `host_runtime.h` header emits this for
     # `__cudaUnregisterBinaryUtil`.

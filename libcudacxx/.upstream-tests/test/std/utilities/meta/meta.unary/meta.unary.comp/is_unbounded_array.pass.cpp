@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // type_traits
 
@@ -44,7 +44,7 @@ union Union {};
 
 class Abstract
 {
-    virtual ~Abstract() = 0;
+    __host__ __device__ virtual ~Abstract() = 0;
 };
 
 enum Enum {zero, one};

@@ -8,7 +8,7 @@
 
 // <cuda/std/array>
 
-// UNSUPPORTED: nvrtc
+
 
 // tuple_element<I, array<T, N> >::type
 

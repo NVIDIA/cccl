@@ -9,7 +9,7 @@
 #ifndef NASTY_CONTAINERS_H
 #define NASTY_CONTAINERS_H
 
-#include <cassert>
+#include <cuda/std/cassert>
 #include <vector>
 #include <list>
 

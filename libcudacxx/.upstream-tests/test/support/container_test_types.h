@@ -85,7 +85,7 @@
  *
  */
 
-#include <cassert>
+#include <cuda/std/cassert>
 #include <functional>
 #include <new>
 #include <utility>

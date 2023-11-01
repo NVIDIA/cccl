@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
@@ -35,14 +35,13 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
-#include "../util_type.cuh"
-#include "../util_namespace.cuh"
-#include "../block/block_load.cuh"
-#include "../block/block_store.cuh"
-#include "../block/block_adjacent_difference.cuh"
+#include <cub/block/block_adjacent_difference.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_store.cuh>
+#include <cub/util_namespace.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/util.h>
-
 
 CUB_NAMESPACE_BEGIN
 

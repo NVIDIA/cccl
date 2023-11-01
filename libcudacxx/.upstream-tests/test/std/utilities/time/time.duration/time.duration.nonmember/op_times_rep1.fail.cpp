@@ -19,7 +19,7 @@
 //   operator*(const Rep1& s, const duration<Rep2, Period>& d);
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
-// UNSUPPORTED: nvrtc
+
 
 #include <cuda/std/chrono>
 

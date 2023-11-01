@@ -9,8 +9,6 @@
 
 // <cuda/std/iterator>
 
-// UNSUPPORTED: nvrtc
-
 // reverse_iterator
 
 // explicit reverse_iterator(Iter x);

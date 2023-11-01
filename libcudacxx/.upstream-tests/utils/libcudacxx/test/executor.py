@@ -33,6 +33,7 @@ class Executor(object):
 class LocalExecutor(Executor):
     def __init__(self):
         super(LocalExecutor, self).__init__()
+        self.timeout = 0
         self.is_windows = platform.system() == 'Windows'
 
     def run(self, exe_path, cmd=None, work_dir='.', file_deps=None, env=None):

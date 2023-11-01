@@ -8,7 +8,7 @@
 
 // UNSUPPORTED: c++98, c++03
 // UNSUPPORTED: msvc
-// UNSUPPORTED: nvrtc
+
 // XFAIL: gcc-4
 
 // <utility>

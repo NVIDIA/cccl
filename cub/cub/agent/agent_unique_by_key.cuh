@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
@@ -40,14 +40,14 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/block/block_discontinuity.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/thread/thread_operators.cuh>
+
 #include <iterator>
 #include <type_traits>
-
-#include "../thread/thread_operators.cuh"
-#include "../block/block_load.cuh"
-#include "../block/block_scan.cuh"
-#include "../agent/single_pass_scan_operators.cuh"
-#include "../block/block_discontinuity.cuh"
 
 CUB_NAMESPACE_BEGIN
 

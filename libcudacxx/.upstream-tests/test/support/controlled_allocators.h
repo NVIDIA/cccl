@@ -15,7 +15,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdint>
-#include <cassert>
+#include <cuda/std/cassert>
 #include "test_macros.h"
 #include "type_id.h"
 

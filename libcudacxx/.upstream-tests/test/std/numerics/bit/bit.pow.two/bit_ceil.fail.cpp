@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: c++98, c++03
-// UNSUPPORTED: nvrtc
 
 // template <class T>
 //   constexpr T bit_ceil(T x) noexcept;

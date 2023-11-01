@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvrtc
-
 // <functional>
 //
 // reference_wrapper
@@ -63,7 +61,7 @@ int main(int, char**)
   {
     meow(0);
   }
-#if !defined(TEST_COMPILER_MSVC)
+#if !defined(TEST_COMPILER_MSVC) && !defined(TEST_COMPILER_NVRTC)
   {
     extern cuda::std::reference_wrapper<int> purr();
     ASSERT_SAME_TYPE(decltype(true ? purr() : 0), int);

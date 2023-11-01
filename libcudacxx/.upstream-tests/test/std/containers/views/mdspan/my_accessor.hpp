@@ -23,11 +23,11 @@ namespace Foo
     constexpr my_accessor(my_accessor<OtherElementType> other) noexcept { flag = other.flag; }
 
 
-    constexpr reference access(data_handle_type p, size_t i) const noexcept {
+    _LIBCUDACXX_HOST_DEVICE constexpr reference access(data_handle_type p, size_t i) const noexcept {
       return p.data[i];
     }
 
-    constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept {
+    _LIBCUDACXX_HOST_DEVICE constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept {
       return data_handle_type(p.data+i);
     }
     int* flag;
