@@ -7,10 +7,12 @@
   "initializeCommand": [
     "/bin/bash",
     "-c",
-    "mkdir -m 0755 -p ${localWorkspaceFolder}/.{cache,config,sccache}"
+    "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config}"
   ],
   "containerEnv": {
-    "SCCACHE_DIR": "${containerWorkspaceFolder}/.sccache",
+    "SCCACHE_REGION": "us-east-2",
+    "SCCACHE_BUCKET": "rapids-sccache-devs",
+    "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda12.2-gcc12",
     "CCCL_CUDA_VERSION": "12.2",
@@ -23,6 +25,7 @@
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
   "mounts": [
+    "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/.config,target=/home/coder/.config,type=bind,consistency=consistent"
   ],

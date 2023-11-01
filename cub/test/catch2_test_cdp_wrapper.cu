@@ -78,7 +78,7 @@ struct cub_api_example_t
       temp_storage_bytes = static_cast<std::size_t>(num_items);
       return cudaSuccess;
     }
-  
+
     if (temp_storage_bytes != static_cast<std::size_t>(num_items))
     {
       return cudaErrorInvalidValue;

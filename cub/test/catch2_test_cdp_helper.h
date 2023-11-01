@@ -71,7 +71,6 @@ __global__ void device_side_api_launch_kernel(std::uint8_t *d_temp_storage,
                                               ActionT action,
                                               Args... args)
 {
-  
   *d_error = action(d_temp_storage, *temp_storage_bytes, args...);
 }
 

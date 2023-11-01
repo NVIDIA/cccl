@@ -89,7 +89,7 @@ CUB_TEST("CDP wrapper works with custom invocables and cdp_launch, on both host 
 
 }
 
-CUB_TEST("Rough draft of testing Chevron launches successfully ", "[test][utils]") {
+CUB_TEST("Triple Chevron can launch kernels via cdp_launch successfully", "[device][chevron]") {
   cudaStream_t stream1, stream2;
   cudaStreamCreate(&stream1);
   cudaStreamCreate(&stream2);
@@ -123,7 +123,7 @@ CUB_TEST("Rough draft of testing Chevron launches successfully ", "[test][utils]
 
 }
 
-CUB_TEST("Triple chevron returns kernel launch failures", "[test][utils]") {
+CUB_TEST("Triple chevron returns kernel launch failures", "[device][chevron]") {
   int n = 42;
   thrust::device_vector<int> in(n, 21);
   thrust::device_vector<int> out(n);
@@ -135,7 +135,7 @@ CUB_TEST("Triple chevron returns kernel launch failures", "[test][utils]") {
   REQUIRE( CubDebug(cudaErrorMissingConfiguration) == cudaErrorMissingConfiguration );
 }
 
-CUB_TEST("Triple Chevron respects required dynamic shared memory allocation", "[test][utils]") {
+CUB_TEST("Triple Chevron respects required dynamic shared memory allocation", "[device][chevron]") {
 
 
   cudaDeviceProp deviceProperties;
@@ -170,7 +170,7 @@ struct cdp_add_invocable {
   }
 };
 
-CUB_TEST("Triple Chevron properly forwards parameters", "[test][utils]") {
+CUB_TEST("Triple Chevron properly forwards parameters", "[device][chevron]") {
   double result;
   double *d_result = nullptr;
   cudaMalloc(&d_result, sizeof(double));
