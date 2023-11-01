@@ -186,7 +186,7 @@ void radix_sort_values(std::integral_constant<bool, true>,
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto *temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec([&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
     cub::DoubleBuffer<key_t> keys     = d_keys;
     cub::DoubleBuffer<value_t> values = d_values;
 

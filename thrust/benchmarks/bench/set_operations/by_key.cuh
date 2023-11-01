@@ -70,7 +70,7 @@ static void basic(nvbench::state &state, nvbench::type_list<KeyT, ValueT>, OpT o
   state.add_global_memory_reads<ValueT>(OpT::read_all_values ? elements : elements_in_A); 
   state.add_global_memory_writes<ValueT>(elements_in_AB);
 
-  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
     op(in_keys.cbegin(),
        in_keys.cbegin() + elements_in_A,
        in_keys.cbegin() + elements_in_A,
