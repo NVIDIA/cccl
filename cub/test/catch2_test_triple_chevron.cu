@@ -9,11 +9,6 @@
 #include "catch2_test_helper.h"
 
 // %PARAM% TEST_CDP cdp 0:1
-
-__global__ void add_kernel(int a, float b, double* out) {
-    *out = a + b;
-}
-
 __global__ void shared_mem_kernel(unsigned int* size) {
   extern __shared__ char smem[];
 
@@ -34,14 +29,16 @@ __global__ void mult_two_kernel(const T *d_in, T *d_out, int num_items)
     }
 }
 
+__global__ void add_kernel(int a, float b, double* out) {
+    *out = a + b;
+}
 
-struct cdp_chevron_invoker { 
+struct cdp_invocable_mult_two {
   static constexpr int threads_in_block = 256;
 
-  template <class T, class KernelT>
-  CUB_RUNTIME_FUNCTION static cudaError_t invoke(std::uint8_t *d_temp_storage,
+  template <class T>
+  CUB_RUNTIME_FUNCTION cudaError_t operator()(std::uint8_t *d_temp_storage,
                                                  std::size_t &temp_storage_bytes,
-                                                 KernelT kernel,
                                                  const T *d_in,
                                                  T *d_out,
                                                  int num_items,
@@ -65,64 +62,11 @@ struct cdp_chevron_invoker {
     const int blocks_in_grid = (num_items + threads_in_block - 1) / threads_in_block;
 
     return cub::detail::triple_chevron(blocks_in_grid, threads_in_block, 0, 0)
-      .doit(kernel, d_in, d_out, num_items);
-  }
-
-  template <class T>
-  CUB_RUNTIME_FUNCTION static cudaError_t create(std::uint8_t *d_temp_storage,
-                                               std::size_t &temp_storage_bytes,
-                                               const T *d_in,
-                                               T *d_out,
-                                               int num_items,
-                                               bool device_invoke)
-  {
-    return invoke(d_temp_storage,
-                  temp_storage_bytes,
-                  mult_two_kernel<T>,
-                  d_in,
-                  d_out,
-                  num_items,
-                  device_invoke);
+      .doit(mult_two_kernel<T>, d_in, d_out, num_items);
   }
 };
 
-struct cdp_invocable {
-    static constexpr int threads_in_block = 256;
-
-    template <class T, class KernelT>
-    CUB_RUNTIME_FUNCTION cudaError_t operator()(
-        uint8_t* d_temp_storage,
-        size_t& temp_storage_bytes,
-        KernelT kernel,
-        const T* d_in,
-        T* d_out,
-        int num_items,
-        bool on_device) const 
-    {
-        NV_IF_TARGET(NV_IS_HOST,
-                    (if (on_device) { return cudaErrorLaunchFailure; }),
-                    (if (!on_device) { return cudaErrorLaunchFailure; }));
-
-        if (d_temp_storage == nullptr) 
-        {
-            temp_storage_bytes = static_cast<std::size_t>(num_items);
-            return cudaSuccess;
-        }
-
-        if (temp_storage_bytes != static_cast<std::size_t>(num_items))
-        {
-            return cudaErrorInvalidValue;
-        }
-
-        const int blocks_in_grid = (num_items + threads_in_block - 1) / threads_in_block;
-
-        return cub::detail::triple_chevron(blocks_in_grid, threads_in_block, 0, 0)
-            .doit(kernel, d_in, d_out, num_items);
-    }
-};
-
-
-CUB_TEST("CDP wrapper works with custom invocables and cdp_launch, on both host and device", "[device][triple_chevron]")
+CUB_TEST("CDP wrapper works with custom invocables and cdp_launch, on both host and device", "[device][chevron]")
 {
   int n = 42;
   thrust::device_vector<int> in(n, 21);
@@ -134,26 +78,18 @@ CUB_TEST("CDP wrapper works with custom invocables and cdp_launch, on both host 
   constexpr bool on_device = TEST_CDP;
 
   {
-    cdp_launch(cdp_invocable{}, mult_two_kernel<int>, d_in, d_out, n, on_device);
+    cdp_launch(cdp_invocable_mult_two{}, d_in, d_out, n, on_device);
     cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess) {
-        printf("Error: %s\n", cudaGetErrorString(err));
-    }
-    cudaDeviceSynchronize();
-    std::vector<int> h_out(n);
-    thrust::copy(out.begin(), out.end(), h_out.begin());
-
+    
     const auto actual   = static_cast<std::size_t>(thrust::count(out.begin(), out.end(), 42));
     const auto expected = static_cast<std::size_t>(n);
 
     REQUIRE(actual == expected);
   }
 
-
 }
 
-
-CUB_TEST("Triple Chevron properly launches with cuda streams involved and returns successful", "[device][triple_chevron]") {
+CUB_TEST("Rough draft of testing Chevron launches successfully ", "[test][utils]") {
   cudaStream_t stream1, stream2;
   cudaStreamCreate(&stream1);
   cudaStreamCreate(&stream2);
@@ -201,6 +137,7 @@ CUB_TEST("Triple chevron returns kernel launch failures", "[test][utils]") {
 
 CUB_TEST("Triple Chevron respects required dynamic shared memory allocation", "[test][utils]") {
 
+
   cudaDeviceProp deviceProperties;
   cudaGetDeviceProperties(&deviceProperties, 0);
   auto cap = deviceProperties.sharedMemPerBlock;
@@ -212,19 +149,33 @@ CUB_TEST("Triple Chevron respects required dynamic shared memory allocation", "[
   cudaMalloc(&device_actual, sizeof(unsigned int)); 
   auto err = chevron.doit(shared_mem_kernel, device_actual);
   cudaMemcpy(&host_actual, device_actual, sizeof(unsigned int), cudaMemcpyDeviceToHost);
+
   REQUIRE(host_actual == cap);
 
   cudaFree(device_actual);
 }
 
-CUB_TEST("Triple Chevron properly forwards parameters", "[device][triple_chevron]") {
+struct cdp_add_invocable {
+
+  CUB_RUNTIME_FUNCTION cudaError_t operator()(uint8_t* temp,
+    size_t& bytes,
+    double* out,
+    bool on_device) {
+    NV_IF_TARGET(NV_IS_HOST,
+                 (if (on_device) { return cudaErrorLaunchFailure; }),
+                 (if (!on_device) { return cudaErrorLaunchFailure; }));
+
+     auto chev = cub::detail::triple_chevron(1, 1); 
+     return chev.doit(add_kernel, 5, 3.5f, out);     
+  }
+};
+
+CUB_TEST("Triple Chevron properly forwards parameters", "[test][utils]") {
   double result;
-  double *d_result;
-
+  double *d_result = nullptr;
   cudaMalloc(&d_result, sizeof(double));
-  auto chev = cub::detail::triple_chevron(1, 1); 
-  chev.doit(add_kernel, 5, 3.5f, d_result);
+  constexpr bool on_device = TEST_CDP;
+  cdp_launch(cdp_add_invocable{}, d_result, on_device);
   cudaMemcpy(&result, d_result, sizeof(double), cudaMemcpyDeviceToHost);
-
   REQUIRE(result == 8.5f);
 }
