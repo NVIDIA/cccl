@@ -71,10 +71,8 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cta (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-
-  _CUDA_VSTD::uint64_t __state;
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,(
+    _CUDA_VSTD::uint64_t __state;
     asm (
       "mbarrier.arrive.shared.b64 %0, [%1]; // 1. "
       : "=l"(__state)
@@ -112,10 +110,8 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_no_complet
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cta (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-
-  _CUDA_VSTD::uint64_t __state;
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,(
+    _CUDA_VSTD::uint64_t __state;
     asm (
       "mbarrier.arrive.noComplete.shared.b64 %0, [%1], %2; // 2. "
       : "=l"(__state)
@@ -154,10 +150,8 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cta (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-
-  _CUDA_VSTD::uint64_t __state;
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint64_t __state;
     asm (
       "mbarrier.arrive.shared.b64 %0, [%1], %2; // 3."
       : "=l"(__state)
@@ -196,10 +190,8 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cluster (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-
-  _CUDA_VSTD::uint64_t __state;
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint64_t __state;
     asm (
       "mbarrier.arrive.release.cluster.shared.b64 %0,  [%1], %2; // 4."
       : "=l"(__state)
@@ -239,8 +231,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
   // __space == space_shared_cluster (due to parameter type constraint)
-
-
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -292,10 +282,8 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
   // __space == space_shared (due to parameter type constraint)
-
-  _CUDA_VSTD::uint64_t __state;
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint64_t __state;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
       asm (
         "mbarrier.arrive.expect_tx.release.cta.shared.b64   %0, [%1], %2; // 6. "
@@ -345,8 +333,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
   // __space == space_shared_cluster (due to parameter type constraint)
-
-
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
