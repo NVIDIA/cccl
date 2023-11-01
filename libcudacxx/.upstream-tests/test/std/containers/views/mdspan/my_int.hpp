@@ -22,7 +22,7 @@ struct my_int_non_convertible
 {
     my_int _val;
 
-    my_int_non_convertible();
+    __host__ __device__ my_int_non_convertible();
     __host__ __device__ my_int_non_convertible( my_int val ) : _val( val ){};
     __host__ __device__ operator my_int() const noexcept { return _val; }
 };
@@ -37,7 +37,7 @@ struct my_int_non_nothrow_constructible
 {
     int _val;
 
-    my_int_non_nothrow_constructible();
+    __host__ __device__ my_int_non_nothrow_constructible();
     __host__ __device__ my_int_non_nothrow_constructible( int val ) : _val( val ){};
     __host__ __device__ operator int() const { return _val; }
 };

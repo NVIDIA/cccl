@@ -9,8 +9,6 @@
 
 // <cuda/std/iterator>
 
-// UNSUPPORTED: nvrtc
-
 // move_iterator
 
 // explicit move_iterator(Iter );

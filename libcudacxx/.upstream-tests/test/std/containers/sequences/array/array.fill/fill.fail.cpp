@@ -8,7 +8,7 @@
 
 // <cuda/std/array>
 
-// UNSUPPORTED: nvrtc
+
 
 // void fill(const T& u);
 

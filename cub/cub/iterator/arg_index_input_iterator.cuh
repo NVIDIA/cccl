@@ -33,7 +33,7 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
@@ -41,13 +41,13 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
-#include <iterator>
-#include <iostream>
-
-#include "../thread/thread_load.cuh"
-#include "../thread/thread_store.cuh"
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_store.cuh>
 
 #include <thrust/version.h>
+
+#include <iostream>
+#include <iterator>
 
 #if (THRUST_VERSION >= 100700)
     // This iterator is compatible with Thrust API 1.7 and newer

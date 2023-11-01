@@ -42,7 +42,7 @@ jobs:
       PER_CUDA_COMPILER_MATRIX: ${{steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX}}
       NVRTC_MATRIX: ${{steps.set-outputs.outputs.NVRTC_MATRIX}}
       CLANG_CUDA_MATRIX: ${{steps.set-outputs.outputs.CLANG_CUDA_MATRIX}}
-      EXAMPLES_MATRIX: ${{steps.set-outputs.outputs.EXAMPLES_MATRIX}}
+      CCCL_INFRA_MATRIX: ${{steps.set-outputs.outputs.CCCL_INFRA_MATRIX}}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -134,7 +134,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.compute-matrix.outputs.EXAMPLES_MATRIX) }}
+        include: ${{ fromJSON(needs.compute-matrix.outputs.CCCL_INFRA_MATRIX) }}
     uses: ./.github/workflows/run-as-coder.yml
     with:
       name: CCCL Examples CUDA${{matrix.cuda}} ${{matrix.compiler.name}}${{matrix.compiler.version}}

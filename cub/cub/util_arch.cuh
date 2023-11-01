@@ -33,7 +33,7 @@
 
 #pragma once
 
-#include "config.cuh"
+#include <cub/config.cuh>
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
@@ -41,9 +41,9 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
-#include "util_cpp_dialect.cuh"
-#include "util_namespace.cuh"
-#include "util_macro.cuh"
+#include <cub/util_cpp_dialect.cuh>
+#include <cub/util_macro.cuh>
+#include <cub/util_namespace.cuh>
 
 // Legacy include; this functionality used to be defined in here.
 #include <cub/detail/detect_cuda_runtime.cuh>

@@ -16,7 +16,7 @@
 // Rep2 shall be implicitly convertible to rep
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
-// UNSUPPORTED: nvrtc
+
 
 #include <cuda/std/chrono>
 

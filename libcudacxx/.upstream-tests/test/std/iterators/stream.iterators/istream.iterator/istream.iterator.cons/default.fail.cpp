@@ -9,8 +9,6 @@
 
 // <cuda/std/iterator>
 
-// UNSUPPORTED: nvrtc
-
 // class istream_iterator
 
 // constexpr istream_iterator();

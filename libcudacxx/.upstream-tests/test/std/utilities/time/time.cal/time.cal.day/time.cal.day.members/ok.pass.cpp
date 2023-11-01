@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class day;
@@ -15,14 +15,14 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
     using day = cuda::std::chrono::day;
-    ASSERT_NOEXCEPT(                std::declval<const day>().ok());
+    ASSERT_NOEXCEPT(                cuda::std::declval<const day>().ok());
     ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const day>().ok()));
 
     static_assert(!day{0}.ok(), "");

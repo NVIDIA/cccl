@@ -8,7 +8,7 @@
 
 // <cuda/std/array>
 
-// UNSUPPORTED: nvrtc
+
 
 // void swap(array& a);
 

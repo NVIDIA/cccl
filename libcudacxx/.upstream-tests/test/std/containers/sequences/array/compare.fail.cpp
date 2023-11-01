@@ -8,7 +8,7 @@
 
 // <cuda/std/array>
 
-// UNSUPPORTED: nvrtc
+
 
 // bool operator==(array<T, N> const&, array<T, N> const&);
 // bool operator!=(array<T, N> const&, array<T, N> const&);
