@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
@@ -43,17 +43,18 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
-#include <stdint.h>
+#include <cub/block/block_exchange.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_store.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_type.cuh>
+
 #include <type_traits>
 
-#include <cub/thread/thread_load.cuh>
-#include <cub/block/block_load.cuh>
-#include <cub/block/block_store.cuh>
-#include <cub/block/block_radix_rank.cuh>
-#include <cub/block/block_exchange.cuh>
-#include <cub/block/radix_rank_sort_operations.cuh>
-#include <cub/util_type.cuh>
-#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <stdint.h>
 
 CUB_NAMESPACE_BEGIN
 

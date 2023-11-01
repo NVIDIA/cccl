@@ -14,8 +14,8 @@
 //   struct tuple_size<tuple<Types...>>
 //     : public integral_constant<size_t, sizeof...(Types)> { };
 
-// UNSUPPORTED: c++98, c++03 
-// UNSUPPORTED: nvrtc
+// UNSUPPORTED: c++98, c++03
+
 
 #include <cuda/std/tuple>
 #include <cuda/std/array>

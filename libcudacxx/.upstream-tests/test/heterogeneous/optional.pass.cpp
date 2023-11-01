@@ -14,7 +14,7 @@
 #include "helpers.h"
 
 #include <cuda/std/optional>
-#include <cassert>
+#include <cuda/std/cassert>
 
 template<int Value>
 struct int_generator

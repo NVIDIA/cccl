@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
-// UNSUPPORTED: nvrtc
+
 // <cuda/std/optional>
 
 // constexpr const T& optional<T>::value() const &;

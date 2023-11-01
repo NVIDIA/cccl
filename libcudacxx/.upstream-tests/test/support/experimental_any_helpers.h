@@ -11,7 +11,7 @@
 #include <experimental/any>
 #include <typeinfo>
 #include <type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 

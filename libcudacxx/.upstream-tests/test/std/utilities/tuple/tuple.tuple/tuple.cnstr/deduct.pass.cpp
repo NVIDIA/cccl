@@ -17,7 +17,7 @@
 // against libstdc++.
 // XFAIL: gcc-5, gcc-6, gcc-7, gcc-10
 
-// UNSUPPORTED: nvrtc
+
 
 // Currently broken with Clang + NVCC.
 // XFAIL: clang-6, clang-7

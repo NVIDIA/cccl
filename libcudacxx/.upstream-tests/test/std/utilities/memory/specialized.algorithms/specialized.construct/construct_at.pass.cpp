@@ -21,6 +21,10 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
+#if defined(TEST_COMPILER_MSVC)
+#pragma warning(disable:4244)
+#endif // TEST_COMPILER_MSVC
+
 struct Foo {
     __host__ __device__ constexpr Foo() { }
     __host__ __device__ constexpr Foo(int a, char b, double c) : a_(a), b_(b), c_(c) { }
@@ -119,6 +123,14 @@ __host__ __device__ constexpr bool test()
         WithSpecialMoveAssignment with_special_move_assignment{};
         WithSpecialMoveAssignment* res = cuda::std::construct_at(&with_special_move_assignment);
         assert(res == &with_special_move_assignment);
+    }
+
+    // ensure that we can construct despite narrowing conversions
+    {
+        int i = 0;
+        int* res = cuda::std::construct_at(&i, 2.0);
+        assert(res == &i);
+        assert(*res == 2);
     }
 
 #if 0 // we do not support std::allocator

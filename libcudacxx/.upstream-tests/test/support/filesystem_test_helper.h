@@ -5,7 +5,7 @@
 
 #include <unistd.h> // for ftruncate
 
-#include <cassert>
+#include <cuda/std/cassert>
 #include <cstdio> // for printf
 #include <string>
 #include <fstream>

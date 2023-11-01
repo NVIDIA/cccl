@@ -9,8 +9,6 @@
 
 // <functional>
 
-// UNSUPPORTED: nvrtc
-
 // reference_wrapper
 
 // reference_wrapper(T&&) = delete;

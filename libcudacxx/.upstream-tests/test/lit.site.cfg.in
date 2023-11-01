@@ -13,6 +13,7 @@ config.enable_rtti              = False
 config.enable_shared            = False
 config.enable_32bit             = False
 config.cxx_abi                  = "none"
+config.is_nvrtc                 = @LIBCUDACXX_CUDA_TEST_WITH_NVRTC@
 config.configuration_variant    = "libcudacxx"
 config.host_triple              = "@LLVM_HOST_TRIPLE@"
 config.target_triple            = "@TARGET_TRIPLE@"

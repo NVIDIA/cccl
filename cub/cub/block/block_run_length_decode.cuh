@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
@@ -35,12 +35,13 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
-#include "../thread/thread_search.cuh"
-#include "../util_math.cuh"
-#include "../util_namespace.cuh"
-#include "../util_ptx.cuh"
-#include "../util_type.cuh"
-#include "block_scan.cuh"
+#include <cub/block/block_scan.cuh>
+#include <cub/thread/thread_search.cuh>
+#include <cub/util_math.cuh>
+#include <cub/util_namespace.cuh>
+#include <cub/util_ptx.cuh>
+#include <cub/util_type.cuh>
+
 #include <limits>
 #include <type_traits>
 
@@ -382,7 +383,10 @@ public:
     {
       decoded_items[i] = val;
       item_offsets[i]  = thread_decoded_offset - assigned_run_begin;
-      if (thread_decoded_offset == assigned_run_end - 1)
+
+      // A thread only needs to fetch the next run if this was not the last loop iteration
+      const bool is_final_loop_iteration = (i + 1 >= DECODED_ITEMS_PER_THREAD);
+      if (!is_final_loop_iteration && (thread_decoded_offset == assigned_run_end - 1))
       {
         // We make sure that a thread is not re-entering this conditional when being assigned to the last run already by
         // extending the last run's length to all the thread's item

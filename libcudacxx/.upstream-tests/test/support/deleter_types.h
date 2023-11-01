@@ -17,7 +17,7 @@
 
 #include <type_traits>
 #include <utility>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 #include "min_allocator.h"

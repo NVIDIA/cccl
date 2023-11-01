@@ -8,7 +8,7 @@
 
 // <cuda/std/array>
 
-// UNSUPPORTED: nvrtc
+
 
 // template <size_t I, class T, size_t N> T& get(array<T, N>& a);
 
