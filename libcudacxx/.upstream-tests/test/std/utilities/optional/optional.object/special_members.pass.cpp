@@ -9,6 +9,9 @@
 
 // UNSUPPORTED: c++03, c++11
 
+// UNSUPPORTED: nvrtc
+// see nvbug4263883
+
 // <cuda/std/optional>
 
 // Make sure we properly generate special member functions for optional<T>
