@@ -17,10 +17,15 @@ Remove-Module -Name build_common
 Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD
 
 $PRESET = "cub-cpp$CXX_STANDARD"
-$CMAKE_OPTIONS = "-DCUB_ENABLE_RDC_TESTS=OFF"
-
-if ($CL_VERSION -lt [version]"19.20") {
-    $CMAKE_OPTIONS += "-DCUB_IGNORE_DEPRECATED_COMPILER=ON "
+If ($CL_VERSION -lt [version]"19.20") {
+    $CMAKE_OPTIONS= @(
+        "-DCUB_ENABLE_RDC_TESTS=OFF"
+        "-DCUB_IGNORE_DEPRECATED_COMPILER=ON"
+    )
+} Else {
+    $CMAKE_OPTIONS= @(
+        "-DCUB_ENABLE_RDC_TESTS=OFF"
+    )
 }
 
 configure_and_build_preset "CUB" "$PRESET" "$CMAKE_OPTIONS"
