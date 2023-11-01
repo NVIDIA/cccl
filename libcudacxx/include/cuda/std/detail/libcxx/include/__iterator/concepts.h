@@ -474,6 +474,20 @@ template<class _Ip>
 _LIBCUDACXX_CONCEPT bidirectional_iterator = _LIBCUDACXX_FRAGMENT(__bidirectional_iterator_, _Ip);
 
 // [iterator.concept.random.access]
+#if defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+// For whatever reasons MSVC2017 cannot check decltype(__n +  __j)
+template<class _Ip>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __random_access_iterator_operations_,
+  requires(_Ip __i, const _Ip __j, const iter_difference_t<_Ip> __n)(
+    requires(same_as<_Ip&, decltype(__i += __n)>),
+    requires(same_as<_Ip,  decltype(__j +  __n)>),
+    typename(decltype(__n +  __j)),
+    requires(same_as<_Ip&, decltype(__i -= __n)>),
+    requires(same_as<_Ip,  decltype(__j -  __n)>),
+    requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)
+  ));
+#  else // ^^^ _LIBCUDACXX_COMPILER_MSVC_2017 ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC_2017 vvv
 template<class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __random_access_iterator_operations_,
@@ -485,7 +499,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(same_as<_Ip,  decltype(__j -  __n)>),
     requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)
   ));
-
+#  endif // !_LIBCUDACXX_COMPILER_MSVC_2017
 template<class _Ip>
 _LIBCUDACXX_CONCEPT __random_access_iterator_operations = _LIBCUDACXX_FRAGMENT(__random_access_iterator_operations_, _Ip);
 
