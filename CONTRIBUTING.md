@@ -59,7 +59,7 @@ CCCL components are header-only libraries. This means there isn't a traditional 
 
 ### Building
 
-Use the build scripts provided in the `ci/` directory to build tests for each component. Building tests does not require a GPU.
+Use the build scripts provided in the `ci/` directory to build tests for each component. Building tests does not require a GPU. It is recommended to always run these scripts before pushing your changes upstream, to ensure that things do not break. 
 
 ```bash
    ci/build_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
@@ -75,6 +75,11 @@ Use the build scripts provided in the `ci/` directory to build tests for each co
 ```bash
 ./ci/build_cub.sh -cxx g++ -std 14 -arch "70;75;80-virtual"
 ```
+Once you have run the script, and your configuration is properly set up, you can simply use `CMake` to build your targets which will be much faster than the CI scripts when checking to see if your code compiles. For example, to build `CUB` locally with C++ 17, you can run the following command.
+
+```bash
+cmake --build --preset=cub-cpp17 -v
+```
 
 ### Testing
 
@@ -88,6 +93,14 @@ Use the test scripts provided in the `ci/` directory to run tests for each compo
 ```bash
 ./ci/test_cub.sh -cxx g++ -std 14 -arch "70;75;80-virtual"
 ```
+
+Similarly to building, when you are done configuring with the CI scripts, you can also skip right to the testing with the following command:
+
+```bash
+ctest --build --preset=cub-cpp17 -v
+```
+This will run the test executables that are already built. Naturally, this will not go through the CI flow of configuring -> building -> testing. 
+
 
 ## Creating a Pull Request
 
