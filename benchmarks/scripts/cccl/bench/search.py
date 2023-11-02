@@ -47,19 +47,34 @@ def parse_arguments():
                         type=str, help="Parameter in the format `Param=Value`.")
     parser.add_argument(
         '--list-benches', action=argparse.BooleanOptionalAction, help="Show available benchmarks.")
+    parser.add_argument('--num-shards', type=int, default=1, help='Split benchmarks into M pieces and only run one')
+    parser.add_argument('--run-shard', type=int, default=0, help='Run shard N / M of benchmarks')
     return parser.parse_args()
 
 
-def run_benches(benchmarks, sub_space, regex, seeker):
-    pattern = re.compile(regex)
+def run_benches(algnames, sub_space, seeker):
+    for algname in algnames:
+        bench = BaseBench(algname)
+        ct_space = bench.ct_workload_space(sub_space)
+        rt_values = bench.rt_axes_values(sub_space)
+        seeker(algname, ct_space, rt_values)
 
-    for algname in benchmarks:
-        if pattern.match(algname):
-            bench = BaseBench(algname)
-            ct_space = bench.ct_workload_space(sub_space)
-            rt_values = bench.rt_axes_values(sub_space)
-            seeker(algname, ct_space, rt_values)
 
+def filter_benchmarks(benchmarks, args):
+    if args.run_shard >= args.num_shards:
+        raise ValueError('run-shard must be less than num-shards')
+
+    pattern = re.compile(args.R)
+    algnames = list(filter(lambda x: pattern.match(x), benchmarks.keys()))
+    algnames.sort()
+
+    if args.num_shards > 1:
+        algnames = np.array_split(algnames, args.num_shards)[args.run_shard].tolist()
+        print(algnames)
+        return algnames
+    
+    return algnames
+    
 
 def search(seeker):
     args = parse_arguments()
@@ -79,8 +94,8 @@ def search(seeker):
     if args.list_benches:
         list_benches()
         return
-
-    run_benches(config.benchmarks, workload_sub_space, args.R, seeker)
+    
+    run_benches(filter_benchmarks(config.benchmarks, args), workload_sub_space, seeker)
 
 
 class MedianCenterEstimator:
