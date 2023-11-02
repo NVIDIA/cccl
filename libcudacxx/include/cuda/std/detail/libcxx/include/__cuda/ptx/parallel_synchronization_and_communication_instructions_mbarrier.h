@@ -214,7 +214,7 @@ template <cuda::ptx::dot_scope Scope>
 __device__ static inline void mbarrier_arrive(
   cuda::ptx::sem_release_t,
   cuda::ptx::scope_t<Scope> scope,
-  cuda::ptx::space_shared_cluster_t,
+  cuda::ptx::space_cluster_t,
   uint64_t* addr,
   const uint32_t& count);
 */
@@ -224,13 +224,13 @@ template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   sem_release_t,
   scope_t<_Scope> __scope,
-  space_shared_cluster_t,
+  space_cluster_t,
   _CUDA_VSTD::uint64_t* __addr,
   const _CUDA_VSTD::uint32_t& __count)
 {
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-  // __space == space_shared_cluster (due to parameter type constraint)
+  // __space == space_cluster (due to parameter type constraint)
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -316,7 +316,7 @@ template <cuda::ptx::dot_scope Scope>
 __device__ static inline void mbarrier_arrive_expect_tx(
   cuda::ptx::sem_release_t,
   cuda::ptx::scope_t<Scope> scope,
-  cuda::ptx::space_shared_cluster_t,
+  cuda::ptx::space_cluster_t,
   uint64_t* addr,
   const uint32_t& tx_count);
 */
@@ -326,13 +326,13 @@ template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
   sem_release_t,
   scope_t<_Scope> __scope,
-  space_shared_cluster_t,
+  space_cluster_t,
   _CUDA_VSTD::uint64_t* __addr,
   const _CUDA_VSTD::uint32_t& __tx_count)
 {
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-  // __space == space_shared_cluster (due to parameter type constraint)
+  // __space == space_cluster (due to parameter type constraint)
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {

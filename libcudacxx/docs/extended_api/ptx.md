@@ -485,7 +485,7 @@ template <cuda::ptx::dot_scope Scope>
 __device__ static inline void mbarrier_arrive(
   cuda::ptx::sem_release_t,
   cuda::ptx::scope_t<Scope> scope,
-  cuda::ptx::space_shared_cluster_t,
+  cuda::ptx::space_cluster_t,
   uint64_t* addr,
   const uint32_t& count);
 
@@ -505,7 +505,7 @@ template <cuda::ptx::dot_scope Scope>
 __device__ static inline void mbarrier_arrive_expect_tx(
   cuda::ptx::sem_release_t,
   cuda::ptx::scope_t<Scope> scope,
-  cuda::ptx::space_shared_cluster_t,
+  cuda::ptx::space_cluster_t,
   uint64_t* addr,
   const uint32_t& tx_count);
 ```
@@ -518,7 +518,7 @@ Usage:
 
 __global__ void kernel() {
     using cuda::ptx::sem_release;
-    using cuda::ptx::space_shared_cluster;
+    using cuda::ptx::space_cluster;
     using cuda::ptx::space_shared;
     using cuda::ptx::scope_cluster;
     using cuda::ptx::scope_cta;
@@ -544,8 +544,8 @@ __global__ void kernel() {
         cluster.sync();
 
         // Arrive on remote cluster barrier:
-        cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta, space_shared_cluster, remote_bar, 1);
-        cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared_cluster, remote_bar, 1);
+        cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta, space_cluster, remote_bar, 1);
+        cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_cluster, remote_bar, 1);
     )
 }
 ```

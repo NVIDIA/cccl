@@ -24,7 +24,7 @@ __device__ inline bool __unused(_Ty...) { return true; }
 
 __device__ void test_compilation() {
   using cuda::ptx::sem_release;
-  using cuda::ptx::space_shared_cluster;
+  using cuda::ptx::space_cluster;
   using cuda::ptx::space_shared;
   using cuda::ptx::scope_cluster;
   using cuda::ptx::scope_cta;
@@ -40,7 +40,8 @@ __device__ void test_compilation() {
   ));
 #endif // __cccl_ptx_isa >= 700
 
-#if __cccl_ptx_isa >= 780 // This guard is redundant: before PTX ISA 7.8, there was no support for SM_90
+  // This guard is redundant: before PTX ISA 7.8, there was no support for SM_90
+#if __cccl_ptx_isa >= 780
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     state = cuda::ptx::mbarrier_arrive(sem_release, scope_cta,     space_shared, &bar, 1);           // 3.
   ));
@@ -50,14 +51,14 @@ __device__ void test_compilation() {
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     state = cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_shared, &bar, 1);           // 4.
 
-    cuda::ptx::mbarrier_arrive(sem_release, scope_cta,     space_shared_cluster, &bar, 1);           // 5.
-    cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_shared_cluster, &bar, 1);           // 5.
+    cuda::ptx::mbarrier_arrive(sem_release, scope_cta,     space_cluster, &bar, 1);                  // 5.
+    cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_cluster, &bar, 1);                  // 5.
 
     state = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta,     space_shared, &bar, 1); // 6.
     state = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared, &bar, 1); // 6.
 
-    cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta,     space_shared_cluster, &bar, 1); // 7.
-    cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared_cluster, &bar, 1); // 7.
+    cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta,     space_cluster, &bar, 1);        // 7.
+    cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_cluster, &bar, 1);        // 7.
   ));
 #endif // __cccl_ptx_isa >= 800
   __unused(bar, state);
