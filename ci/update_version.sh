@@ -29,6 +29,7 @@ fi
 CCCL_VERSION_FILE="libcudacxx/include/cuda/std/detail/libcxx/include/__cccl/version.h"
 THRUST_VERSION_FILE="thrust/thrust/version.h"
 CUB_VERSION_FILE="cub/cub/version.cuh"
+CCCL_CMAKE_VERSION_FILE="lib/cmake/cccl/cccl-config-version.cmake"
 CUB_CMAKE_VERSION_FILE="cub/cub/cmake/cub-config-version.cmake"
 LIBCUDACXX_CMAKE_VERSION_FILE="libcudacxx/lib/cmake/libcudacxx/libcudacxx-config-version.cmake"
 THRUST_CMAKE_VERSION_FILE="thrust/thrust/cmake/thrust-config-version.cmake"
@@ -46,6 +47,7 @@ latest_tag=$(git tag --sort=-v:refname | head -n 1 | sed 's/^v//')
 # Since the tags and versions are numerically comparable, we cast them to integers
 latest_tag_version=$(echo "$latest_tag" | awk -F. '{ printf("%d%03d%03d", $1,$2,$3) }')
 
+echo "Running in $(pwd)"
 echo "New MMMmmmppp version: $new_cccl_version"
 echo "New MMMmmmpp  version: $new_thrust_cub_version"
 echo "Current CCCL version:  $current_cccl_version"
@@ -87,6 +89,10 @@ update_file "$LIBCUDACXX_CMAKE_VERSION_FILE" "set(libcudacxx_VERSION_PATCH \([0-
 update_file "$THRUST_CMAKE_VERSION_FILE" "set(THRUST_VERSION_MAJOR \([0-9]\+\))" "set(THRUST_VERSION_MAJOR $major)"
 update_file "$THRUST_CMAKE_VERSION_FILE" "set(THRUST_VERSION_MINOR \([0-9]\+\))" "set(THRUST_VERSION_MINOR $minor)"
 update_file "$THRUST_CMAKE_VERSION_FILE" "set(THRUST_VERSION_PATCH \([0-9]\+\))" "set(THRUST_VERSION_PATCH $patch)"
+
+update_file "$CCCL_CMAKE_VERSION_FILE" "set(CCCL_VERSION_MAJOR \([0-9]\+\))" "set(CCCL_VERSION_MAJOR $major)"
+update_file "$CCCL_CMAKE_VERSION_FILE" "set(CCCL_VERSION_MINOR \([0-9]\+\))" "set(CCCL_VERSION_MINOR $minor)"
+update_file "$CCCL_CMAKE_VERSION_FILE" "set(CCCL_VERSION_PATCH \([0-9]\+\))" "set(CCCL_VERSION_PATCH $patch)"
 
 if [ "$DRY_RUN" = true ]; then
     echo "Dry run completed. No changes made."
