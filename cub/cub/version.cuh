@@ -56,7 +56,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
  *         <tt>CUB_VERSION / 100 % 1000</tt> is the minor version.
  *         <tt>CUB_VERSION / 100000</tt> is the major version.
  */
-#define CUB_VERSION 200200 // macro expansion with ## requires this to be a single value
+#define CUB_VERSION 200300 // macro expansion with ## requires this to be a single value
 
 /*! \def CUB_MAJOR_VERSION
  *  \brief The preprocessor macro \p CUB_MAJOR_VERSION encodes the
