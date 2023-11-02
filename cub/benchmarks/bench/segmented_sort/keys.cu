@@ -255,7 +255,7 @@ NVBENCH_BENCH_TYPES(power_law, NVBENCH_TYPE_AXES(fundamental_types, some_offset_
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(22, 30, 4))
   .add_int64_power_of_two_axis("Segments{io}", nvbench::range(12, 20, 4))
-  .add_string_axis("Entropy", {"1.000", "0.544", "0.201"});
+  .add_string_axis("Entropy", {"1.000", "0.201"});
 
 
 template <class T, typename OffsetT>
