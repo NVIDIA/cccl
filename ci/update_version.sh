@@ -3,6 +3,9 @@
 # Usage: ./update_version.sh [--dry-run] <major> <minor> <patch>
 # Example: ./update_version.sh --dry-run 2 2 1
 
+# Run in root cccl/
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit
+
 DRY_RUN=false
 
 while [[ "$#" -gt 0 ]]; do
