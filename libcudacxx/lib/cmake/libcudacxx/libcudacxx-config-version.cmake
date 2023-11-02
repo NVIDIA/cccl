@@ -1,7 +1,6 @@
 # Parse version information from version header:
 include("${CMAKE_CURRENT_LIST_DIR}/libcudacxx-header-search.cmake")
 
-set(libcudacxx_VERSION_FLAT ${CMAKE_MATCH_1})
 set(libcudacxx_VERSION_MAJOR 2)
 set(libcudacxx_VERSION_MINOR 3)
 set(libcudacxx_VERSION_PATCH 0)
