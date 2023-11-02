@@ -22,7 +22,7 @@
 template <typename ... _Ty>
 __device__ inline bool __unused(_Ty...) { return true; }
 
-__device__ void test_compilation() {
+__global__ void test_compilation() {
   using cuda::ptx::sem_release;
   using cuda::ptx::space_cluster;
   using cuda::ptx::space_shared;
