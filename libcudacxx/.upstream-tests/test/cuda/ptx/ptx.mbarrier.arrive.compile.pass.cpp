@@ -12,7 +12,6 @@
 // <cuda/ptx>
 
 #include <cuda/ptx>
-
 #include <cuda/std/utility>
 
 #include "concurrent_agents.h"
@@ -35,30 +34,37 @@ __global__ void test_compilation() {
 
 #if __cccl_ptx_isa >= 700
   NV_IF_TARGET(NV_PROVIDES_SM_80, (
-    state = cuda::ptx::mbarrier_arrive(sem_release, scope_cta, space_shared, &bar);                  // 1.
-    state = cuda::ptx::mbarrier_arrive_no_complete(sem_release, scope_cta, space_shared, &bar, 1);   // 2.
+    state = cuda::ptx::mbarrier_arrive(&bar);                                                        // 1.
+    state = cuda::ptx::mbarrier_arrive_no_complete(&bar, 1);                                         // 5.
   ));
 #endif // __cccl_ptx_isa >= 700
 
   // This guard is redundant: before PTX ISA 7.8, there was no support for SM_90
 #if __cccl_ptx_isa >= 780
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    state = cuda::ptx::mbarrier_arrive(sem_release, scope_cta,     space_shared, &bar, 1);           // 3.
+    state = cuda::ptx::mbarrier_arrive(&bar, 1);                                                     // 2.
   ));
 #endif // __cccl_ptx_isa >= 780
 
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    state = cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_shared, &bar, 1);           // 4.
+    state = cuda::ptx::mbarrier_arrive(sem_release, scope_cta, space_shared, &bar);                  // 3a.
+    state = cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_shared, &bar);              // 3a.
 
-    cuda::ptx::mbarrier_arrive(sem_release, scope_cta,     space_cluster, &bar, 1);                  // 5.
-    cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_cluster, &bar, 1);                  // 5.
+    state = cuda::ptx::mbarrier_arrive(sem_release, scope_cta, space_shared, &bar, 1);               // 3b.
+    state = cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_shared, &bar, 1);           // 3b.
 
-    state = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta,     space_shared, &bar, 1); // 6.
-    state = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared, &bar, 1); // 6.
+    cuda::ptx::mbarrier_arrive(sem_release, scope_cta, space_cluster, &bar);                         // 4a.
+    cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_cluster, &bar);                     // 4a.
 
-    cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta,     space_cluster, &bar, 1);        // 7.
-    cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_cluster, &bar, 1);        // 7.
+    cuda::ptx::mbarrier_arrive(sem_release, scope_cta, space_cluster, &bar, 1);                      // 4b.
+    cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_cluster, &bar, 1);                  // 4b.
+
+    state = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta, space_shared, &bar, 1);     // 8.
+    state = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared, &bar, 1); // 8.
+
+    cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta, space_cluster, &bar, 1);            // 9.
+    cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_cluster, &bar, 1);        // 9.
   ));
 #endif // __cccl_ptx_isa >= 800
   __unused(bar, state);

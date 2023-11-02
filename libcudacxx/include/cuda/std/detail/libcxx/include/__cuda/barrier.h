@@ -27,7 +27,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include "../cstdlib"                // _LIBCUDACXX_UNREACHABLE
 #include "../__type_traits/void_t.h" // _CUDA_VSTD::__void_t
-#include "../__cuda/ptx.h"                  // cuda::ptx::*
+#include "../__cuda/ptx.h"           // cuda::ptx::*
 
 #if defined(_LIBCUDACXX_COMPILER_NVRTC)
 #define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type *)0)->member))
@@ -211,9 +211,7 @@ public:
                 // only defined for block-scope barriers. This barrier may be a
                 // non-block scoped barrier.
                 auto __bh = reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__barrier);
-                __token = _CUDA_VPTX::mbarrier_arrive(
-                    _CUDA_VPTX::sem_release, _CUDA_VPTX::scope_cta, _CUDA_VPTX::space_shared, __bh, __update
-                );
+                __token = _CUDA_VPTX::mbarrier_arrive(__bh, __update);
             ), NV_PROVIDES_SM_80, (
                 if (!__isShared(&__barrier)) {
                     return __barrier.arrive(__update);
@@ -221,13 +219,9 @@ public:
                 auto __bh = reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__barrier);
                 // Need 2 instructions, can't finish barrier with arrive > 1
                 if (__update > 1) {
-                    ___CUDA_VPTX::mbarrier_arrive_no_complete(
-                        _CUDA_VPTX::sem_release, _CUDA_VPTX::scope_cta, _CUDA_VPTX::space_shared,
-                        __bh, __update - 1);
+                    ___CUDA_VPTX::mbarrier_arrive_no_complete(__bh, __update - 1);
                 }
-                __token = _CUDA_VPTX::mbarrier_arrive(
-                    _CUDA_VPTX::sem_release, _CUDA_VPTX::scope_cta, _CUDA_VPTX::space_shared, __bh
-                );
+                __token = _CUDA_VPTX::mbarrier_arrive( __bh);
             ), NV_IS_DEVICE, (
                 if (!__isShared(&__barrier)) {
                     return __barrier.arrive(__update);
