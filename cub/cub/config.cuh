@@ -41,9 +41,9 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
-#include "util_arch.cuh"
-#include "util_compiler.cuh"
-#include "util_cpp_dialect.cuh"
-#include "util_deprecated.cuh"
-#include "util_macro.cuh"
-#include "util_namespace.cuh"
+#include <cub/util_arch.cuh>
+#include <cub/util_compiler.cuh>
+#include <cub/util_cpp_dialect.cuh>
+#include <cub/util_deprecated.cuh>
+#include <cub/util_macro.cuh>
+#include <cub/util_namespace.cuh>

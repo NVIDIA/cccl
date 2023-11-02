@@ -9,8 +9,6 @@
 
 // <cuda/std/iterator>
 
-// nasty_containers is unsupported by nvrtc
-// UNSUPPORTED: nvrtc
 
 // front_insert_iterator
 

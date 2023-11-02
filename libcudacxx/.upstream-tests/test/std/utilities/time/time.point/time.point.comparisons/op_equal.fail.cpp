@@ -21,7 +21,7 @@
 // time_points with different clocks should not compare
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
-// UNSUPPORTED: nvrtc
+
 
 #include <cuda/std/chrono>
 

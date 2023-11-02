@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header

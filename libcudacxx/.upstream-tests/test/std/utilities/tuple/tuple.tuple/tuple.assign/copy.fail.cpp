@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvrtc
+
 
 // <cuda/std/tuple>
 
@@ -14,7 +14,7 @@
 
 // tuple& operator=(const tuple& u);
 
-// UNSUPPORTED: c++98, c++03 
+// UNSUPPORTED: c++98, c++03
 
 #include <cuda/std/tuple>
 #include <cuda/std/cassert>

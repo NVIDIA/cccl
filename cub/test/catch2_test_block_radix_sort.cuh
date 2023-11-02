@@ -28,6 +28,7 @@
 #pragma once
 
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/detail/cpp_compatibility.cuh>
 
 #include <thrust/gather.h>
 #include <thrust/host_vector.h>
@@ -366,21 +367,66 @@ get_striped_keys(const thrust::host_vector<KeyT> &h_keys,
   thrust::host_vector<KeyT> h_striped_keys(h_keys);
   KeyT *h_striped_keys_data = thrust::raw_pointer_cast(h_striped_keys.data());
 
-  if ((begin_bit > 0) || (end_bit < static_cast<int>(sizeof(KeyT) * 8)))
-  {
-    const int num_bits = end_bit - begin_bit;
+  using traits_t                    = cub::Traits<KeyT>;
+  using bit_ordered_t               = typename traits_t::UnsignedBits;
 
-    for (std::size_t i = 0; i < h_keys.size(); i++)
+  const int num_bits = end_bit - begin_bit;
+
+  for (std::size_t i = 0; i < h_keys.size(); i++)
+  {
+    bit_ordered_t key = reinterpret_cast<const bit_ordered_t&>(h_keys[i]);
+
+    CUB_IF_CONSTEXPR(traits_t::CATEGORY == cub::FLOATING_POINT)
+    {
+      const bit_ordered_t negative_zero = bit_ordered_t(1) << bit_ordered_t(sizeof(bit_ordered_t) * 8 - 1);
+
+      if (key == negative_zero)
+      {
+        key = 0;
+      }
+    }
+
+    key = traits_t::TwiddleIn(key);
+
+    if ((begin_bit > 0) || (end_bit < static_cast<int>(sizeof(KeyT) * 8)))
     {
       unsigned long long base = 0;
-      memcpy(&base, h_striped_keys_data + i, sizeof(KeyT));
+      memcpy(&base, &key, sizeof(bit_ordered_t));
       base &= ((1ULL << num_bits) - 1) << begin_bit;
-      memcpy(h_striped_keys_data + i, &base, sizeof(KeyT));
+      memcpy(&key, &base, sizeof(bit_ordered_t));
     }
-  }
+
+    // striped keys are used to compare bit ordered representation of keys, 
+    // so we do not twiddle-out the key here:
+    // key = traits_t::TwiddleOut(key);
+
+    memcpy(h_striped_keys_data + i, &key, sizeof(KeyT));
+}
 
   return h_striped_keys;
 }
+
+template <class T>
+struct indirect_binary_comparator_t
+{
+  const T* h_ptr{};
+  bool is_descending{};
+
+  indirect_binary_comparator_t(const T* h_ptr, bool is_descending)
+      : h_ptr(h_ptr)
+      , is_descending(is_descending)
+  {}
+
+  bool operator()(std::size_t a, std::size_t b)
+  {
+    if (is_descending)
+    {
+      return h_ptr[a] > h_ptr[b];
+    }
+
+    return h_ptr[a] < h_ptr[b];
+  }
+};
 
 template <class KeyT>
 thrust::host_vector<std::size_t>
@@ -395,16 +441,15 @@ get_permutation(const thrust::host_vector<KeyT> &h_keys,
   thrust::host_vector<std::size_t> h_permutation(h_keys.size());
   thrust::sequence(h_permutation.begin(), h_permutation.end());
 
+  using traits_t = cub::Traits<KeyT>;
+  using bit_ordered_t = typename traits_t::UnsignedBits;
+
+  auto bit_ordered_striped_keys =
+    reinterpret_cast<const bit_ordered_t*>(thrust::raw_pointer_cast(h_striped_keys.data()));
+
   std::stable_sort(h_permutation.begin(),
                    h_permutation.end(),
-                   [&](std::size_t a, std::size_t b) {
-                     if (is_descending)
-                     {
-                       return h_striped_keys[a] > h_striped_keys[b];
-                     }
-
-                     return h_striped_keys[a] < h_striped_keys[b];
-                   });
+                   indirect_binary_comparator_t<bit_ordered_t>{bit_ordered_striped_keys, is_descending});
 
   return h_permutation;
 }

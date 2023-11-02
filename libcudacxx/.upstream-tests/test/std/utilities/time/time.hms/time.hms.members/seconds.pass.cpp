@@ -10,7 +10,7 @@
 
 // template <class Duration>
 // class hh_mm_ss
-// 
+//
 // constexpr chrono::seconds seconds() const noexcept;
 //
 // See the table in hours.pass.cpp for correspondence between the magic values used below
@@ -33,10 +33,10 @@ constexpr auto check_seconds(Duration d)
 int main(int, char**)
 {
     using microfortnights = cuda::std::chrono::duration<int, cuda::std::ratio<756, 625>>;
-    
+
     static_assert( check_seconds(cuda::std::chrono::seconds( 1)) == 1, "");
     static_assert( check_seconds(cuda::std::chrono::seconds(-1)) == 1, "");
-    
+
     assert( check_seconds(cuda::std::chrono::seconds( 5000)) == 20);
     assert( check_seconds(cuda::std::chrono::seconds(-5000)) == 20);
     assert( check_seconds(cuda::std::chrono::minutes( 5000)) == 0);

@@ -13,6 +13,9 @@
 // violation because Clock::is_steady is defined in both the dylib and this TU.
 // UNSUPPORTED: asan
 
+// File clock is unsupported in NVRTC
+// UNSUPPORTED: nvrtc
+
 // <cuda/std/chrono>
 
 // file_clock

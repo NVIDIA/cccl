@@ -10,7 +10,7 @@
 #define SUPPORT_CHARCONV_TEST_HELPERS_H
 
 #include <charconv>
-#include <cassert>
+#include <cuda/std/cassert>
 #include <limits>
 #include <string.h>
 #include <stdlib.h>

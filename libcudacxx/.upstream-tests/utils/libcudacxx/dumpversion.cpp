@@ -15,16 +15,12 @@ int main()
   unsigned minor_version = 0;
   unsigned patch_level   = 0;
   unsigned default_dialect = 3;
-  char const* is_nvrtc = "False";
 
   #if defined(__NVCC__)
     compiler_type = "nvcc";
     major_version = __CUDACC_VER_MAJOR__;
     minor_version = __CUDACC_VER_MINOR__;
     patch_level   = __CUDACC_VER_BUILD__;
-    #if defined(__LIBCUDACXX_NVRTC_TEST__)
-      is_nvrtc = "True";
-    #endif
   #elif defined(__NVCOMPILER)
     compiler_type = "nvhpc";
     major_version = __NVCOMPILER;
@@ -83,9 +79,8 @@ int main()
     #endif
   #endif
 
-  printf("(\"%s\", (%d, %d, %d), \"c++%02u\", %s)\n",
+  printf("(\"%s\", (%d, %d, %d), \"c++%02u\")\n",
          compiler_type,
          major_version, minor_version, patch_level,
-         default_dialect,
-         is_nvrtc);
+         default_dialect);
 }
