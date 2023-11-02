@@ -17,7 +17,7 @@
 #define CCCL_PATCH_VERSION (CCCL_VERSION % 1000)
 
 #if CCCL_PATCH_VERSION > 99
-#error "CCCL patch version greater than 99 compatibility with Thrust/CUB's MMMmmmpp format."
+#error "CCCL patch version cannot be greater than 99 for compatibility with Thrust/CUB's MMMmmmpp format."
 #endif
 
 #endif
