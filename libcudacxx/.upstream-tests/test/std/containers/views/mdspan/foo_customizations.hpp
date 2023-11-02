@@ -30,16 +30,16 @@ namespace Foo {
     constexpr foo_accessor(foo_accessor<OtherElementType> other) noexcept { flag = other.flag; }
 
 
-    constexpr reference access(data_handle_type p, size_t i) const noexcept {
+    _LIBCUDACXX_HOST_DEVICE constexpr reference access(data_handle_type p, size_t i) const noexcept {
       return p.data[i];
     }
 
-    constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept {
+    _LIBCUDACXX_HOST_DEVICE constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept {
       return data_handle_type(p.data+i);
     }
     int* flag;
 
-    friend constexpr void swap(foo_accessor& x, foo_accessor& y) {
+    _LIBCUDACXX_HOST_DEVICE friend constexpr void swap(foo_accessor& x, foo_accessor& y) {
       x.flag[0] = 99;
       y.flag[0] = 77;
       cuda::std::swap(x.flag, y.flag);
@@ -210,11 +210,11 @@ class layout_foo::mapping {
 
     // Not really public, but currently needed to implement fully constexpr useable submdspan:
     template<size_t N, class SizeType, size_t ... E, size_t ... Idx>
-    constexpr index_type __get_stride(cuda::std::extents<SizeType, E...>, cuda::std::integer_sequence<size_t, Idx...>) const {
+    _LIBCUDACXX_HOST_DEVICE constexpr index_type __get_stride(cuda::std::extents<SizeType, E...>, cuda::std::integer_sequence<size_t, Idx...>) const {
       return __MDSPAN_FOLD_TIMES_RIGHT((Idx>N? __extents.template __extent<Idx>():1),1);
     }
     template<size_t N>
-    constexpr index_type __stride() const noexcept {
+    _LIBCUDACXX_HOST_DEVICE constexpr index_type __stride() const noexcept {
       return __get_stride<N>(__extents, std::make_index_sequence<extents_type::rank()>());
     }
 
@@ -225,4 +225,3 @@ private:
 
 }
 #endif
-

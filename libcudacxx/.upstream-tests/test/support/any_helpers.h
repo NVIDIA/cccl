@@ -10,7 +10,7 @@
 
 #include <typeinfo>
 #include <type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 
 namespace std { namespace experimental {} }
 

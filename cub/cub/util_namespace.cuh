@@ -38,7 +38,7 @@
 // This is not used by this file; this is a hack so that we can detect the
 // CUB version from Thrust on older versions of CUB that did not have
 // version.cuh.
-#include "version.cuh"
+#include <cub/version.cuh>
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header

@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class month_weekday;
@@ -15,7 +15,7 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
@@ -28,7 +28,7 @@ int main(int, char**)
 
     constexpr weekday Sunday = cuda::std::chrono::Sunday;
 
-    ASSERT_NOEXCEPT(                 std::declval<const month_weekday>().month());
+    ASSERT_NOEXCEPT(                 cuda::std::declval<const month_weekday>().month());
     ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<const month_weekday>().month()));
 
     static_assert( month_weekday{}.month() == month{}, "");

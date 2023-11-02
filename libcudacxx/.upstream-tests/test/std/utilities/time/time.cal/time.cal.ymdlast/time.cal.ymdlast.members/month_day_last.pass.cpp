@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class year_month_day_last;
@@ -15,7 +15,7 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
@@ -26,7 +26,7 @@ int main(int, char**)
     using month_day_last      = cuda::std::chrono::month_day_last;
     using year_month_day_last = cuda::std::chrono::year_month_day_last;
 
-    ASSERT_NOEXCEPT(                          std::declval<const year_month_day_last>().month_day_last());
+    ASSERT_NOEXCEPT(                          cuda::std::declval<const year_month_day_last>().month_day_last());
     ASSERT_SAME_TYPE(month_day_last, decltype(cuda::std::declval<const year_month_day_last>().month_day_last()));
 
     for (unsigned i = 1; i <= 50; ++i)

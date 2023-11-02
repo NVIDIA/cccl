@@ -25,8 +25,10 @@
  *
  ******************************************************************************/
 
+#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/device/device_copy.cuh>
 #include <cub/util_ptx.cuh>
+
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -121,8 +123,10 @@ template <size_t n, typename... T>
 typename std::enable_if<n + 1 <= thrust::tuple_size<thrust::tuple<T...>>::value>::type
 print_tuple(std::ostream &os, const thrust::tuple<T...> &tup)
 {
-  if (n != 0)
+  CUB_IF_CONSTEXPR(n != 0)
+  {
     os << ", ";
+  }
   os << thrust::get<n>(tup);
   print_tuple<n + 1>(os, tup);
 }

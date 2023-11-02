@@ -33,7 +33,7 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
@@ -41,18 +41,17 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
+#include <cub/detail/cpp_compatibility.cuh>
+#include <cub/detail/type_traits.cuh>
+#include <cub/util_ptx.cuh>
+#include <cub/util_type.cuh>
+
 #include <thrust/type_traits/integer_sequence.h>
 
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 #include <type_traits>
-
-#include "../util_ptx.cuh"
-#include "../util_type.cuh"
-#include "cub/detail/cpp_compatibility.cuh"
-#include "cub/detail/type_traits.cuh"
-
 
 CUB_NAMESPACE_BEGIN
 

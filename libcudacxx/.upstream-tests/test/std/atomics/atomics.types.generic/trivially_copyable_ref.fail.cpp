@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
-// UNSUPPORTED: nvrtc
+
 
 // trivially_copyable not supported on gcc4.8
 // UNSUPPORTED: gcc-4.8

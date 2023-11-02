@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class weekday;
@@ -27,7 +27,7 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 #include "../../euclidian.h"
@@ -50,11 +50,11 @@ int main(int, char**)
     using weekday = cuda::std::chrono::weekday;
     using days    = cuda::std::chrono::days;
 
-    ASSERT_NOEXCEPT(                   std::declval<weekday>() + std::declval<days>());
-    ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<weekday>() + std::declval<days>()));
+    ASSERT_NOEXCEPT(                   cuda::std::declval<weekday>() + cuda::std::declval<days>());
+    ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<weekday>() + cuda::std::declval<days>()));
 
-    ASSERT_NOEXCEPT(                   std::declval<days>() + std::declval<weekday>());
-    ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<days>() + std::declval<weekday>()));
+    ASSERT_NOEXCEPT(                   cuda::std::declval<days>() + cuda::std::declval<weekday>());
+    ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<days>() + cuda::std::declval<weekday>()));
 
     static_assert(testConstexpr<weekday, days>(), "");
 

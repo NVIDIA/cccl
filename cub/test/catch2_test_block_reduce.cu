@@ -27,6 +27,7 @@
 
 #include <cub/block/block_reduce.cuh>
 
+#include <limits>
 #include <thrust/host_vector.h>
 
 #include <numeric>
@@ -175,7 +176,7 @@ CUB_TEST("Block reduce works with sum",
 
   thrust::device_vector<type> d_out(1);
   thrust::device_vector<type> d_in(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::gen(CUB_SEED(10), d_in, std::numeric_limits<type>::min());
 
   thrust::host_vector<type> h_in = d_in;
   thrust::host_vector<type> h_reference(1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type &lhs, const type &rhs) {
@@ -205,7 +206,7 @@ CUB_TEST("Block reduce works with sum in partial tiles",
 
   thrust::device_vector<type> d_out(1);
   thrust::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, params::tile_size))));
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::gen(CUB_SEED(10), d_in, std::numeric_limits<type>::min());
 
   thrust::host_vector<type> h_in = d_in;
   std::vector<type> h_reference(1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type &lhs, const type &rhs) {
@@ -235,7 +236,7 @@ CUB_TEST("Block reduce works with custom op",
 
   thrust::device_vector<type> d_out(1);
   thrust::device_vector<type> d_in(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::gen(CUB_SEED(10), d_in, std::numeric_limits<type>::min());
 
   thrust::host_vector<type> h_in = d_in;
   thrust::host_vector<type> h_reference(
@@ -267,7 +268,7 @@ CUB_TEST("Block reduce works with custom op in partial tiles",
 
   thrust::device_vector<type> d_out(1);
   thrust::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, params::tile_size))));
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::gen(CUB_SEED(10), d_in, std::numeric_limits<type>::min());
 
   thrust::host_vector<type> h_in = d_in;
   thrust::host_vector<type> h_reference(
@@ -305,7 +306,7 @@ CUB_TEST("Block reduce works with custom types",
 
   thrust::device_vector<type> d_out(1);
   thrust::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, tile_size))));
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::gen(CUB_SEED(10), d_in, std::numeric_limits<type>::min());
 
   thrust::host_vector<type> h_in = d_in;
   thrust::host_vector<type> h_reference(1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type &lhs, const type &rhs) {
@@ -357,4 +358,3 @@ CUB_TEST("Block reduce works with vec types",
 
   REQUIRE(h_reference == d_out);
 }
-
