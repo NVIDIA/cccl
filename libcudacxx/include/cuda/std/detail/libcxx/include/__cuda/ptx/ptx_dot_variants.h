@@ -59,23 +59,24 @@ enum class dot_sem
   release,
   sc,
   weak
-  // mmio?
-  // volatile?
 };
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#state-spaces
 enum class dot_space
 {
-  reg,
-  sreg,
-  const_mem, // Using const_mem as `const` is reserved in C++.
   global,
-  local,
-  param,
-  shared, // The PTX spelling is shared::cta
-  shared_cluster, // The PTX spelling is shared::cluster, but we might want to go for cluster here.
-  tex // deprecated
-  // generic?
+  cluster, // The PTX spelling is shared::cluster
+  shared,  // The PTX spelling is shared::cta
+
+  // The following state spaces are unlikely to be used in cuda::ptx in the near
+  // future, so they are not exposed:
+
+  // reg,
+  // sreg,
+  // const_mem, // Using const_mem as `const` is reserved in C++.
+  // local,
+  // param,
+  // tex // deprecated
 };
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scope
@@ -118,26 +119,14 @@ static constexpr sem_sc_t sem_sc{};
 static constexpr sem_weak_t sem_weak{};
 
 template <dot_space __spc>
-using space_t                = _CUDA_VSTD::integral_constant<dot_space, __spc>;
-using space_const_mem_t      = space_t<dot_space::const_mem>;
-using space_global_t         = space_t<dot_space::global>;
-using space_local_t          = space_t<dot_space::local>;
-using space_param_t          = space_t<dot_space::param>;
-using space_reg_t            = space_t<dot_space::reg>;
-using space_shared_t         = space_t<dot_space::shared>;
-using space_shared_cluster_t = space_t<dot_space::shared_cluster>;
-using space_sreg_t           = space_t<dot_space::sreg>;
-using space_tex_t            = space_t<dot_space::tex>;
+using space_t         = _CUDA_VSTD::integral_constant<dot_space, __spc>;
+using space_global_t  = space_t<dot_space::global>;
+using space_shared_t  = space_t<dot_space::shared>;
+using space_cluster_t = space_t<dot_space::cluster>;
 
-static constexpr space_const_mem_t space_const_mem{};
 static constexpr space_global_t space_global{};
-static constexpr space_local_t space_local{};
-static constexpr space_param_t space_param{};
-static constexpr space_reg_t space_reg{};
 static constexpr space_shared_t space_shared{};
-static constexpr space_shared_cluster_t space_shared_cluster{};
-static constexpr space_sreg_t space_sreg{};
-static constexpr space_tex_t space_tex{};
+static constexpr space_cluster_t space_cluster{};
 
 template <dot_scope __scope>
 using scope_t         = _CUDA_VSTD::integral_constant<dot_scope, __scope>;
