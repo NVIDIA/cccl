@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// UNSUPPORTED: libcpp-has-no-threads
+// UNSUPPORTED: libcpp-has-no-threads, c++98, c++03, c++11
 // UNSUPPORTED: pre-sm-90
 // UNSUPPORTED: nvrtc
 // NVRTC_SKIP_KERNEL_RUN // This will have effect once PR 433 is merged (line above should be removed.)
