@@ -10,7 +10,7 @@
 #ifndef TEST_SUPPORT_CHECK_ASSERTION_H
 #define TEST_SUPPORT_CHECK_ASSERTION_H
 
-#include <cassert>
+#include <cuda/std/cassert>
 #include <cstdarg>
 #include <cstddef>
 #include <cstdio>

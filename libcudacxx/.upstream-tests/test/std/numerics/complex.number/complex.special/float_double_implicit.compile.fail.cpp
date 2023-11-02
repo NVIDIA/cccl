@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvrtc
-
 // <cuda/std/complex>
 
 // template<> class complex<float>

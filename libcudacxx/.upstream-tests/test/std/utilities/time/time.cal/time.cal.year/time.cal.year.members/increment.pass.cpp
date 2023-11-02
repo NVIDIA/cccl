@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class year;
@@ -16,7 +16,7 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
@@ -37,8 +37,8 @@ int main(int, char**)
     ASSERT_NOEXCEPT(++(cuda::std::declval<year&>())  );
     ASSERT_NOEXCEPT(  (cuda::std::declval<year&>())++);
 
-    ASSERT_SAME_TYPE(year , decltype(  std::declval<year&>()++));
-    ASSERT_SAME_TYPE(year&, decltype(++std::declval<year&>()  ));
+    ASSERT_SAME_TYPE(year , decltype(  cuda::std::declval<year&>()++));
+    ASSERT_SAME_TYPE(year&, decltype(++cuda::std::declval<year&>()  ));
 
     static_assert(testConstexpr<year>(), "");
 

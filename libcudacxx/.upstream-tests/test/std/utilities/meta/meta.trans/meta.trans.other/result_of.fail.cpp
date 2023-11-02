@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // Mandates: invoke result must fail to compile when used with device lambdas.
-// UNSUPPORTED: nvrtc
 // UNSUPPORTED: clang && (!nvcc)
 
 // <cuda/std/functional>
@@ -17,7 +16,6 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
 #include "test_macros.h"
-
 
 template <class Ret, class Fn>
 __host__ __device__
@@ -32,7 +30,7 @@ void test_lambda(Fn &&)
 
 int main(int, char**)
 {
-#if defined(TEST_COMPILER_NVCC)
+#if defined(TEST_COMPILER_NVCC) || defined (TEST_COMPILER_NVRTC)
     { // extended device lambda
     test_lambda<int>([] __device__ () -> int { return 42; });
     test_lambda<double>([] __device__ () -> double { return 42.0; });

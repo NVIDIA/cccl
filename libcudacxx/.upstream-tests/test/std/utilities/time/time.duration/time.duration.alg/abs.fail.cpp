@@ -17,7 +17,7 @@
 // This function shall not participate in overload resolution unless numeric_limits<Rep>::is_signed is true.
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
-// UNSUPPORTED: nvrtc
+
 
 #include <cuda/std/chrono>
 

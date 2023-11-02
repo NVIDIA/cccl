@@ -13,8 +13,8 @@
 // template <class Alloc, class ...UTypes>
 //   tuple(allocator_arg_t, const Alloc& a, tuple<UTypes...>&&);
 
-// UNSUPPORTED: c++98, c++03 
-// UNSUPPORTED: nvrtc
+// UNSUPPORTED: c++98, c++03
+
 
 #include <cuda/std/tuple>
 

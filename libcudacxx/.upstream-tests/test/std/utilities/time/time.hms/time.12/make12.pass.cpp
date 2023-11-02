@@ -27,7 +27,7 @@ int main(int, char**)
     static_assert( cuda::std::chrono::make12(hours(11)) == hours(11), "");
     static_assert( cuda::std::chrono::make12(hours(12)) == hours(12), "");
     static_assert( cuda::std::chrono::make12(hours(23)) == hours(11), "");
-    
+
     assert( cuda::std::chrono::make12(hours(0)) == hours(12));
     for (int i = 1; i < 13; ++i)
         assert( cuda::std::chrono::make12(hours(i)) == hours(i));

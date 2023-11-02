@@ -12,7 +12,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstddef>
-#include <cassert>
+#include <cuda/std/cassert>
 #include <climits>
 #include <memory>
 

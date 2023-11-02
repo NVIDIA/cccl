@@ -7,8 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11, nvrtc
+// UNSUPPORTED: c++11
 // UNSUPPORTED: msvc && c++14, msvc && c++17
+
+// TODO: Diagnose static assertion failures in NVRTC
+// XFAIL: nvrtc
 
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
