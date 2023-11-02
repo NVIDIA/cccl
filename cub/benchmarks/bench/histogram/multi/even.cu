@@ -150,5 +150,5 @@ NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, bin_types, some_offset
   .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "BinT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_int64_axis("Bins", {32, 64, 128, 2048, 2097152})
-  .add_string_axis("Entropy", {"0.201", "0.544", "1.000"});
+  .add_int64_axis("Bins", {32, 128, 2048, 2097152})
+  .add_string_axis("Entropy", {"0.201", "1.000"});
