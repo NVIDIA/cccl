@@ -49,10 +49,12 @@ def parse_arguments():
         '--list-benches', action=argparse.BooleanOptionalAction, help="Show available benchmarks.")
     parser.add_argument('--num-shards', type=int, default=1, help='Split benchmarks into M pieces and only run one')
     parser.add_argument('--run-shard', type=int, default=0, help='Run shard N / M of benchmarks')
+    parser.add_argument('-P0', action=argparse.BooleanOptionalAction, help="Run P0 benchmarks (overwrites -R)")
     return parser.parse_args()
 
 
 def run_benches(algnames, sub_space, seeker):
+    print(algnames)
     for algname in algnames:
         bench = BaseBench(algname)
         ct_space = bench.ct_workload_space(sub_space)
@@ -63,14 +65,18 @@ def run_benches(algnames, sub_space, seeker):
 def filter_benchmarks(benchmarks, args):
     if args.run_shard >= args.num_shards:
         raise ValueError('run-shard must be less than num-shards')
+    
+    R = args.R
+    if args.P0:
+        # TODO Exclude 'segmented'
+        R = '.*(scan|reduce|select|sort).*'
 
-    pattern = re.compile(args.R)
+    pattern = re.compile(R)
     algnames = list(filter(lambda x: pattern.match(x), benchmarks.keys()))
     algnames.sort()
 
     if args.num_shards > 1:
         algnames = np.array_split(algnames, args.num_shards)[args.run_shard].tolist()
-        print(algnames)
         return algnames
     
     return algnames
