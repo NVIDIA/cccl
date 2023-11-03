@@ -23,7 +23,7 @@ def problem_size_looks_large_enough(elements):
 def filter_runtime_workloads_for_ci(rt_values):
   for subbench in rt_values:
     for axis in rt_values[subbench]:
-      if axis == 'Elements{io}[pow2]':
+      if axis.startswith('Elements') and axis.endswith('[pow2]'):
         rt_values[subbench][axis] = list(filter(problem_size_looks_large_enough, rt_values[subbench][axis]))
 
   return rt_values
