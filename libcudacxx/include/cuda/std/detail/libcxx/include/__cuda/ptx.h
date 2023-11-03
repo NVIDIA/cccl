@@ -12,13 +12,27 @@
 #ifndef _LIBCUDACXX___CUDA_PTX_H
 #define  _LIBCUDACXX___CUDA_PTX_H
 
-#include "../cstdint" // uint32_t
-#include "../../../../../../nv/target" // __CUDA_MINIMUM_ARCH__ and friends
+#ifndef __cuda_std__
+#error "<__cuda/ptx.h> should only be included in from <cuda/std/barrier>"
+#endif // __cuda_std__
 
-#include "cuda/std/detail/libcxx/include/__cuda/ptx/ptx_isa_target_macros.h"
-#include "cuda/std/detail/libcxx/include/__cuda/ptx/ptx_dot_variants.h"
-#include "cuda/std/detail/libcxx/include/__cuda/ptx/ptx_helper_functions.h"
-#include "cuda/std/detail/libcxx/include/__cuda/ptx/parallel_synchronization_and_communication_instructions_mbarrier.h"
+#if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 700
+#  error "CUDA synchronization primitives are only supported for sm_70 and up."
+#endif
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
+
+#include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
+
+#include "../__cuda/ptx/ptx_isa_target_macros.h"
+#include "../__cuda/ptx/ptx_dot_variants.h"
+#include "../__cuda/ptx/ptx_helper_functions.h"
+#include "../__cuda/ptx/parallel_synchronization_and_communication_instructions_mbarrier.h"
+#include "../cstdint" // uint32_t
 
 /*
  * The cuda::ptx namespace intends to provide PTX wrappers for new hardware

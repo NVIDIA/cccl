@@ -9,11 +9,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-
 #ifndef _CUDA_PTX_DOT_VARIANTS_H_
 #define _CUDA_PTX_DOT_VARIANTS_H_
 
 #include "../../__type_traits/integral_constant.h" // std::integral_constant
+
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#pragma GCC system_header
+#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
+_CCCL_IMPLICIT_SYSTEM_HEADER
+#endif // !_CCCL_COMPILER_NVHPC
 
 /*
  * Public integral constant types and values for ".variant"s:
