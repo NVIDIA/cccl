@@ -11,7 +11,7 @@ experiment with new hardware features before a high-level C++ API is available.
 The `cuda/ptx` header is intended to present a stable API (not ABI) within one
 major version of the CTK on a best effort basis. This means that:
 
-- All functions are marked inline.
+- All functions are marked static inline.
 
 - The type of a function parameter can be changed to be more generic if
   that means that code that called the original version can still be
@@ -26,7 +26,7 @@ API stability is not taken to the extreme. Call functions like below to ensure
 forward-compatibility:
 
 ```cuda
-// Use arguments to driver overload resolution:
+// Use arguments to drive overload resolution:
 cuda::ptx::mbarrier_arrive_expect_tx(cuda::ptx::sem_release, cuda::ptx::scope_cta, cuda::ptx::space_shared, &bar, 1);
 
 // Specifying templates directly is not forward-compatible, as order and number
