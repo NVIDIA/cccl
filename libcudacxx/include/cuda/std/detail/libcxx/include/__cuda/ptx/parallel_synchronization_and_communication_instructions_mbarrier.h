@@ -90,15 +90,17 @@ mbarrier.arrive{.sem}{.scope}{.space}.b64                   state,  [addr], coun
 .sem   = { .release }
 .scope = { .cta, .cluster }
 
+// NOTE: .scope=.cta is dropped on purpose
 mbarrier.arrive{.sem}{.scope}{.space}.b64                   _, [addr];                // 4a. PTX ISA 80, SM_90, !memory
 .space = { .shared::cluster}
 .sem   = { .release }
-.scope = { .cta, .cluster }
+.scope = { .cluster }
 
+// NOTE: .scope=.cta is dropped on purpose
 mbarrier.arrive{.sem}{.scope}{.space}.b64                   _, [addr], count;         // 4b. PTX ISA 80, SM_90, !memory
 .space = { .shared::cluster}
 .sem   = { .release }
-.scope = { .cta, .cluster }
+.scope = { .cluster }
 
 
 // mbarrier_arrive_no_complete:
@@ -110,10 +112,11 @@ mbarrier.arrive.expect_tx{.sem}{.scope}{.space}.b64        state, [addr], tx_cou
 .sem   = { .release }
 .scope = { .cta, .cluster }
 
+// NOTE: .scope=.cta is dropped on purpose
 mbarrier.arrive.expect_tx{.sem}{.scope}{.space}.b64        _, [addr], tx_count;       // 9. PTX ISA 80, SM_90, !memory
 .space = { .shared::cluster }
 .sem   = { .release }
-.scope = { .cta, .cluster }
+.scope = { .cluster }
 
 */
 
@@ -283,44 +286,35 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
 /*
 // mbarrier.arrive{.sem}{.scope}{.space}.b64                   _, [addr];                // 4a.  PTX ISA 80, SM_90
 // .sem       = { .release }
-// .scope     = { .cta, .cluster }
+// .scope     = { .cluster }
 // .space     = { .shared::cluster }
-template <cuda::ptx::dot_scope Scope>
+template <typename=void>
 __device__ static inline void mbarrier_arrive(
   cuda::ptx::sem_release_t,
-  cuda::ptx::scope_t<Scope> scope,
+  cuda::ptx::scope_cluster_t,
   cuda::ptx::space_cluster_t,
   uint64_t* addr);
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
+template <typename=void>
 _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   sem_release_t,
-  scope_t<_Scope> __scope,
+  scope_cluster_t,
   space_cluster_t,
   _CUDA_VSTD::uint64_t* __addr)
 {
   // __sem == sem_release (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+  // __scope == scope_cluster (due to parameter type constraint)
   // __space == space_cluster (due to parameter type constraint)
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
-      asm (
-        "mbarrier.arrive.release.cta.shared::cluster.b64                   _, [%0];                // 4a. "
-        :
-        : "r"(__as_ptr_smem(__addr))
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
-      asm (
-        "mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0];                // 4a. "
-        :
-        : "r"(__as_ptr_smem(__addr))
-        : "memory"
-      );
-    }
+    asm (
+      "mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0];                // 4a. "
+      :
+      : "r"(__as_ptr_smem(__addr))
+      : "memory"
+    );
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
@@ -332,48 +326,38 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
 /*
 // mbarrier.arrive{.sem}{.scope}{.space}.b64                   _, [addr], count;         // 4b.  PTX ISA 80, SM_90
 // .sem       = { .release }
-// .scope     = { .cta, .cluster }
+// .scope     = { .cluster }
 // .space     = { .shared::cluster }
-template <cuda::ptx::dot_scope Scope>
+template <typename=void>
 __device__ static inline void mbarrier_arrive(
   cuda::ptx::sem_release_t,
-  cuda::ptx::scope_t<Scope> scope,
+  cuda::ptx::scope_cluster_t,
   cuda::ptx::space_cluster_t,
   uint64_t* addr,
   const uint32_t& count);
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
+template <typename=void>
 _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   sem_release_t,
-  scope_t<_Scope> __scope,
+  scope_cluster_t,
   space_cluster_t,
   _CUDA_VSTD::uint64_t* __addr,
   const _CUDA_VSTD::uint32_t& __count)
 {
   // __sem == sem_release (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+  // __scope == scope_cluster (due to parameter type constraint)
   // __space == space_cluster (due to parameter type constraint)
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
-      asm (
-        "mbarrier.arrive.release.cta.shared::cluster.b64                   _, [%0], %1;         // 4b. "
-        :
-        : "r"(__as_ptr_smem(__addr)),
-          "r"(__count)
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
-      asm (
-        "mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0], %1;         // 4b. "
-        :
-        : "r"(__as_ptr_smem(__addr)),
-          "r"(__count)
-        : "memory"
-      );
-    }
+    asm (
+      "mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0], %1;         // 4b. "
+      :
+      : "r"(__as_ptr_smem(__addr)),
+        "r"(__count)
+      : "memory"
+    );
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
@@ -470,48 +454,38 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
 /*
 // mbarrier.arrive.expect_tx{.sem}{.scope}{.space}.b64   _, [addr], tx_count; // 9.  PTX ISA 80, SM_90
 // .sem       = { .release }
-// .scope     = { .cta, .cluster }
+// .scope     = { .cluster }
 // .space     = { .shared::cluster }
-template <cuda::ptx::dot_scope Scope>
+template <typename=void>
 __device__ static inline void mbarrier_arrive_expect_tx(
   cuda::ptx::sem_release_t,
-  cuda::ptx::scope_t<Scope> scope,
+  cuda::ptx::scope_cluster_t,
   cuda::ptx::space_cluster_t,
   uint64_t* addr,
   const uint32_t& tx_count);
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
+template <typename=void>
 _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
   sem_release_t,
-  scope_t<_Scope> __scope,
+  scope_cluster_t,
   space_cluster_t,
   _CUDA_VSTD::uint64_t* __addr,
   const _CUDA_VSTD::uint32_t& __tx_count)
 {
   // __sem == sem_release (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster, "");
+  // __scope == scope_cluster (due to parameter type constraint)
   // __space == space_cluster (due to parameter type constraint)
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
-      asm (
-        "mbarrier.arrive.expect_tx.release.cta.shared::cluster.b64   _, [%0], %1; // 9. "
-        :
-        : "r"(__as_ptr_smem(__addr)),
-          "r"(__tx_count)
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
-      asm (
-        "mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64   _, [%0], %1; // 9. "
-        :
-        : "r"(__as_ptr_smem(__addr)),
-          "r"(__tx_count)
-        : "memory"
-      );
-    }
+    asm (
+      "mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64   _, [%0], %1; // 9. "
+      :
+      : "r"(__as_ptr_smem(__addr)),
+        "r"(__tx_count)
+      : "memory"
+    );
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
@@ -519,6 +493,7 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
   ));
 }
 #endif // __cccl_ptx_isa >= 800
+
 
 
 
