@@ -955,7 +955,13 @@ template <size_t _Copy_size>
 inline __device__
 void __cp_async_shared_global(char * __dest, const char * __src) {
     // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
+
+    // If `if constexpr` is not available, this function gets instantiated even
+    // if is not called. Do not static_assert in that case.
+#if _LIBCUDACXX_STD_VER >= 17
     static_assert(_Copy_size == 4 || _Copy_size == 8 || _Copy_size == 16, "cp.async.shared.global requires a copy size of 4, 8, or 16.");
+#endif // _LIBCUDACXX_STD_VER >= 17
+
     asm volatile(
         "cp.async.ca.shared.global [%0], [%1], %2, %2;"
         :
@@ -982,7 +988,11 @@ void __cp_async_shared_global<16>(char * __dest, const char * __src) {
 template <size_t _Alignment, typename _Group>
 inline __device__
 void __cp_async_shared_global_mechanism(_Group __g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
+    // If `if constexpr` is not available, this function gets instantiated even
+    // if is not called. Do not static_assert in that case.
+#if _LIBCUDACXX_STD_VER >= 17
     static_assert(4 <= _Alignment, "cp.async requires at least 4-byte alignment");
+#endif // _LIBCUDACXX_STD_VER >= 17
 
     // Maximal copy size is 16.
     constexpr int __copy_size = (_Alignment > 16) ? 16 : _Alignment;
