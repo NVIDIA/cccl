@@ -479,23 +479,23 @@ __device__ static inline uint64_t mbarrier_arrive(
 
 // mbarrier.arrive{.sem}{.scope}{.space}.b64                   _, [addr];                // 4a.  PTX ISA 80, SM_90
 // .sem       = { .release }
-// .scope     = { .cta, .cluster }
+// .scope     = { .cluster }
 // .space     = { .shared::cluster }
-template <cuda::ptx::dot_scope Scope>
+template <typename=void>
 __device__ static inline void mbarrier_arrive(
   cuda::ptx::sem_release_t,
-  cuda::ptx::scope_t<Scope> scope,
+  cuda::ptx::scope_cluster_t,
   cuda::ptx::space_cluster_t,
   uint64_t* addr);
 
 // mbarrier.arrive{.sem}{.scope}{.space}.b64                   _, [addr], count;         // 4b.  PTX ISA 80, SM_90
 // .sem       = { .release }
-// .scope     = { .cta, .cluster }
+// .scope     = { .cluster }
 // .space     = { .shared::cluster }
-template <cuda::ptx::dot_scope Scope>
+template <typename=void>
 __device__ static inline void mbarrier_arrive(
   cuda::ptx::sem_release_t,
-  cuda::ptx::scope_t<Scope> scope,
+  cuda::ptx::scope_cluster_t,
   cuda::ptx::space_cluster_t,
   uint64_t* addr,
   const uint32_t& count);
@@ -524,12 +524,12 @@ __device__ static inline uint64_t mbarrier_arrive_expect_tx(
 
 // mbarrier.arrive.expect_tx{.sem}{.scope}{.space}.b64   _, [addr], tx_count; // 9.  PTX ISA 80, SM_90
 // .sem       = { .release }
-// .scope     = { .cta, .cluster }
+// .scope     = { .cluster }
 // .space     = { .shared::cluster }
-template <cuda::ptx::dot_scope Scope>
+template <typename=void>
 __device__ static inline void mbarrier_arrive_expect_tx(
   cuda::ptx::sem_release_t,
-  cuda::ptx::scope_t<Scope> scope,
+  cuda::ptx::scope_cluster_t,
   cuda::ptx::space_cluster_t,
   uint64_t* addr,
   const uint32_t& tx_count);

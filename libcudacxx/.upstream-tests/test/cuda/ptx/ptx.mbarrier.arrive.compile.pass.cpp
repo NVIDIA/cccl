@@ -54,16 +54,13 @@ __global__ void test_compilation() {
     state = cuda::ptx::mbarrier_arrive(sem_release, scope_cta, space_shared, &bar, 1);               // 3b.
     state = cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_shared, &bar, 1);           // 3b.
 
-    cuda::ptx::mbarrier_arrive(sem_release, scope_cta, space_cluster, &bar);                         // 4a.
     cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_cluster, &bar);                     // 4a.
 
-    cuda::ptx::mbarrier_arrive(sem_release, scope_cta, space_cluster, &bar, 1);                      // 4b.
     cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_cluster, &bar, 1);                  // 4b.
 
     state = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta, space_shared, &bar, 1);     // 8.
     state = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared, &bar, 1); // 8.
 
-    cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta, space_cluster, &bar, 1);            // 9.
     cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_cluster, &bar, 1);        // 9.
   ));
 #endif // __cccl_ptx_isa >= 800
