@@ -1,6 +1,6 @@
 
 cuda_oldest: &cuda_oldest '11.1'
-cuda_newest: &cuda_newest '12.2'
+cuda_newest: &cuda_newest '12.3'
 
 # The GPUs to test on
 gpus:

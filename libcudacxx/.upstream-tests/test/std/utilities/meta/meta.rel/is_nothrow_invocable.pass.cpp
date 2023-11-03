@@ -57,6 +57,7 @@ __host__ __device__ constexpr bool throws_invocable_r() {
 }
 
 __host__ __device__ void test_noexcept_function_pointers() {
+#if !defined(TEST_COMPILER_NVCC) || TEST_STD_VER >= 17 // nvbug4360046
   struct Dummy {
     __host__ __device__ void foo() noexcept {}
     __host__ __device__ static void bar() noexcept {}
@@ -66,6 +67,7 @@ __host__ __device__ void test_noexcept_function_pointers() {
   // pointers.
   static_assert(cuda::std::is_nothrow_invocable<decltype(&Dummy::foo), Dummy&>::value, "");
   static_assert(cuda::std::is_nothrow_invocable<decltype(&Dummy::bar)>::value, "");
+#endif // !defined(TEST_COMPILER_NVCC) || TEST_STD_VER >= 17
 }
 
 int main(int, char**) {
