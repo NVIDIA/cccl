@@ -20,4 +20,4 @@
 #error "CCCL patch version cannot be greater than 99 for compatibility with Thrust/CUB's MMMmmmpp format."
 #endif
 
-#endif
+#endif // __CCCL_VERSION_H
