@@ -34,8 +34,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <type_traits>
-
 THRUST_NAMESPACE_BEGIN
 
 // forward declaration of device_reference

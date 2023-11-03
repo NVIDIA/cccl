@@ -48,11 +48,6 @@
 
 #include <nv/target>
 
-#include <cstdio>
-
-CUB_NAMESPACE_BEGIN
-
-
 #ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:
 
 /**
@@ -178,6 +173,12 @@ CUB_NAMESPACE_BEGIN
 #if (defined(DEBUG) || defined(_DEBUG)) && !defined(CUB_STDERR)
     #define CUB_STDERR
 #endif
+
+#ifdef CUB_STDERR
+#include <cstdio>
+#endif
+
+CUB_NAMESPACE_BEGIN
 
 /**
  * \brief %If \p CUB_STDERR is defined and \p error is not \p cudaSuccess, the

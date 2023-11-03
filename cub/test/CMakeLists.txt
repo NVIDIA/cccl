@@ -166,7 +166,8 @@ function(cub_add_test target_name_var test_name test_src cub_target cdp)
       target_include_directories(${config_c2h_target} PUBLIC "${CUB_SOURCE_DIR}/test")
       cub_clone_target_properties(${config_c2h_target} ${cub_target})
       cub_configure_cuda_target(${config_c2h_target} RDC ${cdp_val})
-      target_link_libraries(${config_c2h_target} PRIVATE ${cub_target})
+      target_link_libraries(${config_c2h_target} PRIVATE ${cub_target} 
+                                                 PUBLIC CUDA::nvrtc CUDA::cuda_driver)
       if (CUB_C2H_ENABLE_CURAND)
         target_link_libraries(${config_c2h_target} PRIVATE CUDA::curand)
         target_compile_definitions(${config_c2h_target} PRIVATE C2H_HAS_CURAND=1)
@@ -221,8 +222,14 @@ function(cub_add_test target_name_var test_name test_src cub_target cdp)
       else()
         target_link_libraries(${config_c2run_target} PRIVATE ${test_target})
       endif()
-      
     endif() # CUB_SEPARATE_CATCH2
+
+    if ("${test_target}" MATCHES "nvrtc")
+      target_compile_definitions(${test_target} PRIVATE NVRTC_CUB_PATH="-I${CMAKE_SOURCE_DIR}/cub")
+      target_compile_definitions(${test_target} PRIVATE NVRTC_THRUST_PATH="-I${CMAKE_SOURCE_DIR}/thrust")
+      target_compile_definitions(${test_target} PRIVATE NVRTC_LIBCUDACXX_PATH="-I${CMAKE_SOURCE_DIR}/libcudacxx/include")
+      target_compile_definitions(${test_target} PRIVATE NVRTC_CTK_PATH="-I${CUDAToolkit_INCLUDE_DIRS}")
+    endif()
 
     if (CUB_IN_THRUST)
       thrust_fix_clang_nvcc_build_for(${test_target})

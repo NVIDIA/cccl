@@ -51,8 +51,8 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/std/type_traits>
+#include <cuda/std/cstdint>
 
-#include <stdint.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -108,9 +108,9 @@ namespace detail
 template <int Bits, int PartialWarpThreads, int PartialWarpId>
 struct warp_in_block_matcher_t
 {
-  static __device__ std::uint32_t match_any(std::uint32_t label, std::uint32_t warp_id)
+  static __device__ ::cuda::std::uint32_t match_any(::cuda::std::uint32_t label, ::cuda::std::uint32_t warp_id)
   {
-    if (warp_id == static_cast<std::uint32_t>(PartialWarpId))
+    if (warp_id == static_cast<::cuda::std::uint32_t>(PartialWarpId))
     {
       return MatchAny<Bits, PartialWarpThreads>(label);
     }
@@ -122,7 +122,7 @@ struct warp_in_block_matcher_t
 template <int Bits, int PartialWarpId>
 struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 {
-  static __device__ std::uint32_t match_any(std::uint32_t label, std::uint32_t warp_id)
+  static __device__ ::cuda::std::uint32_t match_any(::cuda::std::uint32_t label, ::cuda::std::uint32_t warp_id)
   {
     return MatchAny<Bits>(label);
   }
@@ -506,13 +506,13 @@ public:
         for (int ITEM = 0; ITEM < KEYS_PER_THREAD; ++ITEM)
         {
             // Get digit
-            std::uint32_t digit = digit_extractor.Digit(keys[ITEM]);
+            ::cuda::std::uint32_t digit = digit_extractor.Digit(keys[ITEM]);
 
             // Get sub-counter
-            std::uint32_t sub_counter = digit >> LOG_COUNTER_LANES;
+            ::cuda::std::uint32_t sub_counter = digit >> LOG_COUNTER_LANES;
 
             // Get counter lane
-            std::uint32_t counter_lane = digit & (COUNTER_LANES - 1);
+            ::cuda::std::uint32_t counter_lane = digit & (COUNTER_LANES - 1);
 
             if (IS_DESCENDING)
             {
@@ -807,7 +807,7 @@ public:
         for (int ITEM = 0; ITEM < KEYS_PER_THREAD; ++ITEM)
         {
             // My digit
-            std::uint32_t digit = digit_extractor.Digit(keys[ITEM]);
+            ::cuda::std::uint32_t digit = digit_extractor.Digit(keys[ITEM]);
 
             if (IS_DESCENDING)
                 digit = RADIX_DIGITS - digit - 1;
@@ -864,7 +864,7 @@ public:
             temp_storage.aliasable.raking_grid[linear_tid][ITEM] = scan_counters[ITEM];
 
         CTA_SYNC();
-        if (!std::is_same<
+        if (!::cuda::std::is_same<
               CountsCallback,
               BlockRadixRankEmptyCallback<BINS_TRACKED_PER_THREAD>>::value)
         {
@@ -1027,9 +1027,9 @@ struct BlockRadixRankMatchEarlyCounts
         int warp;
         int lane;
 
-        __device__ __forceinline__ std::uint32_t Digit(UnsignedBits key)
+        __device__ __forceinline__ ::cuda::std::uint32_t Digit(UnsignedBits key)
         {
-            std::uint32_t digit =  digit_extractor.Digit(key);
+            ::cuda::std::uint32_t digit =  digit_extractor.Digit(key);
             return IS_DESCENDING ? RADIX_DIGITS - 1 - digit : digit;
         }
 
@@ -1153,7 +1153,7 @@ struct BlockRadixRankMatchEarlyCounts
             #pragma unroll
             for (int u = 0; u < KEYS_PER_THREAD; ++u)
             {
-                std::uint32_t bin = Digit(keys[u]);
+                ::cuda::std::uint32_t bin = Digit(keys[u]);
                 int* p_match_mask = &match_masks[bin];
                 atomicOr(p_match_mask, lane_mask);
                 WARP_SYNC(WARP_MASK);
@@ -1183,7 +1183,7 @@ struct BlockRadixRankMatchEarlyCounts
             #pragma unroll
             for (int u = 0; u < KEYS_PER_THREAD; ++u)
             {
-                std::uint32_t bin = Digit(keys[u]);
+                ::cuda::std::uint32_t bin = Digit(keys[u]);
                 int bin_mask = detail::warp_in_block_matcher_t<RADIX_BITS,
                                                                PARTIAL_WARP_THREADS,
                                                                BLOCK_WARPS - 1>::match_any(bin,
