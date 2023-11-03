@@ -1,0 +1,23 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_PTX
+#define _CUDA_PTX
+
+#include "std/detail/__config"
+
+#include "std/detail/__pragma_push"
+
+#include "std/detail/libcxx/include/__cuda/ptx.h"
+
+#include "std/detail/__pragma_pop"
+
+#endif // _CUDA_PTX

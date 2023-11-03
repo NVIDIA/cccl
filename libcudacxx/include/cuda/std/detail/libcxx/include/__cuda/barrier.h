@@ -27,6 +27,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include "../cstdlib"                // _LIBCUDACXX_UNREACHABLE
 #include "../__type_traits/void_t.h" // _CUDA_VSTD::__void_t
+#include "../__cuda/ptx.h"           // cuda::ptx::*
 
 #if defined(_LIBCUDACXX_COMPILER_NVRTC)
 #define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type *)0)->member))
@@ -206,29 +207,21 @@ public:
                 else if (!__isShared(&__barrier)) {
                     __trap();
                 }
-
-                asm volatile ("mbarrier.arrive.shared.b64 %0, [%1], %2;"
-                    : "=l"(__token)
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
-                    "r"(static_cast<_CUDA_VSTD::uint32_t>(__update))
-                    : "memory");
+                // Cannot use cuda::device::barrier_native_handle here, as it is
+                // only defined for block-scope barriers. This barrier may be a
+                // non-block scoped barrier.
+                auto __bh = reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__barrier);
+                __token = _CUDA_VPTX::mbarrier_arrive(__bh, __update);
             ), NV_PROVIDES_SM_80, (
                 if (!__isShared(&__barrier)) {
                     return __barrier.arrive(__update);
                 }
-
+                auto __bh = reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__barrier);
                 // Need 2 instructions, can't finish barrier with arrive > 1
                 if (__update > 1) {
-                    asm volatile ("mbarrier.arrive.noComplete.shared.b64 %0, [%1], %2;"
-                        : "=l"(__token)
-                        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
-                            "r"(static_cast<_CUDA_VSTD::uint32_t>(__update - 1))
-                        : "memory");
+                    ___CUDA_VPTX::mbarrier_arrive_no_complete(__bh, __update - 1);
                 }
-                asm volatile ("mbarrier.arrive.shared.b64 %0, [%1];"
-                    : "=l"(__token)
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier)))
-                    : "memory");
+                __token = _CUDA_VPTX::mbarrier_arrive( __bh);
             ), NV_IS_DEVICE, (
                 if (!__isShared(&__barrier)) {
                     return __barrier.arrive(__update);
@@ -603,14 +596,12 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
             // us in release builds. In debug builds, the error would be caught
             // by the asserts at the top of this function.
 
-            auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+            auto __native_handle = barrier_native_handle(__b);
+            auto __bh = __cvta_generic_to_shared(__native_handle);
             if (__arrive_count_update == 1) {
-                asm (
-                    "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
-                    : "=l"(__token)
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
-                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
-                    : "memory");
+                __token = _CUDA_VPTX::mbarrier_arrive_expect_tx(
+                    _CUDA_VPTX::sem_release, _CUDA_VPTX::scope_cta, _CUDA_VPTX::space_shared, __native_handle, __transaction_count_update
+                );
             } else {
                 asm (
                     "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
@@ -618,12 +609,9 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
                     : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
                       "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
                     : "memory");
-                asm (
-                    "mbarrier.arrive.release.cta.shared::cta.b64 %0, [%1], %2;"
-                    : "=l"(__token)
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
-                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__arrive_count_update))
-                    : "memory");
+                __token = _CUDA_VPTX::mbarrier_arrive(
+                    _CUDA_VPTX::sem_release, _CUDA_VPTX::scope_cta, _CUDA_VPTX::space_shared, __native_handle, __arrive_count_update
+                );
             }
         )
     );
