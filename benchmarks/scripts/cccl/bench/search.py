@@ -54,7 +54,6 @@ def parse_arguments():
 
 
 def run_benches(algnames, sub_space, seeker):
-    print(algnames)
     for algname in algnames:
         bench = BaseBench(algname)
         ct_space = bench.ct_workload_space(sub_space)
