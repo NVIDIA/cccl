@@ -46,12 +46,12 @@ int main(int, char**)
     test<random_access_iterator<const Base*> >(random_access_iterator<Derived*>(&d));
     test<Base*>(&d);
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 11
     {
     constexpr const Derived *p = nullptr;
     constexpr cuda::std::move_iterator<const Derived *>     it1 = cuda::std::make_move_iterator(p);
     constexpr cuda::std::move_iterator<const Base *>        it2(it1);
-    static_assert(it2.base() == p);
+    static_assert(it2.base() == p, "");
     }
 #endif
 

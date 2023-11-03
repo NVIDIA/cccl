@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14
-// UNSUPPORTED: nvrtc
 // UNSUPPORTED: msvc-19.16
 
 // ranges::advance

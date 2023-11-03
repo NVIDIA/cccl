@@ -23,6 +23,10 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
+#ifdef TEST_COMPILER_MSVC
+#pragma warning(disable: 4018) // signed/unsigned mismatch
+#endif // TEST_COMPILER_MSVC
+
 #if TEST_STD_VER > 17
 TEST_CONSTEXPR bool test_constexpr() {
     int ia[] = {1, 3, 6, 7};

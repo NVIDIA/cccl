@@ -122,7 +122,7 @@ If compiling with another compiler, you will need to update your build system's 
 
 #### GitHub
 
-Users that want to stay on the cutting edge of CCCL development are encouraged to use CCCL from GitHub.
+Users who want to stay on the cutting edge of CCCL development are encouraged to use CCCL from GitHub.
 Using a newer version of CCCL with an older version of the CUDA Toolkit is supported, but not the other way around.
 For complete information on compatibility between CCCL and the CUDA Toolkit, see [our platform support](#platform-support).
 
@@ -234,7 +234,7 @@ For more information about our CI pipeline, see [here](ci-overview.md).
 
 ## Versioning
 
-**Objective:** This section describes how CCCL is versioned, API/ABI stability guarantees, and compatibility guideliness to minimize upgrade headaches.
+**Objective:** This section describes how CCCL is versioned, API/ABI stability guarantees, and compatibility guidelines to minimize upgrade headaches.
 
 **Summary**
 - The entirety of CCCL's API shares a common semantic version across all components
@@ -402,7 +402,7 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [QUDA](https://github.com/lattice/quda) - Lattice quantum chromodynamics (QCD) computations
 - [RAFT](https://github.com/rapidsai/raft) - Algorithms and primitives for machine learning
 - [TensorFlow](https://github.com/tensorflow/tensorflow) - End-to-end platform for machine learning
-- [TensorRT](https://github.com/NVIDIA/TensorRT) - Deep leaning inference
+- [TensorRT](https://github.com/NVIDIA/TensorRT) - Deep learning inference
 - [tsne-cuda](https://github.com/CannyLab/tsne-cuda) - Stochastic Neighborhood Embedding library
 - [Visualization Toolkit (VTK)](https://gitlab.kitware.com/vtk/vtk) - Rendering and visualization library
 - [XGBoost](https://github.com/dmlc/xgboost) - Gradient boosting machine learning algorithms
