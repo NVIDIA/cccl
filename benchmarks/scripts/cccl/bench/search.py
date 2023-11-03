@@ -67,8 +67,7 @@ def filter_benchmarks(benchmarks, args):
     
     R = args.R
     if args.P0:
-        # TODO Exclude 'segmented'
-        R = '.*(scan|reduce|select|sort).*'
+        R = '^(?!.*segmented).*(scan|reduce|select|sort).*'
 
     pattern = re.compile(R)
     algnames = list(filter(lambda x: pattern.match(x), benchmarks.keys()))
