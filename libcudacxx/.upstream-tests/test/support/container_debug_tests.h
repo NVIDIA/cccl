@@ -23,7 +23,7 @@
 #include <utility>
 #include <cstddef>
 #include <cstdlib>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "check_assertion.h"
 #include "test_allocator.h"

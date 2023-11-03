@@ -9,9 +9,9 @@
 #ifndef TEST_SUPPORT_COUNTING_PREDICATES_H
 #define TEST_SUPPORT_COUNTING_PREDICATES_H
 
-#ifndef __CUDACC_RTC__
-#include <cstddef>
-#endif
+#include <cuda/std/cstddef>
+#include <cuda/std/utility>
+#include "test_macros.h"
 
 template <typename Predicate, typename Arg>
 struct unary_counting_predicate {
@@ -20,16 +20,14 @@ public:
     typedef bool result_type;
 
     __host__ __device__
-    unary_counting_predicate(Predicate p) : p_(p), count_(0) {}
-    __host__ __device__
-    ~unary_counting_predicate() {}
+    TEST_CONSTEXPR_CXX14 unary_counting_predicate(Predicate p) : p_(p), count_(0) {}
 
     __host__ __device__
-    bool operator () (const Arg &a) const { ++count_; return p_(a); }
+    TEST_CONSTEXPR_CXX14 bool operator () (const Arg &a) const { ++count_; return p_(a); }
     __host__ __device__
-    size_t count() const { return count_; }
+    TEST_CONSTEXPR_CXX14 size_t count() const { return count_; }
     __host__ __device__
-    void reset() { count_ = 0; }
+    TEST_CONSTEXPR_CXX14 void reset() { count_ = 0; }
 
 private:
     Predicate p_;
@@ -45,20 +43,47 @@ public:
     typedef bool result_type;
 
     __host__ __device__
-    binary_counting_predicate ( Predicate p ) : p_(p), count_(0) {}
-    __host__ __device__
-    ~binary_counting_predicate() {}
+    TEST_CONSTEXPR_CXX14 binary_counting_predicate ( Predicate p ) : p_(p), count_(0) {}
 
     __host__ __device__
-    bool operator () (const Arg1 &a1, const Arg2 &a2) const { ++count_; return p_(a1, a2); }
+    TEST_CONSTEXPR_CXX14 bool operator () (const Arg1 &a1, const Arg2 &a2) const { ++count_; return p_(a1, a2); }
     __host__ __device__
-    size_t count() const { return count_; }
+    TEST_CONSTEXPR_CXX14 size_t count() const { return count_; }
     __host__ __device__
-    void reset() { count_ = 0; }
+    TEST_CONSTEXPR_CXX14 void reset() { count_ = 0; }
 
 private:
     Predicate p_;
     mutable size_t count_;
 };
+
+template <class Predicate>
+class counting_predicate {
+  Predicate pred_;
+  int* count_ = nullptr;
+
+public:
+  constexpr counting_predicate() = default;
+  __host__ __device__ constexpr counting_predicate(Predicate pred, int& count) : pred_(cuda::std::move(pred)), count_(&count) {}
+
+  template <class... Args>
+  __host__ __device__ TEST_CONSTEXPR_CXX14 auto operator()(Args&& ...args) -> decltype(pred_(cuda::std::forward<Args>(args)...)) {
+    ++(*count_);
+    return pred_(cuda::std::forward<Args>(args)...);
+  }
+
+  template <class... Args>
+  __host__ __device__ TEST_CONSTEXPR_CXX14 auto operator()(Args&& ...args) const -> decltype(pred_(cuda::std::forward<Args>(args)...)) {
+    ++(*count_);
+    return pred_(cuda::std::forward<Args>(args)...);
+  }
+};
+
+#if TEST_STD_VER > 14
+
+template <class Predicate>
+counting_predicate(Predicate pred, int& count) -> counting_predicate<Predicate>;
+
+#endif // TEST_STD_VER > 14
 
 #endif // TEST_SUPPORT_COUNTING_PREDICATES_H

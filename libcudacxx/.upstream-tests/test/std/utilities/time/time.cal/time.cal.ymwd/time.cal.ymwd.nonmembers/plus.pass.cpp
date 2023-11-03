@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class year_month_weekday;
@@ -27,7 +27,7 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
@@ -67,11 +67,11 @@ int main(int, char**)
     constexpr month January = cuda::std::chrono::January;
 
     {   // year_month_weekday + months (and switched)
-    ASSERT_NOEXCEPT(cuda::std::declval<year_month_weekday>() + std::declval<months>());
-    ASSERT_NOEXCEPT(cuda::std::declval<months>() + std::declval<year_month_weekday>());
+    ASSERT_NOEXCEPT(cuda::std::declval<year_month_weekday>() + cuda::std::declval<months>());
+    ASSERT_NOEXCEPT(cuda::std::declval<months>() + cuda::std::declval<year_month_weekday>());
 
-    ASSERT_SAME_TYPE(year_month_weekday, decltype(cuda::std::declval<year_month_weekday>() + std::declval<months>()));
-    ASSERT_SAME_TYPE(year_month_weekday, decltype(cuda::std::declval<months>() + std::declval<year_month_weekday>()));
+    ASSERT_SAME_TYPE(year_month_weekday, decltype(cuda::std::declval<year_month_weekday>() + cuda::std::declval<months>()));
+    ASSERT_SAME_TYPE(year_month_weekday, decltype(cuda::std::declval<months>() + cuda::std::declval<year_month_weekday>()));
 
     static_assert(testConstexprMonths(year_month_weekday{year{1}, January, weekday_indexed{Tuesday, 1}}), "");
 
@@ -93,11 +93,11 @@ int main(int, char**)
     }
 
     {   // year_month_weekday + years (and switched)
-    ASSERT_NOEXCEPT(cuda::std::declval<year_month_weekday>() + std::declval<years>());
-    ASSERT_NOEXCEPT(cuda::std::declval<years>() + std::declval<year_month_weekday>());
+    ASSERT_NOEXCEPT(cuda::std::declval<year_month_weekday>() + cuda::std::declval<years>());
+    ASSERT_NOEXCEPT(cuda::std::declval<years>() + cuda::std::declval<year_month_weekday>());
 
-    ASSERT_SAME_TYPE(year_month_weekday, decltype(cuda::std::declval<year_month_weekday>() + std::declval<years>()));
-    ASSERT_SAME_TYPE(year_month_weekday, decltype(cuda::std::declval<years>() + std::declval<year_month_weekday>()));
+    ASSERT_SAME_TYPE(year_month_weekday, decltype(cuda::std::declval<year_month_weekday>() + cuda::std::declval<years>()));
+    ASSERT_SAME_TYPE(year_month_weekday, decltype(cuda::std::declval<years>() + cuda::std::declval<year_month_weekday>()));
 
     static_assert(testConstexprYears (year_month_weekday{year{1}, January, weekday_indexed{Tuesday, 1}}), "");
 

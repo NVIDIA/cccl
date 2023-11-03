@@ -10,7 +10,7 @@
 
 #include <cmath>      // for std::abs
 #include <algorithm>  // for std::max
-#include <cassert>
+#include <cuda/std/cassert>
 
 // See https://www.boost.org/doc/libs/1_70_0/libs/test/doc/html/boost_test/testing_tools/extended_comparison/floating_point/floating_points_comparison_theory.html
 

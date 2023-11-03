@@ -10,7 +10,7 @@
 
 // template <class Duration>
 // class hh_mm_ss
-// 
+//
 // constexpr precision subseconds() const noexcept;
 //
 // See the table in hours.pass.cpp for correspondence between the magic values used below
@@ -33,10 +33,10 @@ constexpr auto check_subseconds(Duration d)
 int main(int, char**)
 {
     using microfortnights = cuda::std::chrono::duration<int, cuda::std::ratio<756, 625>>;
-    
+
     static_assert( check_subseconds(cuda::std::chrono::seconds( 1)) == 0, "");
     static_assert( check_subseconds(cuda::std::chrono::seconds(-1)) == 0, "");
-    
+
     assert( check_subseconds(cuda::std::chrono::seconds( 5000)) == 0);
     assert( check_subseconds(cuda::std::chrono::seconds(-5000)) == 0);
     assert( check_subseconds(cuda::std::chrono::minutes( 5000)) == 0);

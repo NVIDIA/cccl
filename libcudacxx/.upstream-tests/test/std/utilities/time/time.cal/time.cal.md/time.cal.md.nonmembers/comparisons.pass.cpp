@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class month_day;
@@ -21,7 +21,7 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 #include "test_comparisons.h"
@@ -32,20 +32,20 @@ int main(int, char**)
     using month     = cuda::std::chrono::month;
     using month_day = cuda::std::chrono::month_day;
 
-    AssertComparisons6AreNoexcept<month_day>();
-    AssertComparisons6ReturnBool<month_day>();
+    AssertComparisonsAreNoexcept<month_day>();
+    AssertComparisonsReturnBool<month_day>();
 
-    static_assert( testComparisons6(
+    static_assert( testComparisons(
         month_day{cuda::std::chrono::January, day{1}},
         month_day{cuda::std::chrono::January, day{1}},
         true, false), "");
 
-    static_assert( testComparisons6(
+    static_assert( testComparisons(
         month_day{cuda::std::chrono::January, day{1}},
         month_day{cuda::std::chrono::January, day{2}},
         false, true), "");
 
-    static_assert( testComparisons6(
+    static_assert( testComparisons(
         month_day{cuda::std::chrono::January,  day{1}},
         month_day{cuda::std::chrono::February, day{1}},
         false, true), "");
@@ -53,7 +53,7 @@ int main(int, char**)
 //  same day, different months
     for (unsigned i = 1; i < 12; ++i)
         for (unsigned j = 1; j < 12; ++j)
-            assert((testComparisons6(
+            assert((testComparisons(
                 month_day{month{i}, day{1}},
                 month_day{month{j}, day{1}},
                 i == j, i < j )));
@@ -61,7 +61,7 @@ int main(int, char**)
 //  same month, different days
     for (unsigned i = 1; i < 31; ++i)
         for (unsigned j = 1; j < 31; ++j)
-            assert((testComparisons6(
+            assert((testComparisons(
                 month_day{month{2}, day{i}},
                 month_day{month{2}, day{j}},
                 i == j, i < j )));

@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
-// UNSUPPORTED: nvrtc
+
 
 // template <class T> constexpr add_const<T>& as_const(T& t) noexcept;      // C++17
 // template <class T>           add_const<T>& as_const(const T&&) = delete; // C++17

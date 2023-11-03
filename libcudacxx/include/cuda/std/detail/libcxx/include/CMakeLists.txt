@@ -1,5 +1,29 @@
 set(files
   __assert
+  __algorithm/adjacent_find.h
+  __algorithm/all_of.h
+  __algorithm/any_of.h
+  __algorithm/comp_ref_type.h
+  __algorithm/comp.h
+  __algorithm/count.h
+  __algorithm/count_if.h
+  __algorithm/equal.h
+  __algorithm/fill_n.h
+  __algorithm/fill.h
+  __algorithm/find_end.h
+  __algorithm/find_first_of.h
+  __algorithm/find_if_not.h
+  __algorithm/find_if.h
+  __algorithm/find.h
+  __algorithm/for_each_n.h
+  __algorithm/for_each.h
+  __algorithm/half_positive.h
+  __algorithm/is_permutation.h
+  __algorithm/lexicographical_compare.h
+  __algorithm/mismatch.h
+  __algorithm/none_of.h
+  __algorithm/search_n.h
+  __algorithm/search.h
   __algorithm/swap_ranges.h
   __availability
   __bit_reference

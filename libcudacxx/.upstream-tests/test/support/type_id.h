@@ -12,7 +12,7 @@
 #include <typeinfo>
 #include <string>
 #include <cstdio>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 #include "demangle.h"

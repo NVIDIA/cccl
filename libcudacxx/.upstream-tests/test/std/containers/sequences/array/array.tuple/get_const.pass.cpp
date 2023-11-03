@@ -1,8 +1,9 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,30 +16,37 @@
 
 #include "test_macros.h"
 
-// cuda::std::array is explicitly allowed to be initialized with A a = { init-list };.
-// Disable the missing braces warning for this reason.
-#include "disable_missing_braces_warning.h"
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+{
+    {
+        cuda::std::array<double, 1> const array = {3.3};
+        assert(cuda::std::get<0>(array) == 3.3);
+    }
+    {
+        cuda::std::array<double, 2> const array = {3.3, 4.4};
+        assert(cuda::std::get<0>(array) == 3.3);
+        assert(cuda::std::get<1>(array) == 4.4);
+    }
+    {
+        cuda::std::array<double, 3> const array = {3.3, 4.4, 5.5};
+        assert(cuda::std::get<0>(array) == 3.3);
+        assert(cuda::std::get<1>(array) == 4.4);
+        assert(cuda::std::get<2>(array) == 5.5);
+    }
+    {
+        cuda::std::array<double, 1> const array = {3.3};
+        static_assert(cuda::std::is_same<double const&, decltype(cuda::std::get<0>(array))>::value, "");
+        assert(cuda::std::get<0>(array) == 3.3);
+    }
+
+    return true;
+}
 
 int main(int, char**)
 {
-    {
-        typedef double T;
-        typedef cuda::std::array<T, 3> C;
-        const C c = {1, 2, 3.5};
-        assert(cuda::std::get<0>(c) == 1);
-        assert(cuda::std::get<1>(c) == 2);
-        assert(cuda::std::get<2>(c) == 3.5);
-    }
-#if TEST_STD_VER > 11
-    {
-        typedef double T;
-        typedef cuda::std::array<T, 3> C;
-        constexpr const C c = {1, 2, 3.5};
-        static_assert(cuda::std::get<0>(c) == 1, "");
-        static_assert(cuda::std::get<1>(c) == 2, "");
-        static_assert(cuda::std::get<2>(c) == 3.5, "");
-    }
+    tests();
+#if TEST_STD_VER >= 14
+    static_assert(tests(), "");
 #endif
-
-  return 0;
+    return 0;
 }
