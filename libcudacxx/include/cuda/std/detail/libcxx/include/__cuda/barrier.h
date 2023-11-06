@@ -219,7 +219,7 @@ public:
                 auto __bh = reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__barrier);
                 // Need 2 instructions, can't finish barrier with arrive > 1
                 if (__update > 1) {
-                    ___CUDA_VPTX::mbarrier_arrive_no_complete(__bh, __update - 1);
+                    _CUDA_VPTX::mbarrier_arrive_no_complete(__bh, __update - 1);
                 }
                 __token = _CUDA_VPTX::mbarrier_arrive( __bh);
             ), NV_IS_DEVICE, (
