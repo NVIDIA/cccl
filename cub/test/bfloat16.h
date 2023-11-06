@@ -77,6 +77,12 @@ struct bfloat16_t
         *this = bfloat16_t(float(a));
     }
 
+    /// Constructor from unsigned long long int
+    __host__ __device__ __forceinline__ bfloat16_t(unsigned long long int a)
+    {
+      *this = bfloat16_t(float(a));
+    }
+
     /// Default constructor
     bfloat16_t() = default;
 

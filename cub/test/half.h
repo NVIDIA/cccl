@@ -80,6 +80,12 @@ struct half_t
         *this = half_t(float(a));
     }
 
+    /// Constructor from unsigned long long int
+    __host__ __device__ __forceinline__ half_t(unsigned long long int a)
+    {
+      *this = half_t(float(a));
+    }
+
     /// Default constructor
     half_t() = default;
 
