@@ -1087,8 +1087,8 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
     ));
 
     NV_IF_TARGET(NV_PROVIDES_SM_80, (
-        const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
         if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 4) {
+            const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
             if (__can_use_async_group) {
                 __cp_async_shared_global_mechanism<_Align>(__group, __dest_char, __src_char, __size);
                 return __completion_mechanism::__async_group;
