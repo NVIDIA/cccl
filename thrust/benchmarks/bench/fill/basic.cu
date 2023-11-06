@@ -41,7 +41,7 @@ static void basic(nvbench::state &state, nvbench::type_list<T>)
   state.add_element_count(elements);
   state.add_global_memory_writes<T>(elements);
 
-  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
     thrust::fill(output.begin(), output.end(), T{42});
   });
 }
