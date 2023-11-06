@@ -722,7 +722,7 @@ def produce_version_header():
 
 #include <__config>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER

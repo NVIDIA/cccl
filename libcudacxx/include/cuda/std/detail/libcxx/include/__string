@@ -60,7 +60,7 @@ template <> struct char_traits<char8_t>;  // c++20
 #include "__assert" // all public C++ headers provide the assertion handler
 #include <__debug>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER

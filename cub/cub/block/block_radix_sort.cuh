@@ -36,7 +36,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -977,7 +977,7 @@ public:
     }
 
     /**
-     * @brief Performs a descending block-wide radix sort over a 
+     * @brief Performs a descending block-wide radix sort over a
      *        [<em>blocked arrangement</em>](index.html#sec5sec3) of keys.
      *
      * @par

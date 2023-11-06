@@ -36,7 +36,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -48,24 +48,24 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 CUB_NAMESPACE_BEGIN
 
 /**
- * @brief The BlockShuffle class provides [<em>collective</em>](index.html#sec0) 
+ * @brief The BlockShuffle class provides [<em>collective</em>](index.html#sec0)
  *        methods for shuffling data partitioned across a CUDA thread block.
  *
  * @ingroup BlockModule
  *
- * @tparam T                    
+ * @tparam T
  *   The data type to be exchanged.
  *
- * @tparam BLOCK_DIM_X          
+ * @tparam BLOCK_DIM_X
  *   The thread block length in threads along the X dimension
  *
- * @tparam BLOCK_DIM_Y          
+ * @tparam BLOCK_DIM_Y
  *   <b>[optional]</b> The thread block length in threads along the Y dimension (default: 1)
  *
- * @tparam BLOCK_DIM_Z          
+ * @tparam BLOCK_DIM_Z
  *   <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
  *
- * @tparam LEGACY_PTX_ARCH      
+ * @tparam LEGACY_PTX_ARCH
  *   <b>[optional]</b> Unused.
  *
  * @par Overview
@@ -144,7 +144,7 @@ public:
     //@{
 
     /**
-     * @brief Collective constructor using a private static allocation of 
+     * @brief Collective constructor using a private static allocation of
      *        shared memory as temporary storage.
      */
     __device__ __forceinline__ BlockShuffle()

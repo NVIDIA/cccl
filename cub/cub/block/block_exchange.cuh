@@ -35,7 +35,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -241,10 +241,10 @@ private:
      * @brief Transposes data items from <em>blocked</em> arrangement to <em>striped</em>
      *        arrangement.  Specialized for warp-timeslicing.
      *
-     * @param[in] input_items 
+     * @param[in] input_items
      *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
      *
-     * @param[out] output_items 
+     * @param[out] output_items
      *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
      */
     template <typename OutputT>

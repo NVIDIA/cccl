@@ -35,7 +35,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -60,13 +60,13 @@ namespace internal {
  */
 
 /**
- * @param[in] input 
+ * @param[in] input
  *   Input array
  *
- * @param[out] output 
+ * @param[out] output
  *   Output array (may be aliased to @p input)
  *
- * @param[in] scan_op 
+ * @param[in] scan_op
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>

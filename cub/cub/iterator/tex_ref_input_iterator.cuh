@@ -35,7 +35,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -100,13 +100,13 @@ CUB_NAMESPACE_BEGIN
  *
  * @endcode
  *
- * @tparam T                    
+ * @tparam T
  *   The value type of this iterator
  *
- * @tparam UNIQUE_ID            
+ * @tparam UNIQUE_ID
  *   A globally-unique identifier (within the compilation unit) to name the underlying texture reference
  *
- * @tparam OffsetT              
+ * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <

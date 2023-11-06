@@ -35,7 +35,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -67,7 +67,7 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * @brief A random-access input wrapper for dereferencing array values through texture cache.  
+ * @brief A random-access input wrapper for dereferencing array values through texture cache.
  *        Uses newer Kepler-style texture objects.
  *
  * @par Overview
@@ -107,10 +107,10 @@ CUB_NAMESPACE_BEGIN
  *
  * @endcode
  *
- * @tparam T                    
+ * @tparam T
  *   The value type of this iterator
  *
- * @tparam OffsetT              
+ * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <
@@ -139,17 +139,17 @@ public:
 
 #if (THRUST_VERSION >= 100700)
     // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
-    
+
     /// The iterator category
     typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
         THRUST_NS_QUALIFIER::device_system_tag,
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        
+      >::type iterator_category;
 #else
     /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;      
+    typedef std::random_access_iterator_tag     iterator_category;
 #endif  // THRUST_VERSION
 
 private:

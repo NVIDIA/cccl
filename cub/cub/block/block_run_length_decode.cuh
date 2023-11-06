@@ -29,7 +29,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -114,8 +114,8 @@ CUB_NAMESPACE_BEGIN
  * Suppose the set of input @p run_values across the block of threads is
  * <tt>{ [0, 1], [2, 3], [4, 5], [6, 7], ..., [254, 255] }</tt> and
  * @p run_lengths is <tt>{ [1, 2], [3, 4], [5, 1], [2, 3], ..., [5, 1] }</tt>.
- * The corresponding output @p decoded_items in those threads will be 
- * <tt>{ [0, 1, 1, 2], [2, 2, 3, 3], [3, 3, 4, 4], [4, 4, 4, 5], ..., [169, 169, 170, 171] }</tt> 
+ * The corresponding output @p decoded_items in those threads will be
+ * <tt>{ [0, 1, 1, 2], [2, 2, 3, 3], [3, 3, 4, 4], [4, 4, 4, 5], ..., [169, 169, 170, 171] }</tt>
  * and @p relative_offsets will be
  * <tt>{ [0, 0, 1, 0], [1, 2, 0, 1], [2, 3, 0, 1], [2, 3, 4, 0], ..., [3, 4, 0, 0] }</tt> during the
  * first iteration of the while loop.
@@ -136,10 +136,10 @@ CUB_NAMESPACE_BEGIN
  *   Type used to index into the block's decoded items (large enough to hold the sum over all the
  *   runs' lengths)
  *
- * @tparam BLOCK_DIM_Y 
+ * @tparam BLOCK_DIM_Y
  *   The thread block length in threads along the Y dimension
  *
- * @tparam BLOCK_DIM_Z 
+ * @tparam BLOCK_DIM_Z
  *   The thread block length in threads along the Z dimension
  */
 template <typename ItemT,

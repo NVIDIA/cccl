@@ -35,7 +35,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -627,15 +627,15 @@ struct AgentSelectIf
 
 
     /**
-     * @brief Process first tile of input (dynamic chained scan).  
+     * @brief Process first tile of input (dynamic chained scan).
      *
-     * @param num_tile_items 
+     * @param num_tile_items
      *   Number of input items comprising this tile
      *
-     * @param tile_offset 
+     * @param tile_offset
      *   Tile offset
      *
-     * @param tile_state 
+     * @param tile_state
      *   Global tile state descriptor
      *
      * @return The running count of selections (including this tile)
@@ -775,7 +775,7 @@ struct AgentSelectIf
      * @param num_tile_items
      *   Number of input items comprising this tile
      *
-     * @param tile_idx 
+     * @param tile_idx
      *   Tile index
      *
      * @param tile_offset

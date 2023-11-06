@@ -36,7 +36,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -433,7 +433,7 @@ struct WarpScanShfl
     }
 
     /**
-     * @brief Inclusive prefix scan step (specialized for types other than small integers size 
+     * @brief Inclusive prefix scan step (specialized for types other than small integers size
      *        32b or less)
      *
      * @param[in] input

@@ -70,12 +70,12 @@
 #elif defined(_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER)
 #  define _CCCL_IMPLICIT_SYSTEM_HEADER
 #else
-#  define _CCCL_USE_IMPLICIT_SYSTEM_DEADER
+#  define _CCCL_USE_IMPLICIT_SYSTEM_HEADER
 #  define _CCCL_IMPLICIT_SYSTEM_HEADER _CCCL_FORCE_SYSTEM_HEADER
 #endif
 
 // We want to ensure that all warning emmiting from this header are supressed
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER

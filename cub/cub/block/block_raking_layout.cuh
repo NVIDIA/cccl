@@ -36,7 +36,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -59,13 +59,13 @@ CUB_NAMESPACE_BEGIN
  * sequences of shared items.  Padding is inserted to eliminate bank conflicts
  * (for most data types).
  *
- * @tparam T                        
+ * @tparam T
  *   The data type to be exchanged.
  *
- * @tparam BLOCK_THREADS            
+ * @tparam BLOCK_THREADS
  *   The thread block size in threads.
  *
- * @tparam LEGACY_PTX_ARCH          
+ * @tparam LEGACY_PTX_ARCH
  *   <b>[optional]</b> Unused.
  */
 template <

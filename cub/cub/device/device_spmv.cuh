@@ -37,7 +37,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -55,7 +55,7 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * @brief DeviceSpmv provides device-wide parallel operations for performing 
+ * @brief DeviceSpmv provides device-wide parallel operations for performing
  *        sparse-matrix * dense-vector multiplication (SpMV).
  *
  * @ingroup SingleModule

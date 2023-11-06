@@ -35,7 +35,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -147,10 +147,10 @@ public:
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        
+      >::type iterator_category;
 #else
     /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;      
+    typedef std::random_access_iterator_tag     iterator_category;
 #endif  // THRUST_VERSION
 
 private:
@@ -161,10 +161,10 @@ private:
 public:
 
     /**
-     * @param itr 
+     * @param itr
      *   Input iterator to wrap
      *
-     * @param offset 
+     * @param offset
      *   OffsetT (in items) from @p itr denoting the position of the iterator
      */
   __host__ __device__ __forceinline__ ArgIndexInputIterator(InputIteratorT itr,

@@ -35,7 +35,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
@@ -243,19 +243,19 @@ struct AgentSegmentFixup
     //---------------------------------------------------------------------
 
     /**
-     * @param temp_storage 
+     * @param temp_storage
      *   Reference to temp_storage
      *
-     * @param d_pairs_in 
+     * @param d_pairs_in
      *   Input keys
      *
-     * @param d_aggregates_out 
+     * @param d_aggregates_out
      *   Output value aggregates
      *
-     * @param equality_op 
+     * @param equality_op
      *   KeyT equality operator
      *
-     * @param reduction_op 
+     * @param reduction_op
      *   ValueT reduction operator
      */
     __device__ __forceinline__ AgentSegmentFixup(TempStorage &temp_storage,
@@ -280,19 +280,19 @@ struct AgentSegmentFixup
     /**
      * @brief Process input tile. Specialized for atomic-fixup
      *
-     * @param num_remaining 
+     * @param num_remaining
      *   Number of global input items remaining (including this tile)
      *
-     * @param tile_idx 
+     * @param tile_idx
      *   Tile index
      *
-     * @param tile_offset 
+     * @param tile_offset
      *   Tile offset
      *
-     * @param tile_state 
+     * @param tile_state
      *   Global tile state descriptor
      *
-     * @param use_atomic_fixup 
+     * @param use_atomic_fixup
      *   Marker whether to use atomicAdd (instead of reduce-by-key)
      */
     template <bool IS_LAST_TILE>

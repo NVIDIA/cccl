@@ -731,7 +731,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #include "concepts"
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
+#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_HEADER)
 #  pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
