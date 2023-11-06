@@ -51,7 +51,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
-#include <cuda/annotated_ptr>
+#include <cuda/discard_memory>
 #include <cuda/std/utility>
 
 #include <nv/target>
