@@ -23,7 +23,7 @@ Does **not** generate any HW store operations.
 This kernel needs a scratch pad that does not fit in shared memory, so it uses an allocation in global memory instead:
 
 ```cuda
-#include <cuda/annotated_ptr>
+#include <cuda/discard_memory>
 __device__ int compute(int* scratch, size_t N);
 
 __global__ void kernel(int const* in, int* out, int* scratch, size_t N) {
