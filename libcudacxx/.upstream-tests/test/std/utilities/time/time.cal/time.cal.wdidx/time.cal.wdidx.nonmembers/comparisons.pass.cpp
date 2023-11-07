@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class weekday_indexed;
@@ -17,7 +17,7 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 #include "test_comparisons.h"
@@ -27,8 +27,8 @@ int main(int, char**)
     using weekday         = cuda::std::chrono::weekday;
     using weekday_indexed = cuda::std::chrono::weekday_indexed;
 
-    AssertComparisons2AreNoexcept<weekday_indexed>();
-    AssertComparisons2ReturnBool<weekday_indexed>();
+    AssertEqualityAreNoexcept<weekday_indexed>();
+    AssertEqualityReturnBool<weekday_indexed>();
 
     static_assert( (weekday_indexed{} == weekday_indexed{}), "");
     static_assert(!(weekday_indexed{} != weekday_indexed{}), "");

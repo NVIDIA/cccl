@@ -11,10 +11,7 @@
 
 // move_iterator
 
-// requires RandomAccessIterator<Iter>
-//   unspecified operator[](difference_type n) const;
-//
-//  constexpr in C++17
+// constexpr reference operator[](difference_type n) const; // Return type unspecified until C++20
 
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
@@ -24,6 +21,10 @@
 
 #include "test_macros.h"
 #include "test_iterators.h"
+
+#if defined(TEST_COMPILER_MSVC)
+#pragma warning(disable: 4172) // returning address of local variable or temporary
+#endif // TEST_COMPILER_MSVC
 
 template <class It>
 __host__ __device__
@@ -47,9 +48,9 @@ int main(int, char**)
 {
     {
         char s[] = "1234567890";
-#ifdef __NVCOMPILER
+#if defined(TEST_COMPILER_NVHPC)
         for (int i = 0; i < 10; ++i) { s[i] = i == 9 ? '0' : ('1' + i); }
-#endif
+#endif // TEST_COMPILER_NVHPC
         test(random_access_iterator<char*>(s+5), 4, '0');
         test(s+5, 4, '0');
     }
@@ -62,8 +63,9 @@ int main(int, char**)
             p[j].reset(i+j);
         test(p, 3, Ptr(i+3));
     }
-#endif
-#if TEST_STD_VER > 14
+#endif // _LIBCUDACXX_HAS_MEMORY
+#if TEST_STD_VER > 11 \
+ && (!defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 14) // MSVC bails here
     {
     constexpr const char *p = "123456789";
     typedef cuda::std::move_iterator<const char *> MI;
@@ -71,7 +73,22 @@ int main(int, char**)
     static_assert(it1[0] == '1', "");
     static_assert(it1[5] == '6', "");
     }
-#endif
+#endif // TEST_STD_VER > 11 && (!defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 14)
+
+#if TEST_STD_VER > 14
+  // Ensure the `iter_move` customization point is being used.
+  {
+    int a[] = {0, 1, 2};
+
+    int iter_moves = 0;
+    adl::Iterator i = adl::Iterator::TrackMoves(a, iter_moves);
+    cuda::std::move_iterator<adl::Iterator> mi(i);
+
+    auto x = mi[0];
+    assert(x == 0);
+    assert(iter_moves == 1);
+  }
+#endif // TEST_STD_VER > 14
 
   return 0;
 }

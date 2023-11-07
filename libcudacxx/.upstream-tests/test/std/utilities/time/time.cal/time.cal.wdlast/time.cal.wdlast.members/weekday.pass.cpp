@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11, nvrtc
+// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class weekday_last;
@@ -15,7 +15,7 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
@@ -24,7 +24,7 @@ int main(int, char**)
     using weekday      = cuda::std::chrono::weekday;
     using weekday_last = cuda::std::chrono::weekday_last;
 
-    ASSERT_NOEXCEPT(                   std::declval<const weekday_last>().weekday());
+    ASSERT_NOEXCEPT(                   cuda::std::declval<const weekday_last>().weekday());
     ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<const weekday_last>().weekday()));
 
     for (unsigned i = 0; i <= 255; ++i)

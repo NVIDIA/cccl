@@ -1,8 +1,9 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,7 +22,7 @@
 //     typedef size_t size_type;
 //     typedef ptrdiff_t difference_type;
 //     typedef T value_type;
-//     typedef cuda::std::reverse_iterator<cuda/std/iterator> reverse_iterator;
+//     typedef cuda::std::reverse_iterator<iterator> reverse_iterator;
 //     typedef cuda::std::reverse_iterator<const_iterator> const_reverse_iterator;
 
 #include <cuda/std/array>
@@ -31,8 +32,7 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__
-void test_iterators() {
+__host__ __device__ void test_iterators() {
     typedef cuda::std::iterator_traits<typename C::iterator> ItT;
     typedef cuda::std::iterator_traits<typename C::const_iterator> CItT;
     static_assert((cuda::std::is_same<typename ItT::iterator_category, cuda::std::random_access_iterator_tag>::value), "");

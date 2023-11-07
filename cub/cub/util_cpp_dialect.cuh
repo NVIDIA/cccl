@@ -39,7 +39,7 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
-#include "util_compiler.cuh"
+#include <cub/util_compiler.cuh>
 
 // Deprecation warnings may be silenced by defining the following macros. These
 // may be combined.

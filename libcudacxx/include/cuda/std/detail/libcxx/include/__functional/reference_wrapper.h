@@ -14,8 +14,13 @@
 #include <__config>
 #endif // __cuda_std__
 
+#include "../__functional/invoke.h"
 #include "../__functional/weak_result_type.h"
 #include "../__memory/addressof.h"
+#include "../__type_traits/enable_if.h"
+#include "../__type_traits/remove_cvref.h"
+#include "../__utility/declval.h"
+#include "../__utility/forward.h"
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
 #pragma GCC system_header
@@ -55,7 +60,13 @@ public:
     template <class... _ArgTypes>
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     typename __invoke_of<type&, _ArgTypes...>::type
-    operator() (_ArgTypes&&... __args) const {
+    operator() (_ArgTypes&&... __args) const
+#if _LIBCUDACXX_STD_VER > 11
+        // Since is_nothrow_invocable requires C++11 LWG3764 is not backported
+        // to earlier versions.
+        noexcept(_LIBCUDACXX_TRAIT(is_nothrow_invocable, _Tp&, _ArgTypes...))
+#endif
+    {
         return _CUDA_VSTD::__invoke(get(), _CUDA_VSTD::forward<_ArgTypes>(__args)...);
     }
 };

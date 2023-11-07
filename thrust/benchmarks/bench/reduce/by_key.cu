@@ -57,7 +57,7 @@ static void basic(nvbench::state &state, nvbench::type_list<KeyT, ValueT>)
   state.add_global_memory_writes<KeyT>(unique_keys);
   state.add_global_memory_writes<ValueT>(unique_keys);
 
-  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
     thrust::reduce_by_key(in_keys.begin(),
                           in_keys.end(),
                           in_vals.begin(),

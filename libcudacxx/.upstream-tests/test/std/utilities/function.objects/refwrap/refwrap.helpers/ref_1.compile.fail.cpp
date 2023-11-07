@@ -9,8 +9,6 @@
 
 // <functional>
 
-// UNSUPPORTED: nvrtc
-
 // reference_wrapper
 
 // template <ObjectType T> reference_wrapper<T> ref(T& t);

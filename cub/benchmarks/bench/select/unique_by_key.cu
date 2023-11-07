@@ -150,7 +150,7 @@ static void select(nvbench::state &state, nvbench::type_list<KeyT, ValueT, Offse
   state.add_global_memory_writes<KeyT>(num_runs);
   state.add_global_memory_writes<OffsetT>(1);
 
-  state.exec([&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
     dispatch_t::Dispatch(d_temp_storage,
                          temp_storage_bytes,
                          d_in_keys,

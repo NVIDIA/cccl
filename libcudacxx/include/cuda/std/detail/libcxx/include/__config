@@ -1505,6 +1505,9 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_END_NAMESPACE_CUDA  } }
 #define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE namespace cuda { namespace device { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE  } } }
+#define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX namespace cuda { namespace ptx { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#define _LIBCUDACXX_END_NAMESPACE_CUDA_PTX  } } }
+#define _CUDA_VPTX ::cuda::ptx::_LIBCUDACXX_ABI_NAMESPACE
 #define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL namespace cuda { namespace device { namespace experimental { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL  } } } }
 #endif
@@ -1702,6 +1705,12 @@ typedef unsigned int   char32_t;
 #  define _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_DEPRECATED
 #else
 #  define _LIBCUDACXX_DEPRECATED_IN_CXX17
+#endif
+
+#if _LIBCUDACXX_STD_VER >= 20
+#  define _LIBCUDACXX_DEPRECATED_IN_CXX20 _LIBCUDACXX_DEPRECATED
+#else
+#  define _LIBCUDACXX_DEPRECATED_IN_CXX20
 #endif
 
 #if _LIBCUDACXX_STD_VER <= 11

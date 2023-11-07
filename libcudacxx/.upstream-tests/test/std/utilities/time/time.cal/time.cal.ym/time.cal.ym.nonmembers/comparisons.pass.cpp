@@ -32,23 +32,23 @@ int main(int, char**)
     using month      = cuda::std::chrono::month;
     using year_month = cuda::std::chrono::year_month;
 
-    AssertComparisons6AreNoexcept<year_month>();
-    AssertComparisons6ReturnBool<year_month>();
+    AssertComparisonsAreNoexcept<year_month>();
+    AssertComparisonsReturnBool<year_month>();
 
     auto constexpr January = cuda::std::chrono::January;
     auto constexpr February = cuda::std::chrono::February;
 
-    static_assert( testComparisons6(
+    static_assert( testComparisons(
         year_month{year{1234}, January},
         year_month{year{1234}, January},
         true, false), "");
 
-    static_assert( testComparisons6(
+    static_assert( testComparisons(
         year_month{year{1234}, January},
         year_month{year{1234}, February},
         false, true), "");
 
-    static_assert( testComparisons6(
+    static_assert( testComparisons(
         year_month{year{1234}, January},
         year_month{year{1235}, January},
         false, true), "");
@@ -56,7 +56,7 @@ int main(int, char**)
 //  same year, different months
     for (unsigned i = 1; i < 12; ++i)
         for (unsigned j = 1; j < 12; ++j)
-            assert((testComparisons6(
+            assert((testComparisons(
                 year_month{year{1234}, month{i}},
                 year_month{year{1234}, month{j}},
                 i == j, i < j )));
@@ -64,7 +64,7 @@ int main(int, char**)
 //  same month, different years
     for (int i = 1000; i < 20; ++i)
         for (int j = 1000; j < 20; ++j)
-        assert((testComparisons6(
+        assert((testComparisons(
             year_month{year{i}, January},
             year_month{year{j}, January},
             i == j, i < j )));

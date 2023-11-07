@@ -676,7 +676,7 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 */
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif //__cuda_std__
 
 #include "__assert" // all public C++ headers provide the assertion handler
@@ -725,12 +725,14 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include "type_traits"
 #include "version"
 
-#ifndef __cuda_std__
-#include <__pragma_push>
-#endif //__cuda_std__
+// Mandated by the Standard.
+#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#  include "compare"
+#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#include "concepts"
 
 #if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
+#  pragma GCC system_header
 #else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
@@ -738,25 +740,24 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Iter>
-struct __libcpp_is_trivial_iterator
-    : public _LIBCUDACXX_BOOL_CONSTANT(is_pointer<_Iter>::value) {};
+struct __libcpp_is_trivial_iterator : public _LIBCUDACXX_BOOL_CONSTANT(is_pointer<_Iter>::value)
+{};
 
 template <class _Iter>
 struct __libcpp_is_trivial_iterator<move_iterator<_Iter> >
-    : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value) {};
+    : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value)
+{};
 
 template <class _Iter>
 struct __libcpp_is_trivial_iterator<reverse_iterator<_Iter> >
-    : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value) {};
+    : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value)
+{};
 
 template <class _Iter>
 struct __libcpp_is_trivial_iterator<__wrap_iter<_Iter> >
-    : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value) {};
+    : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value)
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#ifndef __cuda_std__
-#include <__pragma_pop>
-#endif //__cuda_std__
-
-#endif  // _LIBCUDACXX_ITERATOR
+#endif // _LIBCUDACXX_ITERATOR

@@ -1,0 +1,48 @@
+name: Backport merged pull request
+on:
+  pull_request_target:
+    types: [closed]
+  issue_comment:
+    types: [created]
+permissions:
+  contents: write # so it can comment
+  pull-requests: write # so it can create pull requests
+
+  
+jobs:
+  print-context:
+    runs-on: ubuntu-latest
+    steps:
+     - name: Print GitHub context
+       run: |
+         echo "Event Name: ${{ github.event_name }}"
+         echo "Pull Request Merged: ${{ github.event.pull_request.merged }}"
+         echo "Issue Pull Request: ${{ github.event.issue.pull_request }}"
+         echo "Issue Comment Author Association: ${{ github.event.comment.author_association }}"
+         echo "Comment Body: ${{ github.event.comment.body }}"
+         echo "$GITHUB_CONTEXT"
+       env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+          
+  backport:
+    name: Backport pull request
+    runs-on: ubuntu-latest
+
+    # Only run when pull request is merged
+    # or when a comment containing `/backport` is created by a maintainer
+    if: >
+      (
+        github.event_name == 'pull_request_target' &&
+        github.event.pull_request.merged
+      ) || (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        contains(fromJSON('["MEMBER", "COLLABORATOR", "OWNER"]'), github.event.comment.author_association) &&
+        contains(github.event.comment.body, '/backport')
+      )
+    steps:
+      - uses: actions/checkout@v3
+      - name: Create backport pull requests
+        uses: korthout/backport-action@v1
+        with:
+          merge_commits: 'skip'

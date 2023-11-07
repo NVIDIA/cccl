@@ -239,13 +239,13 @@ namespace __detail_ap {
                     __on::__l2_cop_on_t __hit_prop,
                     std::uint32_t __hit_ratio,
                     __off::__l2_cop_off_t __miss_prop) noexcept
-                        : __fraction(__hit_ratio),
+                        : __ap_reserved(0x0),
+                          __fraction(__hit_ratio),
                           __l2_cop_off(__miss_prop),
                           __l2_cop_on(__hit_prop),
                           __l2_descriptor_mode(_DESC_INTERLEAVED),
                           __l1_inv_dont_allocate(0x0),
                           __l2_sector_promote_256B(0x0),
-                          __ap_reserved(0x0),
                           __ap_reserved2(0x0) {}
 
       _LIBCUDACXX_HOST_DEVICE

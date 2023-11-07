@@ -56,6 +56,7 @@
 
 #include <cuda/std/cstdint>
 #include <cuda/barrier>
+#include <cuda/discard_memory>
 
 #include "std/detail/__access_property"
 
@@ -167,25 +168,6 @@ void apply_access_property(const volatile void* __ptr, const _Shape __shape, acc
     //Apply to all 128 bytes aligned cache lines inclusive of __p
     for (std::size_t __i = 0; __i < __end; __i += _LINE_SIZE) {
       asm volatile ("prefetch.global.L2::evict_normal [%0];" ::"l"(__p + (__i * _LINE_SIZE)) :);
-    }
-  ))
-}
-
-inline
-_LIBCUDACXX_HOST_DEVICE
-void discard_memory(volatile void* __ptr, std::size_t __nbytes) noexcept {
-  NV_IF_TARGET(NV_PROVIDES_SM_80,(
-    if (!__isGlobal((void*)__ptr)) return;
-
-    char* __p = reinterpret_cast<char*>(const_cast<void*>(__ptr));
-    static constexpr std::size_t _LINE_SIZE = 128;
-    std::size_t __start = (reinterpret_cast<std::uintptr_t>(__p) % _LINE_SIZE) ? 1 : 0;
-    std::size_t __end = (reinterpret_cast<std::uintptr_t>(__p + __nbytes) % _LINE_SIZE) ? __nbytes - _LINE_SIZE : __nbytes;
-    __end /= _LINE_SIZE;
-
-    //Trim the first block and last block if they're not 128 bytes aligned
-    for (std::size_t __i = __start; __i < __end; __i += _LINE_SIZE) {
-      asm volatile ("discard.global.L2 [%0], 128;" ::"l"(__p + (__i * _LINE_SIZE)) :);
     }
   ))
 }

@@ -21,13 +21,13 @@
 #include "test_iterators.h"
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX17 void test(It i, typename cuda::std::iterator_traits<It>::difference_type n, It x) {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test(It i, typename cuda::std::iterator_traits<It>::difference_type n, It x) {
     const cuda::std::reverse_iterator<It> r(i);
     cuda::std::reverse_iterator<It> rr = n + r;
     assert(rr.base() == x);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool tests() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
     const char* s = "1234567890";
     test(random_access_iterator<const char*>(s+5), 5, random_access_iterator<const char*>(s));
     test(s+5, 5, s);
@@ -36,7 +36,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool tests() {
 
 int main(int, char**) {
     tests();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 11
     static_assert(tests(), "");
 #endif
     return 0;

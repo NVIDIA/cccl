@@ -1,17 +1,10 @@
 # Parse version information from version.cuh:
 include("${CMAKE_CURRENT_LIST_DIR}/cub-header-search.cmake")
 
-file(READ "${_CUB_VERSION_INCLUDE_DIR}/cub/version.cuh" CUB_VERSION_HEADER)
-string(REGEX MATCH "#define[ \t]+CUB_VERSION[ \t]+([0-9]+)" DUMMY "${CUB_VERSION_HEADER}")
-set(CUB_VERSION_FLAT ${CMAKE_MATCH_1})
-# Note that CUB calls this the PATCH number, CMake calls it the TWEAK number:
-string(REGEX MATCH "#define[ \t]+CUB_PATCH_NUMBER[ \t]+([0-9]+)" DUMMY "${CUB_VERSION_HEADER}")
-set(CUB_VERSION_TWEAK ${CMAKE_MATCH_1})
-
-math(EXPR CUB_VERSION_MAJOR "${CUB_VERSION_FLAT} / 100000")
-math(EXPR CUB_VERSION_MINOR "(${CUB_VERSION_FLAT} / 100) % 1000")
-math(EXPR CUB_VERSION_PATCH "${CUB_VERSION_FLAT} % 100") # CUB: "subminor" CMake: "patch"
-
+set(CUB_VERSION_MAJOR 2)
+set(CUB_VERSION_MINOR 3)
+set(CUB_VERSION_PATCH 0)
+set(CUB_VERSION_TWEAK 0)
 set(CUB_VERSION "${CUB_VERSION_MAJOR}.${CUB_VERSION_MINOR}.${CUB_VERSION_PATCH}.${CUB_VERSION_TWEAK}")
 
 set(PACKAGE_VERSION ${CUB_VERSION})
