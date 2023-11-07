@@ -219,7 +219,7 @@ public:
                 auto __bh = reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__barrier);
                 // Need 2 instructions, can't finish barrier with arrive > 1
                 if (__update > 1) {
-                    ___CUDA_VPTX::mbarrier_arrive_no_complete(__bh, __update - 1);
+                    _CUDA_VPTX::mbarrier_arrive_no_complete(__bh, __update - 1);
                 }
                 __token = _CUDA_VPTX::mbarrier_arrive( __bh);
             ), NV_IS_DEVICE, (
@@ -1077,8 +1077,8 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
     ));
 
     NV_IF_TARGET(NV_PROVIDES_SM_80, (
-        const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
         if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 4) {
+            const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
             if (__can_use_async_group) {
                 __cp_async_shared_global_mechanism<_Align>(__group, __dest_char, __src_char, __size);
                 return __completion_mechanism::__async_group;
