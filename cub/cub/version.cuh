@@ -44,15 +44,19 @@
 _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // !_CCCL_COMPILER_NVHPC
 
+#include <cuda/version>
+
 /*! \def CUB_VERSION
  *  \brief The preprocessor macro \p CUB_VERSION encodes the version
- *         number of the CUB library.
+ *         number of the CUB library as MMMmmmpp.
+ *
+ *  \note CUB_VERSION is formatted as `MMMmmmpp`, which differs from `CCCL_VERSION` that uses `MMMmmmppp`.
  *
  *         <tt>CUB_VERSION % 100</tt> is the sub-minor version.
  *         <tt>CUB_VERSION / 100 % 1000</tt> is the minor version.
  *         <tt>CUB_VERSION / 100000</tt> is the major version.
  */
-#define CUB_VERSION 200200
+#define CUB_VERSION 200300 // macro expansion with ## requires this to be a single value
 
 /*! \def CUB_MAJOR_VERSION
  *  \brief The preprocessor macro \p CUB_MAJOR_VERSION encodes the
@@ -77,3 +81,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
  *         patch number of the CUB library.
  */
 #define CUB_PATCH_NUMBER 0
+
+static_assert(CUB_MAJOR_VERSION == CCCL_MAJOR_VERSION,"");
+static_assert(CUB_MINOR_VERSION == CCCL_MINOR_VERSION,"");
+static_assert(CUB_SUBMINOR_VERSION == CCCL_PATCH_VERSION,"");
