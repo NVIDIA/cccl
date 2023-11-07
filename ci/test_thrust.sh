@@ -9,3 +9,5 @@ print_environment_details
 PRESET="thrust-cpp$CXX_STANDARD"
 
 test_preset "Thrust" ${PRESET}
+
+print_time_summary

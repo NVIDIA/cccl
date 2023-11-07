@@ -9,3 +9,5 @@ print_environment_details
 PRESET="cub-cpp$CXX_STANDARD"
 
 test_preset CUB "${PRESET}"
+
+print_time_summary

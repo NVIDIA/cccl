@@ -111,14 +111,14 @@ function print_var_values() {
 #   Color (optional): ANSI color code to set text color. Default is blue (1;34).
 function begin_group() {
     # See options for colors here: https://gist.github.com/JBlond/2fea43a3049b38287e5e9cefc87b2124
-    local blue="1;34"
+    local blue="34"
     local name="${1:-}"
     local color="${2:-$blue}"
 
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo -e "::group::\e[${color}m${name}\e[0m"
     else
-        echo "================== ${name} ======================"
+        echo -e "\e[${color}m================== ${name} ======================\e[0m"
     fi
 }
 
@@ -129,8 +129,9 @@ function begin_group() {
 function end_group() {
     local name="${1:-}"
     local build_status="${2:-0}"
+    local duration="${3:-}"
     local red="31"
-    local green="32"
+    local blue="34"
 
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo "::endgroup::"
@@ -140,12 +141,14 @@ function end_group() {
         fi
     else
         if [ "$build_status" -ne 0 ]; then
-            echo -e "\e[${red}m================== End ${name} - Failed ==================\e[0m"
+            echo -e "\e[${red}m================== End ${name} - Failed${duration:+ - Duration: ${duration}s} ==================\e[0m"
         else
-            echo -e "\e[${green}m================== End ${name} - Success ==================\n\e[0m"
+            echo -e "\e[${blue}m================== End ${name} - Success${duration:+ - Duration: ${duration}s} ==================\n\e[0m"
         fi
     fi
 }
+
+declare -A command_durations
 
 # Runs a command within a named group, handles the exit status, and prints appropriate messages based on the result.
 # Usage: run_command "Group Name" command [arguments...]
@@ -157,11 +160,41 @@ function run_command() {
 
     begin_group "$group_name"
     set +e
+    local start_time=$(date +%s)
     "${command[@]}"
     status=$?
+    local end_time=$(date +%s)
     set -e
-    end_group "$group_name" $status
+    local duration=$((end_time - start_time))
+    end_group "$group_name" $status $duration
+    command_durations["$group_name"]=$duration
     return $status
+}
+
+function string_width() {
+    local str="$1"
+    echo "$str" | awk '{print length}'
+}
+
+function print_time_summary() {
+    local max_length=0
+    local group
+
+    # Find the longest group name for formatting
+    for group in "${!command_durations[@]}"; do
+        local group_length=$(echo "$group" | awk '{print length}')
+        if [ "$group_length" -gt "$max_length" ]; then
+            max_length=$group_length
+        fi
+    done
+
+    echo "Time Summary:"
+    for group in "${!command_durations[@]}"; do
+        printf "%-${max_length}s : %s seconds\n" "$group" "${command_durations[$group]}"
+    done
+
+    # Clear the array of timing info
+    declare -gA command_durations=()
 }
 
 

@@ -9,3 +9,5 @@ PRESET="thrust-cpp$CXX_STANDARD"
 CMAKE_OPTIONS=""
 
 configure_and_build_preset "Thrust" "$PRESET" "$CMAKE_OPTIONS"
+
+print_time_summary

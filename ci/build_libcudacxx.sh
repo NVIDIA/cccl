@@ -8,3 +8,5 @@ PRESET="libcudacxx-cpp${CXX_STANDARD}"
 CMAKE_OPTIONS=""
 
 configure_and_build_preset libcudacxx "$PRESET" "$CMAKE_OPTIONS"
+
+print_time_summary

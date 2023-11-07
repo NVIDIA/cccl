@@ -37,3 +37,5 @@ CMAKE_OPTIONS="
 "
 
 configure_and_build_preset "CUB" "$PRESET" "$CMAKE_OPTIONS"
+
+print_time_summary
