@@ -37,6 +37,8 @@
 
 #include <cuda_fp16.h>
 
+#include <cuda/std/type_traits>
+
 #include <cstdint>
 #include <cstring>
 #include <iosfwd>
@@ -81,7 +83,11 @@ struct half_t
     }
 
     /// Constructor from unsigned long long int
-    __host__ __device__ __forceinline__ half_t(unsigned long long int a)
+    template < typename T,
+               typename = typename ::cuda::std::enable_if<
+                 ::cuda::std::is_same<T, unsigned long long int>::value
+                 && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
+    __host__ __device__ __forceinline__ half_t(T a)
     {
       *this = half_t(float(a));
     }

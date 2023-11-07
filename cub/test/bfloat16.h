@@ -32,11 +32,14 @@
  * Utilities for interacting with the opaque CUDA __nv_bfloat16 type
  */
 
-#include <stdint.h>
-#include <cuda_bf16.h>
-#include <iosfwd>
-
 #include <cub/util_type.cuh>
+
+#include <cuda_bf16.h>
+
+#include <cuda/std/type_traits>
+
+#include <cstdint>
+#include <iosfwd>
 
 #ifdef __GNUC__
 // There's a ton of type-punning going on in this file.
@@ -78,7 +81,11 @@ struct bfloat16_t
     }
 
     /// Constructor from unsigned long long int
-    __host__ __device__ __forceinline__ bfloat16_t(unsigned long long int a)
+    template < typename T,
+               typename = typename ::cuda::std::enable_if<
+                 ::cuda::std::is_same<T, unsigned long long int>::value
+                 && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
+    __host__ __device__ __forceinline__ bfloat16_t(T a)
     {
       *this = bfloat16_t(float(a));
     }
