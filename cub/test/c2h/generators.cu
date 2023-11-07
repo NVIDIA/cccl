@@ -259,16 +259,17 @@ void generator_t::operator()(seed_t seed, thrust::device_vector<T> &data, T min,
 template <typename T>
 struct count_to_item_t
 {
-  std::size_t n;
+  unsigned long long int n;
 
-  count_to_item_t(std::size_t n)
+  count_to_item_t(unsigned long long int n)
       : n(n)
   {}
 
   template <typename CounterT>
   __device__ T operator()(CounterT id)
   {
-    return static_cast<T>(static_cast<std::size_t>(id) % n);
+    // This has to be a type for which extended floating point types like __nv_fp8_e5m2 provide an overload
+    return static_cast<T>(static_cast<unsigned long long int>(id) % n);
   }
 };
 

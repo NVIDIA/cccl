@@ -46,7 +46,7 @@ static void basic(nvbench::state &state, nvbench::type_list<T>)
 
   state.add_element_count(needles);
 
-  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
     thrust::binary_search(data.begin(),
                           data.begin() + elements,
                           data.begin() + elements,

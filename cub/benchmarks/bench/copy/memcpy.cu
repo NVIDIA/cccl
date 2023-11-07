@@ -249,7 +249,7 @@ void copy(nvbench::state &state,
   thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch &launch) {
     dispatch_t::Dispatch(d_temp_storage,
                          temp_storage_bytes,
                          d_input_buffers,
@@ -275,8 +275,8 @@ void uniform(nvbench::state &state, nvbench::type_list<T, OffsetT> tl)
        elements,
        min_buffer_size,
        max_buffer_size,
-       state.get_int64("RandomizeInput"),
-       state.get_int64("RandomizeOutput"));
+       state.get_int64("Randomize"),
+       state.get_int64("Randomize"));
 }
 
 template <class T, class OffsetT>
@@ -309,8 +309,7 @@ NVBENCH_BENCH_TYPES(uniform, NVBENCH_TYPE_AXES(types, u_offset_types))
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(25, 29, 2))
   .add_int64_axis("MinBufferSizeRatio", {1, 99})
   .add_int64_axis("MaxBufferSize", {8, 64, 256, 1024, 64 * 1024})
-  .add_int64_axis("RandomizeInput", {0, 1})
-  .add_int64_axis("RandomizeOutput", {0, 1});
+  .add_int64_axis("Randomize", {0, 1});
 
 NVBENCH_BENCH_TYPES(large, NVBENCH_TYPE_AXES(types, u_offset_types))
   .set_name("large")
