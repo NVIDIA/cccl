@@ -41,7 +41,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cub/detail/triple_chevron_launch.cuh>
 #include <thrust/detail/integer_math.h>
 
 CUB_NAMESPACE_BEGIN
@@ -318,7 +318,7 @@ struct BlockSortLauncher
     constexpr bool use_vshmem = (AgentFitsIntoDefaultShmemSize == false) &&
                                 UseVShmem;
 
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+    detail::triple_chevron(
       num_tiles,
       ActivePolicyT::MergeSortPolicy::BLOCK_THREADS,
       use_vshmem ? 0 : block_sort_shmem_size,
@@ -415,7 +415,7 @@ struct MergeLauncher
     constexpr bool use_vshmem = (AgentFitsIntoDefaultShmemSize == false) &&
                                 UseVShmem;
 
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+    detail::triple_chevron(
       num_tiles,
       ActivePolicyT::MergeSortPolicy::BLOCK_THREADS,
       use_vshmem ? 0 : merge_shmem_size,
@@ -776,7 +776,7 @@ struct DispatchMergeSort : SelectedPolicy
         OffsetT target_merged_tiles_number = OffsetT(2) << pass;
 
         // Partition
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+        detail::triple_chevron(
           partition_grid_size,
           threads_per_partition_block,
           0,

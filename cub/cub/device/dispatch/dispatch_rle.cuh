@@ -50,7 +50,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cub/detail/triple_chevron_launch.cuh>
 
 #include <cstdio>
 #include <iterator>
@@ -359,7 +359,7 @@ struct DeviceRleDispatch
 #endif
 
       // Invoke device_scan_init_kernel to initialize tile descriptors and queue descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size,
+      detail::triple_chevron(init_grid_size,
                                                               INIT_KERNEL_THREADS,
                                                               0,
                                                               stream)
@@ -423,7 +423,7 @@ struct DeviceRleDispatch
 #endif
 
       // Invoke device_rle_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size,
+      detail::triple_chevron(scan_grid_size,
                                                               block_threads,
                                                               0,
                                                               stream)

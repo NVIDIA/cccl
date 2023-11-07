@@ -54,7 +54,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/reverse_iterator.h>
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cub/detail/triple_chevron_launch.cuh>
 
 #include <nv/target>
 
@@ -590,7 +590,7 @@ DeviceSegmentedSortContinuation(
             (long long)stream);
     #endif
 
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+    detail::triple_chevron(
       blocks_in_grid,
       LargeSegmentPolicyT::BLOCK_THREADS,
       0,
@@ -647,7 +647,7 @@ DeviceSegmentedSortContinuation(
             (long long)stream);
     #endif
 
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+    detail::triple_chevron(
       small_and_medium_blocks_in_grid,
       SmallAndMediumPolicyT::BLOCK_THREADS,
       0,
@@ -1649,7 +1649,7 @@ private:
 #define CUB_TEMP_DEVICE_CODE                                                   \
   using MaxPolicyT = typename DispatchSegmentedSort::MaxPolicy;                \
   error =                                                                      \
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(1, 1, 0, stream)   \
+    detail::triple_chevron(1, 1, 0, stream)   \
       .doit(DeviceSegmentedSortContinuationKernel<MaxPolicyT,                  \
                                                   LargeKernelT,                \
                                                   SmallKernelT,                \
@@ -1761,7 +1761,7 @@ private:
     #endif
 
     // Invoke fallback kernel
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(blocks_in_grid,
+    detail::triple_chevron(blocks_in_grid,
                                                             threads_in_block,
                                                             0,
                                                             stream)

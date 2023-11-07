@@ -42,8 +42,6 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
 #include <cstdint>
 
 CUB_NAMESPACE_BEGIN

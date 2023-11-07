@@ -55,7 +55,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cub/detail/triple_chevron_launch.cuh>
 
 #include <cstdio>
 #include <iterator>
@@ -697,7 +697,7 @@ struct DispatchSpmv
                         threads_in_block,
                         (long long)stream);
                 #endif
-                error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(blocks_in_grid,
+                error = detail::triple_chevron(blocks_in_grid,
                                                                                 threads_in_block,
                                                                                 0,
                                                                                 stream)
@@ -737,7 +737,7 @@ struct DispatchSpmv
                 #endif
 
                 // Invoke spmv_search_kernel
-                THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+                detail::triple_chevron(
                     degen_col_kernel_grid_size, degen_col_kernel_block_size, 0,
                     stream
                 ).doit(spmv_1col_kernel,
@@ -850,7 +850,7 @@ struct DispatchSpmv
                 #endif
 
                 // Invoke spmv_search_kernel
-                THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+                detail::triple_chevron(
                     search_grid_size, search_block_size, 0, stream
                 ).doit(spmv_search_kernel,
                     num_merge_tiles,
@@ -875,7 +875,7 @@ struct DispatchSpmv
             #endif
 
             // Invoke spmv_kernel
-            THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+            detail::triple_chevron(
                 spmv_grid_size, spmv_config.block_threads, 0, stream
             ).doit(spmv_kernel,
                 spmv_params,
@@ -905,7 +905,7 @@ struct DispatchSpmv
                 #endif
 
                 // Invoke segment_fixup_kernel
-                THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+                detail::triple_chevron(
                     segment_fixup_grid_size, segment_fixup_config.block_threads,
                     0, stream
                 ).doit(segment_fixup_kernel,

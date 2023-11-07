@@ -43,7 +43,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cub/detail/triple_chevron_launch.cuh>
 
 #include <iterator>
 
@@ -264,7 +264,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
                 reinterpret_cast<long long>(stream));
         #endif
 
-        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size,
+        detail::triple_chevron(init_grid_size,
                                                                 init_block_size,
                                                                 0,
                                                                 stream)
@@ -300,7 +300,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
               reinterpret_cast<long long>(stream));
       #endif
 
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      detail::triple_chevron(
         num_tiles,
         AdjacentDifferencePolicyT::BLOCK_THREADS,
         0,

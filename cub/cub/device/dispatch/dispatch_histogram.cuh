@@ -56,7 +56,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cub/detail/triple_chevron_launch.cuh>
 
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -465,7 +465,7 @@ struct dispatch_histogram
 #endif
 
       // Invoke histogram_init_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(histogram_init_grid_dims,
+      detail::triple_chevron(histogram_init_grid_dims,
                                                               histogram_init_block_threads,
                                                               0,
                                                               stream)
@@ -494,7 +494,7 @@ struct dispatch_histogram
 #endif
 
       // Invoke histogram_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(sweep_grid_dims,
+      detail::triple_chevron(sweep_grid_dims,
                                                               block_threads,
                                                               0,
                                                               stream)
