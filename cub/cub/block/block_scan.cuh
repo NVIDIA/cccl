@@ -36,11 +36,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/specializations/block_scan_raking.cuh>
 #include <cub/block/specializations/block_scan_warp_scans.cuh>
@@ -118,28 +120,28 @@ enum BlockScanAlgorithm
  ******************************************************************************/
 
 /**
- * @brief The BlockScan class provides [<em>collective</em>](index.html#sec0) methods for 
- *        computing a parallel prefix sum/scan of items partitioned across a 
+ * @brief The BlockScan class provides [<em>collective</em>](index.html#sec0) methods for
+ *        computing a parallel prefix sum/scan of items partitioned across a
  *        CUDA thread block. ![](block_scan_logo.png)
  *
  * @ingroup BlockModule
  *
- * @tparam T                
+ * @tparam T
  *   Data type being scanned
  *
- * @tparam BLOCK_DIM_X      
+ * @tparam BLOCK_DIM_X
  *   The thread block length in threads along the X dimension
  *
- * @tparam ALGORITHM        
+ * @tparam ALGORITHM
  *   <b>[optional]</b> cub::BlockScanAlgorithm enumerator specifying the underlying algorithm to use (default: cub::BLOCK_SCAN_RAKING)
  *
- * @tparam BLOCK_DIM_Y      
+ * @tparam BLOCK_DIM_Y
  *   <b>[optional]</b> The thread block length in threads along the Y dimension (default: 1)
  *
- * @tparam BLOCK_DIM_Z      
+ * @tparam BLOCK_DIM_Z
  *   <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
  *
- * @tparam LEGACY_PTX_ARCH  
+ * @tparam LEGACY_PTX_ARCH
  *   <b>[optional]</b> Unused.
  *
  * @par Overview
@@ -152,14 +154,14 @@ enum BlockScanAlgorithm
  *   the <em>i</em><sup>th</sup> output reduction.
  * - \rowmajor
  * - BlockScan can be optionally specialized by algorithm to accommodate different workload profiles:
- *   -# <b>cub::BLOCK_SCAN_RAKING</b>.  
- *      An efficient (high throughput) "raking reduce-then-scan" prefix scan algorithm. 
+ *   -# <b>cub::BLOCK_SCAN_RAKING</b>.
+ *      An efficient (high throughput) "raking reduce-then-scan" prefix scan algorithm.
  *      [More...](\ref cub::BlockScanAlgorithm)
- *   -# <b>cub::BLOCK_SCAN_RAKING_MEMOIZE</b>.  
- *      Similar to cub::BLOCK_SCAN_RAKING, but having higher throughput at the expense of additional 
+ *   -# <b>cub::BLOCK_SCAN_RAKING_MEMOIZE</b>.
+ *      Similar to cub::BLOCK_SCAN_RAKING, but having higher throughput at the expense of additional
  *      register pressure for intermediate storage. [More...](\ref cub::BlockScanAlgorithm)
- *   -# <b>cub::BLOCK_SCAN_WARP_SCANS</b>.  
- *      A quick (low latency) "tiled warpscans" prefix scan algorithm. 
+ *   -# <b>cub::BLOCK_SCAN_WARP_SCANS</b>.
+ *      A quick (low latency) "tiled warpscans" prefix scan algorithm.
  *      [More...](\ref cub::BlockScanAlgorithm)
  *
  * @par Performance Considerations
@@ -934,7 +936,7 @@ public:
      *        the call-back functor @p block_prefix_callback_op is invoked by the first warp
      *        in the block, and the value returned by <em>lane</em><sub>0</sub> in that warp
      *        is used as the "seed" value that logically prefixes the thread block's scan
-     *        inputs. Also provides every thread with the block-wide @p block_aggregate of 
+     *        inputs. Also provides every thread with the block-wide @p block_aggregate of
      *        all inputs.
      *
      * @par
