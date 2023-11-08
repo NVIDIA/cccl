@@ -152,7 +152,6 @@ void __global__ __launch_bounds__(
 {
   using active_policy_t   = typename ChainedPolicyT::ActivePolicy;
   using default_policy_t  = typename active_policy_t::DummyAlgorithmPolicy;
-  using default_agent_t   = agent_dummy_algorithm_t<default_policy_t, InputIteratorT, OutputIteratorT, OffsetT>;
   using fallback_policy_t = typename active_policy_t::FallbackDummyAlgorithmPolicy;
   using fallback_agent_t  = agent_dummy_algorithm_t<fallback_policy_t, InputIteratorT, OutputIteratorT, OffsetT>;
 
