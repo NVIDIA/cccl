@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
+// UNSUPPORTED: c++11
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
 // UNSUPPORTED: nvrtc
