@@ -19,6 +19,8 @@
     #endif
 #endif
 
+#include <cuda/std/cassert>
+
 #include "test_macros.h"
 
 TEST_EXEC_CHECK_DISABLE
