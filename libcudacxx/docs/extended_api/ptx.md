@@ -673,18 +673,18 @@ __device__ static inline void red_async(
 
 ### [9.7.12.15. Parallel Synchronization and Communication Instructions: mbarrier](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier)
 
-| Instruction                              | Available in libcu++ |
-|------------------------------------------|----------------------|
-| [`mbarrier.init`]                        | No                   |
-| [`mbarrier.inval`]                       | No                   |
-| [`mbarrier.expect_tx`]                   | No                   |
-| [`mbarrier.complete_tx`]                 | No                   |
+| Instruction                              | Available in libcu++    |
+|------------------------------------------|-------------------------|
+| [`mbarrier.init`]                        | No                      |
+| [`mbarrier.inval`]                       | No                      |
+| [`mbarrier.expect_tx`]                   | No                      |
+| [`mbarrier.complete_tx`]                 | No                      |
 | [`mbarrier.arrive`]                      | CTK-FUTURE, CCCL v2.3.0 |
-| [`mbarrier.arrive_drop`]                 | No                   |
-| [`cp.async.mbarrier.arrive`]             | No                   |
-| [`mbarrier.test_wait/mbarrier.try_wait`] | No                   |
-| [`mbarrier.pending_count`]               | No                   |
-| [`tensormap.cp_fenceproxy`]              | No                   |
+| [`mbarrier.arrive_drop`]                 | No                      |
+| [`cp.async.mbarrier.arrive`]             | No                      |
+| [`mbarrier.test_wait/mbarrier.try_wait`] | CTK-FUTURE, CCCL v2.3.0 |
+| [`mbarrier.pending_count`]               | No                      |
+| [`tensormap.cp_fenceproxy`]              | No                      |
 
 [`mbarrier.init`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init
 [`mbarrier.inval`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-inval
