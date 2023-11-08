@@ -1,4 +1,3 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -7,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11, c++14
 
 // <variant>
 
@@ -38,5 +37,6 @@ int main(int, char**)
   static_assert(!std::is_constructible<std::variant<bool>, std::true_type>::value, "");
   static_assert(!std::is_constructible<std::variant<bool>, std::unique_ptr<char> >::value, "");
   static_assert(!std::is_constructible<std::variant<bool>, decltype(nullptr)>::value, "");
-  
+
+  return 0;
 }
