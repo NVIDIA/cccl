@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
@@ -77,7 +79,7 @@ enum CacheLoadModifier
  */
 
 /**
- * @brief Thread utility for reading memory using cub::CacheLoadModifier cache modifiers.  
+ * @brief Thread utility for reading memory using cub::CacheLoadModifier cache modifiers.
  *        Can be used to load any data type.
  *
  * @par Example
@@ -102,10 +104,10 @@ enum CacheLoadModifier
  * TestFoo val = cub::ThreadLoad<cub::LOAD_CS>(d_in + threadIdx.x);
  * \endcode
  *
- * @tparam MODIFIER             
+ * @tparam MODIFIER
  *   <b>[inferred]</b> CacheLoadModifier enumeration
  *
- * @tparam InputIteratorT       
+ * @tparam InputIteratorT
  *   <b>[inferred]</b> Input iterator type \iterator
  */
 template <CacheLoadModifier MODIFIER,
@@ -343,7 +345,7 @@ __device__ __forceinline__ T ThreadLoadVolatilePointer(
     Int2Type<false>         /*is_primitive*/)
 {
     // Word type for memcopying
-    typedef typename UnitWord<T>::VolatileWord VolatileWord;   
+    typedef typename UnitWord<T>::VolatileWord VolatileWord;
 
     constexpr int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
 

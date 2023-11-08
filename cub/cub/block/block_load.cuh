@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/block_exchange.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
@@ -160,7 +162,7 @@ __device__ __forceinline__ void LoadDirectBlocked(int linear_tid,
  *   <b>[inferred]</b> The random-access iterator type for input \iterator.
  *
  * @param[in] linear_tid
- *   A suitable 1D thread-identifier for the calling thread 
+ *   A suitable 1D thread-identifier for the calling thread
  *   (e.g., <tt>(threadIdx.y * blockDim.x) + linear_tid</tt> for 2D thread blocks)
  *
  * @param[in] block_itr
@@ -196,7 +198,7 @@ __device__ __forceinline__ void LoadDirectBlocked(int linear_tid,
  * @brief Internal implementation for load vectorization
  *
  * @param[in] linear_tid
- *   A suitable 1D thread-identifier for the calling thread 
+ *   A suitable 1D thread-identifier for the calling thread
  *   (e.g., <tt>(threadIdx.y * blockDim.x) + linear_tid</tt> for 2D thread blocks)
  *
  * @param[in] block_ptr
@@ -314,7 +316,7 @@ __device__ __forceinline__ void LoadDirectBlockedVectorized(int linear_tid,
  *   <b>[inferred]</b> The random-access iterator type for input \iterator.
  *
  * @param[in] linear_tid
- *   A suitable 1D thread-identifier for the calling thread 
+ *   A suitable 1D thread-identifier for the calling thread
  *   (e.g., <tt>(threadIdx.y * blockDim.x) + linear_tid</tt> for 2D thread blocks)
  *
  * @param[in] block_itr
@@ -401,7 +403,7 @@ __device__ __forceinline__ void LoadDirectStriped(int linear_tid,
  *   <b>[inferred]</b> The random-access iterator type for input \iterator.
  *
  * @param[in] linear_tid
- *   A suitable 1D thread-identifier for the calling thread 
+ *   A suitable 1D thread-identifier for the calling thread
  *   (e.g., <tt>(threadIdx.y * blockDim.x) + linear_tid</tt> for 2D thread blocks)
  *
  * @param[in] block_itr
@@ -505,7 +507,7 @@ __device__ __forceinline__ void LoadDirectWarpStriped(int linear_tid,
  *   <b>[inferred]</b> The random-access iterator type for input \iterator.
  *
  * @param[in] linear_tid
- *   A suitable 1D thread-identifier for the calling thread 
+ *   A suitable 1D thread-identifier for the calling thread
  *   (e.g., <tt>(threadIdx.y * blockDim.x) + linear_tid</tt> for 2D thread blocks)
  *
  * @param[in] block_itr
@@ -557,7 +559,7 @@ __device__ __forceinline__ void LoadDirectWarpStriped(int linear_tid,
  *   <b>[inferred]</b> The random-access iterator type for input \iterator.
  *
  * @param[in] linear_tid
- *   A suitable 1D thread-identifier for the calling thread 
+ *   A suitable 1D thread-identifier for the calling thread
  *   (e.g., <tt>(threadIdx.y * blockDim.x) + linear_tid</tt> for 2D thread blocks)
  *
  * @param[in] block_itr
@@ -709,39 +711,39 @@ enum BlockLoadAlgorithm
 
 
 /**
- * @brief The BlockLoad class provides [<em>collective</em>](index.html#sec0) 
- *        data movement methods for loading a linear segment of items from memory 
- *        into a [<em>blocked arrangement</em>](index.html#sec5sec3) across a 
+ * @brief The BlockLoad class provides [<em>collective</em>](index.html#sec0)
+ *        data movement methods for loading a linear segment of items from memory
+ *        into a [<em>blocked arrangement</em>](index.html#sec5sec3) across a
  *        CUDA thread block.  ![](block_load_logo.png)
  *
  * @ingroup BlockModule
  *
  * @ingroup UtilIo
  *
- * @tparam InputT               
+ * @tparam InputT
  *   The data type to read into (which must be convertible from the input iterator's value type).
  *
- * @tparam BLOCK_DIM_X          
+ * @tparam BLOCK_DIM_X
  *   The thread block length in threads along the X dimension
  *
- * @tparam ITEMS_PER_THREAD     
+ * @tparam ITEMS_PER_THREAD
  *   The number of consecutive items partitioned onto each thread.
  *
- * @tparam ALGORITHM            
+ * @tparam ALGORITHM
  *   <b>[optional]</b> cub::BlockLoadAlgorithm tuning policy.  default: cub::BLOCK_LOAD_DIRECT.
  *
- * @tparam WARP_TIME_SLICING    
- *   <b>[optional]</b> Whether or not only one warp's worth of shared memory should be 
- *   allocated and time-sliced among block-warps during any load-related data transpositions 
+ * @tparam WARP_TIME_SLICING
+ *   <b>[optional]</b> Whether or not only one warp's worth of shared memory should be
+ *   allocated and time-sliced among block-warps during any load-related data transpositions
  *   (versus each warp having its own storage). (default: false)
  *
- * @tparam BLOCK_DIM_Y          
+ * @tparam BLOCK_DIM_Y
  *   <b>[optional]</b> The thread block length in threads along the Y dimension (default: 1)
  *
- * @tparam BLOCK_DIM_Z          
+ * @tparam BLOCK_DIM_Z
  *  <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
  *
- * @tparam LEGACY_PTX_ARCH      
+ * @tparam LEGACY_PTX_ARCH
  *  <b>[optional]</b> Unused.
  *
  * @par Overview
