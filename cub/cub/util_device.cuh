@@ -197,7 +197,7 @@ public:
 
     char* ptr = reinterpret_cast<char*>(&temp_storage);
 
-    const auto size = static_cast<std::size_t>(sizeof(agent_t::TempStorage));
+    const auto size = static_cast<std::size_t>(sizeof(typename agent_t::TempStorage));
     auto ptr_end    = ptr + size;
     ptr_end -= (reinterpret_cast<std::uintptr_t>(ptr_end) % line_size);
 
