@@ -14,156 +14,184 @@
 #include <cuda/ptx>
 #include <cuda/std/utility>
 
-template <typename ... _Ty>
-__device__ inline bool __unused(_Ty...) { return true; }
+/*
+ * We use a special strategy to force the generation of the PTX. This is mainly
+ * a fight against dead-code-elimination in the NVVM layer.
+ *
+ * The reason we need this strategy is because certain older versions of ptxas
+ * segfault when a non-sensical sequence of PTX is generated. So instead, we try
+ * to force the instantiation and compilation to PTX of all the overloads of the
+ * PTX wrapping functions.
+ *
+ * We do this by writing a function pointer of each overload to the `__device__`
+ * variable `fn_ptr`. Now, because weak stores from a single thread may be
+ * elided, we also wrap the store in an if branch that cannot be removed.
+ *
+ * To prevent dead-code-elimination of the if branch, we use
+ * `non_eliminated_false`, which uses inline assembly to hide the fact that is
+ * always false from NVVM.
+ *
+ * So this is how we ensure that none of the function pointer stores are elided.
+ * Because `fn_ptr` is possibly visible outside this translation unit, the
+ * compiler must compile all the functions which are stored.
+ *
+ */
+
+__device__ void * fn_ptr = nullptr;
+
+__device__ bool non_eliminated_false(void){
+  int ret = 0;
+  asm ("": "=r"(ret)::);
+  return ret != 0;
+}
 
 __global__ void test_compilation() {
-  using cuda::ptx::sem_release;
-  using cuda::ptx::space_cluster;
-  using cuda::ptx::space_shared;
-  using cuda::ptx::scope_cluster;
-  using cuda::ptx::scope_cta;
-
-  __shared__ uint64_t bar;
-  bar = 1;
-  uint64_t * addr = &bar;
-  uint64_t state = 1;
-  uint32_t phaseParity = 1;
-  uint32_t suspendTimeHint = 1;
-  bool waitComplete = true;
-
-  int thread_filter = 1024;
-
 #if __cccl_ptx_isa >= 700
   NV_IF_TARGET(NV_PROVIDES_SM_80, (
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.test_wait.shared.b64 waitComplete, [addr], state;                                                  // 1.
-      waitComplete = cuda::ptx::mbarrier_test_wait(addr, state);
+      auto overload = static_cast<bool (*)(uint64_t* , const uint64_t& )>(cuda::ptx::mbarrier_test_wait);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
 #endif // __cccl_ptx_isa >= 700
 
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.test_wait{.sem}{.scope}.shared::cta.b64        waitComplete, [addr], state;                        // 2.
-      waitComplete = cuda::ptx::mbarrier_test_wait(cuda::ptx::sem_acquire, cuda::ptx::scope_cta, addr, state);
+      auto overload = static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t* , const uint64_t& )>(cuda::ptx::mbarrier_test_wait);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.test_wait{.sem}{.scope}.shared::cta.b64        waitComplete, [addr], state;                        // 2.
-      waitComplete = cuda::ptx::mbarrier_test_wait(cuda::ptx::sem_acquire, cuda::ptx::scope_cluster, addr, state);
+      auto overload = static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t* , const uint64_t& )>(cuda::ptx::mbarrier_test_wait);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
 #endif // __cccl_ptx_isa >= 800
 #if __cccl_ptx_isa >= 710
   NV_IF_TARGET(NV_PROVIDES_SM_80, (
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.test_wait.parity.shared.b64 waitComplete, [addr], phaseParity;                                     // 3.
-      waitComplete = cuda::ptx::mbarrier_test_wait_parity(addr, phaseParity);
+      auto overload = static_cast<bool (*)(uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_test_wait_parity);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
 #endif // __cccl_ptx_isa >= 710
 
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.test_wait.parity{.sem}{.scope}.shared::cta.b64 waitComplete, [addr], phaseParity;                  // 4.
-      waitComplete = cuda::ptx::mbarrier_test_wait_parity(cuda::ptx::sem_acquire, cuda::ptx::scope_cta, addr, phaseParity);
+      auto overload = static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_test_wait_parity);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.test_wait.parity{.sem}{.scope}.shared::cta.b64 waitComplete, [addr], phaseParity;                  // 4.
-      waitComplete = cuda::ptx::mbarrier_test_wait_parity(cuda::ptx::sem_acquire, cuda::ptx::scope_cluster, addr, phaseParity);
+      auto overload = static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_test_wait_parity);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
 #endif // __cccl_ptx_isa >= 800
 #if __cccl_ptx_isa >= 780
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state;                                      // 5a.
-      waitComplete = cuda::ptx::mbarrier_try_wait(addr, state);
+      auto overload = static_cast<bool (*)(uint64_t* , const uint64_t& )>(cuda::ptx::mbarrier_try_wait);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
 #endif // __cccl_ptx_isa >= 780
 
 #if __cccl_ptx_isa >= 780
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state, suspendTimeHint;                    // 5b.
-      waitComplete = cuda::ptx::mbarrier_try_wait(addr, state, suspendTimeHint);
+      auto overload = static_cast<bool (*)(uint64_t* , const uint64_t& , const uint32_t& )>(cuda::ptx::mbarrier_try_wait);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
 #endif // __cccl_ptx_isa >= 780
 
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.try_wait{.sem}{.scope}.shared::cta.b64         waitComplete, [addr], state;                        // 6a.
-      waitComplete = cuda::ptx::mbarrier_try_wait(cuda::ptx::sem_acquire, cuda::ptx::scope_cta, addr, state);
+      auto overload = static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t* , const uint64_t& )>(cuda::ptx::mbarrier_try_wait);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.try_wait{.sem}{.scope}.shared::cta.b64         waitComplete, [addr], state;                        // 6a.
-      waitComplete = cuda::ptx::mbarrier_try_wait(cuda::ptx::sem_acquire, cuda::ptx::scope_cluster, addr, state);
+      auto overload = static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t* , const uint64_t& )>(cuda::ptx::mbarrier_try_wait);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.try_wait{.sem}{.scope}.shared::cta.b64         waitComplete, [addr], state , suspendTimeHint;      // 6b.
-      waitComplete = cuda::ptx::mbarrier_try_wait(cuda::ptx::sem_acquire, cuda::ptx::scope_cta, addr, state, suspendTimeHint);
+      auto overload = static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t* , const uint64_t& , const uint32_t& )>(cuda::ptx::mbarrier_try_wait);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.try_wait{.sem}{.scope}.shared::cta.b64         waitComplete, [addr], state , suspendTimeHint;      // 6b.
-      waitComplete = cuda::ptx::mbarrier_try_wait(cuda::ptx::sem_acquire, cuda::ptx::scope_cluster, addr, state, suspendTimeHint);
+      auto overload = static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t* , const uint64_t& , const uint32_t& )>(cuda::ptx::mbarrier_try_wait);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
 #endif // __cccl_ptx_isa >= 800
 #if __cccl_ptx_isa >= 780
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.try_wait.parity.shared::cta.b64  waitComplete, [addr], phaseParity;                                // 7a.
-      waitComplete = cuda::ptx::mbarrier_try_wait_parity(addr, phaseParity);
+      auto overload = static_cast<bool (*)(uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_try_wait_parity);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
 #endif // __cccl_ptx_isa >= 780
 
 #if __cccl_ptx_isa >= 780
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.try_wait.parity.shared::cta.b64  waitComplete, [addr], phaseParity, suspendTimeHint;               // 7b.
-      waitComplete = cuda::ptx::mbarrier_try_wait_parity(addr, phaseParity, suspendTimeHint);
+      auto overload = static_cast<bool (*)(uint64_t* , const uint32_t& , const uint32_t& )>(cuda::ptx::mbarrier_try_wait_parity);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
 #endif // __cccl_ptx_isa >= 780
 
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.try_wait.parity{.sem}{.scope}.shared::cta.b64  waitComplete, [addr], phaseParity;                  // 8a.
-      waitComplete = cuda::ptx::mbarrier_try_wait_parity(cuda::ptx::sem_acquire, cuda::ptx::scope_cta, addr, phaseParity);
+      auto overload = static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_try_wait_parity);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.try_wait.parity{.sem}{.scope}.shared::cta.b64  waitComplete, [addr], phaseParity;                  // 8a.
-      waitComplete = cuda::ptx::mbarrier_try_wait_parity(cuda::ptx::sem_acquire, cuda::ptx::scope_cluster, addr, phaseParity);
+      auto overload = static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_try_wait_parity);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.try_wait.parity{.sem}{.scope}.shared::cta.b64  waitComplete, [addr], phaseParity, suspendTimeHint; // 8b.
-      waitComplete = cuda::ptx::mbarrier_try_wait_parity(cuda::ptx::sem_acquire, cuda::ptx::scope_cta, addr, phaseParity, suspendTimeHint);
+      auto overload = static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t* , const uint32_t& , const uint32_t& )>(cuda::ptx::mbarrier_try_wait_parity);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
-    if (threadIdx.x > thread_filter++) {
+    if (non_eliminated_false()) {
       // mbarrier.try_wait.parity{.sem}{.scope}.shared::cta.b64  waitComplete, [addr], phaseParity, suspendTimeHint; // 8b.
-      waitComplete = cuda::ptx::mbarrier_try_wait_parity(cuda::ptx::sem_acquire, cuda::ptx::scope_cluster, addr, phaseParity, suspendTimeHint);
+      auto overload = static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t* , const uint32_t& , const uint32_t& )>(cuda::ptx::mbarrier_try_wait_parity);
+      fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
 #endif // __cccl_ptx_isa >= 800
-
-  __unused(bar, addr, state, waitComplete, phaseParity, suspendTimeHint);
 }
 
 int main(int, char**)
