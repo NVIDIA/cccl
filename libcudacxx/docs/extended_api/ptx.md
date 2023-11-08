@@ -700,7 +700,7 @@ __device__ static inline void red_async(
 
 #### `mbarrier.test_wait/mbarrier.try_wait`
 
-- PTX ISA: [`mbarrier.test_wait/mbarrier.try_wait`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-mbarrier-try-wait
+- PTX ISA: [`mbarrier.test_wait/mbarrier.try_wait`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-mbarrier-try-wait)
 
 *mbarrier_test_wait*:
 ```cuda
