@@ -959,7 +959,7 @@ void __cp_async_shared_global(char * __dest, const char * __src) {
     static_assert(_Copy_size == 4 || _Copy_size == 8 || _Copy_size == 16, "cp.async.shared.global requires a copy size of 4, 8, or 16.");
     #endif // _LIBCUDACXX_STD_VER >= 17
 
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (
+    NV_IF_TARGET(NV_PROVIDES_SM_80, (
         // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
         asm volatile(
             "cp.async.ca.shared.global [%0], [%1], %2, %2;"
@@ -974,7 +974,7 @@ void __cp_async_shared_global(char * __dest, const char * __src) {
 template <>
 inline _LIBCUDACXX_DEVICE
 void __cp_async_shared_global<16>(char * __dest, const char * __src) {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (
+    NV_IF_TARGET(NV_PROVIDES_SM_80, (
         // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
         // When copying 16 bytes, it is possible to skip L1 cache (.cg).
         asm volatile(
