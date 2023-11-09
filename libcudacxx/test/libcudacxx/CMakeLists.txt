@@ -23,7 +23,9 @@ option(LIBCUDACXX_TEST_WITH_NVRTC
   OFF)
 
 if (LIBCUDACXX_TEST_WITH_NVRTC)
-  set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_BINARY_DIR}/libcudacxx/utils/nvidia/nvrtc/nvrtcc")
+  # TODO: Use project properties to get path to binary.
+  # Should also set up dependency on the project when NVRTC is enabled
+  set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_BINARY_DIR}/libcudacxx/test/utils/nvidia/nvrtc/nvrtcc")
   set(LIBCUDACXX_CUDA_COMPILER_ARG1 "")
   set(LIBCUDACXX_CUDA_TEST_WITH_NVRTC "True")
   set(LIBCUDACXX_FORCE_INCLUDE "-include '${libcudacxx_SOURCE_DIR}/test/support/nvrtc_limit_macros.h'")
