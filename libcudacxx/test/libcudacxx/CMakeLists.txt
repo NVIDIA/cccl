@@ -95,6 +95,8 @@ set(LIBCUDACXX_COMPUTE_ARCHS_STRING
 
 include(AddLLVM)
 
+set(LIBCUDACXX_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+
 set(LIBCUDACXX_TARGET_INFO "libcudacxx.test.target_info.LocalTI" CACHE STRING
 "TargetInfo to use when setting up test environment.")
 set(LIBCUDACXX_EXECUTOR "None" CACHE STRING
