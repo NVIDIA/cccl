@@ -391,7 +391,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 // .type      = { .b32, .b64 }
 template <typename Type>
 __device__ static inline void st_async(
-  void* addr,
+  Type* addr,
   const Type& value,
   uint64_t* remote_bar);
 */
@@ -399,7 +399,7 @@ __device__ static inline void st_async(
 extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_st_async_is_not_supported_before_SM_90__();
 template <typename _Type>
 _LIBCUDACXX_DEVICE static inline void st_async(
-  void* __addr,
+  _Type* __addr,
   const _Type& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
@@ -438,7 +438,7 @@ _LIBCUDACXX_DEVICE static inline void st_async(
 // .type      = { .b32, .b64 }
 template <typename Type>
 __device__ static inline void st_async(
-  void* addr,
+  Type* addr,
   const Type (&value)[2],
   uint64_t* remote_bar);
 */
@@ -446,7 +446,7 @@ __device__ static inline void st_async(
 extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_st_async_is_not_supported_before_SM_90__();
 template <typename _Type>
 _LIBCUDACXX_DEVICE static inline void st_async(
-  void* __addr,
+  _Type* __addr,
   const _Type (&__value)[2],
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
@@ -486,7 +486,7 @@ _LIBCUDACXX_DEVICE static inline void st_async(
 // st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [addr], value, [remote_bar];    // 3.  PTX ISA 81, SM_90
 template <typename B32>
 __device__ static inline void st_async(
-  void* addr,
+  B32* addr,
   const B32 (&value)[4],
   uint64_t* remote_bar);
 */
@@ -494,7 +494,7 @@ __device__ static inline void st_async(
 extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_st_async_is_not_supported_before_SM_90__();
 template <typename _B32>
 _LIBCUDACXX_DEVICE static inline void st_async(
-  void* __addr,
+  _B32* __addr,
   const _B32 (&__value)[4],
   _CUDA_VSTD::uint64_t* __remote_bar)
 {

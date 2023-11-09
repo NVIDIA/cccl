@@ -309,7 +309,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 // .type      = { .b32, .b64 }
 template <typename Type>
 __device__ static inline void st_async(
-  void* addr,
+  Type* addr,
   const Type& value,
   uint64_t* remote_bar);
 
@@ -317,14 +317,14 @@ __device__ static inline void st_async(
 // .type      = { .b32, .b64 }
 template <typename Type>
 __device__ static inline void st_async(
-  void* addr,
+  Type* addr,
   const Type (&value)[2],
   uint64_t* remote_bar);
 
 // st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [addr], value, [remote_bar];    // 3.  PTX ISA 81, SM_90
 template <typename B32>
 __device__ static inline void st_async(
-  void* addr,
+  B32* addr,
   const B32 (&value)[4],
   uint64_t* remote_bar);
 ```

@@ -50,12 +50,12 @@ __global__ void test_compilation() {
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
       // st.async.weak.shared::cluster.mbarrier::complete_tx::bytes{.type} [addr], value, [remote_bar];    // 1.
-      auto overload = static_cast<void (*)(void* , const int32_t& , uint64_t* )>(cuda::ptx::st_async);
+      auto overload = static_cast<void (*)(int32_t* , const int32_t& , uint64_t* )>(cuda::ptx::st_async);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
     if (non_eliminated_false()) {
       // st.async.weak.shared::cluster.mbarrier::complete_tx::bytes{.type} [addr], value, [remote_bar];    // 1.
-      auto overload = static_cast<void (*)(void* , const int64_t& , uint64_t* )>(cuda::ptx::st_async);
+      auto overload = static_cast<void (*)(int64_t* , const int64_t& , uint64_t* )>(cuda::ptx::st_async);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
@@ -65,12 +65,12 @@ __global__ void test_compilation() {
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
       // st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2{.type} [addr], value, [remote_bar]; // 2.
-      auto overload = static_cast<void (*)(void* , const int32_t (&)[2], uint64_t* )>(cuda::ptx::st_async);
+      auto overload = static_cast<void (*)(int32_t* , const int32_t (&)[2], uint64_t* )>(cuda::ptx::st_async);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
     if (non_eliminated_false()) {
       // st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2{.type} [addr], value, [remote_bar]; // 2.
-      auto overload = static_cast<void (*)(void* , const int64_t (&)[2], uint64_t* )>(cuda::ptx::st_async);
+      auto overload = static_cast<void (*)(int64_t* , const int64_t (&)[2], uint64_t* )>(cuda::ptx::st_async);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
@@ -80,7 +80,7 @@ __global__ void test_compilation() {
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
       // st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [addr], value, [remote_bar];    // 3.
-      auto overload = static_cast<void (*)(void* , const int32_t (&)[4], uint64_t* )>(cuda::ptx::st_async);
+      auto overload = static_cast<void (*)(int32_t* , const int32_t (&)[4], uint64_t* )>(cuda::ptx::st_async);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
