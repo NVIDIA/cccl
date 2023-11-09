@@ -31,7 +31,7 @@ jobs:
       - name: Calculate assignee
         id: calculate_assignee
         run: |
-          USERS=("allisonvacanti" "senior-zero" "jrhemstad" "elstehle" "wmaxey" "miscco" "griwes")
+          USERS=("allisonvacanti" "gevtushenko" "jrhemstad" "elstehle" "wmaxey" "miscco" "griwes")
           WEEK=$(date +%U)
           INDEX=$(( WEEK % 7 ))
           echo "ASSIGNEE=${USERS[$INDEX]}" >> $GITHUB_ENV

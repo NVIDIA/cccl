@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/block_exchange.cuh>
 #include <cub/util_ptx.cuh>
@@ -228,7 +230,7 @@ __device__ __forceinline__ void StoreDirectBlockedVectorized(int linear_tid,
 //@{
 
 /**
- * @brief Store a striped arrangement of data across the thread block into a 
+ * @brief Store a striped arrangement of data across the thread block into a
  *        linear segment of items.
  *
  * @striped
@@ -347,7 +349,7 @@ __device__ __forceinline__ void StoreDirectStriped(int linear_tid,
  *   <b>[inferred]</b> The random-access iterator type for output \iterator.
  *
  * @param[in] linear_tid
- *   A suitable 1D thread-identifier for the calling thread 
+ *   A suitable 1D thread-identifier for the calling thread
  *   (e.g., <tt>(threadIdx.y * blockDim.x) + linear_tid</tt> for 2D thread blocks)
  *
  * @param[in] block_itr
@@ -394,7 +396,7 @@ __device__ __forceinline__ void StoreDirectWarpStriped(int linear_tid,
  *   <b>[inferred]</b> The random-access iterator type for output \iterator.
  *
  * @param[in] linear_tid
- *   A suitable 1D thread-identifier for the calling thread 
+ *   A suitable 1D thread-identifier for the calling thread
  *   (e.g., <tt>(threadIdx.y * blockDim.x) + linear_tid</tt> for 2D thread blocks)
  *
  * @param[in] block_itr
@@ -485,7 +487,7 @@ enum BlockStoreAlgorithm
      *   - @p ITEMS_PER_THREAD is odd
      *   - The @p OutputIteratorT is not a simple pointer type
      *   - The block output offset is not quadword-aligned
-     *   - The data type @p T is not a built-in primitive or CUDA vector type 
+     *   - The data type @p T is not a built-in primitive or CUDA vector type
      *     (e.g., @p short, @p int2, @p double, @p float2, etc.)
      */
     BLOCK_STORE_VECTORIZE,
@@ -493,7 +495,7 @@ enum BlockStoreAlgorithm
     /**
      * @par Overview
      * A [<em>blocked arrangement</em>](index.html#sec5sec3) is locally
-     * transposed and then efficiently written to memory as a 
+     * transposed and then efficiently written to memory as a
      * [<em>striped arrangement</em>](index.html#sec5sec3).
      *
      * @par Performance Considerations
@@ -543,35 +545,35 @@ enum BlockStoreAlgorithm
 
 
 /**
- * @brief The BlockStore class provides [<em>collective</em>](index.html#sec0) data movement 
- *        methods for writing a [<em>blocked arrangement</em>](index.html#sec5sec3) of items 
- *        partitioned across a CUDA thread block to a linear segment of memory.  
+ * @brief The BlockStore class provides [<em>collective</em>](index.html#sec0) data movement
+ *        methods for writing a [<em>blocked arrangement</em>](index.html#sec5sec3) of items
+ *        partitioned across a CUDA thread block to a linear segment of memory.
  *        ![](block_store_logo.png)
  *
  * @ingroup BlockModule
  *
  * @ingroup UtilIo
  *
- * @tparam T                    
+ * @tparam T
  *   The type of data to be written.
  *
- * @tparam BLOCK_DIM_X          
+ * @tparam BLOCK_DIM_X
  *   The thread block length in threads along the X dimension
  *
- * @tparam ITEMS_PER_THREAD     
+ * @tparam ITEMS_PER_THREAD
  *   The number of consecutive items partitioned onto each thread.
  *
- * @tparam ALGORITHM            
- *   <b>[optional]</b> cub::BlockStoreAlgorithm tuning policy enumeration.  
+ * @tparam ALGORITHM
+ *   <b>[optional]</b> cub::BlockStoreAlgorithm tuning policy enumeration.
  *   default: cub::BLOCK_STORE_DIRECT.
  *
- * @tparam BLOCK_DIM_Y          
+ * @tparam BLOCK_DIM_Y
  *   <b>[optional]</b> The thread block length in threads along the Y dimension (default: 1)
  *
- * @tparam BLOCK_DIM_Z          
+ * @tparam BLOCK_DIM_Z
  *   <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
  *
- * @tparam LEGACY_PTX_ARCH      
+ * @tparam LEGACY_PTX_ARCH
  *   <b>[optional]</b> Unused.
  *
  * @par Overview
@@ -932,9 +934,9 @@ private:
             BlockExchange(temp_storage).BlockedToStriped(items);
             if (linear_tid == 0)
             {
-              // Move through volatile smem as a workaround to prevent RF spilling on 
+              // Move through volatile smem as a workaround to prevent RF spilling on
               // subsequent loads
-              temp_storage.valid_items = valid_items;     
+              temp_storage.valid_items = valid_items;
             }
             CTA_SYNC();
             StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
@@ -1021,7 +1023,7 @@ private:
             BlockExchange(temp_storage).BlockedToWarpStriped(items);
             if (linear_tid == 0)
             {
-              // Move through volatile smem as a workaround to prevent RF spilling on 
+              // Move through volatile smem as a workaround to prevent RF spilling on
               // subsequent loads
               temp_storage.valid_items = valid_items;
             }

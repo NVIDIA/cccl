@@ -34,11 +34,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/agent/agent_unique_by_key.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
@@ -227,7 +229,7 @@ struct DispatchUniqueByKey : SelectedPolicy
     /// Pointer to the output sequence of selected data items
     ValueOutputIteratorT d_values_out;
 
-    /// Pointer to the total number of items selected 
+    /// Pointer to the total number of items selected
     /// (i.e., length of @p d_keys_out or @p d_values_out)
     NumSelectedIteratorT d_num_selected_out;
 
@@ -300,16 +302,16 @@ struct DispatchUniqueByKey : SelectedPolicy
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
     CUB_RUNTIME_FUNCTION __forceinline__
     DispatchUniqueByKey(
-        void*                   d_temp_storage,     
-        size_t&                 temp_storage_bytes,  
-        KeyInputIteratorT       d_keys_in,            
-        ValueInputIteratorT     d_values_in,           
-        KeyOutputIteratorT      d_keys_out,             
-        ValueOutputIteratorT    d_values_out,         
-        NumSelectedIteratorT    d_num_selected_out,    
-        EqualityOpT             equality_op,            
-        OffsetT                 num_items,           
-        cudaStream_t            stream,               
+        void*                   d_temp_storage,
+        size_t&                 temp_storage_bytes,
+        KeyInputIteratorT       d_keys_in,
+        ValueInputIteratorT     d_values_in,
+        KeyOutputIteratorT      d_keys_out,
+        ValueOutputIteratorT    d_values_out,
+        NumSelectedIteratorT    d_num_selected_out,
+        EqualityOpT             equality_op,
+        OffsetT                 num_items,
+        cudaStream_t            stream,
         bool                    debug_synchronous
     ):
         d_temp_storage(d_temp_storage),
@@ -386,7 +388,7 @@ struct DispatchUniqueByKey : SelectedPolicy
 
             error = CubDebug(
               AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 break;
             }
@@ -420,7 +422,7 @@ struct DispatchUniqueByKey : SelectedPolicy
 
             // Check for failure to launch
             error = CubDebug(cudaPeekAtLastError());
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 break;
             }
@@ -439,7 +441,7 @@ struct DispatchUniqueByKey : SelectedPolicy
             int max_dim_x;
             error =
               CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 break;
             }
@@ -587,7 +589,7 @@ struct DispatchUniqueByKey : SelectedPolicy
             // Get PTX version
             int ptx_version = 0;
             error = CubDebug(PtxVersion(ptx_version));
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 break;
             }
@@ -607,7 +609,7 @@ struct DispatchUniqueByKey : SelectedPolicy
 
             // Dispatch to chained policy
             error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
-            if (cudaSuccess != error) 
+            if (cudaSuccess != error)
             {
                 break;
             }
@@ -620,17 +622,17 @@ struct DispatchUniqueByKey : SelectedPolicy
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
     CUB_RUNTIME_FUNCTION __forceinline__
     static cudaError_t Dispatch(
-        void*                   d_temp_storage,         
-        size_t                  &temp_storage_bytes,    
-        KeyInputIteratorT       d_keys_in,             
-        ValueInputIteratorT     d_values_in,            
-        KeyOutputIteratorT      d_keys_out,            
-        ValueOutputIteratorT    d_values_out,         
-        NumSelectedIteratorT    d_num_selected_out,  
-        EqualityOpT             equality_op,        
-        OffsetT                 num_items,              
-        cudaStream_t            stream,                
-        bool                    debug_synchronous)    
+        void*                   d_temp_storage,
+        size_t                  &temp_storage_bytes,
+        KeyInputIteratorT       d_keys_in,
+        ValueInputIteratorT     d_values_in,
+        KeyOutputIteratorT      d_keys_out,
+        ValueOutputIteratorT    d_values_out,
+        NumSelectedIteratorT    d_num_selected_out,
+        EqualityOpT             equality_op,
+        OffsetT                 num_items,
+        cudaStream_t            stream,
+        bool                    debug_synchronous)
     {
       CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 

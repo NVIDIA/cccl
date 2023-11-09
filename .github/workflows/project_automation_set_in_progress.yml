@@ -52,6 +52,8 @@ jobs:
       - name: Check if changes requested from a reviewer
         id: check_changes_requested
         if: github.event_name == 'pull_request_review'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ ${{ github.event.review.state }} != 'changes_requested' ]; then
             echo "Changes not requested, exiting"

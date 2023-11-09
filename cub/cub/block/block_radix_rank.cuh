@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
@@ -163,7 +165,7 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
  * @tparam BLOCK_DIM_Z
  *  <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
  *
- * @tparam LEGACY_PTX_ARCH      
+ * @tparam LEGACY_PTX_ARCH
  *  <b>[optional]</b> Unused.
  *
  * @par Overview
@@ -259,7 +261,7 @@ private:
         LOG_PACKING_RATIO           = Log2<PACKING_RATIO>::VALUE,
 
         // Always at least one lane
-        LOG_COUNTER_LANES           = CUB_MAX((int(RADIX_BITS) - int(LOG_PACKING_RATIO)), 0),                
+        LOG_COUNTER_LANES           = CUB_MAX((int(RADIX_BITS) - int(LOG_PACKING_RATIO)), 0),
         COUNTER_LANES               = 1 << LOG_COUNTER_LANES,
 
         // The number of packed counters per thread (plus one for padding)
@@ -559,8 +561,8 @@ public:
      *
      * @param[out] exclusive_digit_prefix
      *   The exclusive prefix sum for the digits
-     *   [(threadIdx.x * BINS_TRACKED_PER_THREAD) 
-     *                   ... 
+     *   [(threadIdx.x * BINS_TRACKED_PER_THREAD)
+     *                   ...
      *    (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
      */
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
@@ -721,7 +723,7 @@ public:
      *********************************************************************/
     //@{
 
-    /** 
+    /**
      * @brief Computes the count of keys for each digit value, and calls the
      *        callback with the array of key counts.
      *
