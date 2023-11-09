@@ -47,6 +47,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 #include <cub/detail/device_synchronize.cuh>
 #include <cub/util_debug.cuh>
+#include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
@@ -129,18 +130,25 @@ public:
   using agent_policy_t = cub::detail::conditional_t<uses_fallback_policy, FallbackAgentPolicyT, DefaultAgentPolicyT>;
 
 private:
+  // Per-block virtual shared memory may be padded to make sure vsmem is an integer multiple of `line_size`
+  static constexpr std::size_t line_size = 128;
+
   // The amount of shared memory or virtual shared memory required by the algorithm's agent
-  static constexpr std::size_t required_shmem = sizeof(typename agent_t::TempStorage);
+  static constexpr std::size_t required_smem = sizeof(typename agent_t::TempStorage);
 
   // Whether we need to allocate global memory-backed virtual shared memory
-  static constexpr bool needs_vsmem = required_shmem > max_smem_per_block;
+  static constexpr bool needs_vsmem = required_smem > max_smem_per_block;
+
+  // Padding bytes to an integer multiple of `line_size`. Only applies to virtual shared memory
+  static constexpr std::size_t padding_bytes =
+    (required_smem % line_size == 0) ? 0 : (line_size - (required_smem % line_size));
 
 public:
   // Type alias to be used for static temporary storage declaration within the algorithm's kernel
   using static_temp_storage_t = cub::detail::conditional_t<needs_vsmem, cub::NullType, typename agent_t::TempStorage>;
 
-  // The amount of global memory-backed virtual shared memory needed
-  static constexpr std::size_t vsmem_per_block = needs_vsmem ? required_shmem : 0;
+  // The amount of global memory-backed virtual shared memory needed, padded to an integer multiple of 128 bytes
+  static constexpr std::size_t vsmem_per_block = needs_vsmem ? (required_smem + padding_bytes) : 0;
 
   /**
    * @brief Used from within the device algorithm's kernel to get the temporary storage that can be
@@ -189,22 +197,14 @@ public:
   static __device__ __forceinline__ bool discard_temp_storage(typename agent_t::TempStorage& temp_storage)
   {
     // Ensure all threads finished using temporary storage
-    __syncthreads();
+    CTA_SYNC();
 
-    constexpr std::size_t line_size = 128;
     const std::size_t linear_tid    = threadIdx.x;
     const std::size_t block_stride  = line_size * blockDim.x;
 
     char* ptr = reinterpret_cast<char*>(&temp_storage);
-
-    const auto size = static_cast<std::size_t>(sizeof(typename agent_t::TempStorage));
-    auto ptr_end    = ptr + size;
-    ptr_end -= (reinterpret_cast<std::uintptr_t>(ptr_end) % line_size);
-
-    std::size_t misalignment   = reinterpret_cast<std::uintptr_t>(ptr) % line_size;
-    std::size_t aligned_offset = (misalignment == 0) ? 0ULL : (line_size - misalignment);
-    ptr += aligned_offset;
-
+    auto ptr_end    = ptr + vsmem_per_block;
+    
     // 128 byte-aligned virtual shared memory discard
     for (auto thread_ptr = ptr + (linear_tid * line_size); thread_ptr < ptr_end; thread_ptr += block_stride)
     {

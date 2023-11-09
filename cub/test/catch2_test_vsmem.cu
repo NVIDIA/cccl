@@ -454,7 +454,7 @@ CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
   dummy_algorithm(
     in_ptr, out_ptr, num_items, thrust::raw_pointer_cast(device_kernel_test_info.data()), launch_config_info);
 
-  // Make the algorithm worked correctly
+  // Make sure the algorithm worked correctly
   REQUIRE(in == out);
 
   // Make sure the kernel information retrieved from the vsmem helper is correct
@@ -466,5 +466,13 @@ CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
   // Make sure the launch configuration information retrieved from the vsmem helper is correct
   REQUIRE(launch_config_info->config_assumes_tile_size == expected_tile_size);
   REQUIRE(launch_config_info->config_assumes_block_threads == expected_block_threads);
-  REQUIRE(launch_config_info->config_vsmem_per_block == expected_vsmem_per_block);
+  if (expected_vsmem_per_block == 0)
+  {
+    REQUIRE(launch_config_info->config_vsmem_per_block == 0);
+  }
+  else
+  {
+    // The virtual shared memory helper pads vsmem to a multiple of a line size, hence the range check
+    REQUIRE(launch_config_info->config_vsmem_per_block >= expected_vsmem_per_block);
+  }
 }
