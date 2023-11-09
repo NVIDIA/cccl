@@ -4,7 +4,7 @@ set(cpp_std_versions 11 14 17 20)
 
 set(cpp_11_exclusions "cuda/annotated_ptr" "cuda/std/mdspan")
 set(cpp_14_exclusions "cuda/annotated_ptr" "cuda/std/mdspan")
-set(cpp_17_exclusions "cuda/annotated_ptr")
+set(cpp_17_exclusions "cuda/annotated_ptr" "cuda/std/mdspan")
 set(cpp_20_exclusions "cuda/annotated_ptr")
 
 function(libcudacxx_add_standalone_header_test test_file_output_var header_under_test version)

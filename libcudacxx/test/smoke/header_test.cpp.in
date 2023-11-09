@@ -6,6 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if defined(_MSC_VER)
+# define NOMINMAX
+#endif
+
 #include <@header_under_test@>
 
 int main() {
