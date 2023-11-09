@@ -1,11 +1,20 @@
 add_custom_target(libcudacxx.test.smoke)
 
-set(cpp_std_versions 11 14 17 20)
+if (MSVC)
+    if (MSVC_VERSION GREATER 1920)
+        set(cpp_std_versions 14 17 20)
+    else()
+        set(cpp_std_versions 14 17)
+    endif()
+else()
+    set(cpp_std_versions 11 14 17 20)
+endif()
 
 set(cpp_11_exclusions "cuda/annotated_ptr" "cuda/std/mdspan")
 set(cpp_14_exclusions "cuda/annotated_ptr" "cuda/std/mdspan")
 set(cpp_17_exclusions "cuda/annotated_ptr" "cuda/std/mdspan")
 set(cpp_20_exclusions "cuda/annotated_ptr")
+
 
 function(libcudacxx_add_standalone_header_test test_file_output_var header_under_test version)
     # ex: build/.../header_tests/cuda/std/version.cpp
