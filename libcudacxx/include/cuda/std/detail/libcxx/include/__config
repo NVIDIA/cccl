@@ -1006,6 +1006,9 @@ typedef __char32_t char32_t;
 #define _LIBCUDACXX_GCC_MATH_IN_STD
 #endif
 
+#if _GNUC_VER < 700
+#  define _LIBCUDACXX_HAS_NO_CXX17_CONSTEXPR_IF
+#endif
 // NVCC cannot properly handle some deductions occuring within NOEXCEPT
 // C++17 mode causes reference instatiation errors in tuple
 #if (_GNUC_VER >= 702 && _GNUC_VER <= 805)
@@ -1737,6 +1740,12 @@ typedef unsigned int   char32_t;
 #  define _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 constexpr
 #else
 #  define _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+#endif
+
+#if _LIBCUDACXX_STD_VER > 14 && !defined (_LIBCUDACXX_HAS_NO_CXX17_CONSTEXPR_IF)
+#  define _LIBCUDACXX_CONSTEXPR_IF constexpr
+#else
+#  define _LIBCUDACXX_CONSTEXPR_IF
 #endif
 
 // Macros to enter and leave a state where deprecation warnings are suppressed.

@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _LIBCUDACXX_STD_VER > 14
 
 struct default_sentinel_t { };
-inline constexpr default_sentinel_t default_sentinel{};
+_LIBCUDACXX_CPO_ACCESSIBILITY default_sentinel_t default_sentinel{};
 
 #endif // _LIBCUDACXX_STD_VER > 14
 

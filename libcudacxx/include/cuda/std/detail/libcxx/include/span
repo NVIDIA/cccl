@@ -227,6 +227,9 @@ public:
 
     static constexpr size_type extent = _Extent;
 
+    template <size_t _Offset, size_t _Count = dynamic_extent>
+    using __subspan_t = span<element_type, _Count != dynamic_extent ? _Count : extent - _Offset>;
+
 // [span.cons], span constructors, copy, assignment, and destructor
     template <size_t _Sz = _Extent, enable_if_t<_Sz == 0, int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY constexpr span() noexcept : __data{nullptr} {}
@@ -318,7 +321,7 @@ public:
     template <size_t _Offset, size_t _Count = dynamic_extent>
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr auto subspan() const noexcept
-        -> span<element_type, _Count != dynamic_extent ? _Count : _Extent - _Offset>
+        -> __subspan_t<_Offset, _Count>
     {
         static_assert(_Offset <= _Extent, "span<T, N>::subspan<Offset, Count>(): Offset out of range");
         static_assert(_Count == dynamic_extent || _Count <= _Extent - _Offset, "span<T, N>::subspan<Offset, Count>(): Offset + Count out of range");

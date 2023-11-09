@@ -538,7 +538,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   }
 };
 
-#if _LIBCUDACXX_STD_VER >= 17
+#if !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 template <class _Tp, class... _Args, class = __enable_if_t<(is_same_v<_Tp, _Args> && ...)> >
 _LIBCUDACXX_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
 #endif // _LIBCUDACXX_STD_VER >= 17
