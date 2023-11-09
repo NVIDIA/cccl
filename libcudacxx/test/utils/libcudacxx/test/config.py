@@ -812,7 +812,7 @@ class Configuration(object):
             self.cxx.flags += ['-m' + name + '-version-min=' + version]
 
         # Add includes for support headers used in the tests.
-        support_path = os.path.join(self.libcudacxx_src_root, 'test/support')
+        support_path = os.path.join(self.libcudacxx_src_root, 'test', 'support')
         self.cxx.compile_flags += ['-I' + support_path]
 
         # Add includes for the PSTL headers
@@ -982,7 +982,7 @@ class Configuration(object):
         if not self.get_lit_bool('enable_filesystem', default=True):
             return
 
-        static_env = os.path.join(self.libcudacxx_src_root, 'test', 'std',
+        static_env = os.path.join(self.libcudacxx_src_root, 'test', 'libcudacxx', 'std',
                                   'input.output', 'filesystems', 'Inputs', 'static_test_env')
         static_env = os.path.realpath(static_env)
         assert os.path.isdir(static_env)
@@ -1393,7 +1393,7 @@ class Configuration(object):
         # Configure run env substitution.
         sub.append(('%run', '%t.exe'))
         # Configure not program substitutions
-        not_py = os.path.join(self.libcudacxx_src_root, 'utils', 'not.py')
+        not_py = os.path.join(self.libcudacxx_src_root, 'test', 'utils', 'not.py')
         not_str = '%s %s ' % (pipes.quote(sys.executable), pipes.quote(not_py))
         sub.append(('not ', not_str))
         if self.get_lit_conf('libcudacxx_gdb'):
