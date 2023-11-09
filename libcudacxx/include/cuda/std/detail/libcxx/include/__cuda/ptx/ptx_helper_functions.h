@@ -24,39 +24,79 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx__as_conv_unavailable_in_host_code();
+
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_smem(const void* __ptr)
 {
   // Consider adding debug asserts here.
-  return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
+  NV_DISPATCH_TARGET(
+    NV_IS_DEVICE, (
+      return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
+    ),
+    NV_ANY_TARGET, (
+      __ptr;
+      __cuda_ptx__as_conv_unavailable_in_host_code();
+    )
+  )
 }
 
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_remote_dsmem(const void* __ptr)
 {
   // No difference in implementation to __as_ptr_smem.
   // Consider adding debug asserts here.
-  return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
+  NV_DISPATCH_TARGET(
+    NV_IS_DEVICE, (
+      return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
+    ),
+    NV_ANY_TARGET, (
+      __ptr;
+      __cuda_ptx__as_conv_unavailable_in_host_code();
+    )
+  )
 }
 
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
 {
   // Consider adding debug asserts here.
-  return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr));
+  NV_DISPATCH_TARGET(
+    NV_IS_DEVICE, (
+      return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr));
+    ),
+    NV_ANY_TARGET, (
+      __ptr;
+      __cuda_ptx__as_conv_unavailable_in_host_code();
+    )
+  )
 }
 
 template <typename _Tp>
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
 {
   static_assert(sizeof(_Tp) == 4, "");
-  // Consider using std::bitcast
-  return *reinterpret_cast<_CUDA_VSTD::uint32_t*>(&__val);
+  NV_DISPATCH_TARGET(
+    NV_IS_DEVICE, (
+      // Consider using std::bitcast
+      return *reinterpret_cast<_CUDA_VSTD::uint32_t*>(&__val);
+    ),
+    NV_ANY_TARGET, (
+      __cuda_ptx__as_conv_unavailable_in_host_code();
+    )
+  )
 }
 
 template <typename _Tp>
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val)
 {
   static_assert(sizeof(_Tp) == 8, "");
-  // Consider using std::bitcast
-  return *reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__val);
+  NV_DISPATCH_TARGET(
+    NV_IS_DEVICE, (
+      // Consider using std::bitcast
+      return *reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__val);
+    ),
+    NV_ANY_TARGET, (
+      __cuda_ptx__as_conv_unavailable_in_host_code();
+    )
+  )
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX

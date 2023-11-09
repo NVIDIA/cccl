@@ -635,55 +635,62 @@ _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
 #endif
     static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
 
-    _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
-    _LIBCUDACXX_DEBUG_ASSERT(__isShared(__dest), "dest must point to shared memory.");
-    _LIBCUDACXX_DEBUG_ASSERT(__isGlobal(__src), "src must point to global memory.");
+    NV_IF_TARGET(
+        NV_PROVIDES_SM_90, (
+            _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+            _LIBCUDACXX_DEBUG_ASSERT(__isShared(__dest), "dest must point to shared memory.");
+            _LIBCUDACXX_DEBUG_ASSERT(__isGlobal(__src), "src must point to global memory.");
 
-    auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
-    if (__isShared(__dest) && __isGlobal(__src)) {
-        asm volatile(
-            "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
-            :
-            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
-              "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
-              "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
-              "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh))
-            : "memory");
-    } else {
-        // memcpy_async_tx only supports copying from global to shared
-        // or from shared to remote cluster dsmem. To copy to remote
-        // dsmem, we need to arrive on a cluster-scoped barrier, which
-        // is not yet implemented. So we trap in this case as well.
-        _LIBCUDACXX_UNREACHABLE();
-    }
+            auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+            if (__isShared(__dest) && __isGlobal(__src)) {
+                asm volatile(
+                    "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
+                    :
+                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+                    "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+                    "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
+                    "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh))
+                    : "memory");
+            } else {
+                // memcpy_async_tx only supports copying from global to shared
+                // or from shared to remote cluster dsmem. To copy to remote
+                // dsmem, we need to arrive on a cluster-scoped barrier, which
+                // is not yet implemented. So we trap in this case as well.
+                _LIBCUDACXX_UNREACHABLE();
+            }
 
-    return async_contract_fulfillment::async;
+            return async_contract_fulfillment::async;
+        )
+    )
 }
 
 _LIBCUDACXX_DEVICE inline
 void barrier_expect_tx(
     barrier<thread_scope_block> & __b,
     _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
+    NV_IF_TARGET(
+        NV_PROVIDES_SM_90, (
+            _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+            _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+            // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
+            _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
 
-    _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
-    _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
-    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
-    _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
-
-    // We do not check for the statespace of the barrier here. This is
-    // on purpose. This allows debugging tools like memcheck/racecheck
-    // to detect that we are passing a pointer with the wrong state
-    // space to mbarrier.arrive. If we checked for the state space here,
-    // and __trap() if wrong, then those tools would not be able to help
-    // us in release builds. In debug builds, the error would be caught
-    // by the asserts at the top of this function.
-    auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
-    asm (
-        "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
-        :
-        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
-          "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
-        : "memory");
+            // We do not check for the statespace of the barrier here. This is
+            // on purpose. This allows debugging tools like memcheck/racecheck
+            // to detect that we are passing a pointer with the wrong state
+            // space to mbarrier.arrive. If we checked for the state space here,
+            // and __trap() if wrong, then those tools would not be able to help
+            // us in release builds. In debug builds, the error would be caught
+            // by the asserts at the top of this function.
+            auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+            asm (
+                "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
+                :
+                : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
+                "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
+                : "memory");
+        )
+    )
 }
 #endif // __CUDA_MINIMUM_ARCH__
 
@@ -924,59 +931,64 @@ struct __memcpy_completion_impl {
 
 #if (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
 template <typename _Group>
-inline __device__
+inline _LIBCUDACXX_DEVICE
 void __cp_async_bulk_shared_global(const _Group &__g, char * __dest, const char * __src, size_t __size, uint64_t *__bar_handle) {
-    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
-    if (__g.thread_rank() == 0) {
-        asm volatile(
-            "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
-            :
-            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
-              "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
-              "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
-              "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bar_handle)))
-            : "memory");
-    }
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (
+        // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
+        if (__g.thread_rank() == 0) {
+            asm volatile(
+                "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
+                :
+                : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+                "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+                "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
+                "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bar_handle)))
+                : "memory");
+        }
+    ))
 }
 #endif // __CUDA_MINIMUM_ARCH__
 
 #if (defined(__CUDA_MINIMUM_ARCH__) && 800 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
 template <size_t _Copy_size>
-inline __device__
+inline _LIBCUDACXX_DEVICE
 void __cp_async_shared_global(char * __dest, const char * __src) {
-    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
-
     // If `if constexpr` is not available, this function gets instantiated even
     // if is not called. Do not static_assert in that case.
-#if _LIBCUDACXX_STD_VER >= 17
+    #if _LIBCUDACXX_STD_VER >= 17
     static_assert(_Copy_size == 4 || _Copy_size == 8 || _Copy_size == 16, "cp.async.shared.global requires a copy size of 4, 8, or 16.");
-#endif // _LIBCUDACXX_STD_VER >= 17
+    #endif // _LIBCUDACXX_STD_VER >= 17
 
-    asm volatile(
-        "cp.async.ca.shared.global [%0], [%1], %2, %2;"
-        :
-        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
-          "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
-          "n"(_Copy_size)
-        : "memory");
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (
+        // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
+        asm volatile(
+            "cp.async.ca.shared.global [%0], [%1], %2, %2;"
+            :
+            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+            "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+            "n"(_Copy_size)
+            : "memory");
+    ))
 }
 
 template <>
-inline __device__
+inline _LIBCUDACXX_DEVICE
 void __cp_async_shared_global<16>(char * __dest, const char * __src) {
-    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
-    // When copying 16 bytes, it is possible to skip L1 cache (.cg).
-    asm volatile(
-        "cp.async.cg.shared.global [%0], [%1], %2, %2;"
-        :
-        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
-          "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
-          "n"(16)
-        : "memory");
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (
+        // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
+        // When copying 16 bytes, it is possible to skip L1 cache (.cg).
+        asm volatile(
+            "cp.async.cg.shared.global [%0], [%1], %2, %2;"
+            :
+            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+            "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+            "n"(16)
+            : "memory");
+    ))
 }
 
 template <size_t _Alignment, typename _Group>
-inline __device__
+inline _LIBCUDACXX_DEVICE
 void __cp_async_shared_global_mechanism(_Group __g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
     // If `if constexpr` is not available, this function gets instantiated even
     // if is not called. Do not static_assert in that case.
@@ -1077,9 +1089,9 @@ template<_CUDA_VSTD::size_t _Align, typename _Group>
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
 __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (
-        const bool __can_use_complete_tx = __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
-        _LIBCUDACXX_DEBUG_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle), "Pass non-null bar_handle if and only if can_use_complete_tx.");
         if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 16) {
+            const bool __can_use_complete_tx = __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
+            _LIBCUDACXX_DEBUG_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle), "Pass non-null bar_handle if and only if can_use_complete_tx.");
             if (__can_use_complete_tx && __isShared(__bar_handle)) {
                 __cp_async_bulk_shared_global(__group, __dest_char, __src_char, __size, __bar_handle);
                 return __completion_mechanism::__mbarrier_complete_tx;
