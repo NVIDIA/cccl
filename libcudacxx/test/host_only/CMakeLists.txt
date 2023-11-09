@@ -1,4 +1,4 @@
-add_custom_target(libcudacxx_tu_tests)
+add_custom_target(libcudacxx.test.smoke)
 
 set(cpp_std_versions 11 14 17 20)
 
@@ -33,12 +33,11 @@ function(libcudacxx_add_standalone_header_test test_file_output_var header_under
         set_target_properties(${executable_name} PROPERTIES CXX_STANDARD ${version})
         set_target_properties(${executable_name} PROPERTIES CXX_STANDARD_REQUIRED ON)
         set_target_properties(${executable_name} PROPERTIES CXX_EXTENSIONS OFF)
-        add_dependencies(libcudacxx_tu_tests ${executable_name})
+        add_dependencies(libcudacxx.test.smoke ${executable_name})
     endif()
 
 endfunction()
 
-# Don'libcudacxx generate CUDA targets, they fail currently.
 file(GLOB cuda_headers     LIST_DIRECTORIES false RELATIVE "${libcudacxx_SOURCE_DIR}/include" "${libcudacxx_SOURCE_DIR}/include/cuda/*")
 file(GLOB cuda_std_headers LIST_DIRECTORIES false RELATIVE "${libcudacxx_SOURCE_DIR}/include" "${libcudacxx_SOURCE_DIR}/include/cuda/std/*")
 
