@@ -692,7 +692,8 @@ _LIBCUDACXX_DEVICE static inline void st_async(
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red-async
 
 /*
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u32 [dest], value, [remote_bar]; // 1.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
 // .op        = { .inc }
 template <typename=void>
 __device__ static inline void red_async(
@@ -710,11 +711,12 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   const _CUDA_VSTD::uint32_t& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
+  // __type == type_u32 (due to parameter type constraint)
   // __op == op_inc (due to parameter type constraint)
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
-      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.inc.u32 [%0], %1, [%2]; // 1. "
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.inc.u32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
         "r"(__value),
@@ -730,7 +732,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 #endif // __cccl_ptx_isa >= 810
 
 /*
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u32 [dest], value, [remote_bar]; // 1.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
 // .op        = { .dec }
 template <typename=void>
 __device__ static inline void red_async(
@@ -748,11 +751,12 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   const _CUDA_VSTD::uint32_t& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
+  // __type == type_u32 (due to parameter type constraint)
   // __op == op_dec (due to parameter type constraint)
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
-      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.dec.u32 [%0], %1, [%2]; // 1. "
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.dec.u32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
         "r"(__value),
@@ -768,7 +772,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 #endif // __cccl_ptx_isa >= 810
 
 /*
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u32 [dest], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
 // .op        = { .min }
 template <typename=void>
 __device__ static inline void red_async(
@@ -786,11 +791,12 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   const _CUDA_VSTD::uint32_t& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
+  // __type == type_u32 (due to parameter type constraint)
   // __op == op_min (due to parameter type constraint)
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
-      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.u32 [%0], %1, [%2]; // 2. "
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.u32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
         "r"(__value),
@@ -806,45 +812,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 #endif // __cccl_ptx_isa >= 810
 
 /*
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.s32 [dest], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
-// .op        = { .min }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_min_t,
-  int32_t* dest,
-  const int32_t& value,
-  uint64_t* remote_bar);
-*/
-#if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
-template <typename=void>
-_LIBCUDACXX_DEVICE static inline void red_async(
-  op_min_t,
-  _CUDA_VSTD::int32_t* __dest,
-  const _CUDA_VSTD::int32_t& __value,
-  _CUDA_VSTD::uint64_t* __remote_bar)
-{
-  // __op == op_min (due to parameter type constraint)
-
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    asm (
-      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.s32 [%0], %1, [%2]; // 2. "
-      :
-      : "r"(__as_ptr_remote_dsmem(__dest)),
-        "r"(__value),
-        "r"(__as_ptr_remote_dsmem(__remote_bar))
-      : "memory"
-    );
-
-  ),(
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
-  ));
-}
-#endif // __cccl_ptx_isa >= 810
-
-/*
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u32 [dest], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
 // .op        = { .max }
 template <typename=void>
 __device__ static inline void red_async(
@@ -862,11 +831,12 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   const _CUDA_VSTD::uint32_t& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
+  // __type == type_u32 (due to parameter type constraint)
   // __op == op_max (due to parameter type constraint)
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
-      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.u32 [%0], %1, [%2]; // 2. "
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.u32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
         "r"(__value),
@@ -882,12 +852,93 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 #endif // __cccl_ptx_isa >= 810
 
 /*
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.s32 [dest], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
+// .op        = { .add }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_add_t,
+  uint32_t* dest,
+  const uint32_t& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_add_t,
+  _CUDA_VSTD::uint32_t* __dest,
+  const _CUDA_VSTD::uint32_t& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
+
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .s32 }
+// .op        = { .min }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_min_t,
+  uint32_t* dest,
+  const int32_t& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_min_t,
+  _CUDA_VSTD::uint32_t* __dest,
+  const _CUDA_VSTD::int32_t& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
+
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.s32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .s32 }
 // .op        = { .max }
 template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_max_t,
-  int32_t* dest,
+  uint32_t* dest,
   const int32_t& value,
   uint64_t* remote_bar);
 */
@@ -896,15 +947,16 @@ extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_b
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_max_t,
-  _CUDA_VSTD::int32_t* __dest,
+  _CUDA_VSTD::uint32_t* __dest,
   const _CUDA_VSTD::int32_t& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
+  // __type == type_s32 (due to parameter type constraint)
   // __op == op_max (due to parameter type constraint)
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
-      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.s32 [%0], %1, [%2]; // 2. "
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.s32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
         "r"(__value),
@@ -920,7 +972,48 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 #endif // __cccl_ptx_isa >= 810
 
 /*
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.b32 [dest], value, [remote_bar]; // 3.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .s32 }
+// .op        = { .add }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_add_t,
+  uint32_t* dest,
+  const int32_t& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_add_t,
+  _CUDA_VSTD::uint32_t* __dest,
+  const _CUDA_VSTD::int32_t& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
+
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.s32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .b32 }
 // .op        = { .and }
 template <typename B32>
 __device__ static inline void red_async(
@@ -938,12 +1031,13 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   const _B32& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
+  // __type == type_b32 (due to parameter type constraint)
   // __op == op_and_op (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
-      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.and.b32 [%0], %1, [%2]; // 3. "
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.and.b32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
         "r"(__as_b32(__value)),
@@ -959,7 +1053,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 #endif // __cccl_ptx_isa >= 810
 
 /*
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.b32 [dest], value, [remote_bar]; // 3.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .b32 }
 // .op        = { .or }
 template <typename B32>
 __device__ static inline void red_async(
@@ -977,12 +1072,13 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   const _B32& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
+  // __type == type_b32 (due to parameter type constraint)
   // __op == op_or_op (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
-      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.or.b32 [%0], %1, [%2]; // 3. "
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.or.b32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
         "r"(__as_b32(__value)),
@@ -998,7 +1094,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 #endif // __cccl_ptx_isa >= 810
 
 /*
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.b32 [dest], value, [remote_bar]; // 3.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .b32 }
 // .op        = { .xor }
 template <typename B32>
 __device__ static inline void red_async(
@@ -1016,12 +1113,13 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   const _B32& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
+  // __type == type_b32 (due to parameter type constraint)
   // __op == op_xor_op (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
-      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.xor.b32 [%0], %1, [%2]; // 3. "
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.xor.b32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
         "r"(__as_b32(__value)),
@@ -1037,57 +1135,37 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 #endif // __cccl_ptx_isa >= 810
 
 /*
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type} [dest], value, [remote_bar]; // 4.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u64 }
 // .op        = { .add }
-// .type      = { .u32, .s32, .u64 }
-template <typename Type>
+template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_add_t,
-  Type* dest,
-  const Type& value,
+  uint64_t* dest,
+  const uint64_t& value,
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
-template <typename _Type>
+template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_add_t,
-  _Type* __dest,
-  const _Type& __value,
+  _CUDA_VSTD::uint64_t* __dest,
+  const _CUDA_VSTD::uint64_t& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
+  // __type == type_u64 (due to parameter type constraint)
   // __op == op_add (due to parameter type constraint)
-  static_assert(_CUDA_VSTD::is_same<_Type, _CUDA_VSTD::uint32_t>::value || _CUDA_VSTD::is_same<_Type, _CUDA_VSTD::int32_t>::value || _CUDA_VSTD::is_same<_Type, _CUDA_VSTD::uint64_t>::value, "");
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_CUDA_VSTD::is_same<_Type, _CUDA_VSTD::uint32_t>::value) {
-      asm (
-        "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u32 [%0], %1, [%2]; // 4. "
-        :
-        : "r"(__as_ptr_remote_dsmem(__dest)),
-          "r"(__value),
-          "r"(__as_ptr_remote_dsmem(__remote_bar))
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_CUDA_VSTD::is_same<_Type, _CUDA_VSTD::int32_t>::value) {
-      asm (
-        "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.s32 [%0], %1, [%2]; // 4. "
-        :
-        : "r"(__as_ptr_remote_dsmem(__dest)),
-          "r"(__value),
-          "r"(__as_ptr_remote_dsmem(__remote_bar))
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_CUDA_VSTD::is_same<_Type, _CUDA_VSTD::uint64_t>::value) {
-      asm (
-        "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64 [%0], %1, [%2]; // 4. "
-        :
-        : "r"(__as_ptr_remote_dsmem(__dest)),
-          "l"(__value),
-          "r"(__as_ptr_remote_dsmem(__remote_bar))
-        : "memory"
-      );
-    }
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "l"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
