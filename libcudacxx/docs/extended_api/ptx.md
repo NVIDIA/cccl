@@ -490,22 +490,22 @@ int main() {
 
 ### [9.7.12. Parallel Synchronization and Communication Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions)
 
-| Instruction                              | Available in libcu++ |
-|------------------------------------------|----------------------|
-| [`bar, barrier`]                         | No                   |
-| [`bar.warp.sync`]                        | No                   |
-| [`barrier.cluster`]                      | No                   |
-| [`membar/fence`]                         | No                   |
-| [`atom`]                                 | No                   |
-| [`red`]                                  | No                   |
-| [`red.async`]                            | No                   |
-| [`vote (deprecated)`]                    | No                   |
-| [`vote.sync`]                            | No                   |
-| [`match.sync`]                           | No                   |
-| [`activemask`]                           | No                   |
-| [`redux.sync`]                           | No                   |
-| [`griddepcontrol`]                       | No                   |
-| [`elect.sync`]                           | No                   |
+| Instruction           | Available in libcu++    |
+|-----------------------|-------------------------|
+| [`bar, barrier`]      | No                      |
+| [`bar.warp.sync`]     | No                      |
+| [`barrier.cluster`]   | No                      |
+| [`membar/fence`]      | No                      |
+| [`atom`]              | No                      |
+| [`red`]               | No                      |
+| [`red.async`]         | CTK-FUTURE, CCCL v2.3.0 |
+| [`vote (deprecated)`] | No                      |
+| [`vote.sync`]         | No                      |
+| [`match.sync`]        | No                      |
+| [`activemask`]        | No                      |
+| [`redux.sync`]        | No                      |
+| [`griddepcontrol`]    | No                      |
+| [`elect.sync`]        | No                      |
 
 [`bar, barrier`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-barrier
 [`bar.warp.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-warp-sync
@@ -513,7 +513,7 @@ int main() {
 [`membar/fence`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence
 [`atom`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom
 [`red`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red
-[`red.async`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red-async
+[`red.async`]: #redasync
 [`vote (deprecated)`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-vote-deprecated
 [`vote.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-vote-sync
 [`match.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-match-sync
@@ -521,6 +521,104 @@ int main() {
 [`redux.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-redux-sync
 [`griddepcontrol`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-griddepcontrol
 [`elect.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-elect-sync
+
+#### `red.async`
+
+-  PTX ISA: [`red.async`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red-async)
+
+**red_async**:
+```cuda
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u32 [dest], value, [remote_bar]; // 1.  PTX ISA 81, SM_90
+// .op        = { .inc }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_inc_t,
+  uint32_t* dest,
+  const uint32_t& value,
+  uint64_t* remote_bar);
+
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u32 [dest], value, [remote_bar]; // 1.  PTX ISA 81, SM_90
+// .op        = { .dec }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_dec_t,
+  uint32_t* dest,
+  const uint32_t& value,
+  uint64_t* remote_bar);
+
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u32 [dest], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
+// .op        = { .min }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_min_t,
+  uint32_t* dest,
+  const uint32_t& value,
+  uint64_t* remote_bar);
+
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.s32 [dest], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
+// .op        = { .min }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_min_t,
+  int32_t* dest,
+  const int32_t& value,
+  uint64_t* remote_bar);
+
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u32 [dest], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
+// .op        = { .max }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_max_t,
+  uint32_t* dest,
+  const uint32_t& value,
+  uint64_t* remote_bar);
+
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.s32 [dest], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
+// .op        = { .max }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_max_t,
+  int32_t* dest,
+  const int32_t& value,
+  uint64_t* remote_bar);
+
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.b32 [dest], value, [remote_bar]; // 3.  PTX ISA 81, SM_90
+// .op        = { .and }
+template <typename B32>
+__device__ static inline void red_async(
+  cuda::ptx::op_and_op_t,
+  B32* dest,
+  const B32& value,
+  uint64_t* remote_bar);
+
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.b32 [dest], value, [remote_bar]; // 3.  PTX ISA 81, SM_90
+// .op        = { .or }
+template <typename B32>
+__device__ static inline void red_async(
+  cuda::ptx::op_or_op_t,
+  B32* dest,
+  const B32& value,
+  uint64_t* remote_bar);
+
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.b32 [dest], value, [remote_bar]; // 3.  PTX ISA 81, SM_90
+// .op        = { .xor }
+template <typename B32>
+__device__ static inline void red_async(
+  cuda::ptx::op_xor_op_t,
+  B32* dest,
+  const B32& value,
+  uint64_t* remote_bar);
+
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type} [dest], value, [remote_bar]; // 4.  PTX ISA 81, SM_90
+// .op        = { .add }
+// .type      = { .u32, .s32, .u64 }
+template <typename Type>
+__device__ static inline void red_async(
+  cuda::ptx::op_add_t,
+  Type* dest,
+  const Type& value,
+  uint64_t* remote_bar);
+```
 
 ### [9.7.12.15. Parallel Synchronization and Communication Instructions: mbarrier](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier)
 
