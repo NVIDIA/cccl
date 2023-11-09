@@ -303,6 +303,9 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 
 -  PTX ISA: [`st.async`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st-async)
 
+**NOTE.** Alignment of `addr` must be a multiple of vector size. For instance,
+the `addr` supplied to the `v2.b32` variant must be aligned to `2 x 4 = 8` bytes.
+
 **st_async**:
 ```cuda
 // st.async.weak.shared::cluster.mbarrier::complete_tx::bytes{.type} [addr], value, [remote_bar];    // 1.  PTX ISA 81, SM_90
