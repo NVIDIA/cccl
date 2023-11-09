@@ -417,7 +417,8 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 
 **red_async**:
 ```cuda
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u32 [dest], value, [remote_bar]; // 1.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
 // .op        = { .inc }
 template <typename=void>
 __device__ static inline void red_async(
@@ -426,7 +427,8 @@ __device__ static inline void red_async(
   const uint32_t& value,
   uint64_t* remote_bar);
 
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u32 [dest], value, [remote_bar]; // 1.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
 // .op        = { .dec }
 template <typename=void>
 __device__ static inline void red_async(
@@ -435,7 +437,8 @@ __device__ static inline void red_async(
   const uint32_t& value,
   uint64_t* remote_bar);
 
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u32 [dest], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
 // .op        = { .min }
 template <typename=void>
 __device__ static inline void red_async(
@@ -444,16 +447,8 @@ __device__ static inline void red_async(
   const uint32_t& value,
   uint64_t* remote_bar);
 
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.s32 [dest], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
-// .op        = { .min }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_min_t,
-  int32_t* dest,
-  const int32_t& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u32 [dest], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
 // .op        = { .max }
 template <typename=void>
 __device__ static inline void red_async(
@@ -462,16 +457,48 @@ __device__ static inline void red_async(
   const uint32_t& value,
   uint64_t* remote_bar);
 
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.s32 [dest], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
+// .op        = { .add }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_add_t,
+  uint32_t* dest,
+  const uint32_t& value,
+  uint64_t* remote_bar);
+
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .s32 }
+// .op        = { .min }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_min_t,
+  uint32_t* dest,
+  const int32_t& value,
+  uint64_t* remote_bar);
+
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .s32 }
 // .op        = { .max }
 template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_max_t,
-  int32_t* dest,
+  uint32_t* dest,
   const int32_t& value,
   uint64_t* remote_bar);
 
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.b32 [dest], value, [remote_bar]; // 3.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .s32 }
+// .op        = { .add }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_add_t,
+  uint32_t* dest,
+  const int32_t& value,
+  uint64_t* remote_bar);
+
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .b32 }
 // .op        = { .and }
 template <typename B32>
 __device__ static inline void red_async(
@@ -480,7 +507,8 @@ __device__ static inline void red_async(
   const B32& value,
   uint64_t* remote_bar);
 
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.b32 [dest], value, [remote_bar]; // 3.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .b32 }
 // .op        = { .or }
 template <typename B32>
 __device__ static inline void red_async(
@@ -489,7 +517,8 @@ __device__ static inline void red_async(
   const B32& value,
   uint64_t* remote_bar);
 
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.b32 [dest], value, [remote_bar]; // 3.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .b32 }
 // .op        = { .xor }
 template <typename B32>
 __device__ static inline void red_async(
@@ -498,14 +527,14 @@ __device__ static inline void red_async(
   const B32& value,
   uint64_t* remote_bar);
 
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type} [dest], value, [remote_bar]; // 4.  PTX ISA 81, SM_90
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u64 }
 // .op        = { .add }
-// .type      = { .u32, .s32, .u64 }
-template <typename Type>
+template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_add_t,
-  Type* dest,
-  const Type& value,
+  uint64_t* dest,
+  const uint64_t& value,
   uint64_t* remote_bar);
 ```
 
