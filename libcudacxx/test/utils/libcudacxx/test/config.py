@@ -248,7 +248,7 @@ class Configuration(object):
                 # ValgrindExecutor is supposed to go. It is likely
                 # that the user wants it at the end, but we have no
                 # way of getting at that easily.
-                selt.lit_config.fatal("Cannot infer how to create a Valgrind "
+                self.lit_config.fatal("Cannot infer how to create a Valgrind "
                                       " executor.")
         else:
             te = LocalExecutor()
@@ -257,6 +257,10 @@ class Configuration(object):
                 te.timeout = exec_timeout
             if self.lit_config.useValgrind:
                 te = ValgrindExecutor(self.lit_config.valgrindArgs, te)
+
+        if type(te) is type(NoopExecutor()):
+            self.config.available_features.add("noop-executor")
+
         self.executor = te
 
     def configure_target_info(self):
