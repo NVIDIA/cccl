@@ -219,13 +219,17 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
 
   REQUIRE(NVRTC_SUCCESS == nvrtcCreateProgram(&prog, src, name, 0, nullptr, nullptr));
 
-  constexpr int num_includes = 4;
+  int ptx_version{};
+  cub::PtxVersion(ptx_version);
+  const std::string arch = std::string("-arch=sm_") + std::to_string(ptx_version / 10);
 
+  constexpr int num_includes = 5;
   const char* includes[num_includes] = {
     NVRTC_CUB_PATH,
     NVRTC_THRUST_PATH,
     NVRTC_LIBCUDACXX_PATH,
-    NVRTC_CTK_PATH
+    NVRTC_CTK_PATH,
+    arch.c_str()
   };
 
   std::size_t log_size{};
