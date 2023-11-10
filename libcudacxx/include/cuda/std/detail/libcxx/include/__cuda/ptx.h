@@ -1038,6 +1038,44 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 }
 #endif // __cccl_ptx_isa >= 810
 
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u64  [dest], value, [remote_bar]; // .u64 intentional PTX ISA 81, SM_90
+// .op        = { .add }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_add_t,
+  int64_t* dest,
+  const int64_t& value,
+  int64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_add_t,
+  _CUDA_VSTD::int64_t* __dest,
+  const _CUDA_VSTD::int64_t& __value,
+  _CUDA_VSTD::int64_t* __remote_bar)
+{
+  // __op == op_add (due to parameter type constraint)
+
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [%0], %1, [%2]; // .u64 intentional"
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "l"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
 
 // 9.7.12.8. Parallel Synchronization and Communication Instructions: vote (deprecated)
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-vote-deprecated
