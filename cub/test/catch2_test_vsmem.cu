@@ -94,7 +94,9 @@ struct agent_dummy_algorithm_t
 
   using block_store_t = cub::BlockStore<item_t, block_threads, items_per_thread, cub::BLOCK_STORE_TRANSPOSE>;
 
-  union _temp_storage_t
+  // We are intentionally not aliasing the TempStorage here to double the required shared memory of the test and be able
+  // to use a smaller `large_custom_t`, as we experienced slow compilation times for large a `large_custom_t`.
+  struct _temp_storage_t
   {
     typename block_load_t::TempStorage load;
     typename block_store_t::TempStorage store;
@@ -122,9 +124,6 @@ struct agent_dummy_algorithm_t
     // Load items into a blocked arrangement
     item_t items[items_per_thread]{};
     block_load_t(temp_storage.load).Load(d_in + tile_offset, items, num_remaining);
-
-    // Make sure we can repurpose aliased shared memory
-    __syncthreads();
 
     // Store items from blocked arrangement
     block_store_t(temp_storage.store).Store(d_out + tile_offset, items, num_remaining);
@@ -408,7 +407,7 @@ DECLARE_CDP_WRAPPER(device_dummy_algorithm, dummy_algorithm);
 
 // %PARAM% TEST_CDP cdp 0:1
 
-using type_list = c2h::type_list< large_custom_t<1>, large_custom_t<160>, large_custom_t<256>, large_custom_t<8192>>;
+using type_list = c2h::type_list< large_custom_t<1>, large_custom_t<80>, large_custom_t<128>, large_custom_t<512>>;
 
 CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_list)
 {
