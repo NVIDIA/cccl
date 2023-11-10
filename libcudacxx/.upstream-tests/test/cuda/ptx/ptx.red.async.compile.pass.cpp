@@ -165,6 +165,16 @@ __global__ void test_compilation() {
     }
   ));
 #endif // __cccl_ptx_isa >= 810
+
+#if __cccl_ptx_isa >= 810
+  NV_IF_TARGET(NV_PROVIDES_SM_90, (
+    if (non_eliminated_false()) {
+      // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [dest], value, [remote_bar]; // .u64 intentional
+      auto overload = static_cast<void (*)(cuda::ptx::op_add_t, int64_t* , const int64_t& , int64_t* )>(cuda::ptx::red_async);
+      fn_ptr = reinterpret_cast<void*>(overload);
+    }
+  ));
+#endif // __cccl_ptx_isa >= 810
 }
 
 int main(int, char**)
