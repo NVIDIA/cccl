@@ -238,11 +238,11 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   INFO("nvrtc log = " << log.get());
   REQUIRE(NVRTC_SUCCESS == compile_result);
 
-  std::size_t ptx_size{};
-  REQUIRE(NVRTC_SUCCESS == nvrtcGetPTXSize(prog, &ptx_size));
+  std::size_t code_size{};
+  REQUIRE(NVRTC_SUCCESS == nvrtcGetCUBINSize(prog, &code_size));
 
-  std::unique_ptr<char[]> ptx{ new char[ptx_size] };
-  REQUIRE(NVRTC_SUCCESS == nvrtcGetPTX(prog, ptx.get()));
+  std::unique_ptr<char[]> code{ new char[code_size] };
+  REQUIRE(NVRTC_SUCCESS == nvrtcGetCUBIN(prog, code.get()));
   REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&prog));
 
   CUcontext context;
@@ -252,16 +252,8 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
 
   REQUIRE(CUDA_SUCCESS == cuInit(0));
   REQUIRE(CUDA_SUCCESS == cuDeviceGet(&device, 0));
-  REQUIRE(CUDA_SUCCESS == cuCtxCreate(&context, CU_CTX_SCHED_BLOCKING_SYNC | CU_CTX_MAP_HOST, device));
-
-  CUlinkState link_state;
-  void *cubin{};
-  std::size_t cubin_size;
-
-  REQUIRE(CUDA_SUCCESS == cuLinkCreate(0, nullptr, nullptr, &link_state));
-  REQUIRE(CUDA_SUCCESS == cuLinkAddData(link_state, CU_JIT_INPUT_PTX, ptx.get(), strlen(ptx.get()), 0, 0, 0, 0));
-  REQUIRE(CUDA_SUCCESS == cuLinkComplete(link_state, &cubin, &cubin_size));
-  REQUIRE(CUDA_SUCCESS == cuModuleLoadData(&module, cubin));
+  REQUIRE(CUDA_SUCCESS == cuCtxCreate(&context, 0, device));
+  REQUIRE(CUDA_SUCCESS == cuModuleLoadDataEx(&module, code.get(), 0, 0, 0));
   REQUIRE(CUDA_SUCCESS == cuModuleGetFunction(&kernel, module, "kernel"));
 
   // Generate input for execution, and create output buffers.
@@ -302,6 +294,5 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
 
   REQUIRE(CUDA_SUCCESS == cuMemFree(d_ptr));
   REQUIRE(CUDA_SUCCESS == cuModuleUnload(module));
-  REQUIRE(CUDA_SUCCESS == cuLinkDestroy(link_state));
   REQUIRE(CUDA_SUCCESS == cuCtxDestroy(context));
 }
