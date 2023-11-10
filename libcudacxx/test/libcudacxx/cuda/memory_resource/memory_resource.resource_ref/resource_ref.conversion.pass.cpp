@@ -76,10 +76,10 @@ void test_conversion_from_resource_ref() {
     cuda::mr::resource_ref<PropB> ref{ref_input};
 
     // Ensure that we properly "punch through" the resource ref
-    const auto fake_orig = *reinterpret_cast<Fake_alloc_base*>(&ref_input);
-    const auto fake_conv = *reinterpret_cast<Fake_alloc_base*>(&ref);
-    assert(fake_orig.object == fake_conv.object);
-    assert(fake_orig.static_vtable == fake_conv.static_vtable);
+    const auto fake_orig = reinterpret_cast<Fake_alloc_base*>(&ref_input);
+    const auto fake_conv = reinterpret_cast<Fake_alloc_base*>(&ref);
+    assert(fake_orig->object == fake_conv->object);
+    assert(fake_orig->static_vtable == fake_conv->static_vtable);
 
     // Ensure that we properly pass on the allocate function
     assert(input.allocate(0, 0) == ref.allocate(0, 0));
@@ -95,10 +95,10 @@ void test_conversion_from_resource_ref() {
         cuda::mr::resource_ref<PropA, PropB>{input}};
 
     // Ensure that we properly "punch through" the resource ref
-    const auto fake_orig = *reinterpret_cast<Fake_alloc_base*>(&ref_input);
-    const auto fake_conv = *reinterpret_cast<Fake_alloc_base*>(&ref);
-    assert(fake_orig.object == fake_conv.object);
-    assert(fake_orig.static_vtable == fake_conv.static_vtable);
+    const auto fake_orig = reinterpret_cast<Fake_alloc_base*>(&ref_input);
+    const auto fake_conv = reinterpret_cast<Fake_alloc_base*>(&ref);
+    assert(fake_orig->object == fake_conv->object);
+    assert(fake_orig->static_vtable == fake_conv->static_vtable);
 
     // Ensure that we properly pass on the allocate function
     assert(input.allocate(0, 0) == ref.allocate(0, 0));
