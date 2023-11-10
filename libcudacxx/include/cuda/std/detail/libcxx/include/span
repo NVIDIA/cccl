@@ -320,8 +320,7 @@ public:
 
     template <size_t _Offset, size_t _Count = dynamic_extent>
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr auto subspan() const noexcept
-        -> __subspan_t<_Offset, _Count>
+    constexpr auto subspan() const noexcept -> __subspan_t<_Offset, _Count>
     {
         static_assert(_Offset <= _Extent, "span<T, N>::subspan<Offset, Count>(): Offset out of range");
         static_assert(_Count == dynamic_extent || _Count <= _Extent - _Offset, "span<T, N>::subspan<Offset, Count>(): Offset + Count out of range");

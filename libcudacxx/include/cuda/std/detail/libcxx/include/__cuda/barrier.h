@@ -1003,7 +1003,7 @@ struct __copy_chunk {
 };
 
 template <size_t _Alignment, typename _Group>
-inline __host__ __device__
+inline _LIBCUDACXX_HOST_DEVICE
 void __cp_async_fallback_mechanism(_Group __g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
     // Maximal copy size is 16 bytes
     constexpr _CUDA_VSTD::size_t __copy_size = (_Alignment > 16) ? 16 : _Alignment;

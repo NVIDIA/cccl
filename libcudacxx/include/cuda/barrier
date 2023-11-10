@@ -12,6 +12,7 @@
 #define _CUDA_BARRIER
 
 #include "std/barrier"
+#include "std/detail/__pragma_push"
 
 // Forward-declare CUtensorMap for use in cp_async_bulk_tensor_* PTX wrapping
 // functions. These functions take a pointer to CUtensorMap, so do not need to
@@ -281,5 +282,7 @@ void cp_async_bulk_wait_group_read()
 #endif // __CUDA_MINIMUM_ARCH__
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL
+
+#include "std/detail/__pragma_pop"
 
 #endif // _CUDA_BARRIER

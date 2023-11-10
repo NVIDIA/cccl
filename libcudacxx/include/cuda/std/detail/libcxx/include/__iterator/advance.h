@@ -87,7 +87,8 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void advance(_In
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 14 && !defined(_LICBUDACXX_COMPILER_MSVC_2017)
+#if _LIBCUDACXX_STD_VER > 14 && !defined(_LICBUDACXX_COMPILER_MSVC_2017) \
+  && !defined(_LIBCUDACXX_HAS_NO_CXX17_CONSTEXPR_IF)
 
 // [range.iter.op.advance]
 
@@ -137,12 +138,12 @@ public:
                        "If `n < 0`, then `bidirectional_iterator<I>` must be true.");
 
     // If `I` models `random_access_iterator`, equivalent to `i += n`.
-    if _LIBCUDACXX_CONSTEXPR_IF (random_access_iterator<_Ip>)
+    if constexpr (random_access_iterator<_Ip>)
     {
       __i += __n;
       return;
     }
-    else if _LIBCUDACXX_CONSTEXPR_IF (bidirectional_iterator<_Ip>)
+    else if constexpr (bidirectional_iterator<_Ip>)
     {
       // Otherwise, if `n` is non-negative, increments `i` by `n`.
       __advance_forward(__i, __n);
@@ -163,13 +164,13 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Ip& __i, _Sp __bound_sentinel) const
   {
     // If `I` and `S` model `assignable_from<I&, S>`, equivalent to `i = std::move(bound_sentinel)`.
-    if _LIBCUDACXX_CONSTEXPR_IF (assignable_from<_Ip&, _Sp>)
+    if constexpr (assignable_from<_Ip&, _Sp>)
     {
       __i = _CUDA_VSTD::move(__bound_sentinel);
     }
     // Otherwise, if `S` and `I` model `sized_sentinel_for<S, I>`,
     // equivalent to `ranges::advance(i, bound_sentinel - i)`.
-    else if _LIBCUDACXX_CONSTEXPR_IF (sized_sentinel_for<_Sp, _Ip>)
+    else if constexpr (sized_sentinel_for<_Sp, _Ip>)
     {
       (*this)(__i, __bound_sentinel - __i);
     }
@@ -197,7 +198,7 @@ public:
     _LIBCUDACXX_ASSERT((__n >= 0) || (bidirectional_iterator<_Ip> && same_as<_Ip, _Sp>),
                        "If `n < 0`, then `bidirectional_iterator<I> && same_as<I, S>` must be true.");
     // If `S` and `I` model `sized_sentinel_for<S, I>`:
-    if _LIBCUDACXX_CONSTEXPR_IF (sized_sentinel_for<_Sp, _Ip>)
+    if constexpr (sized_sentinel_for<_Sp, _Ip>)
     {
       // If |n| >= |bound_sentinel - i|, equivalent to `ranges::advance(i, bound_sentinel)`.
       // __magnitude_geq(a, b) returns |a| >= |b|, assuming they have the same sign.
@@ -223,7 +224,7 @@ public:
       }
 
       // Otherwise, while `bool(i != bound_sentinel)` is true, decrements `i` but at most `-n` times.
-      if _LIBCUDACXX_CONSTEXPR_IF (bidirectional_iterator<_Ip> && same_as<_Ip, _Sp>)
+      if constexpr (bidirectional_iterator<_Ip> && same_as<_Ip, _Sp>)
       {
         while (__i != __bound_sentinel && __n < 0)
         {
@@ -245,6 +246,6 @@ _LIBCUDACXX_CPO_ACCESSIBILITY auto advance = __advance::__fn{};
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _LIBCUDACXX_STD_VER > 14 && !_LICBUDACXX_COMPILER_MSVC_2017
+#endif // _LIBCUDACXX_STD_VER > 14 && !_LICBUDACXX_COMPILER_MSVC_2017 && !defined(_LIBCUDACXX_HAS_NO_CXX17_CONSTEXPR_IF)
 
 #endif // _LIBCUDACXX___ITERATOR_ADVANCE_H

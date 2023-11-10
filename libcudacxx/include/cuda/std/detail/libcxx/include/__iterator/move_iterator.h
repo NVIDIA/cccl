@@ -110,19 +110,19 @@ private:
   _Iter __current_;
 
 #if _LIBCUDACXX_STD_VER >= 17
-#  if !defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+#  if !defined(_LIBCUDACXX_COMPILER_MSVC_2017) && !defined(_LIBCUDACXX_HAS_NO_CXX17_CONSTEXPR_IF)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
   __mi_get_iter_concept()
   {
-    if _LIBCUDACXX_CONSTEXPR_IF (random_access_iterator<_Iter>)
+    if constexpr (random_access_iterator<_Iter>)
     {
       return random_access_iterator_tag{};
     }
-    else if _LIBCUDACXX_CONSTEXPR_IF (bidirectional_iterator<_Iter>)
+    else if constexpr (bidirectional_iterator<_Iter>)
     {
       return bidirectional_iterator_tag{};
     }
-    else if _LIBCUDACXX_CONSTEXPR_IF (forward_iterator<_Iter>)
+    else if constexpr (forward_iterator<_Iter>)
     {
       return forward_iterator_tag{};
     }
@@ -138,7 +138,7 @@ private:
 public:
 #if _LIBCUDACXX_STD_VER > 14
   using iterator_type = _Iter;
-#  if defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+#  if defined(_LIBCUDACXX_COMPILER_MSVC_2017) || defined(_LIBCUDACXX_HAS_NO_CXX17_CONSTEXPR_IF)
   // clang-format off
   using iterator_concept = conditional_t<random_access_iterator<_Iter>, random_access_iterator_tag,
                            conditional_t<bidirectional_iterator<_Iter>, bidirectional_iterator_tag,
