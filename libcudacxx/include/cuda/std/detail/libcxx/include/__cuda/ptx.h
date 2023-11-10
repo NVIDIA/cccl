@@ -31,7 +31,6 @@
 #include "../__cuda/ptx/ptx_helper_functions.h"
 #include "../__cuda/ptx/parallel_synchronization_and_communication_instructions_mbarrier.h"
 #include "../cstdint" // uint32_t
-#include "../__type_traits/is_same.h" // is_same
 /*
  * The cuda::ptx namespace intends to provide PTX wrappers for new hardware
  * features and new PTX instructions so that they can be experimented with
