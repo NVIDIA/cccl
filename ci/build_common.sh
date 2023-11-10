@@ -124,7 +124,7 @@ echo "========================================"
 echo
 echo "========================================"
 echo "Current commit is:"
-git log -1 || "Not a repository"
+git log -1 || echo "Not a repository"
 echo "========================================"
 echo
 
