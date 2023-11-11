@@ -552,15 +552,6 @@ namespace __visitation
 struct __base
 {
   template <class _Visitor, class... _Vs>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto)
-  __visit_alt_at(size_t __index, _Visitor&& __visitor, _Vs&&... __vs)
-  {
-    constexpr auto __fdiagonal =
-      __make_fdiagonal<_Visitor&&, decltype(_CUDA_VSTD::forward<_Vs>(__vs).__as_base())...>();
-    return __fdiagonal[__index](_CUDA_VSTD::forward<_Visitor>(__visitor), _CUDA_VSTD::forward<_Vs>(__vs).__as_base()...);
-  }
-
-  template <class _Visitor, class... _Vs>
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto) __visit_alt(_Visitor&& __visitor, _Vs&&... __vs)
   {
     constexpr auto __fmatrix = __make_fmatrix<_Visitor&&, decltype(_CUDA_VSTD::forward<_Vs>(__vs).__as_base())...>();
@@ -586,8 +577,7 @@ private:
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr void __std_visit_visitor_return_type_check()
   {
     static_assert(__all<_LIBCUDACXX_TRAIT(is_same, _Fp, _Fs)...>::value,
-                  "`_CUDA_VSTD::visit` requires the visitor to have a single "
-                  "return type.");
+                  "`std::visit` requires the visitor to have a single return type.");
   }
 
   template <class... _Fs>
@@ -614,26 +604,6 @@ private:
     return __dispatcher<_Is...>::template __dispatch<_Fp, _Vs...>;
   }
 
-  template <size_t _Ip, class _Fp, class... _Vs>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto __make_fdiagonal_impl()
-  {
-    return __make_dispatch<_Fp, _Vs...>(index_sequence<((void) __type_identity<_Vs>{}, _Ip)...>{});
-  }
-
-  template <class _Fp, class... _Vs, size_t... _Is>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto __make_fdiagonal_impl(index_sequence<_Is...>)
-  {
-    return __base::__make_farray(__make_fdiagonal_impl<_Is, _Fp, _Vs...>()...);
-  }
-
-  template <class _Fp, class _Vp, class... _Vs>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto __make_fdiagonal()
-  {
-    constexpr size_t __np = __remove_cvref_t<_Vp>::__size();
-    static_assert(__all<(__np == __remove_cvref_t<_Vs>::__size())...>::value, "");
-    return __make_fdiagonal_impl<_Fp, _Vp, _Vs...>(_CUDA_VSTD::make_index_sequence<__np>{});
-  }
-
   template <class _Fp, class... _Vs, size_t... _Is>
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto __make_fmatrix_impl(index_sequence<_Is...> __is)
   {
@@ -658,26 +628,10 @@ private:
 struct __variant
 {
   template <class _Visitor, class... _Vs>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto)
-  __visit_alt_at(size_t __index, _Visitor&& __visitor, _Vs&&... __vs)
-  {
-    return __base::__visit_alt_at(
-      __index, _CUDA_VSTD::forward<_Visitor>(__visitor), _CUDA_VSTD::forward<_Vs>(__vs).__impl_...);
-  }
-
-  template <class _Visitor, class... _Vs>
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto) __visit_alt(_Visitor&& __visitor, _Vs&&... __vs)
   {
     return __base::__visit_alt(
       _CUDA_VSTD::forward<_Visitor>(__visitor), _CUDA_VSTD::__as_variant(_CUDA_VSTD::forward<_Vs>(__vs)).__impl_...);
-  }
-
-  template <class _Visitor, class... _Vs>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto)
-  __visit_value_at(size_t __index, _Visitor&& __visitor, _Vs&&... __vs)
-  {
-    return __visit_alt_at(
-      __index, __make_value_visitor(_CUDA_VSTD::forward<_Visitor>(__visitor)), _CUDA_VSTD::forward<_Vs>(__vs)...);
   }
 
   template <class _Visitor, class... _Vs>
@@ -699,7 +653,7 @@ private:
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr void __std_visit_exhaustive_visitor_check()
   {
     static_assert(_LIBCUDACXX_TRAIT(is_invocable, _Visitor, _Values...),
-                  "`_CUDA_VSTD::visit` requires the visitor to be exhaustive.");
+                  "`std::visit` requires the visitor to be exhaustive.");
   }
 
   template <class _Visitor>
@@ -934,14 +888,35 @@ class _LIBCUDACXX_TEMPLATE_VIS __ctor : public __dtor<_Traits>
 {
   using __base_type = __dtor<_Traits>;
 
-  struct __visitor
+  template <size_t _CurrentIndex, class _Rhs>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void
+  __generic_construct_impl(integral_constant<size_t, _CurrentIndex>, const size_t __index, __ctor& __lhs, _Rhs&& __rhs)
   {
-    template <class _LeftAlt, class _RightAlt>
-    _LIBCUDACXX_INLINE_VISIBILITY void operator()(_LeftAlt& __lhs_alt, _RightAlt&& __rhs_alt) const
+    if (__index == _CurrentIndex)
     {
-      __construct_alt(__lhs_alt, _CUDA_VSTD::forward<decltype(__rhs_alt)>(__rhs_alt).__value);
+      __construct_at(_CUDA_VSTD::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
+                     in_place,
+                     __access::__base::__get_alt<_CurrentIndex>(_CUDA_VSTD::forward<_Rhs>(__rhs).__as_base()).__value);
+      return;
     }
-  };
+    __generic_construct_impl(
+      integral_constant<size_t, _CurrentIndex - 1>{}, __index, __lhs, _CUDA_VSTD::forward<_Rhs>(__rhs));
+  }
+
+  template <class _Rhs>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void
+  __generic_construct_impl(integral_constant<size_t, 0>, const size_t __index, __ctor& __lhs, _Rhs&& __rhs)
+  {
+    if (__index == 0)
+    {
+      __construct_at(_CUDA_VSTD::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
+                     in_place,
+                     __access::__base::__get_alt<0>(_CUDA_VSTD::forward<_Rhs>(__rhs).__as_base()).__value);
+      return;
+    }
+    // We already checked that every variant has a value, so we should never reach this line
+    _LIBCUDACXX_UNREACHABLE();
+  }
 
 public:
   using __base_type::__base_type;
@@ -961,7 +936,9 @@ protected:
     __lhs.__destroy();
     if (!__rhs.valueless_by_exception())
     {
-      __visitation::__base::__visit_alt_at(__rhs.index(), __visitor{}, __lhs, _CUDA_VSTD::forward<_Rhs>(__rhs));
+      constexpr size_t __np = __remove_cvref_t<__ctor>::__size();
+      __generic_construct_impl(
+        integral_constant<size_t, __np - 1>{}, __rhs.index(), __lhs, _CUDA_VSTD::forward<_Rhs>(__rhs));
       __lhs.__index = static_cast<decltype(__lhs.__index)>(__rhs.index());
     }
   }
@@ -1036,20 +1013,33 @@ class _LIBCUDACXX_TEMPLATE_VIS __assignment : public __copy_constructor<_Traits>
 {
   using __base_type = __copy_constructor<_Traits>;
 
-  struct __visitor
+  template <size_t _CurrentIndex, class _Other>
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void
+  __generic_assign(integral_constant<size_t, _CurrentIndex>, const size_t __index, _Other&& __rhs)
   {
-    __assignment* __this_;
-
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr __visitor(__assignment* __this) noexcept
-        : __this_(__this)
-    {}
-
-    template <class _LeftAlt, class _RightAlt>
-    _LIBCUDACXX_INLINE_VISIBILITY void operator()(_LeftAlt& __this_alt, _RightAlt&& __that_alt) const
+    if (__index == _CurrentIndex)
     {
-      __this_->__assign_alt(__this_alt, _CUDA_VSTD::forward<decltype(__that_alt)>(__that_alt).__value);
+      this->__assign_alt(
+        __access::__base::__get_alt<_CurrentIndex>(this->__as_base()),
+        __access::__base::__get_alt<_CurrentIndex>(_CUDA_VSTD::forward<_Other>(__rhs).__as_base()).__value);
+      return;
     }
-  };
+    this->__generic_assign(integral_constant<size_t, _CurrentIndex - 1>{}, __index, _CUDA_VSTD::forward<_Other>(__rhs));
+  }
+
+  template <class _Other>
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void
+  __generic_assign(integral_constant<size_t, 0>, const size_t __index, _Other&& __rhs)
+  {
+    if (__index == 0)
+    {
+      this->__assign_alt(__access::__base::__get_alt<0>(this->__as_base()),
+                         __access::__base::__get_alt<0>(_CUDA_VSTD::forward<_Other>(__rhs).__as_base()).__value);
+      return;
+    }
+    // We already checked that every variant has a value, so we should never reach this line
+    _LIBCUDACXX_UNREACHABLE();
+  }
 
 public:
   using __base_type::__base_type;
@@ -1065,7 +1055,12 @@ public:
   }
 
 protected:
-  template <size_t _Ip, class _Tp, class _Arg>
+  template <size_t _Ip,
+            class _Tp,
+            class _Arg,
+            enable_if_t<_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Arg)
+                          || !_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp),
+                        int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY void __assign_alt(__alt<_Ip, _Tp>& __a, _Arg&& __arg)
   {
     if (this->index() == _Ip)
@@ -1074,22 +1069,25 @@ protected:
     }
     else
     {
-      struct
-      {
-        _LIBCUDACXX_INLINE_VISIBILITY void operator()(true_type) const
-        {
-          __this->__emplace<_Ip>(_CUDA_VSTD::forward<_Arg>(__arg));
-        }
-        _LIBCUDACXX_INLINE_VISIBILITY void operator()(false_type) const
-        {
-          __this->__emplace<_Ip>(_Tp(_CUDA_VSTD::forward<_Arg>(__arg)));
-        }
-        __assignment* __this;
-        _Arg&& __arg;
-      } __impl{this, _CUDA_VSTD::forward<_Arg>(__arg)};
-      __impl(integral_constant < bool,
-             _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Arg)
-               || !_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp) > {});
+      this->__emplace<_Ip>(_CUDA_VSTD::forward<_Arg>(__arg));
+    }
+  }
+
+  template <size_t _Ip,
+            class _Tp,
+            class _Arg,
+            enable_if_t<!_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Arg)
+                          && _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp),
+                        int> = 0>
+  _LIBCUDACXX_INLINE_VISIBILITY void __assign_alt(__alt<_Ip, _Tp>& __a, _Arg&& __arg)
+  {
+    if (this->index() == _Ip)
+    {
+      __a.__value = _CUDA_VSTD::forward<_Arg>(__arg);
+    }
+    else
+    {
+      this->__emplace<_Ip>(_Tp(_CUDA_VSTD::forward<_Arg>(__arg)));
     }
   }
 
@@ -1106,7 +1104,8 @@ protected:
     }
     else
     {
-      __visitation::__base::__visit_alt_at(__that.index(), __visitor{this}, *this, _CUDA_VSTD::forward<_That>(__that));
+      constexpr size_t __np = __remove_cvref_t<__assignment>::__size();
+      this->__generic_assign(integral_constant<size_t, __np - 1>{}, __that.index(), _CUDA_VSTD::forward<_That>(__that));
     }
   }
 };
@@ -1188,15 +1187,33 @@ class _LIBCUDACXX_TEMPLATE_VIS __impl : public __copy_assignment<__traits<_Types
 {
   using __base_type = __copy_assignment<__traits<_Types...>>;
 
-  struct __visitor
+  template <size_t _CurrentIndex>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void
+  __swap_value(integral_constant<size_t, _CurrentIndex>, const size_t __index, __impl& __lhs, __impl& __rhs)
   {
-    template <class _LeftAlt, class _RightAlt>
-    _LIBCUDACXX_INLINE_VISIBILITY void operator()(_LeftAlt& __this_alt, _RightAlt& __that_alt) const
+    if (__index == _CurrentIndex)
     {
       using _CUDA_VSTD::swap;
-      swap(__this_alt.__value, __that_alt.__value);
+      swap(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base()).__value,
+           __access::__base::__get_alt<_CurrentIndex>(__rhs.__as_base()).__value);
+      return;
     }
-  };
+    __swap_value(integral_constant<size_t, _CurrentIndex - 1>{}, __index, __lhs, __rhs);
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void
+  __swap_value(integral_constant<size_t, 0>, const size_t __index, __impl& __lhs, __impl& __rhs)
+  {
+    if (__index == 0)
+    {
+      using _CUDA_VSTD::swap;
+      swap(__access::__base::__get_alt<0>(__lhs.__as_base()).__value,
+           __access::__base::__get_alt<0>(__rhs.__as_base()).__value);
+      return;
+    }
+    // We already checked that every variant has a value, so we should never reach this line
+    _LIBCUDACXX_UNREACHABLE();
+  }
 
 public:
   using __base_type::__base_type; // get in_place_index_t constructor & friends
@@ -1219,7 +1236,8 @@ public:
     }
     else if (this->index() == __that.index())
     {
-      __visitation::__base::__visit_alt_at(this->index(), __visitor{}, *this, __that);
+      constexpr size_t __np = __remove_cvref_t<__impl>::__size();
+      __swap_value(integral_constant<size_t, __np - 1>{}, this->index(), *this, __that);
     }
     else
     {
@@ -1263,7 +1281,7 @@ public:
   }
 
 private:
-  inline _LIBCUDACXX_INLINE_VISIBILITY bool __move_nothrow() const
+  inline _LIBCUDACXX_INLINE_VISIBILITY constexpr bool __move_nothrow() const
   {
     constexpr bool __results[] = {_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Types)...};
     return this->valueless_by_exception() || __results[this->index()];
@@ -1781,11 +1799,59 @@ struct __convert_to_bool
   }
 };
 
+struct __variant_binary_visitor
+{
+  template <class _BinaryOp, class _LeftVariant, class _RightVariant>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
+  __visit(const size_t __index, _BinaryOp&& __op, const _LeftVariant& __lhs, const _RightVariant& __rhs)
+  {
+    return __visit(integral_constant<size_t, variant_size_v<_LeftVariant> - 1>{},
+                   __index,
+                   _CUDA_VSTD::forward<_BinaryOp>(__op),
+                   __lhs,
+                   __rhs);
+  }
+
+private:
+  template <size_t _CurrentIndex, class _BinaryOp, class _LeftVariant, class _RightVariant>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
+  __visit(integral_constant<size_t, _CurrentIndex>,
+          const size_t __index,
+          _BinaryOp&& __op,
+          const _LeftVariant& __lhs,
+          const _RightVariant& __rhs)
+  {
+    if (__index == _CurrentIndex)
+    {
+      return __op(_CUDA_VSTD::get<_CurrentIndex>(__lhs), _CUDA_VSTD::get<_CurrentIndex>(__rhs));
+    }
+    return __visit(
+      integral_constant<size_t, _CurrentIndex - 1>{}, __index, _CUDA_VSTD::forward<_BinaryOp>(__op), __lhs, __rhs);
+  }
+
+  template <class _BinaryOp, class _LeftVariant, class _RightVariant>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
+  __visit(integral_constant<size_t, 0>,
+          const size_t __index,
+          _BinaryOp&& __op,
+          const _LeftVariant& __lhs,
+          const _RightVariant& __rhs)
+  {
+    if (__index == 0)
+    {
+      return __op(_CUDA_VSTD::get<0>(__lhs), _CUDA_VSTD::get<0>(__rhs));
+    }
+    // We already checked that every variant has a value, so we should never reach this line
+    _LIBCUDACXX_UNREACHABLE();
+  }
+};
+
 template <class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator==(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
 {
   using __variant_detail::__visitation::__variant;
-  if (__lhs.index() != __rhs.index())
+  const auto __index = __lhs.index();
+  if (__index != __rhs.index())
   {
     return false;
   }
@@ -1793,7 +1859,8 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator==(const variant<_Types...>
   {
     return true;
   }
-  return __variant::__visit_value_at(__lhs.index(), __convert_to_bool<equal_to<>>{}, __lhs, __rhs);
+
+  return __variant_binary_visitor::__visit(__index, __convert_to_bool<equal_to<>>{}, __lhs, __rhs);
 }
 
 #  ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
@@ -1824,7 +1891,7 @@ operator<=>(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
   auto __three_way = []<class _Type>(const _Type& __v, const _Type& __w) -> __result_t {
     return __v <=> __w;
   };
-  return __variant::__visit_value_at(__lhs.index(), __three_way, __lhs, __rhs);
+  return __variant_binary_visitor::__visit(__lhs.index(), __three_way, __lhs, __rhs);
 }
 
 #  endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
@@ -1841,7 +1908,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator!=(const variant<_Types...>
   {
     return false;
   }
-  return __variant::__visit_value_at(__lhs.index(), __convert_to_bool<not_equal_to<>>{}, __lhs, __rhs);
+  return __variant_binary_visitor::__visit(__lhs.index(), __convert_to_bool<not_equal_to<>>{}, __lhs, __rhs);
 }
 
 template <class... _Types>
@@ -1864,7 +1931,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<(const variant<_Types...>&
   {
     return false;
   }
-  return __variant::__visit_value_at(__lhs.index(), __convert_to_bool<less<>>{}, __lhs, __rhs);
+  return __variant_binary_visitor::__visit(__lhs.index(), __convert_to_bool<less<>>{}, __lhs, __rhs);
 }
 
 template <class... _Types>
@@ -1887,7 +1954,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>(const variant<_Types...>&
   {
     return false;
   }
-  return __variant::__visit_value_at(__lhs.index(), __convert_to_bool<greater<>>{}, __lhs, __rhs);
+  return __variant_binary_visitor::__visit(__lhs.index(), __convert_to_bool<greater<>>{}, __lhs, __rhs);
 }
 
 template <class... _Types>
@@ -1910,7 +1977,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<=(const variant<_Types...>
   {
     return false;
   }
-  return __variant::__visit_value_at(__lhs.index(), __convert_to_bool<less_equal<>>{}, __lhs, __rhs);
+  return __variant_binary_visitor::__visit(__lhs.index(), __convert_to_bool<less_equal<>>{}, __lhs, __rhs);
 }
 
 template <class... _Types>
@@ -1933,7 +2000,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>=(const variant<_Types...>
   {
     return false;
   }
-  return __variant::__visit_value_at(__lhs.index(), __convert_to_bool<greater_equal<>>{}, __lhs, __rhs);
+  return __variant_binary_visitor::__visit(__lhs.index(), __convert_to_bool<greater_equal<>>{}, __lhs, __rhs);
 }
 
 template <class... _Vs>

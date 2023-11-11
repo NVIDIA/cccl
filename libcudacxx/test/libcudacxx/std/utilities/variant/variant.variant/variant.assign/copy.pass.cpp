@@ -386,9 +386,15 @@ void test_copy_assignment_same_index() {
     assert(&vref == &v1);
     assert(v1.index() == 1);
     assert(cuda::std::get<1>(v1).value == 42);
+#if !defined(TEST_COMPILER_MSVC)
     assert(CopyAssign::copy_construct() == 0);
     assert(CopyAssign::move_construct() == 0);
+    // FIXME(mdominiak): try to narrow down what in the compiler makes it emit an invalid PTX call instruction without this barrier
+    // this seems like it is not going to be a fun exercise trying to reproduce this in a minimal enough case that the compiler can fix it
+    // so I am leaving it with this workaround for now, as it seems to be a strange interactions of many weird things these tests are doing.
+    asm volatile ("" ::: "memory");
     assert(CopyAssign::copy_assign() == 1);
+#endif // !TEST_COMPILER_MSVC
   }
 #ifndef TEST_HAS_NO_EXCEPTIONS
   using MET = MakeEmptyT;
