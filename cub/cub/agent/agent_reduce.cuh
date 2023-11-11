@@ -53,6 +53,8 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/functional>
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -125,7 +127,8 @@ template <typename AgentReducePolicy,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOp,
-          typename AccumT>
+          typename AccumT,
+          typename TransformOp = ::cuda::std::__identity>
 struct AgentReduce
 {
   //---------------------------------------------------------------------
@@ -189,6 +192,7 @@ struct AgentReduce
   InputIteratorT d_in;                ///< Input data to reduce
   WrappedInputIteratorT d_wrapped_in; ///< Wrapped input data to reduce
   ReductionOp reduction_op;           ///< Binary reduction operator
+  TransformOp transform_op;          ///< Transform operator
 
   //---------------------------------------------------------------------
   // Utility
@@ -224,11 +228,13 @@ struct AgentReduce
    */
   __device__ __forceinline__ AgentReduce(TempStorage &temp_storage,
                                          InputIteratorT d_in,
-                                         ReductionOp reduction_op)
+                                         ReductionOp reduction_op,
+                                         TransformOp transform_op = {})
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
       , d_wrapped_in(d_in)
       , reduction_op(reduction_op)
+      , transform_op(transform_op)
   {}
 
   //---------------------------------------------------------------------
@@ -252,9 +258,8 @@ struct AgentReduce
     AccumT items[ITEMS_PER_THREAD];
 
     // Load items in striped fashion
-    LoadDirectStriped<BLOCK_THREADS>(threadIdx.x,
-                                     d_wrapped_in + block_offset,
-                                     items);
+    cub::detail::load_transform_direct_striped<BLOCK_THREADS>(
+      threadIdx.x, d_wrapped_in + block_offset, items, transform_op);
 
     // Reduce items within each thread stripe
     thread_aggregate =
@@ -303,7 +308,7 @@ struct AgentReduce
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
-      items[i] = input_items[i];
+      items[i] = transform_op(input_items[i]);
     }
 
     // Reduce items within each thread stripe
@@ -334,7 +339,7 @@ struct AgentReduce
     // Read first item
     if ((IS_FIRST_TILE) && (thread_offset < valid_items))
     {
-      thread_aggregate = d_wrapped_in[block_offset + thread_offset];
+      thread_aggregate = transform_op(d_wrapped_in[block_offset + thread_offset]);
       thread_offset += BLOCK_THREADS;
     }
 
@@ -343,7 +348,7 @@ struct AgentReduce
     {
       InputT item(d_wrapped_in[block_offset + thread_offset]);
 
-      thread_aggregate = reduction_op(thread_aggregate, item);
+      thread_aggregate = reduction_op(thread_aggregate, transform_op(item));
       thread_offset += BLOCK_THREADS;
     }
   }

@@ -337,6 +337,22 @@ __device__ __forceinline__ void LoadDirectStriped(int linear_tid,
     }
 }
 
+namespace detail
+{
+
+template <int BLOCK_THREADS, typename InputT, int ITEMS_PER_THREAD, typename InputIteratorT, typename TransformOpT>
+__device__ __forceinline__ void load_transform_direct_striped(
+  int linear_tid, InputIteratorT block_itr, InputT (&items)[ITEMS_PER_THREAD], TransformOpT transform_op)
+{
+#pragma unroll
+  for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+  {
+    items[ITEM] = transform_op(block_itr[linear_tid + ITEM * BLOCK_THREADS]);
+  }
+}
+
+} // namespace detail
+
 /**
  * @brief Load a linear segment of items into a striped arrangement across the thread block, guarded
  *        by range
