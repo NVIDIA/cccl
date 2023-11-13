@@ -36,11 +36,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_radix_sort_histogram.cuh>
@@ -2104,13 +2106,13 @@ struct DispatchRadixSort : SelectedPolicy
             size_t allocation_sizes[3] =
             {
                 // bytes needed for privatized block digit histograms
-                spine_length * sizeof(OffsetT),                                         
+                spine_length * sizeof(OffsetT),
 
                 // bytes needed for 3rd keys buffer
-                (is_overwrite_okay) ? 0 : num_items * sizeof(KeyT),                     
+                (is_overwrite_okay) ? 0 : num_items * sizeof(KeyT),
 
                 // bytes needed for 3rd values buffer
-                (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * sizeof(ValueT),    
+                (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * sizeof(ValueT),
             };
 
             // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
@@ -2736,10 +2738,10 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
             size_t allocation_sizes[2] =
             {
                 // bytes needed for 3rd keys buffer
-                (is_overwrite_okay) ? 0 : num_items * sizeof(KeyT),                      
+                (is_overwrite_okay) ? 0 : num_items * sizeof(KeyT),
 
                 // bytes needed for 3rd values buffer
-                (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * sizeof(ValueT),     
+                (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * sizeof(ValueT),
             };
 
             // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
@@ -2887,8 +2889,8 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
      * @param[in] d_end_offsets
      *   Random-access input iterator to the sequence of ending offsets of length @p num_segments,
      *   such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup>
-     *   data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.  
-     *   If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>, 
+     *   data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.
+     *   If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>,
      *   the <em>i</em><sup>th</sup> is considered empty.
      *
      * @param[in] begin_bit

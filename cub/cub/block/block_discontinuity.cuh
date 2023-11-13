@@ -36,11 +36,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
@@ -445,13 +447,13 @@ public:
      *   if a discontinuity exists between \p a and \p b, otherwise \p false.  \p b_index is the rank
      *   of b in the aggregate tile of data.
      *
-     * @param[out] head_flags 
+     * @param[out] head_flags
      *   Calling thread's discontinuity head_flags
      *
-     * @param[in] input 
+     * @param[in] input
      *   Calling thread's input items
      *
-     * @param[in] flag_op 
+     * @param[in] flag_op
      *   Binary boolean flag predicate
      */
     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
