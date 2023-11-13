@@ -200,7 +200,8 @@ protected:
 template <class _Tp, int __digits, bool _IsSigned>
 struct __libcpp_compute_min
 {
-    static constexpr _Tp value = static_cast<_Tp>(_Tp(1) << __digits);
+    using _uTp = typename _CUDA_VSTD::make_unsigned<_Tp>::type;
+    static constexpr _Tp value = static_cast<_Tp>(static_cast<_uTp>(_uTp(1u) << __digits));
 };
 
 template <class _Tp, int __digits>
