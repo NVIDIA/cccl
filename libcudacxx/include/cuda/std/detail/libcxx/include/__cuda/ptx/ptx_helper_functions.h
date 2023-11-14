@@ -24,7 +24,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx__as_conv_unavailable_in_host_code();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx__as_conv_unavailable_in_host_code(...);
 
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_smem(const void* __ptr)
 {
@@ -34,8 +34,7 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_smem(const void* __ptr)
       return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
     ),
     NV_ANY_TARGET, (
-      __ptr;
-      __cuda_ptx__as_conv_unavailable_in_host_code();
+      __cuda_ptx__as_conv_unavailable_in_host_code(__ptr);
     )
   )
 }
@@ -49,8 +48,7 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_remote_dsmem(const void*
       return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
     ),
     NV_ANY_TARGET, (
-      __ptr;
-      __cuda_ptx__as_conv_unavailable_in_host_code();
+      __cuda_ptx__as_conv_unavailable_in_host_code(__ptr);
     )
   )
 }
@@ -63,8 +61,7 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
       return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr));
     ),
     NV_ANY_TARGET, (
-      __ptr;
-      __cuda_ptx__as_conv_unavailable_in_host_code();
+      __cuda_ptx__as_conv_unavailable_in_host_code(__ptr);
     )
   )
 }
@@ -79,7 +76,7 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
       return *reinterpret_cast<_CUDA_VSTD::uint32_t*>(&__val);
     ),
     NV_ANY_TARGET, (
-      __cuda_ptx__as_conv_unavailable_in_host_code();
+      __cuda_ptx__as_conv_unavailable_in_host_code(__val);
     )
   )
 }
