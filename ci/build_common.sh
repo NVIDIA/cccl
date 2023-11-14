@@ -40,7 +40,7 @@ args=("$@")
 echo "Args: ${args[@]}"
 while [ "${#args[@]}" -ne 0 ]; do
     case "${args[0]}" in
-    -v | --verbose) VERBOSE=1; args=("${args[0]:1}");;
+    -v | --verbose) VERBOSE=1; args=("${args[@]:1}");;
     -cxx)  HOST_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
@@ -124,7 +124,7 @@ echo "========================================"
 echo
 echo "========================================"
 echo "Current commit is:"
-git log -1 || "Not a repository"
+git log -1 || echo "Not a repository"
 echo "========================================"
 echo
 
