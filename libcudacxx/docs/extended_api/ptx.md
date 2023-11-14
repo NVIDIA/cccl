@@ -597,7 +597,7 @@ __device__ static inline void red_async(
 template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_min_t,
-  uint32_t* dest,
+  int32_t* dest,
   const int32_t& value,
   uint64_t* remote_bar);
 
@@ -607,7 +607,7 @@ __device__ static inline void red_async(
 template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_max_t,
-  uint32_t* dest,
+  int32_t* dest,
   const int32_t& value,
   uint64_t* remote_bar);
 
@@ -617,7 +617,7 @@ __device__ static inline void red_async(
 template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_add_t,
-  uint32_t* dest,
+  int32_t* dest,
   const int32_t& value,
   uint64_t* remote_bar);
 

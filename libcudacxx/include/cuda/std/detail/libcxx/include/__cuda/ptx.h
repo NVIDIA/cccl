@@ -897,7 +897,7 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_min_t,
-  uint32_t* dest,
+  int32_t* dest,
   const int32_t& value,
   uint64_t* remote_bar);
 */
@@ -906,13 +906,12 @@ extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_b
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_min_t,
-  _CUDA_VSTD::uint32_t* __dest,
+  _CUDA_VSTD::int32_t* __dest,
   const _CUDA_VSTD::int32_t& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
   // __type == type_s32 (due to parameter type constraint)
   // __op == op_min (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.s32  [%0], %1, [%2]; "
@@ -937,7 +936,7 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_max_t,
-  uint32_t* dest,
+  int32_t* dest,
   const int32_t& value,
   uint64_t* remote_bar);
 */
@@ -946,13 +945,12 @@ extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_b
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_max_t,
-  _CUDA_VSTD::uint32_t* __dest,
+  _CUDA_VSTD::int32_t* __dest,
   const _CUDA_VSTD::int32_t& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
   // __type == type_s32 (due to parameter type constraint)
   // __op == op_max (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.s32  [%0], %1, [%2]; "
@@ -977,7 +975,7 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_add_t,
-  uint32_t* dest,
+  int32_t* dest,
   const int32_t& value,
   uint64_t* remote_bar);
 */
@@ -986,13 +984,12 @@ extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_b
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_add_t,
-  _CUDA_VSTD::uint32_t* __dest,
+  _CUDA_VSTD::int32_t* __dest,
   const _CUDA_VSTD::int32_t& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
   // __type == type_s32 (due to parameter type constraint)
   // __op == op_add (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.s32  [%0], %1, [%2]; "
