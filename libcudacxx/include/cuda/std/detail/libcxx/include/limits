@@ -197,12 +197,18 @@ protected:
     static constexpr float_round_style round_style = round_toward_zero;
 };
 
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#  pragma warning(push)
+#  pragma warning(disable : 4309)
+#endif // _LIBCUDACXX_COMPILER_MSVC
 template <class _Tp, int __digits, bool _IsSigned>
 struct __libcpp_compute_min
 {
-    using _uTp = typename _CUDA_VSTD::make_unsigned<_Tp>::type;
-    static constexpr _Tp value = static_cast<_Tp>(static_cast<_uTp>(_uTp(1u) << __digits));
+    static constexpr _Tp value = static_cast<_Tp>(_Tp(1) << __digits);
 };
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#  pragma warning(pop)
+#endif // _LIBCUDACXX_COMPILER_MSVC
 
 template <class _Tp, int __digits>
 struct __libcpp_compute_min<_Tp, __digits, false>
