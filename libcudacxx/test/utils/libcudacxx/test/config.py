@@ -639,6 +639,7 @@ class Configuration(object):
         # Configure extra flags
         compile_flags_str = self.get_lit_conf('compile_flags', '')
         self.cxx.compile_flags += shlex.split(compile_flags_str)
+        self.cxx.compile_flags += ['-D_CCCL_NO_SYSTEM_HEADER']
         if self.is_windows:
             # FIXME: Can we remove this?
             self.cxx.compile_flags += ['-D_CRT_SECURE_NO_WARNINGS']
