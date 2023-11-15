@@ -100,7 +100,7 @@ __global__ void test_compilation() {
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
       // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.s32  [dest], value, [remote_bar];
-      auto overload = static_cast<void (*)(cuda::ptx::op_min_t, uint32_t* , const int32_t& , uint64_t* )>(cuda::ptx::red_async);
+      auto overload = static_cast<void (*)(cuda::ptx::op_min_t, int32_t* , const int32_t& , uint64_t* )>(cuda::ptx::red_async);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
@@ -110,7 +110,7 @@ __global__ void test_compilation() {
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
       // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.s32  [dest], value, [remote_bar];
-      auto overload = static_cast<void (*)(cuda::ptx::op_max_t, uint32_t* , const int32_t& , uint64_t* )>(cuda::ptx::red_async);
+      auto overload = static_cast<void (*)(cuda::ptx::op_max_t, int32_t* , const int32_t& , uint64_t* )>(cuda::ptx::red_async);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
@@ -120,7 +120,7 @@ __global__ void test_compilation() {
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
       // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.s32  [dest], value, [remote_bar];
-      auto overload = static_cast<void (*)(cuda::ptx::op_add_t, uint32_t* , const int32_t& , uint64_t* )>(cuda::ptx::red_async);
+      auto overload = static_cast<void (*)(cuda::ptx::op_add_t, int32_t* , const int32_t& , uint64_t* )>(cuda::ptx::red_async);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
   ));
