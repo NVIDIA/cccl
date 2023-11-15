@@ -34,11 +34,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
@@ -440,7 +442,7 @@ struct AgentUniqueByKey
     }
 
     /**
-     * @brief Process subsequent tile of input (dynamic chained scan).  
+     * @brief Process subsequent tile of input (dynamic chained scan).
      *
      * @param num_tile_items
      *   Number of input items comprising this tile

@@ -186,7 +186,7 @@ void radix_sort_values(std::integral_constant<bool, true>,
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto *temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec([&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
     cub::DoubleBuffer<key_t> keys     = d_keys;
     cub::DoubleBuffer<value_t> values = d_values;
 
@@ -224,7 +224,7 @@ void radix_sort_values(nvbench::state &state, nvbench::type_list<KeyT, ValueT, O
 #ifdef TUNE_KeyT
 using key_types = nvbench::type_list<TUNE_KeyT>;
 #else // !defined(TUNE_KeyT) 
-using key_types = fundamental_types;
+using key_types = integral_types;
 #endif // TUNE_KeyT
 
 #ifdef TUNE_ValueT
@@ -245,4 +245,4 @@ NVBENCH_BENCH_TYPES(radix_sort_values, NVBENCH_TYPE_AXES(key_types, value_types,
   .set_name("base")
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_string_axis("Entropy", {"1.000", "0.811", "0.544", "0.337", "0.201"});
+  .add_string_axis("Entropy", {"1.000", "0.201"});

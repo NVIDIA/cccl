@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
@@ -90,10 +92,10 @@ CUB_NAMESPACE_BEGIN
  *
  * @endcode
  *
- * @tparam ValueType            
+ * @tparam ValueType
  *   The value type of this iterator
  *
- * @tparam OffsetT              
+ * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <
@@ -129,10 +131,10 @@ public:
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        
+      >::type iterator_category;
 #else
     /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;      
+    typedef std::random_access_iterator_tag     iterator_category;
 #endif  // THRUST_VERSION
 
 private:
@@ -141,7 +143,7 @@ private:
     OffsetT     offset;
 #ifdef _WIN32
     // Workaround for win32 parameter-passing bug (ulonglong2 argmin DeviceReduce)
-    OffsetT     pad[CUB_MAX(1, (16 / sizeof(OffsetT) - 1))];        
+    OffsetT     pad[CUB_MAX(1, (16 / sizeof(OffsetT) - 1))];
 #endif
 
 public:

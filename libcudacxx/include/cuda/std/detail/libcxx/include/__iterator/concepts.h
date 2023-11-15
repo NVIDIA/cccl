@@ -45,11 +45,13 @@
 #include "../__type_traits/remove_cvref.h"
 #include "../__type_traits/void_t.h"
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -474,6 +476,20 @@ template<class _Ip>
 _LIBCUDACXX_CONCEPT bidirectional_iterator = _LIBCUDACXX_FRAGMENT(__bidirectional_iterator_, _Ip);
 
 // [iterator.concept.random.access]
+#if defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+// For whatever reasons MSVC2017 cannot check decltype(__n +  __j)
+template<class _Ip>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __random_access_iterator_operations_,
+  requires(_Ip __i, const _Ip __j, const iter_difference_t<_Ip> __n)(
+    requires(same_as<_Ip&, decltype(__i += __n)>),
+    requires(same_as<_Ip,  decltype(__j +  __n)>),
+    typename(decltype(__n +  __j)),
+    requires(same_as<_Ip&, decltype(__i -= __n)>),
+    requires(same_as<_Ip,  decltype(__j -  __n)>),
+    requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)
+  ));
+#  else // ^^^ _LIBCUDACXX_COMPILER_MSVC_2017 ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC_2017 vvv
 template<class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __random_access_iterator_operations_,
@@ -485,7 +501,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(same_as<_Ip,  decltype(__j -  __n)>),
     requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)
   ));
-
+#  endif // !_LIBCUDACXX_COMPILER_MSVC_2017
 template<class _Ip>
 _LIBCUDACXX_CONCEPT __random_access_iterator_operations = _LIBCUDACXX_FRAGMENT(__random_access_iterator_operations_, _Ip);
 

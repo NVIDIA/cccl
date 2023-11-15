@@ -19,14 +19,17 @@
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include "../cstdlib"                // _LIBCUDACXX_UNREACHABLE
 #include "../__type_traits/void_t.h" // _CUDA_VSTD::__void_t
+#include "../__cuda/ptx.h"           // cuda::ptx::*
 
 #if defined(_LIBCUDACXX_COMPILER_NVRTC)
 #define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type *)0)->member))
@@ -206,29 +209,21 @@ public:
                 else if (!__isShared(&__barrier)) {
                     __trap();
                 }
-
-                asm volatile ("mbarrier.arrive.shared.b64 %0, [%1], %2;"
-                    : "=l"(__token)
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
-                    "r"(static_cast<_CUDA_VSTD::uint32_t>(__update))
-                    : "memory");
+                // Cannot use cuda::device::barrier_native_handle here, as it is
+                // only defined for block-scope barriers. This barrier may be a
+                // non-block scoped barrier.
+                auto __bh = reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__barrier);
+                __token = _CUDA_VPTX::mbarrier_arrive(__bh, __update);
             ), NV_PROVIDES_SM_80, (
                 if (!__isShared(&__barrier)) {
                     return __barrier.arrive(__update);
                 }
-
+                auto __bh = reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__barrier);
                 // Need 2 instructions, can't finish barrier with arrive > 1
                 if (__update > 1) {
-                    asm volatile ("mbarrier.arrive.noComplete.shared.b64 %0, [%1], %2;"
-                        : "=l"(__token)
-                        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
-                            "r"(static_cast<_CUDA_VSTD::uint32_t>(__update - 1))
-                        : "memory");
+                    _CUDA_VPTX::mbarrier_arrive_no_complete(__bh, __update - 1);
                 }
-                asm volatile ("mbarrier.arrive.shared.b64 %0, [%1];"
-                    : "=l"(__token)
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier)))
-                    : "memory");
+                __token = _CUDA_VPTX::mbarrier_arrive( __bh);
             ), NV_IS_DEVICE, (
                 if (!__isShared(&__barrier)) {
                     return __barrier.arrive(__update);
@@ -603,14 +598,12 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
             // us in release builds. In debug builds, the error would be caught
             // by the asserts at the top of this function.
 
-            auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+            auto __native_handle = barrier_native_handle(__b);
+            auto __bh = __cvta_generic_to_shared(__native_handle);
             if (__arrive_count_update == 1) {
-                asm (
-                    "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2;"
-                    : "=l"(__token)
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
-                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
-                    : "memory");
+                __token = _CUDA_VPTX::mbarrier_arrive_expect_tx(
+                    _CUDA_VPTX::sem_release, _CUDA_VPTX::scope_cta, _CUDA_VPTX::space_shared, __native_handle, __transaction_count_update
+                );
             } else {
                 asm (
                     "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
@@ -618,12 +611,9 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
                     : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
                       "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
                     : "memory");
-                asm (
-                    "mbarrier.arrive.release.cta.shared::cta.b64 %0, [%1], %2;"
-                    : "=l"(__token)
-                    : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
-                      "r"(static_cast<_CUDA_VSTD::uint32_t>(__arrive_count_update))
-                    : "memory");
+                __token = _CUDA_VPTX::mbarrier_arrive(
+                    _CUDA_VPTX::sem_release, _CUDA_VPTX::scope_cta, _CUDA_VPTX::space_shared, __native_handle, __arrive_count_update
+                );
             }
         )
     );
@@ -955,7 +945,13 @@ template <size_t _Copy_size>
 inline __device__
 void __cp_async_shared_global(char * __dest, const char * __src) {
     // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
+
+    // If `if constexpr` is not available, this function gets instantiated even
+    // if is not called. Do not static_assert in that case.
+#if _LIBCUDACXX_STD_VER >= 17
     static_assert(_Copy_size == 4 || _Copy_size == 8 || _Copy_size == 16, "cp.async.shared.global requires a copy size of 4, 8, or 16.");
+#endif // _LIBCUDACXX_STD_VER >= 17
+
     asm volatile(
         "cp.async.ca.shared.global [%0], [%1], %2, %2;"
         :
@@ -982,7 +978,11 @@ void __cp_async_shared_global<16>(char * __dest, const char * __src) {
 template <size_t _Alignment, typename _Group>
 inline __device__
 void __cp_async_shared_global_mechanism(_Group __g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
+    // If `if constexpr` is not available, this function gets instantiated even
+    // if is not called. Do not static_assert in that case.
+#if _LIBCUDACXX_STD_VER >= 17
     static_assert(4 <= _Alignment, "cp.async requires at least 4-byte alignment");
+#endif // _LIBCUDACXX_STD_VER >= 17
 
     // Maximal copy size is 16.
     constexpr int __copy_size = (_Alignment > 16) ? 16 : _Alignment;
@@ -1089,8 +1089,8 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
     ));
 
     NV_IF_TARGET(NV_PROVIDES_SM_80, (
-        const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
         if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 4) {
+            const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
             if (__can_use_async_group) {
                 __cp_async_shared_global_mechanism<_Align>(__group, __dest_char, __src_char, __size);
                 return __completion_mechanism::__async_group;

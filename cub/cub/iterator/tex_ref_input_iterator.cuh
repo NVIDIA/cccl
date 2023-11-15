@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/iterator/tex_obj_input_iterator.cuh>
 
@@ -100,13 +102,13 @@ CUB_NAMESPACE_BEGIN
  *
  * @endcode
  *
- * @tparam T                    
+ * @tparam T
  *   The value type of this iterator
  *
- * @tparam UNIQUE_ID            
+ * @tparam UNIQUE_ID
  *   A globally-unique identifier (within the compilation unit) to name the underlying texture reference
  *
- * @tparam OffsetT              
+ * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <

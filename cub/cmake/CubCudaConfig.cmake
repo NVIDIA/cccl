@@ -23,7 +23,14 @@ list(FILTER CUB_CUDA_ARCHITECTURES_RDC EXCLUDE REGEX "53|62|72|90")
 message(STATUS "CUB_CUDA_ARCHITECTURES:     ${CUB_CUDA_ARCHITECTURES}")
 message(STATUS "CUB_CUDA_ARCHITECTURES_RDC: ${CUB_CUDA_ARCHITECTURES_RDC}")
 
-option(CUB_ENABLE_RDC_TESTS "Enable tests that require separable compilation." ON)
+if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  # Currently, there are linkage issues caused by bugs in interaction between MSBuild and CMake object libraries
+  # that take place with -rdc builds. Changing the default for now.
+  option(CUB_ENABLE_RDC_TESTS "Enable tests that require separable compilation." OFF)
+else()
+  option(CUB_ENABLE_RDC_TESTS "Enable tests that require separable compilation." ON)
+endif()
+
 option(CUB_FORCE_RDC "Enable separable compilation on all targets that support it." OFF)
 
 #

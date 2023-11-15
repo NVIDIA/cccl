@@ -121,7 +121,7 @@ Finally, we can run the algorithm:
 
 .. code:: c++
 
-    state.exec([&](nvbench::launch &launch) {
+    state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
       dispatch_t::Dispatch(temp_storage,
                            temp_size,
                            d_in,
