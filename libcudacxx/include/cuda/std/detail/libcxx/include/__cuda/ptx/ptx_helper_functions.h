@@ -35,6 +35,7 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_smem(const void* __ptr)
     ),
     NV_ANY_TARGET, (
       __cuda_ptx__as_conv_unavailable_in_host_code(__ptr);
+      return 0;
     )
   )
 }
@@ -49,6 +50,7 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_remote_dsmem(const void*
     ),
     NV_ANY_TARGET, (
       __cuda_ptx__as_conv_unavailable_in_host_code(__ptr);
+      return 0;
     )
   )
 }
@@ -62,6 +64,7 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
     ),
     NV_ANY_TARGET, (
       __cuda_ptx__as_conv_unavailable_in_host_code(__ptr);
+      return 0;
     )
   )
 }
@@ -77,6 +80,7 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
     ),
     NV_ANY_TARGET, (
       __cuda_ptx__as_conv_unavailable_in_host_code(__val);
+      return 0;
     )
   )
 }
@@ -92,6 +96,7 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val)
     ),
     NV_ANY_TARGET, (
       __cuda_ptx__as_conv_unavailable_in_host_code();
+      return 0;
     )
   )
 }
