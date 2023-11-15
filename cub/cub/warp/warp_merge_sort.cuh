@@ -41,6 +41,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -137,7 +139,7 @@ class WarpMergeSort
 {
 private:
   static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
-  static constexpr bool KEYS_ONLY    = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY    = ::cuda::std::is_same<ValueT, NullType>::value;
   static constexpr int TILE_SIZE     = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
 
   using BlockMergeSortStrategyT =

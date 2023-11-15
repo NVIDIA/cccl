@@ -42,7 +42,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <type_traits>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -51,13 +51,13 @@ namespace detail
 
 template <typename T>
 using is_integral_or_enum =
-  std::integral_constant<bool,
-                         std::is_integral<T>::value || std::is_enum<T>::value>;
+  ::cuda::std::integral_constant<bool,
+                         ::cuda::std::is_integral<T>::value || ::cuda::std::is_enum<T>::value>;
 
-__host__ __device__ __forceinline__ constexpr  std::size_t
-VshmemSize(std::size_t max_shmem,
-           std::size_t shmem_per_block,
-           std::size_t num_blocks)
+__host__ __device__ __forceinline__ constexpr  ::cuda::std::size_t
+VshmemSize(::cuda::std::size_t max_shmem,
+           ::cuda::std::size_t shmem_per_block,
+           ::cuda::std::size_t num_blocks)
 {
   return shmem_per_block > max_shmem ? shmem_per_block * num_blocks : 0;
 }

@@ -45,9 +45,6 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_exchange.cuh>
 
-#include <iterator>
-#include <type_traits>
-
 CUB_NAMESPACE_BEGIN
 
 //! @rst
