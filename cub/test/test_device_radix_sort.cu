@@ -508,7 +508,7 @@ cudaError_t Dispatch(
 // CUDA Nested Parallelism Test Kernel
 //---------------------------------------------------------------------
 
-#if TEST_CDP == 1
+#if TEST_LAUNCH == 1
 
 /**
  * Simple wrapper kernel to invoke DeviceRadixSort
@@ -686,7 +686,7 @@ DEFINE_CDP_DISPATCHER(CDP_SEGMENTED_NO_OVERWRITE, CUB_SEGMENTED_NO_OVERWRITE)
 
 #undef DEFINE_CDP_DISPATCHER
 
-#endif // TEST_CDP
+#endif // TEST_LAUNCH
 
 //---------------------------------------------------------------------
 // Problem generation
@@ -1301,17 +1301,17 @@ void TestBackend(KeyT                *h_keys,
                  KeyT                *h_reference_keys,
                  NumItemsT           *h_reference_ranks)
 {
-#if TEST_CDP == 0
+#if TEST_LAUNCH == 0
   constexpr auto NonSegmentedOverwrite   = CUB;
   constexpr auto NonSegmentedNoOverwrite = CUB_NO_OVERWRITE;
   constexpr auto SegmentedOverwrite      = CUB_SEGMENTED;
   constexpr auto SegmentedNoOverwrite    = CUB_SEGMENTED_NO_OVERWRITE;
-#else  // TEST_CDP
+#else  // TEST_LAUNCH
   constexpr auto NonSegmentedOverwrite   = CDP;
   constexpr auto NonSegmentedNoOverwrite = CDP_NO_OVERWRITE;
   constexpr auto SegmentedOverwrite      = CDP_SEGMENTED;
   constexpr auto SegmentedNoOverwrite    = CDP_SEGMENTED_NO_OVERWRITE;
-#endif // TEST_CDP
+#endif // TEST_LAUNCH
 
   constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
@@ -2235,7 +2235,7 @@ int main(int argc, char** argv)
     // Initialize device
     CubDebugExit(args.DeviceInit());
 
-    // %PARAM% TEST_CDP cdp 0:1
+    // %PARAM% TEST_LAUNCH lid 0:1
     // %PARAM% TEST_KEY_BYTES bytes 1:2:4:8:16
     // %PARAM% TEST_VALUE_TYPE pairs 0:1:2:3
     //   0->Keys only

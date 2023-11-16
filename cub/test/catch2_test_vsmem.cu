@@ -34,7 +34,7 @@
 #include <thrust/device_vector.h>
 
 #include "catch2/catch.hpp"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
 //----------------------------------------------------------------------------
@@ -403,9 +403,9 @@ CUB_RUNTIME_FUNCTION static cudaError_t device_dummy_algorithm(
 
 // CUB_NAMESPACE_END
 
-DECLARE_CDP_WRAPPER(device_dummy_algorithm, dummy_algorithm);
+DECLARE_LAUNCH_WRAPPER(device_dummy_algorithm, dummy_algorithm);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 using type_list = c2h::type_list< large_custom_t<1>, large_custom_t<80>, large_custom_t<128>, large_custom_t<512>>;
 

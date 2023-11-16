@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <stdexcept>
 #include <thrust/device_vector.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
@@ -40,11 +41,11 @@
 //!
 //! ```
 //! // Add PARAM to make CMake generate a test for both host and device launch:
-//! // %PARAM% TEST_CDP cdp 0:1
+//! // %PARAM% TEST_LAUNCH lid 0:1
 //!
 //! // Declare CDP wrapper for CUB API. The wrapper will accept the same
 //! // arguments as the CUB API. The wrapper name is provided as the second argument.
-//! DECLARE_CDP_WRAPPER(cub::DeviceReduce::Sum, cub_reduce_sum);
+//! DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, cub_reduce_sum);
 //!
 //! CUB_TEST("Reduce test", "[device][reduce]")
 //! {
@@ -59,11 +60,70 @@
 //!
 //! Consult with `test/catch2_test_cdp_wrapper.cu` for more usage examples.
 
-#if !defined(TEST_CDP)
-#error Test file should contain %PARAM% TEST_CDP cdp 0:1
+#if !defined(TEST_LAUNCH)
+#error Test file should contain %PARAM% TEST_LAUNCH lid 0:1
 #endif
 
-#if TEST_CDP == 1
+
+#if TEST_LAUNCH == 2
+
+template <class ActionT, class... Args>
+void cuda_graph_api_launch(ActionT action, Args... args)
+{
+  cudaStream_t stream{};
+  REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
+
+  std::uint8_t *d_temp_storage = nullptr;
+  std::size_t temp_storage_bytes{};
+  cudaError_t error = action(d_temp_storage, temp_storage_bytes, args..., stream);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == error);
+
+  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  cudaGraph_t graph{};
+  // REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
+  REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
+  error = action(d_temp_storage, temp_storage_bytes, args..., stream);
+  REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));
+  REQUIRE(cudaSuccess == error);
+
+  cudaGraphExec_t exec{};
+  REQUIRE(cudaSuccess == cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
+
+  REQUIRE(cudaSuccess == cudaGraphLaunch(exec, stream));
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(stream));
+
+  REQUIRE(cudaSuccess == cudaGraphExecDestroy(exec));
+  REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
+  REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
+}
+
+#define launch cuda_graph_api_launch
+
+#define DECLARE_INVOCABLE(API, WRAPPED_API_NAME)                                                   \
+  struct WRAPPED_API_NAME##_cuda_graph_invocable_t                                                 \
+  {                                                                                                \
+    template <class... Ts>                                                                         \
+    CUB_RUNTIME_FUNCTION cudaError_t operator()(std::uint8_t *d_temp_storage,                      \
+                                                std::size_t &temp_storage_bytes,                   \
+                                                Ts... args)                                        \
+    {                                                                                              \
+      return API(d_temp_storage, temp_storage_bytes, args...);                                     \
+    }                                                                                              \
+  };                                                                                               
+
+#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                                              \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME);                                                        \
+  template <class... As>                                                                           \
+  static void WRAPPED_API_NAME(As... args)                                                         \
+  {                                                                                                \
+    cuda_graph_api_launch(WRAPPED_API_NAME##_cuda_graph_invocable_t{}, args...);                   \
+  }                                                                                                
+
+#elif TEST_LAUNCH == 1
+
 template <class ActionT, class... Args>
 __global__ void device_side_api_launch_kernel(std::uint8_t *d_temp_storage,
                                               std::size_t *temp_storage_bytes,
@@ -73,6 +133,8 @@ __global__ void device_side_api_launch_kernel(std::uint8_t *d_temp_storage,
 {
   *d_error = action(d_temp_storage, *temp_storage_bytes, args...);
 }
+
+// We should assign 0 to stream argument when launching on device side, because host stream is not valid there.
 
 template <class ActionT, class... Args>
 void device_side_api_launch(ActionT action, Args... args)
@@ -102,9 +164,9 @@ void device_side_api_launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == d_error[0]);
 }
 
-#define cdp_launch device_side_api_launch
+#define launch device_side_api_launch
 
-#define DECLARE_CDP_INVOCABLE(API, WRAPPED_API_NAME)                                               \
+#define DECLARE_INVOCABLE(API, WRAPPED_API_NAME)                                                   \
   struct WRAPPED_API_NAME##_device_invocable_t                                                     \
   {                                                                                                \
     template <class... Ts>                                                                         \
@@ -116,15 +178,15 @@ void device_side_api_launch(ActionT action, Args... args)
     }                                                                                              \
   };                                                                                               
 
-#define DECLARE_CDP_WRAPPER(API, WRAPPED_API_NAME)                                                 \
-  DECLARE_CDP_INVOCABLE(API, WRAPPED_API_NAME);                                                    \
+#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                                              \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME);                                                        \
   template <class... As>                                                                           \
   static void WRAPPED_API_NAME(As... args)                                                         \
   {                                                                                                \
-    cdp_launch(WRAPPED_API_NAME##_device_invocable_t{}, args...);                                  \
+    launch(WRAPPED_API_NAME##_device_invocable_t{}, args...);                                      \
   }                                                                                                
 
-#else
+#else // TEST_LAUNCH == 0
 
 template <class ActionT, class... Args>
 void host_side_api_launch(ActionT action, Args... args)
@@ -145,9 +207,9 @@ void host_side_api_launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == error);
 }
 
-#define cdp_launch host_side_api_launch
+#define launch host_side_api_launch
 
-#define DECLARE_CDP_INVOCABLE(API, WRAPPED_API_NAME)                                               \
+#define DECLARE_INVOCABLE(API, WRAPPED_API_NAME)                                                   \
   struct WRAPPED_API_NAME##_host_invocable_t                                                       \
   {                                                                                                \
     template <class... Ts>                                                                         \
@@ -159,12 +221,12 @@ void host_side_api_launch(ActionT action, Args... args)
     }                                                                                              \
   };                                                                                               
 
-#define DECLARE_CDP_WRAPPER(API, WRAPPED_API_NAME)                                                 \
-  DECLARE_CDP_INVOCABLE(API, WRAPPED_API_NAME);                                                    \
+#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                                              \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME);                                                        \
   template <class... As>                                                                           \
   static void WRAPPED_API_NAME(As... args)                                                         \
   {                                                                                                \
-    cdp_launch(WRAPPED_API_NAME##_host_invocable_t{}, args...);                                    \
+    launch(WRAPPED_API_NAME##_host_invocable_t{}, args...);                                        \
   }                                                                                                
 
-#endif
+#endif // TEST_LAUNCH == 0

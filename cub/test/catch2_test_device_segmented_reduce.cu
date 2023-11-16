@@ -36,17 +36,17 @@
 
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
-DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
-DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Min, device_segmented_min);
-DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::ArgMin, device_segmented_arg_min);
-DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Max, device_segmented_max);
-DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::ArgMax, device_segmented_arg_max);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Min, device_segmented_min);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMin, device_segmented_arg_min);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Max, device_segmented_max);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMax, device_segmented_arg_max);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_TYPES types 0:1:2:3
 
 // List of types to test
