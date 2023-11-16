@@ -80,12 +80,12 @@ struct ValueToKey
   }
 };
 
-template <typename ValueType>
-struct ValueToKey<HugeDataType, ValueType>
+template <int ELEMENTS_PER_OBJECT, typename ValueType>
+struct ValueToKey<HugeDataType<ELEMENTS_PER_OBJECT>, ValueType>
 {
-  __device__ __host__ HugeDataType operator()(const ValueType &val)
+  __device__ __host__ HugeDataType<ELEMENTS_PER_OBJECT> operator()(const ValueType& val)
   {
-    return HugeDataType(val);
+    return HugeDataType<ELEMENTS_PER_OBJECT>(val);
   }
 };
 
@@ -325,7 +325,10 @@ void Test(thrust::default_random_engine &rng)
       const unsigned int num_items = 1 << pow2;
       AllocateAndTestIterators<DataType, DataType>(num_items);
 
-      TestHelper<true>::AllocateAndTest<HugeDataType, DataType>(rng, num_items);
+      // Testing vsmem facility with a fallback policy
+      TestHelper<true>::AllocateAndTest<HugeDataType<128>, DataType>(rng, num_items);
+      // Testing vsmem facility with virtual shared memory
+      TestHelper<true>::AllocateAndTest<HugeDataType<256>, DataType>(rng, num_items);
       Test<DataType>(rng, num_items);
     }
     catch (std::bad_alloc &e)

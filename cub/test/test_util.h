@@ -1479,9 +1479,10 @@ struct GpuTimer
     }
 };
 
+template <int ELEMENTS_PER_OBJECT_ = 128>
 struct HugeDataType
 {
-  static constexpr int ELEMENTS_PER_OBJECT = 128;
+  static constexpr int ELEMENTS_PER_OBJECT = ELEMENTS_PER_OBJECT_;
 
   __device__ __host__ HugeDataType()
   {
@@ -1491,7 +1492,7 @@ struct HugeDataType
     }
   }
 
-  __device__ __host__ HugeDataType(const HugeDataType&rhs)
+  __device__ __host__ HugeDataType(const HugeDataType& rhs)
   {
     for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
     {
@@ -1510,10 +1511,11 @@ struct HugeDataType
   int data[ELEMENTS_PER_OBJECT];
 };
 
-inline __device__ __host__ bool operator==(const HugeDataType &lhs,
-                                           const HugeDataType &rhs)
+template <int ELEMENTS_PER_OBJECT>
+inline __device__ __host__ bool
+operator==(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEMENTS_PER_OBJECT>& rhs)
 {
-  for (int i = 0; i < HugeDataType::ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
   {
     if (lhs.data[i] != rhs.data[i])
     {
@@ -1524,10 +1526,11 @@ inline __device__ __host__ bool operator==(const HugeDataType &lhs,
   return true;
 }
 
-inline __device__ __host__ bool operator<(const HugeDataType &lhs,
-                                          const HugeDataType &rhs)
+template <int ELEMENTS_PER_OBJECT>
+inline __device__ __host__ bool
+operator<(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEMENTS_PER_OBJECT>& rhs)
 {
-  for (int i = 0; i < HugeDataType::ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
   {
     if (lhs.data[i] < rhs.data[i])
     {
@@ -1538,11 +1541,10 @@ inline __device__ __host__ bool operator<(const HugeDataType &lhs,
   return false;
 }
 
-template <typename DataType>
-__device__ __host__ bool operator!=(const HugeDataType &lhs,
-                                    const DataType &rhs)
+template <typename DataType, int ELEMENTS_PER_OBJECT>
+__device__ __host__ bool operator!=(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const DataType& rhs)
 {
-  for (int i = 0; i < HugeDataType::ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
   {
     if (lhs.data[i] != rhs)
     {
