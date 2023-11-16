@@ -26,8 +26,15 @@ message(STATUS "CUB_CUDA_ARCHITECTURES_RDC: ${CUB_CUDA_ARCHITECTURES_RDC}")
 option(CUB_ENABLE_RDC_TESTS "Enable tests that require separable compilation." ON)
 option(CUB_FORCE_RDC "Enable separable compilation on all targets that support it." OFF)
 
+list(LENGTH CUB_CUDA_ARCHITECTURES_RDC rdc_arch_count)
+if (rdc_arch_count EQUAL 0)
+  message(NOTICE "Disabling CUB CDPv1 targets as no enabled architectures support it.")
+  set(CUB_ENABLE_RDC_TESTS OFF CACHE BOOL "" FORCE)
+  set(CUB_FORCE_RDC OFF CACHE BOOL "" FORCE)
+endif()
+
 #
-# Clang CUDA options 
+# Clang CUDA options
 #
 if ("Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Wno-unknown-cuda-version -Xclang=-fcuda-allow-variadic-functions")
