@@ -116,11 +116,11 @@ file(GLOB test_srcs
   catch2_test_*.cu
 )
 
-## cub_is_catch2_test
+## _cub_is_catch2_test
 #
 # If the test_src contains the substring "catch2_test_", `result_var` will
 # be set to TRUE.
-function(cub_is_catch2_test result_var test_src)
+function(_cub_is_catch2_test result_var test_src)
   string(FIND "${test_src}" "catch2_test_" idx)
   if (idx EQUAL -1)
     set(${result_var} FALSE PARENT_SCOPE)
@@ -129,10 +129,10 @@ function(cub_is_catch2_test result_var test_src)
   endif()
 endfunction()
 
-## cub_cdp_by_lid
+## _cub_launcher_requires_rdc
 #
 # If given launcher id corresponds to a CDP launcher, set `out_var` to 1.
-function(cub_cdp_by_lid out_var launcher_id)
+function(_cub_launcher_requires_rdc out_var launcher_id)
   if ("${launcher_id}" STREQUAL "1")
     set(${out_var} 1 PARENT_SCOPE)
   else()
@@ -155,8 +155,8 @@ endfunction()
 function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
   cub_get_target_property(config_prefix ${cub_target} PREFIX)
 
-  cub_is_catch2_test(is_catch2_test "${test_src}")
-  cub_cdp_by_lid(cdp_val "${launcher_id}")
+  _cub_is_catch2_test(is_catch2_test "${test_src}")
+  _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
 
   # The actual name of the test's target:
   set(test_target ${config_prefix}.test.${test_name})
@@ -372,7 +372,7 @@ foreach (test_src IN LISTS test_srcs)
           endif()
         endif()
 
-        cub_cdp_by_lid(cdp_val "${launcher_id}")
+        _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
 
         if (cdp_val AND NOT CUB_ENABLE_RDC_TESTS)
           continue()
