@@ -31,14 +31,15 @@ generate multiple test executables for the full cartesian product of values.
 
 ## Special Labels
 
-### CDP / RDC Testing
+### Testing Different Launchers
 
-If a `label` is `cdp`, it is assumed that the parameter is used to explicitly
-test variants built with and without CDP support. The `values` for such a
-parameter must be `0:1`, with `0` indicating CDP disabled (RDC off) and `1`
-indicating CDP enabled (RDC on).
+If a `label` is `lid`, it is assumed that the parameter is used to explicitly
+test variants built with different launchers. The `values` for such a
+parameter must be `0:1:2`, with `0` indicating host launch and CDP disabled (RDC off),
+`1` indicating device launch and CDP enabled (RDC on),
+`2` indicating graph capture launch and CDP disabled (RDC off).
 
-Tests that do not contain a variant labeled `cdp` will only enable RDC if
+Tests that do not contain a variant labeled `lid` will only enable RDC if
 the CMake config enables them.
 
 ## Example

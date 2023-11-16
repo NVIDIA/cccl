@@ -288,15 +288,12 @@ function(_cub_has_lid_variant out_var label)
   endif()
 endfunction()
 
-# Sets out_var to 1 if the label contains "cdp_1", e.g. cdp is explicitly
-# requested for this variant.
+# Sets out_var to 1 if the label contains "lid_1", e.g. launch id corresponds
+# to device-side (CDP) launch.
 function(_cub_launcher_id out_var label)
   string(REGEX MATCH "lid_([0-9]+)" MATCH_RESULT "${label}")
   if(MATCH_RESULT)
-    string(LENGTH "${MATCH_RESULT}" MATCH_LENGTH)
-    math(EXPR NUMBER_LENGTH "${MATCH_LENGTH} - 4")
-    string(SUBSTRING "${MATCH_RESULT}" 4 ${NUMBER_LENGTH} EXTRACTED_NUMBER)
-    set(${out_var} ${EXTRACTED_NUMBER} PARENT_SCOPE)
+    set(${out_var} ${CMAKE_MATCH_1} PARENT_SCOPE)
   else()
     set(${out_var} 0 PARENT_SCOPE)
   endif()
@@ -361,7 +358,7 @@ foreach (test_src IN LISTS test_srcs)
         # A unique index per variant:
         list(APPEND defs VAR_IDX=${var_idx})
 
-        # Check if the test has explicit CDP variants:
+        # Check if the test explicitly specifies launcher id:
         _cub_has_lid_variant(explicit_launcher "${label}")
         _cub_launcher_id(explicit_launcher_id "${label}")
 
@@ -381,6 +378,8 @@ foreach (test_src IN LISTS test_srcs)
           continue()
         endif()
 
+        cub_add_test(test_target ${test_name}.${label} "${test_src}" ${cub_target} ${launcher_id})
+
         # Enable RDC if the test either:
         # 1. Explicitly requests it (lid_1 label)
         # 2. Does not have an explicit CDP variant (no lid_0, lid_1, or lid_2) but
@@ -388,7 +387,6 @@ foreach (test_src IN LISTS test_srcs)
         #
         # Tests that explicitly request no cdp (lid_0 label) should never enable
         # RDC.
-        cub_add_test(test_target ${test_name}.${label} "${test_src}" ${cub_target} ${launcher_id})
         cub_configure_cuda_target(${test_target} RDC ${cdp_val})
         add_dependencies(${variant_meta_target} ${test_target})
         add_dependencies(${cub_variant_meta_target} ${test_target})

@@ -27,7 +27,6 @@
 
 #pragma once
 
-#include <stdexcept>
 #include <thrust/device_vector.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
@@ -58,6 +57,20 @@
 //!
 //! ```
 //!
+//! It's also possible to cover cuda graph capture. To do that, extend
+//! launcher ids with `2` as follows:
+//!
+//! ```
+//! // %PARAM% TEST_LAUNCH lid 0:1:2
+//! ```
+//! 
+//! Graph capture backend of launch helper will add extra parameter to each call,
+//! so `cub_reduce_sum(d_in, d_out, n, should_be_invoked_on_device)` implicitly turns 
+//! into `cub_reduce_sum(d_in, d_out, n, should_be_invoked_on_device, stream)`.
+//!
+//! If the wrapped API contains default parameters before stream, you'd want to explicitly 
+//! specify those at all invocations.
+//!
 //! Consult with `test/catch2_test_cdp_wrapper.cu` for more usage examples.
 
 #if !defined(TEST_LAUNCH)
@@ -83,7 +96,6 @@ void cuda_graph_api_launch(ActionT action, Args... args)
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   cudaGraph_t graph{};
-  // REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
   REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
   error = action(d_temp_storage, temp_storage_bytes, args..., stream);
   REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));

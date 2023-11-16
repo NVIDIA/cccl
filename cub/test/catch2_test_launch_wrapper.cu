@@ -71,9 +71,9 @@ struct cub_api_example_t
   {
     constexpr bool should_be_invoked_on_device = TEST_LAUNCH == 1;
 
-    NV_IF_TARGET(NV_IS_HOST,
-                 (if (should_be_invoked_on_device) { return cudaErrorLaunchFailure; }),
-                 (if (!should_be_invoked_on_device) { return cudaErrorLaunchFailure; }));
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (if (should_be_invoked_on_device) { return cudaErrorLaunchFailure; }),
+                      (if (!should_be_invoked_on_device) { return cudaErrorLaunchFailure; }));
 
     if (d_temp_storage == nullptr)
     {
@@ -136,7 +136,7 @@ struct cub_api_example_t
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x2_0, x2_0);
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x0_5, x0_5);
 
-CUB_TEST("Laucn wrapper works with predefined invocables", "[test][utils]")
+CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]")
 {
   INFO("Launch = " << TEST_LAUNCH);
 
