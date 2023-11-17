@@ -30,15 +30,24 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
-      # Build top level docs for CCCL
+      # Build helper image for Thrust/CUB
       - name: Build helper image
-        run: ./docs/make_env.sh "cccl:docs"
+        run: |
+          bash ./docs/make_env.bash "cccl:docs"
 
+      # Build top level docs for CCCL
       - name: Build landing page
         uses: actions/jekyll-build-pages@v1
         with:
           source: ./docs/jekyll
           destination: ./_site
+
+      # CUB
+      - name: Build CUB docs
+        run: |
+          bash ./docs/build_docs.bash "cccl:docs" /cccl/cub/docs/gen_docs.bash
+          sudo mkdir -p ./_site/cub
+          sudo cp -rf ./cub/docs/_build/docs/CUB/latest/* ./_site/cub
 
       # Libcudacxx
       - name: Build libcudacxx docs
@@ -49,7 +58,7 @@ jobs:
 
       # Thrust
       - name: Build Thrust markdown in Docker
-        run: ./docs/build_docs.sh "cccl:docs" /cccl/thrust/docs/build_docs_locally.bash
+        run: bash ./docs/build_docs.bash "cccl:docs" /cccl/thrust/docs/build_docs_locally.bash
 
       - name: Build Thrust docs
         uses: actions/jekyll-build-pages@v1
@@ -57,6 +66,7 @@ jobs:
           source: ./thrust/build_docs/github_pages
           destination: ./_site/thrust
 
+      # Upload build artifacts
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
 

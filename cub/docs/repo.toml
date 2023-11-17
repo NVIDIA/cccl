@@ -102,7 +102,7 @@ doxygen_predefined = [
     "CUB_IGNORE_DEPRECATED_CPP_DIALECT"
 ]
 
-# make sure to use ./fetch_imgs.sh 
+# make sure to use ./fetch_imgs.sh
 doxygen_conf_extra = """
   IMAGE_PATH             = ${config_root}/img
   DOXYFILE_ENCODING      = UTF-8
