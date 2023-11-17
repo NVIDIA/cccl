@@ -229,6 +229,7 @@ since C++20
 #include "__type_traits/add_pointer.h"
 #include "__type_traits/add_volatile.h"
 #include "__type_traits/dependent_type.h"
+#include "__type_traits/integral_constant.h"
 #include "__type_traits/is_array.h"
 #include "__type_traits/is_destructible.h"
 #include "__type_traits/is_nothrow_move_constructible.h"
@@ -245,6 +246,7 @@ since C++20
 #include "__utility/declval.h"
 #include "__utility/forward.h"
 #include "__utility/in_place.h"
+#include "__utility/integer_sequence.h"
 #include "__utility/move.h"
 #include "__utility/swap.h"
 #include "__variant/monostate.h"
@@ -285,20 +287,6 @@ _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 #if _LIBCUDACXX_STD_VER >= 14
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-// Light N-dimensional array of function pointers. Used in place of
-// _CUDA_VSTD::array to avoid adding a dependency.
-template <class _Tp, size_t _Size>
-struct __farray
-{
-  static_assert(_Size > 0, "N-dimensional array should never be empty in _CUDA_VSTD::visit");
-  _Tp __buf_[_Size] = {};
-
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr const _Tp& operator[](size_t __n) const noexcept
-  {
-    return __buf_[__n];
-  }
-};
 
 _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS void
 __throw_bad_variant_access()
@@ -549,104 +537,131 @@ struct __variant
 
 namespace __visitation
 {
-
-struct __base
-{
-  template <class _Visitor, class... _Vs>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto) __visit_alt(_Visitor&& __visitor, _Vs&&... __vs)
-  {
-    constexpr auto __fmatrix = __make_fmatrix<_Visitor&&, decltype(_CUDA_VSTD::forward<_Vs>(__vs).__as_base())...>();
-    return __at(__fmatrix, __vs.index()...)(
-      _CUDA_VSTD::forward<_Visitor>(__visitor), _CUDA_VSTD::forward<_Vs>(__vs).__as_base()...);
-  }
-
-private:
-  template <class _Tp>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr const _Tp& __at(const _Tp& __elem)
-  {
-    return __elem;
-  }
-
-  template <class _Tp, size_t _Np, typename... _Indices>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto&&
-  __at(const __farray<_Tp, _Np>& __elems, size_t __index, _Indices... __indices)
-  {
-    return __at(__elems[__index], __indices...);
-  }
-
-  template <class _Fp, class... _Fs>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void __std_visit_visitor_return_type_check()
-  {
-    static_assert(__all<_LIBCUDACXX_TRAIT(is_same, _Fp, _Fs)...>::value,
-                  "`std::visit` requires the visitor to have a single return type.");
-  }
-
-  template <class... _Fs>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto __make_farray(_Fs&&... __fs)
-  {
-    __std_visit_visitor_return_type_check<__remove_cvref_t<_Fs>...>();
-    using __result = __farray<common_type_t<__remove_cvref_t<_Fs>...>, sizeof...(_Fs)>;
-    return __result{{_CUDA_VSTD::forward<_Fs>(__fs)...}};
-  }
-
-  template <size_t... _Is>
-  struct __dispatcher
-  {
-    template <class _Fp, class... _Vs>
-    _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto) __dispatch(_Fp __f, _Vs... __vs)
-    {
-      return _CUDA_VSTD::__invoke(static_cast<_Fp>(__f), __access::__base::__get_alt<_Is>(static_cast<_Vs>(__vs))...);
-    }
-  };
-
-  template <class _Fp, class... _Vs, size_t... _Is>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto __make_dispatch(index_sequence<_Is...>)
-  {
-    return __dispatcher<_Is...>::template __dispatch<_Fp, _Vs...>;
-  }
-
-  template <class _Fp, class... _Vs, size_t... _Is>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto __make_fmatrix_impl(index_sequence<_Is...> __is)
-  {
-    return __make_dispatch<_Fp, _Vs...>(__is);
-  }
-
-  template <class _Fp, class... _Vs, size_t... _Is, size_t... _Js, class... _Ls>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
-  __make_fmatrix_impl(index_sequence<_Is...>, index_sequence<_Js...>, _Ls... __ls)
-  {
-    return __base::__make_farray(__make_fmatrix_impl<_Fp, _Vs...>(index_sequence<_Is..., _Js>{}, __ls...)...);
-  }
-
-  template <class _Fp, class... _Vs>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto __make_fmatrix()
-  {
-    return __make_fmatrix_impl<_Fp, _Vs...>(
-      index_sequence<>{}, _CUDA_VSTD::make_index_sequence<__remove_cvref_t<_Vs>::__size()>{}...);
-  }
-};
-
 struct __variant
 {
-  template <class _Visitor, class... _Vs>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto) __visit_alt(_Visitor&& __visitor, _Vs&&... __vs)
+  // We need to guard against the final invocation where we have processed all variants
+  template <size_t _Remaining, size_t _CurrentVariant, class... _Variants, enable_if_t<_Remaining == 0, int> = 0>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr size_t __get_runtime_index(const _Variants&...) noexcept
   {
-    return __base::__visit_alt(
-      _CUDA_VSTD::forward<_Visitor>(__visitor), _CUDA_VSTD::__as_variant(_CUDA_VSTD::forward<_Vs>(__vs)).__impl_...);
+    return 0;
+  }
+
+  template <size_t _Remaining,
+            size_t _CurrentVariant,
+            class _Variant,
+            class... _OtherVariants,
+            enable_if_t<(_Remaining != 0) && (_CurrentVariant == 0), int> = 0>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr size_t
+  __get_runtime_index(const _Variant& __v, const _OtherVariants&... __vs) noexcept
+  {
+    return __v.__impl_.index();
+  }
+
+  template <size_t _Remaining,
+            size_t _CurrentVariant,
+            class _Variant,
+            class... _OtherVariants,
+            enable_if_t<(_Remaining != 0) && (_CurrentVariant != 0), int> = 0>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr size_t
+  __get_runtime_index(const _Variant& __v, const _OtherVariants&... __vs) noexcept
+  {
+    return __get_runtime_index<_Remaining, _CurrentVariant - 1>(__vs...);
+  }
+
+  // Terminal function call with all indexes determined
+  template <class _Visitor, class... _Vs, size_t... _ProcessedIndices>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto) __visit_impl(
+    integer_sequence<size_t, _ProcessedIndices...>,
+    integer_sequence<size_t>,
+    const size_t,
+    _Visitor&& __visitor,
+    _Vs&&... __vs)
+  {
+    return _CUDA_VSTD::__invoke(
+      _CUDA_VSTD::forward<_Visitor>(__visitor),
+      __access::__base::__get_alt<_ProcessedIndices>(_CUDA_VSTD::forward<_Vs>(__vs).__impl_)...);
+  }
+
+  template <size_t _CurrentIndex,
+            class _Visitor,
+            class... _Vs,
+            size_t... _ProcessedIndices,
+            size_t... _UnprocessedIndices,
+            enable_if_t<_CurrentIndex != 0, int> = 0>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto) __visit_impl(
+    integer_sequence<size_t, _ProcessedIndices...>,
+    integer_sequence<size_t, _CurrentIndex, _UnprocessedIndices...>,
+    const size_t __current_index,
+    _Visitor&& __visitor,
+    _Vs&&... __vs)
+  {
+    // We found the right index, move to the next variant
+    if (__current_index == _CurrentIndex)
+    {
+      const size_t __next_index =
+        __get_runtime_index<sizeof...(_UnprocessedIndices), sizeof...(_ProcessedIndices) + 1>(__vs...);
+      return __visit_impl(
+        integer_sequence<size_t, _ProcessedIndices..., _CurrentIndex>{},
+        integer_sequence<size_t, _UnprocessedIndices...>{},
+        __next_index,
+        _CUDA_VSTD::forward<_Visitor>(__visitor),
+        _CUDA_VSTD::forward<_Vs>(__vs)...);
+    }
+
+    return __visit_impl(
+      integer_sequence<size_t, _ProcessedIndices...>{},
+      integer_sequence<size_t, _CurrentIndex - 1, _UnprocessedIndices...>{},
+      __current_index,
+      _CUDA_VSTD::forward<_Visitor>(__visitor),
+      _CUDA_VSTD::forward<_Vs>(__vs)...);
+  }
+
+  // This overload is needed to tell the compiler that the recursion is indeed limited
+  template <class _Visitor, class... _Vs, size_t... _ProcessedIndices, size_t... _UnprocessedIndices>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto) __visit_impl(
+    integer_sequence<size_t, _ProcessedIndices...>,
+    integer_sequence<size_t, 0, _UnprocessedIndices...>,
+    const size_t __current_index,
+    _Visitor&& __visitor,
+    _Vs&&... __vs)
+  {
+    // We found the right index, move to the next variant
+    if (__current_index == 0)
+    {
+      const size_t __next_index =
+        __get_runtime_index<sizeof...(_UnprocessedIndices), sizeof...(_ProcessedIndices) + 1>(__vs...);
+      return __visit_impl(
+        integer_sequence<size_t, _ProcessedIndices..., 0>{},
+        integer_sequence<size_t, _UnprocessedIndices...>{},
+        __next_index,
+        _CUDA_VSTD::forward<_Visitor>(__visitor),
+        _CUDA_VSTD::forward<_Vs>(__vs)...);
+    }
+    _LIBCUDACXX_UNREACHABLE();
   }
 
   template <class _Visitor, class... _Vs>
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto) __visit_value(_Visitor&& __visitor, _Vs&&... __vs)
   {
-    return __visit_alt(__make_value_visitor(_CUDA_VSTD::forward<_Visitor>(__visitor)),
-                       _CUDA_VSTD::forward<_Vs>(__vs)...);
+    const size_t __first_index = __get_runtime_index<sizeof...(_Vs), 0>(__vs...);
+    return __visit_impl(
+      integer_sequence<size_t>{},
+      integer_sequence<size_t, (__remove_cvref_t<_Vs>::__size() - 1)...>{},
+      __first_index,
+      __make_value_visitor(_CUDA_VSTD::forward<_Visitor>(__visitor)),
+      _CUDA_VSTD::forward<_Vs>(__vs)...);
   }
 
   template <class _Rp, class _Visitor, class... _Vs>
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr _Rp __visit_value(_Visitor&& __visitor, _Vs&&... __vs)
   {
-    return __visit_alt(__make_value_visitor<_Rp>(_CUDA_VSTD::forward<_Visitor>(__visitor)),
-                       _CUDA_VSTD::forward<_Vs>(__vs)...);
+    const size_t __first_index = __get_runtime_index<sizeof...(_Vs), 0>(__vs...);
+    return __visit_impl(
+      integer_sequence<size_t>{},
+      integer_sequence<size_t, (__remove_cvref_t<_Vs>::__size() - 1)...>{},
+      __first_index,
+      __make_value_visitor<_Rp>(_CUDA_VSTD::forward<_Visitor>(__visitor)),
+      _CUDA_VSTD::forward<_Vs>(__vs)...);
   }
 
 private:
@@ -839,7 +854,6 @@ protected:
   __index_t __index;
 
   friend struct __access::__base;
-  friend struct __visitation::__base;
 };
 
 template <class _Traits, _Trait = _Traits::__destructible_trait>
@@ -909,8 +923,8 @@ private:
   {
     if (__index == _CurrentIndex)
     {
-      using __value_type = __type_pack_element<_CurrentIndex, _Types...>;
-      __access::__base::__get_alt<_CurrentIndex>(this->__as_base()).__value.~__value_type();
+      using __alt_type = __remove_cvref_t<decltype(__access::__base::__get_alt<_CurrentIndex>(this->__as_base()))>;
+      __access::__base::__get_alt<_CurrentIndex>(this->__as_base()).~__alt_type();
       return;
     }
     __destroy(integral_constant<size_t, _CurrentIndex - 1>{}, __index);
@@ -919,8 +933,8 @@ private:
   {
     if (__index == 0)
     {
-      using __value_type = __type_pack_element<0, _Types...>;
-      __access::__base::__get_alt<0>(this->__as_base()).__value.~__value_type();
+      using __alt_type = __remove_cvref_t<decltype(__access::__base::__get_alt<0>(this->__as_base()))>;
+      __access::__base::__get_alt<0>(this->__as_base()).~__alt_type();
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
@@ -1695,6 +1709,11 @@ public:
     __impl_.__swap(__that.__impl_);
   }
 
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr size_t __size() noexcept
+  {
+    return sizeof...(_Types);
+  }
+
 private:
   __variant_detail::__impl<_Types...> __impl_;
 
@@ -1907,7 +1926,6 @@ private:
 template <class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator==(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
 {
-  using __variant_detail::__visitation::__variant;
   const auto __index = __lhs.index();
   if (__index != __rhs.index())
   {
@@ -1928,7 +1946,6 @@ template <class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr common_comparison_category_t<compare_three_way_result_t<_Types>...>
 operator<=>(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
 {
-  using __variant_detail::__visitation::__variant;
   using __result_t = common_comparison_category_t<compare_three_way_result_t<_Types>...>;
   if (__lhs.valueless_by_exception() && __rhs.valueless_by_exception())
   {
@@ -1957,7 +1974,6 @@ operator<=>(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
 template <class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator!=(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
 {
-  using __variant_detail::__visitation::__variant;
   if (__lhs.index() != __rhs.index())
   {
     return true;
@@ -1972,7 +1988,6 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator!=(const variant<_Types...>
 template <class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
 {
-  using __variant_detail::__visitation::__variant;
   if (__rhs.valueless_by_exception())
   {
     return false;
@@ -1995,7 +2010,6 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<(const variant<_Types...>&
 template <class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
 {
-  using __variant_detail::__visitation::__variant;
   if (__lhs.valueless_by_exception())
   {
     return false;
@@ -2018,7 +2032,6 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>(const variant<_Types...>&
 template <class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<=(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
 {
-  using __variant_detail::__visitation::__variant;
   if (__lhs.valueless_by_exception())
   {
     return true;
@@ -2041,7 +2054,6 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<=(const variant<_Types...>
 template <class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>=(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
 {
-  using __variant_detail::__visitation::__variant;
   if (__rhs.valueless_by_exception())
   {
     return true;
@@ -2133,11 +2145,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<__enable_hash_helper<variant<_Types...>, re
 
   _LIBCUDACXX_INLINE_VISIBILITY result_type operator()(const argument_type& __v) const
   {
-    using __variant_detail::__visitation::__variant;
-    size_t __res =
-      __v.valueless_by_exception()
-        ? 299792458 // Random value chosen by the universe upon creation
-        : __hash(integral_constant<size_t, sizeof...(_Types) - 1>{}, __v.index(), __v);
+    size_t __res = __v.valueless_by_exception()
+                   ? 299792458 // Random value chosen by the universe upon creation
+                   : __hash(integral_constant<size_t, sizeof...(_Types) - 1>{}, __v.index(), __v);
     return _CUDA_VSTD::__hash_combine(__res, hash<size_t>{}(__v.index()));
   }
 };
