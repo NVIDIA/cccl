@@ -13,6 +13,8 @@ search.heading_level: 4
 # just-the-docs ignores these filenames by default.
 include: [ "contributing.md", "code_of_conduct.md" ]
 
+baseurl: "cccl/libcudacxx"
+
 plugins_dir:
   - jekyll-remote-theme
   - jekyll-optional-front-matter # GitHub Pages.
