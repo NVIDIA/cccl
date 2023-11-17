@@ -380,10 +380,10 @@ void TestFunctionIsBijection(size_t m) {
   thrust::default_random_engine device_g(0xD5);
   thrust::system::detail::generic::feistel_bijection device_f(m, device_g);
 
-  if (static_cast<double>(device_f.nearest_power_of_two()) >= static_cast<double>(std::numeric_limits<T>::max()) || m == 0) {
+  const size_t total_length = device_f.nearest_power_of_two();
+  if (static_cast<double>(total_length) >= static_cast<double>(std::numeric_limits<T>::max()) || m == 0) {
     return;
   }
-  const size_t total_length = device_f.nearest_power_of_two();
   ASSERT_LEQUAL(total_length, std::max(m * 2, size_t(16))); // Check the rounded up size is at most double the input
 
   auto device_result_it = thrust::make_transform_iterator(thrust::make_counting_iterator(T(0)),
@@ -392,7 +392,9 @@ void TestFunctionIsBijection(size_t m) {
   thrust::device_vector<T> unpermuted(total_length, T(0));
 
   // Run a scatter, this should copy each value to the index matching is value, the result should be in ascending order
-  thrust::scatter(device_result_it, device_result_it + total_length, device_result_it, unpermuted.begin());
+  thrust::scatter(device_result_it,
+                  device_result_it + static_cast<T>(total_length), // total_length is guaranteed to fit T
+                  device_result_it, unpermuted.begin());
 
   // Check every index is in the result, if any are missing then the function was not a bijection over [0,m)
   ASSERT_EQUAL(true, thrust::equal(unpermuted.begin(), unpermuted.end(), thrust::make_counting_iterator(T(0))));
