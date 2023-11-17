@@ -28,7 +28,7 @@
 
 #include <thrust/detail/config/cpp_dialect.h>
 
-#include <cstddef>
+#include <cuda/std/cstddef>
 
 #ifndef __has_cpp_attribute
 #  define __has_cpp_attribute(X) 0

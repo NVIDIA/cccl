@@ -46,7 +46,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <iterator>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -408,7 +408,7 @@ ThreadLoad(InputIteratorT itr)
     return ThreadLoad(
         itr,
         Int2Type<MODIFIER>(),
-        Int2Type<std::is_pointer<InputIteratorT>::value>());
+        Int2Type<::cuda::std::is_pointer<InputIteratorT>::value>());
 }
 
 

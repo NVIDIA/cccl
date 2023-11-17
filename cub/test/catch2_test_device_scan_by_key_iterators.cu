@@ -37,15 +37,15 @@
 
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
-DECLARE_CDP_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
-DECLARE_CDP_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_inclusive_sum_by_key);
-DECLARE_CDP_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_inclusive_scan_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_inclusive_sum_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_inclusive_scan_by_key);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1
 // %PARAM% TEST_TYPES types 0:1:2:3
 
 // List of types to test

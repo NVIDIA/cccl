@@ -31,14 +31,15 @@ generate multiple test executables for the full cartesian product of values.
 
 ## Special Labels
 
-### CDP / RDC Testing
+### Testing Different Launchers
 
-If a `label` is `cdp`, it is assumed that the parameter is used to explicitly
-test variants built with and without CDP support. The `values` for such a
-parameter must be `0:1`, with `0` indicating CDP disabled (RDC off) and `1`
-indicating CDP enabled (RDC on).
+If a `label` is `lid`, it is assumed that the parameter is used to explicitly
+test variants built with different launchers. The `values` for such a
+parameter must be `0:1:2`, with `0` indicating host launch and CDP disabled (RDC off),
+`1` indicating device launch and CDP enabled (RDC on),
+`2` indicating graph capture launch and CDP disabled (RDC off).
 
-Tests that do not contain a variant labeled `cdp` will only enable RDC if
+Tests that do not contain a variant labeled `lid` will only enable RDC if
 the CMake config enables them.
 
 ## Example
@@ -47,20 +48,20 @@ For example, if `test_baz.cu` contains the following lines:
 
 ```cpp
 // %PARAM% TEST_FOO foo 0:1:2
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1
 ```
 
 Six executables and CTest targets will be generated with unique definitions
 (only c++17 targets shown):
 
-| Executable Name                  | Preprocessor Definitions    | RDC State |
-|----------------------------------|-----------------------------|-----------|
-| `cub.cpp17.test.baz.foo_0.cdp_0` | `-DTEST_FOO=0 -DTEST_CDP=0` | Disabled  |
-| `cub.cpp17.test.baz.foo_0.cdp_1` | `-DTEST_FOO=0 -DTEST_CDP=1` | Enabled   |
-| `cub.cpp17.test.baz.foo_1.cdp_0` | `-DTEST_FOO=1 -DTEST_CDP=0` | Disabled  |
-| `cub.cpp17.test.baz.foo_1.cdp_1` | `-DTEST_FOO=1 -DTEST_CDP=1` | Enabled   |
-| `cub.cpp17.test.baz.foo_2.cdp_0` | `-DTEST_FOO=2 -DTEST_CDP=0` | Disabled  |
-| `cub.cpp17.test.baz.foo_2.cdp_1` | `-DTEST_FOO=2 -DTEST_CDP=1` | Enabled   |
+| Executable Name                  | Preprocessor Definitions       | Launcher  |
+|----------------------------------|--------------------------------|-----------|
+| `cub.cpp17.test.baz.foo_0.lid_0` | `-DTEST_FOO=0 -DTEST_LAUNCH=0` | Host      |
+| `cub.cpp17.test.baz.foo_0.lid_1` | `-DTEST_FOO=0 -DTEST_LAUNCH=1` | Device    |
+| `cub.cpp17.test.baz.foo_1.lid_0` | `-DTEST_FOO=1 -DTEST_LAUNCH=0` | Host      |
+| `cub.cpp17.test.baz.foo_1.lid_1` | `-DTEST_FOO=1 -DTEST_LAUNCH=1` | Device    |
+| `cub.cpp17.test.baz.foo_2.lid_0` | `-DTEST_FOO=2 -DTEST_LAUNCH=0` | Host      |
+| `cub.cpp17.test.baz.foo_2.lid_1` | `-DTEST_FOO=2 -DTEST_LAUNCH=1` | Device    |
 
 ## Changing `%PARAM%` Hints
 
