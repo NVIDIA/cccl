@@ -5,7 +5,7 @@ repository: nvidia/libcudacxx
 remote_theme: pmarsceill/just-the-docs
 
 color_scheme: nvidia
-logo: ../../docs/images/nvidia_logo.png
+logo: /images/nvidia_logo.png
 
 search_enabled: true
 search.heading_level: 4
