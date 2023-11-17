@@ -1065,7 +1065,7 @@ struct DeviceReduce
    *   Binary reduction functor
    *
    * @param[in] transform_op
-   *   Uniary transform functor
+   *   Unary transform functor
    *
    * @param[in] init
    *   Initial value of the reduction
