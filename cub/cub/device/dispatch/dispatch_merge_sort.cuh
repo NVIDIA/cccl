@@ -72,7 +72,7 @@ struct dual_policy_agent_helper_t
  * size. This circumstance needs to be respected when determining whether the fallback policy for large user types is
  * applicable: we must either use the fallback for both or for none of the two agents.
  */
-template < typename default_policy_t,
+template < typename DefaultPolicyT,
            typename KeyInputIteratorT,
            typename ValueInputIteratorT,
            typename KeyIteratorT,
@@ -85,12 +85,12 @@ class merge_sort_vsmem_helper_t
 {
 private:
   // Default fallback policy with a smaller tile size
-  using fallback_policy_t = cub::detail::policy_wrapper_t<default_policy_t, 64, 1>;
+  using fallback_policy_t = cub::detail::policy_wrapper_t<DefaultPolicyT, 64, 1>;
 
   // Helper for the `AgentBlockSort` template with one member type alias for the agent template instantiated with the
   // default policy and one instantiated with the fallback policy
   using block_sort_helper_t = dual_policy_agent_helper_t<
-    default_policy_t,
+    DefaultPolicyT,
     fallback_policy_t,
     AgentBlockSort,
     KeyInputIteratorT,
@@ -107,7 +107,7 @@ private:
   // Helper for the `AgentMerge` template with one member type alias for the agent template instantiated with the
   // default policy and one instantiated with the fallback policy
   using merge_helper_t = dual_policy_agent_helper_t<
-    default_policy_t,
+    DefaultPolicyT,
     fallback_policy_t,
     AgentMerge,
     KeyIteratorT,
@@ -122,13 +122,14 @@ private:
   // Use fallback if either (a) the default block sort or (b) the block merge agent exceed the maximum shared memory
   // available per block and both (1) the fallback block sort and (2) the fallback merge agent would not exceed the
   // available shared memory
+  static constexpr auto max_default_size = (cub::max)(block_sort_helper_t::default_size, merge_helper_t::default_size);
+  static constexpr auto max_fallback_size =
+    (cub::max)(block_sort_helper_t::fallback_size, merge_helper_t::fallback_size);
   static constexpr bool uses_fallback_policy =
-    (block_sort_helper_t::default_size > max_smem_per_block || merge_helper_t::default_size > max_smem_per_block)
-    && (block_sort_helper_t::fallback_size <= max_smem_per_block
-        && merge_helper_t::fallback_size <= max_smem_per_block);
+    (max_default_size > max_smem_per_block) && (max_fallback_size <= max_smem_per_block);
 
 public:
-  using policy_t = cub::detail::conditional_t<uses_fallback_policy, fallback_policy_t, default_policy_t>;
+  using policy_t = cub::detail::conditional_t<uses_fallback_policy, fallback_policy_t, DefaultPolicyT>;
   using block_sort_agent_t =
     cub::detail::conditional_t<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
   using merge_agent_t = cub::detail::conditional_t<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
@@ -362,82 +363,6 @@ struct DeviceMergeSortPolicy
   using MaxPolicy = Policy600;
 };
 
-template < typename KeyInputIteratorT,
-           typename ValueInputIteratorT,
-           typename KeyIteratorT,
-           typename ValueIteratorT,
-           typename OffsetT,
-           typename ChainedPolicyT,
-           typename CompareOpT,
-           typename KeyT,
-           typename ValueT>
-struct MergeLauncher
-{
-  int block_threads;
-  int num_tiles;
-
-  KeyIteratorT d_keys;
-  ValueIteratorT d_items;
-  OffsetT num_items;
-  CompareOpT compare_op;
-  OffsetT* merge_partitions;
-  cudaStream_t stream;
-
-  KeyT* keys_buffer;
-  ValueT* items_buffer;
-  cub::detail::vsmem_t vsmem;
-
-  CUB_RUNTIME_FUNCTION __forceinline__ MergeLauncher(
-    int block_threads,
-    int num_tiles,
-    KeyIteratorT d_keys,
-    ValueIteratorT d_items,
-    OffsetT num_items,
-    CompareOpT compare_op,
-    OffsetT* merge_partitions,
-    cudaStream_t stream,
-    KeyT* keys_buffer,
-    ValueT* items_buffer,
-    cub::detail::vsmem_t vsmem)
-      : block_threads(block_threads)
-      , num_tiles(num_tiles)
-      , d_keys(d_keys)
-      , d_items(d_items)
-      , num_items(num_items)
-      , compare_op(compare_op)
-      , merge_partitions(merge_partitions)
-      , stream(stream)
-      , keys_buffer(keys_buffer)
-      , items_buffer(items_buffer)
-      , vsmem(vsmem)
-  {}
-
-  CUB_RUNTIME_FUNCTION __forceinline__ void launch(bool ping, OffsetT target_merged_tiles_number) const
-  {
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_tiles, block_threads, 0, stream)
-      .doit(
-        DeviceMergeSortMergeKernel<ChainedPolicyT,
-                                   KeyInputIteratorT,
-                                   ValueInputIteratorT,
-                                   KeyIteratorT,
-                                   ValueIteratorT,
-                                   OffsetT,
-                                   CompareOpT,
-                                   KeyT,
-                                   ValueT>,
-        ping,
-        d_keys,
-        d_items,
-        num_items,
-        keys_buffer,
-        items_buffer,
-        compare_op,
-        merge_partitions,
-        target_merged_tiles_number,
-        vsmem);
-  }
-};
-
 template <typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
@@ -667,28 +592,6 @@ struct DispatchMergeSort : SelectedPolicy
       const int partition_grid_size =
         static_cast<int>(cub::DivideAndRoundUp(num_partitions, threads_per_partition_block));
 
-      MergeLauncher< KeyInputIteratorT,
-                     ValueInputIteratorT,
-                     KeyIteratorT,
-                     ValueIteratorT,
-                     OffsetT,
-                     MaxPolicyT,
-                     CompareOpT,
-                     KeyT,
-                     ValueT>
-        merge_launcher(
-          static_cast<int>(merge_sort_helper_t::policy_t::BLOCK_THREADS),
-          static_cast<int>(num_tiles),
-          d_output_keys,
-          d_output_items,
-          num_items,
-          compare_op,
-          merge_partitions,
-          stream,
-          keys_buffer,
-          items_buffer,
-          cub::detail::vsmem_t{allocations[3]});
-
       error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
@@ -734,7 +637,28 @@ struct DispatchMergeSort : SelectedPolicy
         }
 
         // Merge
-        merge_launcher.launch(ping, target_merged_tiles_number);
+        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+          static_cast<int>(num_tiles), static_cast<int>(merge_sort_helper_t::policy_t::BLOCK_THREADS), 0, stream)
+          .doit(
+            DeviceMergeSortMergeKernel<MaxPolicyT,
+                                       KeyInputIteratorT,
+                                       ValueInputIteratorT,
+                                       KeyIteratorT,
+                                       ValueIteratorT,
+                                       OffsetT,
+                                       CompareOpT,
+                                       KeyT,
+                                       ValueT>,
+            ping,
+            d_output_keys,
+            d_output_items,
+            num_items,
+            keys_buffer,
+            items_buffer,
+            compare_op,
+            merge_partitions,
+            target_merged_tiles_number,
+            cub::detail::vsmem_t{allocations[3]});
 
         error = CubDebug(detail::DebugSyncStream(stream));
         if (cudaSuccess != error)
