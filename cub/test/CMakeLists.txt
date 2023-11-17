@@ -129,6 +129,19 @@ function(_cub_is_catch2_test result_var test_src)
   endif()
 endfunction()
 
+## _cub_is_fail_test
+#
+# If the test_src contains the substring "_fail", `result_var` will
+# be set to TRUE.
+function(_cub_is_fail_test result_var test_src)
+  string(FIND "${test_src}" "_fail" idx)
+  if (idx EQUAL -1)
+    set(${result_var} FALSE PARENT_SCOPE)
+  else()
+    set(${result_var} TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
 ## _cub_launcher_requires_rdc
 #
 # If given launcher id corresponds to a CDP launcher, set `out_var` to 1.
@@ -265,16 +278,45 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       thrust_fix_clang_nvcc_build_for(${test_target})
     endif()
 
-    # Add to the active configuration's meta target
-    add_dependencies(${config_meta_target} ${test_target})
+    _cub_is_fail_test(is_fail_test "${test_src}")
+    if (is_fail_test)
+      set_target_properties(${test_target} PROPERTIES EXCLUDE_FROM_ALL true
+                                           EXCLUDE_FROM_DEFAULT_BUILD true)
+      add_test(NAME ${test_target}
+               COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}" 
+                                        --target ${test_target} 
+                                        --config $<CONFIGURATION>)
+      string(REGEX MATCH "err_([0-9]+)" MATCH_RESULT "${test_name}")
+      file(READ ${test_src} test_content)
+      if(MATCH_RESULT)
+        string(REGEX MATCH "// expected-error-${CMAKE_MATCH_1}+ {{\"([^\"]+)\"}}" expected_errors_matches ${test_content})
 
-    # Meta target that builds tests with this name for all configurations:
-    if (NOT TARGET ${test_meta_target})
-      add_custom_target(${test_meta_target})
+        if (expected_errors_matches)
+          set_tests_properties(${test_target} PROPERTIES PASS_REGULAR_EXPRESSION "${CMAKE_MATCH_1}")
+        else()
+          set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
+        endif()
+      else()
+        string(REGEX MATCH "// expected-error {{\"([^\"]+)\"}}" expected_errors_matches ${test_content})
+
+        if (expected_errors_matches)
+          set_tests_properties(${test_target} PROPERTIES PASS_REGULAR_EXPRESSION "${CMAKE_MATCH_1}")
+        else()
+          set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
+        endif()
+      endif()
+    else()
+      # Add to the active configuration's meta target
+      add_dependencies(${config_meta_target} ${test_target})
+
+      # Meta target that builds tests with this name for all configurations:
+      if (NOT TARGET ${test_meta_target})
+        add_custom_target(${test_meta_target})
+      endif()
+      add_dependencies(${test_meta_target} ${test_target})
+
+      add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
     endif()
-    add_dependencies(${test_meta_target} ${test_target})
-
-    add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
   endif() # Not catch2 test
 endfunction()
 
