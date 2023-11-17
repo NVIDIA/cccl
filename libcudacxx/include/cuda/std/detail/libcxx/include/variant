@@ -239,6 +239,7 @@ since C++20
 #include "__type_traits/is_trivially_move_constructible.h"
 #include "__type_traits/is_void.h"
 #include "__type_traits/remove_const.h"
+#include "__type_traits/remove_cvref.h"
 #include "__type_traits/type_identity.h"
 #include "__type_traits/void_t.h"
 #include "__utility/declval.h"
@@ -729,46 +730,57 @@ template <_Trait _DestructibleTrait, size_t _Index>
 union _LIBCUDACXX_TEMPLATE_VIS __union<_DestructibleTrait, _Index>
 {};
 
-#  define _LIBCUDACXX_VARIANT_UNION(destructible_trait, destructor)                                      \
-    template <size_t _Index, class _Tp, class... _Types>                                                 \
-    union _LIBCUDACXX_TEMPLATE_VIS __union<destructible_trait, _Index, _Tp, _Types...>                   \
-    {                                                                                                    \
-    public:                                                                                              \
-      _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr __union(__valueless_t) noexcept                   \
-          : __dummy{}                                                                                    \
-      {}                                                                                                 \
-                                                                                                         \
-      template <class... _Args>                                                                          \
-      _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr __union(in_place_index_t<0>, _Args&&... __args)   \
-          : __head(in_place, _CUDA_VSTD::forward<_Args>(__args)...)                                      \
-      {}                                                                                                 \
-                                                                                                         \
-      template <size_t _Ip, class... _Args>                                                              \
-      _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr __union(in_place_index_t<_Ip>, _Args&&... __args) \
-          : __tail(in_place_index<_Ip - 1>, _CUDA_VSTD::forward<_Args>(__args)...)                       \
-      {}                                                                                                 \
-                                                                                                         \
-      __union(const __union&) = default;                                                                 \
-      __union(__union&&)      = default;                                                                 \
-                                                                                                         \
-      destructor;                                                                                        \
-                                                                                                         \
-      __union& operator=(const __union&) = default;                                                      \
-      __union& operator=(__union&&)      = default;                                                      \
-                                                                                                         \
-    private:                                                                                             \
-      char __dummy;                                                                                      \
-      __alt<_Index, _Tp> __head;                                                                         \
-      __union<destructible_trait, _Index + 1, _Types...> __tail;                                         \
-                                                                                                         \
-      friend struct __access::__union;                                                                   \
-    }
+#  define _LIBCUDACXX_VARIANT_UNION_BODY(destructible_trait)                                           \
+                                                                                                       \
+  private:                                                                                             \
+    char __dummy;                                                                                      \
+    __alt<_Index, _Tp> __head;                                                                         \
+    __union<destructible_trait, _Index + 1, _Types...> __tail;                                         \
+                                                                                                       \
+    friend struct __access::__union;                                                                   \
+                                                                                                       \
+  public:                                                                                              \
+    _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr __union(__valueless_t) noexcept                   \
+        : __dummy{}                                                                                    \
+    {}                                                                                                 \
+                                                                                                       \
+    template <class... _Args>                                                                          \
+    _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr __union(in_place_index_t<0>, _Args&&... __args)   \
+        : __head(in_place, _CUDA_VSTD::forward<_Args>(__args)...)                                      \
+    {}                                                                                                 \
+                                                                                                       \
+    template <size_t _Ip, class... _Args>                                                              \
+    _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr __union(in_place_index_t<_Ip>, _Args&&... __args) \
+        : __tail(in_place_index<_Ip - 1>, _CUDA_VSTD::forward<_Args>(__args)...)                       \
+    {}                                                                                                 \
+                                                                                                       \
+    __union(const __union&)            = default;                                                      \
+    __union(__union&&)                 = default;                                                      \
+    __union& operator=(const __union&) = default;                                                      \
+    __union& operator=(__union&&)      = default;
 
-_LIBCUDACXX_VARIANT_UNION(_Trait::_TriviallyAvailable, ~__union() = default;);
-_LIBCUDACXX_VARIANT_UNION(_Trait::_Available, _LIBCUDACXX_INLINE_VISIBILITY ~__union(){});
-_LIBCUDACXX_VARIANT_UNION(_Trait::_Unavailable, ~__union() = delete;);
+template <size_t _Index, class _Tp, class... _Types>
+union _LIBCUDACXX_TEMPLATE_VIS __union<_Trait::_TriviallyAvailable, _Index, _Tp, _Types...>
+{
+  _LIBCUDACXX_VARIANT_UNION_BODY(_Trait::_TriviallyAvailable)
+  ~__union() = default;
+};
 
-#  undef _LIBCUDACXX_VARIANT_UNION
+template <size_t _Index, class _Tp, class... _Types>
+union _LIBCUDACXX_TEMPLATE_VIS __union<_Trait::_Available, _Index, _Tp, _Types...>
+{
+  _LIBCUDACXX_VARIANT_UNION_BODY(_Trait::_Available)
+  _LIBCUDACXX_INLINE_VISIBILITY ~__union() {}
+};
+
+template <size_t _Index, class _Tp, class... _Types>
+union _LIBCUDACXX_TEMPLATE_VIS __union<_Trait::_Unavailable, _Index, _Tp, _Types...>
+{
+  _LIBCUDACXX_VARIANT_UNION_BODY(_Trait::_Unavailable)
+  _LIBCUDACXX_INLINE_VISIBILITY ~__union() = delete;
+};
+
+#  undef _LIBCUDACXX_VARIANT_UNION_BODY
 
 template <_Trait _DestructibleTrait, class... _Types>
 class _LIBCUDACXX_TEMPLATE_VIS __base
@@ -833,55 +845,101 @@ protected:
 template <class _Traits, _Trait = _Traits::__destructible_trait>
 class _LIBCUDACXX_TEMPLATE_VIS __dtor;
 
-#  define _LIBCUDACXX_VARIANT_DESTRUCTOR(destructible_trait, destructor, destroy)  \
-    template <class... _Types>                                                     \
-    class _LIBCUDACXX_TEMPLATE_VIS __dtor<__traits<_Types...>, destructible_trait> \
-        : public __base<destructible_trait, _Types...>                             \
-    {                                                                              \
-      using __base_type = __base<destructible_trait, _Types...>;                   \
-      using __index_t   = typename __base_type::__index_t;                         \
-                                                                                   \
-      struct __visitor                                                             \
-      {                                                                            \
-        template <class _Alt>                                                      \
-        _LIBCUDACXX_INLINE_VISIBILITY void operator()(_Alt& __alt) const noexcept  \
-        {                                                                          \
-          using __alt_type = __remove_cvref_t<decltype(__alt)>;                    \
-          __alt.~__alt_type();                                                     \
-        }                                                                          \
-      };                                                                           \
-                                                                                   \
-    public:                                                                        \
-      using __base_type::__base_type;                                              \
-      using __base_type::operator=;                                                \
-                                                                                   \
-      __dtor(const __dtor&)                       = default;                       \
-      __dtor(__dtor&&)                            = default;                       \
-      destructor __dtor& operator=(const __dtor&) = default;                       \
-      __dtor& operator=(__dtor&&)                 = default;                       \
-                                                                                   \
-    protected:                                                                     \
-      inline destroy                                                               \
+#  define _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY(destructible_trait) \
+    using __base_type = __base<destructible_trait, _Types...>;    \
+    using __index_t   = typename __base_type::__index_t;          \
+                                                                  \
+  public:                                                         \
+    using __base_type::__base_type;                               \
+    using __base_type::operator=;                                 \
+                                                                  \
+    __dtor(const __dtor&)            = default;                   \
+    __dtor(__dtor&&)                 = default;                   \
+    __dtor& operator=(const __dtor&) = default;                   \
+    __dtor& operator=(__dtor&&)      = default;
+
+template <class... _Types>
+class _LIBCUDACXX_TEMPLATE_VIS __dtor<__traits<_Types...>, _Trait::_TriviallyAvailable>
+    : public __base<_Trait::_TriviallyAvailable, _Types...>
+{
+  _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY(_Trait::_TriviallyAvailable)
+  ~__dtor() = default;
+
+protected:
+  _LIBCUDACXX_INLINE_VISIBILITY void __destroy() noexcept
+  {
+    this->__index = __variant_npos<__index_t>;
+  }
+};
+
+template <class... _Types>
+class _LIBCUDACXX_TEMPLATE_VIS __dtor<__traits<_Types...>, _Trait::_Available>
+    : public __base<_Trait::_Available, _Types...>
+{
+  struct __visitor
+  {
+    template <class _Alt>
+    _LIBCUDACXX_INLINE_VISIBILITY void operator()(_Alt& __alt) const noexcept
+    {
+      using __alt_type = __remove_cvref_t<decltype(__alt)>;
+      __alt.~__alt_type();
     }
+  };
 
-_LIBCUDACXX_VARIANT_DESTRUCTOR(
-  _Trait::_TriviallyAvailable, ~__dtor() = default;
-  , _LIBCUDACXX_INLINE_VISIBILITY void __destroy() noexcept { this->__index = __variant_npos<__index_t>; });
+  _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY(_Trait::_Available)
+  _LIBCUDACXX_INLINE_VISIBILITY ~__dtor() noexcept
+  {
+    __destroy();
+  }
 
-_LIBCUDACXX_VARIANT_DESTRUCTOR(
-  _Trait::_Available,
-  _LIBCUDACXX_INLINE_VISIBILITY ~__dtor() { __destroy(); },
-  _LIBCUDACXX_INLINE_VISIBILITY void __destroy() noexcept {
+protected:
+  _LIBCUDACXX_INLINE_VISIBILITY void __destroy() noexcept
+  {
     if (!this->valueless_by_exception())
     {
-      __visitation::__base::__visit_alt(__visitor{}, *this);
+      constexpr size_t __np = __remove_cvref_t<__dtor>::__size();
+      __destroy(integral_constant<size_t, __np - 1>{}, this->__index);
     }
     this->__index = __variant_npos<__index_t>;
-  });
+  }
 
-_LIBCUDACXX_VARIANT_DESTRUCTOR(_Trait::_Unavailable, ~__dtor() = delete;, void __destroy() noexcept = delete;);
+private:
+  template <size_t _CurrentIndex>
+  _LIBCUDACXX_INLINE_VISIBILITY void __destroy(integral_constant<size_t, _CurrentIndex>, const size_t __index) noexcept
+  {
+    if (__index == _CurrentIndex)
+    {
+      using __value_type = __type_pack_element<_CurrentIndex, _Types...>;
+      __access::__base::__get_alt<_CurrentIndex>(this->__as_base()).__value.~__value_type();
+      return;
+    }
+    __destroy(integral_constant<size_t, _CurrentIndex - 1>{}, __index);
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY void __destroy(integral_constant<size_t, 0>, const size_t __index) noexcept
+  {
+    if (__index == 0)
+    {
+      using __value_type = __type_pack_element<0, _Types...>;
+      __access::__base::__get_alt<0>(this->__as_base()).__value.~__value_type();
+      return;
+    }
+    // We already checked that every variant has a value, so we should never reach this line
+    _LIBCUDACXX_UNREACHABLE();
+  }
+};
 
-#  undef _LIBCUDACXX_VARIANT_DESTRUCTOR
+template <class... _Types>
+class _LIBCUDACXX_TEMPLATE_VIS __dtor<__traits<_Types...>, _Trait::_Unavailable>
+    : public __base<_Trait::_Unavailable, _Types...>
+{
+  _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY(_Trait::_Unavailable)
+  _LIBCUDACXX_INLINE_VISIBILITY ~__dtor() = delete;
+
+protected:
+  _LIBCUDACXX_INLINE_VISIBILITY void __destroy() noexcept = delete;
+};
+
+#  undef _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY
 
 template <class _Traits>
 class _LIBCUDACXX_TEMPLATE_VIS __ctor : public __dtor<_Traits>
@@ -2050,19 +2108,36 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<__enable_hash_helper<variant<_Types...>, re
   using argument_type = variant<_Types...>;
   using result_type   = size_t;
 
+  template <size_t _CurrentIndex>
+  _LIBCUDACXX_INLINE_VISIBILITY static size_t
+  __hash(integral_constant<size_t, _CurrentIndex>, const size_t __index, const argument_type& __v) noexcept
+  {
+    if (__index == _CurrentIndex)
+    {
+      using __value_type = remove_const_t<__type_pack_element<_CurrentIndex, _Types...>>;
+      return hash<__value_type>{}(__access::__base::__get_alt<_CurrentIndex>(this->__as_base()).__value);
+    }
+    __hash(integral_constant<size_t, _CurrentIndex - 1>{}, __index, __v);
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY static size_t
+  __hash(integral_constant<size_t, 0>, const size_t __index, const argument_type& __v) noexcept
+  {
+    if (__index == 0)
+    {
+      using __value_type = remove_const_t<__type_pack_element<0, _Types...>>;
+      return hash<__value_type>{}(__access::__base::__get_alt<0>(this->__as_base()).__value);
+    }
+    // We already checked that every variant has a value, so we should never reach this line
+    _LIBCUDACXX_UNREACHABLE();
+  }
+
   _LIBCUDACXX_INLINE_VISIBILITY result_type operator()(const argument_type& __v) const
   {
     using __variant_detail::__visitation::__variant;
     size_t __res =
       __v.valueless_by_exception()
         ? 299792458 // Random value chosen by the universe upon creation
-        : __variant::__visit_alt(
-          [](const auto& __alt) {
-            using __alt_type   = __remove_cvref_t<decltype(__alt)>;
-            using __value_type = remove_const_t<typename __alt_type::__value_type>;
-            return hash<__value_type>{}(__alt.__value);
-          },
-          __v);
+        : __hash(integral_constant<size_t, sizeof...(_Types) - 1>{}, __v.index(), __v);
     return _CUDA_VSTD::__hash_combine(__res, hash<size_t>{}(__v.index()));
   }
 };
