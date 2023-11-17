@@ -26,10 +26,7 @@
  *
  ******************************************************************************/
 
-/**
- * @file
- * cub::BlockRadixRank provides operations for ranking unsigned integer types within a CUDA thread block
- */
+//! @file cub::BlockRadixRank provides operations for ranking unsigned integer types within a CUDA thread block
 
 #pragma once
 
@@ -56,42 +53,37 @@
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * @brief Radix ranking algorithm, the algorithm used to implement stable ranking of the
- *        keys from a single tile. Note that different ranking algorithms require different
- *        initial arrangements of keys to function properly.
- */
+//! @brief Radix ranking algorithm, the algorithm used to implement stable ranking of the
+//!        keys from a single tile. Note that different ranking algorithms require different
+//!        initial arrangements of keys to function properly.
 enum RadixRankAlgorithm
 {
-    /** Ranking using the BlockRadixRank algorithm with MEMOIZE_OUTER_SCAN == false. It
-     * uses thread-private histograms, and thus uses more shared memory. Requires blocked
-     * arrangement of keys. Does not support count callbacks. */
-    RADIX_RANK_BASIC,
-    /** Ranking using the BlockRadixRank algorithm with MEMOIZE_OUTER_SCAN ==
-     * true. Similar to RADIX_RANK BASIC, it requires blocked arrangement of
-     * keys and does not support count callbacks.*/
-    RADIX_RANK_MEMOIZE,
-    /** Ranking using the BlockRadixRankMatch algorithm. It uses warp-private
-     * histograms and matching for ranking the keys in a single warp. Therefore,
-     * it uses less shared memory compared to RADIX_RANK_BASIC. It requires
-     * warp-striped key arrangement and supports count callbacks. */
-    RADIX_RANK_MATCH,
-    /** Ranking using the BlockRadixRankMatchEarlyCounts algorithm with
-     * MATCH_ALGORITHM == WARP_MATCH_ANY. An alternative implementation of
-     * match-based ranking that computes bin counts early. Because of this, it
-     * works better with onesweep sorting, which requires bin counts for
-     * decoupled look-back. Assumes warp-striped key arrangement and supports
-     * count callbacks.*/
-    RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-    /** Ranking using the BlockRadixRankEarlyCounts algorithm with
-     * MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR. It uses extra space in shared
-     * memory to generate warp match masks using atomicOr(). This is faster when
-     * there are few matches, but can lead to slowdowns if the number of
-     * matching keys among warp lanes is high. Assumes warp-striped key
-     * arrangement and supports count callbacks. */
-    RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR
-};
+  //! Ranking using the BlockRadixRank algorithm with `MEMOIZE_OUTER_SCAN == false`.
+  //! It uses thread-private histograms, and thus uses more shared memory.
+  //! Requires blocked arrangement of keys. Does not support count callbacks.
+  RADIX_RANK_BASIC,
 
+  //! Ranking using the BlockRadixRank algorithm with `MEMOIZE_OUTER_SCAN == true`.
+  //! Similar to RADIX_RANK BASIC, it requires blocked arrangement of keys and does not support count callbacks.
+  RADIX_RANK_MEMOIZE,
+
+  //! Ranking using the BlockRadixRankMatch algorithm. It uses warp-private histograms and matching for ranking
+  //! the keys in a single warp. Therefore, it uses less shared memory compared to RADIX_RANK_BASIC.
+  //! It requires warp-striped key arrangement and supports count callbacks.
+  RADIX_RANK_MATCH,
+
+  //! Ranking using the BlockRadixRankMatchEarlyCounts algorithm with `MATCH_ALGORITHM == WARP_MATCH_ANY`.
+  //! An alternative implementation of match-based ranking that computes bin counts early.
+  //! Because of this, it works better with onesweep sorting, which requires bin counts for decoupled look-back.
+  //! Assumes warp-striped key arrangement and supports count callbacks.
+  RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+
+  //! Ranking using the BlockRadixRankEarlyCounts algorithm with `MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR`.
+  //! It uses extra space in shared memory to generate warp match masks using `atomicOr()`.
+  //! This is faster when there are few matches, but can lead to slowdowns if the number of matching keys among
+  //! warp lanes is high. Assumes warp-striped key arrangement and supports count callbacks.
+  RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR
+};
 
 /** Empty callback implementation */
 template <int BINS_PER_THREAD>
@@ -131,106 +123,100 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 } // namespace detail
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
-/**
- * @brief BlockRadixRank provides operations for ranking unsigned integer types within a CUDA thread
- *        block.
- *
- * @ingroup BlockModule
- *
- * @tparam BLOCK_DIM_X
- *   The thread block length in threads along the X dimension
- *
- * @tparam RADIX_BITS
- *   The number of radix bits per digit place
- *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
- *
- * @tparam MEMOIZE_OUTER_SCAN
- *   <b>[optional]</b> Whether or not to buffer outer raking scan
- *   partials to incur fewer shared memory reads at the expense of higher register pressure
- *   (default: true for architectures SM35 and newer, false otherwise).
- *   See BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE for more details.
- *
- * @tparam INNER_SCAN_ALGORITHM
- *   <b>[optional]</b> The cub::BlockScanAlgorithm algorithm to use (default:
- *   cub::BLOCK_SCAN_WARP_SCANS)
- *
- * @tparam SMEM_CONFIG
- *   <b>[optional]</b> Shared memory bank mode (default: @p cudaSharedMemBankSizeFourByte)
- *
- * @tparam BLOCK_DIM_Y
- *   <b>[optional]</b> The thread block length in threads along the Y dimension (default: 1)
- *
- * @tparam BLOCK_DIM_Z
- *  <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
- *
- * @tparam LEGACY_PTX_ARCH
- *  <b>[optional]</b> Unused.
- *
- * @par Overview
- * Blah...
- * - Keys must be in a form suitable for radix ranking (i.e., unsigned bits).
- * - @blocked
- *
- * @par Performance Considerations
- * - @granularity
- *
- * @par
- * @code
- * #include <cub/cub.cuh>
- *
- * __global__ void ExampleKernel(...)
- * {
- *   constexpr int block_threads = 2;
- *   constexpr int radix_bits = 5;
- *
- *   // Specialize BlockRadixRank for a 1D block of 2 threads
- *   // Specialize BlockRadixRank for a 1D block of 2 threads
- *   using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits>;
- *   using storage_t = typename block_radix_rank::TempStorage;
- *
- *   // Allocate shared memory for BlockRadixSort
- *   __shared__ storage_t temp_storage;
- *
- *   // Obtain a segment of consecutive items that are blocked across threads
- *   int keys[2];
- *   int ranks[2];
- *   ...
- *
- *   cub::BFEDigitExtractor<int> extractor(0, radix_bits);
- *   block_radix_rank(temp_storage).RankKeys(keys, ranks, extractor);
- *
- *   ...
- * @endcode
- * Suppose the set of input `keys` across the block of threads is `{ [16,10], [9,11] }`.
- * The corresponding output `ranks` in those threads will be `{ [3,1], [0,2] }`.
- *
- * @par Re-using dynamically allocating shared memory
- * The following example under the examples/block folder illustrates usage of
- * dynamically shared memory with BlockReduce and how to re-purpose
- * the same memory region:
- * <a href="../../examples/block/example_block_reduce_dyn_smem.cu">example_block_reduce_dyn_smem.cu</a>
- *
- * This example can be easily adapted to the storage required by BlockRadixRank.
- */
-template <
-    int                     BLOCK_DIM_X,
-    int                     RADIX_BITS,
-    bool                    IS_DESCENDING,
-    bool                    MEMOIZE_OUTER_SCAN      = true,
-    BlockScanAlgorithm      INNER_SCAN_ALGORITHM    = BLOCK_SCAN_WARP_SCANS,
-    cudaSharedMemConfig     SMEM_CONFIG             = cudaSharedMemBankSizeFourByte,
-    int                     BLOCK_DIM_Y             = 1,
-    int                     BLOCK_DIM_Z             = 1,
-    int                     LEGACY_PTX_ARCH         = 0>
+//! @rst
+//! BlockRadixRank provides operations for ranking unsigned integer types within a CUDA thread block.
+//!
+//! Overview
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! - Keys must be in a form suitable for radix ranking (i.e., unsigned bits).
+//! - @blocked
+//!
+//! Performance Considerations
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! - @granularity
+//!
+//! .. code-block:: c++
+//!
+//!    #include <cub/cub.cuh>
+//!
+//!    __global__ void ExampleKernel(...)
+//!    {
+//!      constexpr int block_threads = 2;
+//!      constexpr int radix_bits = 5;
+//!
+//!      // Specialize BlockRadixRank for a 1D block of 2 threads
+//!      // Specialize BlockRadixRank for a 1D block of 2 threads
+//!      using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits>;
+//!      using storage_t = typename block_radix_rank::TempStorage;
+//!
+//!      // Allocate shared memory for BlockRadixSort
+//!      __shared__ storage_t temp_storage;
+//!
+//!      // Obtain a segment of consecutive items that are blocked across threads
+//!      int keys[2];
+//!      int ranks[2];
+//!      ...
+//!
+//!      cub::BFEDigitExtractor<int> extractor(0, radix_bits);
+//!      block_radix_rank(temp_storage).RankKeys(keys, ranks, extractor);
+//!
+//!      ...
+//!
+//! Suppose the set of input ``keys`` across the block of threads is ``{ [16,10], [9,11] }``.
+//! The corresponding output ``ranks`` in those threads will be ``{ [3,1], [0,2] }``.
+//!
+//! Re-using dynamically allocating shared memory
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! The ``block/example_block_reduce_dyn_smem.cu`` example illustrates usage of dynamically shared memory with
+//! BlockReduce and how to re-purpose the same memory region.
+//! This example can be easily adapted to the storage required by BlockRadixRank.
+//!
+//! @endrst
+//!
+//! @tparam BLOCK_DIM_X
+//!   The thread block length in threads along the X dimension
+//!
+//! @tparam RADIX_BITS
+//!   The number of radix bits per digit place
+//!
+//! @tparam IS_DESCENDING
+//!   Whether or not the sorted-order is high-to-low
+//!
+//! @tparam MEMOIZE_OUTER_SCAN
+//!   **[optional]** Whether or not to buffer outer raking scan
+//!   partials to incur fewer shared memory reads at the expense of higher register pressure
+//!   (default: true for architectures SM35 and newer, false otherwise).
+//!   See `BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE` for more details.
+//!
+//! @tparam INNER_SCAN_ALGORITHM
+//!   **[optional]** The cub::BlockScanAlgorithm algorithm to use (default: cub::BLOCK_SCAN_WARP_SCANS)
+//!
+//! @tparam SMEM_CONFIG
+//!   **[optional]** Shared memory bank mode (default: `cudaSharedMemBankSizeFourByte`)
+//!
+//! @tparam BLOCK_DIM_Y
+//!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
+//!
+//! @tparam BLOCK_DIM_Z
+//!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
+//!
+//! @tparam LEGACY_PTX_ARCH
+//!   **[optional]** Unused.
+template < int BLOCK_DIM_X,
+           int RADIX_BITS,
+           bool IS_DESCENDING,
+           bool MEMOIZE_OUTER_SCAN                 = true,
+           BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
+           cudaSharedMemConfig SMEM_CONFIG         = cudaSharedMemBankSizeFourByte,
+           int BLOCK_DIM_Y                         = 1,
+           int BLOCK_DIM_Z                         = 1,
+           int LEGACY_PTX_ARCH                     = 0>
 class BlockRadixRank
 {
 private:
-
-    /******************************************************************************
-     * Type definitions and constants
-     ******************************************************************************/
 
     // Integer type for digit counters (to be packed into words of type PackedCounters)
     using DigitCounter = unsigned short;
@@ -304,11 +290,6 @@ private:
         typename BlockScan::TempStorage block_scan;
     };
 
-
-    /******************************************************************************
-     * Thread fields
-     ******************************************************************************/
-
     /// Shared storage reference
     _TempStorage &temp_storage;
 
@@ -318,11 +299,6 @@ private:
     /// Copy of raking segment, promoted to registers
     PackedCounter cached_segment[RAKING_SEGMENT];
 
-
-    /******************************************************************************
-     * Utility methods
-     ******************************************************************************/
-
     /**
      * Internal storage allocator
      */
@@ -331,7 +307,6 @@ private:
         __shared__ _TempStorage private_storage;
         return private_storage;
     }
-
 
     /**
      * Performs upsweep raking reduction, returning the aggregate
@@ -443,15 +418,10 @@ public:
     struct TempStorage : Uninitialized<_TempStorage> {};
 
 
-    /******************************************************************//**
-     * @name Collective constructors
-     *********************************************************************/
-    //@{
+    //! @name Collective constructors
+    //! @{
 
-    /**
-     * @brief Collective constructor using a private static allocation of shared memory as temporary
-     *        storage.
-     */
+    //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
     __device__ __forceinline__ BlockRadixRank()
     :
         temp_storage(PrivateStorage()),
@@ -470,11 +440,9 @@ public:
     {}
 
 
-    //@}  end member group
-    /******************************************************************//**
-     * @name Raking
-     *********************************************************************/
-    //@{
+    //! @} end member group
+    //! @name Raking
+    //! @{
 
     /**
      * @brief Rank keys.
@@ -597,6 +565,8 @@ public:
             }
         }
     }
+
+    //! @}
 };
 
 
@@ -617,10 +587,6 @@ template <
 class BlockRadixRankMatch
 {
 private:
-
-    /******************************************************************************
-     * Type definitions and constants
-     ******************************************************************************/
 
     typedef int32_t    RankT;
     typedef int32_t    DigitCounterT;
@@ -681,11 +647,6 @@ private:
         } aliasable;
     };
 
-
-    /******************************************************************************
-     * Thread fields
-     ******************************************************************************/
-
     /// Shared storage reference
     _TempStorage &temp_storage;
 
@@ -700,10 +661,8 @@ public:
     struct TempStorage : Uninitialized<_TempStorage> {};
 
 
-    /******************************************************************//**
-     * @name Collective constructors
-     *********************************************************************/
-    //@{
+    //! @name Collective constructors
+    //! @{
 
     /**
      * @brief Collective constructor using the specified memory allocation as temporary storage.
@@ -717,11 +676,9 @@ public:
     {}
 
 
-    //@}  end member group
-    /******************************************************************//**
-     * @name Raking
-     *********************************************************************/
-    //@{
+    //! @}  end member group
+    //! @name Raking
+    //! @{
 
     /**
      * @brief Computes the count of keys for each digit value, and calls the
@@ -958,6 +915,8 @@ public:
         RankKeys(keys, ranks, digit_extractor, exclusive_digit_prefix,
                  BlockRadixRankEmptyCallback<BINS_TRACKED_PER_THREAD>());
     }
+
+  //! @}
 };
 
 enum WarpMatchAlgorithm
@@ -1317,5 +1276,3 @@ using block_radix_rank_t = cub::detail::conditional_t<
 
 
 CUB_NAMESPACE_END
-
-

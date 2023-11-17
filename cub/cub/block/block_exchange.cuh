@@ -26,10 +26,8 @@
  *
  ******************************************************************************/
 
-/**
- * \file
- * The cub::BlockExchange class provides [<em>collective</em>](index.html#sec0) methods for rearranging data partitioned across a CUDA thread block.
- */
+//! @file The cub::BlockExchange class provides :ref:`collective <collective-primitives>` methods for
+//!       rearranging data partitioned across a CUDA thread block.
 
 #pragma once
 
@@ -50,89 +48,106 @@
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * \brief The BlockExchange class provides [<em>collective</em>](index.html#sec0) methods for rearranging data partitioned across a CUDA thread block. ![](transpose_logo.png)
- * \ingroup BlockModule
- *
- * \tparam T                    The data type to be exchanged.
- * \tparam BLOCK_DIM_X          The thread block length in threads along the X dimension
- * \tparam ITEMS_PER_THREAD     The number of items partitioned onto each thread.
- * \tparam WARP_TIME_SLICING    <b>[optional]</b> When \p true, only use enough shared memory for a single warp's worth of tile data, time-slicing the block-wide exchange over multiple synchronized rounds.  Yields a smaller memory footprint at the expense of decreased parallelism.  (Default: false)
- * \tparam BLOCK_DIM_Y          <b>[optional]</b> The thread block length in threads along the Y dimension (default: 1)
- * \tparam BLOCK_DIM_Z          <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
- * \tparam LEGACY_PTX_ARCH      <b>[optional]</b> Unused.
- *
- * \par Overview
- * - It is commonplace for blocks of threads to rearrange data items between
- *   threads.  For example, the device-accessible memory subsystem prefers access patterns
- *   where data items are "striped" across threads (where consecutive threads access consecutive items),
- *   yet most block-wide operations prefer a "blocked" partitioning of items across threads
- *   (where consecutive items belong to a single thread).
- * - BlockExchange supports the following types of data exchanges:
- *   - Transposing between [<em>blocked</em>](index.html#sec5sec3) and [<em>striped</em>](index.html#sec5sec3) arrangements
- *   - Transposing between [<em>blocked</em>](index.html#sec5sec3) and [<em>warp-striped</em>](index.html#sec5sec3) arrangements
- *   - Scattering ranked items to a [<em>blocked arrangement</em>](index.html#sec5sec3)
- *   - Scattering ranked items to a [<em>striped arrangement</em>](index.html#sec5sec3)
- * - \rowmajor
- *
- * \par A Simple Example
- * \blockcollective{BlockExchange}
- * \par
- * The code snippet below illustrates the conversion from a "blocked" to a "striped" arrangement
- * of 512 integer items partitioned across 128 threads where each thread owns 4 items.
- * \par
- * \code
- * #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
- *
- * __global__ void ExampleKernel(int *d_data, ...)
- * {
- *     // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
- *     typedef cub::BlockExchange<int, 128, 4> BlockExchange;
- *
- *     // Allocate shared memory for BlockExchange
- *     __shared__ typename BlockExchange::TempStorage temp_storage;
- *
- *     // Load a tile of data striped across threads
- *     int thread_data[4];
- *     cub::LoadDirectStriped<128>(threadIdx.x, d_data, thread_data);
- *
- *     // Collectively exchange data into a blocked arrangement across threads
- *     BlockExchange(temp_storage).StripedToBlocked(thread_data);
- *
- * \endcode
- * \par
- * Suppose the set of striped input \p thread_data across the block of threads is
- * <tt>{ [0,128,256,384], [1,129,257,385], ..., [127,255,383,511] }</tt>.
- * The corresponding output \p thread_data in those threads will be
- * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }</tt>.
- *
- * \par Performance Considerations
- * - Proper device-specific padding ensures zero bank conflicts for most types.
- *
- * \par Re-using dynamically allocating shared memory
- * The following example under the examples/block folder illustrates usage of
- * dynamically shared memory with BlockReduce and how to re-purpose
- * the same memory region:
- * <a href="../../examples/block/example_block_reduce_dyn_smem.cu">example_block_reduce_dyn_smem.cu</a>
- *
- * This example can be easily adapted to the storage required by BlockExchange.
- */
-template <
-    typename    InputT,
-    int         BLOCK_DIM_X,
-    int         ITEMS_PER_THREAD,
-    bool        WARP_TIME_SLICING   = false,
-    int         BLOCK_DIM_Y         = 1,
-    int         BLOCK_DIM_Z         = 1,
-    int         LEGACY_PTX_ARCH     = 0>
+//! @rst
+//! The BlockExchange class provides :ref:`collective <collective-primitives>` methods for rearranging data partitioned 
+//! across a CUDA thread block.
+//! 
+//! Overview
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! - It is commonplace for blocks of threads to rearrange data items between
+//!   threads.  For example, the device-accessible memory subsystem prefers access patterns
+//!   where data items are "striped" across threads (where consecutive threads access consecutive items),
+//!   yet most block-wide operations prefer a "blocked" partitioning of items across threads
+//!   (where consecutive items belong to a single thread).
+//! - BlockExchange supports the following types of data exchanges:
+//!
+//!   - Transposing between :ref:`blocked <flexible-data-arrangement>` and :ref:`striped <flexible-data-arrangement>`
+//!     arrangements
+//!   - Transposing between :ref:`blocked <flexible-data-arrangement>` and 
+//!     :ref:`warp-striped <flexible-data-arrangement>`  arrangements
+//!   - Scattering ranked items to a :ref:`blocked arrangement <flexible-data-arrangement>` 
+//!   - Scattering ranked items to a :ref:`striped arrangement <flexible-data-arrangement>` 
+//!
+//! - @rowmajor
+//! 
+//! A Simple Example
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! @blockcollective{BlockExchange}
+//!
+//! The code snippet below illustrates the conversion from a "blocked" to a "striped" arrangement
+//! of 512 integer items partitioned across 128 threads where each thread owns 4 items.
+//!
+//! .. code-block:: c++
+//!
+//!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
+//! 
+//!    __global__ void ExampleKernel(int *d_data, ...)
+//!    {
+//!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
+//!        typedef cub::BlockExchange<int, 128, 4> BlockExchange;
+//! 
+//!        // Allocate shared memory for BlockExchange
+//!        __shared__ typename BlockExchange::TempStorage temp_storage;
+//! 
+//!        // Load a tile of data striped across threads
+//!        int thread_data[4];
+//!        cub::LoadDirectStriped<128>(threadIdx.x, d_data, thread_data);
+//! 
+//!        // Collectively exchange data into a blocked arrangement across threads
+//!        BlockExchange(temp_storage).StripedToBlocked(thread_data);
+//! 
+//! Suppose the set of striped input ``thread_data`` across the block of threads is
+//! ``{ [0,128,256,384], [1,129,257,385], ..., [127,255,383,511] }``.
+//! The corresponding output ``thread_data`` in those threads will be
+//! ``{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }``.
+//! 
+//! Performance Considerations
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! - Proper device-specific padding ensures zero bank conflicts for most types.
+//! 
+//! Re-using dynamically allocating shared memory
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! The ``block/example_block_reduce_dyn_smem.cu`` example illustrates usage of dynamically shared memory with 
+//! BlockReduce and how to re-purpose the same memory region. This example can be easily adapted to 
+//! the storage required by BlockExchange.
+//! @endrst
+//!
+//! @tparam T
+//!   The data type to be exchanged
+//!
+//! @tparam BLOCK_DIM_X
+//!   The thread block length in threads along the X dimension
+//!
+//! @tparam ITEMS_PER_THREAD
+//!   The number of items partitioned onto each thread.
+//!
+//! @tparam WARP_TIME_SLICING
+//!   **[optional]** When `true`, only use enough shared memory for a single warp's worth of tile data, 
+//!   time-slicing the block-wide exchange over multiple synchronized rounds. 
+//!   Yields a smaller memory footprint at the expense of decreased parallelism. (Default: false)
+//!
+//! @tparam BLOCK_DIM_Y          
+//!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
+//!
+//! @tparam BLOCK_DIM_Z          
+//!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
+//!
+//! @tparam LEGACY_PTX_ARCH      
+//!   <b>[optional]</b> Unused.
+template <typename InputT,
+          int BLOCK_DIM_X,
+          int ITEMS_PER_THREAD,
+          bool WARP_TIME_SLICING = false,
+          int BLOCK_DIM_Y        = 1,
+          int BLOCK_DIM_Z        = 1,
+          int LEGACY_PTX_ARCH    = 0>
 class BlockExchange
 {
 private:
-
-    /******************************************************************************
-     * Constants
-     ******************************************************************************/
-
     /// Constants
     enum
     {
@@ -161,10 +176,6 @@ private:
         PADDING_ITEMS               = (INSERT_PADDING) ? (TIME_SLICED_ITEMS >> LOG_SMEM_BANKS) : 0,
     };
 
-    /******************************************************************************
-     * Type definitions
-     ******************************************************************************/
-
     /// Shared memory storage layout type
     struct __align__(16) _TempStorage
     {
@@ -173,15 +184,10 @@ private:
 
 public:
 
-    /// \smemstorage{BlockExchange}
+    /// @smemstorage{BlockExchange}
     struct TempStorage : Uninitialized<_TempStorage> {};
 
 private:
-
-
-    /******************************************************************************
-     * Thread fields
-     ******************************************************************************/
 
     /// Shared storage reference
     _TempStorage &temp_storage;
@@ -192,11 +198,6 @@ private:
     unsigned int warp_id;
     unsigned int warp_offset;
 
-
-    /******************************************************************************
-     * Utility methods
-     ******************************************************************************/
-
     /// Internal storage allocator
     __device__ __forceinline__ _TempStorage& PrivateStorage()
     {
@@ -204,16 +205,14 @@ private:
         return private_storage;
     }
 
-    /**
-     * @brief Transposes data items from <em>blocked</em> arrangement to <em>striped</em>
-     *        arrangement. Specialized for no timeslicing.
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     */
+    //! @brief Transposes data items from **blocked** arrangement to **striped** arrangement. 
+    //!        Specialized for no timeslicing.
+    //!
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[out] output_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
     template <typename OutputT>
     __device__ __forceinline__ void BlockedToStriped(InputT (&input_items)[ITEMS_PER_THREAD],
                                                      OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -239,16 +238,14 @@ private:
         }
     }
 
-    /**
-     * @brief Transposes data items from <em>blocked</em> arrangement to <em>striped</em>
-     *        arrangement.  Specialized for warp-timeslicing.
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     */
+    //! @brief Transposes data items from **blocked** arrangement to **striped**
+    //!        arrangement. Specialized for warp-timeslicing.
+    //!
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[out] output_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
     template <typename OutputT>
     __device__ __forceinline__ void BlockedToStriped(InputT (&input_items)[ITEMS_PER_THREAD],
                                                      OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -305,16 +302,14 @@ private:
         }
     }
 
-    /**
-     * @brief Transposes data items from <em>blocked</em> arrangement to <em>warp-striped</em>
-     *        arrangement. Specialized for no timeslicing
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     */
+    //! @brief Transposes data items from **blocked** arrangement to **warp-striped** arrangement. 
+    //!        Specialized for no timeslicing
+    //! 
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //! 
+    //! @param[out] output_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
     template <typename OutputT>
     __device__ __forceinline__ void BlockedToWarpStriped(InputT (&input_items)[ITEMS_PER_THREAD],
                                                          OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -340,16 +335,14 @@ private:
         }
     }
 
-    /**
-     * @brief Transposes data items from <em>blocked</em> arrangement to <em>warp-striped</em>
-     *        arrangement. Specialized for warp-timeslicing
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     */
+    //! @brief Transposes data items from **blocked** arrangement to **warp-striped** arrangement. 
+    //!        Specialized for warp-timeslicing
+    //!
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[out] output_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
     template <typename OutputT>
     __device__ __forceinline__ void BlockedToWarpStriped(InputT (&input_items)[ITEMS_PER_THREAD],
                                                          OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -406,16 +399,14 @@ private:
         }
     }
 
-    /**
-     * @brief Transposes data items from <em>striped</em> arrangement to <em>blocked</em>
-     *        arrangement. Specialized for no timeslicing.
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     */
+    //! @brief Transposes data items from **striped** arrangement to **blocked** arrangement. 
+    //!        Specialized for no timeslicing.
+    //!
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[out] output_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
     template <typename OutputT>
     __device__ __forceinline__ void StripedToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
                                                      OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -442,16 +433,14 @@ private:
         }
     }
 
-    /**
-     * @brief Transposes data items from <em>striped</em> arrangement to <em>blocked</em>
-     *        arrangement. Specialized for warp-timeslicing.
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     */
+    //! @brief Transposes data items from **striped** arrangement to **blocked** arrangement. 
+    //!        Specialized for warp-timeslicing.
+    //! 
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //! 
+    //! @param[out] output_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
     template <typename OutputT>
     __device__ __forceinline__ void StripedToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
                                                      OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -510,16 +499,14 @@ private:
         }
     }
 
-    /**
-     * @brief Transposes data items from <em>warp-striped</em> arrangement to <em>blocked</em>
-     *        arrangement. Specialized for no timeslicing
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     */
+    //! @brief Transposes data items from **warp-striped** arrangement to **blocked** arrangement. 
+    //!        Specialized for no timeslicing
+    //!
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[out] output_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
     template <typename OutputT>
     __device__ __forceinline__ void WarpStripedToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
                                                          OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -546,16 +533,14 @@ private:
         }
     }
 
-    /**
-     * @brief Transposes data items from <em>warp-striped</em> arrangement to <em>blocked</em>
-     *        arrangement. Specialized for warp-timeslicing
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     */
+    //! @brief Transposes data items from **warp-striped** arrangement to **blocked** arrangement. 
+    //!        Specialized for warp-timeslicing
+    //!
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[out] output_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
     template <typename OutputT>
     __device__ __forceinline__ void WarpStripedToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
                                                          OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -590,19 +575,17 @@ private:
         }
     }
 
-    /**
-     * @brief Exchanges data items annotated by rank into <em>blocked</em> arrangement.  Specialized
-     * for no timeslicing.
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[in] ranks
-     *   Corresponding scatter ranks
-     */
+    //! @brief Exchanges data items annotated by rank into **blocked** arrangement.  
+    //!        Specialized for no timeslicing.
+    //!
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[out] output_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[in] ranks
+    //!   Corresponding scatter ranks
     template <typename OutputT, typename OffsetT>
     __device__ __forceinline__ void ScatterToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
                                                      OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -629,19 +612,17 @@ private:
         }
     }
 
-    /**
-     * @brief Exchanges data items annotated by rank into <em>blocked</em> arrangement. Specialized
-     *        for warp-timeslicing.
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[in] ranks
-     *   Corresponding scatter ranks
-     */
+    //! @brief Exchanges data items annotated by rank into **blocked** arrangement. 
+    //!        Specialized for warp-timeslicing.
+    //!
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[out] output_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[in] ranks
+    //!   Corresponding scatter ranks
     template <typename OutputT, typename OffsetT>
     __device__ __forceinline__ void ScatterToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
                                                      OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -691,19 +672,17 @@ private:
         }
     }
 
-    /**
-     * @brief Exchanges data items annotated by rank into <em>striped</em> arrangement.  Specialized
-     *        for no timeslicing.
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[in] ranks
-     *   Corresponding scatter ranks
-     */
+    //! @brief Exchanges data items annotated by rank into **striped** arrangement.  
+    //!        Specialized for no timeslicing.
+    //!
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[out] output_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[in] ranks
+    //!   Corresponding scatter ranks
     template <typename OutputT, typename OffsetT>
     __device__ __forceinline__ void ScatterToStriped(InputT (&input_items)[ITEMS_PER_THREAD],
                                                      OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -730,19 +709,17 @@ private:
         }
     }
 
-    /**
-     * @brief Exchanges data items annotated by rank into <em>striped</em> arrangement. Specialized
-     *        for warp-timeslicing.
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items to exchange, converting between <em>blocked</em> and <em>striped</em> arrangements.
-     *
-     * @param[in] ranks
-     *   Corresponding scatter ranks
-     */
+    //! @brief Exchanges data items annotated by rank into **striped** arrangement. 
+    //!        Specialized for warp-timeslicing.
+    //!
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[out] output_items
+    //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+    //!
+    //! @param[in] ranks
+    //!   Corresponding scatter ranks
     template <typename OutputT, typename OffsetT>
     __device__ __forceinline__ void ScatterToStriped(InputT (&input_items)[ITEMS_PER_THREAD],
                                                      OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -803,10 +780,8 @@ private:
 
 public:
 
-    /******************************************************************//**
-     * @name Collective constructors
-     *********************************************************************/
-    //@{
+    //! @name Collective constructors
+    //! @{
 
     /**
      * @brief Collective constructor using a private static allocation of shared memory as temporary storage.
@@ -835,54 +810,51 @@ public:
     {}
 
 
-    //@}  end member group
-    /******************************************************************//**
-     * @name Structured exchanges
-     *********************************************************************/
-    //@{
+    //! @} end member group
+    //! @name Structured exchanges
+    //! @{
 
-    /**
-     * @brief Transposes data items from <em>striped</em> arrangement to <em>blocked</em>
-     *        arrangement.
-     *
-     * @par
-     * - @smemreuse
-     *
-     * @par Snippet
-     * The code snippet below illustrates the conversion from a "striped" to a "blocked" arrangement
-     * of 512 integer items partitioned across 128 threads where each thread owns 4 items.
-     * @par
-     * @code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
-     *
-     * __global__ void ExampleKernel(int *d_data, ...)
-     * {
-     *     // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-     *     typedef cub::BlockExchange<int, 128, 4> BlockExchange;
-     *
-     *     // Allocate shared memory for BlockExchange
-     *     __shared__ typename BlockExchange::TempStorage temp_storage;
-     *
-     *     // Load a tile of ordered data into a striped arrangement across block threads
-     *     int thread_data[4];
-     *     cub::LoadDirectStriped<128>(threadIdx.x, d_data, thread_data);
-     *
-     *     // Collectively exchange data into a blocked arrangement across threads
-     *     BlockExchange(temp_storage).StripedToBlocked(thread_data, thread_data);
-     *
-     * @endcode
-     * @par
-     * Suppose the set of striped input @p thread_data across the block of threads is
-     * <tt>{ [0,128,256,384], [1,129,257,385], ..., [127,255,383,511] }</tt> after loading from
-     * device-accessible memory. The corresponding output @p thread_data in those threads will be
-     * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }</tt>.
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     */
+    //! @rst
+    //! Transposes data items from **striped** arrangement to **blocked** arrangement.
+    //! 
+    //! - @smemreuse
+    //! 
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates the conversion from a "striped" to a "blocked" arrangement
+    //! of 512 integer items partitioned across 128 threads where each thread owns 4 items.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
+    //! 
+    //!    __global__ void ExampleKernel(int *d_data, ...)
+    //!    {
+    //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
+    //!        typedef cub::BlockExchange<int, 128, 4> BlockExchange;
+    //! 
+    //!        // Allocate shared memory for BlockExchange
+    //!        __shared__ typename BlockExchange::TempStorage temp_storage;
+    //! 
+    //!        // Load a tile of ordered data into a striped arrangement across block threads
+    //!        int thread_data[4];
+    //!        cub::LoadDirectStriped<128>(threadIdx.x, d_data, thread_data);
+    //! 
+    //!        // Collectively exchange data into a blocked arrangement across threads
+    //!        BlockExchange(temp_storage).StripedToBlocked(thread_data, thread_data);
+    //! 
+    //! Suppose the set of striped input ``thread_data`` across the block of threads is
+    //! ``{ [0,128,256,384], [1,129,257,385], ..., [127,255,383,511] }`` after loading from
+    //! device-accessible memory. The corresponding output ``thread_data`` in those threads will be
+    //! ``{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }``.
+    //! @endrst
+    //! 
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **striped** and **blocked** arrangements.
+    //! 
+    //! @param[out] output_items
+    //!   Items from exchange, converting between **striped** and **blocked** arrangements.
     template <typename OutputT>
     __device__ __forceinline__ void StripedToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
                                                      OutputT (&output_items)[ITEMS_PER_THREAD])
@@ -890,52 +862,51 @@ public:
         StripedToBlocked(input_items, output_items, Int2Type<WARP_TIME_SLICING>());
     }
 
-    /**
-     * @brief Transposes data items from <em>blocked</em> arrangement to <em>striped</em>
-     *        arrangement.
-     *
-     * @par
-     * - @smemreuse
-     *
-     * @par Snippet
-     * The code snippet below illustrates the conversion from a "blocked" to a "striped" arrangement
-     * of 512 integer items partitioned across 128 threads where each thread owns 4 items.
-     * @par
-     * @code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
-     *
-     * __global__ void ExampleKernel(int *d_data, ...)
-     * {
-     *     // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-     *     typedef cub::BlockExchange<int, 128, 4> BlockExchange;
-     *
-     *     // Allocate shared memory for BlockExchange
-     *     __shared__ typename BlockExchange::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_data[4];
-     *     ...
-     *
-     *     // Collectively exchange data into a striped arrangement across threads
-     *     BlockExchange(temp_storage).BlockedToStriped(thread_data, thread_data);
-     *
-     *     // Store data striped across block threads into an ordered tile
-     *     cub::StoreDirectStriped<STORE_DEFAULT, 128>(threadIdx.x, d_data, thread_data);
-     *
-     * @endcode
-     * @par
-     * Suppose the set of blocked input @p thread_data across the block of threads is
-     * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }</tt>.
-     * The corresponding output @p thread_data in those threads will be
-     * <tt>{ [0,128,256,384], [1,129,257,385], ..., [127,255,383,511] }</tt> in
-     * preparation for storing to device-accessible memory.
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     */
+    //! @rst
+    //! Transposes data items from **blocked** arrangement to **striped** arrangement.
+    //! 
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates the conversion from a "blocked" to a "striped" arrangement
+    //! of 512 integer items partitioned across 128 threads where each thread owns 4 items.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
+    //! 
+    //!    __global__ void ExampleKernel(int *d_data, ...)
+    //!    {
+    //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
+    //!        typedef cub::BlockExchange<int, 128, 4> BlockExchange;
+    //! 
+    //!        // Allocate shared memory for BlockExchange
+    //!        __shared__ typename BlockExchange::TempStorage temp_storage;
+    //! 
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_data[4];
+    //!        ...
+    //! 
+    //!        // Collectively exchange data into a striped arrangement across threads
+    //!        BlockExchange(temp_storage).BlockedToStriped(thread_data, thread_data);
+    //! 
+    //!        // Store data striped across block threads into an ordered tile
+    //!        cub::StoreDirectStriped<STORE_DEFAULT, 128>(threadIdx.x, d_data, thread_data);
+    //! 
+    //! Suppose the set of blocked input ``thread_data`` across the block of threads is
+    //! ``{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }``.
+    //! The corresponding output ``thread_data`` in those threads will be
+    //! ``{ [0,128,256,384], [1,129,257,385], ..., [127,255,383,511] }`` in
+    //! preparation for storing to device-accessible memory.
+    //! @endrst
+    //! 
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **striped** and **blocked** arrangements.
+    //! 
+    //! @param[out] output_items
+    //!   Items from exchange, converting between **striped** and **blocked** arrangements.
     template <typename OutputT>
     __device__ __forceinline__ void BlockedToStriped(InputT (&input_items)[ITEMS_PER_THREAD],
                                                      OutputT (&output_items)[ITEMS_PER_THREAD])
@@ -943,51 +914,51 @@ public:
         BlockedToStriped(input_items, output_items, Int2Type<WARP_TIME_SLICING>());
     }
 
-    /**
-     * @brief Transposes data items from <em>warp-striped</em> arrangement to <em>blocked</em>
-     *        arrangement.
-     *
-     * @par
-     * - @smemreuse
-     *
-     * @par Snippet
-     * The code snippet below illustrates the conversion from a "warp-striped" to a "blocked"
-     * arrangement of 512 integer items partitioned across 128 threads where each thread owns 4
-     * items.
-     * @par
-     * @code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
-     *
-     * __global__ void ExampleKernel(int *d_data, ...)
-     * {
-     *     // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-     *     typedef cub::BlockExchange<int, 128, 4> BlockExchange;
-     *
-     *     // Allocate shared memory for BlockExchange
-     *     __shared__ typename BlockExchange::TempStorage temp_storage;
-     *
-     *     // Load a tile of ordered data into a warp-striped arrangement across warp threads
-     *     int thread_data[4];
-     *     cub::LoadSWarptriped<LOAD_DEFAULT>(threadIdx.x, d_data, thread_data);
-     *
-     *     // Collectively exchange data into a blocked arrangement across threads
-     *     BlockExchange(temp_storage).WarpStripedToBlocked(thread_data);
-     *
-     * @endcode
-     * @par
-     * Suppose the set of warp-striped input @p thread_data across the block of threads is
-     * <tt>{ [0,32,64,96], [1,33,65,97], [2,34,66,98], ..., [415,447,479,511] }</tt>
-     * after loading from device-accessible memory.  (The first 128 items are striped across
-     * the first warp of 32 threads, the second 128 items are striped across the second warp, etc.)
-     * The corresponding output @p thread_data in those threads will be
-     * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }</tt>.
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     */
+    //! @rst 
+    //! Transposes data items from **warp-striped** arrangement to **blocked** arrangement.
+    //! 
+    //! - @smemreuse
+    //! 
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates the conversion from a "warp-striped" to a "blocked"
+    //! arrangement of 512 integer items partitioned across 128 threads where each thread owns 4
+    //! items.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
+    //! 
+    //!    __global__ void ExampleKernel(int *d_data, ...)
+    //!    {
+    //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
+    //!        typedef cub::BlockExchange<int, 128, 4> BlockExchange;
+    //! 
+    //!        // Allocate shared memory for BlockExchange
+    //!        __shared__ typename BlockExchange::TempStorage temp_storage;
+    //! 
+    //!        // Load a tile of ordered data into a warp-striped arrangement across warp threads
+    //!        int thread_data[4];
+    //!        cub::LoadSWarptriped<LOAD_DEFAULT>(threadIdx.x, d_data, thread_data);
+    //! 
+    //!        // Collectively exchange data into a blocked arrangement across threads
+    //!        BlockExchange(temp_storage).WarpStripedToBlocked(thread_data);
+    //! 
+    //! Suppose the set of warp-striped input ``thread_data`` across the block of threads is
+    //! ``{ [0,32,64,96], [1,33,65,97], [2,34,66,98], ..., [415,447,479,511] }``
+    //! after loading from device-accessible memory. (The first 128 items are striped across
+    //! the first warp of 32 threads, the second 128 items are striped across the second warp, etc.)
+    //! The corresponding output ``thread_data`` in those threads will be
+    //! ``{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }``.
+    //! @endrst
+    //! 
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **striped** and **blocked** arrangements.
+    //! 
+    //! @param[out] output_items
+    //!   Items from exchange, converting between **striped** and **blocked** arrangements.
     template <typename OutputT>
     __device__ __forceinline__ void WarpStripedToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
                                                          OutputT (&output_items)[ITEMS_PER_THREAD])
@@ -995,55 +966,54 @@ public:
         WarpStripedToBlocked(input_items, output_items, Int2Type<WARP_TIME_SLICING>());
     }
 
-    /**
-     * @brief Transposes data items from <em>blocked</em> arrangement to <em>warp-striped</em>
-     * arrangement.
-     *
-     * @par
-     * - @smemreuse
-     *
-     * @par Snippet
-     * The code snippet below illustrates the conversion from a "blocked" to a "warp-striped"
-     * arrangement of 512 integer items partitioned across 128 threads where each thread owns 4
-     * items.
-     * @par
-     * @code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
-     *
-     * __global__ void ExampleKernel(int *d_data, ...)
-     * {
-     *     // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-     *     typedef cub::BlockExchange<int, 128, 4> BlockExchange;
-     *
-     *     // Allocate shared memory for BlockExchange
-     *     __shared__ typename BlockExchange::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_data[4];
-     *     ...
-     *
-     *     // Collectively exchange data into a warp-striped arrangement across threads
-     *     BlockExchange(temp_storage).BlockedToWarpStriped(thread_data, thread_data);
-     *
-     *     // Store data striped across warp threads into an ordered tile
-     *     cub::StoreDirectStriped<STORE_DEFAULT, 128>(threadIdx.x, d_data, thread_data);
-     *
-     * @endcode
-     * @par
-     * Suppose the set of blocked input @p thread_data across the block of threads is
-     * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }</tt>.
-     * The corresponding output @p thread_data in those threads will be
-     * <tt>{ [0,32,64,96], [1,33,65,97], [2,34,66,98], ..., [415,447,479,511] }</tt>
-     * in preparation for storing to device-accessible memory. (The first 128 items are striped
-     * across the first warp of 32 threads, the second 128 items are striped across the second warp,
-     * etc.)
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     */
+    //! @rst
+    //! Transposes data items from **blocked** arrangement to **warp-striped** arrangement.
+    //! 
+    //! - @smemreuse
+    //! 
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates the conversion from a "blocked" to a "warp-striped"
+    //! arrangement of 512 integer items partitioned across 128 threads where each thread owns 4
+    //! items.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
+    //! 
+    //!    __global__ void ExampleKernel(int *d_data, ...)
+    //!    {
+    //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
+    //!        typedef cub::BlockExchange<int, 128, 4> BlockExchange;
+    //! 
+    //!        // Allocate shared memory for BlockExchange
+    //!        __shared__ typename BlockExchange::TempStorage temp_storage;
+    //! 
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_data[4];
+    //!        ...
+    //! 
+    //!        // Collectively exchange data into a warp-striped arrangement across threads
+    //!        BlockExchange(temp_storage).BlockedToWarpStriped(thread_data, thread_data);
+    //! 
+    //!        // Store data striped across warp threads into an ordered tile
+    //!        cub::StoreDirectStriped<STORE_DEFAULT, 128>(threadIdx.x, d_data, thread_data);
+    //! 
+    //! Suppose the set of blocked input ``thread_data`` across the block of threads is
+    //! ``{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }``.
+    //! The corresponding output ``thread_data`` in those threads will be
+    //! ``{ [0,32,64,96], [1,33,65,97], [2,34,66,98], ..., [415,447,479,511] }``
+    //! in preparation for storing to device-accessible memory. (The first 128 items are striped
+    //! across the first warp of 32 threads, the second 128 items are striped across the second warp, etc.)
+    //! @endrst
+    //! 
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **striped** and **blocked** arrangements.
+    //! 
+    //! @param[out] output_items
+    //!   Items from exchange, converting between **striped** and **blocked** arrangements.
     template <typename OutputT>
     __device__ __forceinline__ void BlockedToWarpStriped(InputT (&input_items)[ITEMS_PER_THREAD],
                                                          OutputT (&output_items)[ITEMS_PER_THREAD])
@@ -1051,32 +1021,27 @@ public:
         BlockedToWarpStriped(input_items, output_items, Int2Type<WARP_TIME_SLICING>());
     }
 
+    //! @}  end member group
+    //! @name Scatter exchanges
+    //! @{
 
-
-    //@}  end member group
-    /******************************************************************//**
-     * @name Scatter exchanges
-     *********************************************************************/
-    //@{
-
-    /**
-     * @brief Exchanges data items annotated by rank into <em>blocked</em> arrangement.
-     *
-     * @par
-     * - @smemreuse
-     *
-     * @tparam OffsetT
-     *   <b>[inferred]</b> Signed integer type for local offsets
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     *
-     * @param[in] ranks
-     *   Corresponding scatter ranks
-     */
+    //! @rst
+    //! Exchanges data items annotated by rank into **blocked** arrangement.
+    //!
+    //! - @smemreuse
+    //! @endrst
+    //!
+    //! @tparam OffsetT
+    //!   **[inferred]** Signed integer type for local offsets
+    //!
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **striped** and **blocked** arrangements.
+    //!
+    //! @param[out] output_items
+    //!   Items from exchange, converting between **striped** and **blocked** arrangements.
+    //!
+    //! @param[in] ranks
+    //!   Corresponding scatter ranks
     template <typename OutputT, typename OffsetT>
     __device__ __forceinline__ void ScatterToBlocked(InputT (&input_items)[ITEMS_PER_THREAD],
                                                      OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -1085,24 +1050,24 @@ public:
         ScatterToBlocked(input_items, output_items, ranks, Int2Type<WARP_TIME_SLICING>());
     }
 
-    /**
-     * @brief Exchanges data items annotated by rank into <em>striped</em> arrangement.
-     *
-     * @par
-     * - @smemreuse
-     *
-     * @tparam OffsetT
-     *   <b>[inferred]</b> Signed integer type for local offsets
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     *
-     * @param[in] ranks
-     *   Corresponding scatter ranks
-     */
+    //! @rst 
+    //! Exchanges data items annotated by rank into **striped** arrangement.
+    //! 
+    //! - @smemreuse
+    //!
+    //! @endrst 
+    //! 
+    //! @tparam OffsetT
+    //!   **[inferred]** Signed integer type for local offsets
+    //! 
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **striped** and **blocked** arrangements.
+    //! 
+    //! @param[out] output_items
+    //!   Items from exchange, converting between **striped** and **blocked** arrangements.
+    //! 
+    //! @param[in] ranks
+    //!   Corresponding scatter ranks
     template <typename OutputT, typename OffsetT>
     __device__ __forceinline__ void ScatterToStriped(InputT (&input_items)[ITEMS_PER_THREAD],
                                                      OutputT (&output_items)[ITEMS_PER_THREAD],
@@ -1111,25 +1076,24 @@ public:
         ScatterToStriped(input_items, output_items, ranks, Int2Type<WARP_TIME_SLICING>());
     }
 
-    /**
-     * @brief Exchanges data items annotated by rank into <em>striped</em> arrangement.
-     *        Items with rank -1 are not exchanged.
-     *
-     * @par
-     * - @smemreuse
-     *
-     * @tparam OffsetT
-     *   <b>[inferred]</b> Signed integer type for local offsets
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     *
-     * @param[in] ranks
-     *   Corresponding scatter ranks
-     */
+    //! @rst 
+    //! Exchanges data items annotated by rank into **striped** arrangement. Items with rank -1 are not exchanged.
+    //! 
+    //! - @smemreuse
+    //!
+    //! @endrst 
+    //! 
+    //! @tparam OffsetT
+    //!   **[inferred]** Signed integer type for local offsets
+    //! 
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **striped** and **blocked** arrangements.
+    //! 
+    //! @param[out] output_items
+    //!   Items from exchange, converting between **striped** and **blocked** arrangements.
+    //! 
+    //! @param[in] ranks
+    //!   Corresponding scatter ranks
     template <typename OutputT, typename OffsetT>
     __device__ __forceinline__ void
     ScatterToStripedGuarded(InputT (&input_items)[ITEMS_PER_THREAD],
@@ -1156,30 +1120,30 @@ public:
         }
     }
 
-    /**
-     * @brief Exchanges valid data items annotated by rank into <em>striped</em> arrangement.
-     *
-     * @par
-     * - @smemreuse
-     *
-     * @tparam OffsetT
-     *   <b>[inferred]</b> Signed integer type for local offsets
-     *
-     * @tparam ValidFlag
-     *   <b>[inferred]</b> FlagT type denoting which items are valid
-     *
-     * @param[in] input_items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     *
-     * @param[out] output_items
-     *   Items from exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
-     *
-     * @param[in] ranks
-     *   Corresponding scatter ranks
-     *
-     * @param[in] is_valid
-     *   Corresponding flag denoting item validity
-     */
+    //! @rst 
+    //! Exchanges valid data items annotated by rank into **striped** arrangement.
+    //! 
+    //! - @smemreuse
+    //!
+    //! @endrst 
+    //! 
+    //! @tparam OffsetT
+    //!   **[inferred]** Signed integer type for local offsets
+    //! 
+    //! @tparam ValidFlag
+    //!   **[inferred]** FlagT type denoting which items are valid
+    //! 
+    //! @param[in] input_items
+    //!   Items to exchange, converting between **striped** and **blocked** arrangements.
+    //! 
+    //! @param[out] output_items
+    //!   Items from exchange, converting between **striped** and **blocked** arrangements.
+    //! 
+    //! @param[in] ranks
+    //!   Corresponding scatter ranks
+    //! 
+    //! @param[in] is_valid
+    //!   Corresponding flag denoting item validity
     template <typename OutputT, typename OffsetT, typename ValidFlag>
     __device__ __forceinline__ void
     ScatterToStripedFlagged(InputT (&input_items)[ITEMS_PER_THREAD],
@@ -1207,16 +1171,13 @@ public:
         }
     }
 
-
-    //@}  end member group
-
-
+    //! @}  end member group
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
 
     /**
      * @param[in-out] items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *   Items to exchange, converting between **striped** and **blocked** arrangements.
      */
     __device__ __forceinline__ void StripedToBlocked(InputT (&items)[ITEMS_PER_THREAD])
     {
@@ -1225,7 +1186,7 @@ public:
 
     /**
      * @param[in-out] items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *   Items to exchange, converting between **striped** and **blocked** arrangements.
      */
     __device__ __forceinline__ void BlockedToStriped(InputT (&items)[ITEMS_PER_THREAD])
     {
@@ -1234,7 +1195,7 @@ public:
 
     /**
      * @param[in-out] items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *   Items to exchange, converting between **striped** and **blocked** arrangements.
      */
     __device__ __forceinline__ void WarpStripedToBlocked(InputT (&items)[ITEMS_PER_THREAD])
     {
@@ -1243,7 +1204,7 @@ public:
 
     /**
      * @param[in-out] items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *   Items to exchange, converting between **striped** and **blocked** arrangements.
      */
     __device__ __forceinline__ void BlockedToWarpStriped(InputT (&items)[ITEMS_PER_THREAD])
     {
@@ -1252,7 +1213,7 @@ public:
 
     /**
      * @param[in-out] items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *   Items to exchange, converting between **striped** and **blocked** arrangements.
      *
      * @param[in] ranks
      *   Corresponding scatter ranks
@@ -1266,7 +1227,7 @@ public:
 
     /**
      * @param[in-out] items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *   Items to exchange, converting between **striped** and **blocked** arrangements.
      *
      * @param[in] ranks
      *   Corresponding scatter ranks
@@ -1280,7 +1241,7 @@ public:
 
     /**
      * @param[in-out] items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *   Items to exchange, converting between **striped** and **blocked** arrangements.
      *
      * @param[in] ranks
      *   Corresponding scatter ranks
@@ -1294,7 +1255,7 @@ public:
 
     /**
      * @param[in-out] items
-     *   Items to exchange, converting between <em>striped</em> and <em>blocked</em> arrangements.
+     *   Items to exchange, converting between **striped** and **blocked** arrangements.
      *
      * @param[in] ranks
      *   Corresponding scatter ranks
