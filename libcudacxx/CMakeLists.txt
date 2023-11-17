@@ -32,16 +32,11 @@ endif()
 include(CTest)
 enable_testing()
 
-# Enable building the nvrtcc project if NVRTC is enabled
-if (LIBCUDACXX_TEST_WITH_NVRTC)
-  add_subdirectory(utils/nvidia/nvrtc)
-endif()
-
 # Note that this currently returns and skips the rest of the build
 # system.
 option(libcudacxx_ENABLE_CMAKE_TESTS "Enable ctest-based testing." ON)
 if (libcudacxx_ENABLE_CMAKE_TESTS)
-  add_subdirectory(cmake/test/)
+  add_subdirectory(cmake/test)
 endif()
 
 set(CMAKE_MODULE_PATH "${libcudacxx_SOURCE_DIR}/cmake")
