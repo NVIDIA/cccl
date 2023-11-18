@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -26,17 +26,11 @@
  ******************************************************************************/
 
 /******************************************************************************
- * Test of DeviceMergeSort utilities
+ * Test of DeviceMergeSort utilities using large user types (i.e., with vsmem utilities)
  ******************************************************************************/
 
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
-
-#include <cub/device/device_merge_sort.cuh>
-
-#include <thrust/device_vector.h>
-#include <thrust/iterator/reverse_iterator.h>
-#include <thrust/sequence.h>
 
 #include <cstdio>
 #include <new> // for std::bad_alloc
@@ -44,60 +38,25 @@
 #include "test_device_merge_sort.cuh"
 #include "test_util.h"
 
-using namespace cub;
-
-template <typename DataType>
-void Test(thrust::default_random_engine& rng, unsigned int num_items)
+int main(int argc, char** argv)
 {
-  TestHelper<sizeof(DataType) <= sizeof(std::uint8_t) >::template AllocateAndTest<std::uint8_t, DataType>(
-    rng, num_items);
-  TestHelper<sizeof(DataType) <= sizeof(std::uint32_t)>::template AllocateAndTest<std::uint32_t, DataType>(
-    rng, num_items);
-  TestHelper<sizeof(DataType) <= sizeof(std::uint64_t)>::template AllocateAndTest<std::uint64_t, DataType>(
-    rng, num_items);
-}
+  CommandLineArgs args(argc, argv);
 
-template <typename KeyType, typename DataType>
-void AllocateAndTestIterators(unsigned int num_items)
-{
-  thrust::device_vector<KeyType> d_keys(num_items);
-  thrust::device_vector<DataType> d_values(num_items);
+  // Initialize device
+  CubDebugExit(args.DeviceInit());
 
-  thrust::sequence(d_keys.begin(), d_keys.end());
-  thrust::sequence(d_values.begin(), d_values.end());
+  using DataType = int64_t;
 
-  thrust::reverse(d_values.begin(), d_values.end());
-
-  using KeyIterator = typename thrust::device_vector<KeyType>::iterator;
-  thrust::reverse_iterator<KeyIterator> reverse_iter(d_keys.end());
-
-  size_t temp_size = 0;
-  cub::DeviceMergeSort::SortPairs(
-    nullptr, temp_size, reverse_iter, thrust::raw_pointer_cast(d_values.data()), num_items, CustomLess());
-
-  thrust::device_vector<char> tmp(temp_size);
-
-  cub::DeviceMergeSort::SortPairs(
-    thrust::raw_pointer_cast(tmp.data()),
-    temp_size,
-    reverse_iter,
-    thrust::raw_pointer_cast(d_values.data()),
-    num_items,
-    CustomLess());
-
-  AssertTrue(CheckResult(d_values));
-}
-
-template <typename DataType>
-void Test(thrust::default_random_engine& rng)
-{
+  thrust::default_random_engine rng;
   for (unsigned int pow2 = 9; pow2 < 22; pow2 += 2)
   {
     try
     {
       const unsigned int num_items = 1 << pow2;
-      AllocateAndTestIterators<DataType, DataType>(num_items);
-      Test<DataType>(rng, num_items);
+      // Testing vsmem facility with a fallback policy
+      TestHelper<true>::AllocateAndTest<HugeDataType<128>, DataType>(rng, num_items);
+      // Testing vsmem facility with virtual shared memory
+      TestHelper<true>::AllocateAndTest<HugeDataType<256>, DataType>(rng, num_items);
     }
     catch (std::bad_alloc& e)
     {
@@ -113,19 +72,6 @@ void Test(thrust::default_random_engine& rng)
       }
     }
   }
-}
-
-int main(int argc, char** argv)
-{
-  CommandLineArgs args(argc, argv);
-
-  // Initialize device
-  CubDebugExit(args.DeviceInit());
-
-  thrust::default_random_engine rng;
-
-  Test<std::int32_t>(rng);
-  Test<std::int64_t>(rng);
 
   return 0;
 }
