@@ -46,8 +46,8 @@ pull_request:
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '15', exe: 'clang++'}, std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'llvm', version: '16', exe: 'clang++'}, std: [11, 14, 17, 20], jobs: ['build', 'test']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'arm64', compiler: {name: 'llvm', version: '16', exe: 'clang++'}, std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_oldest, os: 'windows2022', cpu: 'amd64', compiler: {name: 'cl',   version: '14.16', exe: 'cl++'}, std: [14, 17],         jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: {name: 'cl',   version: '14.16', exe: 'cl++'}, std: [14, 17],         jobs: ['build']}
+    - {cuda: *cuda_oldest, os: 'windows2022', cpu: 'amd64', compiler: {name: 'cl',   version: '14.16', exe: 'cl++'}, std: [14],         jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: {name: 'cl',   version: '14.16', exe: 'cl++'}, std: [17],         jobs: ['build']}
     - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: {name: 'cl',   version: '14.29', exe: 'cl++'}, std: [14, 17],         jobs: ['build']}
     - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: {name: 'cl',   version: '14.36', exe: 'cl++'}, std: [14, 17, 20],     jobs: ['build']}
   nvrtc:
