@@ -55,10 +55,13 @@ def parse_arguments():
 
 def run_benches(algnames, sub_space, seeker):
     for algname in algnames:
-        bench = BaseBench(algname)
-        ct_space = bench.ct_workload_space(sub_space)
-        rt_values = bench.rt_axes_values(sub_space)
-        seeker(algname, ct_space, rt_values)
+        try:
+            bench = BaseBench(algname)
+            ct_space = bench.ct_workload_space(sub_space)
+            rt_values = bench.rt_axes_values(sub_space)
+            seeker(algname, ct_space, rt_values)
+        except Exception as e:
+            print("#### ERROR exception occured while running {}: '{}'".format(algname, e))
 
 
 def filter_benchmarks(benchmarks, args):
