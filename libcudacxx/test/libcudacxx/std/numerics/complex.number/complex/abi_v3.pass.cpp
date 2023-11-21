@@ -39,6 +39,9 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
+// These specializations didn't exist at the time of ABI v3:
+//    test<__half>();
+//    test<__nv_bfloat16>();
 
   return 0;
 }

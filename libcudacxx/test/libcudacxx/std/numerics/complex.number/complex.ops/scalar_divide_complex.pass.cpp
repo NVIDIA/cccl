@@ -34,6 +34,8 @@ int main(int, char**)
 {
     test<float>();
     test<double>();
+    test<__half>();
+    test<__nv_bfloat16>();
 // CUDA treats long double as double
 //  test<long double>();
 #if TEST_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)

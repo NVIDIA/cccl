@@ -22,28 +22,28 @@ test()
 {
     cuda::std::complex<T> c;
     const cuda::std::complex<T> c2(1.5, 2.5);
-    assert(c.real() == 0);
-    assert(c.imag() == 0);
+    assert(c.real() == T(0));
+    assert(c.imag() == T(0));
     c -= c2;
-    assert(c.real() == -1.5);
-    assert(c.imag() == -2.5);
+    assert(c.real() == T(-1.5));
+    assert(c.imag() == T(-2.5));
     c -= c2;
-    assert(c.real() == -3);
-    assert(c.imag() == -5);
+    assert(c.real() == T(-3));
+    assert(c.imag() == T(-5));
 
     cuda::std::complex<T> c3;
 
     c3 = c;
     cuda::std::complex<int> ic (1,1);
     c3 -= ic;
-    assert(c3.real() == -4);
-    assert(c3.imag() == -6);
+    assert(c3.real() == T(-4));
+    assert(c3.imag() == T(-6));
 
     c3 = c;
     cuda::std::complex<float> fc (1,1);
     c3 -= fc;
-    assert(c3.real() == -4);
-    assert(c3.imag() == -6);
+    assert(c3.real() == T(-4));
+    assert(c3.imag() == T(-6));
 
     return true;
 }
@@ -54,6 +54,9 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
+    test<__half>();
+    test<__nv_bfloat16>();
+
 #if TEST_STD_VER > 2011
     static_assert(test<float>(), "");
     static_assert(test<double>(), "");

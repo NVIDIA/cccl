@@ -19,6 +19,10 @@
 #include "../__utility/declval.h"
 #include "../cstddef"
 
+#ifdef __cuda_std__
+#include <cuda_fp16.h>
+#endif
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -33,6 +37,10 @@ template <class _Tp>
 struct __numeric_type
 {
    _LIBCUDACXX_INLINE_VISIBILITY static void __test(...);
+#ifdef __cuda_std__
+   _LIBCUDACXX_INLINE_VISIBILITY static __half __test(__half);
+   _LIBCUDACXX_INLINE_VISIBILITY static __nv_bfloat16 __test(__nv_bfloat16);
+#endif
    _LIBCUDACXX_INLINE_VISIBILITY static float __test(float);
    _LIBCUDACXX_INLINE_VISIBILITY static double __test(char);
    _LIBCUDACXX_INLINE_VISIBILITY static double __test(int);

@@ -25,7 +25,7 @@ test(const cuda::std::complex<T>& c, cuda::std::complex<T> x)
 {
     cuda::std::complex<T> a = sqrt(c);
     is_about(real(a), real(x));
-    assert(cuda::std::abs(imag(c)) < 1.e-6);
+    assert(cuda::std::abs(imag(c)) < T(1.e-6));
 }
 
 template <class T>
@@ -35,14 +35,15 @@ test()
     test(cuda::std::complex<T>(64, 0), cuda::std::complex<T>(8, 0));
 }
 
+template <class T>
 __host__ __device__ void test_edges()
 {
-    auto testcases = get_testcases();
+    auto testcases = get_testcases<T>();
     const unsigned N = sizeof(testcases) / sizeof(testcases[0]);
     for (unsigned i = 0; i < N; ++i)
     {
-        cuda::std::complex<double> r = sqrt(testcases[i]);
-        if (testcases[i].real() == 0 && testcases[i].imag() == 0)
+        cuda::std::complex<T> r = sqrt(testcases[i]);
+        if (testcases[i].real() == T(0) && testcases[i].imag() == T(0))
         {
             assert(!cuda::std::signbit(r.real()));
             assert(cuda::std::signbit(r.imag()) == cuda::std::signbit(testcases[i].imag()));
@@ -50,7 +51,7 @@ __host__ __device__ void test_edges()
         else if (cuda::std::isinf(testcases[i].imag()))
         {
             assert(cuda::std::isinf(r.real()));
-            assert(r.real() > 0);
+            assert(r.real() > T(0));
             assert(cuda::std::isinf(r.imag()));
             assert(cuda::std::signbit(r.imag()) == cuda::std::signbit(testcases[i].imag()));
         }
@@ -59,29 +60,29 @@ __host__ __device__ void test_edges()
             assert(cuda::std::isnan(r.real()));
             assert(cuda::std::isnan(r.imag()));
         }
-        else if (cuda::std::isinf(testcases[i].real()) && testcases[i].real() < 0 && cuda::std::isfinite(testcases[i].imag()))
+        else if (cuda::std::isinf(testcases[i].real()) && testcases[i].real() < T(0) && cuda::std::isfinite(testcases[i].imag()))
         {
-            assert(r.real() == 0);
+            assert(r.real() == T(0));
             assert(!cuda::std::signbit(r.real()));
             assert(cuda::std::isinf(r.imag()));
             assert(cuda::std::signbit(testcases[i].imag()) == cuda::std::signbit(r.imag()));
         }
-        else if (cuda::std::isinf(testcases[i].real()) && testcases[i].real() > 0 && cuda::std::isfinite(testcases[i].imag()))
+        else if (cuda::std::isinf(testcases[i].real()) && testcases[i].real() > T(0) && cuda::std::isfinite(testcases[i].imag()))
         {
             assert(cuda::std::isinf(r.real()));
-            assert(r.real() > 0);
-            assert(r.imag() == 0);
+            assert(r.real() > T(0));
+            assert(r.imag() == T(0));
             assert(cuda::std::signbit(testcases[i].imag()) == cuda::std::signbit(r.imag()));
         }
-        else if (cuda::std::isinf(testcases[i].real()) && testcases[i].real() < 0 && cuda::std::isnan(testcases[i].imag()))
+        else if (cuda::std::isinf(testcases[i].real()) && testcases[i].real() < T(0) && cuda::std::isnan(testcases[i].imag()))
         {
             assert(cuda::std::isnan(r.real()));
             assert(cuda::std::isinf(r.imag()));
         }
-        else if (cuda::std::isinf(testcases[i].real()) && testcases[i].real() > 0 && cuda::std::isnan(testcases[i].imag()))
+        else if (cuda::std::isinf(testcases[i].real()) && testcases[i].real() > T(0) && cuda::std::isnan(testcases[i].imag()))
         {
             assert(cuda::std::isinf(r.real()));
-            assert(r.real() > 0);
+            assert(r.real() > T(0));
             assert(cuda::std::isnan(r.imag()));
         }
         else if (cuda::std::isnan(testcases[i].real()) && (cuda::std::isfinite(testcases[i].imag()) || cuda::std::isnan(testcases[i].imag())))
@@ -108,7 +109,11 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
-    test_edges();
+    test<__half>();
+    test<__nv_bfloat16>();
+    test_edges<double>();
+    test_edges<__half>();
+    test_edges<__nv_bfloat16>();
 
   return 0;
 }

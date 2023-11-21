@@ -21,21 +21,21 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool
 test()
 {
     cuda::std::complex<T> c(1);
-    assert(c.real() == 1);
-    assert(c.imag() == 0);
+    assert(c.real() == T(1));
+    assert(c.imag() == T(0));
     c *= 1.5;
-    assert(c.real() == 1.5);
-    assert(c.imag() == 0);
+    assert(c.real() == T(1.5));
+    assert(c.imag() == T(0));
     c *= 1.5;
-    assert(c.real() == 2.25);
-    assert(c.imag() == 0);
+    assert(c.real() == T(2.25));
+    assert(c.imag() == T(0));
     c *= -1.5;
-    assert(c.real() == -3.375);
-    assert(c.imag() == 0);
+    assert(c.real() == T(-3.375));
+    assert(c.imag() == T(0));
     c.imag(2);
     c *= 1.5;
-    assert(c.real() == -5.0625);
-    assert(c.imag() == 3);
+    assert(c.real() == T(-5.0625));
+    assert(c.imag() == T(3));
 
     return true;
 }
@@ -44,6 +44,8 @@ int main(int, char**)
 {
     test<float>();
     test<double>();
+    test<__half>();
+    test<__nv_bfloat16>();
 // CUDA treats long double as double
 //  test<long double>();
 #if TEST_STD_VER > 2011

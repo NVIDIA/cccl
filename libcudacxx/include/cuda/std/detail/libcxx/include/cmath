@@ -320,6 +320,11 @@ long double    truncl(long double x);
 #include <__pragma_push>
 #endif // __cuda_std__
 
+#ifdef __cuda_std__
+#include <cuda_fp16.h>
+#include <cuda_bf16.h>
+#endif
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -612,6 +617,146 @@ hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
 #define _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX
 #endif // _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 
+#ifdef __cuda_std__
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half sin(__half __v)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (return hsin(__v);),
+        (return __half(_CUDA_VSTD::sin(float(__v)));)
+    )
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 sin(__nv_bfloat16 __v)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (return hsin(__v);),
+        (return __nv_bfloat16(_CUDA_VSTD::sin(float(__v)));)
+    )
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half sinh(__half __v)
+{
+    return __half(_CUDA_VSTD::sinh(float(__v)));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 sinh(__nv_bfloat16 __v)
+{
+    return __nv_bfloat16(_CUDA_VSTD::sinh(float(__v)));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 cos(__nv_bfloat16 __v)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (return hcos(__v);),
+        (return __nv_bfloat16(_CUDA_VSTD::cos(float(__v)));)
+    )
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half cos(__half __v)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (return hcos(__v);),
+        (return __half(_CUDA_VSTD::cos(float(__v)));)
+    )
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half cosh(__half __v)
+{
+    return __half(_CUDA_VSTD::cosh(float(__v)));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 cosh(__nv_bfloat16 __v)
+{
+    return __nv_bfloat16(_CUDA_VSTD::cosh(float(__v)));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half exp(__half __v)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (return hexp(__v);),
+        (return __half(_CUDA_VSTD::exp(float(__v)));)
+    )
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 exp(__nv_bfloat16 __v)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (return hexp(__v);),
+        (return __nv_bfloat16(_CUDA_VSTD::exp(float(__v)));)
+    )
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool signbit(__half __v)
+{
+    return ::signbit(__half2float(__v));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool signbit(__nv_bfloat16 __v)
+{
+    return ::signbit(__bfloat162float(__v));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half atan2(__half __x, __half __y)
+{
+    return __half(_CUDA_VSTD::atan2(float(__x), float(__y)));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 atan2(__nv_bfloat16 __x, __nv_bfloat16 __y)
+{
+    return __nv_bfloat16(_CUDA_VSTD::atan2(float(__x), float(__y)));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half log(__half __x)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (return hlog(__x);),
+        (return __half(_CUDA_VSTD::log(float(__x)));)
+    )
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 log(__nv_bfloat16 __x)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (return hlog(__x);),
+        (return __nv_bfloat16(_CUDA_VSTD::log(float(__x)));)
+    )
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half sqrt(__half __x)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (return hsqrt(__x);),
+        (return __half(_CUDA_VSTD::sqrt(float(__x)));)
+    )
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 sqrt(__nv_bfloat16 __x)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (return hsqrt(__x);),
+        (return __nv_bfloat16(_CUDA_VSTD::sqrt(float(__x)));)
+    )
+}
+#endif
+
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 constexpr __enable_if_t<is_floating_point<_A1>::value, bool>
@@ -633,6 +778,32 @@ __constexpr_isnan(_A1 __lcpp_x) noexcept
 {
     return isnan(__lcpp_x);
 }
+
+#ifdef __cuda_std__
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool __constexpr_isnan(__half __x) noexcept
+{
+    return __hisnan(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool isnan(__half __v)
+{
+    return __constexpr_isnan(__v);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool __constexpr_isnan(__nv_bfloat16 __x) noexcept
+{
+    return __hisnan(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool isnan(__nv_bfloat16 __v)
+{
+    return __constexpr_isnan(__v);
+}
+#endif
 
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
@@ -656,6 +827,70 @@ __constexpr_isinf(_A1 __lcpp_x) noexcept
     return isinf(__lcpp_x);
 }
 
+#ifdef __cuda_std__
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool __constexpr_isinf(__half __x) noexcept {
+#if _LIBCUDACXX_STD_VER >= 20
+    // There's some sort of a bug with C++20 here.
+    // XXX nvbug number pending
+    return !__hisnan(__x) && __hisnan(__x - __x);
+#else
+    return __hisinf(__x) != 0;
+#endif
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool __constexpr_isinf(__nv_bfloat16 __x) noexcept {
+#if _LIBCUDACXX_STD_VER >= 20
+    // There's some sort of a bug with C++20 here.
+    // XXX nvbug number pending
+    return !__hisnan(__x) && __hisnan(__x - __x);
+#else
+    return __hisinf(__x) != 0;
+#endif
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool isinf(__half __v)
+{
+    return __constexpr_isinf(__v);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool isinf(__nv_bfloat16 __v)
+{
+    return __constexpr_isinf(__v);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half hypot(__half __x, __half __y)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (
+            if (__constexpr_isinf(__x) || __constexpr_isinf(__y)) {
+                return __half(INFINITY);
+            }
+            return hsqrt(__x * __x + __y * __y);
+        ),
+        (return __half(_CUDA_VSTD::hypot(float(__x), float(__y)));)
+    )
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (
+            if (__constexpr_isinf(__x) || __constexpr_isinf(__y)) {
+                return __nv_bfloat16(INFINITY);
+            }
+            return hsqrt(__x * __x + __y * __y);
+        ),
+        (return __nv_bfloat16(_CUDA_VSTD::hypot(float(__x), float(__y)));)
+    )
+}
+#endif
+
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 constexpr __enable_if_t<is_floating_point<_A1>::value, bool>
@@ -677,6 +912,30 @@ __constexpr_isfinite(_A1 __lcpp_x) noexcept
 {
     return isfinite(__lcpp_x);
 }
+
+#ifdef __cuda_std__
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool __constexpr_isfinite(__half __x) noexcept {
+    return !__constexpr_isnan(__x) && !__constexpr_isinf(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool isfinite(__half __v)
+{
+    return __constexpr_isfinite(__v);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool __constexpr_isfinite(__nv_bfloat16 __x) noexcept {
+    return !__constexpr_isnan(__x) && !__constexpr_isinf(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+bool isfinite(__nv_bfloat16 __v)
+{
+    return __constexpr_isfinite(__v);
+}
+#endif
 
 #if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
 template <class _A1>
@@ -712,6 +971,32 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 typename __enable_if_t<is_arithmetic<_A1>::val
 }
 #endif // !_MSC_VER
 
+#ifdef __cuda_std__
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half __constexpr_copysign(__half __x, __half __y) noexcept
+{
+    return __half(_CUDA_VSTD::copysign(float(__x), float(__y)));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half copysign(__half __x, __half __y)
+{
+    return __constexpr_copysign(__x, __y);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 __constexpr_copysign(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
+{
+    return __nv_bfloat16(_CUDA_VSTD::copysign(float(__x), float(__y)));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 copysign(__nv_bfloat16 __x, __nv_bfloat16 __y)
+{
+    return __constexpr_copysign(__x, __y);
+}
+#endif
+
 #if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
@@ -741,6 +1026,44 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 double __constexpr_fabs(_Tp __x) noexcept {
     return __builtin_fabs(static_cast<double>(__x));
 }
 #endif // !_MSC_VER
+
+#ifdef __cuda_std__
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half __constexpr_fabs(__half __x) noexcept
+{
+    return __habs(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half fabs(__half __x)
+{
+    return __constexpr_fabs(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half abs(__half __x)
+{
+    return __constexpr_fabs(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 __constexpr_fabs(__nv_bfloat16 __x) noexcept
+{
+    return __habs(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 fabs(__nv_bfloat16 __x)
+{
+    return __constexpr_fabs(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 abs(__nv_bfloat16 __x)
+{
+    return __constexpr_fabs(__x);
+}
+#endif
 
 #if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
 template <class _A1>
@@ -801,6 +1124,20 @@ __constexpr_fmax(_Tp __x, _Up __y) noexcept {
 }
 #endif // !_MSC_VER
 
+#ifdef __cuda_std__
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__half __constexpr_fmax(__half __x, __half __y) noexcept
+{
+    return __hmax(__x, __y);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__nv_bfloat16 __constexpr_fmax(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
+{
+    return __hmax(__x, __y);
+}
+#endif
+
 #if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
@@ -827,7 +1164,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX _Tp __constexpr_logb(_Tp __x) {
 
     __x = __constexpr_fabs(__x);
     unsigned long long __exp = 0;
-    while (__x >= numeric_limits<_Tp>::radix) {
+    while (__x >= _Tp(numeric_limits<_Tp>::radix)) {
       __x /= numeric_limits<_Tp>::radix;
       __exp += 1;
     }
@@ -876,7 +1213,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX _Tp __constexpr_scalbn(_Tp __x, int __
     if (__constexpr_isinf(__x))
       return __x;
 
-    if (__exp == _Tp(0))
+    if (_Tp(__exp) == _Tp(0))
       return __x;
 
     if (__constexpr_isnan(__x))

@@ -26,28 +26,28 @@ test()
 {
     cuda::std::complex<T> c(1);
     const cuda::std::complex<T> c2(1.5, 2.5);
-    assert(c.real() == 1);
-    assert(c.imag() == 0);
+    assert(c.real() == T(1));
+    assert(c.imag() == T(0));
     c *= c2;
-    assert(c.real() == 1.5);
-    assert(c.imag() == 2.5);
+    assert(c.real() == T(1.5));
+    assert(c.imag() == T(2.5));
     c *= c2;
-    assert(c.real() == -4);
-    assert(c.imag() == 7.5);
+    assert(c.real() == T(-4));
+    assert(c.imag() == T(7.5));
 
     cuda::std::complex<T> c3;
 
     c3 = c;
     cuda::std::complex<int> ic (1,1);
     c3 *= ic;
-    assert(c3.real() == -11.5);
-    assert(c3.imag() ==   3.5);
+    assert(c3.real() == T(-11.5));
+    assert(c3.imag() ==   T(3.5));
 
     c3 = c;
     cuda::std::complex<float> fc (1,1);
     c3 *= fc;
-    assert(c3.real() == -11.5);
-    assert(c3.imag() ==   3.5);
+    assert(c3.real() == T(-11.5));
+    assert(c3.imag() ==   T(3.5));
 
     return true;
 }
@@ -56,6 +56,8 @@ int main(int, char**)
 {
     test<float>();
     test<double>();
+    test<__half>();
+    test<__nv_bfloat16>();
 // CUDA treats long double as double
 //  test<long double>();
 #if TEST_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)

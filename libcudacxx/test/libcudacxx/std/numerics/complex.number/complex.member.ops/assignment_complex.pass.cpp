@@ -26,16 +26,16 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool
 test()
 {
     cuda::std::complex<T> c;
-    assert(c.real() == 0);
-    assert(c.imag() == 0);
+    assert(c.real() == T(0));
+    assert(c.imag() == T(0));
     cuda::std::complex<T> c2(1.5, 2.5);
     c = c2;
-    assert(c.real() == 1.5);
-    assert(c.imag() == 2.5);
+    assert(c.real() == T(1.5));
+    assert(c.imag() == T(2.5));
     cuda::std::complex<X> c3(3.5, -4.5);
     c = c3;
-    assert(c.real() == 3.5);
-    assert(c.imag() == -4.5);
+    assert(c.real() == T(3.5));
+    assert(c.imag() == T(-4.5));
 
     return true;
 }
@@ -54,6 +54,16 @@ int main(int, char**)
 //  test<long double, float>();
 //  test<long double, double>();
 //  test<long double, long double>();
+
+    test<float, __half>();
+    test<float, __nv_bfloat16>();
+    test<double, __half>();
+    test<double, __nv_bfloat16>();
+
+    test<__half, float>();
+    test<__nv_bfloat16, float>();
+    test<__half, double>();
+    test<__nv_bfloat16, double>();
 
 #if TEST_STD_VER > 2011
     static_assert(test<float, float>(), "");

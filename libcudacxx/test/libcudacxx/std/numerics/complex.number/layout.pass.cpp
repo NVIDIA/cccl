@@ -20,8 +20,8 @@ test()
 {
     cuda::std::complex<T> z;
     T* a = (T*)&z;
-    assert(0 == z.real());
-    assert(0 == z.imag());
+    assert(T(0) == z.real());
+    assert(T(0) == z.imag());
     assert(a[0] == z.real());
     assert(a[1] == z.imag());
     a[0] = 5;
@@ -36,6 +36,8 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
+    test<__half>();
+    test<__nv_bfloat16>();
 
   return 0;
 }

@@ -20,17 +20,27 @@
 #include "test_macros.h"
 #include "../cases.h"
 
+template <class T, int x, class Target>
+__host__ __device__ void
+test_nonconstexpr()
+{
+    static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), Target>::value), "");
+    assert(cuda::std::imag(T(x)) == T(0));
+}
+
 template <class T, int x>
 __host__ __device__ void
 test(typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
 {
+    test_nonconstexpr<T, x, double>();
+
     static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), double>::value), "");
     assert(cuda::std::imag(x) == 0);
 #if TEST_STD_VER > 2011
     constexpr T val {x};
-    static_assert(cuda::std::imag(val) == 0, "");
+    static_assert(cuda::std::imag(val) == T(0), "");
     constexpr cuda::std::complex<T> t{val, val};
-    static_assert(t.imag() == x, "" );
+    static_assert(t.imag() == T(x), "" );
 #endif
 }
 
@@ -38,14 +48,25 @@ template <class T, int x>
 __host__ __device__ void
 test(typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0)
 {
+    test_nonconstexpr<T, x, T>();
+
     static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), T>::value), "");
     assert(cuda::std::imag(x) == 0);
 #if TEST_STD_VER > 2011
     constexpr T val {x};
-    static_assert(cuda::std::imag(val) == 0, "");
+    static_assert(cuda::std::imag(val) == T(0), "");
     constexpr cuda::std::complex<T> t{val, val};
-    static_assert(t.imag() == x, "" );
+    static_assert(t.imag() == T(x), "" );
 #endif
+}
+
+template <class T>
+__host__ __device__ void
+test_nonconstexpr()
+{
+    test_nonconstexpr<T, 0, T>();
+    test_nonconstexpr<T, 1, T>();
+    test_nonconstexpr<T, 10, T>();
 }
 
 template <class T>
@@ -63,6 +84,8 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
+    test_nonconstexpr<__half>();
+    test_nonconstexpr<__nv_bfloat16>();
     test<int>();
     test<unsigned>();
     test<long long>();

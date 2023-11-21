@@ -23,7 +23,7 @@ __host__ __device__ void
 test()
 {
     cuda::std::complex<T> z(1.5, 2.5);
-    assert(imag(z) == 2.5);
+    assert(imag(z) == T(2.5));
 }
 
 int main(int, char**)
@@ -32,6 +32,8 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
+    test<__half>();
+    test<__nv_bfloat16>();
 
   return 0;
 }

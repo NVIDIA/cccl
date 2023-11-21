@@ -34,16 +34,17 @@ test()
     test(cuda::std::complex<T>(10000, -10000), cuda::std::complex<T>(0, -1));
 }
 
+template <class T>
 __host__ __device__ void test_edges()
 {
-    auto testcases = get_testcases();
+    auto testcases = get_testcases<T>();
     const unsigned N = sizeof(testcases) / sizeof(testcases[0]);
     for (unsigned i = 0; i < N; ++i)
     {
-        cuda::std::complex<double> r = tan(testcases[i]);
-        cuda::std::complex<double> t1(-imag(testcases[i]), real(testcases[i]));
-        cuda::std::complex<double> t2 = tanh(t1);
-        cuda::std::complex<double> z(imag(t2), -real(t2));
+        cuda::std::complex<T> r = tan(testcases[i]);
+        cuda::std::complex<T> t1(-imag(testcases[i]), real(testcases[i]));
+        cuda::std::complex<T> t2 = tanh(t1);
+        cuda::std::complex<T> z(imag(t2), -real(t2));
         if (cuda::std::isnan(real(r)))
             assert(cuda::std::isnan(real(z)));
         else
@@ -67,7 +68,11 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
-    test_edges();
+    test<__half>();
+    test<__nv_bfloat16>();
+    test_edges<double>();
+    test_edges<__half>();
+    test_edges<__nv_bfloat16>();
 
   return 0;
 }

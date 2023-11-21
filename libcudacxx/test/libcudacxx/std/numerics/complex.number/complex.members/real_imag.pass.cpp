@@ -35,25 +35,31 @@ test_constexpr()
 }
 
 template <class T>
+__host__ __device__ TEST_CONSTEXPR_CXX14 void
+test_nonconstexpr()
+{
+    cuda::std::complex<T> c;
+    assert(c.real() == T(0));
+    assert(c.imag() == T(0));
+    c.real(3.5);
+    assert(c.real() == T(3.5));
+    assert(c.imag() == T(0));
+    c.imag(4.5);
+    assert(c.real() == T(3.5));
+    assert(c.imag() == T(4.5));
+    c.real(-4.5);
+    assert(c.real() == T(-4.5));
+    assert(c.imag() == T(4.5));
+    c.imag(-5.5);
+    assert(c.real() == T(-4.5));
+    assert(c.imag() == T(-5.5));
+}
+
+template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool
 test()
 {
-    cuda::std::complex<T> c;
-    assert(c.real() == 0);
-    assert(c.imag() == 0);
-    c.real(3.5);
-    assert(c.real() == 3.5);
-    assert(c.imag() == 0);
-    c.imag(4.5);
-    assert(c.real() == 3.5);
-    assert(c.imag() == 4.5);
-    c.real(-4.5);
-    assert(c.real() == -4.5);
-    assert(c.imag() == 4.5);
-    c.imag(-5.5);
-    assert(c.real() == -4.5);
-    assert(c.imag() == -5.5);
-
+    test_nonconstexpr<T>();
     test_constexpr<T> ();
 
     return true;
@@ -64,14 +70,14 @@ __host__ __device__ void
 test_volatile()
 {
     volatile cuda::std::complex<T> cv;
-    assert(cv.real() == 0);
-    assert(cv.imag() == 0);
+    assert(cv.real() == T(0));
+    assert(cv.imag() == T(0));
     cv.real(3.5);
-    assert(cv.real() == 3.5);
-    assert(cv.imag() == 0);
+    assert(cv.real() == T(3.5));
+    assert(cv.imag() == T(0));
     cv.imag(4.5);
-    assert(cv.real() == 3.5);
-    assert(cv.imag() == 4.5);
+    assert(cv.real() == T(3.5));
+    assert(cv.imag() == T(4.5));
 
 }
 
@@ -81,6 +87,9 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
+    test_nonconstexpr<__half>();
+    test_nonconstexpr<__nv_bfloat16>();
+
 #if TEST_STD_VER > 2011
     static_assert(test<float>(), "");
     static_assert(test<double>(), "");
@@ -92,6 +101,8 @@ int main(int, char**)
     // test volatile extensions
     test_volatile<float>();
     test_volatile<double>();
+    // test_volatile<__half>();
+    // test_volatile<__nv_bfloat16>();
 
   return 0;
 }

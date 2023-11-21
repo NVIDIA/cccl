@@ -55,8 +55,8 @@ test_constexpr()
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool
-test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void
+test_nonconstexpr()
 {
     {
         cuda::std::complex<T> lhs(1.5,  2.5);
@@ -79,6 +79,13 @@ test()
         assert( !(lhs != rhs));
     }
 
+}
+
+template <class T>
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool
+test()
+{
+    test_nonconstexpr<T>();
     test_constexpr<T> ();
 
     return true;
@@ -88,6 +95,8 @@ int main(int, char**)
 {
     test<float>();
     test<double>();
+    test_nonconstexpr<__half>();
+    test_nonconstexpr<__nv_bfloat16>();
 // CUDA treats long double as double
 //  test<long double>();
 #if TEST_STD_VER > 2011

@@ -66,6 +66,8 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
+    test<__half>();
+    test<__nv_bfloat16>();
     test<int>();
     test<unsigned>();
     test<long long>();

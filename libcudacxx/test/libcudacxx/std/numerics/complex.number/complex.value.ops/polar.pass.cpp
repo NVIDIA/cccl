@@ -45,15 +45,16 @@ test()
     test(T(100), T(0), cuda::std::complex<T>(100, 0));
 }
 
+template <class T>
 __host__ __device__ void test_edges()
 {
-    auto testcases = get_testcases();
+    auto testcases = get_testcases<T>();
     const unsigned N = sizeof(testcases) / sizeof(testcases[0]);
     for (unsigned i = 0; i < N; ++i)
     {
-        double r = real(testcases[i]);
-        double theta = imag(testcases[i]);
-        cuda::std::complex<double> z = cuda::std::polar(r, theta);
+        T r = real(testcases[i]);
+        T theta = imag(testcases[i]);
+        cuda::std::complex<T> z = cuda::std::polar(r, theta);
         switch (classify(r))
         {
         case zero:
@@ -64,7 +65,7 @@ __host__ __device__ void test_edges()
             }
             else
             {
-                assert(z == cuda::std::complex<double>());
+                assert(z == cuda::std::complex<T>());
             }
             break;
         case non_zero:
@@ -75,11 +76,12 @@ __host__ __device__ void test_edges()
             }
             else
             {
+                printf("in: %f %f\n", float(testcases[i].real()), float(testcases[i].imag()));
                 is_about(cuda::std::abs(z), r);
             }
             break;
         case inf:
-            if (r < 0)
+            if (r < T(0))
             {
                 int c = classify(z);
                 assert(c == NaN || c == non_zero_nan);
@@ -111,7 +113,11 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
-    test_edges();
+    test<__half>();
+    test<__nv_bfloat16>();
+    test_edges<double>();
+    test_edges<__half>();
+    test_edges<__nv_bfloat16>();
 
   return 0;
 }

@@ -33,15 +33,16 @@ test()
 
 // test edges
 
+template <class T>
 __host__ __device__ void test_edges()
 {
-    auto testcases = get_testcases();
+    auto testcases = get_testcases<T>();
     const unsigned N = sizeof(testcases) / sizeof(testcases[0]);
     for (unsigned i = 0; i < N; ++i)
     {
         for (unsigned j = 0; j < N; ++j)
         {
-            cuda::std::complex<double> r = testcases[i] * testcases[j];
+            cuda::std::complex<T> r = testcases[i] * testcases[j];
             switch (classify(testcases[i]))
             {
             case zero:
@@ -163,8 +164,12 @@ int main(int, char**)
 //  static_assert(test<long double>(), "");
 #endif
 #endif
+    test<__half>();
+    test<__nv_bfloat16>();
 
-    test_edges();
+    test_edges<double>();
+    test_edges<__half>();
+    test_edges<__nv_bfloat16>();
 
   return 0;
 }
