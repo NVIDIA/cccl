@@ -1184,12 +1184,16 @@ struct FpLimits<__nv_fp8_e4m3>
 {
     static __host__ __device__ __forceinline__ __nv_fp8_e4m3 Max() {
         unsigned char max_word = 0x7EU;
-        return reinterpret_cast<__nv_fp8_e4m3&>(max_word);
+        __nv_fp8_e4m3 ret_val;
+        memcpy(&ret_val, &max_word, sizeof(__nv_fp8_e4m3));
+        return ret_val;
     }
 
     static __host__ __device__ __forceinline__ __nv_fp8_e4m3 Lowest() {
         unsigned char lowest_word = 0xFEU;
-        return reinterpret_cast<__nv_fp8_e4m3&>(lowest_word);
+        __nv_fp8_e4m3 ret_val;
+        memcpy(&ret_val, &lowest_word, sizeof(__nv_fp8_e4m3));
+        return ret_val;
     }
 };
 
@@ -1198,12 +1202,16 @@ struct FpLimits<__nv_fp8_e5m2>
 {
     static __host__ __device__ __forceinline__ __nv_fp8_e5m2 Max() {
         unsigned char max_word = 0x7BU;
-        return reinterpret_cast<__nv_fp8_e5m2&>(max_word);
+        __nv_fp8_e5m2 ret_val;
+        memcpy(&ret_val, &max_word, sizeof(__nv_fp8_e5m2));
+        return ret_val;
     }
 
     static __host__ __device__ __forceinline__ __nv_fp8_e5m2 Lowest() {
         unsigned char lowest_word = 0xFBU;
-        return reinterpret_cast<__nv_fp8_e5m2&>(lowest_word);
+        __nv_fp8_e5m2 ret_val;
+        memcpy(&ret_val, &lowest_word, sizeof(__nv_fp8_e5m2));
+        return ret_val;
     }
 };
 
