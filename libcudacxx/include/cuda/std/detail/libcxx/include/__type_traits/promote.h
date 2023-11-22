@@ -21,6 +21,7 @@
 
 #ifdef __cuda_std__
 #include <cuda_fp16.h>
+#include <cuda_bf16.h>
 #endif
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
