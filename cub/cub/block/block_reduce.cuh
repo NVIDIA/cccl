@@ -105,7 +105,7 @@ enum BlockReduceAlgorithm
     //!    single warp rake across segments of shared partial reductions.
     //! #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
     //! 
-    //! @par Performance Considerations
+    //! Performance Considerations
     //! ++++++++++++++++++++++++++
     //!
     //! - This variant performs more communication than BLOCK_REDUCE_RAKING

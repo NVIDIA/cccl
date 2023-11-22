@@ -25,10 +25,7 @@
  *
  ******************************************************************************/
 
-/**
- * \file
- * cub::DeviceMemcpy provides device-wide, parallel operations for copying data.
- */
+//! @file cub::DeviceMemcpy provides device-wide, parallel operations for copying data.
 
 #pragma once
 
@@ -49,102 +46,122 @@
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * @brief cub::DeviceMemcpy provides device-wide, parallel operations for copying data.
- * \ingroup SingleModule
- */
+//! @brief cub::DeviceMemcpy provides device-wide, parallel operations for copying data.
 struct DeviceMemcpy
 {
-  /**
-   * @brief Copies data from a batch of given source buffers to their corresponding destination
-   * buffer.
-   * @note If any input buffer aliases memory from any output buffer the behavior is undefined. If
-   * any output buffer aliases memory of another output buffer the behavior is undefined. Input
-   * buffers can alias one another.
-   *
-   * @par Snippet
-   * The code snippet below illustrates usage of DeviceMemcpy::Batched for mutating strings withing
-   * a single string buffer.
-   * @par
-   * @code
-   * struct GetPtrToStringItem
-   * {
-   *   __host__ __device__ __forceinline__ void *operator()(uint32_t index)
-   *   {
-   *     return &d_string_data_in[d_string_offsets[index]];
-   *   }
-   *   char *d_string_data_in;
-   *   uint32_t *d_string_offsets;
-   * };
-   *
-   * struct GetStringItemSize
-   * {
-   *   __host__ __device__ __forceinline__ uint32_t operator()(uint32_t index)
-   *   {
-   *     return d_string_offsets[index + 1] - d_string_offsets[index];
-   *   }
-   *   uint32_t *d_string_offsets;
-   * };
-   *
-   * uint32_t num_strings = 5;
-   * char *d_string_data_in;         // e.g., "TomatoesBananasApplesOrangesGrapes"
-   * char *d_string_data_out;        // e.g., "                ...               "
-   * uint32_t *d_string_offsets_old; // e.g., [0, 8, 15, 21, 28, 34]
-   * uint32_t *d_string_offsets_new; // e.g., [0, 6, 13, 19, 26, 34]
-   * uint32_t *d_gather_index;       // e.g., [2, 1, 4, 3, 0]
-   *
-   * // Initialize an iterator that returns d_gather_index[i] when the i-th item is dereferenced
-   * auto gather_iterator = thrust::make_permutation_iterator(thrust::make_counting_iterator(0),
-   * d_gather_index);
-   *
-   * // Returns pointers to the input buffer for each string
-   * auto str_ptrs_in = thrust::make_transform_iterator(gather_iterator,
-   *                                                    GetPtrToStringItem{d_string_data_in,
-   * d_string_offsets_old});
-   *
-   * // Returns the string size of the i-th string
-   * auto str_sizes = thrust::make_transform_iterator(gather_iterator,
-   * GetStringItemSize{d_string_offsets_old});
-   *
-   * // Returns pointers to the output buffer for each string
-   * auto str_ptrs_out = thrust::make_transform_iterator(thrust::make_counting_iterator(0),
-   *                                                     GetPtrToStringItem{d_string_data_out,
-   * d_string_offsets_new});
-   *
-   * // Determine temporary device storage requirements
-   * void *d_temp_storage      = nullptr;
-   * size_t temp_storage_bytes = 0;
-   * cub::DeviceMemcpy::Batched(d_temp_storage, temp_storage_bytes, str_ptrs_in, str_ptrs_out,
-   * str_sizes, num_strings);
-   *
-   * // Allocate temporary storage
-   * cudaMalloc(&d_temp_storage, temp_storage_bytes);
-   *
-   * // Run batched copy algorithm (used to permute strings)
-   * cub::DeviceMemcpy::Batched(d_temp_storage, temp_storage_bytes, str_ptrs_in, str_ptrs_out,
-   * str_sizes, num_strings);
-   *
-   * // d_string_data_out       <-- "ApplesBananasGrapesOrangesTomatoe"
-   * @endcode
-   * @tparam InputBufferIt <b>[inferred]</b> Device-accessible random-access input iterator type
-   * providing the pointers to the source memory buffers
-   * @tparam OutputBufferIt <b>[inferred]</b> Device-accessible random-access input iterator type
-   * providing the pointers to the destination memory buffers
-   * @tparam BufferSizeIteratorT <b>[inferred]</b> Device-accessible random-access input iterator
-   * type providing the number of bytes to be copied for each pair of buffers
-   * @param d_temp_storage [in] Device-accessible allocation of temporary storage.  When NULL, the
-   * required allocation size is written to \p temp_storage_bytes and no work is done.
-   * @param temp_storage_bytes [in,out] Reference to size in bytes of \p d_temp_storage allocation
-   * @param input_buffer_it [in] Device-accessible iterator providing the pointers to the source
-   * memory buffers
-   * @param output_buffer_it [in] Device-accessible iterator providing the pointers to the
-   * destination memory buffers
-   * @param buffer_sizes [in] Device-accessible iterator providing the number of bytes to be copied
-   * for each pair of buffers
-   * @param num_buffers [in] The total number of buffer pairs
-   * @param stream [in] <b>[optional]</b> CUDA stream to launch kernels within. Default is
-   * stream<sub>0</sub>.
-   */
+  //! @rst
+  //! Copies data from a batch of given source buffers to their corresponding destination buffer.
+  //!
+  //! .. note::
+  //!
+  //!    If any input buffer aliases memory from any output buffer the behavior is undefined. 
+  //!    If any output buffer aliases memory of another output buffer the behavior is undefined. 
+  //!    Input buffers can alias one another.
+  //! 
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates usage of DeviceMemcpy::Batched for mutating strings withing
+  //! a single string buffer.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    struct GetPtrToStringItem
+  //!    {
+  //!      __host__ __device__ __forceinline__ void *operator()(uint32_t index)
+  //!      {
+  //!        return &d_string_data_in[d_string_offsets[index]];
+  //!      }
+  //!      char *d_string_data_in;
+  //!      uint32_t *d_string_offsets;
+  //!    };
+  //! 
+  //!    struct GetStringItemSize
+  //!    {
+  //!      __host__ __device__ __forceinline__ uint32_t operator()(uint32_t index)
+  //!      {
+  //!        return d_string_offsets[index + 1] - d_string_offsets[index];
+  //!      }
+  //!      uint32_t *d_string_offsets;
+  //!    };
+  //! 
+  //!    uint32_t num_strings = 5;
+  //!    char *d_string_data_in;         // e.g., "TomatoesBananasApplesOrangesGrapes"
+  //!    char *d_string_data_out;        // e.g., "                ...               "
+  //!    uint32_t *d_string_offsets_old; // e.g., [0, 8, 15, 21, 28, 34]
+  //!    uint32_t *d_string_offsets_new; // e.g., [0, 6, 13, 19, 26, 34]
+  //!    uint32_t *d_gather_index;       // e.g., [2, 1, 4, 3, 0]
+  //! 
+  //!    // Initialize an iterator that returns d_gather_index[i] when the i-th item is dereferenced
+  //!    auto gather_iterator = thrust::make_permutation_iterator(thrust::make_counting_iterator(0),
+  //!    d_gather_index);
+  //! 
+  //!    // Returns pointers to the input buffer for each string
+  //!    auto str_ptrs_in = thrust::make_transform_iterator(gather_iterator,
+  //!                                                       GetPtrToStringItem{d_string_data_in,
+  //!    d_string_offsets_old});
+  //! 
+  //!    // Returns the string size of the i-th string
+  //!    auto str_sizes = thrust::make_transform_iterator(gather_iterator,
+  //!    GetStringItemSize{d_string_offsets_old});
+  //! 
+  //!    // Returns pointers to the output buffer for each string
+  //!    auto str_ptrs_out = thrust::make_transform_iterator(thrust::make_counting_iterator(0),
+  //!                                                        GetPtrToStringItem{d_string_data_out,
+  //!    d_string_offsets_new});
+  //! 
+  //!    // Determine temporary device storage requirements
+  //!    void *d_temp_storage      = nullptr;
+  //!    size_t temp_storage_bytes = 0;
+  //!    cub::DeviceMemcpy::Batched(d_temp_storage, temp_storage_bytes, str_ptrs_in, str_ptrs_out,
+  //!    str_sizes, num_strings);
+  //! 
+  //!    // Allocate temporary storage
+  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
+  //! 
+  //!    // Run batched copy algorithm (used to permute strings)
+  //!    cub::DeviceMemcpy::Batched(d_temp_storage, temp_storage_bytes, str_ptrs_in, str_ptrs_out,
+  //!    str_sizes, num_strings);
+  //! 
+  //!    // d_string_data_out       <-- "ApplesBananasGrapesOrangesTomatoe"
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputBufferIt 
+  //!   **[inferred]** Device-accessible random-access input iterator type providing the pointers to 
+  //!   the source memory buffers
+  //!
+  //! @tparam OutputBufferIt 
+  //!   **[inferred]** Device-accessible random-access input iterator type providing the pointers to 
+  //!   the destination memory buffers
+  //!
+  //! @tparam BufferSizeIteratorT 
+  //!   **[inferred]** Device-accessible random-access input iterator type providing the number of bytes 
+  //!   to be copied for each pair of buffers
+  //!
+  //! @param[in] d_temp_storage 
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes 
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] input_buffer_it 
+  //!   Device-accessible iterator providing the pointers to the source memory buffers
+  //!
+  //! @param[in] output_buffer_it 
+  //!   Device-accessible iterator providing the pointers to the destination memory buffers
+  //!
+  //! @param[in] buffer_sizes 
+  //!   Device-accessible iterator providing the number of bytes to be copied for each pair of buffers
+  //!
+  //! @param[in] num_buffers 
+  //!   The total number of buffer pairs
+  //!
+  //! @param[in] stream 
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
   template <typename InputBufferIt, typename OutputBufferIt, typename BufferSizeIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t Batched(void *d_temp_storage,
                                                   size_t &temp_storage_bytes,

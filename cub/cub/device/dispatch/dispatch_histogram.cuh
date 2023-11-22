@@ -139,7 +139,7 @@ DeviceHistogramInitKernel(ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_output_bins
  *   Number of channels actively being histogrammed
  *
  * @tparam SampleIteratorT
- *   The input iterator type. \iterator.
+ *   The input iterator type. @iterator.
  *
  * @tparam CounterT
  *   Integer type for counting sample occurrences per histogram bin
@@ -565,7 +565,7 @@ struct dispatch_histogram
  *   Number of channels actively being histogrammed
  *
  * @tparam SampleIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam CounterT
  *   Integer type for counting sample occurrences per histogram bin

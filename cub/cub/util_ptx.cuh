@@ -50,12 +50,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * \addtogroup UtilPtx
- * @{
- */
-
-
 /******************************************************************************
  * PTX helper macros
  ******************************************************************************/
@@ -515,16 +509,12 @@ __device__ __forceinline__ unsigned int LaneMaskGe()
     return ret;
 }
 
-/** @} */       // end group UtilPtx
-
 /**
  * @brief Shuffle-up for any data type.
  *        Each <em>warp-lane<sub>i</sub></em> obtains the value @p input contributed by
  *        <em>warp-lane</em><sub><em>i</em>-<tt>src_offset</tt></sub>.
  *        For thread lanes @e i < src_offset, the thread's own @p input is returned to the thread.
  *        ![](shfl_up_logo.png)
- *
- * @ingroup WarpModule
  *
  * @tparam LOGICAL_WARP_THREADS
  *   The number of threads per "logical" warp. Must be a power-of-two <= 32.
@@ -605,8 +595,6 @@ ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
  *        <em>warp-lane</em><sub><em>i</em>+<tt>src_offset</tt></sub>.
  *        For thread lanes @e i >= WARP_THREADS, the thread's own @p input is returned to the
  *        thread. ![](shfl_down_logo.png)
- *
- * @ingroup WarpModule
  *
  * @tparam LOGICAL_WARP_THREADS
  *   The number of threads per "logical" warp.  Must be a power-of-two <= 32.
@@ -695,8 +683,6 @@ ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
  *
  * @tparam T
  *   <b>[inferred]</b> The input/output element type
- *
- * @ingroup WarpModule
  *
  * @par
  * - Available only for SM3.0 or newer

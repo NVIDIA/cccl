@@ -49,8 +49,6 @@ CUB_NAMESPACE_BEGIN
  *        computing a merge sort across a sequence of data items residing within
  *        device-accessible memory.
  *
- * @ingroup SingleModule
- *
  * @par Overview
  * - DeviceMergeSort arranges items into ascending order using a comparison
  *   functor with less-than semantics. Merge sort can handle arbitrary types (as

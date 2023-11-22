@@ -25,9 +25,7 @@
  *
  ******************************************************************************/
 
-/*! \file
- *  \brief Detect the version of the C++ standard used by the compiler.
- */
+//! @file Detect the version of the C++ standard used by the compiler.
 
 #pragma once
 
@@ -42,6 +40,8 @@
 #endif // no system header
 
 #include <cub/util_compiler.cuh>
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document 
 
 // Deprecation warnings may be silenced by defining the following macros. These
 // may be combined.
@@ -159,3 +159,5 @@
 #undef CUB_COMP_DEPR_IMPL
 #undef CUB_COMP_DEPR_IMPL0
 #undef CUB_COMP_DEPR_IMPL1
+
+#endif // !DOXYGEN_SHOULD_SKIP_THIS

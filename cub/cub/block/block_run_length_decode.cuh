@@ -60,9 +60,9 @@ CUB_NAMESPACE_BEGIN
 //! the specified window will be returned.
 //! 
 //! .. note::
-//!   Trailing runs of length 0 are supported (i.e., they may only appear at the end of the run_lengths array). 
-//!   A run of length zero may not be followed by a run length that is not zero.
-//! 
+//!
+//!    Trailing runs of length 0 are supported (i.e., they may only appear at the end of the run_lengths array). 
+//!    A run of length zero may not be followed by a run length that is not zero.
 //!
 //! .. code-block:: c++
 //!

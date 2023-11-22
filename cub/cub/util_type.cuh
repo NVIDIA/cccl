@@ -93,13 +93,6 @@ CUB_NAMESPACE_BEGIN
 #endif // !defined(__CUDACC_RTC__)
 #endif // !defined(CUB_IS_INT128_ENABLED)
 
-/**
- * \addtogroup UtilModule
- * @{
- */
-
-
-
 /******************************************************************************
  * Conditional types
  ******************************************************************************/
@@ -1379,8 +1372,5 @@ struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type> {};
 
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
-
-
-/** @} */       // end group UtilModule
 
 CUB_NAMESPACE_END

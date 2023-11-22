@@ -49,13 +49,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-
-/**
- * @addtogroup GridModule
- * @{
- */
-
-
 /**
  * @brief GridQueue is a descriptor utility for dynamic queue management.
  *
@@ -242,11 +235,7 @@ __global__ void FillAndResetDrainKernel(
 }
 
 
-
 #endif // DOXYGEN_SHOULD_SKIP_THIS
-
-
-/** @} */       // end group GridModule
 
 CUB_NAMESPACE_END
 

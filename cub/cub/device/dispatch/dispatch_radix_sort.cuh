@@ -515,10 +515,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
  *   Value type
  *
  * @tparam BeginOffsetIteratorT
- *   Random-access input iterator type for reading segment beginning offsets \iterator
+ *   Random-access input iterator type for reading segment beginning offsets @iterator
  *
  * @tparam EndOffsetIteratorT
- *   Random-access input iterator type for reading segment ending offsets \iterator
+ *   Random-access input iterator type for reading segment ending offsets @iterator
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
@@ -536,12 +536,12 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
  *   Output values buffer
  *
  * @param[in] d_begin_offsets
- *   Random-access input iterator to the sequence of beginning offsets of length @p num_segments,
+ *   Random-access input iterator to the sequence of beginning offsets of length `num_segments`,
  *   such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup>
  *   data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
  *
  * @param[in] d_end_offsets
- *   Random-access input iterator to the sequence of ending offsets of length @p num_segments,
+ *   Random-access input iterator to the sequence of ending offsets of length `num_segments`,
  *   such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup>
  *   data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.
  *   If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>,
@@ -1380,11 +1380,11 @@ struct DispatchRadixSort : SelectedPolicy
     //------------------------------------------------------------------------------
 
     /// Device-accessible allocation of temporary storage.
-    //  When NULL, the required allocation size is written to @p temp_storage_bytes and no work is
+    //  When NULL, the required allocation size is written to `temp_storage_bytes` and no work is
     //  done.
     void *d_temp_storage;
 
-    /// Reference to size in bytes of @p d_temp_storage allocation
+    /// Reference to size in bytes of `d_temp_storage` allocation
     size_t &temp_storage_bytes;
 
     /// Double-buffer whose current buffer contains the unsorted input keys and, upon return, is
@@ -2343,10 +2343,10 @@ struct DispatchRadixSort : SelectedPolicy
      *
      * @param[in] d_temp_storage
      *   Device-accessible allocation of temporary storage. When NULL, the required
-     *   allocation size is written to @p temp_storage_bytes and no work is done.
+     *   allocation size is written to `temp_storage_bytes` and no work is done.
      *
      * @param[in,out] temp_storage_bytes
-     *   Reference to size in bytes of @p d_temp_storage allocation
+     *   Reference to size in bytes of `d_temp_storage` allocation
      *
      * @param[in,out] d_keys
      *   Double-buffer whose current buffer contains the unsorted input keys and,
@@ -2467,10 +2467,10 @@ struct DispatchRadixSort : SelectedPolicy
  *   Value type
  *
  * @tparam BeginOffsetIteratorT
- *   Random-access input iterator type for reading segment beginning offsets \iterator
+ *   Random-access input iterator type for reading segment beginning offsets @iterator
  *
  * @tparam EndOffsetIteratorT
- *   Random-access input iterator type for reading segment ending offsets \iterator
+ *   Random-access input iterator type for reading segment ending offsets @iterator
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
@@ -2497,10 +2497,10 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
     //------------------------------------------------------------------------------
 
     /// Device-accessible allocation of temporary storage.  When NULL, the required allocation size
-    /// is written to @p temp_storage_bytes and no work is done.
+    /// is written to `temp_storage_bytes` and no work is done.
     void *d_temp_storage;
 
-    /// Reference to size in bytes of @p d_temp_storage allocation
+    /// Reference to size in bytes of `d_temp_storage` allocation
     size_t &temp_storage_bytes;
 
     /// Double-buffer whose current buffer contains the unsorted input keys and, upon return, is
@@ -2517,12 +2517,12 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
     /// The number of segments that comprise the sorting data
     OffsetT num_segments;
 
-    /// Random-access input iterator to the sequence of beginning offsets of length @p num_segments,
+    /// Random-access input iterator to the sequence of beginning offsets of length `num_segments`,
     /// such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup>
     /// data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
     BeginOffsetIteratorT d_begin_offsets;
 
-    /// Random-access input iterator to the sequence of ending offsets of length @p num_segments,
+    /// Random-access input iterator to the sequence of ending offsets of length `num_segments`,
     /// such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup>
     /// data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>. If <tt>d_end_offsets[i]-1</tt>
     /// <= <tt>d_begin_offsets[i]</tt>, the <em>i</em><sup>th</sup> is considered empty.
@@ -2862,10 +2862,10 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
      *
      * @param[in] d_temp_storage
      *   Device-accessible allocation of temporary storage.  When NULL, the required allocation size
-     *   is written to @p temp_storage_bytes and no work is done.
+     *   is written to `temp_storage_bytes` and no work is done.
      *
      * @param[in,out] temp_storage_bytes
-     *   Reference to size in bytes of @p d_temp_storage allocation
+     *   Reference to size in bytes of `d_temp_storage` allocation
      *
      * @param[in,out] d_keys
      *   Double-buffer whose current buffer contains the unsorted input keys and, upon return, is
@@ -2883,11 +2883,11 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
      *
      * @param[in] d_begin_offsets
      *   Random-access input iterator to the sequence of beginning offsets of length
-     *   @p num_segments, such that <tt>d_begin_offsets[i]</tt> is the first element of the
+     *   `num_segments`, such that <tt>d_begin_offsets[i]</tt> is the first element of the
      *   <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
      *
      * @param[in] d_end_offsets
-     *   Random-access input iterator to the sequence of ending offsets of length @p num_segments,
+     *   Random-access input iterator to the sequence of ending offsets of length `num_segments`,
      *   such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup>
      *   data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.
      *   If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>,

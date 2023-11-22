@@ -94,12 +94,6 @@
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
-/**
- * \addtogroup UtilMgmt
- * @{
- */
-
-
 // `CUB_DETAIL_DEBUG_LEVEL_*`: Implementation details, internal use only:
 
 #define CUB_DETAIL_DEBUG_LEVEL_NONE 0
@@ -331,7 +325,5 @@ inline __host__ __device__ void va_printf(char const*, Args const&...)
 #endif
 #endif
 #endif
-
-/** @} */       // end group UtilMgmt
 
 CUB_NAMESPACE_END

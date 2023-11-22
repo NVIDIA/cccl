@@ -49,11 +49,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * @addtogroup UtilMgmt
- * @{
- */
-
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 /**
@@ -119,7 +114,5 @@ AliasTemporaries(void *d_temp_storage,
 }
 
 #endif  // DOXYGEN_SHOULD_SKIP_THIS
-
-/** @} */       // end group UtilMgmt
 
 CUB_NAMESPACE_END
