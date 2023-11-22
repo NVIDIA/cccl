@@ -32,6 +32,7 @@
 #include <thrust/sequence.h>
 
 #include <cub/detail/cpp_compatibility.cuh>
+#include <cub/device/device_radix_sort.cuh>
 #include <cub/util_type.cuh>
 
 #include <climits>
@@ -39,6 +40,69 @@
 
 #include "c2h/utility.cuh"
 #include "catch2_test_helper.h"
+
+// The launchers defined in catch2_test_launch_helper.h do not support
+// passing objects by reference since the device-launch tests cannot
+// pass references to a __global__ function. The DoubleBuffer object
+// must be passed by reference to the radix sort APIs so that the selector
+// can be updated appropriately for the caller. This wrapper allows the
+// selector to be updated in a way that's compatible with the launch helpers.
+// Call initialize() before using to allocate temporary memory, and finalize()
+// when finished to release.
+struct double_buffer_sort_t
+{
+private:
+  bool m_is_descending;
+  int* m_selector;
+
+public:
+  explicit double_buffer_sort_t(bool is_descending)
+  : m_is_descending(is_descending),
+    m_selector(nullptr)
+  {
+  }
+
+  void initialize()
+  {
+    cudaMallocHost(&m_selector, sizeof(int));
+  }
+
+  void finalize()
+  {
+    cudaFreeHost(m_selector);
+    m_selector = nullptr;
+  }
+
+  int selector() const { return *m_selector;}
+
+  template <class KeyT, class... As>
+  CUB_RUNTIME_FUNCTION cudaError_t
+  operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, cub::DoubleBuffer<KeyT> keys, As... as)
+  {
+    const cudaError_t status =
+      m_is_descending ? cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, keys, as...)
+                      : cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, keys, as...);
+
+    *m_selector = keys.selector;
+    return status;
+  }
+
+  template <class KeyT, class ValueT, class... As>
+  CUB_RUNTIME_FUNCTION cudaError_t operator()(
+    std::uint8_t* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    cub::DoubleBuffer<KeyT> keys,
+    cub::DoubleBuffer<ValueT> values,
+    As... as)
+  {
+    const cudaError_t status =
+      m_is_descending ? cub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes, keys, values, as...)
+                      : cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, keys, values, as...);
+
+    *m_selector = keys.selector;
+    return status;
+  }
+};
 
 template <class KeyT>
 thrust::host_vector<KeyT>
