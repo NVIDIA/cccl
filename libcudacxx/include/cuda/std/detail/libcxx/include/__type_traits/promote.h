@@ -19,7 +19,7 @@
 #include "../__utility/declval.h"
 #include "../cstddef"
 
-#ifdef __cuda_std__
+#if defined(__cuda_std__) && defined(_LIBCUDACXX_CUDACC)
 #include <cuda_fp16.h>
 #include <cuda_bf16.h>
 #endif
@@ -38,7 +38,7 @@ template <class _Tp>
 struct __numeric_type
 {
    _LIBCUDACXX_INLINE_VISIBILITY static void __test(...);
-#ifdef __cuda_std__
+#if defined(__cuda_std__) && defined(_LIBCUDACXX_CUDACC)
    _LIBCUDACXX_INLINE_VISIBILITY static __half __test(__half);
    _LIBCUDACXX_INLINE_VISIBILITY static __nv_bfloat16 __test(__nv_bfloat16);
 #endif
