@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,63 +25,38 @@
  *
  ******************************************************************************/
 
-#include <cub/device/device_reduce.cuh>
-
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+#include <thrust/reduce.h>
 
-#include <cuda/std/limits>
+#include "nvbench_helper.cuh"
 
-#include "catch2_test_launch_helper.h"
-#include "catch2_test_helper.h"
-
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
-
-// %PARAM% TEST_LAUNCH lid 0:1
-
-CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
+template <class T>
+struct square_t 
 {
-  using in_t     = float;
-  using offset_t = int;
-  using out_t    = cub::KeyValuePair<offset_t, in_t>;
-
-  constexpr int n     = 10;
-  constexpr float inf = ::cuda::std::numeric_limits<float>::infinity();
-
-  thrust::device_vector<out_t> out(1);
-  out_t *d_out = thrust::raw_pointer_cast(out.data());
-
-  /**
-   * ArgMin should return max value for empty input. This interferes with
-   * input data containing infinity values. This test checks that ArgMin
-   * works correctly with infinity values.
-   */
-  SECTION("InfInArgMin")
+  __host__ __device__ T operator()(const T& x) const
   {
-    thrust::device_vector<in_t> in(n, inf);
-    const in_t *d_in = thrust::raw_pointer_cast(in.data());
-
-    device_arg_min(d_in, d_out, n);
-
-    const out_t result = out[0];
-    REQUIRE(result.key == 0);
-    REQUIRE(result.value == inf);
+    return x * x;
   }
+};
 
-  /**
-   * ArgMax should return lowest value for empty input. This interferes with
-   * input data containing infinity values. This test checks that ArgMax
-   * works correctly with infinity values.
-   */
-  SECTION("InfInArgMax")
-  {
-    thrust::device_vector<in_t> in(n, -inf);
-    const in_t *d_in = thrust::raw_pointer_cast(in.data());
+template <typename T>
+static void basic(nvbench::state &state, nvbench::type_list<T>)
+{
+  const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
-    device_arg_max(d_in, d_out, n);
+  thrust::device_vector<T> in = generate(elements);
 
-    const out_t result = out[0];
-    REQUIRE(result.key == 0);
-    REQUIRE(result.value == -inf);
-  }
+  state.add_element_count(elements);
+  state.add_global_memory_reads<T>(elements);
+  state.add_global_memory_writes<T>(1);
+
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
+    do_not_optimize(thrust::transform_reduce(in.begin(), in.end(), square_t<T>{}, T{}, thrust::plus<T>{}));
+  });
 }
+
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
+  .set_name("base")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));

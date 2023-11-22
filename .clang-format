@@ -155,6 +155,7 @@ SpacesInParentheses: false
 SpacesInSquareBrackets: false
 Standard: c++20
 StatementMacros: [
+  '__thrust_exec_check_disable__',
   'CUB_NAMESPACE_BEGIN',
   'CUB_NAMESPACE_END',
   'THRUST_NAMESPACE_BEGIN',

@@ -967,6 +967,145 @@ struct DeviceReduce
   }
 
   /**
+   * @brief Fuses transform and reduce operations
+   *
+   * @par
+   * - Does not support binary reduction operators that are non-commutative.
+   * - Provides "run-to-run" determinism for pseudo-associative reduction
+   *   (e.g., addition of floating point types) on the same GPU device.
+   *   However, results for pseudo-associative reduction may be inconsistent
+   *   from one device to a another device of a different compute-capability
+   *   because CUB can employ different tile-sizing for different architectures.
+   * - The range `[d_in, d_in + num_items)` shall not overlap `d_out`.
+   * - @devicestorage
+   *
+   * @par Snippet
+   * The code snippet below illustrates a user-defined min-reduction of a
+   * device vector of `int` data elements.
+   * @par
+   * @code
+   * #include <cub/cub.cuh>
+   * // or equivalently <cub/device/device_reduce.cuh>
+   *
+   * thrust::device_vector<int> in = { 1, 2, 3, 4 };
+   * thrust::device_vector<int> out(1);
+   *
+   * std::size_t temp_storage_bytes = 0;
+   * std::uint8_t *d_temp_storage = nullptr;
+   *
+   * const int init = 42;
+   *
+   * cub::DeviceReduce::TransformReduce(
+   *   d_temp_storage,
+   *   temp_storage_bytes,
+   *   in.begin(),
+   *   out.begin(),
+   *   in.size(),
+   *   cub::Sum{},
+   *   square_t{},
+   *   init);
+   *
+   * thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+   * d_temp_storage = temp_storage.data().get();
+   *
+   * cub::DeviceReduce::TransformReduce(
+   *   d_temp_storage,
+   *   temp_storage_bytes,
+   *   in.begin(),
+   *   out.begin(),
+   *   in.size(),
+   *   cub::Sum{},
+   *   square_t{},
+   *   init);
+   *
+   * // out[0] <-- 72
+   * @endcode
+   *
+   * @tparam InputIteratorT
+   *   **[inferred]** Random-access input iterator type for reading input
+   *   items \iterator
+   *
+   * @tparam OutputIteratorT
+   *   **[inferred]** Output iterator type for recording the reduced
+   *   aggregate \iterator
+   *
+   * @tparam ReductionOpT
+   *   **[inferred]** Binary reduction functor type having member
+   *   `T operator()(const T &a, const T &b)`
+   *
+   * @tparam TransformOpT
+   *   **[inferred]** Unary reduction functor type having member
+   *   `auto operator()(const T &a)`
+   *
+   * @tparam T
+   *   **[inferred]** Data element type that is convertible to the `value` type
+   *   of `InputIteratorT`
+   *
+   * @tparam NumItemsT 
+   *   **[inferred]** Type of num_items
+   *
+   * @param[in] d_temp_storage
+   *   Device-accessible allocation of temporary storage. When `nullptr`, the
+   *   required allocation size is written to `temp_storage_bytes` and no work
+   *   is done.
+   *
+   * @param[in,out] temp_storage_bytes
+   *   Reference to size in bytes of `d_temp_storage` allocation
+   *
+   * @param[in] d_in
+   *   Pointer to the input sequence of data items
+   *
+   * @param[out] d_out
+   *   Pointer to the output aggregate
+   *
+   * @param[in] num_items
+   *   Total number of input items (i.e., length of `d_in`)
+   *
+   * @param[in] reduction_op
+   *   Binary reduction functor
+   *
+   * @param[in] transform_op
+   *   Unary transform functor
+   *
+   * @param[in] init
+   *   Initial value of the reduction
+   *
+   * @param[in] stream
+   *   **[optional]** CUDA stream to launch kernels within.
+   *   Default is stream<sub>0</sub>.
+   */
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename TransformOpT,
+            typename T,
+            typename NumItemsT>
+  CUB_RUNTIME_FUNCTION static cudaError_t TransformReduce(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    TransformOpT transform_op,
+    T init,
+    cudaStream_t stream = 0)
+  {
+    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+
+    return DispatchTransformReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, TransformOpT, T>::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      static_cast<OffsetT>(num_items),
+      reduction_op,
+      init,
+      stream,
+      transform_op);
+  }
+
+  /**
    * @brief Reduces segments of values, where segments are demarcated by
    *        corresponding runs of identical keys.
    *

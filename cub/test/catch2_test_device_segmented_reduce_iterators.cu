@@ -38,13 +38,13 @@
 #include "catch2_test_device_reduce.cuh"
 
 #include "c2h/custom_type.cuh"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
-DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1
 
 // List of types to test
 using custom_t           = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
