@@ -204,6 +204,9 @@ __launch_bounds__(
     compare_op);
 
   agent.Process();
+
+  // If applicable, hints to discard modified cache lines for vsmem
+  VSmemHelperT::discard_temp_storage(temp_storage);
 }
 
 template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
@@ -309,6 +312,9 @@ __launch_bounds__(
     target_merged_tiles_number);
 
   agent.Process();
+
+  // If applicable, hints to discard modified cache lines for vsmem
+  VSmemHelperT::discard_temp_storage(temp_storage);
 }
 
 /*******************************************************************************
