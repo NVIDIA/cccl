@@ -37,7 +37,7 @@
 #include <algorithm>
 #include <limits>
 
-#include "catch2_sort_helper.cuh"
+#include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
@@ -52,30 +52,16 @@ using value_types = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, cust
 using num_items_types =
   c2h::type_list<cuda::std::uint32_t, cuda::std::int32_t, cuda::std::uint64_t, cuda::std::int64_t>;
 
-// Helpers to assist with specifying default args to DeviceRadixSort API:
-template <typename T>
-constexpr int begin_bit()
-{
-  return 0;
-}
-
-template <typename T>
-constexpr int end_bit()
-{
-  return static_cast<int>(sizeof(T) * CHAR_BIT);
-}
-
 CUB_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][device]", value_types, num_items_types)
 {
   using key_t = cuda::std::uint32_t;
   using value_t = c2h::get<0, TestType>;
   using num_items_t = c2h::get<1, TestType>;
 
-  // Test different magnitudes:
-  const int power_of_two = GENERATE(0, 5, 10, 20);
-  // Test slightly less than a power of two, exactly a power of two, and slightly more:
-  const int offset            = GENERATE(-1, 0, 3);
-  const num_items_t num_items = static_cast<num_items_t>((1 << power_of_two) + offset);
+  constexpr num_items_t min_num_items = 1 << 5;
+  constexpr num_items_t max_num_items = 1 << 20;
+  const num_items_t num_items =
+    GENERATE_COPY(num_items_t{0}, num_items_t{1}, take(5, random(min_num_items, max_num_items)));
 
   thrust::device_vector<key_t> in_keys(num_items);
   thrust::device_vector<key_t> out_keys(num_items);
@@ -125,7 +111,8 @@ CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][d
   using key_t = cuda::std::uint32_t;
   using value_t = c2h::get<0, TestType>;
 
-  const std::size_t num_items = (1 << 18) + 7;
+  constexpr std::size_t max_num_items = 1 << 18;
+  const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
 
   thrust::device_vector<key_t> in_keys(num_items);
   thrust::device_vector<key_t> out_keys(num_items);

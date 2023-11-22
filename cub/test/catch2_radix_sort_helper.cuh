@@ -64,12 +64,12 @@ public:
 
   void initialize()
   {
-    cudaMallocHost(&m_selector, sizeof(int));
+    REQUIRE(cudaSuccess == cudaMallocHost(&m_selector, sizeof(int)));
   }
 
   void finalize()
   {
-    cudaFreeHost(m_selector);
+    REQUIRE(cudaSuccess == cudaFreeHost(m_selector));
     m_selector = nullptr;
   }
 
@@ -103,6 +103,19 @@ public:
     return status;
   }
 };
+
+// Helpers to assist with specifying default args to DeviceRadixSort API:
+template <typename T>
+constexpr int begin_bit()
+{
+  return 0;
+}
+
+template <typename T>
+constexpr int end_bit()
+{
+  return static_cast<int>(sizeof(T) * CHAR_BIT);
+}
 
 template <class KeyT>
 thrust::host_vector<KeyT>

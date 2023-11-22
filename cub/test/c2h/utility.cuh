@@ -33,16 +33,16 @@ namespace c2h
 {
 
 /**
- * Return a value of type `T` with the same bitwise representation of `in`.
- * Types `T` and `U` must be the same size.
+ * Return a value of type `T0` with the same bitwise representation of `in`.
+ * Types `To` and `From` must be the same size.
  */
-template <typename T, typename U>
+template <typename To, typename From>
 __host__ __device__
-T bit_cast(const U& in)
+To bit_cast(const From& in)
 {
-  static_assert(sizeof(T) == sizeof(U), "Types must be same size.");
-  T out;
-  memcpy(&out, &in, sizeof(T));
+  static_assert(sizeof(To) == sizeof(From), "Types must be same size.");
+  To out;
+  memcpy(&out, &in, sizeof(To));
   return out;
 }
 

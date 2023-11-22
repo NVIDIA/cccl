@@ -39,7 +39,7 @@
 #include <climits>
 #include <limits>
 
-#include "catch2_sort_helper.cuh"
+#include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 #include "cub/util_type.cuh"

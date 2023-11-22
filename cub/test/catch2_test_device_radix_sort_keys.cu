@@ -41,7 +41,7 @@
 #include <algorithm>
 #include <limits>
 
-#include "catch2_sort_helper.cuh"
+#include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
@@ -82,7 +82,7 @@ using key_types = c2h::type_list<cuda::std::uint64_t, cuda::std::int64_t, double
 template <typename T>
 struct supports_bit_window
 {
-  static constexpr bool value = cuda::std::is_unsigned<T>::value && !cuda::std::is_same<bool, T>::value;
+  static constexpr bool value = cuda::std::is_integral<T>::value && !cuda::std::is_same<bool, T>::value;
 };
 using bit_window_key_types = c2h::copy_if<key_types, c2h::trait<supports_bit_window>>;
 
@@ -96,28 +96,13 @@ using single_key_type = c2h::type_list<c2h::get<0, key_types>>;
 using num_items_types =
   c2h::type_list<cuda::std::uint32_t, cuda::std::int32_t, cuda::std::uint64_t, cuda::std::int64_t>;
 
-// Helpers to assist with specifying default args to DeviceRadixSort API:
-template <typename T>
-constexpr int begin_bit()
-{
-  return 0;
-}
-
-template <typename T>
-constexpr int end_bit()
-{
-  return static_cast<int>(sizeof(T) * CHAR_BIT);
-}
-
 CUB_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device]", key_types)
 {
   using key_t = c2h::get<0, TestType>;
 
-  // Test different magnitudes:
-  const int power_of_two = GENERATE(0, 5, 10, 20);
-  // Test slightly less than a power of two, exactly a power of two, and slightly more:
-  const int offset            = GENERATE(-1, 0, 3);
-  const std::size_t num_items = (1 << power_of_two) + offset;
+  constexpr std::size_t min_num_items = 1 << 5;
+  constexpr std::size_t max_num_items = 1 << 20;
+  const std::size_t num_items = GENERATE_COPY(std::size_t{0}, std::size_t{1}, take(8, random(min_num_items, max_num_items)));
 
   thrust::device_vector<key_t> in_keys(num_items);
   thrust::device_vector<key_t> out_keys(num_items);
@@ -154,11 +139,12 @@ CUB_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]"
 {
   using key_t = c2h::get<0, TestType>;
 
-  const std::size_t num_items = (1 << 18) + 7;
+  constexpr std::size_t max_num_items = 1 << 18;
+  const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
 
   constexpr int num_bits = sizeof(key_t) * CHAR_BIT;
-  const int begin_bit    = GENERATE_COPY(0, 1, num_bits / 3, 3 * num_bits / 4, num_bits);
-  const int end_bit      = GENERATE_COPY(0, 1, num_bits / 3, 3 * num_bits / 4, num_bits);
+  const int begin_bit    = GENERATE_COPY(0, num_bits / 3, 3 * num_bits / 4, num_bits);
+  const int end_bit      = GENERATE_COPY(0, num_bits / 3, 3 * num_bits / 4, num_bits);
   if (end_bit < begin_bit || (begin_bit == 0 && end_bit == num_bits))
   {
     // SKIP(); Not available until Catch2 3.3.0
@@ -205,7 +191,8 @@ CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
   const key_t positive_zero      = c2h::bit_cast<key_t>(bits_t(0));
   const key_t negative_zero      = c2h::bit_cast<key_t>(bits_t(1) << (num_bits - 1));
 
-  const std::size_t num_items = (1 << 18) + 7;
+  constexpr std::size_t max_num_items = 1 << 18;
+  const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
   thrust::device_vector<key_t> in_keys(num_items);
   thrust::device_vector<key_t> out_keys(num_items);
 
@@ -256,7 +243,8 @@ CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
   using key_t    = c2h::get<0, TestType>;
   using limits_t = cuda::std::numeric_limits<key_t>;
 
-  const std::size_t num_items = (1 << 18) + 7;
+  constexpr std::size_t max_num_items = 1 << 18;
+  const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
   thrust::device_vector<key_t> in_keys(num_items);
   thrust::device_vector<key_t> out_keys(num_items);
 
@@ -318,7 +306,8 @@ CUB_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
 {
   using key_t = c2h::get<0, TestType>;
 
-  const std::size_t num_items = (1 << 18) + 7;
+  constexpr std::size_t max_num_items = 1 << 18;
+  const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
   thrust::device_vector<key_t> in_keys(num_items);
 
   const int num_key_seeds = 1;
@@ -365,9 +354,9 @@ CUB_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
 CUB_TEST("DeviceRadixSort::SortKeys: uniform values", "[keys][radix][sort][device]", key_types)
 {
   using key_t  = c2h::get<0, TestType>;
-  using bits_t = typename cub::Traits<key_t>::UnsignedBits;
 
-  const std::size_t num_items = (1 << 18) + 7;
+  constexpr std::size_t max_num_items = 1 << 18;
+  const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
   thrust::device_vector<key_t> in_keys(num_items, key_t(4));
 
   const bool is_descending = GENERATE(false, true);
@@ -401,9 +390,10 @@ CUB_TEST("DeviceRadixSort::SortKeys: NumItemsT", "[keys][radix][sort][device]", 
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = c2h::get<1, TestType>;
 
-  const int power_of_two      = GENERATE(0, 5, 10, 20);
-  const int offset            = GENERATE(-1, 0, 3);
-  const num_items_t num_items = static_cast<num_items_t>((1 << power_of_two) + offset);
+  constexpr num_items_t min_num_items = 1 << 5;
+  constexpr num_items_t max_num_items = 1 << 20;
+  const num_items_t num_items =
+    GENERATE_COPY(num_items_t{0}, num_items_t{1}, take(8, random(min_num_items, max_num_items)));
 
   thrust::device_vector<key_t> in_keys(num_items);
 
@@ -440,7 +430,8 @@ CUB_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][dev
 {
   using key_t = c2h::get<0, TestType>;
 
-  const std::size_t num_items = (1 << 18) + 7;
+  constexpr std::size_t max_num_items = 1 << 18;
+  const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
   thrust::device_vector<key_t> in_keys(num_items);
 
   const int num_key_seeds = 1;
