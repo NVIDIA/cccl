@@ -66,6 +66,8 @@ function(do_find_package pkg_name pkg_prefix)
   if (NOT ${pkg_name}_FOUND)
     message(FATAL_ERROR "Failed: find_package(${pkg_name} ${arg_str})")
   endif()
+  # Re-execute find_package to ensure that repeated calls don't break:
+  find_package(${pkg_name} ${arg_list})
 endfunction()
 
 # Run find package with the requested configuration:
