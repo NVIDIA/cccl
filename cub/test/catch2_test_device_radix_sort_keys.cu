@@ -64,6 +64,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeysDescending, sort_keys_desce
 // The unsigned integer for the given byte count should be first:
 #if TEST_KEY_BITS == 8
 using key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::int8_t, bool, char>;
+using bit_window_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::int8_t, char>;
+#define NO_FP_KEY_TYPES
 #elif TEST_KEY_BITS == 16
 // clang-format off
 using key_types = c2h::type_list<
@@ -77,22 +79,17 @@ using key_types = c2h::type_list<
 #endif
   >;
 // clang-format on
+using bit_window_key_types = c2h::type_list<cuda::std::uint16_t, cuda::std::int16_t>;
+#define NO_FP_KEY_TYPES
 #elif TEST_KEY_BITS == 32
 using key_types = c2h::type_list<cuda::std::uint32_t, cuda::std::int32_t, float>;
+using bit_window_key_types = c2h::type_list<cuda::std::uint32_t, cuda::std::int32_t>;
+using fp_key_types = c2h::type_list<float>;
 #elif TEST_KEY_BITS == 64
 using key_types = c2h::type_list<cuda::std::uint64_t, cuda::std::int64_t, double>;
+using bit_window_key_types = c2h::type_list<cuda::std::uint64_t, cuda::std::int64_t>;
+using fp_key_types = c2h::type_list<double>;
 #endif
-
-// Used for testing begin/end bit slicing
-template <typename T>
-struct supports_bit_window
-{
-  static constexpr bool value = cuda::std::is_integral<T>::value && !cuda::std::is_same<bool, T>::value;
-};
-using bit_window_key_types = c2h::copy_if<key_types, c2h::trait<supports_bit_window>>;
-
-// Used for testing floating-point specific behavior
-using fp_key_types = c2h::copy_if<key_types, c2h::trait<cuda::std::is_floating_point>>;
 
 // Used for tests that just need a single type for testing:
 using single_key_type = c2h::type_list<c2h::get<0, key_types>>;
@@ -186,6 +183,8 @@ CUB_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]"
 
   REQUIRE(ref_keys == out_keys);
 }
+
+#ifndef NO_FP_KEY_TYPES
 
 CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sort][device]", fp_key_types)
 {
@@ -306,6 +305,8 @@ CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
 
   REQUIRE_EQ_WITH_NAN_MATCHING(ref_keys, out_keys);
 }
+
+#endif // !NO_FP_KEY_TYPES
 
 CUB_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][device]", single_key_type)
 {

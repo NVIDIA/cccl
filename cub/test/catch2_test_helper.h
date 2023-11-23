@@ -79,12 +79,6 @@ using second = metal::second<P>;
 template <std::size_t start, std::size_t size, std::size_t stride = 1>
 using iota = metal::iota<metal::number<start>, metal::number<size>, metal::number<stride>>;
 
-template <class seq, class lbd>
-using copy_if = metal::copy_if<seq, lbd>;
-
-template <template <class...> class expr>
-using trait = metal::trait<expr>;
-
 } // namespace c2h
 
 namespace detail
