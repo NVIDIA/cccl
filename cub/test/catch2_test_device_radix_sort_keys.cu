@@ -140,8 +140,9 @@ CUB_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]"
   const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
 
   constexpr int num_bits = sizeof(key_t) * CHAR_BIT;
-  const int begin_bit    = GENERATE_COPY(0, num_bits / 3, 3 * num_bits / 4, num_bits);
-  const int end_bit      = GENERATE_COPY(0, num_bits / 3, 3 * num_bits / 4, num_bits);
+  // Explicitly use values<>({}) to workaround bug catchorg/Catch2#2040:
+  const int begin_bit    = GENERATE_COPY(values<int>({0, num_bits / 3, 3 * num_bits / 4, num_bits}));
+  const int end_bit      = GENERATE_COPY(values<int>({0, num_bits / 3, 3 * num_bits / 4, num_bits}));
   if (end_bit < begin_bit || (begin_bit == 0 && end_bit == num_bits))
   {
     // SKIP(); Not available until Catch2 3.3.0
