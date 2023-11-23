@@ -25,11 +25,6 @@
  *
  ******************************************************************************/
 
-// Catch2 internals throw the following diagnositic when CUB_TEST is given an empty typelist,
-// which happens for some parameterizations of this test due to filtering for floating-point types, etc.
-// error #177-D: variable "index" was declared but never referenced
-#pragma diag_suppress 177
-
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
