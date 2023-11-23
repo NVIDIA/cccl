@@ -50,16 +50,16 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeysDescending, sort_keys_descending);
 
-// %PARAM% TEST_KEY_BYTES key_bytes 8:16:32:64
+// %PARAM% TEST_KEY_BITS key_bits 8:16:32:64
 
 // TODO:
 // - int128
 // - uint128
 
 // The unsigned integer for the given byte count should be first:
-#if TEST_KEY_BYTES == 8
+#if TEST_KEY_BITS == 8
 using key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::int8_t, bool, char>;
-#elif TEST_KEY_BYTES == 16
+#elif TEST_KEY_BITS == 16
 // clang-format off
 using key_types = c2h::type_list<
     cuda::std::uint16_t
@@ -72,9 +72,9 @@ using key_types = c2h::type_list<
 #endif
   >;
 // clang-format on
-#elif TEST_KEY_BYTES == 32
+#elif TEST_KEY_BITS == 32
 using key_types = c2h::type_list<cuda::std::uint32_t, cuda::std::int32_t, float>;
-#elif TEST_KEY_BYTES == 64
+#elif TEST_KEY_BITS == 64
 using key_types = c2h::type_list<cuda::std::uint64_t, cuda::std::int64_t, double>;
 #endif
 
