@@ -1,6 +1,6 @@
 # Building docs
 
-Most docs can be *prepared* locally, but the build process is partially invested in the github workflows.
+Most docs can be *prepared* locally, but the build process is partially invested in the github workflows. This script accepts a tag name and runs a given script inside the container. This takes care of dependencies and system config for the user.
 
 ## First steps
 
