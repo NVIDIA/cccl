@@ -12,7 +12,11 @@
 #define __CCCL_CONFIG
 
 // Determine the host compiler
-#if defined(__NVCOMPILER)
+#if defined(__INTEL_LLVM_COMPILER)
+#  define _CCCL_COMPILER_ICC_LLVM
+#elif defined(__INTEL_COMPILER)
+#  define _CCCL_COMPILER_ICC
+#elif defined(__NVCOMPILER)
 #  define _CCCL_COMPILER_NVHPC
 #elif defined(__clang__)
 #  define _CCCL_COMPILER_CLANG
@@ -22,10 +26,6 @@
 #  define _CCCL_COMPILER_MSVC
 #elif defined(__IBMCPP__)
 #  define _CCCL_COMPILER_IBM
-#elif defined(__INTEL_LLVM_COMPILER)
-#  define _CCCL_COMPILER_ICC_LLVM
-#elif defined(__INTEL_COMPILER)
-#  define _CCCL_COMPILER_ICC
 #elif defined(__CUDACC_RTC__)
 #  define _CCCL_COMPILER_NVRTC
 #endif
