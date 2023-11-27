@@ -38,5 +38,5 @@ jobs:
         include: ${{ fromJSON(inputs.per_cuda_compiler_matrix) }}
     with:
       test_name: ${{matrix.cpu}}/${{matrix.compiler.name}}${{matrix.compiler.version}}/C++${{matrix.std}}
-      build_script: "./ci/windows/build_${{ inputs.project_name }}.ps1 ${{matrix.std}}"
+      build_script: "./ci/windows/build_${{ inputs.project_name }}.ps1 -std ${{matrix.std}}"
       container_image: rapidsai/devcontainers:${{inputs.devcontainer_version}}-cuda${{matrix.cuda}}-${{matrix.compiler.name}}${{matrix.compiler.version}}-${{matrix.os}}
