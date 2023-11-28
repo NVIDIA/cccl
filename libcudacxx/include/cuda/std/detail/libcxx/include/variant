@@ -294,6 +294,7 @@ __throw_bad_variant_access()
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
   throw bad_variant_access();
 #  else
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__trap();), (_CUDA_VSTD::abort();))
   _LIBCUDACXX_UNREACHABLE();
 #  endif
 }
