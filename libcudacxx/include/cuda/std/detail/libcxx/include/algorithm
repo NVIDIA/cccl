@@ -645,6 +645,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/any_of.h"
 #include "__algorithm/comp_ref_type.h"
 #include "__algorithm/comp.h"
+#include "__algorithm/copy_backward.h"
 #include "__algorithm/copy.h"
 #include "__algorithm/count_if.h"
 #include "__algorithm/count.h"
@@ -724,48 +725,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _T1& __x, const _T2& __y) {return __p_(__y, __x);}
 };
-
-// copy_backward
-
-template <class _BidirectionalIterator, class _OutputIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_OutputIterator
-__copy_backward(_BidirectionalIterator __first, _BidirectionalIterator __last, _OutputIterator __result)
-{
-    while (__first != __last)
-        *--__result = *--__last;
-    return __result;
-}
-
-template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-__enable_if_t
-<
-    is_same<__remove_const_t<_Tp>, _Up>::value &&
-    is_trivially_copy_assignable<_Up>::value,
-    _Up*
->
-__copy_backward(_Tp* __first, _Tp* __last, _Up* __result)
-{
-    const size_t __n = static_cast<size_t>(__last - __first);
-    if (__n > 0)
-    {
-        __result -= __n;
-        _CUDA_VSTD::memmove(__result, __first, __n * sizeof(_Up));
-    }
-    return __result;
-}
-
-template <class _BidirectionalIterator1, class _BidirectionalIterator2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_BidirectionalIterator2
-copy_backward(_BidirectionalIterator1 __first, _BidirectionalIterator1 __last,
-              _BidirectionalIterator2 __result)
-{
-    return _CUDA_VSTD::__copy_backward(__unwrap_iter(__first),
-                                  __unwrap_iter(__last),
-                                  __unwrap_iter(__result));
-}
 
 // copy_if
 
