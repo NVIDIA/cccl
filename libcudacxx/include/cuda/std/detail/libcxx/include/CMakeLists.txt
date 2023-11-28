@@ -6,6 +6,7 @@ set(files
   __algorithm/comp_ref_type.h
   __algorithm/comp.h
   __algorithm/copy_backward.h
+  __algorithm/copy_if.h
   __algorithm/copy.h
   __algorithm/count.h
   __algorithm/count_if.h
