@@ -765,6 +765,11 @@ class Configuration(object):
                 self.cxx.compile_flags += ['/std:{0}'.format(std)]
             else:
                 self.cxx.compile_flags += ['-std={0}'.format(std)]
+
+            # Do a check with a user/config flag to ensure that the flag is supported.
+            if not self.cxx.hasCompileFlag(self.cxx.compile_flags):
+                raise OSError("Configured compiler does not support flag {0}".format(self.cxx.compile_flags))
+
         if not std:
             # There is no dialect flag. This happens with older MSVC.
             if self.cxx.type == 'nvcc':
