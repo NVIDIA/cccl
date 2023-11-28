@@ -708,6 +708,8 @@ class Configuration(object):
 
     def configure_default_compile_flags(self):
         nvcc_host_compiler = self.get_lit_conf('nvcc_host_compiler')
+        cxx_additional_flags = self.get_lit_conf('test_compiler_flags')
+
         if nvcc_host_compiler and self.cxx.type == 'nvcc':
             self.cxx.compile_flags += ['-ccbin={0}'.format(nvcc_host_compiler)]
 
@@ -761,14 +763,15 @@ class Configuration(object):
 
         if std:
             # We found a dialect flag.
+            stdflag = '-std={0}'.format(std)
             if self.cxx.type == 'msvc':
-                self.cxx.compile_flags += ['/std:{0}'.format(std)]
-            else:
-                self.cxx.compile_flags += ['-std={0}'.format(std)]
+                stdflag = '/std:{0}'.format(std)
 
-            # Do a check with a user/config flag to ensure that the flag is supported.
-            if not self.cxx.hasCompileFlag(self.cxx.compile_flags):
-                raise OSError("Configured compiler does not support flag {0}".format(self.cxx.compile_flags))
+            # Do a check with the user/config flag to ensure that the flag is supported.
+            if not self.cxx.hasCompileFlag([stdflag] + cxx_additional_flags.split(' ')):
+                raise OSError("Configured compiler does not support flag {0}".format(stdflag))
+
+            self.cxx.flags += [stdflag]
 
         if not std:
             # There is no dialect flag. This happens with older MSVC.
