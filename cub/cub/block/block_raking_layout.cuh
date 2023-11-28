@@ -48,32 +48,29 @@
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * @brief BlockRakingLayout provides a conflict-free shared memory layout abstraction for 1D raking
- *        across thread block data.    ![](raking.png)
- *
- * @ingroup BlockModule
- *
- * @par Overview
- * This type facilitates a shared memory usage pattern where a block of CUDA
- * threads places elements into shared memory and then reduces the active
- * parallelism to one "raking" warp of threads for serially aggregating consecutive
- * sequences of shared items.  Padding is inserted to eliminate bank conflicts
- * (for most data types).
- *
- * @tparam T
- *   The data type to be exchanged.
- *
- * @tparam BLOCK_THREADS
- *   The thread block size in threads.
- *
- * @tparam LEGACY_PTX_ARCH
- *   <b>[optional]</b> Unused.
- */
-template <
-    typename    T,
-    int         BLOCK_THREADS,
-    int         LEGACY_PTX_ARCH = 0>
+//! @rst
+//! BlockRakingLayout provides a conflict-free shared memory layout abstraction for 1D raking across thread block data.
+//!
+//! Overview
+//! ++++++++++++++++++++++++++
+//!
+//! This type facilitates a shared memory usage pattern where a block of CUDA
+//! threads places elements into shared memory and then reduces the active
+//! parallelism to one "raking" warp of threads for serially aggregating consecutive
+//! sequences of shared items.  Padding is inserted to eliminate bank conflicts
+//! (for most data types).
+//!
+//! @endrst
+//!
+//! @tparam T
+//!   The data type to be exchanged.
+//!
+//! @tparam BLOCK_THREADS
+//!   The thread block size in threads.
+//!
+//! @tparam LEGACY_PTX_ARCH
+//!   **[optional]** Unused.
+template <typename T, int BLOCK_THREADS, int LEGACY_PTX_ARCH = 0>
 struct BlockRakingLayout
 {
     //---------------------------------------------------------------------
