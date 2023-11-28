@@ -46,13 +46,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-
-/**
- * \addtogroup GridModule
- * @{
- */
-
-
 /******************************************************************************
  * Mapping policies
  *****************************************************************************/
@@ -109,9 +102,6 @@ enum GridMappingStrategy
      */
     GRID_MAPPING_DYNAMIC,
 };
-
-
-/** @} */       // end group GridModule
 
 CUB_NAMESPACE_END
 

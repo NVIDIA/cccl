@@ -58,12 +58,6 @@ _CCCL_DIAG_SUPPRESS_DEPRECATED_POP
 
 CUB_NAMESPACE_BEGIN
 
-
-/**
- * @addtogroup UtilModule
- * @{
- */
-
 /// @brief Inequality functor (wraps equality functor)
 template <typename EqualityOp>
 struct InequalityWrapper
@@ -427,8 +421,5 @@ __device__ __host__ BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
 {
   return BinaryFlip<BinaryOpT>(binary_op);
 }
-
-/** @} */       // end group UtilModule
-
 
 CUB_NAMESPACE_END

@@ -125,10 +125,10 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(ScanTileStateT tile_st
  *   Chained tuning policy
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading scan inputs \iterator
+ *   Random-access input iterator type for reading scan inputs @iterator
  *
  * @tparam OutputIteratorT
- *   Random-access output iterator type for writing scan outputs \iterator
+ *   Random-access output iterator type for writing scan outputs @iterator
  *
  * @tparam ScanTileStateT
  *   Tile status interface type
@@ -214,10 +214,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
  *        DeviceScan
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading scan inputs \iterator
+ *   Random-access input iterator type for reading scan inputs @iterator
  *
  * @tparam OutputIteratorT
- *   Random-access output iterator type for writing scan outputs \iterator
+ *   Random-access output iterator type for writing scan outputs @iterator
  *
  * @tparam ScanOpT
  *   Binary scan functor type having member

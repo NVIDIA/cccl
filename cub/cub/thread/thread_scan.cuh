@@ -50,12 +50,6 @@ CUB_NAMESPACE_BEGIN
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
 namespace internal {
 
-
-/**
- * @addtogroup UtilModule
- * @{
- */
-
 /**
  * @name Sequential prefix scan over statically-sized array types
  * @{
@@ -354,8 +348,5 @@ __device__ __forceinline__ T ThreadScanInclusive(T (&input)[LENGTH],
 
 //@}  end member group
 
-/** @} */       // end group UtilModule
-
-
-}               // internal namespace
+} // internal namespace
 CUB_NAMESPACE_END
