@@ -5,6 +5,7 @@ set(files
   __algorithm/any_of.h
   __algorithm/comp_ref_type.h
   __algorithm/comp.h
+  __algorithm/copy.h
   __algorithm/count.h
   __algorithm/count_if.h
   __algorithm/equal.h
