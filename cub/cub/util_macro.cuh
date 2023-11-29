@@ -137,7 +137,10 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
 #  if !defined(_CCCL_CUDA_COMPILER_NVHPC)
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #  endif // !_CCCL_CUDA_COMPILER_NVHPC
-#  if defined(_CCCL_COMPILER_ICC) || defined(_CCCL_COMPILER_ICC_LLVM)
+#  if defined(_CCCL_COMPILER_ICC)
+#    pragma warning(disable : 1407) // the "__visibility__" attribute can only appear on functions and
+                                    // variables with external linkage'
+#  elif defined(_CCCL_COMPILER_ICC_LLVM)
 #    pragma warning(disable : 1890) // the "__visibility__" attribute can only appear on functions and
                                     // variables with external linkage'
 #  endif
