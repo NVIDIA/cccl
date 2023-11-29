@@ -19,6 +19,7 @@ jobs:
     name: build and test linux
     permissions:
       id-token: write
+      contents: read
     if: ${{ !inputs.is_windows }}
     uses: ./.github/workflows/build-and-test-linux.yml
     strategy:
@@ -37,6 +38,7 @@ jobs:
     name: build and test windows
     permissions:
       id-token: write
+      contents: read
     if: ${{ inputs.is_windows }}
     uses: ./.github/workflows/build-and-test-windows.yml
     strategy:

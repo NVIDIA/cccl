@@ -22,6 +22,7 @@ jobs:
     name: Build ${{inputs.test_name}}
     permissions:
       id-token: write
+      contents: read
     uses: ./.github/workflows/run-as-coder.yml
     with:
       name: Build ${{inputs.test_name}}
@@ -34,6 +35,7 @@ jobs:
     needs: build
     permissions:
       id-token: write
+      contents: read
     if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.run_tests}}
     name: Test ${{inputs.test_name}}
     uses: ./.github/workflows/run-as-coder.yml

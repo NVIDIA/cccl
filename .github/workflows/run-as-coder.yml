@@ -22,6 +22,7 @@ jobs:
     name: ${{inputs.name}}
     permissions:
       id-token: write
+      contents: read
     runs-on: ${{inputs.runner}}
     container:
       options: -u root
