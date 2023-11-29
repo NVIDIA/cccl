@@ -708,6 +708,7 @@ class Configuration(object):
 
     def configure_default_compile_flags(self):
         nvcc_host_compiler = self.get_lit_conf('nvcc_host_compiler')
+
         if nvcc_host_compiler and self.cxx.type == 'nvcc':
             self.cxx.compile_flags += ['-ccbin={0}'.format(nvcc_host_compiler)]
 
@@ -761,10 +762,20 @@ class Configuration(object):
 
         if std:
             # We found a dialect flag.
+            stdflag = '-std={0}'.format(std)
             if self.cxx.type == 'msvc':
-                self.cxx.compile_flags += ['/std:{0}'.format(std)]
-            else:
-                self.cxx.compile_flags += ['-std={0}'.format(std)]
+                stdflag = '/std:{0}'.format(std)
+
+            extraflags = []
+            if self.cxx.type == 'clang':
+                extraflags = ['-Wno-unknown-cuda-version']
+
+            # Do a check with the user/config flag to ensure that the flag is supported.
+            if not self.cxx.hasCompileFlag([stdflag] + extraflags):
+                raise OSError("Configured compiler does not support flag {0}".format(stdflag))
+
+            self.cxx.flags += [stdflag]
+
         if not std:
             # There is no dialect flag. This happens with older MSVC.
             if self.cxx.type == 'nvcc':
