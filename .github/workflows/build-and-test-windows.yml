@@ -11,9 +11,6 @@ jobs:
   prepare:
     name: Build ${{inputs.test_name}}
     runs-on: windows-2022
-    permissions:
-      id-token: write
-      contents: read
     env:
       SCCACHE_BUCKET: rapids-sccache-devs
       SCCACHE_REGION: us-east-2
