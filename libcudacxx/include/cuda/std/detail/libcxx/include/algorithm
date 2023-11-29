@@ -665,6 +665,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/is_permutation.h"
 #include "__algorithm/lexicographical_compare.h"
 #include "__algorithm/mismatch.h"
+#include "__algorithm/move_backward.h"
 #include "__algorithm/move.h"
 #include "__algorithm/none_of.h"
 #include "__algorithm/search_n.h"
@@ -728,50 +729,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _T1& __x, const _T2& __y) {return __p_(__y, __x);}
 };
-
-// move_backward
-
-template <class _InputIterator, class _OutputIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_OutputIterator
-__move_backward(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
-{
-    while (__first != __last)
-        *--__result = _CUDA_VSTD::move(*--__last);
-    return __result;
-}
-
-template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-__enable_if_t
-<
-    is_same<__remove_const_t<_Tp>, _Up>::value &&
-    is_trivially_copy_assignable<_Up>::value,
-    _Up*
->
-__move_backward(_Tp* __first, _Tp* __last, _Up* __result)
-{
-    const size_t __n = static_cast<size_t>(__last - __first);
-    if (__n > 0)
-    {
-        __result -= __n;
-        _CUDA_VSTD::memmove(__result, __first, __n * sizeof(_Up));
-    }
-    return __result;
-}
-
-template <class _BidirectionalIterator1, class _BidirectionalIterator2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_BidirectionalIterator2
-move_backward(_BidirectionalIterator1 __first, _BidirectionalIterator1 __last,
-              _BidirectionalIterator2 __result)
-{
-    return _CUDA_VSTD::__move_backward(__unwrap_iter(__first), __unwrap_iter(__last), __unwrap_iter(__result));
-}
-
-// iter_swap
-
-// moved to <type_traits> for better swap / noexcept support
 
 // transform
 
