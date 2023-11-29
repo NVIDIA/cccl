@@ -31,6 +31,7 @@ set(files
   __algorithm/search_n.h
   __algorithm/search.h
   __algorithm/swap_ranges.h
+  __algorithm/transform.h
   __availability
   __bit_reference
   __bsd_locale_defaults.h
