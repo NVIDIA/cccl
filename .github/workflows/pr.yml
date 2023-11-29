@@ -59,6 +59,7 @@ jobs:
     name: NVRTC CUDA${{matrix.cuda}} C++${{matrix.std}}
     permissions:
       id-token: write
+      contents: read
     needs: compute-matrix
     if: ${{ !contains(github.event.head_commit.message, 'skip-tests') }}
     uses: ./.github/workflows/run-as-coder.yml
@@ -77,6 +78,7 @@ jobs:
     name: Thrust CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
     permissions:
       id-token: write
+      contents: read
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
@@ -94,6 +96,7 @@ jobs:
     name: CUB CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
     permissions:
       id-token: write
+      contents: read
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
@@ -111,6 +114,7 @@ jobs:
     name: libcudacxx CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
     permissions:
       id-token: write
+      contents: read
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
@@ -128,6 +132,7 @@ jobs:
     name: ${{matrix.lib}} ${{matrix.cpu}}/CTK${{matrix.cuda}}/clang-cuda
     permissions:
       id-token: write
+      contents: read
     needs: compute-matrix
     strategy:
       fail-fast: false
@@ -145,6 +150,7 @@ jobs:
     name: CCCL Infrastructure
     permissions:
       id-token: write
+      contents: read
     needs: compute-matrix
     if: ${{ !contains(github.event.head_commit.message, 'skip-tests') }}
     strategy:

@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
   # Using a matrix to dispatch to the build-and-test reusable workflow for each build configuration
