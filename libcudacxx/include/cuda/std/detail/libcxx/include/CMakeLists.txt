@@ -30,6 +30,7 @@ set(files
   __algorithm/move_backward.h
   __algorithm/move.h
   __algorithm/none_of.h
+  __algorithm/remove_copy_if.h
   __algorithm/remove_copy.h
   __algorithm/remove_if.h
   __algorithm/remove.h
