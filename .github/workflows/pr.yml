@@ -168,6 +168,9 @@ jobs:
 
   verify-devcontainers:
     name: Verify Dev Containers
+    permissions:
+      id-token: write
+      contents: read
     uses: ./.github/workflows/verify-devcontainers.yml
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.

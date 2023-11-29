@@ -7,6 +7,9 @@ defaults:
   run:
     shell: bash -euo pipefail {0}
 
+permissions:
+  contents: read
+
 jobs:
   verify-make-devcontainers:
     name: Verify devcontainer files are up-to-date
