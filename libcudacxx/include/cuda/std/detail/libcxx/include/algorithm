@@ -661,6 +661,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/find.h"
 #include "__algorithm/for_each_n.h"
 #include "__algorithm/for_each.h"
+#include "__algorithm/generate.h"
 #include "__algorithm/half_positive.h"
 #include "__algorithm/is_permutation.h"
 #include "__algorithm/lexicographical_compare.h"
@@ -734,17 +735,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _T1& __x, const _T2& __y) {return __p_(__y, __x);}
 };
-
-// generate
-
-template <class _ForwardIterator, class _Generator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-void
-generate(_ForwardIterator __first, _ForwardIterator __last, _Generator __gen)
-{
-    for (; __first != __last; ++__first)
-        *__first = __gen();
-}
 
 // generate_n
 

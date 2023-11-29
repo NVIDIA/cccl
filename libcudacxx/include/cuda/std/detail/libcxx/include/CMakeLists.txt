@@ -21,6 +21,7 @@ set(files
   __algorithm/find.h
   __algorithm/for_each_n.h
   __algorithm/for_each.h
+  __algorithm/generate.h
   __algorithm/half_positive.h
   __algorithm/is_permutation.h
   __algorithm/lexicographical_compare.h
