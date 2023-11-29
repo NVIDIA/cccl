@@ -25,6 +25,7 @@ set(files
   __algorithm/is_permutation.h
   __algorithm/lexicographical_compare.h
   __algorithm/mismatch.h
+  __algorithm/move.h
   __algorithm/none_of.h
   __algorithm/search_n.h
   __algorithm/search.h
