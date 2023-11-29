@@ -43,12 +43,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cfloat>
-#include <iostream>
-#include <iterator>
-#include <limits>
-
-#include <cuda.h>
+#include <cuda/std/limits>
+#include <cuda/__cccl_config> // _LIBCUDACXX_CUDACC_VER
 
 #if !_NVHPC_CUDA
     #include <cuda_fp16.h>
@@ -57,7 +53,7 @@
 #if !_NVHPC_CUDA && !defined(CUB_DISABLE_BF16_SUPPORT)
 #  include <cuda_bf16.h>
 // cuda_fp8.h transitively includes cuda_fp16.h, so we have to include the header under !CUB_DISABLE_BF16_SUPPORT
-#  if CUDA_VERSION >= 11080
+#  if _LIBCUDACXX_CUDACC_VER >= 1108000
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
 #    if CUB_HOST_COMPILER == CUB_HOST_COMPILER_MSVC
 #      pragma warning(push)
@@ -73,6 +69,12 @@
 
 #include <cuda/std/type_traits>
 
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  include <iterator>
+#else
+#  include <cuda/std/iterator>
+#endif
+
 CUB_NAMESPACE_BEGIN
 
 #ifndef CUB_IS_INT128_ENABLED
@@ -81,7 +83,7 @@ CUB_NAMESPACE_BEGIN
 #define CUB_IS_INT128_ENABLED 1
 #endif // !defined(__CUDACC_RTC_INT128__)
 #else  // !defined(__CUDACC_RTC__)
-#if CUDA_VERSION >= 11050
+#if _LIBCUDACXX_CUDACC_VER >= 1105000
 #if (CUB_HOST_COMPILER == CUB_HOST_COMPILER_GCC) || \
     (CUB_HOST_COMPILER == CUB_HOST_COMPILER_CLANG) || \
     defined(__ICC) || defined(_NVHPC_CUDA)
@@ -109,11 +111,15 @@ namespace detail
 
 
 template <bool Test, class T1, class T2>
-using conditional_t = typename std::conditional<Test, T1, T2>::type;
-
+using conditional_t = typename ::cuda::std::conditional<Test, T1, T2>::type;
 
 template <typename Iterator>
-using value_t = typename std::iterator_traits<Iterator>::value_type;
+using value_t =
+#  if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+  typename std::iterator_traits<Iterator>::value_type;
+#  else // defined(_LIBCUDACXX_COMPILER_NVRTC)
+  typename ::cuda::std::iterator_traits<Iterator>::value_type;
+#  endif // defined(_LIBCUDACXX_COMPILER_NVRTC)
 
 template <typename It,
           typename FallbackT,
@@ -128,10 +134,8 @@ struct non_void_value_impl
 template <typename It, typename FallbackT>
 struct non_void_value_impl<It, FallbackT, false>
 {
-  using type = typename ::cuda::std::conditional<
-    ::cuda::std::is_same<typename std::iterator_traits<It>::value_type, void>::value,
-    FallbackT,
-    typename std::iterator_traits<It>::value_type>::type;
+  using type =
+    typename ::cuda::std::conditional<::cuda::std::is_same<value_t<It>, void>::value, FallbackT, value_t<It>>::type;
 };
 
 /**
@@ -171,7 +175,7 @@ struct CUB_DEPRECATED If
 template <typename A, typename B>
 struct CUB_DEPRECATED Equals
 {
-  static constexpr int VALUE = std::is_same<A, B>::value ? 1 : 0;
+  static constexpr int VALUE = ::cuda::std::is_same<A, B>::value ? 1 : 0;
   static constexpr int NEGATE = VALUE ? 0 : 1;
 };
 
@@ -230,7 +234,7 @@ struct PowerOfTwo
 template <typename Tp>
 struct CUB_DEPRECATED IsPointer
 {
-  static constexpr int VALUE = std::is_pointer<Tp>::value;
+  static constexpr int VALUE = ::cuda::std::is_pointer<Tp>::value;
 };
 
 
@@ -247,7 +251,7 @@ struct CUB_DEPRECATED IsPointer
 template <typename Tp>
 struct CUB_DEPRECATED IsVolatile
 {
-  static constexpr int VALUE = std::is_volatile<Tp>::value;
+  static constexpr int VALUE = ::cuda::std::is_volatile<Tp>::value;
 };
 
 /******************************************************************************
@@ -266,7 +270,7 @@ struct CUB_DEPRECATED IsVolatile
 template <typename Tp, typename Up = Tp>
 struct CUB_DEPRECATED RemoveQualifiers
 {
-  using Type = typename std::remove_cv<Tp>::type;
+  using Type = typename ::cuda::std::remove_cv<Tp>::type;
 };
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
@@ -721,9 +725,9 @@ struct Uninitialized
     /// Biggest memory-access word that T is a whole multiple of and is not larger than the alignment of T
     typedef typename UnitWord<T>::DeviceWord DeviceWord;
 
-    static constexpr std::size_t DATA_SIZE = sizeof(T);
-    static constexpr std::size_t WORD_SIZE = sizeof(DeviceWord);
-    static constexpr std::size_t WORDS = DATA_SIZE / WORD_SIZE;
+    static constexpr ::cuda::std::size_t DATA_SIZE = sizeof(T);
+    static constexpr ::cuda::std::size_t WORD_SIZE = sizeof(DeviceWord);
+    static constexpr ::cuda::std::size_t WORDS = DATA_SIZE / WORD_SIZE;
 
     /// Backing storage
     DeviceWord storage[WORDS];
@@ -941,7 +945,7 @@ struct DoubleBuffer
 template <bool Condition, class T = void>
 struct CUB_DEPRECATED EnableIf
 {
-  using Type = typename std::enable_if<Condition, T>::type;
+  using Type = typename ::cuda::std::enable_if<Condition, T>::type;
 };
 
 /******************************************************************************
@@ -976,7 +980,7 @@ private:
     template <typename BinaryOpT> __host__ __device__ static char Test(SFINAE7<BinaryOpT, &BinaryOpT::operator()> *);
     template <typename BinaryOpT> __host__ __device__ static char Test(SFINAE8<BinaryOpT, &BinaryOpT::operator()> *);
 
-    template <typename BinaryOpT> static int Test(...);
+    template <typename BinaryOpT> __host__ __device__ static int Test(...);
 
 public:
 
@@ -1122,11 +1126,11 @@ template <>
 struct FpLimits<float>
 {
     static __host__ __device__ __forceinline__ float Max() {
-        return FLT_MAX;
+        return ::cuda::std::numeric_limits<float>::max();
     }
 
     static __host__ __device__ __forceinline__ float Lowest() {
-        return FLT_MAX * float(-1);
+        return ::cuda::std::numeric_limits<float>::lowest();
     }
 };
 
@@ -1134,11 +1138,11 @@ template <>
 struct FpLimits<double>
 {
     static __host__ __device__ __forceinline__ double Max() {
-        return DBL_MAX;
+        return ::cuda::std::numeric_limits<double>::max();
     }
 
     static __host__ __device__ __forceinline__ double Lowest() {
-        return DBL_MAX  * double(-1);
+        return ::cuda::std::numeric_limits<double>::lowest();
     }
 };
 
@@ -1180,12 +1184,16 @@ struct FpLimits<__nv_fp8_e4m3>
 {
     static __host__ __device__ __forceinline__ __nv_fp8_e4m3 Max() {
         unsigned char max_word = 0x7EU;
-        return reinterpret_cast<__nv_fp8_e4m3&>(max_word);
+        __nv_fp8_e4m3 ret_val;
+        memcpy(&ret_val, &max_word, sizeof(__nv_fp8_e4m3));
+        return ret_val;
     }
 
     static __host__ __device__ __forceinline__ __nv_fp8_e4m3 Lowest() {
         unsigned char lowest_word = 0xFEU;
-        return reinterpret_cast<__nv_fp8_e4m3&>(lowest_word);
+        __nv_fp8_e4m3 ret_val;
+        memcpy(&ret_val, &lowest_word, sizeof(__nv_fp8_e4m3));
+        return ret_val;
     }
 };
 
@@ -1194,12 +1202,16 @@ struct FpLimits<__nv_fp8_e5m2>
 {
     static __host__ __device__ __forceinline__ __nv_fp8_e5m2 Max() {
         unsigned char max_word = 0x7BU;
-        return reinterpret_cast<__nv_fp8_e5m2&>(max_word);
+        __nv_fp8_e5m2 ret_val;
+        memcpy(&ret_val, &max_word, sizeof(__nv_fp8_e5m2));
+        return ret_val;
     }
 
     static __host__ __device__ __forceinline__ __nv_fp8_e5m2 Lowest() {
         unsigned char lowest_word = 0xFBU;
-        return reinterpret_cast<__nv_fp8_e5m2&>(lowest_word);
+        __nv_fp8_e5m2 ret_val;
+        memcpy(&ret_val, &lowest_word, sizeof(__nv_fp8_e5m2));
+        return ret_val;
     }
 };
 
@@ -1254,7 +1266,7 @@ template <typename T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER,
 
 template <> struct NumericTraits<NullType> :            BaseTraits<NOT_A_NUMBER, false, true, NullType, NullType> {};
 
-template <> struct NumericTraits<char> :                BaseTraits<(std::numeric_limits<char>::is_signed) ? SIGNED_INTEGER : UNSIGNED_INTEGER, true, false, unsigned char, char> {};
+template <> struct NumericTraits<char> :                BaseTraits<(::cuda::std::numeric_limits<char>::is_signed) ? SIGNED_INTEGER : UNSIGNED_INTEGER, true, false, unsigned char, char> {};
 template <> struct NumericTraits<signed char> :         BaseTraits<SIGNED_INTEGER, true, false, unsigned char, signed char> {};
 template <> struct NumericTraits<short> :               BaseTraits<SIGNED_INTEGER, true, false, unsigned short, short> {};
 template <> struct NumericTraits<int> :                 BaseTraits<SIGNED_INTEGER, true, false, unsigned int, int> {};
@@ -1363,7 +1375,7 @@ template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTE
  * \brief Type traits
  */
 template <typename T>
-struct Traits : NumericTraits<typename std::remove_cv<T>::type> {};
+struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type> {};
 
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS

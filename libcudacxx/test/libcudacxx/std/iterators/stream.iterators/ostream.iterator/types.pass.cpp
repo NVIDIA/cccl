@@ -34,7 +34,11 @@ int main(int, char**)
 #else
     static_assert((cuda::std::is_same<I1::iterator_category, cuda::std::output_iterator_tag>::value), "");
     static_assert((cuda::std::is_same<I1::value_type, void>::value), "");
+#if TEST_STD_VER > 17
+    static_assert((cuda::std::is_same<I1::difference_type, ptrdiff_t>::value), "");
+#else
     static_assert((cuda::std::is_same<I1::difference_type, void>::value), "");
+#endif
     static_assert((cuda::std::is_same<I1::pointer, void>::value), "");
     static_assert((cuda::std::is_same<I1::reference, void>::value), "");
 #endif
@@ -48,7 +52,11 @@ int main(int, char**)
 #else
     static_assert((cuda::std::is_same<I2::iterator_category, cuda::std::output_iterator_tag>::value), "");
     static_assert((cuda::std::is_same<I2::value_type, void>::value), "");
+#if TEST_STD_VER > 17
+    static_assert((cuda::std::is_same<I2::difference_type, ptrdiff_t>::value), "");
+#else
     static_assert((cuda::std::is_same<I2::difference_type, void>::value), "");
+#endif
     static_assert((cuda::std::is_same<I2::pointer, void>::value), "");
     static_assert((cuda::std::is_same<I2::reference, void>::value), "");
 #endif

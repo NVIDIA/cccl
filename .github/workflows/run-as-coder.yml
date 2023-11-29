@@ -14,17 +14,21 @@ on:
       command: {type: string, required: true}
       env: { type: string, required: false, default: "" }
 
+permissions:
+  contents: read
+
 jobs:
   run-as-coder:
     name: ${{inputs.name}}
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ${{inputs.runner}}
     container:
       options: -u root
       image: ${{inputs.image}}
       env:
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
-    permissions:
-      id-token: write
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3

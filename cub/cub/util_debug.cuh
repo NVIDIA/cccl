@@ -48,11 +48,6 @@
 
 #include <nv/target>
 
-#include <cstdio>
-
-CUB_NAMESPACE_BEGIN
-
-
 #ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:
 
 /**
@@ -179,6 +174,12 @@ CUB_NAMESPACE_BEGIN
     #define CUB_STDERR
 #endif
 
+#ifdef CUB_STDERR
+#include <cstdio>
+#endif
+
+CUB_NAMESPACE_BEGIN
+
 /**
  * \brief %If \p CUB_STDERR is defined and \p error is not \p cudaSuccess, the
  * corresponding error message is printed to \p stderr (or \p stdout in device
@@ -296,6 +297,7 @@ cudaError_t Debug(cudaError_t error, const char *filename, int line)
 //     so we silence them :)
 #pragma clang diagnostic ignored "-Wc++11-extensions"
 #pragma clang diagnostic ignored "-Wunnamed-type-template-args"
+#ifdef CUB_STDERR
 template <class... Args>
 inline __host__ __device__ void va_printf(char const *format,
                                           Args const &...args)
@@ -313,6 +315,12 @@ inline __host__ __device__ void va_printf(char const *format,
   printf(format, args...);
 #endif
 }
+#else // !defined(CUB_STDERR)
+template <class... Args>
+inline __host__ __device__ void va_printf(char const*, Args const&...)
+{}
+#endif // !defined(CUB_STDERR)
+
 #ifndef __CUDA_ARCH__
 #define _CubLog(format, ...) CUB_NS_QUALIFIER::va_printf(format, __VA_ARGS__);
 #else

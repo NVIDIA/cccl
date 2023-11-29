@@ -39,16 +39,16 @@
 #include <climits>
 #include <limits>
 
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 #include "cub/util_type.cuh"
 
-DECLARE_CDP_WRAPPER(cub::DeviceRadixSort::SortKeys, sort_keys);
-DECLARE_CDP_WRAPPER(cub::DeviceRadixSort::SortPairs, sort_pairs);
-DECLARE_CDP_WRAPPER(cub::DeviceRadixSort::SortKeysDescending, sort_keys_descending);
-DECLARE_CDP_WRAPPER(cub::DeviceRadixSort::SortPairsDescending, sort_pairs_descending);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeys, sort_keys);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, sort_pairs);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeysDescending, sort_keys_descending);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairsDescending, sort_pairs_descending);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1
 
 using key   = c2h::custom_type_t<c2h::equal_comparable_t,
                                c2h::lexicographical_less_comparable_t,
@@ -326,7 +326,7 @@ CUB_TEST("Device radix sort works with custom i128_t (db)", "[radix][sort][devic
 
   const bool is_descending = GENERATE(false, true);
   auto reference_keys      = reference_sort_keys(keys_1, is_descending, 0, 128);
-  cdp_launch(double_buffer_sort_t{is_descending, selector}, keys, num_items, pair_decomposer_t{});
+  launch(double_buffer_sort_t{is_descending, selector}, keys, num_items, pair_decomposer_t{});
 
   keys.selector = *selector;
   cudaFreeHost(selector);
@@ -364,11 +364,11 @@ CUB_TEST("Device radix sort works with custom i128_t keys (db)", "[radix][sort][
   const bool is_descending = GENERATE(false, true);
 
   auto reference_keys = reference_sort_pairs(keys_1, values_1, is_descending, 0, 128);
-  cdp_launch(double_buffer_sort_t{is_descending, selector},
-             keys,
-             values,
-             num_items,
-             pair_decomposer_t{});
+  launch(double_buffer_sort_t{is_descending, selector},
+         keys,
+         values,
+         num_items,
+         pair_decomposer_t{});
 
   keys.selector   = *selector;
   values.selector = *selector;
@@ -487,12 +487,12 @@ CUB_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sor
   const bool is_descending = GENERATE(false, true);
 
   auto reference_keys = reference_sort_keys(keys_1, is_descending, begin_bit, end_bit);
-  cdp_launch(double_buffer_sort_t{is_descending, selector},
-             keys,
-             num_items,
-             pair_decomposer_t{},
-             begin_bit,
-             end_bit);
+  launch(double_buffer_sort_t{is_descending, selector},
+         keys,
+         num_items,
+         pair_decomposer_t{},
+         begin_bit,
+         end_bit);
 
   keys.selector = *selector;
   cudaFreeHost(selector);
@@ -532,13 +532,13 @@ CUB_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix
   const bool is_descending = GENERATE(false, true);
 
   auto reference_keys = reference_sort_pairs(keys_1, values_1, is_descending, begin_bit, end_bit);
-  cdp_launch(double_buffer_sort_t{is_descending, selector},
-             keys,
-             values,
-             num_items,
-             pair_decomposer_t{},
-             begin_bit,
-             end_bit);
+  launch(double_buffer_sort_t{is_descending, selector},
+         keys,
+         values,
+         num_items,
+         pair_decomposer_t{},
+         begin_bit,
+         end_bit);
 
   keys.selector   = *selector;
   values.selector = *selector;
@@ -551,7 +551,7 @@ CUB_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix
   REQUIRE(reference_keys.second == out_values);
 }
 
-#if TEST_CDP != 1
+#if TEST_LAUNCH != 1
 
 // example-begin custom-type
 struct custom_t

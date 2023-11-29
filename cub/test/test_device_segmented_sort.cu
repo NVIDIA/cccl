@@ -1635,7 +1635,7 @@ void Test()
 }
 
 
-#if TEST_CDP == 1
+#if TEST_LAUNCH == 1
 template <typename KeyT>
 __global__ void LauncherKernel(
     void *tmp_storage,
@@ -1748,7 +1748,7 @@ void TestDeviceSideLaunch()
   TestDeviceSideLaunch<KeyT>(1 << 9, 1 << 19);
 }
 
-#endif // TEST_CDP
+#endif // TEST_LAUNCH
 
 void TestUnspecifiedRanges()
 {
@@ -1917,9 +1917,9 @@ int main(int argc, char** argv)
   // Initialize device
   CubDebugExit(args.DeviceInit());
 
-  // %PARAM% TEST_CDP cdp 0:1
+  // %PARAM% TEST_LAUNCH lid 0:1
 
-#if TEST_CDP == 0
+#if TEST_LAUNCH == 0
   TestZeroSegments();
   TestEmptySegments(1 << 2);
   TestEmptySegments(1 << 22);
@@ -1936,9 +1936,9 @@ int main(int argc, char** argv)
   Test<std::uint8_t, std::uint64_t>();
   Test<std::int64_t, std::uint32_t>();
 
-#elif TEST_CDP == 1
+#elif TEST_LAUNCH == 1
   TestDeviceSideLaunch<int>();
-#endif // TEST_CDP
+#endif // TEST_LAUNCH
 
   TestUnspecifiedRanges();
 

@@ -37,12 +37,12 @@
 #include <limits>
 #include <numeric>
 
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 using all_types = c2h::type_list<std::uint8_t,
                                  std::uint64_t,

@@ -24,11 +24,11 @@ int main()
   // the %PARAM% system to request CDP support (see the README.md file in
   // this directory).
 
-  // %PARAM% TEST_CDP cdp 0:1
+  // %PARAM% TEST_LAUNCH lid 0:1:2
 
 #ifdef CUB_RDC_ENABLED
-  return (TEST_CDP == 1) ? EXIT_SUCCESS : EXIT_FAILURE;
+  return (TEST_LAUNCH == 1) ? EXIT_SUCCESS : EXIT_FAILURE;
 #else
-  return (TEST_CDP == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+  return (TEST_LAUNCH == 0 || TEST_LAUNCH == 2) ? EXIT_SUCCESS : EXIT_FAILURE;
 #endif
 }

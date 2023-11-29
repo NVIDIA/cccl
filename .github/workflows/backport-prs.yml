@@ -9,21 +9,7 @@ permissions:
   pull-requests: write # so it can create pull requests
 
   
-jobs:
-  print-context:
-    runs-on: ubuntu-latest
-    steps:
-     - name: Print GitHub context
-       run: |
-         echo "Event Name: ${{ github.event_name }}"
-         echo "Pull Request Merged: ${{ github.event.pull_request.merged }}"
-         echo "Issue Pull Request: ${{ github.event.issue.pull_request }}"
-         echo "Issue Comment Author Association: ${{ github.event.comment.author_association }}"
-         echo "Comment Body: ${{ github.event.comment.body }}"
-         echo "$GITHUB_CONTEXT"
-       env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-          
+jobs:        
   backport:
     name: Backport pull request
     runs-on: ubuntu-latest
