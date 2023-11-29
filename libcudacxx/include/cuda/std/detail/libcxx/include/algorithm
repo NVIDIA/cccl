@@ -670,6 +670,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/move_backward.h"
 #include "__algorithm/move.h"
 #include "__algorithm/none_of.h"
+#include "__algorithm/remove_copy.h"
 #include "__algorithm/remove_if.h"
 #include "__algorithm/remove.h"
 #include "__algorithm/replace_copy_if.h"
@@ -738,24 +739,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _T1& __x, const _T2& __y) {return __p_(__y, __x);}
 };
-
-// remove_copy
-
-template <class _InputIterator, class _OutputIterator, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_OutputIterator
-remove_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result, const _Tp& __value_)
-{
-    for (; __first != __last; ++__first)
-    {
-        if (!(*__first == __value_))
-        {
-            *__result = *__first;
-            ++__result;
-        }
-    }
-    return __result;
-}
 
 // remove_copy_if
 
