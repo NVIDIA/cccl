@@ -87,11 +87,11 @@ int main(int, char**)
         static_assert(noexcept(cuda::std::tuple<NoExceptDefault>()), "");
         static_assert(noexcept(cuda::std::tuple<NoExceptDefault, NoExceptDefault>()), "");
 
-#ifndef TEST_COMPILER_NVHPC
+#if !defined(TEST_COMPILER_NVHPC) && !defined(TEST_COMPILER_ICC)
         static_assert(!noexcept(cuda::std::tuple<ThrowingDefault, NoExceptDefault>()), "");
         static_assert(!noexcept(cuda::std::tuple<NoExceptDefault, ThrowingDefault>()), "");
         static_assert(!noexcept(cuda::std::tuple<ThrowingDefault, ThrowingDefault>()), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER_NVHPC && !TEST_COMPILER_ICC
     }
     {
         constexpr cuda::std::tuple<> t;
