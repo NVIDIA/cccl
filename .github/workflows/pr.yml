@@ -30,6 +30,9 @@ concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   compute-matrix:
     name: Compute matrix
@@ -53,6 +56,8 @@ jobs:
 
   nvrtc:
     name: NVRTC CUDA${{matrix.cuda}} C++${{matrix.std}}
+    permissions:
+      id-token: write
     needs: compute-matrix
     if: ${{ !contains(github.event.head_commit.message, 'skip-tests') }}
     uses: ./.github/workflows/run-as-coder.yml
@@ -69,6 +74,8 @@ jobs:
 
   thrust:
     name: Thrust CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+    permissions:
+      id-token: write
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
@@ -84,6 +91,8 @@ jobs:
 
   cub:
     name: CUB CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+    permissions:
+      id-token: write
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
@@ -99,6 +108,8 @@ jobs:
 
   libcudacxx:
     name: libcudacxx CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+    permissions:
+      id-token: write
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
@@ -114,6 +125,8 @@ jobs:
 
   clang-cuda:
     name: ${{matrix.lib}} ${{matrix.cpu}}/CTK${{matrix.cuda}}/clang-cuda
+    permissions:
+      id-token: write
     needs: compute-matrix
     strategy:
       fail-fast: false
@@ -129,6 +142,8 @@ jobs:
 
   cccl-infra:
     name: CCCL Infrastructure
+    permissions:
+      id-token: write
     needs: compute-matrix
     if: ${{ !contains(github.event.head_commit.message, 'skip-tests') }}
     strategy:
@@ -146,6 +161,8 @@ jobs:
 
   verify-devcontainers:
     name: Verify Dev Containers
+    permissions:
+      id-token: write
     uses: ./.github/workflows/verify-devcontainers.yml
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
@@ -154,7 +171,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     name: CI
-    if: ${{ always() }} # need to use always() instead of !cancelled() because skipped jobs count as success 
+    if: ${{ always() }} # need to use always() instead of !cancelled() because skipped jobs count as success
     needs:
       - clang-cuda
       - cub
