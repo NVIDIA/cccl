@@ -28,6 +28,7 @@ set(files
   __algorithm/move_backward.h
   __algorithm/move.h
   __algorithm/none_of.h
+  __algorithm/replace.h
   __algorithm/search_n.h
   __algorithm/search.h
   __algorithm/swap_ranges.h

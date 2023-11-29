@@ -668,6 +668,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/move_backward.h"
 #include "__algorithm/move.h"
 #include "__algorithm/none_of.h"
+#include "__algorithm/replace.h"
 #include "__algorithm/search_n.h"
 #include "__algorithm/search.h"
 #include "__algorithm/swap_ranges.h"
@@ -730,18 +731,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _T1& __x, const _T2& __y) {return __p_(__y, __x);}
 };
-
-// replace
-
-template <class _ForwardIterator, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-void
-replace(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __old_value, const _Tp& __new_value)
-{
-    for (; __first != __last; ++__first)
-        if (*__first == __old_value)
-            *__first = __new_value;
-}
 
 // replace_if
 
