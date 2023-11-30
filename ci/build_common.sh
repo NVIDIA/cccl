@@ -37,7 +37,6 @@ function usage {
 # Copy the args into a temporary array, since we will modify them and
 # the parent script may still need them.
 args=("$@")
-echo "Args: ${args[@]}"
 while [ "${#args[@]}" -ne 0 ]; do
     case "${args[0]}" in
     -v | --verbose) VERBOSE=1; args=("${args[@]:1}");;
@@ -90,7 +89,6 @@ export CTEST_PARALLEL_LEVEL="1"
 export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"
-
 export CXX_STANDARD
 
 # Print "ARG=${ARG}" for all args.
@@ -107,67 +105,193 @@ function print_var_values() {
     done
 }
 
-echo "========================================"
-echo "pwd=$(pwd)"
-print_var_values \
-    BUILD_DIR \
-    CXX_STANDARD \
-    CXX \
-    CUDACXX \
-    CUDAHOSTCXX \
-    NVCC_VERSION \
-    CMAKE_BUILD_PARALLEL_LEVEL \
-    CTEST_PARALLEL_LEVEL \
-    CCCL_BUILD_INFIX \
-    GLOBAL_CMAKE_OPTIONS
-echo "========================================"
-echo
-echo "========================================"
-echo "Current commit is:"
-git log -1 || echo "Not a repository"
-echo "========================================"
-echo
+# begin_group: Start a named section of log output, possibly with color.
+# Usage: begin_group "Group Name" [Color]
+#   Group Name: A string specifying the name of the group.
+#   Color (optional): ANSI color code to set text color. Default is blue (1;34).
+function begin_group() {
+    # See options for colors here: https://gist.github.com/JBlond/2fea43a3049b38287e5e9cefc87b2124
+    local blue="34"
+    local name="${1:-}"
+    local color="${2:-$blue}"
+
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        echo -e "::group::\e[${color}m${name}\e[0m"
+    else
+        echo -e "\e[${color}m================== ${name} ======================\e[0m"
+    fi
+}
+
+# end_group: End a named section of log output and print status based on exit status.
+# Usage: end_group "Group Name" [Exit Status]
+#   Group Name: A string specifying the name of the group.
+#   Exit Status (optional): The exit status of the command run within the group. Default is 0.
+function end_group() {
+    local name="${1:-}"
+    local build_status="${2:-0}"
+    local duration="${3:-}"
+    local red="31"
+    local blue="34"
+
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        echo "::endgroup::"
+
+        if [ "$build_status" -ne 0 ]; then
+            echo -e "::error::\e[${red}m ${name} - Failed (⬆️ click above for full log ⬆️)\e[0m"
+        fi
+    else
+        if [ "$build_status" -ne 0 ]; then
+            echo -e "\e[${red}m================== End ${name} - Failed${duration:+ - Duration: ${duration}s} ==================\e[0m"
+        else
+            echo -e "\e[${blue}m================== End ${name} - Success${duration:+ - Duration: ${duration}s} ==================\n\e[0m"
+        fi
+    fi
+}
+
+declare -A command_durations
+
+# Runs a command within a named group, handles the exit status, and prints appropriate messages based on the result.
+# Usage: run_command "Group Name" command [arguments...]
+function run_command() {
+    local group_name="${1:-}"
+    shift
+    local command=("$@")
+    local status
+
+    begin_group "$group_name"
+    set +e
+    local start_time=$(date +%s)
+    "${command[@]}"
+    status=$?
+    local end_time=$(date +%s)
+    set -e
+    local duration=$((end_time - start_time))
+    end_group "$group_name" $status $duration
+    command_durations["$group_name"]=$duration
+    return $status
+}
+
+function string_width() {
+    local str="$1"
+    echo "$str" | awk '{print length}'
+}
+
+function print_time_summary() {
+    local max_length=0
+    local group
+
+    # Find the longest group name for formatting
+    for group in "${!command_durations[@]}"; do
+        local group_length=$(echo "$group" | awk '{print length}')
+        if [ "$group_length" -gt "$max_length" ]; then
+            max_length=$group_length
+        fi
+    done
+
+    echo "Time Summary:"
+    for group in "${!command_durations[@]}"; do
+        printf "%-${max_length}s : %s seconds\n" "$group" "${command_durations[$group]}"
+    done
+
+    # Clear the array of timing info
+    declare -gA command_durations=()
+}
+
+
+print_environment_details() {
+  begin_group "⚙️ Environment Details"
+
+  echo "pwd=$(pwd)"
+
+  print_var_values \
+      BUILD_DIR \
+      CXX_STANDARD \
+      CXX \
+      CUDACXX \
+      CUDAHOSTCXX \
+      NVCC_VERSION \
+      CMAKE_BUILD_PARALLEL_LEVEL \
+      CTEST_PARALLEL_LEVEL \
+      CCCL_BUILD_INFIX \
+      GLOBAL_CMAKE_OPTIONS
+
+  echo "Current commit is:"
+  git log -1 || echo "Not a repository"
+
+  if command -v nvidia-smi &> /dev/null; then
+    nvidia-smi
+  else
+    echo "nvidia-smi not found"
+  fi
+
+  end_group "⚙️ Environment Details"
+}
+
 
 function configure_preset()
 {
     local BUILD_NAME=$1
     local PRESET=$2
     local CMAKE_OPTIONS=$3
+    local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
     pushd .. > /dev/null
-
-    cmake --preset=$PRESET --log-level=VERBOSE $GLOBAL_CMAKE_OPTIONS $CMAKE_OPTIONS
-    echo "$BUILD_NAME configure complete."
-
+    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $GLOBAL_CMAKE_OPTIONS $CMAKE_OPTIONS
+    status=$?
     popd > /dev/null
+    return $status
 }
 
-function build_preset()
-{
+function build_preset() {
     local BUILD_NAME=$1
     local PRESET=$2
+    local green="1;32"
+    local red="1;31"
+    local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
 
     source "./sccache_stats.sh" "start"
+
     pushd .. > /dev/null
-
-    cmake --build --preset=$PRESET -v
-    echo "$BUILD_NAME build complete."
-
+    run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v
+    status=$?
     popd > /dev/null
-    source "./sccache_stats.sh" "end"
+
+    minimal_sccache_stats=$(source "./sccache_stats.sh" "end")
+
+    # Only print detailed stats in actions workflow
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        begin_group "💲 sccache stats"
+        echo "${minimal_sccache_stats}"
+        sccache -s
+        end_group
+
+        begin_group "🥷 ninja build times"
+        echo "The "weighted" time is the elapsed time of each build step divided by the number
+              of tasks that were running in parallel. This makes it an excellent approximation
+              of how "important" a slow step was. A link that is entirely or mostly serialized
+              will have a weighted time that is the same or similar to its elapsed time. A
+              compile that runs in parallel with 999 other compiles will have a weighted time
+              that is tiny."
+        ./ninja_summary.py -C ${BUILD_DIR}/${PRESET}
+        end_group
+    else
+      echo $minimal_sccache_stats
+    fi
+
+    return $status
 }
 
 function test_preset()
 {
     local BUILD_NAME=$1
     local PRESET=$2
+    local GROUP_NAME="🚀  Test ${BUILD_NAME}"
 
     pushd .. > /dev/null
-
-    ctest --preset=$PRESET
-    echo "$BUILD_NAME testing complete."
-
+    run_command "$GROUP_NAME" ctest --preset=$PRESET
+    status=$?
     popd > /dev/null
+    return $status
 }
 
 function configure_and_build_preset()

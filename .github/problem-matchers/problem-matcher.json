@@ -1,0 +1,14 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "nvcc",
+      "pattern": [
+        {
+          "regexp": "^\\/home\\/coder\\/(.+):(\\d+):(\\d+): (\\w+): \"(.+)\"$",
+          "severity": 4,
+          "message": 5
+        }
+      ]
+    }
+  ]
+}
