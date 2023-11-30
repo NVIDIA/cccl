@@ -339,11 +339,11 @@ struct DeviceBatchMemcpyPolicy
 };
 
 /**
- * @tparam InputBufferIt <b>[inferred]</b> Random-access input iterator type providing the pointers
+ * @tparam InputBufferIt **[inferred]** Random-access input iterator type providing the pointers
  * to the source memory buffers
- * @tparam OutputBufferIt <b>[inferred]</b> Random-access input iterator type providing the pointers
+ * @tparam OutputBufferIt **[inferred]** Random-access input iterator type providing the pointers
  * to the destination memory buffers
- * @tparam BufferSizeIteratorT <b>[inferred]</b> Random-access input iterator type providing the
+ * @tparam BufferSizeIteratorT **[inferred]** Random-access input iterator type providing the
  * number of bytes to be copied for each pair of buffers
  * @tparam BufferOffsetT Integer type large enough to hold any offset in [0, num_buffers)
  * @tparam BlockOffsetT Integer type large enough to hold any offset in [0,

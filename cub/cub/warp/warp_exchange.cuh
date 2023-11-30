@@ -73,7 +73,6 @@ using InternalWarpExchangeImpl =
 /**
  * @brief The WarpExchange class provides [<em>collective</em>](index.html#sec0)
  *        methods for rearranging data partitioned across a CUDA warp.
- * @ingroup WarpModule
  *
  * @tparam T
  *   The data type to be exchanged.

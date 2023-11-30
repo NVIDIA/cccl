@@ -276,7 +276,7 @@ private:
         BlockScan;
 
 
-    /// Shared memory storage layout type for BlockRadixRank
+    #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
     struct __align__(16) _TempStorage
     {
         union Aliasable
@@ -289,6 +289,7 @@ private:
         // Storage for scanning local ranks
         typename BlockScan::TempStorage block_scan;
     };
+    #endif // !DOXYGEN_SHOULD_SKIP_THIS
 
     /// Shared storage reference
     _TempStorage &temp_storage;
@@ -634,7 +635,7 @@ private:
         BlockScanT;
 
 
-    /// Shared memory storage layout type for BlockRadixRank
+    #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
     struct __align__(16) _TempStorage
     {
         typename BlockScanT::TempStorage            block_scan;
@@ -646,6 +647,7 @@ private:
 
         } aliasable;
     };
+    #endif // !DOXYGEN_SHOULD_SKIP_THIS
 
     /// Shared storage reference
     _TempStorage &temp_storage;
@@ -657,7 +659,7 @@ private:
 
 public:
 
-    /// @smemstorage{BlockScan}
+    /// @smemstorage{BlockRadixRankMatch}
     struct TempStorage : Uninitialized<_TempStorage> {};
 
 
@@ -957,9 +959,6 @@ struct BlockRadixRankMatchEarlyCounts
     // types
     typedef cub::BlockScan<int, BLOCK_THREADS, INNER_SCAN_ALGORITHM> BlockScan;
 
-
-
-    // temporary storage
     struct TempStorage
     {
         union

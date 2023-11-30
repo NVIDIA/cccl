@@ -62,13 +62,6 @@
 CUB_NAMESPACE_BEGIN
 
 /**
- * @addtogroup UtilIterator
- * @{
- */
-
-
-
-/**
  * @brief A random-access input wrapper for dereferencing array values through texture cache.
  *        Uses newer Kepler-style texture objects.
  *
@@ -340,9 +333,5 @@ private:
         return *reinterpret_cast<T *>(words);
     }
 };
-
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

@@ -60,11 +60,6 @@
 CUB_NAMESPACE_BEGIN
 
 /**
- * @addtogroup UtilIterator
- * @{
- */
-
-/**
  * @brief A random-access input wrapper for pairing dereferenced values with their corresponding
  *        indices (forming \p KeyValuePair tuples).
  *
@@ -276,9 +271,5 @@ public:
         return os;
     }
 };
-
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

@@ -9,6 +9,7 @@ CUB
    developer_overview
    test_overview
    tuning
+   benchmarking
 
 .. the line below can be used to use the README.md file as the index page
 .. .. mdinclude:: ../README.md

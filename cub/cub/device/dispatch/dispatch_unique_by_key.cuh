@@ -211,10 +211,10 @@ struct DispatchUniqueByKey : SelectedPolicy
     using ScanTileStateT = ScanTileState<OffsetT>;
 
     /// Device-accessible allocation of temporary storage.  When NULL, the required allocation size
-    /// is written to @p temp_storage_bytes and no work is done.
+    /// is written to `temp_storage_bytes` and no work is done.
     void *d_temp_storage;
 
-    /// Reference to size in bytes of @p d_temp_storage allocation
+    /// Reference to size in bytes of `d_temp_storage` allocation
     size_t &temp_storage_bytes;
 
     /// Pointer to the input sequence of keys
@@ -239,17 +239,17 @@ struct DispatchUniqueByKey : SelectedPolicy
     /// Total number of input items (i.e., length of @p d_keys_in or @p d_values_in)
     OffsetT num_items;
 
-    /// <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+    /// **[optional]** CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
     cudaStream_t stream;
 
     /**
      * @param[in] d_temp_storage
      *   Device-accessible allocation of temporary storage.
      *   When NULL, the required allocation size is written to
-     *   @p temp_storage_bytes and no work is done.
+     *   `temp_storage_bytes` and no work is done.
      *
      * @tparam temp_storage_bytes
-     *   [in,out] Reference to size in bytes of @p d_temp_storage allocation
+     *   [in,out] Reference to size in bytes of `d_temp_storage` allocation
      *
      * @param[in] d_keys_in
      *   Pointer to the input sequence of keys
@@ -274,7 +274,7 @@ struct DispatchUniqueByKey : SelectedPolicy
      *   Total number of input items (i.e., length of @p d_keys_in or @p d_values_in)
      *
      * @param[in] stream
-     *   <b>[optional]</b> CUDA stream to launch kernels within.
+     *   **[optional]** CUDA stream to launch kernels within.
      *   Default is stream<sub>0</sub>.
      */
     CUB_RUNTIME_FUNCTION __forceinline__ DispatchUniqueByKey(void *d_temp_storage,
@@ -538,10 +538,10 @@ struct DispatchUniqueByKey : SelectedPolicy
      * @param[in] d_temp_storage
      *   Device-accessible allocation of temporary storage.
      *   When NULL, the required allocation size is written to
-     *   @p temp_storage_bytes and no work is done.
+     *   `temp_storage_bytes` and no work is done.
      *
      * @param[in,out] &temp_storage_bytes
-     *   Reference to size in bytes of @p d_temp_storage allocation
+     *   Reference to size in bytes of `d_temp_storage` allocation
      *
      * @param[in] d_keys_in
      *   Pointer to the input sequence of keys
@@ -566,7 +566,7 @@ struct DispatchUniqueByKey : SelectedPolicy
      *   Total number of input items (i.e., the length of @p d_in)
      *
      * @param[in] stream
-     *   <b>[optional]</b> CUDA stream to launch kernels within.
+     *   **[optional]** CUDA stream to launch kernels within.
      *   Default is stream<sub>0</sub>.
      */
     CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t

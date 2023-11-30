@@ -129,7 +129,7 @@ __host__ __device__ void finalize_and_store_aggregate(OutputIteratorT d_out,
  *   Chained tuning policy
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
@@ -205,10 +205,10 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(ChainedPolicyT::ActivePolicy:
  *   Chained tuning policy
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam OutputIteratorT
- *   Output iterator type for recording the reduced aggregate \iterator
+ *   Output iterator type for recording the reduced aggregate @iterator
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
@@ -311,18 +311,18 @@ NormalizeReductionOutput(KeyValuePairT &val,
  *   Chained tuning policy
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam OutputIteratorT
- *   Output iterator type for recording the reduced aggregate \iterator
+ *   Output iterator type for recording the reduced aggregate @iterator
  *
  * @tparam BeginOffsetIteratorT
  *   Random-access input iterator type for reading segment beginning offsets
- *   \iterator
+ *   @iterator
  *
  * @tparam EndOffsetIteratorT
  *   Random-access input iterator type for reading segment ending offsets
- *   \iterator
+ *   @iterator
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
@@ -520,10 +520,10 @@ struct DeviceReducePolicy
  *        device-wide reduction
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam OutputIteratorT
- *   Output iterator type for recording the reduced aggregate \iterator
+ *   Output iterator type for recording the reduced aggregate @iterator
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
@@ -1016,10 +1016,10 @@ struct DispatchReduce : SelectedPolicy
  *        device-wide transpose reduce
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam OutputIteratorT
- *   Output iterator type for recording the reduced aggregate \iterator
+ *   Output iterator type for recording the reduced aggregate @iterator
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
@@ -1058,18 +1058,18 @@ using DispatchTransformReduce =
  *        device-wide reduction
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam OutputIteratorT
- *   Output iterator type for recording the reduced aggregate \iterator
+ *   Output iterator type for recording the reduced aggregate @iterator
  *
  * @tparam BeginOffsetIteratorT
  *   Random-access input iterator type for reading segment beginning offsets
- *   \iterator
+ *   @iterator
  *
  * @tparam EndOffsetIteratorT
  *   Random-access input iterator type for reading segment ending offsets
- *   \iterator
+ *   @iterator
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets

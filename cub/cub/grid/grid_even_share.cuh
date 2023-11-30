@@ -53,12 +53,6 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * @addtogroup GridModule
- * @{
- */
-
-
-/**
  * @brief GridEvenShare is a descriptor utility for distributing input among
  * CUDA thread blocks in an "even-share" fashion.  Each thread block gets roughly
  * the same number of input tiles.
@@ -225,8 +219,5 @@ public:
 
 };
 
-
-
-/** @} */       // end group GridModule
 
 CUB_NAMESPACE_END

@@ -65,12 +65,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-
-/**
- * \addtogroup UtilMgmt
- * @{
- */
-
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 namespace detail
@@ -859,9 +853,5 @@ struct ChainedPolicy<PTX_VERSION, PolicyT, PolicyT>
     }
 };
 
-
-
-
-/** @} */       // end group UtilMgmt
 
 CUB_NAMESPACE_END

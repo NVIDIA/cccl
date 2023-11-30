@@ -755,7 +755,7 @@ enum BlockLoadAlgorithm
 //!      using CUDA's built-in vectorized loads as a coalescing optimization.
 //!   #. :cpp:enumerator:`cub::BLOCK_LOAD_TRANSPOSE`:
 //!      A :ref:`striped arrangement <flexible-data-arrangement>` of data is read directly from memory and is then
-//!      locally transposed into a `blocked arrangement <flexible-data-arrangement>`.
+//!      locally transposed into a :ref:`blocked arrangement <flexible-data-arrangement>`.
 //!   #. :cpp:enumerator:`cub::BLOCK_LOAD_WARP_TRANSPOSE`:
 //!      A :ref:`warp-striped arrangement <flexible-data-arrangement>` of data is read directly from memory and is then
 //!      locally transposed into a :ref:`blocked arrangement <flexible-data-arrangement>`.

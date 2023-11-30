@@ -50,12 +50,6 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * \addtogroup GridModule
- * @{
- */
-
-
-/**
  * \brief GridBarrier implements a software global barrier among thread blocks within a CUDA grid
  */
 class GridBarrier
@@ -220,9 +214,6 @@ public:
         return retval;
     }
 };
-
-
-/** @} */       // end group GridModule
 
 CUB_NAMESPACE_END
 
