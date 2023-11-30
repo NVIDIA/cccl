@@ -35,6 +35,7 @@ pull_request:
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'gcc',  version: '10', exe: 'g++'},     std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'gcc',  version: '11', exe: 'g++'},     std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'gcc',  version: '12', exe: 'g++'},     std: [11, 14, 17, 20], jobs: ['build', 'test']}
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: {name: 'gcc',  version: '13', exe: 'g++'},     std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'arm64', compiler: {name: 'gcc',  version: '12', exe: 'g++'},     std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9',  exe: 'clang++'}, std: [11, 14, 17],     jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: {name: 'llvm', version: '9',  exe: 'clang++'}, std: [11, 14, 17],     jobs: ['build']}
