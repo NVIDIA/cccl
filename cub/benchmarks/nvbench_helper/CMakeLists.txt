@@ -1,5 +1,5 @@
 # Fetch nvbench
-CPMAddPackage("gh:NVIDIA/nvbench#39b2770b62ce1f4e0ebeb9af60d7c6de624633a5")
+CPMAddPackage("gh:NVIDIA/nvbench#main")
 
 add_library(nvbench_helper OBJECT nvbench_helper/nvbench_helper.cuh
                                   nvbench_helper/nvbench_helper.cu)
@@ -45,3 +45,4 @@ if (CUB_ENABLE_NVBENCH_HELPER_TESTS)
   add_nvbench_helper_test(cpp)
   add_nvbench_helper_test(cuda)
 endif()
+

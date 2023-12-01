@@ -220,7 +220,7 @@ void seg_sort(nvbench::state &state,
   thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch &launch) {
     cub::DoubleBuffer<key_t> keys     = d_keys;
     cub::DoubleBuffer<value_t> values = d_values;
 
@@ -255,7 +255,7 @@ NVBENCH_BENCH_TYPES(power_law, NVBENCH_TYPE_AXES(fundamental_types, some_offset_
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(22, 30, 4))
   .add_int64_power_of_two_axis("Segments{io}", nvbench::range(12, 20, 4))
-  .add_string_axis("Entropy", {"1.000", "0.544", "0.201"});
+  .add_string_axis("Entropy", {"1.000", "0.201"});
 
 
 template <class T, typename OffsetT>

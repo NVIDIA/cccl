@@ -45,7 +45,7 @@ static void scan(nvbench::state &state, nvbench::type_list<KeyT, ValueT>)
   state.add_global_memory_reads<ValueT>(elements);
   state.add_global_memory_writes<ValueT>(elements);
 
-  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
     thrust::exclusive_scan_by_key(keys.cbegin(), keys.cend(), in_vals.cbegin(), out_vals.begin());
   });
 }
