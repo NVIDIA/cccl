@@ -50,11 +50,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * @addtogroup UtilIo
- * @{
- */
-
 //-----------------------------------------------------------------------------
 // Tags and constants
 //-----------------------------------------------------------------------------
@@ -414,9 +409,6 @@ ThreadLoad(InputIteratorT itr)
 
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
-
-
-/** @} */       // end group UtilIo
 
 
 CUB_NAMESPACE_END

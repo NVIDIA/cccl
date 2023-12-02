@@ -682,7 +682,6 @@ private:
 /**
  * @brief The BlockMergeSort class provides methods for sorting items
  *        partitioned across a CUDA thread block using a merge sorting method.
- * @ingroup BlockModule
  *
  * @tparam KeyT
  *   KeyT type

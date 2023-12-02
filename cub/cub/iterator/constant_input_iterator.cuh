@@ -58,13 +58,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-
-/**
- * @addtogroup UtilIterator
- * @{
- */
-
-
 /**
  * @brief A random-access input generator for dereferencing a sequence of homogeneous values
  *
@@ -251,8 +244,5 @@ public:
     }
 
 };
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

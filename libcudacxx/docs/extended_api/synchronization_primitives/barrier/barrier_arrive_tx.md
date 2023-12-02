@@ -16,7 +16,7 @@ cuda::device::barrier_arrive_tx(
   ptrdiff_t transaction_count_update);
 ```
 
-Arrives at a barrier in shared memory, updating both the arrival count and
+Arrives at a barrier in shared memory, decrementing the arrival count and incrementing the expected
 transaction count.
 
 ## Preconditions
@@ -29,7 +29,7 @@ transaction count.
 ## Effects
 
 * This function constructs an arrival_token object associated with the phase
-  synchronization point for the current phase. Then, decrements the expected
+  synchronization point for the current phase. Then, decrements the
   arrival count by `arrive_count_update` and increments the expected transaction
   count by `transaction_count_update`.
 * This function executes atomically. The call to this function strongly

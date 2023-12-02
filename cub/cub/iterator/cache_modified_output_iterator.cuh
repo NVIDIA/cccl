@@ -60,12 +60,6 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * @addtogroup UtilIterator
- * @{
- */
-
-
-/**
  * @brief A random-access output wrapper for storing array values using a PTX cache-modifier.
  *
  * @par Overview
@@ -268,8 +262,5 @@ public:
         return os;
     }
 };
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END
