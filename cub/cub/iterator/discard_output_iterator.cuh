@@ -57,12 +57,6 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * @addtogroup UtilIterator
- * @{
- */
-
-
-/**
  * @brief A discard iterator
  */
 template <typename OffsetT = ptrdiff_t>
@@ -222,8 +216,5 @@ public:
     }
 
 };
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

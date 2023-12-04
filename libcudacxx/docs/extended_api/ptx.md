@@ -397,7 +397,7 @@ __global__ void __cluster_dims__(8, 1, 1) kernel()
   // Print received values:
   if (threadIdx.x == 0) {
     printf(
-      "[block %d] receive_buffer = {%d, %d, %d, %d}\n",
+      "[block %d] receive_buffer = { %d, %d, %d, %d }\n",
       cluster.block_rank(),
       receive_buffer[0], receive_buffer[1], receive_buffer[2], receive_buffer[3]
     );

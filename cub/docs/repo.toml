@@ -74,7 +74,8 @@ doxygen_aliases = [
   "warpstriped=Assumes a *warp-striped arrangement* of elements across threads, where warp\\ :sub:`i` owns the *i*\\ :sup:`th` range of (*warp-threads* * *items-per-thread*) contiguous items, and each thread owns items (*i*), (*i* + *warp-threads*), ..., (*i* + (*warp-threads* * (*items-per-thread* - 1))).",
   "linear_performance{1}=The work-complexity of \\1 as a function of input size is linear, resulting in performance throughput that plateaus with problem sizes large enough to saturate the GPU."  ,
   "plots_below=Performance plots for other scenarios can be found in the detailed method descriptions below.",
-  "identityzero=This operation assumes the value of obtained by the ``T``'s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value \"zero\" for addition."
+  "identityzero=This operation assumes the value of obtained by the ``T``'s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value \"zero\" for addition.",
+  "lookback=`decoupled look-back <https://research.nvidia.com/publication/single-pass-parallel-prefix-scan-decoupled-look-back>`_"
 ]
 
 # doxygen sometimes gets confused by macros. the array below allows the user to
@@ -101,7 +102,7 @@ doxygen_predefined = [
     "CUB_IGNORE_DEPRECATED_CPP_DIALECT"
 ]
 
-# make sure to use ./fetch_imgs.sh 
+# make sure to use ./fetch_imgs.sh
 doxygen_conf_extra = """
   IMAGE_PATH             = ${config_root}/img
   DOXYFILE_ENCODING      = UTF-8

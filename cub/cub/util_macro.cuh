@@ -49,11 +49,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * \addtogroup UtilModule
- * @{
- */
-
 #ifndef CUB_ALIGN
     #if defined(_WIN32) || defined(_WIN64)
         /// Align struct
@@ -66,6 +61,7 @@ CUB_NAMESPACE_BEGIN
 
 #define CUB_PREVENT_MACRO_SUBSTITUTION
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 template <typename T, typename U>
 constexpr __host__ __device__ auto min CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
                                                                       U &&u)
@@ -81,6 +77,7 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 {
   return t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t);
 }
+#endif
 
 #ifndef CUB_MAX
     /// Select maximum(a, b)
@@ -145,7 +142,5 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
                                     // variables with external linkage'
 #  endif
 #endif // !CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
-
-/** @} */       // end group UtilModule
 
 CUB_NAMESPACE_END

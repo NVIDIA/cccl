@@ -55,12 +55,6 @@
 CUB_NAMESPACE_BEGIN
 
 
-/**
- * @addtogroup UtilMgmt
- * @{
- */
-
-
 /******************************************************************************
  * CachingDeviceAllocator (host use)
  ******************************************************************************/
@@ -871,10 +865,5 @@ struct CachingDeviceAllocator
     }
 
 };
-
-
-
-
-/** @} */       // end group UtilMgmt
 
 CUB_NAMESPACE_END

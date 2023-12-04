@@ -48,12 +48,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * @addtogroup UtilIo
- * @{
- */
-
-
 //-----------------------------------------------------------------------------
 // Tags and constants
 //-----------------------------------------------------------------------------
@@ -413,9 +407,5 @@ __device__ __forceinline__ void ThreadStore(OutputIteratorT itr, T val)
 
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
-
-
-/** @} */       // end group UtilIo
-
 
 CUB_NAMESPACE_END

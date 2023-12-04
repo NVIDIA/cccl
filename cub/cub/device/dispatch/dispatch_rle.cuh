@@ -76,16 +76,16 @@ CUB_NAMESPACE_BEGIN
  *   Parameterized AgentRlePolicyT tuning policy type
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam OffsetsOutputIteratorT
- *   Random-access output iterator type for writing run-offset values \iterator
+ *   Random-access output iterator type for writing run-offset values @iterator
  *
  * @tparam LengthsOutputIteratorT
- *   Random-access output iterator type for writing run-length values \iterator
+ *   Random-access output iterator type for writing run-length values @iterator
  *
  * @tparam NumRunsOutputIteratorT
- *   Output iterator type for recording the number of runs encountered \iterator
+ *   Output iterator type for recording the number of runs encountered @iterator
  *
  * @tparam ScanTileStateT
  *   Tile status interface type
@@ -164,16 +164,16 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
  * Utility class for dispatching the appropriately-tuned kernels for DeviceRle
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam OffsetsOutputIteratorT
- *   Random-access output iterator type for writing run-offset values \iterator
+ *   Random-access output iterator type for writing run-offset values @iterator
  *
  * @tparam LengthsOutputIteratorT
- *   Random-access output iterator type for writing run-length values \iterator
+ *   Random-access output iterator type for writing run-length values @iterator
  *
  * @tparam NumRunsOutputIteratorT
- *   Output iterator type for recording the number of runs encountered \iterator
+ *   Output iterator type for recording the number of runs encountered @iterator
  *
  * @tparam EqualityOpT
  *   T equality operator type
@@ -502,7 +502,7 @@ struct DeviceRleDispatch
    *   Total number of input items (i.e., length of `d_in`)
    *
    * @param stream
-   *   <b>[optional]</b> CUDA stream to launch kernels within.
+   *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
   CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t

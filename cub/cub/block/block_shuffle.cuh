@@ -185,7 +185,7 @@ public:
     //! 
     //! - @smemreuse
     //!
-    //! @rst
+    //! @endrst
     //! 
     //! @param[in] input
     //!   The calling thread's input item
@@ -311,7 +311,7 @@ public:
 
     //! @rst 
     //! The thread block rotates its :ref:`blocked arrangement <flexible-data-arrangement>` of input items,
-    //! shifting it down by one item. All threads receive ``input[0]` provided by *thread*\ :sub:`0`.
+    //! shifting it down by one item. All threads receive ``input[0]`` provided by *thread*\ :sub:`0`.
     //! 
     //! - @blocked
     //! - @granularity

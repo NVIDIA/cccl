@@ -182,8 +182,6 @@ CUB_NAMESPACE_BEGIN
 //! This example can be easily adapted to the storage required by BlockRadixSort.
 //! @endrst
 //!
-//! @ingroup BlockModule
-//!
 //! @tparam KeyT
 //!   KeyT type
 //!
@@ -2230,9 +2228,5 @@ public:
     //@}  end member group
 
 };
-
-/**
- * \example example_block_radix_sort.cu
- */
 
 CUB_NAMESPACE_END
