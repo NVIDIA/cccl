@@ -33,22 +33,24 @@
 
 #pragma once
 
-#include "../../config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include "../../thread/thread_operators.cuh"
-#include "../../util_ptx.cuh"
-#include "../../util_type.cuh"
-
-#include <stdint.h>
+#include <cub/thread/thread_operators.cuh>
+#include <cub/util_ptx.cuh>
+#include <cub/util_type.cuh>
 
 #include <cuda/std/type_traits>
+
 #include <nv/target>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -146,7 +148,7 @@ struct WarpReduceShfl
     int warp_id;
 
     /// 32-thread physical warp member mask of logical warp
-    uint32_t member_mask;
+    ::cuda::std::uint32_t member_mask;
 
 
     //---------------------------------------------------------------------
@@ -357,7 +359,7 @@ struct WarpReduceShfl
     }
 
     /**
-     * @brief Reduction (specialized for swizzled ReduceByKeyOp<cub::Sum> across 
+     * @brief Reduction (specialized for swizzled ReduceByKeyOp<cub::Sum> across
      *        KeyValuePair<KeyT, ValueT> types)
      *
      * @param[in] input
@@ -490,7 +492,7 @@ struct WarpReduceShfl
     }
 
     /**
-     * @brief Reduction step (specialized for types other than small unsigned integers size 
+     * @brief Reduction step (specialized for types other than small unsigned integers size
      *        32b or less)
      *
      * @param[in] input
@@ -618,8 +620,8 @@ struct WarpReduceShfl
 
     template <class U = T>
     __device__ __forceinline__
-    typename std::enable_if<
-               (std::is_same<int, U>::value || std::is_same<unsigned int, U>::value)
+    typename ::cuda::std::enable_if<
+               (::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
             && detail::reduce_add_exists<>::value, T>::type
     ReduceImpl(Int2Type<1> /* all_lanes_valid */,
                T input,
@@ -640,8 +642,8 @@ struct WarpReduceShfl
 
     template <class U = T>
     __device__ __forceinline__
-    typename std::enable_if<
-               (std::is_same<int, U>::value || std::is_same<unsigned int, U>::value)
+    typename ::cuda::std::enable_if<
+               (::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
             && detail::reduce_min_exists<>::value, T>::type
     ReduceImpl(Int2Type<1> /* all_lanes_valid */,
                T input,
@@ -662,8 +664,8 @@ struct WarpReduceShfl
 
     template <class U = T>
     __device__ __forceinline__
-    typename std::enable_if<
-               (std::is_same<int, U>::value || std::is_same<unsigned int, U>::value)
+    typename ::cuda::std::enable_if<
+               (::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
             && detail::reduce_max_exists<>::value, T>::type
     ReduceImpl(Int2Type<1> /* all_lanes_valid */,
                T input,

@@ -41,8 +41,7 @@ update_devcontainer() {
        '.image = $image | .name = $name | .containerEnv.DEVCONTAINER_NAME = $name |
         .containerEnv.CCCL_BUILD_INFIX = $name |
         .containerEnv.CCCL_CUDA_VERSION = $cuda_version | .containerEnv.CCCL_HOST_COMPILER = $compiler_name |
-        .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version |
-        .containerEnv.CXX = $compiler_exe | .containerEnv.CUDAHOSTCXX = $compiler_exe' \
+        .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version '\
        "$input_file" > "$output_file"
 }
 

@@ -35,13 +35,15 @@
 
 #pragma once
 
-#include "../../config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/agent/agent_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
@@ -123,10 +125,10 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(ScanTileStateT tile_st
  *   Chained tuning policy
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading scan inputs \iterator
+ *   Random-access input iterator type for reading scan inputs @iterator
  *
  * @tparam OutputIteratorT
- *   Random-access output iterator type for writing scan outputs \iterator
+ *   Random-access output iterator type for writing scan outputs @iterator
  *
  * @tparam ScanTileStateT
  *   Tile status interface type
@@ -212,10 +214,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
  *        DeviceScan
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading scan inputs \iterator
+ *   Random-access input iterator type for reading scan inputs @iterator
  *
  * @tparam OutputIteratorT
- *   Random-access output iterator type for writing scan outputs \iterator
+ *   Random-access output iterator type for writing scan outputs @iterator
  *
  * @tparam ScanOpT
  *   Binary scan functor type having member

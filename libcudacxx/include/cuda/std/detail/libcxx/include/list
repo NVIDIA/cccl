@@ -190,11 +190,13 @@ template <class T, class Allocator, class Predicate>
 
 #include <__debug>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
@@ -1066,7 +1068,7 @@ public:
     __remove_return_type remove(const value_type& __x);
     template <class _Pred> __remove_return_type remove_if(_Pred __pred);
     _LIBCUDACXX_INLINE_VISIBILITY
-    __remove_return_type unique() { return unique(__equal_to<value_type>()); }
+    __remove_return_type unique() { return unique(__equal_to{}); }
     template <class _BinaryPred>
         __remove_return_type unique(_BinaryPred __binary_pred);
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -2193,7 +2195,7 @@ inline
 void
 list<_Tp, _Alloc>::merge(list& __c)
 {
-    merge(__c, __less<value_type>());
+    merge(__c, __less{});
 }
 
 template <class _Tp, class _Alloc>
@@ -2255,7 +2257,7 @@ inline
 void
 list<_Tp, _Alloc>::sort()
 {
-    sort(__less<value_type>());
+    sort(__less{});
 }
 
 template <class _Tp, class _Alloc>

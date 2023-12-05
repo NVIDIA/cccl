@@ -32,21 +32,22 @@
 #include <thrust/host_vector.h>
 
 #include <cstdint>
+#include <type_traits>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
-DECLARE_CDP_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
-DECLARE_CDP_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_inclusive_sum_by_key);
-DECLARE_CDP_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_inclusive_scan_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_inclusive_sum_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_inclusive_scan_by_key);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_TYPES types 0:1:2:3
 
 // List of types to test
@@ -121,7 +122,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
 
   // Generate input data
   thrust::device_vector<value_t> in_values(num_items);
-  c2h::gen(CUB_SEED(2), in_values);
+  c2h::gen(CUB_SEED(2), in_values, std::numeric_limits<value_t>::min());
   auto d_values_it = thrust::raw_pointer_cast(in_values.data());
 
 // Skip DeviceScan::InclusiveSum and DeviceScan::ExclusiveSum tests for extended floating-point
@@ -352,7 +353,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
 
   // Generate input data
   thrust::device_vector<value_t> in_values(num_items);
-  c2h::gen(CUB_SEED(2), in_values);
+  c2h::gen(CUB_SEED(2), in_values, std::numeric_limits<value_t>::min());
   auto d_values_it = thrust::raw_pointer_cast(in_values.data());
 
   SECTION("inclusive sum")
@@ -369,7 +370,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
 
     // Run test
     auto d_values_out_it = d_keys_it;
-    device_inclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items);
+    device_inclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items, cub::Equality{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);
@@ -390,7 +391,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
 
     // Run test
     auto d_values_out_it = d_keys_it;
-    device_exclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items);
+    device_exclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items, cub::Equality{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);
@@ -410,7 +411,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
 
     // Run test
     auto d_values_out_it = d_keys_it;
-    device_inclusive_scan_by_key(d_keys_it, d_values_it, d_values_out_it, op_t{}, num_items);
+    device_inclusive_scan_by_key(d_keys_it, d_values_it, d_values_out_it, op_t{}, num_items, cub::Equality{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);
@@ -440,7 +441,8 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
                                  d_values_out_it,
                                  scan_op,
                                  init_t{},
-                                 num_items);
+                                 num_items,
+                                 cub::Equality{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);

@@ -30,6 +30,10 @@ concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   compute-matrix:
     name: Compute matrix
@@ -42,7 +46,7 @@ jobs:
       PER_CUDA_COMPILER_MATRIX: ${{steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX}}
       NVRTC_MATRIX: ${{steps.set-outputs.outputs.NVRTC_MATRIX}}
       CLANG_CUDA_MATRIX: ${{steps.set-outputs.outputs.CLANG_CUDA_MATRIX}}
-      EXAMPLES_MATRIX: ${{steps.set-outputs.outputs.EXAMPLES_MATRIX}}
+      CCCL_INFRA_MATRIX: ${{steps.set-outputs.outputs.CCCL_INFRA_MATRIX}}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -53,6 +57,9 @@ jobs:
 
   nvrtc:
     name: NVRTC CUDA${{matrix.cuda}} C++${{matrix.std}}
+    permissions:
+      id-token: write
+      contents: read
     needs: compute-matrix
     if: ${{ !contains(github.event.head_commit.message, 'skip-tests') }}
     uses: ./.github/workflows/run-as-coder.yml
@@ -69,6 +76,9 @@ jobs:
 
   thrust:
     name: Thrust CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+    permissions:
+      id-token: write
+      contents: read
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
@@ -84,6 +94,9 @@ jobs:
 
   cub:
     name: CUB CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+    permissions:
+      id-token: write
+      contents: read
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
@@ -99,6 +112,9 @@ jobs:
 
   libcudacxx:
     name: libcudacxx CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+    permissions:
+      id-token: write
+      contents: read
     needs: compute-matrix
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
@@ -114,6 +130,9 @@ jobs:
 
   clang-cuda:
     name: ${{matrix.lib}} ${{matrix.cpu}}/CTK${{matrix.cuda}}/clang-cuda
+    permissions:
+      id-token: write
+      contents: read
     needs: compute-matrix
     strategy:
       fail-fast: false
@@ -129,12 +148,15 @@ jobs:
 
   cccl-infra:
     name: CCCL Infrastructure
+    permissions:
+      id-token: write
+      contents: read
     needs: compute-matrix
     if: ${{ !contains(github.event.head_commit.message, 'skip-tests') }}
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.compute-matrix.outputs.EXAMPLES_MATRIX) }}
+        include: ${{ fromJSON(needs.compute-matrix.outputs.CCCL_INFRA_MATRIX) }}
     uses: ./.github/workflows/run-as-coder.yml
     with:
       name: CCCL Examples CUDA${{matrix.cuda}} ${{matrix.compiler.name}}${{matrix.compiler.version}}
@@ -146,6 +168,9 @@ jobs:
 
   verify-devcontainers:
     name: Verify Dev Containers
+    permissions:
+      id-token: write
+      contents: read
     uses: ./.github/workflows/verify-devcontainers.yml
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
@@ -154,7 +179,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     name: CI
-    if: ${{ always() }} # need to use always() instead of !cancelled() because skipped jobs count as success 
+    if: ${{ always() }} # need to use always() instead of !cancelled() because skipped jobs count as success
     needs:
       - clang-cuda
       - cub

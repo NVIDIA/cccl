@@ -1,6 +1,6 @@
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/NVIDIA/cccl?quickstart=1&devcontainer_path=.devcontainer%2Fdevcontainer.json)
 
-|[Contributor Guide](https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md)|[Dev Containers](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md)|[Discord](https://discord.gg/nvidiadeveloper)|[Godbolt](https://godbolt.org/z/x4G73af9a)|[GitHub Project](https://github.com/orgs/NVIDIA/projects/6)|[libcudacxx Docs](https://nvidia.github.io/libcudacxx/)|[Thrust Docs](https://nvidia.github.io/thrust/)|[CUB Docs](https://nvlabs.github.io/cub/)| 
+|[Contributor Guide](https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md)|[Dev Containers](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md)|[Discord](https://discord.gg/nvidiadeveloper)|[Godbolt](https://godbolt.org/z/x4G73af9a)|[GitHub Project](https://github.com/orgs/NVIDIA/projects/6)|[libcudacxx Docs](https://nvidia.github.io/cccl/libcudacxx/)|[Thrust Docs](https://nvidia.github.io/cccl/thrust/)|[CUB Docs](https://nvidia.github.io/cccl/cub/)|
 |-|-|-|-|-|-|-|-|
 
 # CUDA C++ Core Libraries (CCCL)
@@ -122,7 +122,7 @@ If compiling with another compiler, you will need to update your build system's 
 
 #### GitHub
 
-Users that want to stay on the cutting edge of CCCL development are encouraged to use CCCL from GitHub.
+Users who want to stay on the cutting edge of CCCL development are encouraged to use CCCL from GitHub.
 Using a newer version of CCCL with an older version of the CUDA Toolkit is supported, but not the other way around.
 For complete information on compatibility between CCCL and the CUDA Toolkit, see [our platform support](#platform-support).
 
@@ -234,7 +234,7 @@ For more information about our CI pipeline, see [here](ci-overview.md).
 
 ## Versioning
 
-**Objective:** This section describes how CCCL is versioned, API/ABI stability guarantees, and compatibility guideliness to minimize upgrade headaches.
+**Objective:** This section describes how CCCL is versioned, API/ABI stability guarantees, and compatibility guidelines to minimize upgrade headaches.
 
 **Summary**
 - The entirety of CCCL's API shares a common semantic version across all components
@@ -284,20 +284,22 @@ Anything not part of the public API may change at any time without warning.
 
 #### API Versioning
 
-The entirety of CCCL's public API across all components shares a common semantic version of `MAJOR.MINOR.PATCH`.
+The public API of all CCCL's components share a unified semantic version of `MAJOR.MINOR.PATCH`.
 
 Only the most recently released version is supported.
 As a rule, features and bug fixes are not backported to previously released version or branches.
 
-For historical reasons, the library versions are encoded separately in each of Thrust/CUB/libcudacxx as follows:
+The preferred method for querying the version is to use `CCCL_[MAJOR/MINOR/PATCH_]VERSION` as described below.
+For backwards compatibility, the Thrust/CUB/libcudacxxx version definitions are available and will always be consistent with `CCCL_VERSION`.
+Note that Thrust/CUB use a `MMMmmmpp` scheme whereas the CCCL and libcudacxx use `MMMmmmppp`.
 
-|                        | libcudacxx                                | Thrust                        | CUB                        | Incremented when?                                                  |
-|------------------------|-------------------------------------------|-------------------------------|----------------------------|--------------------------------------------------------------------|
-| Header                 | `<cuda/std/version>`                      | `<thrust/version.h>`          | `<cub/version.h>`          | -                                                                  |
-| Major Version          | `_LIBCUDACXX_CUDA_API_VERSION_MAJOR`      | `THRUST_MAJOR_VERSION`        | `CUB_MAJOR_VERSION`        | Public API breaking changes (only at new CTK major release)        |
-| Minor Version          | `_LIBCUDACXX_CUDA_API_VERSION_MINOR`      | `THRUST_MINOR_VERSION`        | `CUB_MINOR_VERSION`        | Non-breaking feature additions                                     |
-| Patch/Subminor Version | `_LIBCUDACXX_CUDA_API_VERSION_PATCH`      | `THRUST_SUBMINOR_VERSION`     | `CUB_SUBMINOR_VERSION`     | Minor changes not covered by major/minor versions                  |
-| Concatenated Version   | `_LIBCUDACXX_CUDA_API_VERSION (MMMmmmppp)`| `THRUST_VERSION (MMMmmmpp)`   | `CUB_VERSION (MMMmmmpp)`   | -                                                                  |
+|                        | CCCL                                   | libcudacxx                                | Thrust                       | CUB                       |
+|------------------------|----------------------------------------|-------------------------------------------|------------------------------|---------------------------|
+| Header                 | `<cuda/version>`                       | `<cuda/std/version>`                      | `<thrust/version.h>`         | `<cub/version.h>`         |
+| Major Version          | `CCCL_MAJOR_VERSION`                   | `_LIBCUDACXX_CUDA_API_VERSION_MAJOR`      | `THRUST_MAJOR_VERSION`       | `CUB_MAJOR_VERSION`       |
+| Minor Version          | `CCCL_MINOR_VERSION`                   | `_LIBCUDACXX_CUDA_API_VERSION_MINOR`      | `THRUST_MINOR_VERSION`       | `CUB_MINOR_VERSION`       |
+| Patch/Subminor Version | `CCCL_PATCH_VERSION`                   | `_LIBCUDACXX_CUDA_API_VERSION_PATCH`      | `THRUST_SUBMINOR_VERSION`    | `CUB_SUBMINOR_VERSION`    |
+| Concatenated Version   | `CCCL_VERSION (MMMmmmppp)`             | `_LIBCUDACXX_CUDA_API_VERSION (MMMmmmppp)`| `THRUST_VERSION (MMMmmmpp)`  | `CUB_VERSION (MMMmmmpp)`  |
 
 ### Application Binary Interface (ABI)
 
@@ -376,7 +378,7 @@ For a detailed overview of the CI pipeline, see [ci-overview.md](ci-overview.md)
 Projects that are related to CCCL's mission to make CUDA C++ more delightful:
 - [cuCollections](https://github.com/NVIDIA/cuCollections) - GPU accelerated data structures like hash tables
 - [NVBench](https://github.com/NVIDIA/nvbench) - Benchmarking library tailored for CUDA applications
-- [stdexec](https://github.com/nvidia/stdexec) - Reference implementation for Senders asynchronous programming model 
+- [stdexec](https://github.com/nvidia/stdexec) - Reference implementation for Senders asynchronous programming model
 
 ## Projects Using CCCL
 
@@ -402,7 +404,7 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [QUDA](https://github.com/lattice/quda) - Lattice quantum chromodynamics (QCD) computations
 - [RAFT](https://github.com/rapidsai/raft) - Algorithms and primitives for machine learning
 - [TensorFlow](https://github.com/tensorflow/tensorflow) - End-to-end platform for machine learning
-- [TensorRT](https://github.com/NVIDIA/TensorRT) - Deep leaning inference
+- [TensorRT](https://github.com/NVIDIA/TensorRT) - Deep learning inference
 - [tsne-cuda](https://github.com/CannyLab/tsne-cuda) - Stochastic Neighborhood Embedding library
 - [Visualization Toolkit (VTK)](https://gitlab.kitware.com/vtk/vtk) - Rendering and visualization library
 - [XGBoost](https://github.com/dmlc/xgboost) - Gradient boosting machine learning algorithms

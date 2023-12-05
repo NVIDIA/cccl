@@ -35,25 +35,28 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include <stdint.h>
+#include <cub/block/block_exchange.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_store.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_type.cuh>
+
 #include <type_traits>
 
-#include <cub/thread/thread_load.cuh>
-#include <cub/block/block_load.cuh>
-#include <cub/block/block_store.cuh>
-#include <cub/block/block_radix_rank.cuh>
-#include <cub/block/block_exchange.cuh>
-#include <cub/block/radix_rank_sort_operations.cuh>
-#include <cub/util_type.cuh>
-#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <stdint.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -130,7 +133,7 @@ struct AgentRadixSortDownsweepPolicy : ScalingType
 
 
 /**
- * @brief AgentRadixSortDownsweep implements a stateful abstraction of CUDA thread blocks for participating in 
+ * @brief AgentRadixSortDownsweep implements a stateful abstraction of CUDA thread blocks for participating in
  *        device-wide radix sort downsweep .
  *
  * @tparam AgentRadixSortDownsweepPolicy

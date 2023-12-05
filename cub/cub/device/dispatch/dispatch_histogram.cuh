@@ -35,13 +35,15 @@
 
 #pragma once
 
-#include "../../config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/detail/cpp_compatibility.cuh>
@@ -137,7 +139,7 @@ DeviceHistogramInitKernel(ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_output_bins
  *   Number of channels actively being histogrammed
  *
  * @tparam SampleIteratorT
- *   The input iterator type. \iterator.
+ *   The input iterator type. @iterator.
  *
  * @tparam CounterT
  *   Integer type for counting sample occurrences per histogram bin
@@ -563,7 +565,7 @@ struct dispatch_histogram
  *   Number of channels actively being histogrammed
  *
  * @tparam SampleIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam CounterT
  *   Integer type for counting sample occurrences per histogram bin

@@ -33,19 +33,27 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include <iterator>
-#include <iostream>
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_store.cuh>
 
-#include "../thread/thread_load.cuh"
-#include "../thread/thread_store.cuh"
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  include <iostream>
+#  include <iterator>
+#else
+#  include <cuda/std/iterator>
+#endif
+
+#include <cuda/std/iterator>
 
 #if (THRUST_VERSION >= 100700)
     // This iterator is compatible with Thrust API 1.7 and newer
@@ -55,11 +63,6 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 
 CUB_NAMESPACE_BEGIN
-
-/**
- * @addtogroup UtilIterator
- * @{
- */
 
 /**
  * @brief A random-access input generator for dereferencing a sequence of incrementing integer values.
@@ -87,10 +90,10 @@ CUB_NAMESPACE_BEGIN
  *
  * @endcode
  *
- * @tparam ValueType            
+ * @tparam ValueType
  *   The value type of this iterator
  *
- * @tparam OffsetT              
+ * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <
@@ -117,20 +120,20 @@ public:
     /// The type of a reference to an element the iterator can point to
     typedef ValueType reference;
 
-#if (THRUST_VERSION >= 100700)
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  if (THRUST_VERSION >= 100700)
     // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
-
-    /// The iterator category
-    typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
-        THRUST_NS_QUALIFIER::any_system_tag,
-        THRUST_NS_QUALIFIER::random_access_traversal_tag,
-        value_type,
-        reference
-      >::type iterator_category;                                        
-#else
-    /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;      
-#endif  // THRUST_VERSION
+    using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
+      THRUST_NS_QUALIFIER::any_system_tag,
+      THRUST_NS_QUALIFIER::random_access_traversal_tag,
+      value_type,
+      reference >::type;
+#  else // THRUST_VERSION < 100700
+    using iterator_category = std::random_access_iterator_tag;
+#  endif // THRUST_VERSION
+#else // defined(_LIBCUDACXX_COMPILER_NVRTC)
+    using iterator_category = ::cuda::std::random_access_iterator_tag;
+#endif // defined(_LIBCUDACXX_COMPILER_NVRTC)
 
 private:
 
@@ -230,16 +233,14 @@ public:
     }
 
     /// ostream operator
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
     friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
     {
         os << "[" << itr.val << "]";
         return os;
     }
+#endif
 
 };
-
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

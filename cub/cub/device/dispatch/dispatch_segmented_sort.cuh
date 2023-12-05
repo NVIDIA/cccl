@@ -27,13 +27,15 @@
 
 #pragma once
 
-#include "../../config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/agent/agent_segmented_radix_sort.cuh>
 #include <cub/agent/agent_sub_warp_merge_sort.cuh>
@@ -94,12 +96,12 @@ CUB_NAMESPACE_BEGIN
  *
  * @param[in] d_begin_offsets
  *   Random-access input iterator to the sequence of beginning offsets of length
- *   @p num_segments, such that `d_begin_offsets[i]` is the first element of the
+ *   `num_segments`, such that `d_begin_offsets[i]` is the first element of the
  *   i-th data segment in `d_keys_*` and `d_values_*`
  *
  * @param[in] d_end_offsets
  *   Random-access input iterator to the sequence of ending offsets of length
- *   @p num_segments, such that `d_end_offsets[i]-1` is the last element of the
+ *   `num_segments`, such that `d_end_offsets[i]-1` is the last element of the
  *   i-th data segment in `d_keys_*` and `d_values_*`.
  *   If `d_end_offsets[i]-1 <= d_begin_offsets[i]`, the i-th segment is
  *   considered empty.
@@ -289,12 +291,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
  *
  * @param[in] d_begin_offsets
  *   Random-access input iterator to the sequence of beginning offsets of length
- *   @p num_segments, such that `d_begin_offsets[i]` is the first element of the
+ *   `num_segments`, such that `d_begin_offsets[i]` is the first element of the
  *   <em>i</em><sup>th</sup> data segment in `d_keys_*` and `d_values_*`
  *
  * @param[in] d_end_offsets
  *   Random-access input iterator to the sequence of ending offsets of length
- *   @p num_segments, such that `d_end_offsets[i]-1` is the last element of the
+ *   `num_segments`, such that `d_end_offsets[i]-1` is the last element of the
  *   <em>i</em><sup>th</sup> data segment in `d_keys_*` and `d_values_*`. If
  *   `d_end_offsets[i]-1 <= d_begin_offsets[i]`, the <em>i</em><sup>th</sup> is
  *   considered empty.
@@ -418,12 +420,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
  *
  * @param[in] d_begin_offsets
  *   Random-access input iterator to the sequence of beginning offsets of length
- *   @p num_segments, such that `d_begin_offsets[i]` is the first element of the
+ *   `num_segments`, such that `d_begin_offsets[i]` is the first element of the
  *   <em>i</em><sup>th</sup> data segment in `d_keys_*` and `d_values_*`
  *
  * @param[in] d_end_offsets
  *   Random-access input iterator to the sequence of ending offsets of length
- *   @p num_segments, such that `d_end_offsets[i]-1` is the last element of the
+ *   `num_segments`, such that `d_end_offsets[i]-1` is the last element of the
  *   <em>i</em><sup>th</sup> data segment in `d_keys_*` and `d_values_*`. If
  *   `d_end_offsets[i]-1 <= d_begin_offsets[i]`, the <em>i</em><sup>th</sup> is
  *   considered empty.
@@ -1149,12 +1151,12 @@ struct DispatchSegmentedSort : SelectedPolicy
 
   /**
    * Device-accessible allocation of temporary storage. When `nullptr`, the
-   * required allocation size is written to @p temp_storage_bytes and no work
+   * required allocation size is written to `temp_storage_bytes` and no work
    * is done.
    */
   void *d_temp_storage;
 
-  /// Reference to size in bytes of @p d_temp_storage allocation
+  /// Reference to size in bytes of `d_temp_storage` allocation
   std::size_t &temp_storage_bytes;
 
   /**
@@ -1177,14 +1179,14 @@ struct DispatchSegmentedSort : SelectedPolicy
 
   /**
    * Random-access input iterator to the sequence of beginning offsets of length
-   * @p num_segments, such that `d_begin_offsets[i]` is the first element of the
+   * `num_segments`, such that `d_begin_offsets[i]` is the first element of the
    * <em>i</em><sup>th</sup> data segment in `d_keys_*` and `d_values_*`
    */
   BeginOffsetIteratorT d_begin_offsets;
 
   /**
    * Random-access input iterator to the sequence of ending offsets of length
-   * @p num_segments, such that <tt>d_end_offsets[i]-1</tt> is the last element
+   * `num_segments`, such that <tt>d_end_offsets[i]-1</tt> is the last element
    * of the <em>i</em><sup>th</sup> data segment in `d_keys_*` and
    * `d_values_*`. If `d_end_offsets[i]-1 <= d_begin_offsets[i]`,
    * the <em>i</em><sup>th</sup> is considered empty.

@@ -33,25 +33,22 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include <iterator>
+#include <cub/util_ptx.cuh>
+#include <cub/util_type.cuh>
 
-#include "../util_ptx.cuh"
-#include "../util_type.cuh"
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
-
-/**
- * @addtogroup UtilIo
- * @{
- */
 
 //-----------------------------------------------------------------------------
 // Tags and constants
@@ -77,7 +74,7 @@ enum CacheLoadModifier
  */
 
 /**
- * @brief Thread utility for reading memory using cub::CacheLoadModifier cache modifiers.  
+ * @brief Thread utility for reading memory using cub::CacheLoadModifier cache modifiers.
  *        Can be used to load any data type.
  *
  * @par Example
@@ -102,10 +99,10 @@ enum CacheLoadModifier
  * TestFoo val = cub::ThreadLoad<cub::LOAD_CS>(d_in + threadIdx.x);
  * \endcode
  *
- * @tparam MODIFIER             
+ * @tparam MODIFIER
  *   <b>[inferred]</b> CacheLoadModifier enumeration
  *
- * @tparam InputIteratorT       
+ * @tparam InputIteratorT
  *   <b>[inferred]</b> Input iterator type \iterator
  */
 template <CacheLoadModifier MODIFIER,
@@ -343,7 +340,7 @@ __device__ __forceinline__ T ThreadLoadVolatilePointer(
     Int2Type<false>         /*is_primitive*/)
 {
     // Word type for memcopying
-    typedef typename UnitWord<T>::VolatileWord VolatileWord;   
+    typedef typename UnitWord<T>::VolatileWord VolatileWord;
 
     constexpr int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
 
@@ -406,15 +403,12 @@ ThreadLoad(InputIteratorT itr)
     return ThreadLoad(
         itr,
         Int2Type<MODIFIER>(),
-        Int2Type<std::is_pointer<InputIteratorT>::value>());
+        Int2Type<::cuda::std::is_pointer<InputIteratorT>::value>());
 }
 
 
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
-
-
-/** @} */       // end group UtilIo
 
 
 CUB_NAMESPACE_END

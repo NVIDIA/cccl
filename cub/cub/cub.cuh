@@ -34,81 +34,83 @@
 #pragma once
 
 // Static configuration
-#include "config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 // Block
-#include "block/block_adjacent_difference.cuh"
-#include "block/block_discontinuity.cuh"
-#include "block/block_exchange.cuh"
-#include "block/block_histogram.cuh"
-#include "block/block_load.cuh"
-#include "block/block_merge_sort.cuh"
-#include "block/block_radix_rank.cuh"
-#include "block/block_radix_sort.cuh"
-#include "block/block_reduce.cuh"
-#include "block/block_scan.cuh"
-#include "block/block_store.cuh"
-//#include "block/block_shift.cuh"
+#include <cub/block/block_adjacent_difference.cuh>
+#include <cub/block/block_discontinuity.cuh>
+#include <cub/block/block_exchange.cuh>
+#include <cub/block/block_histogram.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_merge_sort.cuh>
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_radix_sort.cuh>
+#include <cub/block/block_reduce.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/block/block_store.cuh>
+// #include <cub/block/block_shift.cuh>
 
 // Device
-#include "device/device_adjacent_difference.cuh"
-#include "device/device_copy.cuh"
-#include "device/device_histogram.cuh"
-#include "device/device_memcpy.cuh"
-#include "device/device_merge_sort.cuh"
-#include "device/device_partition.cuh"
-#include "device/device_radix_sort.cuh"
-#include "device/device_reduce.cuh"
-#include "device/device_run_length_encode.cuh"
-#include "device/device_scan.cuh"
-#include "device/device_segmented_radix_sort.cuh"
-#include "device/device_segmented_reduce.cuh"
-#include "device/device_segmented_sort.cuh"
-#include "device/device_select.cuh"
-#include "device/device_spmv.cuh"
+#include <cub/device/device_adjacent_difference.cuh>
+#include <cub/device/device_copy.cuh>
+#include <cub/device/device_histogram.cuh>
+#include <cub/device/device_memcpy.cuh>
+#include <cub/device/device_merge_sort.cuh>
+#include <cub/device/device_partition.cuh>
+#include <cub/device/device_radix_sort.cuh>
+#include <cub/device/device_reduce.cuh>
+#include <cub/device/device_run_length_encode.cuh>
+#include <cub/device/device_scan.cuh>
+#include <cub/device/device_segmented_radix_sort.cuh>
+#include <cub/device/device_segmented_reduce.cuh>
+#include <cub/device/device_segmented_sort.cuh>
+#include <cub/device/device_select.cuh>
+#include <cub/device/device_spmv.cuh>
 
 // Grid
-//#include "grid/grid_barrier.cuh"
-#include "grid/grid_even_share.cuh"
-#include "grid/grid_mapping.cuh"
-#include "grid/grid_queue.cuh"
+// #include <cub/grid/grid_barrier.cuh>
+#include <cub/grid/grid_even_share.cuh>
+#include <cub/grid/grid_mapping.cuh>
+#include <cub/grid/grid_queue.cuh>
 
 // Thread
-#include "thread/thread_load.cuh"
-#include "thread/thread_operators.cuh"
-#include "thread/thread_reduce.cuh"
-#include "thread/thread_scan.cuh"
-#include "thread/thread_store.cuh"
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_operators.cuh>
+#include <cub/thread/thread_reduce.cuh>
+#include <cub/thread/thread_scan.cuh>
+#include <cub/thread/thread_store.cuh>
 
 // Warp
-#include "warp/warp_exchange.cuh"
-#include "warp/warp_load.cuh"
-#include "warp/warp_merge_sort.cuh"
-#include "warp/warp_reduce.cuh"
-#include "warp/warp_scan.cuh"
-#include "warp/warp_store.cuh"
+#include <cub/warp/warp_exchange.cuh>
+#include <cub/warp/warp_load.cuh>
+#include <cub/warp/warp_merge_sort.cuh>
+#include <cub/warp/warp_reduce.cuh>
+#include <cub/warp/warp_scan.cuh>
+#include <cub/warp/warp_store.cuh>
 
 // Iterator
-#include "iterator/arg_index_input_iterator.cuh"
-#include "iterator/cache_modified_input_iterator.cuh"
-#include "iterator/cache_modified_output_iterator.cuh"
-#include "iterator/constant_input_iterator.cuh"
-#include "iterator/counting_input_iterator.cuh"
-#include "iterator/discard_output_iterator.cuh"
-#include "iterator/tex_obj_input_iterator.cuh"
-#include "iterator/tex_ref_input_iterator.cuh"
-#include "iterator/transform_input_iterator.cuh"
+#include <cub/iterator/arg_index_input_iterator.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/iterator/cache_modified_output_iterator.cuh>
+#include <cub/iterator/constant_input_iterator.cuh>
+#include <cub/iterator/counting_input_iterator.cuh>
+#include <cub/iterator/discard_output_iterator.cuh>
+#include <cub/iterator/tex_obj_input_iterator.cuh>
+#include <cub/iterator/tex_ref_input_iterator.cuh>
+#include <cub/iterator/transform_input_iterator.cuh>
 
 // Util
-#include "util_allocator.cuh"
-#include "util_debug.cuh"
-#include "util_device.cuh"
-#include "util_ptx.cuh"
-#include "util_temporary_storage.cuh"
-#include "util_type.cuh"
+#include <cub/util_allocator.cuh>
+#include <cub/util_debug.cuh>
+#include <cub/util_device.cuh>
+#include <cub/util_ptx.cuh>
+#include <cub/util_temporary_storage.cuh>
+#include <cub/util_type.cuh>

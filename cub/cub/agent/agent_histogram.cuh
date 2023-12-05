@@ -33,20 +33,22 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/block/block_load.cuh>
+#include <cub/grid/grid_queue.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/util_type.cuh>
 
 #include <iterator>
-
-#include "../util_type.cuh"
-#include "../block/block_load.cuh"
-#include "../grid/grid_queue.cuh"
-#include "../iterator/cache_modified_input_iterator.cuh"
 
 CUB_NAMESPACE_BEGIN
 
@@ -266,7 +268,7 @@ struct AgentHistogram
     struct _TempStorage
     {
         // Smem needed for block-privatized smem histogram (with 1 word of padding)
-        CounterT histograms[NUM_ACTIVE_CHANNELS][PRIVATIZED_SMEM_BINS + 1];     
+        CounterT histograms[NUM_ACTIVE_CHANNELS][PRIVATIZED_SMEM_BINS + 1];
 
         int tile_idx;
 
@@ -274,10 +276,10 @@ struct AgentHistogram
         union Aliasable
         {
             // Smem needed for loading a tile of samples
-            typename BlockLoadSampleT::TempStorage sample_load;     
+            typename BlockLoadSampleT::TempStorage sample_load;
 
             // Smem needed for loading a tile of pixels
-            typename BlockLoadPixelT::TempStorage pixel_load;       
+            typename BlockLoadPixelT::TempStorage pixel_load;
 
             // Smem needed for loading a tile of vecs
             typename BlockLoadVecT::TempStorage vec_load;
@@ -650,7 +652,7 @@ struct AgentHistogram
 
     /**
      * @brief Consume a tile of data samples
-     * 
+     *
      * @tparam IS_ALIGNED
      *   Whether the tile offset is aligned (vec-aligned for single-channel, pixel-aligned for multi-channel)
      *
@@ -691,17 +693,17 @@ struct AgentHistogram
 
     /**
      * @brief Consume row tiles. Specialized for work-stealing from queue
-     * 
-     * @param num_row_pixels 
-     *   The number of multi-channel pixels per row in the region of interest 
      *
-     * @param num_rows 
+     * @param num_row_pixels
+     *   The number of multi-channel pixels per row in the region of interest
+     *
+     * @param num_rows
      *   The number of rows in the region of interest
      *
-     * @param row_stride_samples 
+     * @param row_stride_samples
      *   The number of samples between starts of consecutive rows in the region of interest
      *
-     * @param tiles_per_row 
+     * @param tiles_per_row
      *   Number of image tiles per row
      */
     template <bool IS_ALIGNED>
@@ -752,17 +754,17 @@ struct AgentHistogram
 
     /**
      * @brief Consume row tiles.  Specialized for even-share (striped across thread blocks)
-     * 
-     * @param num_row_pixels 
+     *
+     * @param num_row_pixels
      *   The number of multi-channel pixels per row in the region of interest
      *
-     * @param num_rows 
+     * @param num_rows
      *   The number of rows in the region of interest
      *
-     * @param row_stride_samples 
+     * @param row_stride_samples
      *   The number of samples between starts of consecutive rows in the region of interest
      *
-     * @param tiles_per_row 
+     * @param tiles_per_row
      *   Number of image tiles per row
      */
     template <bool IS_ALIGNED>
@@ -829,10 +831,10 @@ struct AgentHistogram
     /**
      * @brief Constructor
      *
-     * @param temp_storage 
+     * @param temp_storage
      *   Reference to temp_storage
      *
-     * @param d_samples 
+     * @param d_samples
      *   Input data to reduce
      *
      * @param num_output_bins

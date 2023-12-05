@@ -12,6 +12,8 @@ search.heading_level: 4
 
 incremental: true
 
+baseurl: "cccl/thrust"
+
 # just-the-docs ignores these filenames by default.
 include: [ "contributing.md", "code_of_conduct.md" ]
 
@@ -19,6 +21,7 @@ exclude: [ "node_modules", "doxybook_templates",
            "generate_markdown.bash", "serve_docs_locally.bash" ]
 
 plugins:
+  - jekyll-remote-theme
   - jekyll-optional-front-matter # GitHub Pages.
   - jekyll-default-layout        # GitHub Pages.
   - jekyll-titles-from-headings  # GitHub Pages.

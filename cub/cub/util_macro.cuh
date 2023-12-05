@@ -32,13 +32,15 @@
 
 #pragma once
 
-#include "version.cuh"
+#include <cuda/__cccl_config>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/util_namespace.cuh>
@@ -46,11 +48,6 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
-
-/**
- * \addtogroup UtilModule
- * @{
- */
 
 #ifndef CUB_ALIGN
     #if defined(_WIN32) || defined(_WIN64)
@@ -64,6 +61,7 @@ CUB_NAMESPACE_BEGIN
 
 #define CUB_PREVENT_MACRO_SUBSTITUTION
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 template <typename T, typename U>
 constexpr __host__ __device__ auto min CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
                                                                       U &&u)
@@ -79,6 +77,7 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 {
   return t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t);
 }
+#endif
 
 #ifndef CUB_MAX
     /// Select maximum(a, b)
@@ -132,11 +131,13 @@ constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 #if !defined(CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
-#if !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#  if !defined(_CCCL_CUDA_COMPILER_NVHPC)
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
-#endif // !_CCCL_CUDA_COMPILER_NVHPC
+#  endif // !_CCCL_CUDA_COMPILER_NVHPC
+#  if defined(_CCCL_COMPILER_ICC) || defined(_CCCL_COMPILER_ICC_LLVM)
+#    pragma warning(disable : 1890) // the "__visibility__" attribute can only appear on functions and
+                                    // variables with external linkage'
+#  endif
 #endif // !CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
-
-/** @} */       // end group UtilModule
 
 CUB_NAMESPACE_END

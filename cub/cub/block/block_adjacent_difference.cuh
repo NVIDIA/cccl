@@ -26,109 +26,101 @@
  *
  ******************************************************************************/
 
-/**
- * @file
- * The cub::BlockAdjacentDifference class provides
- * [<em>collective</em>](index.html#sec0) methods for computing the differences
- * of adjacent elements partitioned across a CUDA thread block.
- */
+//! @file The cub::BlockAdjacentDifference class provides collective methods for computing 
+//! the differences of adjacent elements partitioned across a CUDA thread block.
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include "../util_type.cuh"
-#include "../util_ptx.cuh"
+#include <cub/util_ptx.cuh>
+#include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * @brief BlockAdjacentDifference provides
- *        [<em>collective</em>](index.html#sec0) methods for computing the
- *        differences of adjacent elements partitioned across a CUDA thread
- *        block.
- *
- * @ingroup BlockModule
- *
- * @par Overview
- * - BlockAdjacentDifference calculates the differences of adjacent elements in
- *   the elements partitioned across a CUDA thread block. Because the binary
- *   operation could be noncommutative, there are two sets of methods.
- *   Methods named SubtractLeft subtract left element `i - 1` of input sequence
- *   from current element `i`. Methods named SubtractRight subtract the right element `i + 1`
- *   from the current one `i`:
- *   @par
- *   @code
- *   int values[4]; // [1, 2, 3, 4]
- *   //...
- *   int subtract_left_result[4];  <-- [  1,  1,  1,  1 ]
- *   int subtract_right_result[4]; <-- [ -1, -1, -1,  4 ]
- *   @endcode
- * - For SubtractLeft, if the left element is out of bounds, the
- *   input value is assigned to `output[0]` without modification.
- * - For SubtractRight, if the right element is out of bounds, the input value
- *   is assigned to the current output value without modification.
- * - The following example under the examples/block folder illustrates usage of
- *   dynamically shared memory with BlockReduce and how to re-purpose
- *   the same memory region:
- *   <a href="../../examples/block/example_block_reduce_dyn_smem.cu">example_block_reduce_dyn_smem.cu</a>
- *   This example can be easily adapted to the storage required by
- *   BlockAdjacentDifference.
- *
- * @par Snippet
- * The code snippet below illustrates how to use @p BlockAdjacentDifference to
- * compute the left difference between adjacent elements.
- *
- * @par
- * @code
- * #include <cub/cub.cuh>
- * // or equivalently <cub/block/block_adjacent_difference.cuh>
- *
- * struct CustomDifference
- * {
- *   template <typename DataType>
- *   __device__ DataType operator()(DataType &lhs, DataType &rhs)
- *   {
- *     return lhs - rhs;
- *   }
- * };
- *
- * __global__ void ExampleKernel(...)
- * {
- *     // Specialize BlockAdjacentDifference for a 1D block of
- *     // 128 threads of type int
- *     using BlockAdjacentDifferenceT =
- *        cub::BlockAdjacentDifference<int, 128>;
- *
- *     // Allocate shared memory for BlockAdjacentDifference
- *     __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
- *
- *     // Obtain a segment of consecutive items that are blocked across threads
- *     int thread_data[4];
- *     ...
- *
- *     // Collectively compute adjacent_difference
- *     int result[4];
- *
- *     BlockAdjacentDifferenceT(temp_storage).SubtractLeft(
- *         thread_data,
- *         result,
- *         CustomDifference());
- *
- * @endcode
- * @par
- * Suppose the set of input `thread_data` across the block of threads is
- * <tt>{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }</tt>.
- * The corresponding output `result` in those threads will be
- * <tt>{ [4,-2,-1,0], [0,0,0,0], [1,1,0,0], [0,1,-3,3], ... }</tt>.
- *
- */
+//! @rst
+//! BlockAdjacentDifference provides :ref:`collective <collective-primitives>` methods for computing the
+//! differences of adjacent elements partitioned across a CUDA thread block.
+//! 
+//! Overview
+//! ++++++++++++++++
+//! 
+//! BlockAdjacentDifference calculates the differences of adjacent elements in the elements partitioned across a CUDA 
+//! thread block. Because the binary operation could be noncommutative, there are two sets of methods.
+//! Methods named SubtractLeft subtract left element ``i - 1`` of input sequence from current element ``i``. 
+//! Methods named SubtractRight subtract the right element ``i + 1`` from the current one ``i``:
+//!
+//! .. code-block:: c++
+//!
+//!    int values[4]; // [1, 2, 3, 4]
+//!    //...
+//!    int subtract_left_result[4];  <-- [  1,  1,  1,  1 ]
+//!    int subtract_right_result[4]; <-- [ -1, -1, -1,  4 ]
+//!
+//! - For SubtractLeft, if the left element is out of bounds, the input value is assigned to ``output[0]`` 
+//!   without modification.
+//! - For SubtractRight, if the right element is out of bounds, the input value is assigned to the current output value
+//!   without modification.
+//! - The block/example_block_reduce_dyn_smem.cu example under the examples/block folder illustrates usage of 
+//!   dynamically shared memory with BlockReduce and how to re-purpose the same memory region.
+//!   This example can be easily adapted to the storage required by BlockAdjacentDifference.
+//! 
+//! A Simple Example
+//! ++++++++++++++++
+//!
+//! The code snippet below illustrates how to use BlockAdjacentDifference to
+//! compute the left difference between adjacent elements.
+//! 
+//! .. code-block:: c++
+//!
+//!    #include <cub/cub.cuh>
+//!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+//! 
+//!    struct CustomDifference
+//!    {
+//!      template <typename DataType>
+//!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+//!      {
+//!        return lhs - rhs;
+//!      }
+//!    };
+//! 
+//!    __global__ void ExampleKernel(...)
+//!    {
+//!        // Specialize BlockAdjacentDifference for a 1D block of
+//!        // 128 threads of type int
+//!        using BlockAdjacentDifferenceT =
+//!           cub::BlockAdjacentDifference<int, 128>;
+//! 
+//!        // Allocate shared memory for BlockAdjacentDifference
+//!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+//! 
+//!        // Obtain a segment of consecutive items that are blocked across threads
+//!        int thread_data[4];
+//!        ...
+//! 
+//!        // Collectively compute adjacent_difference
+//!        int result[4];
+//! 
+//!        BlockAdjacentDifferenceT(temp_storage).SubtractLeft(
+//!            thread_data,
+//!            result,
+//!            CustomDifference());
+//! 
+//! Suppose the set of input `thread_data` across the block of threads is
+//! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
+//! The corresponding output ``result`` in those threads will be
+//! ``{ [4,-2,-1,0], [0,0,0,0], [1,1,0,0], [0,1,-3,3], ... }``.
+//!
+//! @endrst
 template <typename T,
           int BLOCK_DIM_X,
           int BLOCK_DIM_Y     = 1,
@@ -137,13 +129,6 @@ template <typename T,
 class BlockAdjacentDifference
 {
 private:
-
-    /***************************************************************************
-     * Constants and type definitions
-     **************************************************************************/
-
-    /// Constants
-
     /// The thread block size in threads
     static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
 
@@ -153,11 +138,6 @@ private:
         T first_items[BLOCK_THREADS];
         T last_items[BLOCK_THREADS];
     };
-
-
-    /***************************************************************************
-     * Utility methods
-     **************************************************************************/
 
     /// Internal storage allocator
     __device__ __forceinline__ _TempStorage& PrivateStorage()
@@ -251,10 +231,6 @@ private:
         }
     };
 
-    /***************************************************************************
-     * Thread fields
-     **************************************************************************/
-
     /// Shared storage reference
     _TempStorage &temp_storage;
 
@@ -264,103 +240,89 @@ private:
 
 public:
 
-    /// \smemstorage{BlockAdjacentDifference}
+    /// @smemstorage{BlockAdjacentDifference}
     struct TempStorage : Uninitialized<_TempStorage> {};
 
+    //! @name Collective constructors
+    //! @{
 
-    /***********************************************************************//**
-     * @name Collective constructors
-     **************************************************************************/
-    //@{
-
-    /**
-     * @brief Collective constructor using a private static allocation of shared
-     *        memory as temporary storage.
-     */
+    //! @brief Collective constructor using a private static allocation of shared memory as temporary storage
     __device__ __forceinline__ BlockAdjacentDifference()
         : temp_storage(PrivateStorage())
         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
 
-    /**
-     * @brief Collective constructor using the specified memory allocation as
-     *        temporary storage.
-     *
-     * @param[in] temp_storage Reference to memory allocation having layout type TempStorage
-     */
+    //! @brief Collective constructor using the specified memory allocation as temporary storage
+    //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
     __device__ __forceinline__ BlockAdjacentDifference(TempStorage &temp_storage)
         : temp_storage(temp_storage.Alias())
         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
 
-    //@}  end member group
-    /***********************************************************************//**
-     * @name Read left operations
-     **************************************************************************/
-    //@{
+    //! @} end member group
+    //! @name Read left operations
+    //! @{
 
-    /**
-     * @brief Subtracts the left element of each adjacent pair of elements
-     *        partitioned across a CUDA thread block.
-     *
-     * @par
-     * - \rowmajor
-     * - \smemreuse
-     *
-     * @par Snippet
-     * The code snippet below illustrates how to use @p BlockAdjacentDifference
-     * to compute the left difference between adjacent elements.
-     *
-     * @par
-     * @code
-     * #include <cub/cub.cuh>
-     * // or equivalently <cub/block/block_adjacent_difference.cuh>
-     *
-     * struct CustomDifference
-     * {
-     *   template <typename DataType>
-     *   __device__ DataType operator()(DataType &lhs, DataType &rhs)
-     *   {
-     *     return lhs - rhs;
-     *   }
-     * };
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockAdjacentDifference for a 1D block
-     *     // of 128 threads of type int
-     *     using BlockAdjacentDifferenceT =
-     *        cub::BlockAdjacentDifference<int, 128>;
-     *
-     *     // Allocate shared memory for BlockAdjacentDifference
-     *     __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_data[4];
-     *     ...
-     *
-     *     // Collectively compute adjacent_difference
-     *     BlockAdjacentDifferenceT(temp_storage).SubtractLeft(
-     *         thread_data,
-     *         thread_data,
-     *         CustomDifference());
-     *
-     * @endcode
-     * @par
-     * Suppose the set of input `thread_data` across the block of threads is
-     * `{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }`.
-     * The corresponding output `result` in those threads will be
-     * `{ [4,-2,-1,0], [0,0,0,0], [1,1,0,0], [0,1,-3,3], ... }`.
-     *
-     * @param[out] output
-     *   Calling thread's adjacent difference result
-     *
-     * @param[in] input
-     *   Calling thread's input items (may be aliased to @p output)
-     *
-     * @param[in] difference_op
-     *   Binary difference operator
-     */
+    //! @rst
+    //! Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.
+    //!
+    //! - @rowmajor
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the left difference between
+    //! adjacent elements.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>
+    //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+    //!
+    //!    struct CustomDifference
+    //!    {
+    //!      template <typename DataType>
+    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      {
+    //!        return lhs - rhs;
+    //!      }
+    //!    };
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockAdjacentDifference for a 1D block
+    //!        // of 128 threads of type int
+    //!        using BlockAdjacentDifferenceT =
+    //!           cub::BlockAdjacentDifference<int, 128>;
+    //!
+    //!        // Allocate shared memory for BlockAdjacentDifference
+    //!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+    //!
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_data[4];
+    //!        ...
+    //!
+    //!        // Collectively compute adjacent_difference
+    //!        BlockAdjacentDifferenceT(temp_storage).SubtractLeft(
+    //!            thread_data,
+    //!            thread_data,
+    //!            CustomDifference());
+    //!
+    //! Suppose the set of input ``thread_data`` across the block of threads is
+    //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
+    //! The corresponding output ``result`` in those threads will be
+    //! ``{ [4,-2,-1,0], [0,0,0,0], [1,1,0,0], [0,1,-3,3], ... }``.
+    //! @endrst
+    //!
+    //! @param[out] output
+    //!   Calling thread's adjacent difference result
+    //!
+    //! @param[in] input
+    //!   Calling thread's input items (may be aliased to `output`)
+    //!
+    //! @param[in] difference_op
+    //!   Binary difference operator
     template <int ITEMS_PER_THREAD,
               typename OutputType,
               typename DifferenceOpT>
@@ -391,78 +353,77 @@ public:
       }
     }
 
-    /**
-     * @brief Subtracts the left element of each adjacent pair of elements
-     *        partitioned across a CUDA thread block.
-     *
-     * @par
-     * - \rowmajor
-     * - \smemreuse
-     *
-     * @par Snippet
-     * The code snippet below illustrates how to use @p BlockAdjacentDifference
-     * to compute the left difference between adjacent elements.
-     *
-     * @par
-     * @code
-     * #include <cub/cub.cuh>
-     * // or equivalently <cub/block/block_adjacent_difference.cuh>
-     *
-     * struct CustomDifference
-     * {
-     *   template <typename DataType>
-     *   __device__ DataType operator()(DataType &lhs, DataType &rhs)
-     *   {
-     *     return lhs - rhs;
-     *   }
-     * };
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockAdjacentDifference for a 1D block of
-     *     // 128 threads of type int
-     *     using BlockAdjacentDifferenceT =
-     *        cub::BlockAdjacentDifference<int, 128>;
-     *
-     *     // Allocate shared memory for BlockAdjacentDifference
-     *     __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_data[4];
-     *     ...
-     *
-     *     // The last item in the previous tile:
-     *     int tile_predecessor_item = ...;
-     *
-     *     // Collectively compute adjacent_difference
-     *     BlockAdjacentDifferenceT(temp_storage).SubtractLeft(
-     *         thread_data,
-     *         thread_data,
-     *         CustomDifference(),
-     *         tile_predecessor_item);
-     *
-     * @endcode
-     * @par
-     * Suppose the set of input `thread_data` across the block of threads is
-     * `{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }`.
-     * and that `tile_predecessor_item` is `3`. The corresponding output
-     * `result` in those threads will be
-     * `{ [1,-2,-1,0], [0,0,0,0], [1,1,0,0], [0,1,-3,3], ... }`.
-     *
-     * @param[out] output
-     *   Calling thread's adjacent difference result
-     *
-     * @param[in] input
-     *   Calling thread's input items (may be aliased to \p output)
-     *
-     * @param[in] difference_op
-     *   Binary difference operator
-     *
-     * @param[in] tile_predecessor_item
-     *   <b>[<em>thread</em><sub>0</sub> only]</b> item which is going to be
-     *   subtracted from the first tile item (<tt>input<sub>0</sub></tt> from
-     *   <em>thread</em><sub>0</sub>).
-     */
+    //! @rst
+    //! Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.
+    //!
+    //! - @rowmajor
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the left difference between
+    //! adjacent elements.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>
+    //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+    //!
+    //!    struct CustomDifference
+    //!    {
+    //!      template <typename DataType>
+    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      {
+    //!        return lhs - rhs;
+    //!      }
+    //!    };
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockAdjacentDifference for a 1D block of
+    //!        // 128 threads of type int
+    //!        using BlockAdjacentDifferenceT =
+    //!           cub::BlockAdjacentDifference<int, 128>;
+    //!
+    //!        // Allocate shared memory for BlockAdjacentDifference
+    //!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+    //!
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_data[4];
+    //!        ...
+    //!
+    //!        // The last item in the previous tile:
+    //!        int tile_predecessor_item = ...;
+    //!
+    //!        // Collectively compute adjacent_difference
+    //!        BlockAdjacentDifferenceT(temp_storage).SubtractLeft(
+    //!            thread_data,
+    //!            thread_data,
+    //!            CustomDifference(),
+    //!            tile_predecessor_item);
+    //!
+    //! Suppose the set of input ``thread_data`` across the block of threads is
+    //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
+    //! and that `tile_predecessor_item` is `3`. The corresponding output
+    //! ``result`` in those threads will be
+    //! ``{ [1,-2,-1,0], [0,0,0,0], [1,1,0,0], [0,1,-3,3], ... }``.
+    //! @endrst
+    //!
+    //! @param[out] output
+    //!   Calling thread's adjacent difference result
+    //!
+    //! @param[in] input
+    //!   Calling thread's input items (may be aliased to `output`)
+    //!
+    //! @param[in] difference_op
+    //!   Binary difference operator
+    //!
+    //! @param[in] tile_predecessor_item
+    //!   @rst
+    //!   *thread*\ :sub:`0` only item which is going to be subtracted from the first tile item 
+    //!   (*input*\ :sub:`0` from *thread*\ :sub:`0`).
+    //!   @endrst
     template <int ITEMS_PER_THREAD,
               typename OutputT,
               typename DifferenceOpT>
@@ -495,73 +456,71 @@ public:
       }
     }
 
-    /**
-     * @brief Subtracts the left element of each adjacent pair of elements
-     *        partitioned across a CUDA thread block.
-     *
-     * @par
-     * - \rowmajor
-     * - \smemreuse
-     *
-     * @par Snippet
-     * The code snippet below illustrates how to use @p BlockAdjacentDifference
-     * to compute the left difference between adjacent elements.
-     *
-     * @par
-     * @code
-     * #include <cub/cub.cuh>
-     * // or equivalently <cub/block/block_adjacent_difference.cuh>
-     *
-     * struct CustomDifference
-     * {
-     *   template <typename DataType>
-     *   __device__ DataType operator()(DataType &lhs, DataType &rhs)
-     *   {
-     *     return lhs - rhs;
-     *   }
-     * };
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *   // Specialize BlockAdjacentDifference for a 1D block of
-     *   // 128 threads of type int
-     *   using BlockAdjacentDifferenceT =
-     *      cub::BlockAdjacentDifference<int, 128>;
-     *
-     *   // Allocate shared memory for BlockAdjacentDifference
-     *   __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
-     *
-     *   // Obtain a segment of consecutive items that are blocked across threads
-     *   int thread_data[4];
-     *   ...
-     *   int valid_items = 9;
-     *
-     *   // Collectively compute adjacent_difference
-     *   BlockAdjacentDifferenceT(temp_storage).SubtractLeftPartialTile(
-     *       thread_data,
-     *       thread_data,
-     *       CustomDifference(),
-     *       valid_items);
-     *
-     * @endcode
-     * @par
-     * Suppose the set of input `thread_data` across the block of threads is
-     * `{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }`.
-     * The corresponding output `result` in those threads will be
-     * `{ [4,-2,-1,0], [0,0,0,0], [1,3,3,3], [3,4,1,4], ... }`.
-     *
-     * @param[out] output
-     *   Calling thread's adjacent difference result
-     *
-     * @param[in] input
-     *   Calling thread's input items (may be aliased to \p output)
-     *
-     * @param[in] difference_op
-     *   Binary difference operator
-     *
-     * @param[in] valid_items
-     *   Number of valid items in thread block
-     */
+    //! @rst
+    //! Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.
+    //!
+    //! - @rowmajor
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the left difference between
+    //! adjacent elements.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>
+    //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+    //!
+    //!    struct CustomDifference
+    //!    {
+    //!      template <typename DataType>
+    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      {
+    //!        return lhs - rhs;
+    //!      }
+    //!    };
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!      // Specialize BlockAdjacentDifference for a 1D block of
+    //!      // 128 threads of type int
+    //!      using BlockAdjacentDifferenceT =
+    //!         cub::BlockAdjacentDifference<int, 128>;
+    //!
+    //!      // Allocate shared memory for BlockAdjacentDifference
+    //!      __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+    //!
+    //!      // Obtain a segment of consecutive items that are blocked across threads
+    //!      int thread_data[4];
+    //!      ...
+    //!      int valid_items = 9;
+    //!
+    //!      // Collectively compute adjacent_difference
+    //!      BlockAdjacentDifferenceT(temp_storage).SubtractLeftPartialTile(
+    //!          thread_data,
+    //!          thread_data,
+    //!          CustomDifference(),
+    //!          valid_items);
+    //!
+    //! Suppose the set of input ``thread_data`` across the block of threads is
+    //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
+    //! The corresponding output ``result`` in those threads will be
+    //! ``{ [4,-2,-1,0], [0,0,0,0], [1,3,3,3], [3,4,1,4], ... }``.
+    //! @endrst
+    //!
+    //! @param[out] output
+    //!   Calling thread's adjacent difference result
+    //!
+    //! @param[in] input
+    //!   Calling thread's input items (may be aliased to `output`)
+    //!
+    //! @param[in] difference_op
+    //!   Binary difference operator
+    //!
+    //! @param[in] valid_items
+    //!   Number of valid items in thread block
     template <int ITEMS_PER_THREAD,
               typename OutputType,
               typename DifferenceOpT>
@@ -613,80 +572,80 @@ public:
       }
     }
 
-    /**
-     * @brief Subtracts the left element of each adjacent pair of elements
-     *        partitioned across a CUDA thread block.
-     *
-     * @par
-     * - \rowmajor
-     * - \smemreuse
-     *
-     * @par Snippet
-     * The code snippet below illustrates how to use @p BlockAdjacentDifference
-     * to compute the left difference between adjacent elements.
-     *
-     * @par
-     * @code
-     * #include <cub/cub.cuh>
-     * // or equivalently <cub/block/block_adjacent_difference.cuh>
-     *
-     * struct CustomDifference
-     * {
-     *   template <typename DataType>
-     *   __device__ DataType operator()(DataType &lhs, DataType &rhs)
-     *   {
-     *     return lhs - rhs;
-     *   }
-     * };
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *   // Specialize BlockAdjacentDifference for a 1D block of
-     *   // 128 threads of type int
-     *   using BlockAdjacentDifferenceT =
-     *      cub::BlockAdjacentDifference<int, 128>;
-     *
-     *   // Allocate shared memory for BlockAdjacentDifference
-     *   __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
-     *
-     *   // Obtain a segment of consecutive items that are blocked across threads
-     *   int thread_data[4];
-     *   ...
-     *   int valid_items = 9;
-     *   int tile_predecessor_item = 4;
-     *
-     *   // Collectively compute adjacent_difference
-     *   BlockAdjacentDifferenceT(temp_storage).SubtractLeftPartialTile(
-     *       thread_data,
-     *       thread_data,
-     *       CustomDifference(),
-     *       valid_items,
-     *       tile_predecessor_item);
-     *
-     * @endcode
-     * @par
-     * Suppose the set of input `thread_data` across the block of threads is
-     * `{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }`.
-     * The corresponding output `result` in those threads will be
-     * `{ [0,-2,-1,0], [0,0,0,0], [1,3,3,3], [3,4,1,4], ... }`.
-     *
-     * @param[out] output
-     *   Calling thread's adjacent difference result
-     *
-     * @param[in] input
-     *   Calling thread's input items (may be aliased to \p output)
-     *
-     * @param[in] difference_op
-     *   Binary difference operator
-     *
-     * @param[in] valid_items
-     *   Number of valid items in thread block
-     *
-     * @param[in] tile_predecessor_item
-     *   **[<em>thread</em><sub>0</sub> only]** item which is going to be
-     *   subtracted from the first tile item (<tt>input<sub>0</sub></tt> from
-     *   <em>thread</em><sub>0</sub>).
-     */
+    //! @rst
+    //! Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.
+    //!
+    //! - @rowmajor
+    //! - @smemreuse
+    //!
+    //!
+    //! Snippet
+    //! +++++++
+    //! 
+    //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the left difference between
+    //! adjacent elements.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>
+    //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+    //!
+    //!    struct CustomDifference
+    //!    {
+    //!      template <typename DataType>
+    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      {
+    //!        return lhs - rhs;
+    //!      }
+    //!    };
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!      // Specialize BlockAdjacentDifference for a 1D block of
+    //!      // 128 threads of type int
+    //!      using BlockAdjacentDifferenceT =
+    //!         cub::BlockAdjacentDifference<int, 128>;
+    //!
+    //!      // Allocate shared memory for BlockAdjacentDifference
+    //!      __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+    //!
+    //!      // Obtain a segment of consecutive items that are blocked across threads
+    //!      int thread_data[4];
+    //!      ...
+    //!      int valid_items = 9;
+    //!      int tile_predecessor_item = 4;
+    //!
+    //!      // Collectively compute adjacent_difference
+    //!      BlockAdjacentDifferenceT(temp_storage).SubtractLeftPartialTile(
+    //!          thread_data,
+    //!          thread_data,
+    //!          CustomDifference(),
+    //!          valid_items,
+    //!          tile_predecessor_item);
+    //!
+    //! Suppose the set of input ``thread_data`` across the block of threads is
+    //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
+    //! The corresponding output ``result`` in those threads will be
+    //! ``{ [0,-2,-1,0], [0,0,0,0], [1,3,3,3], [3,4,1,4], ... }``.
+    //! @endrst
+    //!
+    //! @param[out] output
+    //!   Calling thread's adjacent difference result
+    //!
+    //! @param[in] input
+    //!   Calling thread's input items (may be aliased to `output`)
+    //!
+    //! @param[in] difference_op
+    //!   Binary difference operator
+    //!
+    //! @param[in] valid_items
+    //!   Number of valid items in thread block
+    //!
+    //! @param[in] tile_predecessor_item
+    //!   @rst
+    //!   *thread*\ :sub:`0` only item which is going to be subtracted from the first tile item 
+    //!   (*input*\ :sub:`0` from *thread*\ :sub:`0`).
+    //!   @endrst
     template <int ITEMS_PER_THREAD,
               typename OutputType,
               typename DifferenceOpT>
@@ -744,74 +703,71 @@ public:
       }
     }
 
-    //@}  end member group
-    /******************************************************************//**
-     * @name Read right operations
-     *********************************************************************/
-    //@{
-
-    /**
-     * @brief Subtracts the right element of each adjacent pair of elements
-     *        partitioned across a CUDA thread block.
-     *
-     * @par
-     * - \rowmajor
-     * - \smemreuse
-     *
-     * @par Snippet
-     * The code snippet below illustrates how to use @p BlockAdjacentDifference
-     * to compute the right difference between adjacent elements.
-     *
-     * @par
-     * @code
-     * #include <cub/cub.cuh>
-     * // or equivalently <cub/block/block_adjacent_difference.cuh>
-     *
-     * struct CustomDifference
-     * {
-     *   template <typename DataType>
-     *   __device__ DataType operator()(DataType &lhs, DataType &rhs)
-     *   {
-     *     return lhs - rhs;
-     *   }
-     * };
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockAdjacentDifference for a 1D block of
-     *     // 128 threads of type int
-     *     using BlockAdjacentDifferenceT =
-     *        cub::BlockAdjacentDifference<int, 128>;
-     *
-     *     // Allocate shared memory for BlockAdjacentDifference
-     *     __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_data[4];
-     *     ...
-     *
-     *     // Collectively compute adjacent_difference
-     *     BlockAdjacentDifferenceT(temp_storage).SubtractRight(
-     *         thread_data,
-     *         thread_data,
-     *         CustomDifference());
-     *
-     * @endcode
-     * @par
-     * Suppose the set of input `thread_data` across the block of threads is
-     * `{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }`.
-     * The corresponding output `result` in those threads will be
-     * `{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,0,0], [-1,3,-3,4] }`.
-     *
-     * @param[out] output
-     *   Calling thread's adjacent difference result
-     *
-     * @param[in] input
-     *   Calling thread's input items (may be aliased to \p output)
-     *
-     * @param[in] difference_op
-     *   Binary difference operator
-     */
+    //! @} end member group
+    //! @name Read right operations
+    //! @{
+    //!
+    //! @rst
+    //! 
+    //! Subtracts the right element of each adjacent pair of elements partitioned across a CUDA thread block.
+    //! 
+    //! - @rowmajor
+    //! - @smemreuse
+    //! 
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the right difference between
+    //! adjacent elements.
+    //! 
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>
+    //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+    //! 
+    //!    struct CustomDifference
+    //!    {
+    //!      template <typename DataType>
+    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      {
+    //!        return lhs - rhs;
+    //!      }
+    //!    };
+    //! 
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockAdjacentDifference for a 1D block of
+    //!        // 128 threads of type int
+    //!        using BlockAdjacentDifferenceT =
+    //!           cub::BlockAdjacentDifference<int, 128>;
+    //! 
+    //!        // Allocate shared memory for BlockAdjacentDifference
+    //!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+    //! 
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_data[4];
+    //!        ...
+    //! 
+    //!        // Collectively compute adjacent_difference
+    //!        BlockAdjacentDifferenceT(temp_storage).SubtractRight(
+    //!            thread_data,
+    //!            thread_data,
+    //!            CustomDifference());
+    //! 
+    //! Suppose the set of input ``thread_data`` across the block of threads is
+    //! ``{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }``.
+    //! The corresponding output ``result`` in those threads will be
+    //! ``{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,0,0], [-1,3,-3,4] }``.
+    //! @endrst
+    //! 
+    //! @param[out] output
+    //!   Calling thread's adjacent difference result
+    //! 
+    //! @param[in] input
+    //!   Calling thread's input items (may be aliased to `output`)
+    //! 
+    //! @param[in] difference_op
+    //!   Binary difference operator
     template <int ITEMS_PER_THREAD,
               typename OutputT,
               typename DifferenceOpT>
@@ -843,79 +799,78 @@ public:
       }
     }
 
-    /**
-     * @brief Subtracts the right element of each adjacent pair of elements
-     *        partitioned across a CUDA thread block.
-     *
-     * @par
-     * - \rowmajor
-     * - \smemreuse
-     *
-     * @par Snippet
-     * The code snippet below illustrates how to use @p BlockAdjacentDifference
-     * to compute the right difference between adjacent elements.
-     *
-     * @par
-     * @code
-     * #include <cub/cub.cuh>
-     * // or equivalently <cub/block/block_adjacent_difference.cuh>
-     *
-     * struct CustomDifference
-     * {
-     *   template <typename DataType>
-     *   __device__ DataType operator()(DataType &lhs, DataType &rhs)
-     *   {
-     *     return lhs - rhs;
-     *   }
-     * };
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockAdjacentDifference for a 1D block of
-     *     // 128 threads of type int
-     *     using BlockAdjacentDifferenceT =
-     *        cub::BlockAdjacentDifference<int, 128>;
-     *
-     *     // Allocate shared memory for BlockAdjacentDifference
-     *     __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_data[4];
-     *     ...
-     *
-     *     // The first item in the next tile:
-     *     int tile_successor_item = ...;
-     *
-     *     // Collectively compute adjacent_difference
-     *     BlockAdjacentDifferenceT(temp_storage).SubtractRight(
-     *         thread_data,
-     *         thread_data,
-     *         CustomDifference(),
-     *         tile_successor_item);
-     *
-     * @endcode
-     * @par
-     * Suppose the set of input `thread_data` across the block of threads is
-     * `{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }`,
-     * and that `tile_successor_item` is `3`. The corresponding output `result`
-     * in those threads will be
-     * `{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,0,0], [-1,3,-3,1] }`.
-     *
-     * @param[out] output
-     *   Calling thread's adjacent difference result
-     *
-     * @param[in] input
-     *   Calling thread's input items (may be aliased to @p output)
-     *
-     * @param[in] difference_op
-     *   Binary difference operator
-     *
-     * @param[in] tile_successor_item
-     *   <b>[<em>thread</em><sub><tt>BLOCK_THREADS</tt>-1</sub> only]</b> item
-     *   which is going to be subtracted from the last tile item
-     *   (<tt>input</tt><sub><em>ITEMS_PER_THREAD</em>-1</sub> from
-     *   <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
-     */
+    //! @rst
+    //! Subtracts the right element of each adjacent pair of elements partitioned across a CUDA thread block.
+    //!
+    //! - @rowmajor
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the right difference between
+    //! adjacent elements.
+    //!
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>
+    //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+    //!
+    //!    struct CustomDifference
+    //!    {
+    //!      template <typename DataType>
+    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      {
+    //!        return lhs - rhs;
+    //!      }
+    //!    };
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockAdjacentDifference for a 1D block of
+    //!        // 128 threads of type int
+    //!        using BlockAdjacentDifferenceT =
+    //!           cub::BlockAdjacentDifference<int, 128>;
+    //!
+    //!        // Allocate shared memory for BlockAdjacentDifference
+    //!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+    //!
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_data[4];
+    //!        ...
+    //!
+    //!        // The first item in the next tile:
+    //!        int tile_successor_item = ...;
+    //!
+    //!        // Collectively compute adjacent_difference
+    //!        BlockAdjacentDifferenceT(temp_storage).SubtractRight(
+    //!            thread_data,
+    //!            thread_data,
+    //!            CustomDifference(),
+    //!            tile_successor_item);
+    //!
+    //! Suppose the set of input ``thread_data`` across the block of threads is
+    //! ``{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }``,
+    //! and that ``tile_successor_item`` is ``3``. The corresponding output ``result``
+    //! in those threads will be
+    //! ``{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,0,0], [-1,3,-3,1] }``.
+    //! @endrst
+    //!
+    //! @param[out] output
+    //!   Calling thread's adjacent difference result
+    //!
+    //! @param[in] input
+    //!   Calling thread's input items (may be aliased to `output`)
+    //!
+    //! @param[in] difference_op
+    //!   Binary difference operator
+    //!
+    //! @param[in] tile_successor_item
+    //!   @rst
+    //!   *thread*\ :sub:`BLOCK_THREADS` only item which is going to be subtracted from the last tile item 
+    //!   (*input*\ :sub:`ITEMS_PER_THREAD` from *thread*\ :sub:`BLOCK_THREADS`).
+    //!   @endrst
     template <int ITEMS_PER_THREAD,
               typename OutputT,
               typename DifferenceOpT>
@@ -945,73 +900,72 @@ public:
         difference_op(input[ITEMS_PER_THREAD - 1], successor_item);
     }
 
-    /**
-     * @brief Subtracts the right element of each adjacent pair in range of
-     *        elements partitioned across a CUDA thread block.
-     *
-     * @par
-     * - \rowmajor
-     * - \smemreuse
-     *
-     * @par Snippet
-     * The code snippet below illustrates how to use @p BlockAdjacentDifference to
-     * compute the right difference between adjacent elements.
-     *
-     * @par
-     * @code
-     * #include <cub/cub.cuh>
-     * // or equivalently <cub/block/block_adjacent_difference.cuh>
-     *
-     * struct CustomDifference
-     * {
-     *   template <typename DataType>
-     *   __device__ DataType operator()(DataType &lhs, DataType &rhs)
-     *   {
-     *     return lhs - rhs;
-     *   }
-     * };
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockAdjacentDifference for a 1D block of
-     *     // 128 threads of type int
-     *     using BlockAdjacentDifferenceT =
-     *        cub::BlockAdjacentDifference<int, 128>;
-     *
-     *     // Allocate shared memory for BlockAdjacentDifference
-     *     __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_data[4];
-     *     ...
-     *
-     *     // Collectively compute adjacent_difference
-     *     BlockAdjacentDifferenceT(temp_storage).SubtractRightPartialTile(
-     *         thread_data,
-     *         thread_data,
-     *         CustomDifference(),
-     *         valid_items);
-     *
-     * @endcode
-     * @par
-     * Suppose the set of input `thread_data` across the block of threads is
-     * `{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }`.
-     * and that `valid_items` is `507`. The corresponding output `result` in
-     * those threads will be
-     * `{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,3,3], [3,4,1,4] }`.
-     *
-     * @param[out] output
-     *   Calling thread's adjacent difference result
-     *
-     * @param[in] input
-     *   Calling thread's input items (may be aliased to @p output)
-     *
-     * @param[in] difference_op
-     *   Binary difference operator
-     *
-     * @param[in] valid_items
-     *   Number of valid items in thread block
-     */
+    //! @rst
+    //! Subtracts the right element of each adjacent pair in range of elements partitioned across a CUDA thread block.
+    //!
+    //! - @rowmajor
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the right difference between
+    //! adjacent elements.
+    //!
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>
+    //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+    //!
+    //!    struct CustomDifference
+    //!    {
+    //!      template <typename DataType>
+    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      {
+    //!        return lhs - rhs;
+    //!      }
+    //!    };
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockAdjacentDifference for a 1D block of
+    //!        // 128 threads of type int
+    //!        using BlockAdjacentDifferenceT =
+    //!           cub::BlockAdjacentDifference<int, 128>;
+    //!
+    //!        // Allocate shared memory for BlockAdjacentDifference
+    //!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+    //!
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_data[4];
+    //!        ...
+    //!
+    //!        // Collectively compute adjacent_difference
+    //!        BlockAdjacentDifferenceT(temp_storage).SubtractRightPartialTile(
+    //!            thread_data,
+    //!            thread_data,
+    //!            CustomDifference(),
+    //!            valid_items);
+    //!
+    //! Suppose the set of input ``thread_data`` across the block of threads is
+    //! ``{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }``.
+    //! and that ``valid_items`` is ``507``. The corresponding output ``result`` in
+    //! those threads will be
+    //! ``{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,3,3], [3,4,1,4] }``.
+    //! @endrst
+    //!
+    //! @param[out] output
+    //!   Calling thread's adjacent difference result
+    //!
+    //! @param[in] input
+    //!   Calling thread's input items (may be aliased to `output`)
+    //!
+    //! @param[in] difference_op
+    //!   Binary difference operator
+    //!
+    //! @param[in] valid_items
+    //!   Number of valid items in thread block
     template <int ITEMS_PER_THREAD,
               typename OutputT,
               typename DifferenceOpT>
@@ -1060,11 +1014,9 @@ public:
       }
     }
 
-    //@}  end member group
-    /******************************************************************//**
-     * @name Head flag operations (deprecated)
-     *********************************************************************/
-    //@{
+    //! @} end member group
+    //! @name Head flag operations (deprecated)
+    //! @{
 
     #ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
 
@@ -1555,6 +1507,7 @@ public:
         Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
     }
 
+    //! @} end member group
 };
 
 

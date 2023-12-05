@@ -27,21 +27,45 @@
 
 #include "catch2_test_block_radix_sort.cuh"
 
+#include <thrust/execution_policy.h>
+
 #include <algorithm>
 #include <type_traits>
 #include <utility>
 
-#include "catch2_test_helper.h"
+#include "catch2_test_helper.h" // __CUDA_FP8_TYPES_EXIST__
 
 // %PARAM% TEST_MEMOIZE mem 0:1
 // %PARAM% TEST_ALGORITHM alg 0:1
 // %PARAM% TEST_IPT ipt 1:11
 // %PARAM% TEST_THREADS_IN_BLOCK ipt 32:160
 
-using types = c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>;
+using types =
+  c2h::type_list<std::uint8_t,
+                 std::uint16_t,
+                 std::uint32_t,
+                 std::uint64_t
+#if defined(__CUDA_FP8_TYPES_EXIST__)
+                 ,
+                 __nv_fp8_e5m2,
+                 __nv_fp8_e4m3
+#endif // defined(__CUDA_FP8_TYPES_EXIST__)
+                 >;
 using no_value_types = c2h::type_list<cub::NullType>;
 
-using key_types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
+using key_types =
+  c2h::type_list<std::int8_t,
+                 std::int16_t,
+                 std::int32_t,
+                 std::int64_t,
+                 float,
+                 double
+#if defined(__CUDA_FP8_TYPES_EXIST__)
+                 ,
+                 __nv_fp8_e5m2,
+                 __nv_fp8_e4m3
+#endif // defined(__CUDA_FP8_TYPES_EXIST__)
+                 >;
 using value_types = c2h::type_list<std::int8_t, c2h::custom_type_t<c2h::equal_comparable_t>>;
 
 using threads_in_block = c2h::enum_type_list<int, TEST_THREADS_IN_BLOCK>;
@@ -81,6 +105,21 @@ struct params_t
     c2h::get<7, TestType>::value;
 };
 
+template <class T>
+bool binary_equal(
+  const thrust::device_vector<T>& d_output, const thrust::host_vector<T>& h_reference, thrust::device_vector<T>& d_tmp)
+{
+  d_tmp = h_reference;
+
+  using traits_t      = cub::Traits<T>;
+  using bit_ordered_t = typename traits_t::UnsignedBits;
+
+  auto d_output_ptr    = reinterpret_cast<const bit_ordered_t*>(thrust::raw_pointer_cast(d_output.data()));
+  auto d_reference_ptr = reinterpret_cast<const bit_ordered_t*>(thrust::raw_pointer_cast(d_tmp.data()));
+
+  return thrust::equal(thrust::device, d_output_ptr, d_output_ptr + d_output.size(), d_reference_ptr);
+}
+
 CUB_TEST("Block radix sort can sort keys",
          "[radix][sort][block]",
          types,
@@ -119,11 +158,10 @@ CUB_TEST("Block radix sort can sort keys",
     end_bit, 
     striped);
 
-  thrust::host_vector<type> h_reference =
-    radix_sort_reference(d_input, is_descending, begin_bit, end_bit);
+  thrust::host_vector<type> h_reference = radix_sort_reference(d_input, is_descending, begin_bit, end_bit);
 
-  INFO( "striped = " << striped );
-  REQUIRE( h_reference == d_output );
+  // overwrite `d_input` for comparison
+  REQUIRE(binary_equal(d_output, h_reference, d_input));
 }
 
 CUB_TEST("Block radix sort can sort keys in descending order",
@@ -167,7 +205,8 @@ CUB_TEST("Block radix sort can sort keys in descending order",
   thrust::host_vector<type> h_reference =
     radix_sort_reference(d_input, is_descending, begin_bit, end_bit);
 
-  REQUIRE( h_reference == d_output );
+  // overwrite `d_input` for comparison
+  REQUIRE(binary_equal(d_output, h_reference, d_input));
 }
 
 CUB_TEST("Block radix sort can sort pairs",
@@ -221,8 +260,9 @@ CUB_TEST("Block radix sort can sort pairs",
                                        begin_bit,
                                        end_bit);
 
-  REQUIRE( h_reference.first == d_output_keys );
-  REQUIRE( h_reference.second == d_output_values );
+  // overwrite `d_input_*` for comparison
+  REQUIRE(binary_equal(d_output_keys, h_reference.first, d_input_keys));
+  REQUIRE(binary_equal(d_output_values, h_reference.second, d_input_values));
 }
 
 CUB_TEST("Block radix sort can sort pairs in descending order",
@@ -276,8 +316,9 @@ CUB_TEST("Block radix sort can sort pairs in descending order",
                                        begin_bit,
                                        end_bit);
 
-  REQUIRE( h_reference.first == d_output_keys );
-  REQUIRE( h_reference.second == d_output_values );
+  // overwrite `d_input_*` for comparison
+  REQUIRE(binary_equal(d_output_keys, h_reference.first, d_input_keys));
+  REQUIRE(binary_equal(d_output_values, h_reference.second, d_input_values));
 }
 
 CUB_TEST("Block radix sort can sort mixed pairs",
@@ -331,8 +372,9 @@ CUB_TEST("Block radix sort can sort mixed pairs",
                                        begin_bit,
                                        end_bit);
 
-  REQUIRE( h_reference.first == d_output_keys );
-  REQUIRE( h_reference.second == d_output_values );
+  // overwrite `d_input_*` for comparison
+  REQUIRE(binary_equal(d_output_keys, h_reference.first, d_input_keys));
+  REQUIRE(d_output_values == h_reference.second);
 }
 
 CUB_TEST("Block radix sort can sort mixed pairs in descending order",
@@ -386,7 +428,7 @@ CUB_TEST("Block radix sort can sort mixed pairs in descending order",
                                        begin_bit,
                                        end_bit);
 
-  REQUIRE( h_reference.first == d_output_keys );
-  REQUIRE( h_reference.second == d_output_values );
+  // overwrite `d_input_*` for comparison
+  REQUIRE(binary_equal(d_output_keys, h_reference.first, d_input_keys));
+  REQUIRE(d_output_values == h_reference.second);
 }
-

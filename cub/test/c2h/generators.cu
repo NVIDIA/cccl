@@ -107,7 +107,7 @@ private:
   thrust::device_vector<float> m_distribution;
 };
 
-template <typename T>
+template <typename T, cub::Category = cub::Traits<T>::CATEGORY>
 struct random_to_item_t
 {
   float m_min;
@@ -121,6 +121,23 @@ struct random_to_item_t
   __device__ T operator()(float random_value)
   {
     return static_cast<T>((m_max - m_min) * random_value + m_min);
+  }
+};
+
+template <typename T>
+struct random_to_item_t<T, cub::FLOATING_POINT>
+{
+  float m_min;
+  float m_max;
+
+  __host__ __device__ random_to_item_t(T min, T max)
+      : m_min(static_cast<float>(min))
+      , m_max(static_cast<float>(max))
+  {}
+
+  __device__ T operator()(float random_value)
+  {
+    return static_cast<T>(m_max * random_value + m_min * (1.0f - random_value));
   }
 };
 
@@ -242,16 +259,17 @@ void generator_t::operator()(seed_t seed, thrust::device_vector<T> &data, T min,
 template <typename T>
 struct count_to_item_t
 {
-  std::size_t n;
+  unsigned long long int n;
 
-  count_to_item_t(std::size_t n)
+  count_to_item_t(unsigned long long int n)
       : n(n)
   {}
 
   template <typename CounterT>
   __device__ T operator()(CounterT id)
   {
-    return static_cast<T>(static_cast<std::size_t>(id) % n);
+    // This has to be a type for which extended floating point types like __nv_fp8_e5m2 provide an overload
+    return static_cast<T>(static_cast<unsigned long long int>(id) % n);
   }
 };
 
@@ -501,6 +519,10 @@ INSTANTIATE(std::int16_t);
 INSTANTIATE(std::int32_t);
 INSTANTIATE(std::int64_t);
 
+#if defined(__CUDA_FP8_TYPES_EXIST__)
+INSTANTIATE(__nv_fp8_e5m2);
+INSTANTIATE(__nv_fp8_e4m3);
+#endif // defined(__CUDA_FP8_TYPES_EXIST__)
 INSTANTIATE(float);
 INSTANTIATE(double);
 

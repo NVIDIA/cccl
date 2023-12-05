@@ -15,15 +15,18 @@
 #include <__config>
 #endif //__cuda_std__
 
-#include "../__iterator/iterator.h"
+#include "../__iterator/default_sentinel.h"
 #include "../__iterator/iterator_traits.h"
+#include "../__iterator/iterator.h"
 #include "../iosfwd"
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -38,6 +41,11 @@ class _LIBCUDACXX_TEMPLATE_VIS istreambuf_iterator
 {
 _LIBCUDACXX_SUPPRESS_DEPRECATED_POP
 public:
+    typedef input_iterator_tag              iterator_category;
+    typedef _CharT                          value_type;
+    typedef typename _Traits::off_type      difference_type;
+    typedef _CharT*                         pointer;
+    typedef _CharT                          reference;
     typedef _CharT                          char_type;
     typedef _Traits                         traits_type;
     typedef typename _Traits::int_type      int_type;
@@ -50,7 +58,8 @@ private:
     {
         char_type __keep_;
         streambuf_type* __sbuf_;
-        _LIBCUDACXX_INLINE_VISIBILITY __proxy(char_type __c, streambuf_type* __s)
+        _LIBCUDACXX_INLINE_VISIBILITY
+        explicit __proxy(char_type __c, streambuf_type* __s)
             : __keep_(__c), __sbuf_(__s) {}
         friend class istreambuf_iterator;
     public:
@@ -61,11 +70,15 @@ private:
     bool __test_for_eof() const
     {
         if (__sbuf_ && traits_type::eq_int_type(__sbuf_->sgetc(), traits_type::eof()))
-            __sbuf_ = 0;
-        return __sbuf_ == 0;
+            __sbuf_ = nullptr;
+        return __sbuf_ == nullptr;
     }
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr istreambuf_iterator() noexcept : __sbuf_(0) {}
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr istreambuf_iterator() noexcept : __sbuf_(nullptr) {}
+#if _LIBCUDACXX_STD_VER > 17
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr istreambuf_iterator(default_sentinel_t) noexcept
+        : istreambuf_iterator() {}
+#endif // _LIBCUDACXX_STD_VER > 17
     _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(istream_type& __s) noexcept
         : __sbuf_(__s.rdbuf()) {}
     _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(streambuf_type* __s) noexcept
@@ -87,6 +100,23 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY bool equal(const istreambuf_iterator& __b) const
         {return __test_for_eof() == __b.__test_for_eof();}
+
+#if _LIBCUDACXX_STD_VER > 14
+    friend _LIBCUDACXX_HIDE_FROM_ABI bool operator==(const istreambuf_iterator& __i, default_sentinel_t) {
+      return __i.__test_for_eof();
+    }
+#if _LIBCUDACXX_STD_VER < 20
+    friend _LIBCUDACXX_HIDE_FROM_ABI bool operator==(default_sentinel_t, const istreambuf_iterator& __i) {
+      return __i.__test_for_eof();
+    }
+    friend _LIBCUDACXX_HIDE_FROM_ABI bool operator!=(const istreambuf_iterator& __i, default_sentinel_t) {
+      return !__i.__test_for_eof();
+    }
+    friend _LIBCUDACXX_HIDE_FROM_ABI bool operator!=(default_sentinel_t, const istreambuf_iterator& __i) {
+      return !__i.__test_for_eof();
+    }
+#endif // _LIBCUDACXX_STD_VER < 20
+#endif // _LIBCUDACXX_STD_VER > 14
 };
 
 template <class _CharT, class _Traits>
@@ -95,11 +125,13 @@ bool operator==(const istreambuf_iterator<_CharT,_Traits>& __a,
                 const istreambuf_iterator<_CharT,_Traits>& __b)
                 {return __a.equal(__b);}
 
+#if _LIBCUDACXX_STD_VER <= 17
 template <class _CharT, class _Traits>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool operator!=(const istreambuf_iterator<_CharT,_Traits>& __a,
                 const istreambuf_iterator<_CharT,_Traits>& __b)
                 {return !__a.equal(__b);}
+#endif // _LIBCUDACXX_STD_VER <= 17
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -33,26 +33,25 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/detail/cpp_compatibility.cuh>
+#include <cub/detail/type_traits.cuh>
+#include <cub/util_ptx.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/integer_sequence.h>
 
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
-
-#include <type_traits>
-
-#include "../util_ptx.cuh"
-#include "../util_type.cuh"
-#include "cub/detail/cpp_compatibility.cuh"
-#include "cub/detail/type_traits.cuh"
-
 
 CUB_NAMESPACE_BEGIN
 
@@ -106,17 +105,17 @@ struct BFEDigitExtractor : BaseDigitExtractor<KeyT>
 {
     using typename BaseDigitExtractor<KeyT>::UnsignedBits;
 
-    std::uint32_t bit_start;
-    std::uint32_t num_bits;
+    ::cuda::std::uint32_t bit_start;
+    ::cuda::std::uint32_t num_bits;
 
     explicit __device__ __forceinline__ BFEDigitExtractor(
-        std::uint32_t bit_start = 0,
-        std::uint32_t num_bits = 0)
+        ::cuda::std::uint32_t bit_start = 0,
+        ::cuda::std::uint32_t num_bits = 0)
       : bit_start(bit_start)
       , num_bits(num_bits)
     { }
 
-    __device__ __forceinline__ std::uint32_t Digit(UnsignedBits key) const
+    __device__ __forceinline__ ::cuda::std::uint32_t Digit(UnsignedBits key) const
     {
         return BFE(this->ProcessFloatMinusZero(key), bit_start, num_bits);
     }
@@ -129,18 +128,18 @@ struct ShiftDigitExtractor : BaseDigitExtractor<KeyT>
 {
     using typename BaseDigitExtractor<KeyT>::UnsignedBits;
 
-    std::uint32_t bit_start;
-    std::uint32_t mask;
+    ::cuda::std::uint32_t bit_start;
+    ::cuda::std::uint32_t mask;
 
     explicit __device__ __forceinline__ ShiftDigitExtractor(
-        std::uint32_t bit_start = 0, std::uint32_t num_bits = 0)
+        ::cuda::std::uint32_t bit_start = 0, ::cuda::std::uint32_t num_bits = 0)
       : bit_start(bit_start)
       , mask((1 << num_bits) - 1)
     { }
 
-    __device__ __forceinline__ std::uint32_t Digit(UnsignedBits key) const
+    __device__ __forceinline__ ::cuda::std::uint32_t Digit(UnsignedBits key) const
     {
-        return std::uint32_t(this->ProcessFloatMinusZero(key) >> UnsignedBits(bit_start)) & mask;
+        return ::cuda::std::uint32_t(this->ProcessFloatMinusZero(key) >> UnsignedBits(bit_start)) & mask;
     }
 };
 
@@ -173,7 +172,7 @@ struct identity_decomposer_t
   }
 };
 
-template<class F, class... Ts, std::size_t... Is>
+template<class F, class... Ts, ::cuda::std::size_t... Is>
 __host__ __device__ void
 for_each_member_impl_helper(F f, const ::cuda::std::tuple<Ts&...>& tpl, THRUST_NS_QUALIFIER::index_sequence<Is...>)
 {
@@ -437,15 +436,15 @@ __host__ __device__ int default_end_bit(DecomposerT decomposer, T &aggregate)
 
 struct digit_f
 {
-  std::uint32_t &dst;
-  std::uint32_t &dst_bit_start;
-  std::uint32_t &src_bit_start;
-  std::uint32_t &num_bits;
+  ::cuda::std::uint32_t &dst;
+  ::cuda::std::uint32_t &dst_bit_start;
+  ::cuda::std::uint32_t &src_bit_start;
+  ::cuda::std::uint32_t &num_bits;
 
   template <class T>
   __host__ __device__ void operator()(T &src)
   {
-    constexpr std::uint32_t src_size = sizeof(T) * 8;
+    constexpr ::cuda::std::uint32_t src_size = sizeof(T) * 8;
 
     if (src_bit_start >= src_size)
     {
@@ -456,14 +455,14 @@ struct digit_f
       using traits           = traits_t<typename ::cuda::std::remove_cv<T>::type>;
       using bit_ordered_type = typename traits::bit_ordered_type;
 
-      const std::uint32_t bits_to_copy = min(src_size - src_bit_start, num_bits);
+      const ::cuda::std::uint32_t bits_to_copy = min(src_size - src_bit_start, num_bits);
 
       if (bits_to_copy)
       {
         bit_ordered_type ordered_src = BaseDigitExtractor<T>::ProcessFloatMinusZero(
           reinterpret_cast<bit_ordered_type &>(src));
 
-        const std::uint32_t mask = (1 << bits_to_copy) - 1;
+        const ::cuda::std::uint32_t mask = (1 << bits_to_copy) - 1;
         dst = dst | (((ordered_src >> src_bit_start) & mask) << dst_bit_start);
 
         num_bits -= bits_to_copy;
@@ -476,11 +475,11 @@ struct digit_f
 
 template <class DecomposerT, class T>
 __host__ __device__ void digit(DecomposerT decomposer,
-                               std::uint32_t &dst,
+                               ::cuda::std::uint32_t &dst,
                                T &src,
-                               std::uint32_t &dst_bit_start,
-                               std::uint32_t &src_bit_start,
-                               std::uint32_t &num_bits)
+                               ::cuda::std::uint32_t &dst_bit_start,
+                               ::cuda::std::uint32_t &src_bit_start,
+                               ::cuda::std::uint32_t &num_bits)
 {
   detail::for_each_member(digit_f{dst, dst_bit_start, src_bit_start, num_bits}, decomposer, src);
 }
@@ -489,24 +488,24 @@ template <class DecomposerT>
 struct custom_digit_extractor_t
 {
   DecomposerT decomposer;
-  std::uint32_t bit_start;
-  std::uint32_t num_bits;
+  ::cuda::std::uint32_t bit_start;
+  ::cuda::std::uint32_t num_bits;
 
   __host__ __device__ __forceinline__ custom_digit_extractor_t(DecomposerT decomposer,
-                                                               std::uint32_t bit_start,
-                                                               std::uint32_t num_bits)
+                                                               ::cuda::std::uint32_t bit_start,
+                                                               ::cuda::std::uint32_t num_bits)
       : decomposer(decomposer)
       , bit_start(bit_start)
       , num_bits(num_bits)
   {}
 
   template <class T>
-  __host__ __device__ __forceinline__ std::uint32_t Digit(T &key) const
+  __host__ __device__ __forceinline__ ::cuda::std::uint32_t Digit(T &key) const
   {
-    std::uint32_t result{};
-    std::uint32_t dst_bit_start{};
-    std::uint32_t src_bit_start = bit_start;
-    std::uint32_t bits_remaining{num_bits};
+    ::cuda::std::uint32_t result{};
+    ::cuda::std::uint32_t dst_bit_start{};
+    ::cuda::std::uint32_t src_bit_start = bit_start;
+    ::cuda::std::uint32_t bits_remaining{num_bits};
     digit(decomposer, result, key, dst_bit_start, src_bit_start, bits_remaining);
     return result;
   }

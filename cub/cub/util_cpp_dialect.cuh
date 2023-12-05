@@ -25,21 +25,23 @@
  *
  ******************************************************************************/
 
-/*! \file
- *  \brief Detect the version of the C++ standard used by the compiler.
- */
+//! @file Detect the version of the C++ standard used by the compiler.
 
 #pragma once
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include "util_compiler.cuh"
+#include <cub/util_compiler.cuh>
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document 
 
 // Deprecation warnings may be silenced by defining the following macros. These
 // may be combined.
@@ -157,3 +159,5 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #undef CUB_COMP_DEPR_IMPL
 #undef CUB_COMP_DEPR_IMPL0
 #undef CUB_COMP_DEPR_IMPL1
+
+#endif // !DOXYGEN_SHOULD_SKIP_THIS

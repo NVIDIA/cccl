@@ -35,15 +35,17 @@
 // For _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include "util_arch.cuh"
-#include "util_compiler.cuh"
-#include "util_cpp_dialect.cuh"
-#include "util_deprecated.cuh"
-#include "util_macro.cuh"
-#include "util_namespace.cuh"
+#include <cub/util_arch.cuh>
+#include <cub/util_compiler.cuh>
+#include <cub/util_cpp_dialect.cuh>
+#include <cub/util_deprecated.cuh>
+#include <cub/util_macro.cuh>
+#include <cub/util_namespace.cuh>

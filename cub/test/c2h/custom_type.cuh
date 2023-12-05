@@ -180,6 +180,14 @@ namespace std {
        return val;
      }
 
+     static c2h::custom_type_t<Policies...> min() 
+     {
+       c2h::custom_type_t<Policies...> val;
+       val.key = std::numeric_limits<std::size_t>::min();
+       val.val = std::numeric_limits<std::size_t>::min();
+       return val;
+     }
+
      static c2h::custom_type_t<Policies...> lowest() 
      {
        c2h::custom_type_t<Policies...> val;

@@ -14,7 +14,7 @@ void cuda::device::barrier_expect_tx(
   ptrdiff_t transaction_count_update);
 ```
 
-Updates the expected transaction count of a barrier in shared memory.
+Increments the expected transaction count of a barrier in shared memory.
 
 ## Preconditions
 

@@ -69,7 +69,7 @@ class feistel_bijection {
         state[1] = lo & right_side_mask;
     }
     // Combine the left and right sides together to get result
-    return static_cast<std::uint64_t>(state[0] << right_side_bits) | static_cast<std::uint64_t>(state[1]);
+    return (static_cast<std::uint64_t>(state[0]) << right_side_bits) | static_cast<std::uint64_t>(state[1]);
   }
 
  private:

@@ -37,13 +37,15 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_type.cuh>
@@ -55,12 +57,6 @@ _CCCL_DIAG_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
-
-
-/**
- * @addtogroup UtilModule
- * @{
- */
 
 /// @brief Inequality functor (wraps equality functor)
 template <typename EqualityOp>
@@ -425,8 +421,5 @@ __device__ __host__ BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
 {
   return BinaryFlip<BinaryOpT>(binary_op);
 }
-
-/** @} */       // end group UtilModule
-
 
 CUB_NAMESPACE_END

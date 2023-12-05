@@ -74,7 +74,7 @@ static void basic(nvbench::state &state,
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(selected_elements);
 
-  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
     thrust::copy_if(input.cbegin(), input.cend(), output.begin(), select_op);
   });
 }

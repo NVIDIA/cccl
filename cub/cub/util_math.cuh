@@ -32,15 +32,17 @@
 
 #pragma once
 
-#include "config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include <type_traits>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -49,13 +51,13 @@ namespace detail
 
 template <typename T>
 using is_integral_or_enum =
-  std::integral_constant<bool,
-                         std::is_integral<T>::value || std::is_enum<T>::value>;
+  ::cuda::std::integral_constant<bool,
+                         ::cuda::std::is_integral<T>::value || ::cuda::std::is_enum<T>::value>;
 
-__host__ __device__ __forceinline__ constexpr  std::size_t
-VshmemSize(std::size_t max_shmem,
-           std::size_t shmem_per_block,
-           std::size_t num_blocks)
+__host__ __device__ __forceinline__ constexpr  ::cuda::std::size_t
+VshmemSize(::cuda::std::size_t max_shmem,
+           ::cuda::std::size_t shmem_per_block,
+           ::cuda::std::size_t num_blocks)
 {
   return shmem_per_block > max_shmem ? shmem_per_block * num_blocks : 0;
 }

@@ -33,21 +33,23 @@
 
 #pragma once
 
-#include "../config.cuh"
+#include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include <iterator>
-#include <iostream>
-
-#include "../thread/thread_load.cuh"
-#include "../thread/thread_store.cuh"
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_store.cuh>
 
 #include <thrust/version.h>
+
+#include <iostream>
+#include <iterator>
 
 #if (THRUST_VERSION >= 100700)
     // This iterator is compatible with Thrust API 1.7 and newer
@@ -56,11 +58,6 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #endif // THRUST_VERSION
 
 CUB_NAMESPACE_BEGIN
-
-/**
- * @addtogroup UtilIterator
- * @{
- */
 
 /**
  * @brief A random-access input wrapper for pairing dereferenced values with their corresponding
@@ -147,10 +144,10 @@ public:
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        
+      >::type iterator_category;
 #else
     /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;      
+    typedef std::random_access_iterator_tag     iterator_category;
 #endif  // THRUST_VERSION
 
 private:
@@ -161,10 +158,10 @@ private:
 public:
 
     /**
-     * @param itr 
+     * @param itr
      *   Input iterator to wrap
      *
-     * @param offset 
+     * @param offset
      *   OffsetT (in items) from @p itr denoting the position of the iterator
      */
   __host__ __device__ __forceinline__ ArgIndexInputIterator(InputIteratorT itr,
@@ -274,9 +271,5 @@ public:
         return os;
     }
 };
-
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

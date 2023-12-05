@@ -185,11 +185,13 @@ template <class T, class Allocator, class Predicate>
 #include <algorithm>
 #include <version>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
@@ -819,19 +821,19 @@ public:
     __remove_return_type remove(const value_type& __v);
     template <class _Predicate> __remove_return_type remove_if(_Predicate __pred);
     _LIBCUDACXX_INLINE_VISIBILITY
-    __remove_return_type unique() {return unique(__equal_to<value_type>());}
+    __remove_return_type unique() {return unique(__equal_to{});}
     template <class _BinaryPredicate> __remove_return_type unique(_BinaryPredicate __binary_pred);
     _LIBCUDACXX_INLINE_VISIBILITY
-    void merge(forward_list&& __x) {merge(__x, __less<value_type>());}
+    void merge(forward_list&& __x) {merge(__x, __less{});}
     template <class _Compare>
         _LIBCUDACXX_INLINE_VISIBILITY
         void merge(forward_list&& __x, _Compare __comp)
         {merge(__x, _CUDA_VSTD::move(__comp));}
     _LIBCUDACXX_INLINE_VISIBILITY
-    void merge(forward_list& __x) {merge(__x, __less<value_type>());}
+    void merge(forward_list& __x) {merge(__x, __less{});}
     template <class _Compare> void merge(forward_list& __x, _Compare __comp);
     _LIBCUDACXX_INLINE_VISIBILITY
-    void sort() {sort(__less<value_type>());}
+    void sort() {sort(__less{});}
     template <class _Compare> _LIBCUDACXX_INLINE_VISIBILITY void sort(_Compare __comp);
     void reverse() noexcept;
 
