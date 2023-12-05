@@ -168,7 +168,7 @@
     #define CUB_STDERR
 #endif
 
-#ifdef CUB_STDERR
+#if defined(CUB_STDERR) || defined(CUB_DETAIL_DEBUG_ENABLE_LOG)
 #include <cstdio>
 #endif
 
