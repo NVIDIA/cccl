@@ -141,7 +141,7 @@ jobs:
     uses: ./.github/workflows/run-as-coder.yml
     with:
       name: ${{matrix.lib}} CTK${{matrix.cuda}} clang-cuda${{matrix.compiler.version}}/${{matrix.std}}
-      runner: linux-${{matrix.cpu}}-cpu16
+      runner: linux-${{matrix.cpu}}-cpu16-testing
       image: rapidsai/devcontainers:${{needs.compute-matrix.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       command: |
         ./ci/build_${{matrix.lib}}.sh -cxx "${{matrix.compiler.exe}}" -cuda "${{matrix.compiler.exe}}" -std "${{matrix.std}}"

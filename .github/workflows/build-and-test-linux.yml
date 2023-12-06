@@ -26,7 +26,7 @@ jobs:
     uses: ./.github/workflows/run-as-coder.yml
     with:
       name: Build ${{inputs.test_name}}
-      runner: linux-${{inputs.cpu}}-cpu16
+      runner: linux-${{inputs.cpu}}-cpu16-testing
       image:  ${{ inputs.container_image }}
       command: |
         ${{ inputs.build_script }}
