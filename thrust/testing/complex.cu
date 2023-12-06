@@ -679,3 +679,21 @@ struct TestComplexStdComplexDeviceInterop
 SimpleUnitTest<TestComplexStdComplexDeviceInterop, FloatingPointTypes>
   TestComplexStdComplexDeviceInteropInstance;
 #endif
+
+template <typename T>
+struct TestComplexExplicitConstruction
+{
+  struct user_complex {
+    __host__ __device__ user_complex(T, T) {}
+    __host__ __device__ user_complex(const thrust::complex<T>&) {}
+  };
+
+  void operator()()
+  {
+    const thrust::complex<T> input(42.0, 1337.0);
+    const user_complex result = thrust::exp(input);
+    (void)result;
+  }
+};
+SimpleUnitTest<TestComplexExplicitConstruction, FloatingPointTypes>
+  TestComplexExplicitConstructionInstance;
