@@ -114,8 +114,6 @@ struct AgentBlockSort
   static constexpr int BLOCK_THREADS = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE = Policy::ITEMS_PER_TILE;
-  static constexpr int SHARED_MEMORY_SIZE =
-    static_cast<int>(sizeof(TempStorage));
 
   //---------------------------------------------------------------------
   // Per thread data
@@ -428,8 +426,6 @@ struct AgentMerge
   static constexpr int BLOCK_THREADS = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE = Policy::ITEMS_PER_TILE;
-  static constexpr int SHARED_MEMORY_SIZE =
-    static_cast<int>(sizeof(TempStorage));
 
   //---------------------------------------------------------------------
   // Per thread data
