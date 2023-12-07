@@ -174,7 +174,6 @@ function run_command() {
     begin_group "$group_name"
     set +e
     local start_time=$(date +%s)
-    declare -p command
     "${command[@]}"
     status=$?
     local end_time=$(date +%s)
