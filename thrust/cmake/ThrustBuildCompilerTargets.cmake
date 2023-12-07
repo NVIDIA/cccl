@@ -115,8 +115,6 @@ function(thrust_build_compiler_targets)
     # Disable warning that inlining is inhibited by compiler thresholds.
     append_option_if_available("-diag-disable=11074" cxx_compile_options)
     append_option_if_available("-diag-disable=11076" cxx_compile_options)
-    # Disable warning about deprecated classic compiler
-    append_option_if_available("-diag-disable=10441" cxx_compile_options)
   endif()
 
   add_library(thrust.compiler_interface INTERFACE)
