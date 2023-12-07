@@ -50,7 +50,8 @@ while [ "${#args[@]}" -ne 0 ]; do
     -disable-benchmarks) ENABLE_CUB_BENCHMARKS="false"; args=("${args[@]:1}");;
     -cmake-options)
         if [ -n "${args[1]}" ]; then
-            GLOBAL_CMAKE_OPTIONS+=("${args[1]}")
+            IFS=' ' read -ra split_args <<< "${args[1]}"
+            GLOBAL_CMAKE_OPTIONS+=("${split_args[@]}")
             args=("${args[@]:2}")
         else
             echo "Error: No arguments provided for -cmake-options"
@@ -173,6 +174,7 @@ function run_command() {
     begin_group "$group_name"
     set +e
     local start_time=$(date +%s)
+    declare -p command
     "${command[@]}"
     status=$?
     local end_time=$(date +%s)
