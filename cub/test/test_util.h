@@ -1509,7 +1509,7 @@ struct HugeDataType
     }
   }
 
-   __device__ __host__ HugeDataType& operator=(const HugeDataType& rhs)
+  __device__ __host__ HugeDataType& operator=(const HugeDataType& rhs)
   {
     if (this != &rhs)
     {

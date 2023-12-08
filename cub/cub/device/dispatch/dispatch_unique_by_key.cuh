@@ -43,6 +43,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_unique_by_key.cuh>
+#include <cub/config.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
 #include <cub/util_deprecated.cuh>
