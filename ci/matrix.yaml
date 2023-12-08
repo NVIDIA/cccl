@@ -18,8 +18,8 @@ gcc9: &gcc9 { name: 'gcc', version: '9', exe: 'g++' }
 gcc10: &gcc10 { name: 'gcc', version: '10', exe: 'g++' }
 gcc11: &gcc11 { name: 'gcc', version: '11', exe: 'g++' }
 gcc12: &gcc12 { name: 'gcc', version: '12', exe: 'g++' }
-gcc-oldest: &gcc-oldest { name: 'gcc', version: '6', exe: 'g++' }
-gcc-newest: &gcc-newest { name: 'gcc', version: '12', exe: 'g++' }
+gcc-oldest: *gcc6
+gcc-newest: *gcc12
 
 # LLVM Compiler configurations
 llvm9: &llvm9 { name: 'llvm', version: '9', exe: 'clang++' }
@@ -30,8 +30,8 @@ llvm13: &llvm13 { name: 'llvm', version: '13', exe: 'clang++' }
 llvm14: &llvm14 { name: 'llvm', version: '14', exe: 'clang++' }
 llvm15: &llvm15 { name: 'llvm', version: '15', exe: 'clang++' }
 llvm16: &llvm16 { name: 'llvm', version: '16', exe: 'clang++' }
-llvm-oldest: &llvm-oldest { name: 'llvm', version: '9', exe: 'clang++' }
-llvm-newest: &llvm-newest { name: 'llvm', version: '16', exe: 'clang++' }
+llvm-oldest: *llvm9
+llvm-newest: *llvm16
 
 # MSVC configs
 msvc2017: &msvc2017 { name: 'cl', version: '14.16', exe: 'cl++' }
