@@ -151,11 +151,11 @@ namespace __parallel_for {
   }
 }    // __parallel_for
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived,
           class F,
           class Size>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 parallel_for(execution_policy<Derived> &policy,
              F                          f,
              Size                       count)

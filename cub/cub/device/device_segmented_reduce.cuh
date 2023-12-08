@@ -53,18 +53,18 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! @rst 
+//! @rst
 //! DeviceSegmentedReduce provides device-wide, parallel operations for
 //! computing a reduction across multiple sequences of data items
-//! residing within device-accessible memory. 
-//! 
+//! residing within device-accessible memory.
+//!
 //! Overview
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! A `reduction <http://en.wikipedia.org/wiki/Reduce_(higher-order_function)>`_
 //! (or *fold*) uses a binary combining operator to compute a single aggregate
 //! from a sequence of input elements.
-//! 
+//!
 //! Usage Considerations
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -76,7 +76,7 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Computes a device-wide segmented reduction using the specified
   //! binary ``reduction_op`` functor.
-  //! 
+  //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -93,7 +93,7 @@ struct DeviceSegmentedReduce
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -103,17 +103,17 @@ struct DeviceSegmentedReduce
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_radix_sort.cuh>
-  //! 
+  //!
   //!    // CustomMin functor
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int          num_segments;   // e.g., 3
@@ -123,67 +123,67 @@ struct DeviceSegmentedReduce
   //!    CustomMin    min_op;
   //!    int          initial_value;           // e.g., INT_MAX
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedReduce::Reduce(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out,
   //!      num_segments, d_offsets, d_offsets + 1, min_op, initial_value);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run reduction
   //!    cub::DeviceSegmentedReduce::Reduce(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out,
   //!      num_segments, d_offsets, d_offsets + 1, min_op, initial_value);
-  //! 
+  //!
   //!    // d_out <-- [6, INT_MAX, 0]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
-  //! 
+  //!
   //! @tparam ReductionOpT
   //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @tparam T
   //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -191,13 +191,13 @@ struct DeviceSegmentedReduce
   //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] reduction_op
   //!   Binary reduction functor
-  //! 
+  //!
   //! @param[in] initial_value
   //!   Initial value of the reduction for each segment
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -279,7 +279,7 @@ struct DeviceSegmentedReduce
 
   //! @rst
   //! Computes a device-wide segmented sum using the addition (``+``) operator.
-  //! 
+  //!
   //! - Uses ``0`` as the initial value of the reduction for each segment.
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -292,7 +292,7 @@ struct DeviceSegmentedReduce
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -302,7 +302,7 @@ struct DeviceSegmentedReduce
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_radix_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int num_segments;   // e.g., 3
@@ -310,54 +310,54 @@ struct DeviceSegmentedReduce
   //!    int *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int *d_out;         // e.g., [-, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedReduce::Sum(
   //!        d_temp_storage, temp_storage_bytes, d_in, d_out,
   //!        num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sum-reduction
   //!    cub::DeviceSegmentedReduce::Sum(
   //!        d_temp_storage, temp_storage_bytes, d_in, d_out,
   //!        num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_out <-- [21, 0, 17]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
@@ -365,7 +365,7 @@ struct DeviceSegmentedReduce
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and
   //!   ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -373,7 +373,7 @@ struct DeviceSegmentedReduce
   //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -445,7 +445,7 @@ struct DeviceSegmentedReduce
 
   //! @rst
   //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
-  //! 
+  //!
   //! - Uses ``std::numeric_limits<T>::max()`` as the initial value of the reduction for each segment.
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased for both
@@ -458,7 +458,7 @@ struct DeviceSegmentedReduce
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -468,7 +468,7 @@ struct DeviceSegmentedReduce
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_radix_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int num_segments;   // e.g., 3
@@ -476,61 +476,61 @@ struct DeviceSegmentedReduce
   //!    int *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int *d_out;         // e.g., [-, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedReduce::Min(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out,
   //!      num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run min-reduction
   //!    cub::DeviceSegmentedReduce::Min(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out,
   //!      num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_out <-- [6, INT_MAX, 0]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -538,7 +538,7 @@ struct DeviceSegmentedReduce
   //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -614,7 +614,7 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Finds the first device-wide minimum in each segment using the
   //! less-than (``<``) operator, also returning the in-segment index of that item.
-  //! 
+  //!
   //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
   //!
@@ -633,7 +633,7 @@ struct DeviceSegmentedReduce
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -643,7 +643,7 @@ struct DeviceSegmentedReduce
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_radix_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int                      num_segments;   // e.g., 3
@@ -651,64 +651,64 @@ struct DeviceSegmentedReduce
   //!    int                      *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    KeyValuePair<int, int>   *d_out;         // e.g., [{-,-}, {-,-}, {-,-}]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedReduce::ArgMin(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out,
   //!      num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run argmin-reduction
   //!    cub::DeviceSegmentedReduce::ArgMin(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out,
   //!      num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_out <-- [{1,6}, {1,INT_MAX}, {2,0}]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items (of some type `T`) @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
   //!   (having value type `KeyValuePair<int, T>`) @iterator
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -716,7 +716,7 @@ struct DeviceSegmentedReduce
   //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -811,7 +811,7 @@ struct DeviceSegmentedReduce
 
   //! @rst
   //! Computes a device-wide segmented maximum using the greater-than (``>``) operator.
-  //! 
+  //!
   //! - Uses ``std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -824,7 +824,7 @@ struct DeviceSegmentedReduce
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -834,7 +834,7 @@ struct DeviceSegmentedReduce
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_radix_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int num_segments;   // e.g., 3
@@ -842,61 +842,61 @@ struct DeviceSegmentedReduce
   //!    int *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int *d_out;         // e.g., [-, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedReduce::Max(
   //!        d_temp_storage, temp_storage_bytes, d_in, d_out,
   //!        num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run max-reduction
   //!    cub::DeviceSegmentedReduce::Max(
   //!        d_temp_storage, temp_storage_bytes, d_in, d_out,
   //!        num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_out <-- [8, INT_MIN, 9]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -904,7 +904,7 @@ struct DeviceSegmentedReduce
   //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -980,7 +980,7 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Finds the first device-wide maximum in each segment using the
   //! greater-than (``>``) operator, also returning the in-segment index of that item
-  //! 
+  //!
   //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
   //!
@@ -999,7 +999,7 @@ struct DeviceSegmentedReduce
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -1010,7 +1010,7 @@ struct DeviceSegmentedReduce
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_reduce.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int                      num_segments;   // e.g., 3
@@ -1018,66 +1018,66 @@ struct DeviceSegmentedReduce
   //!    int                      *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    KeyValuePair<int, int>   *d_out;         // e.g., [{-,-}, {-,-}, {-,-}]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedReduce::ArgMax(
   //!        d_temp_storage, temp_storage_bytes, d_in, d_out,
   //!        num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run argmax-reduction
   //!    cub::DeviceSegmentedReduce::ArgMax(
   //!        d_temp_storage, temp_storage_bytes, d_in, d_out,
   //!        num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_out <-- [{0,8}, {1,INT_MIN}, {3,9}]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items
   //!   (of some type `T`) @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
   //!   (having value type `KeyValuePair<int, T>`) @iterator
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length `num_segments`, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -1085,7 +1085,7 @@ struct DeviceSegmentedReduce
   //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.

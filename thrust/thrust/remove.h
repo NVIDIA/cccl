@@ -101,7 +101,7 @@ THRUST_NAMESPACE_BEGIN
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator remove(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                          ForwardIterator first,
                          ForwardIterator last,
@@ -218,7 +218,7 @@ template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator remove_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                              InputIterator first,
                              InputIterator last,
@@ -311,7 +311,7 @@ template<typename InputIterator,
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int x)
  *    {
  *      return (x % 2) == 0;
@@ -348,7 +348,7 @@ template<typename InputIterator,
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator remove_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -384,7 +384,7 @@ __host__ __device__
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int x)
  *    {
  *      return (x % 2) == 0;
@@ -462,7 +462,7 @@ template<typename ForwardIterator,
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int x)
  *    {
  *      return (x % 2) == 0;
@@ -486,7 +486,7 @@ template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator remove_copy_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                 InputIterator first,
                                 InputIterator last,
@@ -525,7 +525,7 @@ __host__ __device__
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int x)
  *    {
  *      return (x % 2) == 0;
@@ -612,7 +612,7 @@ template<typename DerivedPolicy,
          typename ForwardIterator,
          typename InputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator remove_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -735,7 +735,7 @@ template<typename DerivedPolicy,
          typename InputIterator2,
          typename OutputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator remove_copy_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                 InputIterator1 first,
                                 InputIterator1 last,

@@ -70,7 +70,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see https://en.cppreference.com/w/cpp/iterator/distance
  */
 template<typename InputIterator>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::difference_type
     distance(InputIterator first, InputIterator last);
 

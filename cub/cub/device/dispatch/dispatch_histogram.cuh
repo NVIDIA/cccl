@@ -311,7 +311,7 @@ struct dispatch_histogram
   template <typename ActivePolicyT,
             typename DeviceHistogramInitKernelT,
             typename DeviceHistogramSweepKernelT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   Invoke(DeviceHistogramInitKernelT histogram_init_kernel,
          DeviceHistogramSweepKernelT histogram_sweep_kernel)
   {
@@ -533,7 +533,7 @@ struct dispatch_histogram
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>,
                                  DeviceHistogramSweepKernel<MaxPolicyT,
@@ -625,7 +625,7 @@ public:
      * @param d_levels_ Pointer to levels array
      * @param num_output_levels_ Number of levels in array
      */
-    __host__ __device__ __forceinline__ void Init(LevelIteratorT d_levels_, int num_output_levels_)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(LevelIteratorT d_levels_, int num_output_levels_)
     {
       this->d_levels          = d_levels_;
       this->num_output_levels = num_output_levels_;
@@ -633,7 +633,7 @@ public:
 
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    __host__ __device__ __forceinline__ void BinSelect(_SampleT sample, int &bin, bool valid)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int &bin, bool valid)
     {
       /// Level iterator wrapper type
       // Wrap the native input pointer with CacheModifiedInputIterator
@@ -718,7 +718,7 @@ public:
     ScaleT m_scale; // Bin scaling
 
     template <typename T>
-    __host__ __device__ __forceinline__ ScaleT
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::true_type /* is_fp */)
     {
       ScaleT result;
@@ -728,7 +728,7 @@ public:
     }
 
     template <typename T>
-    __host__ __device__ __forceinline__ ScaleT
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::false_type /* is_fp */)
     {
       ScaleT result;
@@ -738,7 +738,7 @@ public:
     }
 
     template <typename T>
-    __host__ __device__ __forceinline__ ScaleT ComputeScale(int num_levels,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels,
                                                             T max_level,
                                                             T min_level)
     {
@@ -749,7 +749,7 @@ public:
     }
 
 #ifdef __CUDA_FP16_TYPES_EXIST__
-    __host__ __device__ __forceinline__ ScaleT ComputeScale(int num_levels,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels,
                                                             __half max_level,
                                                             __half min_level)
     {
@@ -765,13 +765,13 @@ public:
 
     // All types but __half:
     template <typename T>
-    __host__ __device__ __forceinline__ int SampleIsValid(T sample, T max_level, T min_level)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(T sample, T max_level, T min_level)
     {
       return sample >= min_level && sample < max_level;
     }
 
 #ifdef __CUDA_FP16_TYPES_EXIST__
-    __host__ __device__ __forceinline__ int SampleIsValid(__half sample,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(__half sample,
                                                           __half max_level,
                                                           __half min_level)
     {
@@ -787,7 +787,7 @@ public:
      * @brief Bin computation for floating point (and extended floating point) types
      */
     template <typename T>
-    __host__ __device__ __forceinline__ int
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
     ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::true_type /* is_fp */)
     {
       return static_cast<int>((sample - min_level) * scale.reciprocal);
@@ -797,7 +797,7 @@ public:
      * @brief Bin computation for custom types and __[u]int128
      */
     template <typename T>
-    __host__ __device__ __forceinline__ int
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
     ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::false_type /* is_fp */)
     {
       return static_cast<int>(((sample - min_level) * scale.fraction.bins) / scale.fraction.range);
@@ -808,7 +808,7 @@ public:
      */
     template <typename T,
               typename ::cuda::std::enable_if<is_integral_excl_int128<T>::value, int>::type = 0>
-    __host__ __device__ __forceinline__ int ComputeBin(T sample, T min_level, ScaleT scale)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale)
     {
       return static_cast<int>((static_cast<IntArithmeticT>(sample - min_level) *
                                static_cast<IntArithmeticT>(scale.fraction.bins)) /
@@ -817,13 +817,13 @@ public:
 
     template <typename T,
               typename ::cuda::std::enable_if<!is_integral_excl_int128<T>::value, int>::type = 0>
-    __host__ __device__ __forceinline__ int ComputeBin(T sample, T min_level, ScaleT scale)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale)
     {
       return this->ComputeBin(sample, min_level, scale, ::cuda::std::is_floating_point<T>{});
     }
 
 #ifdef __CUDA_FP16_TYPES_EXIST__
-    __host__ __device__ __forceinline__ int ComputeBin(__half sample,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(__half sample,
                                                        __half min_level,
                                                        ScaleT scale)
     {
@@ -834,7 +834,7 @@ public:
     }
 #endif
 
-    __host__ __device__ __forceinline__ bool MayOverflow(CommonT /* num_bins */,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool MayOverflow(CommonT /* num_bins */,
                                                          ::cuda::std::false_type /* is_integral */)
     {
       return false;
@@ -844,7 +844,7 @@ public:
      * @brief Returns true if the bin computation for a given combination of range `(max_level -
      * min_level)` and number of bins may overflow.
      */
-    __host__ __device__ __forceinline__ bool MayOverflow(CommonT num_bins,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool MayOverflow(CommonT num_bins,
                                                          ::cuda::std::true_type /* is_integral */)
     {
       return static_cast<IntArithmeticT>(m_max - m_min) >
@@ -858,7 +858,7 @@ public:
      * @return cudaErrorInvalidValue if the ScaleTransform for the given values may overflow,
      * cudaSuccess otherwise
      */
-    __host__ __device__ __forceinline__ cudaError_t Init(int num_levels,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Init(int num_levels,
                                                          LevelT max_level,
                                                          LevelT min_level)
     {
@@ -877,7 +877,7 @@ public:
 
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER>
-    __host__ __device__ __forceinline__ void BinSelect(SampleT sample, int &bin, bool valid)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int &bin, bool valid)
     {
       const CommonT common_sample = static_cast<CommonT>(sample);
 
@@ -893,7 +893,7 @@ public:
   {
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    __host__ __device__ __forceinline__ void BinSelect(_SampleT sample, int &bin, bool valid)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int &bin, bool valid)
     {
       if (valid)
         bin = (int)sample;
@@ -1309,7 +1309,7 @@ public:
    * @param is_byte_sample
    *   Marker type indicating whether or not SampleT is a 8b type
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   DispatchEven(void *d_temp_storage,
                size_t &temp_storage_bytes,
                SampleIteratorT d_samples,
@@ -1444,7 +1444,7 @@ public:
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   DispatchEven(void *d_temp_storage,
                size_t &temp_storage_bytes,
                SampleIteratorT d_samples,
@@ -1524,7 +1524,7 @@ public:
    * @param is_byte_sample
    *   type indicating whether or not SampleT is a 8b type
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   DispatchEven(void *d_temp_storage,
                size_t &temp_storage_bytes,
                SampleIteratorT d_samples,
@@ -1612,7 +1612,7 @@ public:
     return error;
   }
 
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   DispatchEven(void *d_temp_storage,
                size_t &temp_storage_bytes,
                SampleIteratorT d_samples,

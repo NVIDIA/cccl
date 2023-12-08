@@ -90,45 +90,45 @@ public:
   template <typename U>
   using rebind_traits = allocator_traits<std::allocator<U>>;
 
-  __thrust_exec_check_disable__
-  __host__ __device__
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
   static pointer allocate(allocator_type &a, size_type n)
   {
     return superclass::allocate(a, n);
   }
 
-  __thrust_exec_check_disable__
-  __host__ __device__
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
   static pointer allocate(allocator_type &a, size_type n, const_void_pointer hint)
   {
     return superclass::allocate(a, n, hint);
   }
 
-  __thrust_exec_check_disable__
-  __host__ __device__
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
   static void deallocate(allocator_type &a, pointer p, size_type n)
   {
     superclass::deallocate(a, p, n);
   }
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename U, typename ...Args>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static void construct(allocator_type &a, U *p, Args&&... args)
   {
     superclass::construct(a, p, THRUST_FWD(args)...);
   }
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename U>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static void destroy(allocator_type &a, U *p)
   {
     superclass::destroy(a, p);
   }
 
-  __thrust_exec_check_disable__
-  __host__ __device__
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
   static size_type max_size(const allocator_type &a)
   {
     return superclass::max_size(a);
@@ -155,7 +155,7 @@ template<typename Alloc>
 };
 
 template<typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename enable_if<
     has_member_allocate_with_hint<Alloc>::value,
     typename allocator_traits<Alloc>::pointer
@@ -166,7 +166,7 @@ __host__ __device__
 }
 
 template<typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename disable_if<
     has_member_allocate_with_hint<Alloc>::value,
     typename allocator_traits<Alloc>::pointer
@@ -184,9 +184,9 @@ template<typename Alloc, typename T>
     : has_member_construct1_impl<Alloc, void(T*)>
 {};
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename Alloc, typename T>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
     typename enable_if<
       has_member_construct1<Alloc,T>::value
     >::type
@@ -195,9 +195,9 @@ template<typename Alloc, typename T>
   a.construct(p);
 }
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename Alloc, typename T>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
     typename disable_if<
       has_member_construct1<Alloc,T>::value
     >::type
@@ -214,9 +214,9 @@ template<typename Alloc, typename T, typename Arg1>
     : has_member_construct2_impl<Alloc, void(T*,const Arg1 &)>
 {};
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename Alloc, typename T, typename Arg1>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
     typename enable_if<
       has_member_construct2<Alloc,T,Arg1>::value
     >::type
@@ -225,9 +225,9 @@ template<typename Alloc, typename T, typename Arg1>
   a.construct(p,arg1);
 }
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename Alloc, typename T, typename Arg1>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
     typename disable_if<
       has_member_construct2<Alloc,T,Arg1>::value
     >::type
@@ -245,9 +245,9 @@ template<typename Alloc, typename T, typename... Args>
     : has_member_constructN_impl<Alloc, void(T*, Args...)>
 {};
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename Alloc, typename T, typename... Args>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
     typename enable_if<
       has_member_constructN<Alloc, T, Args...>::value
     >::type
@@ -256,9 +256,9 @@ template<typename Alloc, typename T, typename... Args>
   a.construct(p, THRUST_FWD(args)...);
 }
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename Alloc, typename T, typename... Args>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
     typename disable_if<
       has_member_constructN<Alloc, T, Args...>::value
     >::type
@@ -276,9 +276,9 @@ template<typename Alloc, typename T>
     : has_member_destroy_impl<Alloc, void(T*)>
 {};
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename Alloc, typename T>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
     typename enable_if<
       has_member_destroy<Alloc,T>::value
     >::type
@@ -287,9 +287,9 @@ template<typename Alloc, typename T>
   a.destroy(p);
 }
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename Alloc, typename T>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
     typename disable_if<
       has_member_destroy<Alloc,T>::value
     >::type
@@ -312,7 +312,7 @@ template<typename Alloc>
 };
 
 template<typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename enable_if<
     has_member_max_size<Alloc>::value,
     typename allocator_traits<Alloc>::size_type
@@ -323,7 +323,7 @@ __host__ __device__
 }
 
 template<typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename disable_if<
     has_member_max_size<Alloc>::value,
     typename allocator_traits<Alloc>::size_type
@@ -335,7 +335,7 @@ __host__ __device__
 }
 
 template<typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename enable_if<
     has_member_system<Alloc>::value,
     typename allocator_system<Alloc>::type &
@@ -347,7 +347,7 @@ __host__ __device__
 }
 
 template<typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename disable_if<
     has_member_system<Alloc>::value,
     typename allocator_system<Alloc>::type
@@ -363,15 +363,15 @@ __host__ __device__
 
 
 template<typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename allocator_traits<Alloc>::pointer
     allocator_traits<Alloc>
       ::allocate(Alloc &a, typename allocator_traits<Alloc>::size_type n)
 {
   struct workaround_warnings
   {
-    __thrust_exec_check_disable__
-    static __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    static _CCCL_HOST_DEVICE
     typename allocator_traits<Alloc>::pointer
       allocate(Alloc &a, typename allocator_traits<Alloc>::size_type n)
     {
@@ -383,7 +383,7 @@ __host__ __device__
 }
 
 template<typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename allocator_traits<Alloc>::pointer
     allocator_traits<Alloc>
       ::allocate(Alloc &a, typename allocator_traits<Alloc>::size_type n, typename allocator_traits<Alloc>::const_void_pointer hint)
@@ -392,14 +392,14 @@ __host__ __device__
 }
 
 template<typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void allocator_traits<Alloc>
     ::deallocate(Alloc &a, typename allocator_traits<Alloc>::pointer p, typename allocator_traits<Alloc>::size_type n)
 {
   struct workaround_warnings
   {
-    __thrust_exec_check_disable__
-    static __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    static _CCCL_HOST_DEVICE
     void deallocate(Alloc &a, typename allocator_traits<Alloc>::pointer p, typename allocator_traits<Alloc>::size_type n)
     {
       return a.deallocate(p,n);
@@ -411,7 +411,7 @@ __host__ __device__
 
 template<typename Alloc>
   template<typename T>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     void allocator_traits<Alloc>
       ::construct(allocator_type &a, T *p)
 {
@@ -420,7 +420,7 @@ template<typename Alloc>
 
 template<typename Alloc>
   template<typename T, typename Arg1>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     void allocator_traits<Alloc>
       ::construct(allocator_type &a, T *p, const Arg1 &arg1)
 {
@@ -431,7 +431,7 @@ template<typename Alloc>
 
 template<typename Alloc>
   template<typename T, typename... Args>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     void allocator_traits<Alloc>
       ::construct(allocator_type &a, T *p, Args&&... args)
 {
@@ -442,7 +442,7 @@ template<typename Alloc>
 
 template<typename Alloc>
   template<typename T>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     void allocator_traits<Alloc>
       ::destroy(allocator_type &a, T *p)
 {
@@ -450,7 +450,7 @@ template<typename Alloc>
 }
 
 template<typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename allocator_traits<Alloc>::size_type
     allocator_traits<Alloc>
       ::max_size(const allocator_type &a)
@@ -459,7 +459,7 @@ __host__ __device__
 }
 
 template<typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename allocator_system<Alloc>::get_result_type
     allocator_system<Alloc>
       ::get(Alloc &a)

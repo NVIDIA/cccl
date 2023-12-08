@@ -46,7 +46,7 @@ namespace copy_detail
 
 // returns the raw pointer associated with a Pointer-like thing
 template<typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::pointer_traits<Pointer>::raw_pointer
     get(Pointer ptr)
 {
@@ -54,10 +54,10 @@ __host__ __device__
 }
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy(InputIterator first,
                       InputIterator last,
                       OutputIterator result,
@@ -71,10 +71,10 @@ __host__ __device__
 } // end copy()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy(InputIterator first,
                       InputIterator last,
                       OutputIterator result,
@@ -84,11 +84,11 @@ __host__ __device__
 } // end copy()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename InputIterator,
          typename Size,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy_n(InputIterator first,
                         Size n,
                         OutputIterator result,
@@ -99,11 +99,11 @@ __host__ __device__
 } // end copy_n()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename InputIterator,
          typename Size,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy_n(InputIterator first,
                         Size n,
                         OutputIterator result,
@@ -116,11 +116,11 @@ __host__ __device__
 } // end namespace copy_detail
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy(sequential::execution_policy<DerivedPolicy> &,
                       InputIterator first,
                       InputIterator last,
@@ -131,12 +131,12 @@ __host__ __device__
 } // end copy()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator,
          typename Size,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy_n(sequential::execution_policy<DerivedPolicy> &,
                         InputIterator first,
                         Size n,

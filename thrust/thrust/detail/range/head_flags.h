@@ -56,18 +56,18 @@ template<typename RandomAccessIterator,
 
       typedef ValueType result_type;
 
-      __host__ __device__
+      _CCCL_HOST_DEVICE
       head_flag_functor(init_type init, IndexType n)
         : binary_pred(), init(init), n(n)
       {}
 
-      __host__ __device__
+      _CCCL_HOST_DEVICE
       head_flag_functor(init_type init, IndexType n, BinaryPredicate binary_pred)
         : binary_pred(binary_pred), init(init), n(n)
       {}
 
       template<typename Tuple>
-      __host__ __device__ __thrust_forceinline__
+      _CCCL_HOST_DEVICE __thrust_forceinline__
       result_type operator()(const Tuple &t)
       {
         const IndexType i = thrust::get<0>(t);
@@ -89,36 +89,36 @@ template<typename RandomAccessIterator,
       thrust::zip_iterator<thrust::tuple<counting_iterator,RandomAccessIterator,RandomAccessIterator> >
     > iterator;
 
-    __thrust_exec_check_disable__
-    __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
     head_flags_with_init(RandomAccessIterator first, RandomAccessIterator last, init_type init)
       : m_begin(thrust::make_transform_iterator(thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
                                                 head_flag_functor(init, last - first))),
         m_end(m_begin + (last - first))
     {}
 
-    __thrust_exec_check_disable__
-    __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
     head_flags_with_init(RandomAccessIterator first, RandomAccessIterator last, init_type init, BinaryPredicate binary_pred)
       : m_begin(thrust::make_transform_iterator(thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
                                                 head_flag_functor(init, last - first, binary_pred))),
         m_end(m_begin + (last - first))
     {}
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     iterator begin() const
     {
       return m_begin;
     }
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     iterator end() const
     {
       return m_end;
     }
 
     template<typename OtherIndex>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename iterator::reference operator[](OtherIndex i)
     {
       return *(begin() + i);
@@ -146,18 +146,18 @@ template<typename RandomAccessIterator,
 
       typedef ValueType result_type;
 
-      __host__ __device__
+      _CCCL_HOST_DEVICE
       head_flag_functor(IndexType n)
         : binary_pred(), n(n)
       {}
 
-      __host__ __device__
+      _CCCL_HOST_DEVICE
       head_flag_functor(IndexType n, BinaryPredicate binary_pred)
         : binary_pred(binary_pred), n(n)
       {}
 
       template<typename Tuple>
-      __host__ __device__ __thrust_forceinline__
+      _CCCL_HOST_DEVICE __thrust_forceinline__
       result_type operator()(const Tuple &t)
       {
         const IndexType i = thrust::get<0>(t);
@@ -176,34 +176,34 @@ template<typename RandomAccessIterator,
       thrust::zip_iterator<thrust::tuple<counting_iterator,RandomAccessIterator,RandomAccessIterator> >
     > iterator;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     head_flags(RandomAccessIterator first, RandomAccessIterator last)
       : m_begin(thrust::make_transform_iterator(thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
                                                 head_flag_functor(last - first))),
         m_end(m_begin + (last - first))
     {}
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     head_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred)
       : m_begin(thrust::make_transform_iterator(thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
                                                 head_flag_functor(last - first, binary_pred))),
         m_end(m_begin + (last - first))
     {}
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     iterator begin() const
     {
       return m_begin;
     }
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     iterator end() const
     {
       return m_end;
     }
 
     template<typename OtherIndex>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename iterator::reference operator[](OtherIndex i)
     {
       return *(begin() + i);
@@ -215,7 +215,7 @@ template<typename RandomAccessIterator,
 
 
 template<typename RandomAccessIterator, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 head_flags<RandomAccessIterator, BinaryPredicate>
   make_head_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred)
 {
@@ -224,7 +224,7 @@ head_flags<RandomAccessIterator, BinaryPredicate>
 
 
 template<typename RandomAccessIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 head_flags<RandomAccessIterator>
   make_head_flags(RandomAccessIterator first, RandomAccessIterator last)
 {

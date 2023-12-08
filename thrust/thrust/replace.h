@@ -90,7 +90,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see \c replace_copy_if
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void replace(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                ForwardIterator first, ForwardIterator last,
                const T &old_value,
@@ -176,7 +176,7 @@ template<typename ForwardIterator, typename T>
  *  ...
  *  struct is_less_than_zero
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -204,7 +204,7 @@ template<typename ForwardIterator, typename T>
  *  \see \c replace_copy_if
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename Predicate, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void replace_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                   ForwardIterator first, ForwardIterator last,
                   Predicate pred,
@@ -237,7 +237,7 @@ __host__ __device__
  *  ...
  *  struct is_less_than_zero
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -305,7 +305,7 @@ template<typename ForwardIterator, typename Predicate, typename T>
  *
  *  struct is_less_than_zero
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -338,7 +338,7 @@ template<typename ForwardIterator, typename Predicate, typename T>
  *  \see \c replace_copy_if
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void replace_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                   ForwardIterator first, ForwardIterator last,
                   InputIterator stencil,
@@ -375,7 +375,7 @@ __host__ __device__
  *
  *  struct is_less_than_zero
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -467,7 +467,7 @@ template<typename ForwardIterator, typename InputIterator, typename Predicate, t
  *  \see \c replace_copy_if
  */
 template<typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator replace_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                               InputIterator first, InputIterator last,
                               OutputIterator result,
@@ -563,7 +563,7 @@ template<typename InputIterator, typename OutputIterator, typename T>
  *
  *  struct is_less_than_zero
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -592,7 +592,7 @@ template<typename InputIterator, typename OutputIterator, typename T>
  *  \see \c replace_copy
  */
 template<typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator replace_copy_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                  InputIterator first, InputIterator last,
                                  OutputIterator result,
@@ -630,7 +630,7 @@ __host__ __device__
  *
  *  struct is_less_than_zero
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -703,7 +703,7 @@ template<typename InputIterator, typename OutputIterator, typename Predicate, ty
  *
  *  struct is_less_than_zero
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -736,7 +736,7 @@ template<typename InputIterator, typename OutputIterator, typename Predicate, ty
  *  \see \c replace_if
  */
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator replace_copy_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                  InputIterator1 first, InputIterator1 last,
                                  InputIterator2 stencil,
@@ -778,7 +778,7 @@ __host__ __device__
  *
  *  struct is_less_than_zero
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(int x)
  *    {
  *      return x < 0;

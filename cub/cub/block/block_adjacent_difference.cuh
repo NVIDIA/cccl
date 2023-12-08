@@ -26,7 +26,7 @@
  *
  ******************************************************************************/
 
-//! @file The cub::BlockAdjacentDifference class provides collective methods for computing 
+//! @file The cub::BlockAdjacentDifference class provides collective methods for computing
 //! the differences of adjacent elements partitioned across a CUDA thread block.
 
 #pragma once
@@ -49,13 +49,13 @@ CUB_NAMESPACE_BEGIN
 //! @rst
 //! BlockAdjacentDifference provides :ref:`collective <collective-primitives>` methods for computing the
 //! differences of adjacent elements partitioned across a CUDA thread block.
-//! 
+//!
 //! Overview
 //! ++++++++++++++++
-//! 
-//! BlockAdjacentDifference calculates the differences of adjacent elements in the elements partitioned across a CUDA 
+//!
+//! BlockAdjacentDifference calculates the differences of adjacent elements in the elements partitioned across a CUDA
 //! thread block. Because the binary operation could be noncommutative, there are two sets of methods.
-//! Methods named SubtractLeft subtract left element ``i - 1`` of input sequence from current element ``i``. 
+//! Methods named SubtractLeft subtract left element ``i - 1`` of input sequence from current element ``i``.
 //! Methods named SubtractRight subtract the right element ``i + 1`` from the current one ``i``:
 //!
 //! .. code-block:: c++
@@ -65,56 +65,56 @@ CUB_NAMESPACE_BEGIN
 //!    int subtract_left_result[4];  <-- [  1,  1,  1,  1 ]
 //!    int subtract_right_result[4]; <-- [ -1, -1, -1,  4 ]
 //!
-//! - For SubtractLeft, if the left element is out of bounds, the input value is assigned to ``output[0]`` 
+//! - For SubtractLeft, if the left element is out of bounds, the input value is assigned to ``output[0]``
 //!   without modification.
 //! - For SubtractRight, if the right element is out of bounds, the input value is assigned to the current output value
 //!   without modification.
-//! - The block/example_block_reduce_dyn_smem.cu example under the examples/block folder illustrates usage of 
+//! - The block/example_block_reduce_dyn_smem.cu example under the examples/block folder illustrates usage of
 //!   dynamically shared memory with BlockReduce and how to re-purpose the same memory region.
 //!   This example can be easily adapted to the storage required by BlockAdjacentDifference.
-//! 
+//!
 //! A Simple Example
 //! ++++++++++++++++
 //!
 //! The code snippet below illustrates how to use BlockAdjacentDifference to
 //! compute the left difference between adjacent elements.
-//! 
+//!
 //! .. code-block:: c++
 //!
 //!    #include <cub/cub.cuh>
 //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
-//! 
+//!
 //!    struct CustomDifference
 //!    {
 //!      template <typename DataType>
-//!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+//!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
 //!      {
 //!        return lhs - rhs;
 //!      }
 //!    };
-//! 
+//!
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        // Specialize BlockAdjacentDifference for a 1D block of
 //!        // 128 threads of type int
 //!        using BlockAdjacentDifferenceT =
 //!           cub::BlockAdjacentDifference<int, 128>;
-//! 
+//!
 //!        // Allocate shared memory for BlockAdjacentDifference
 //!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
-//! 
+//!
 //!        // Obtain a segment of consecutive items that are blocked across threads
 //!        int thread_data[4];
 //!        ...
-//! 
+//!
 //!        // Collectively compute adjacent_difference
 //!        int result[4];
-//! 
+//!
 //!        BlockAdjacentDifferenceT(temp_storage).SubtractLeft(
 //!            thread_data,
 //!            result,
 //!            CustomDifference());
-//! 
+//!
 //! Suppose the set of input `thread_data` across the block of threads is
 //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
 //! The corresponding output ``result`` in those threads will be
@@ -140,7 +140,7 @@ private:
     };
 
     /// Internal storage allocator
-    __device__ __forceinline__ _TempStorage& PrivateStorage()
+    _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
     {
         __shared__ _TempStorage private_storage;
         return private_storage;
@@ -153,7 +153,7 @@ private:
     struct ApplyOp
     {
         // Apply flag operator
-      static __device__ __forceinline__ T FlagT(FlagOp flag_op,
+      static _CCCL_DEVICE _CCCL_FORCEINLINE T FlagT(FlagOp flag_op,
                                                 const T &a,
                                                 const T &b,
                                                 int idx)
@@ -167,7 +167,7 @@ private:
     struct ApplyOp<FlagOp, false>
     {
       // Apply flag operator
-      static __device__ __forceinline__ T FlagT(FlagOp flag_op,
+      static _CCCL_DEVICE _CCCL_FORCEINLINE T FlagT(FlagOp flag_op,
                                                 const T &a,
                                                 const T &b,
                                                 int /*idx*/)
@@ -188,7 +188,7 @@ private:
          * @param[in] flag_op Binary boolean flag predicate
          */
         template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-        static __device__ __forceinline__ void
+        static _CCCL_DEVICE _CCCL_FORCEINLINE void
         FlagHeads(int linear_tid,
                   FlagT (&flags)[ITEMS_PER_THREAD],
                   T (&input)[ITEMS_PER_THREAD],
@@ -214,7 +214,7 @@ private:
          * @param[in] flag_op Binary boolean flag predicate
          */
         template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-        static __device__ __forceinline__ void
+        static _CCCL_DEVICE _CCCL_FORCEINLINE void
         FlagTails(int linear_tid,
                   FlagT (&flags)[ITEMS_PER_THREAD],
                   T (&input)[ITEMS_PER_THREAD],
@@ -247,14 +247,14 @@ public:
     //! @{
 
     //! @brief Collective constructor using a private static allocation of shared memory as temporary storage
-    __device__ __forceinline__ BlockAdjacentDifference()
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockAdjacentDifference()
         : temp_storage(PrivateStorage())
         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
 
     //! @brief Collective constructor using the specified memory allocation as temporary storage
     //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
-    __device__ __forceinline__ BlockAdjacentDifference(TempStorage &temp_storage)
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockAdjacentDifference(TempStorage &temp_storage)
         : temp_storage(temp_storage.Alias())
         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
@@ -283,7 +283,7 @@ public:
     //!    struct CustomDifference
     //!    {
     //!      template <typename DataType>
-    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
     //!      {
     //!        return lhs - rhs;
     //!      }
@@ -326,7 +326,7 @@ public:
     template <int ITEMS_PER_THREAD,
               typename OutputType,
               typename DifferenceOpT>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     SubtractLeft(T (&input)[ITEMS_PER_THREAD],
                  OutputType (&output)[ITEMS_PER_THREAD],
                  DifferenceOpT difference_op)
@@ -373,7 +373,7 @@ public:
     //!    struct CustomDifference
     //!    {
     //!      template <typename DataType>
-    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
     //!      {
     //!        return lhs - rhs;
     //!      }
@@ -421,13 +421,13 @@ public:
     //!
     //! @param[in] tile_predecessor_item
     //!   @rst
-    //!   *thread*\ :sub:`0` only item which is going to be subtracted from the first tile item 
+    //!   *thread*\ :sub:`0` only item which is going to be subtracted from the first tile item
     //!   (*input*\ :sub:`0` from *thread*\ :sub:`0`).
     //!   @endrst
     template <int ITEMS_PER_THREAD,
               typename OutputT,
               typename DifferenceOpT>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     SubtractLeft(T (&input)[ITEMS_PER_THREAD],
                  OutputT (&output)[ITEMS_PER_THREAD],
                  DifferenceOpT difference_op,
@@ -476,7 +476,7 @@ public:
     //!    struct CustomDifference
     //!    {
     //!      template <typename DataType>
-    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
     //!      {
     //!        return lhs - rhs;
     //!      }
@@ -524,7 +524,7 @@ public:
     template <int ITEMS_PER_THREAD,
               typename OutputType,
               typename DifferenceOpT>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     SubtractLeftPartialTile(T (&input)[ITEMS_PER_THREAD],
                             OutputType (&output)[ITEMS_PER_THREAD],
                             DifferenceOpT difference_op,
@@ -581,7 +581,7 @@ public:
     //!
     //! Snippet
     //! +++++++
-    //! 
+    //!
     //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the left difference between
     //! adjacent elements.
     //!
@@ -593,7 +593,7 @@ public:
     //!    struct CustomDifference
     //!    {
     //!      template <typename DataType>
-    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
     //!      {
     //!        return lhs - rhs;
     //!      }
@@ -643,13 +643,13 @@ public:
     //!
     //! @param[in] tile_predecessor_item
     //!   @rst
-    //!   *thread*\ :sub:`0` only item which is going to be subtracted from the first tile item 
+    //!   *thread*\ :sub:`0` only item which is going to be subtracted from the first tile item
     //!   (*input*\ :sub:`0` from *thread*\ :sub:`0`).
     //!   @endrst
     template <int ITEMS_PER_THREAD,
               typename OutputType,
               typename DifferenceOpT>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     SubtractLeftPartialTile(T (&input)[ITEMS_PER_THREAD],
                             OutputType (&output)[ITEMS_PER_THREAD],
                             DifferenceOpT difference_op,
@@ -708,70 +708,70 @@ public:
     //! @{
     //!
     //! @rst
-    //! 
+    //!
     //! Subtracts the right element of each adjacent pair of elements partitioned across a CUDA thread block.
-    //! 
+    //!
     //! - @rowmajor
     //! - @smemreuse
-    //! 
+    //!
     //! Snippet
     //! +++++++
     //!
     //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the right difference between
     //! adjacent elements.
-    //! 
+    //!
     //! .. code-block:: c++
     //!
     //!    #include <cub/cub.cuh>
     //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
-    //! 
+    //!
     //!    struct CustomDifference
     //!    {
     //!      template <typename DataType>
-    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
     //!      {
     //!        return lhs - rhs;
     //!      }
     //!    };
-    //! 
+    //!
     //!    __global__ void ExampleKernel(...)
     //!    {
     //!        // Specialize BlockAdjacentDifference for a 1D block of
     //!        // 128 threads of type int
     //!        using BlockAdjacentDifferenceT =
     //!           cub::BlockAdjacentDifference<int, 128>;
-    //! 
+    //!
     //!        // Allocate shared memory for BlockAdjacentDifference
     //!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
-    //! 
+    //!
     //!        // Obtain a segment of consecutive items that are blocked across threads
     //!        int thread_data[4];
     //!        ...
-    //! 
+    //!
     //!        // Collectively compute adjacent_difference
     //!        BlockAdjacentDifferenceT(temp_storage).SubtractRight(
     //!            thread_data,
     //!            thread_data,
     //!            CustomDifference());
-    //! 
+    //!
     //! Suppose the set of input ``thread_data`` across the block of threads is
     //! ``{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }``.
     //! The corresponding output ``result`` in those threads will be
     //! ``{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,0,0], [-1,3,-3,4] }``.
     //! @endrst
-    //! 
+    //!
     //! @param[out] output
     //!   Calling thread's adjacent difference result
-    //! 
+    //!
     //! @param[in] input
     //!   Calling thread's input items (may be aliased to `output`)
-    //! 
+    //!
     //! @param[in] difference_op
     //!   Binary difference operator
     template <int ITEMS_PER_THREAD,
               typename OutputT,
               typename DifferenceOpT>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     SubtractRight(T (&input)[ITEMS_PER_THREAD],
                   OutputT (&output)[ITEMS_PER_THREAD],
                   DifferenceOpT difference_op)
@@ -820,7 +820,7 @@ public:
     //!    struct CustomDifference
     //!    {
     //!      template <typename DataType>
-    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
     //!      {
     //!        return lhs - rhs;
     //!      }
@@ -868,13 +868,13 @@ public:
     //!
     //! @param[in] tile_successor_item
     //!   @rst
-    //!   *thread*\ :sub:`BLOCK_THREADS` only item which is going to be subtracted from the last tile item 
+    //!   *thread*\ :sub:`BLOCK_THREADS` only item which is going to be subtracted from the last tile item
     //!   (*input*\ :sub:`ITEMS_PER_THREAD` from *thread*\ :sub:`BLOCK_THREADS`).
     //!   @endrst
     template <int ITEMS_PER_THREAD,
               typename OutputT,
               typename DifferenceOpT>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     SubtractRight(T (&input)[ITEMS_PER_THREAD],
                   OutputT (&output)[ITEMS_PER_THREAD],
                   DifferenceOpT difference_op,
@@ -921,7 +921,7 @@ public:
     //!    struct CustomDifference
     //!    {
     //!      template <typename DataType>
-    //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+    //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
     //!      {
     //!        return lhs - rhs;
     //!      }
@@ -969,7 +969,7 @@ public:
     template <int ITEMS_PER_THREAD,
               typename OutputT,
               typename DifferenceOpT>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     SubtractRightPartialTile(T (&input)[ITEMS_PER_THREAD],
                              OutputT (&output)[ITEMS_PER_THREAD],
                              DifferenceOpT difference_op,
@@ -1037,7 +1037,7 @@ public:
      *   Binary boolean flag predicate
      */
     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagHeads(FlagT (&output)[ITEMS_PER_THREAD],
+    CUB_DEPRECATED _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(FlagT (&output)[ITEMS_PER_THREAD],
                                                              T (&input)[ITEMS_PER_THREAD],
                                                              T (&preds)[ITEMS_PER_THREAD],
                                                              FlagOp flag_op)
@@ -1083,7 +1083,7 @@ public:
      *   (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
      */
     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagHeads(FlagT (&output)[ITEMS_PER_THREAD],
+    CUB_DEPRECATED _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(FlagT (&output)[ITEMS_PER_THREAD],
                                                              T (&input)[ITEMS_PER_THREAD],
                                                              T (&preds)[ITEMS_PER_THREAD],
                                                              FlagOp flag_op,
@@ -1121,7 +1121,7 @@ public:
      *   Binary boolean flag predicate
      */
     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagHeads(FlagT (&output)[ITEMS_PER_THREAD],
+    CUB_DEPRECATED _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(FlagT (&output)[ITEMS_PER_THREAD],
                                                              T (&input)[ITEMS_PER_THREAD],
                                                              FlagOp flag_op)
     {
@@ -1147,7 +1147,7 @@ public:
      *   (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
      */
     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagHeads(FlagT (&output)[ITEMS_PER_THREAD],
+    CUB_DEPRECATED _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(FlagT (&output)[ITEMS_PER_THREAD],
                                                              T (&input)[ITEMS_PER_THREAD],
                                                              FlagOp flag_op,
                                                              T tile_predecessor_item)
@@ -1170,7 +1170,7 @@ public:
      *   [in] Binary boolean flag predicate
      */
     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagTails(FlagT (&output)[ITEMS_PER_THREAD],
+    CUB_DEPRECATED _CCCL_DEVICE _CCCL_FORCEINLINE void FlagTails(FlagT (&output)[ITEMS_PER_THREAD],
                                                              T (&input)[ITEMS_PER_THREAD],
                                                              FlagOp flag_op)
     {
@@ -1211,7 +1211,7 @@ public:
      *   <em>thread</em><sub><em>BLOCK_THREADS</em>-1</sub>).
      */
     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void FlagTails(FlagT (&output)[ITEMS_PER_THREAD],
+    CUB_DEPRECATED _CCCL_DEVICE _CCCL_FORCEINLINE void FlagTails(FlagT (&output)[ITEMS_PER_THREAD],
                                                              T (&input)[ITEMS_PER_THREAD],
                                                              FlagOp flag_op,
                                                              T tile_successor_item)
@@ -1254,7 +1254,7 @@ public:
      *   Binary boolean flag predicate
      */
     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void
+    CUB_DEPRECATED _CCCL_DEVICE _CCCL_FORCEINLINE void
     FlagHeadsAndTails(FlagT (&head_flags)[ITEMS_PER_THREAD],
                       FlagT (&tail_flags)[ITEMS_PER_THREAD],
                       T (&input)[ITEMS_PER_THREAD],
@@ -1323,7 +1323,7 @@ public:
      *   Binary boolean flag predicate
      */
     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void
+    CUB_DEPRECATED _CCCL_DEVICE _CCCL_FORCEINLINE void
     FlagHeadsAndTails(FlagT (&head_flags)[ITEMS_PER_THREAD],
                       FlagT (&tail_flags)[ITEMS_PER_THREAD],
                       T tile_successor_item,
@@ -1393,7 +1393,7 @@ public:
      *   Binary boolean flag predicate
      */
     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void
+    CUB_DEPRECATED _CCCL_DEVICE _CCCL_FORCEINLINE void
     FlagHeadsAndTails(FlagT (&head_flags)[ITEMS_PER_THREAD],
                       T tile_predecessor_item,
                       FlagT (&tail_flags)[ITEMS_PER_THREAD],
@@ -1462,7 +1462,7 @@ public:
      *   [in] Binary boolean flag predicate
      */
     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-    CUB_DEPRECATED __device__ __forceinline__ void
+    CUB_DEPRECATED _CCCL_DEVICE _CCCL_FORCEINLINE void
     FlagHeadsAndTails(FlagT (&head_flags)[ITEMS_PER_THREAD],
                       T tile_predecessor_item,
                       FlagT (&tail_flags)[ITEMS_PER_THREAD],

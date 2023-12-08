@@ -243,19 +243,19 @@ private:
 
     int linear_tid;
 
-    __device__ __forceinline__ LoadInternal(TempStorage & /*temp_storage*/, int linear_tid)
+    _CCCL_DEVICE _CCCL_FORCEINLINE LoadInternal(TempStorage & /*temp_storage*/, int linear_tid)
         : linear_tid(linear_tid)
     {}
 
     template <typename InputIteratorT>
-    __device__ __forceinline__ void Load(InputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                          InputT (&items)[ITEMS_PER_THREAD])
     {
       LoadDirectBlocked(linear_tid, block_itr, items);
     }
 
     template <typename InputIteratorT>
-    __device__ __forceinline__ void Load(InputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                          InputT (&items)[ITEMS_PER_THREAD],
                                          int valid_items)
     {
@@ -263,7 +263,7 @@ private:
     }
 
     template <typename InputIteratorT, typename DefaultT>
-    __device__ __forceinline__ void Load(InputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                          InputT (&items)[ITEMS_PER_THREAD],
                                          int valid_items,
                                          DefaultT oob_default)
@@ -279,19 +279,19 @@ private:
 
     int linear_tid;
 
-    __device__ __forceinline__ LoadInternal(TempStorage & /*temp_storage*/, int linear_tid)
+    _CCCL_DEVICE _CCCL_FORCEINLINE LoadInternal(TempStorage & /*temp_storage*/, int linear_tid)
         : linear_tid(linear_tid)
     {}
 
     template <typename InputIteratorT>
-    __device__ __forceinline__ void Load(InputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                          InputT (&items)[ITEMS_PER_THREAD])
     {
       LoadDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items);
     }
 
     template <typename InputIteratorT>
-    __device__ __forceinline__ void Load(InputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                          InputT (&items)[ITEMS_PER_THREAD],
                                          int valid_items)
     {
@@ -299,7 +299,7 @@ private:
     }
 
     template <typename InputIteratorT, typename DefaultT>
-    __device__ __forceinline__ void Load(InputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                          InputT (&items)[ITEMS_PER_THREAD],
                                          int valid_items,
                                          DefaultT oob_default)
@@ -319,24 +319,24 @@ private:
 
     int linear_tid;
 
-    __device__ __forceinline__ LoadInternal(TempStorage & /*temp_storage*/, int linear_tid)
+    _CCCL_DEVICE _CCCL_FORCEINLINE LoadInternal(TempStorage & /*temp_storage*/, int linear_tid)
         : linear_tid(linear_tid)
     {}
 
     template <typename InputIteratorT>
-    __device__ __forceinline__ void Load(InputT *block_ptr, InputT (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputT *block_ptr, InputT (&items)[ITEMS_PER_THREAD])
     {
       InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, items);
     }
 
     template <typename InputIteratorT>
-    __device__ __forceinline__ void Load(const InputT *block_ptr, InputT (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(const InputT *block_ptr, InputT (&items)[ITEMS_PER_THREAD])
     {
       InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, items);
     }
 
     template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     Load(CacheModifiedInputIterator<MODIFIER, ValueType, OffsetT> block_itr,
          InputT (&items)[ITEMS_PER_THREAD])
     {
@@ -344,14 +344,14 @@ private:
     }
 
     template <typename _InputIteratorT>
-    __device__ __forceinline__ void Load(_InputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(_InputIteratorT block_itr,
                                          InputT (&items)[ITEMS_PER_THREAD])
     {
       LoadDirectBlocked(linear_tid, block_itr, items);
     }
 
     template <typename InputIteratorT>
-    __device__ __forceinline__ void Load(InputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                          InputT (&items)[ITEMS_PER_THREAD],
                                          int valid_items)
     {
@@ -359,7 +359,7 @@ private:
     }
 
     template <typename InputIteratorT, typename DefaultT>
-    __device__ __forceinline__ void Load(InputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                          InputT (&items)[ITEMS_PER_THREAD],
                                          int valid_items,
                                          DefaultT oob_default)
@@ -383,13 +383,13 @@ private:
 
     int linear_tid;
 
-    __device__ __forceinline__ LoadInternal(TempStorage &temp_storage, int linear_tid)
+    _CCCL_DEVICE _CCCL_FORCEINLINE LoadInternal(TempStorage &temp_storage, int linear_tid)
         : temp_storage(temp_storage.Alias())
         , linear_tid(linear_tid)
     {}
 
     template <typename InputIteratorT>
-    __device__ __forceinline__ void Load(InputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                          InputT (&items)[ITEMS_PER_THREAD])
     {
       LoadDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items);
@@ -397,7 +397,7 @@ private:
     }
 
     template <typename InputIteratorT>
-    __device__ __forceinline__ void Load(InputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                          InputT (&items)[ITEMS_PER_THREAD],
                                          int valid_items)
     {
@@ -406,7 +406,7 @@ private:
     }
 
     template <typename InputIteratorT, typename DefaultT>
-    __device__ __forceinline__ void Load(InputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                          InputT (&items)[ITEMS_PER_THREAD],
                                          int valid_items,
                                          DefaultT oob_default)
@@ -435,7 +435,7 @@ private:
    ****************************************************************************/
 
   /// Internal storage allocator
-  __device__ __forceinline__ _TempStorage &PrivateStorage()
+  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage &PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -461,14 +461,14 @@ public:
 
   //! @brief Collective constructor using a private static allocation of
   //!        shared memory as temporary storage.
-  __device__ __forceinline__ WarpLoad()
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpLoad()
       : temp_storage(PrivateStorage())
       , linear_tid(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as
   //!        temporary storage.
-  __device__ __forceinline__ WarpLoad(TempStorage &temp_storage)
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpLoad(TempStorage &temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
   {}
@@ -521,7 +521,7 @@ public:
   //! @param[in] block_itr The thread block's base input iterator for loading from
   //! @param[out] items Data to load
   template <typename InputIteratorT>
-  __device__ __forceinline__ void Load(InputIteratorT block_itr, InputT (&items)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ITEMS_PER_THREAD])
   {
     InternalLoad(temp_storage, linear_tid).Load(block_itr, items);
   }
@@ -573,7 +573,7 @@ public:
   //! @param[out] items Data to load
   //! @param[in] valid_items Number of valid items to load
   template <typename InputIteratorT>
-  __device__ __forceinline__ void Load(InputIteratorT block_itr,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                        InputT (&items)[ITEMS_PER_THREAD],
                                        int valid_items)
   {
@@ -630,7 +630,7 @@ public:
   //! @param[in] valid_items Number of valid items to load
   //! @param[in] oob_default Default value to assign out-of-bound items
   template <typename InputIteratorT, typename DefaultT>
-  __device__ __forceinline__ void Load(InputIteratorT block_itr,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr,
                                        InputT (&items)[ITEMS_PER_THREAD],
                                        int valid_items,
                                        DefaultT oob_default)

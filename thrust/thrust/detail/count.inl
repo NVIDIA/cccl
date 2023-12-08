@@ -33,9 +33,9 @@
 
 THRUST_NAMESPACE_BEGIN
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::difference_type
     count(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, const EqualityComparable& value)
 {
@@ -44,9 +44,9 @@ __host__ __device__
 } // end count()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::difference_type
     count_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred)
 {

@@ -32,9 +32,9 @@
 
 THRUST_NAMESPACE_BEGIN
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator find(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    InputIterator first,
                    InputIterator last,
@@ -45,9 +45,9 @@ InputIterator find(const thrust::detail::execution_policy_base<DerivedPolicy> &e
 } // end find()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator find_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                       InputIterator first,
                       InputIterator last,
@@ -58,9 +58,9 @@ InputIterator find_if(const thrust::detail::execution_policy_base<DerivedPolicy>
 } // end find_if()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator find_if_not(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                           InputIterator first,
                           InputIterator last,

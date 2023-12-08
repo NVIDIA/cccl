@@ -28,7 +28,6 @@
 #endif // no system header
 
 #include <thrust/system/cuda/error.h>
-#include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 
 THRUST_NAMESPACE_BEGIN
 

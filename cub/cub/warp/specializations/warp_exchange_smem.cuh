@@ -93,7 +93,7 @@ public:
 
   WarpExchangeSmem() = delete;
 
-  explicit __device__ __forceinline__
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE
   WarpExchangeSmem(TempStorage &temp_storage)
       : temp_storage(temp_storage.Alias())
       , lane_id(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
@@ -102,7 +102,7 @@ public:
   {}
 
   template <typename OutputT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
                    OutputT (&output_items)[ITEMS_PER_THREAD])
   {
@@ -121,7 +121,7 @@ public:
   }
 
   template <typename OutputT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD],
                    OutputT (&output_items)[ITEMS_PER_THREAD])
   {
@@ -140,7 +140,7 @@ public:
   }
 
   template <typename OffsetT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScatterToStriped(InputT (&items)[ITEMS_PER_THREAD],
                    OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
@@ -149,7 +149,7 @@ public:
 
   template <typename OutputT,
             typename OffsetT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScatterToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
                    OutputT (&output_items)[ITEMS_PER_THREAD],
                    OffsetT (&ranks)[ITEMS_PER_THREAD])

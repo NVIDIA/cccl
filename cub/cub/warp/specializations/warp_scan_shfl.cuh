@@ -113,7 +113,7 @@ struct WarpScanShfl
     //---------------------------------------------------------------------
 
     /// Constructor
-    explicit __device__ __forceinline__
+    explicit _CCCL_DEVICE _CCCL_FORCEINLINE
     WarpScanShfl(TempStorage & /*temp_storage*/)
         : lane_id(LaneId())
         , warp_id(IS_ARCH_WARP ? 0 : (lane_id / LOGICAL_WARP_THREADS))
@@ -145,7 +145,7 @@ struct WarpScanShfl
      * @param[in] offset
      *   Up-offset to pull from
      */
-    __device__ __forceinline__ int
+    _CCCL_DEVICE _CCCL_FORCEINLINE int
     InclusiveScanStep(int input, cub::Sum /*scan_op*/, int first_lane, int offset)
     {
         int output;
@@ -180,7 +180,7 @@ struct WarpScanShfl
      * @param[in] offset
      *   Up-offset to pull from
      */
-    __device__ __forceinline__ unsigned int
+    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
     InclusiveScanStep(unsigned int input, cub::Sum /*scan_op*/, int first_lane, int offset)
     {
         unsigned int output;
@@ -215,7 +215,7 @@ struct WarpScanShfl
      * @param[in] offset
      *   Up-offset to pull from
      */
-    __device__ __forceinline__ float
+    _CCCL_DEVICE _CCCL_FORCEINLINE float
     InclusiveScanStep(float input, cub::Sum /*scan_op*/, int first_lane, int offset)
     {
         float output;
@@ -250,7 +250,7 @@ struct WarpScanShfl
      * @param[in] offset
      *   Up-offset to pull from
      */
-    __device__ __forceinline__ unsigned long long
+    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long
     InclusiveScanStep(unsigned long long input, cub::Sum /*scan_op*/, int first_lane, int offset)
     {
         unsigned long long output;
@@ -290,7 +290,7 @@ struct WarpScanShfl
      * @param[in] offset
      *   Up-offset to pull from
      */
-    __device__ __forceinline__ long long
+    _CCCL_DEVICE _CCCL_FORCEINLINE long long
     InclusiveScanStep(long long input, cub::Sum /*scan_op*/, int first_lane, int offset)
     {
         long long output;
@@ -330,7 +330,7 @@ struct WarpScanShfl
      * @param[in] offset
      *   Up-offset to pull from
      */
-    __device__ __forceinline__ double
+    _CCCL_DEVICE _CCCL_FORCEINLINE double
     InclusiveScanStep(double input, cub::Sum /*scan_op*/, int first_lane, int offset)
     {
         double output;
@@ -359,7 +359,7 @@ struct WarpScanShfl
 /*
     /// Inclusive prefix scan (specialized for ReduceBySegmentOp<cub::Sum> across KeyValuePair<OffsetT, Value> types)
     template <typename Value, typename OffsetT>
-    __device__ __forceinline__ KeyValuePair<OffsetT, Value>InclusiveScanStep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, Value>InclusiveScanStep(
         KeyValuePair<OffsetT, Value>    input,              ///< [in] Calling thread's input item.
         ReduceBySegmentOp<cub::Sum>     scan_op,            ///< [in] Binary scan operator
         int                             first_lane,         ///< [in] Index of first lane in segment
@@ -393,7 +393,7 @@ struct WarpScanShfl
      *   Up-offset to pull from
      */
     template <typename _T, typename ScanOpT>
-    __device__ __forceinline__ _T
+    _CCCL_DEVICE _CCCL_FORCEINLINE _T
     InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset)
     {
         _T temp = ShuffleUp<LOGICAL_WARP_THREADS>(input, offset, first_lane, member_mask);
@@ -425,7 +425,7 @@ struct WarpScanShfl
      *   Marker type indicating whether T is a small integer
      */
     template <typename _T, typename ScanOpT>
-    __device__ __forceinline__ _T InclusiveScanStep(_T input,
+    _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(_T input,
                                                     ScanOpT scan_op,
                                                     int first_lane,
                                                     int offset,
@@ -454,7 +454,7 @@ struct WarpScanShfl
      *   Marker type indicating whether T is a small integer
      */
     template <typename _T, typename ScanOpT>
-    __device__ __forceinline__ _T InclusiveScanStep(_T input,
+    _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(_T input,
                                                     ScanOpT scan_op,
                                                     int first_lane,
                                                     int offset,
@@ -481,7 +481,7 @@ struct WarpScanShfl
      * @param[in] src_lane
      *   Which warp lane is to do the broadcasting
      */
-    __device__ __forceinline__ T Broadcast(T input, int src_lane)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Broadcast(T input, int src_lane)
     {
         return ShuffleIndex<LOGICAL_WARP_THREADS>(input, src_lane, member_mask);
     }
@@ -504,7 +504,7 @@ struct WarpScanShfl
      *   Binary scan operator
      */
     template <typename _T, typename ScanOpT>
-    __device__ __forceinline__ void InclusiveScan(_T input, _T &inclusive_output, ScanOpT scan_op)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(_T input, _T &inclusive_output, ScanOpT scan_op)
     {
         inclusive_output = input;
 
@@ -538,7 +538,7 @@ struct WarpScanShfl
      *   Binary scan operator
      */
     template <typename KeyT, typename ValueT, typename ReductionOpT>
-    __device__ __forceinline__ void InclusiveScan(KeyValuePair<KeyT, ValueT> input,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(KeyValuePair<KeyT, ValueT> input,
                                                   KeyValuePair<KeyT, ValueT> &inclusive_output,
                                                   ReduceByKeyOp<ReductionOpT> scan_op)
     {
@@ -583,7 +583,7 @@ struct WarpScanShfl
      *   Warp-wide aggregate reduction of input items
      */
     template <typename ScanOpT>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     InclusiveScan(T input, T &inclusive_output, ScanOpT scan_op, T &warp_aggregate)
     {
         InclusiveScan(input, inclusive_output, scan_op);
@@ -611,7 +611,7 @@ struct WarpScanShfl
      * @param[in] is_integer
      */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     Update(T /*input*/, T &inclusive, T &exclusive, ScanOpT /*scan_op*/, IsIntegerT /*is_integer*/)
     {
         // initial value unknown
@@ -622,7 +622,7 @@ struct WarpScanShfl
      * @brief Update inclusive and exclusive using input and inclusive (specialized for summation of
      *        integer types)
      */
-    __device__ __forceinline__ void Update(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
@@ -638,7 +638,7 @@ struct WarpScanShfl
      *        value
      */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void Update (
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       /*input*/,
         T                       &inclusive,
         T                       &exclusive,
@@ -657,7 +657,7 @@ struct WarpScanShfl
      * @brief Update inclusive and exclusive using initial value using input and inclusive
      *        (specialized for summation of integer types)
      */
-    __device__ __forceinline__ void Update (
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
@@ -673,7 +673,7 @@ struct WarpScanShfl
      * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive
      */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void Update (
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
@@ -690,7 +690,7 @@ struct WarpScanShfl
      *        value
      */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void Update (
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       input,
         T                       &inclusive,
         T                       &exclusive,

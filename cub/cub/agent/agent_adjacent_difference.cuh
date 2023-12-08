@@ -107,7 +107,7 @@ struct AgentDifference
   DifferenceOpT difference_op;
   OffsetT num_items;
 
-  __device__ __forceinline__ AgentDifference(TempStorage &temp_storage,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentDifference(TempStorage &temp_storage,
                                              InputIteratorT input_it,
                                              InputT *first_tile_previous,
                                              OutputIteratorT result,
@@ -126,7 +126,7 @@ struct AgentDifference
 
   template <bool IS_LAST_TILE,
             bool IS_FIRST_TILE>
-  __device__ __forceinline__ void consume_tile_impl(int num_remaining,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile_impl(int num_remaining,
                                                     int tile_idx,
                                                     OffsetT tile_base)
   {
@@ -219,7 +219,7 @@ struct AgentDifference
   }
 
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void consume_tile(int num_remaining,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int num_remaining,
                                                int tile_idx,
                                                OffsetT tile_base)
   {
@@ -237,7 +237,7 @@ struct AgentDifference
     }
   }
 
-  __device__ __forceinline__ void Process(int tile_idx,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process(int tile_idx,
                                           OffsetT tile_base)
   {
     OffsetT num_remaining = num_items - tile_base;
@@ -261,7 +261,7 @@ struct AgentDifferenceInit
 {
   static constexpr int BLOCK_THREADS = 128;
 
-  static __device__ __forceinline__ void Process(int tile_idx,
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void Process(int tile_idx,
                                                  InputIteratorT first,
                                                  InputT *result,
                                                  OffsetT num_tiles,

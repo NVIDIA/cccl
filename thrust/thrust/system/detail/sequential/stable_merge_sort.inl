@@ -48,7 +48,7 @@ namespace stable_merge_sort_detail
 template<typename DerivedPolicy,
          typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void inplace_merge(sequential::execution_policy<DerivedPolicy> &exec,
                    RandomAccessIterator first,
                    RandomAccessIterator middle,
@@ -68,7 +68,7 @@ template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void inplace_merge_by_key(sequential::execution_policy<DerivedPolicy> &exec,
                           RandomAccessIterator1 first1,
                           RandomAccessIterator1 middle1,
@@ -99,7 +99,7 @@ void inplace_merge_by_key(sequential::execution_policy<DerivedPolicy> &exec,
 template<typename RandomAccessIterator,
          typename Size,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void insertion_sort_each(RandomAccessIterator first,
                          RandomAccessIterator last,
                          Size partition_size,
@@ -121,7 +121,7 @@ template<typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename Size,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void insertion_sort_each_by_key(RandomAccessIterator1 keys_first,
                                 RandomAccessIterator1 keys_last,
                                 RandomAccessIterator2 values_first,
@@ -145,7 +145,7 @@ template<typename DerivedPolicy,
          typename Size,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void merge_adjacent_partitions(sequential::execution_policy<DerivedPolicy> &exec,
                                RandomAccessIterator1 first,
                                RandomAccessIterator1 last,
@@ -174,7 +174,7 @@ template<typename DerivedPolicy,
          typename RandomAccessIterator3,
          typename RandomAccessIterator4,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void merge_adjacent_partitions_by_key(sequential::execution_policy<DerivedPolicy> &exec,
                                       RandomAccessIterator1 keys_first,
                                       RandomAccessIterator1 keys_last,
@@ -210,7 +210,7 @@ void merge_adjacent_partitions_by_key(sequential::execution_policy<DerivedPolicy
 template<typename DerivedPolicy,
          typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void iterative_stable_merge_sort(sequential::execution_policy<DerivedPolicy> &exec,
                                  RandomAccessIterator first,
                                  RandomAccessIterator last,
@@ -256,7 +256,7 @@ template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void iterative_stable_merge_sort_by_key(sequential::execution_policy<DerivedPolicy> &exec,
                                         RandomAccessIterator1 keys_first,
                                         RandomAccessIterator1 keys_last,
@@ -305,7 +305,7 @@ void iterative_stable_merge_sort_by_key(sequential::execution_policy<DerivedPoli
 template<typename DerivedPolicy,
          typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void recursive_stable_merge_sort(sequential::execution_policy<DerivedPolicy> &exec,
                                  RandomAccessIterator first,
                                  RandomAccessIterator last,
@@ -330,7 +330,7 @@ template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void recursive_stable_merge_sort_by_key(sequential::execution_policy<DerivedPolicy> &exec,
                                         RandomAccessIterator1 first1,
                                         RandomAccessIterator1 last1,
@@ -359,7 +359,7 @@ void recursive_stable_merge_sort_by_key(sequential::execution_policy<DerivedPoli
 template<typename DerivedPolicy,
          typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void stable_merge_sort(sequential::execution_policy<DerivedPolicy> &exec,
                        RandomAccessIterator first,
                        RandomAccessIterator last,
@@ -378,7 +378,7 @@ template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void stable_merge_sort_by_key(sequential::execution_policy<DerivedPolicy> &exec,
                               RandomAccessIterator1 first1,
                               RandomAccessIterator1 last1,

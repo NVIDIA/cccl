@@ -181,8 +181,7 @@ CUB_NAMESPACE_BEGIN
  *
  * \return The CUDA error.
  */
-__host__ __device__
-__forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 cudaError_t Debug(cudaError_t error, const char *filename, int line)
 {
   // Clear the global CUDA error state which may have been set by the last
@@ -293,7 +292,7 @@ cudaError_t Debug(cudaError_t error, const char *filename, int line)
 #pragma clang diagnostic ignored "-Wunnamed-type-template-args"
 #ifdef CUB_STDERR
 template <class... Args>
-inline __host__ __device__ void va_printf(char const *format,
+inline _CCCL_HOST_DEVICE void va_printf(char const *format,
                                           Args const &...args)
 {
 #ifdef __CUDA_ARCH__
@@ -311,7 +310,7 @@ inline __host__ __device__ void va_printf(char const *format,
 }
 #else // !defined(CUB_STDERR)
 template <class... Args>
-inline __host__ __device__ void va_printf(char const*, Args const&...)
+inline _CCCL_HOST_DEVICE void va_printf(char const*, Args const&...)
 {}
 #endif // !defined(CUB_STDERR)
 

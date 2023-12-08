@@ -77,7 +77,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  struct Int
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    Int(int x) : val(x) {}
  *    int val;
  *  };
@@ -100,7 +100,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see \c device_malloc
  */
 template<typename DerivedPolicy, typename InputIterator, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator uninitialized_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                      InputIterator first,
                                      InputIterator last,
@@ -139,7 +139,7 @@ __host__ __device__
  *
  *  struct Int
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    Int(int x) : val(x) {}
  *    int val;
  *  };
@@ -206,7 +206,7 @@ template<typename InputIterator, typename ForwardIterator>
  *
  *  struct Int
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    Int(int x) : val(x) {}
  *    int val;
  *  };
@@ -230,7 +230,7 @@ template<typename InputIterator, typename ForwardIterator>
  *  \see \c device_malloc
  */
 template<typename DerivedPolicy, typename InputIterator, typename Size, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator uninitialized_copy_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                        InputIterator first,
                                        Size n,
@@ -270,7 +270,7 @@ __host__ __device__
  *
  *  struct Int
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    Int(int x) : val(x) {}
  *    int val;
  *  };

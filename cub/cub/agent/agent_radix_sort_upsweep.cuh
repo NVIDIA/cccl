@@ -218,7 +218,7 @@ struct AgentRadixSortUpsweep
     struct Iterate
     {
         // BucketKeys
-        static __device__ __forceinline__ void BucketKeys(
+        static _CCCL_DEVICE _CCCL_FORCEINLINE void BucketKeys(
             AgentRadixSortUpsweep       &cta,
             bit_ordered_type             keys[KEYS_PER_THREAD])
         {
@@ -234,14 +234,14 @@ struct AgentRadixSortUpsweep
     struct Iterate<MAX, MAX>
     {
         // BucketKeys
-        static __device__ __forceinline__ void BucketKeys(AgentRadixSortUpsweep &/*cta*/, bit_ordered_type /*keys*/[KEYS_PER_THREAD]) {}
+        static _CCCL_DEVICE _CCCL_FORCEINLINE void BucketKeys(AgentRadixSortUpsweep &/*cta*/, bit_ordered_type /*keys*/[KEYS_PER_THREAD]) {}
     };
 
 
     //---------------------------------------------------------------------
     // Utility methods
     //---------------------------------------------------------------------
-    __device__ __forceinline__ digit_extractor_t digit_extractor()
+    _CCCL_DEVICE _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
     {
         return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit, num_bits, decomposer);
     }
@@ -249,7 +249,7 @@ struct AgentRadixSortUpsweep
     /**
      * Decode a key and increment corresponding smem digit counter
      */
-    __device__ __forceinline__ void Bucket(bit_ordered_type key)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Bucket(bit_ordered_type key)
     {
         // Perform transform op
         bit_ordered_type converted_key = bit_ordered_conversion::to_bit_ordered(decomposer, key);
@@ -271,7 +271,7 @@ struct AgentRadixSortUpsweep
     /**
      * Reset composite counters
      */
-    __device__ __forceinline__ void ResetDigitCounters()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ResetDigitCounters()
     {
         #pragma unroll
         for (int LANE = 0; LANE < COUNTER_LANES; LANE++)
@@ -284,7 +284,7 @@ struct AgentRadixSortUpsweep
     /**
      * Reset the unpacked counters in each thread
      */
-    __device__ __forceinline__ void ResetUnpackedCounters()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ResetUnpackedCounters()
     {
         #pragma unroll
         for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
@@ -302,7 +302,7 @@ struct AgentRadixSortUpsweep
      * Extracts and aggregates the digit counters for each counter lane
      * owned by this warp
      */
-    __device__ __forceinline__ void UnpackDigitCounts()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void UnpackDigitCounts()
     {
         unsigned int warp_id = threadIdx.x >> LOG_WARP_THREADS;
         unsigned int warp_tid = LaneId();
@@ -331,7 +331,7 @@ struct AgentRadixSortUpsweep
     /**
      * Processes a single, full tile
      */
-    __device__ __forceinline__ void ProcessFullTile(OffsetT block_offset)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessFullTile(OffsetT block_offset)
     {
         // Tile of keys
         bit_ordered_type keys[KEYS_PER_THREAD];
@@ -349,7 +349,7 @@ struct AgentRadixSortUpsweep
     /**
      * Processes a single load (may have some threads masked off)
      */
-    __device__ __forceinline__ void ProcessPartialTile(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessPartialTile(
         OffsetT block_offset,
         const OffsetT &block_end)
     {
@@ -370,7 +370,7 @@ struct AgentRadixSortUpsweep
     /**
      * Constructor
      */
-    __device__ __forceinline__ AgentRadixSortUpsweep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE AgentRadixSortUpsweep(
         TempStorage &temp_storage,
         const KeyT  *d_keys_in,
         int         current_bit,
@@ -388,7 +388,7 @@ struct AgentRadixSortUpsweep
     /**
      * Compute radix digit histograms from a segment of input tiles.
      */
-    __device__ __forceinline__ void ProcessRegion(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessRegion(
         OffsetT          block_offset,
         const OffsetT    &block_end)
     {
@@ -439,7 +439,7 @@ struct AgentRadixSortUpsweep
      * Extract counts (saving them to the external array)
      */
     template <bool IS_DESCENDING>
-    __device__ __forceinline__ void ExtractCounts(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(
         OffsetT     *counters,
         int         bin_stride = 1,
         int         bin_offset = 0)
@@ -516,7 +516,7 @@ struct AgentRadixSortUpsweep
      *   [(threadIdx.x * BINS_TRACKED_PER_THREAD) ... (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
      */
     template <int BINS_TRACKED_PER_THREAD>
-    __device__ __forceinline__ void ExtractCounts(OffsetT (&bin_count)[BINS_TRACKED_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT (&bin_count)[BINS_TRACKED_PER_THREAD])
     {
         unsigned int warp_id    = threadIdx.x >> LOG_WARP_THREADS;
         unsigned int warp_tid   = LaneId();

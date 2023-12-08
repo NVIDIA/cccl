@@ -63,7 +63,7 @@ CUB_NAMESPACE_BEGIN
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 template <typename T, typename U>
-constexpr __host__ __device__ auto min CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
+constexpr _CCCL_HOST_DEVICE auto min CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
                                                                       U &&u)
   -> decltype(t < u ? ::cuda::std::forward<T>(t) : ::cuda::std::forward<U>(u))
 {
@@ -71,7 +71,7 @@ constexpr __host__ __device__ auto min CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
 }
 
 template <typename T, typename U>
-constexpr __host__ __device__ auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
+constexpr _CCCL_HOST_DEVICE auto max CUB_PREVENT_MACRO_SUBSTITUTION(T &&t,
                                                                       U &&u)
   -> decltype(t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t))
 {

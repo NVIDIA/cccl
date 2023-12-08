@@ -78,14 +78,14 @@ namespace unimplemented
 
 struct no_unique_eager_event_type_found {};
 
-inline __host__
+inline _CCCL_HOST
 no_unique_eager_event_type_found
 unique_eager_event_type(...) noexcept;
 
 struct no_unique_eager_future_type_found {};
 
 template <typename T>
-__host__
+_CCCL_HOST
 no_unique_eager_future_type_found
 unique_eager_future_type(...) noexcept;
 

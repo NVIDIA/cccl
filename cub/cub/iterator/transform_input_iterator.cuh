@@ -81,7 +81,7 @@ CUB_NAMESPACE_BEGIN
  * // Functor for tripling integer values and converting to doubles
  * struct TripleDoubler
  * {
- *     __host__ __device__ __forceinline__
+ *     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
  *     double operator()(const int &a) const {
  *         return double(a * 3);
  *     }
@@ -168,14 +168,14 @@ public:
      * @param conversion_op
      *   Conversion functor to wrap
      */
-    __host__ __device__ __forceinline__ TransformInputIterator(InputIteratorT input_itr,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TransformInputIterator(InputIteratorT input_itr,
                                                                ConversionOp conversion_op)
         : conversion_op(conversion_op)
         , input_itr(input_itr)
     {}
 
     /// Postfix increment
-    __host__ __device__ __forceinline__ self_type operator++(int)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
     {
       self_type retval = *this;
       input_itr++;
@@ -183,21 +183,21 @@ public:
     }
 
     /// Prefix increment
-    __host__ __device__ __forceinline__ self_type operator++()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
     {
         input_itr++;
         return *this;
     }
 
     /// Indirection
-    __host__ __device__ __forceinline__ reference operator*() const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
     {
         return conversion_op(*input_itr);
     }
 
     /// Addition
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator+(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
     {
         self_type retval(input_itr + n, conversion_op);
         return retval;
@@ -205,7 +205,7 @@ public:
 
     /// Addition assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator+=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
     {
         input_itr += n;
         return *this;
@@ -213,7 +213,7 @@ public:
 
     /// Subtraction
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator-(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
     {
         self_type retval(input_itr - n, conversion_op);
         return retval;
@@ -221,33 +221,33 @@ public:
 
     /// Subtraction assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator-=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
     {
         input_itr -= n;
         return *this;
     }
 
     /// Distance
-    __host__ __device__ __forceinline__ difference_type operator-(self_type other) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
     {
         return input_itr - other.input_itr;
     }
 
     /// Array subscript
     template <typename Distance>
-    __host__ __device__ __forceinline__ reference operator[](Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
     {
         return conversion_op(input_itr[n]);
     }
 
     /// Equal to
-    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
     {
         return (input_itr == rhs.input_itr);
     }
 
     /// Not equal to
-    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
     {
         return (input_itr != rhs.input_itr);
     }

@@ -394,10 +394,10 @@ namespace core {
   template<class Agent>
   void __global__ get_agent_plan_kernel(AgentPlan *plan);
 
-  static __device__ AgentPlan agent_plan_device;
+  static _CCCL_DEVICE AgentPlan agent_plan_device;
 
   template<class Agent>
-  AgentPlan __device__ get_agent_plan_dev()
+  AgentPlan _CCCL_DEVICE get_agent_plan_dev()
   {
     AgentPlan plan;
     plan.block_threads      = Agent::ptx_plan::BLOCK_THREADS;
@@ -408,7 +408,7 @@ namespace core {
   }
 
   template <class Agent, class F>
-  AgentPlan __host__ __device__ __forceinline__
+  AgentPlan _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
   xget_agent_plan_impl(F f, cudaStream_t s, void* d_ptr)
   {
     AgentPlan plan;
@@ -535,21 +535,21 @@ namespace core {
   };    // struct Iterator
 
   template <class PtxPlan, class It>
-  typename LoadIterator<PtxPlan, It>::type __device__ __forceinline__
+  typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
   make_load_iterator_impl(It it, thrust::detail::true_type /* is_trivial */)
   {
     return raw_pointer_cast(&*it);
   }
 
   template <class PtxPlan, class It>
-  typename LoadIterator<PtxPlan, It>::type __device__ __forceinline__
+  typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
   make_load_iterator_impl(It it, thrust::detail::false_type /* is_trivial */)
   {
     return it;
   }
 
   template <class PtxPlan, class It>
-  typename LoadIterator<PtxPlan, It>::type __device__ __forceinline__
+  typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
   make_load_iterator(PtxPlan const&, It it)
   {
     return make_load_iterator_impl<PtxPlan>(
@@ -609,19 +609,19 @@ namespace core {
   public:
     cuda_optional() = default;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     cuda_optional(T v, cudaError_t status = cudaSuccess) : status_(status), value_(v) {}
 
-    bool __host__ __device__
+    bool _CCCL_HOST_DEVICE
     isValid() const { return cudaSuccess == status_; }
 
-    cudaError_t __host__ __device__
+    cudaError_t _CCCL_HOST_DEVICE
     status() const { return status_; }
 
-    __host__ __device__ T const &
+    _CCCL_HOST_DEVICE T const &
     value() const { return value_; }
 
-    __host__ __device__ operator T const &() const { return value_; }
+    _CCCL_HOST_DEVICE operator T const &() const { return value_; }
   };
 
   THRUST_RUNTIME_FUNCTION
@@ -684,7 +684,7 @@ namespace core {
     return cub::SyncStream(stream);
   }
 
-  inline void __device__ sync_threadblock()
+  inline void _CCCL_DEVICE sync_threadblock()
   {
     cub::CTA_SYNC();
   }
@@ -711,12 +711,12 @@ namespace core {
 
     DeviceWord storage[WORDS];
 
-    __host__ __device__ __forceinline__ T& get()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& get()
     {
       return reinterpret_cast<T&>(*this);
     }
 
-    __host__ __device__ __forceinline__ operator T&() { return get(); }
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&() { return get(); }
   };
 
   // uninitialized_array
@@ -732,12 +732,12 @@ namespace core {
       T data_[N];
 
     public:
-      __host__ __device__ T* data() { return data_; }
-      __host__ __device__ const T* data() const { return data_; }
-      __host__ __device__ T& operator[](unsigned int idx) { return ((T*)data_)[idx]; }
-      __host__ __device__ T const& operator[](unsigned int idx) const { return ((T*)data_)[idx]; }
-      __host__ __device__ unsigned int size() const { return N; }
-      __host__ __device__ operator ref&() { return data_; }
+      _CCCL_HOST_DEVICE T* data() { return data_; }
+      _CCCL_HOST_DEVICE const T* data() const { return data_; }
+      _CCCL_HOST_DEVICE T& operator[](unsigned int idx) { return ((T*)data_)[idx]; }
+      _CCCL_HOST_DEVICE T const& operator[](unsigned int idx) const { return ((T*)data_)[idx]; }
+      _CCCL_HOST_DEVICE unsigned int size() const { return N; }
+      _CCCL_HOST_DEVICE operator ref&() { return data_; }
   };
 
 
@@ -754,18 +754,18 @@ namespace core {
       char data_[N * sizeof(T)];
 
     public:
-      __host__ __device__ T* data() { return data_; }
-      __host__ __device__ const T* data() const { return data_; }
-      __host__ __device__ T& operator[](unsigned int idx) { return ((T*)data_)[idx]; }
-      __host__ __device__ T const& operator[](unsigned int idx) const { return ((T*)data_)[idx]; }
-      __host__ __device__ T& operator[](int idx) { return ((T*)data_)[idx]; }
-      __host__ __device__ T const& operator[](int idx) const { return ((T*)data_)[idx]; }
-      __host__ __device__ unsigned int size() const { return N; }
-      __host__ __device__ operator ref&() { return *reinterpret_cast<ref*>(data_); }
-      __host__ __device__ ref& get_ref() { return (ref&)*this; }
+      _CCCL_HOST_DEVICE T* data() { return data_; }
+      _CCCL_HOST_DEVICE const T* data() const { return data_; }
+      _CCCL_HOST_DEVICE T& operator[](unsigned int idx) { return ((T*)data_)[idx]; }
+      _CCCL_HOST_DEVICE T const& operator[](unsigned int idx) const { return ((T*)data_)[idx]; }
+      _CCCL_HOST_DEVICE T& operator[](int idx) { return ((T*)data_)[idx]; }
+      _CCCL_HOST_DEVICE T const& operator[](int idx) const { return ((T*)data_)[idx]; }
+      _CCCL_HOST_DEVICE unsigned int size() const { return N; }
+      _CCCL_HOST_DEVICE operator ref&() { return *reinterpret_cast<ref*>(data_); }
+      _CCCL_HOST_DEVICE ref& get_ref() { return (ref&)*this; }
   };
 
-  __host__ __device__ __forceinline__ size_t align_to(size_t n, size_t align)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE size_t align_to(size_t n, size_t align)
   {
     return ((n+align-1)/align) * align;
   }

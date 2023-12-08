@@ -42,12 +42,12 @@ namespace sequential
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator adjacent_difference(sequential::execution_policy<DerivedPolicy> &,
                                    InputIterator first,
                                    InputIterator last,

@@ -81,7 +81,7 @@ THRUST_NAMESPACE_BEGIN
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -103,7 +103,7 @@ THRUST_NAMESPACE_BEGIN
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator partition(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -142,7 +142,7 @@ __host__ __device__
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -209,7 +209,7 @@ template<typename ForwardIterator,
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -232,7 +232,7 @@ template<typename DerivedPolicy,
          typename ForwardIterator,
          typename InputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator partition(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -277,7 +277,7 @@ __host__ __device__
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -345,7 +345,7 @@ template<typename ForwardIterator,
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -377,7 +377,7 @@ template<typename DerivedPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     partition_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    InputIterator first,
@@ -422,7 +422,7 @@ __host__ __device__
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -532,7 +532,7 @@ template<typename DerivedPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     partition_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    InputIterator1 first,
@@ -656,7 +656,7 @@ template<typename InputIterator1,
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -678,7 +678,7 @@ template<typename InputIterator1,
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator stable_partition(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                    ForwardIterator first,
                                    ForwardIterator last,
@@ -720,7 +720,7 @@ __host__ __device__
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -789,7 +789,7 @@ template<typename ForwardIterator,
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -812,7 +812,7 @@ template<typename DerivedPolicy,
          typename ForwardIterator,
          typename InputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator stable_partition(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                    ForwardIterator first,
                                    ForwardIterator last,
@@ -859,7 +859,7 @@ __host__ __device__
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -933,7 +933,7 @@ template<typename ForwardIterator,
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -961,7 +961,7 @@ template<typename DerivedPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     stable_partition_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                           InputIterator first,
@@ -1012,7 +1012,7 @@ __host__ __device__
  *  ...
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -1119,7 +1119,7 @@ template<typename DerivedPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     stable_partition_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                           InputIterator1 first,
@@ -1248,7 +1248,7 @@ template<typename InputIterator1,
  *
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -1267,7 +1267,7 @@ template<typename InputIterator1,
  *  \see \p find_if_not
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator partition_point(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                   ForwardIterator first,
                                   ForwardIterator last,
@@ -1300,7 +1300,7 @@ __host__ __device__
  *
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -1361,7 +1361,7 @@ template<typename ForwardIterator, typename Predicate>
  *
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;
@@ -1380,7 +1380,7 @@ template<typename ForwardIterator, typename Predicate>
  *  \see \p partition
  */
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   bool is_partitioned(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                       InputIterator first,
                       InputIterator last,
@@ -1410,7 +1410,7 @@ __host__ __device__
  *
  *  struct is_even
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(const int &x)
  *    {
  *      return (x % 2) == 0;

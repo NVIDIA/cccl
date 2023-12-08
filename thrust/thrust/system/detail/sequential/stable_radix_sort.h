@@ -38,7 +38,7 @@ namespace sequential
 
 template<typename DerivedPolicy,
          typename RandomAccessIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void stable_radix_sort(sequential::execution_policy<DerivedPolicy> &exec,
                        RandomAccessIterator begin,
                        RandomAccessIterator end);
@@ -47,7 +47,7 @@ void stable_radix_sort(sequential::execution_policy<DerivedPolicy> &exec,
 template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void stable_radix_sort_by_key(sequential::execution_policy<DerivedPolicy> &exec,
                               RandomAccessIterator1 keys_begin,
                               RandomAccessIterator1 keys_end,

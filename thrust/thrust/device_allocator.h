@@ -61,7 +61,7 @@ public:
     /*! Initialize the adaptor with the global instance of the upstream resource. Obtains
      *      the global instance by calling \p get_global_resource.
      */
-    __host__
+    _CCCL_HOST
     device_ptr_memory_resource() : m_upstream(mr::get_global_resource<Upstream>())
     {
     }
@@ -70,18 +70,18 @@ public:
      *
      *  \param upstream the upstream memory resource to adapt.
      */
-    __host__
+    _CCCL_HOST
     device_ptr_memory_resource(Upstream * upstream) : m_upstream(upstream)
     {
     }
 
-    THRUST_NODISCARD __host__
+    THRUST_NODISCARD _CCCL_HOST
     virtual pointer do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
     {
         return pointer(m_upstream->do_allocate(bytes, alignment).get());
     }
 
-    __host__
+    _CCCL_HOST
     virtual void do_deallocate(pointer p, std::size_t bytes, std::size_t alignment) override
     {
         m_upstream->do_deallocate(upstream_ptr(p.get()), bytes, alignment);
@@ -123,22 +123,22 @@ public:
     };
 
     /*! Default constructor has no effect. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     device_allocator() {}
 
     /*! Copy constructor has no effect. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     device_allocator(const device_allocator& other) : base(other) {}
 
     /*! Constructor from other \p device_allocator has no effect. */
     template<typename U>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     device_allocator(const device_allocator<U>& other) : base(other) {}
 
     device_allocator & operator=(const device_allocator &) = default;
 
     /*! Destructor has no effect. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     ~device_allocator() {}
 };
 

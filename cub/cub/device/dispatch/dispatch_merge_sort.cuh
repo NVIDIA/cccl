@@ -418,7 +418,7 @@ struct DispatchMergeSort : SelectedPolicy
   int ptx_version;
 
   // Constructor
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchMergeSort(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchMergeSort(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
@@ -442,7 +442,7 @@ struct DispatchMergeSort : SelectedPolicy
   {}
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchMergeSort(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchMergeSort(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
@@ -470,7 +470,7 @@ struct DispatchMergeSort : SelectedPolicy
 
   // Invocation
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using MergePolicyT = typename ActivePolicyT::MergeSortPolicy;
 
@@ -684,7 +684,7 @@ struct DispatchMergeSort : SelectedPolicy
     return error;
   }
 
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
@@ -735,7 +735,7 @@ struct DispatchMergeSort : SelectedPolicy
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,

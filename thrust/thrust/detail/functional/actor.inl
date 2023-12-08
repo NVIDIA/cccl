@@ -49,14 +49,14 @@ namespace functional
 {
 
 template<typename Eval>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr actor<Eval>
     ::actor()
       : eval_type()
 {}
 
 template<typename Eval>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   actor<Eval>
     ::actor(const Eval &base)
       : eval_type(base)
@@ -83,7 +83,7 @@ using actor_check_ref_types =
 
 template<typename Eval>
 template<typename... Ts>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename apply_actor<typename actor<Eval>::eval_type,
                      thrust::tuple<eval_ref<Ts>...>>::type
 actor<Eval>::operator()(Ts&&... ts) const
@@ -97,7 +97,7 @@ actor<Eval>::operator()(Ts&&... ts) const
 
 template<typename Eval>
   template<typename T>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename assign_result<Eval,T>::type
       actor<Eval>
         ::operator=(const T& _1) const

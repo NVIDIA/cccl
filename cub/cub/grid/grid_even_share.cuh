@@ -103,7 +103,7 @@ public:
     /**
      * \brief Constructor.
      */
-    __host__ __device__ __forceinline__ GridEvenShare() :
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridEvenShare() :
         total_tiles(0),
         big_shares(0),
         big_share_items(0),
@@ -129,7 +129,7 @@ public:
      * @param tile_items
      *   Number of data items per input tile
      */
-    __host__ __device__ __forceinline__ void DispatchInit(OffsetT num_items_,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void DispatchInit(OffsetT num_items_,
                                                           int max_grid_size,
                                                           int tile_items)
     {
@@ -152,7 +152,7 @@ public:
      *        consecutive sequence of input tiles.
      */
     template <int TILE_ITEMS>
-    __device__ __forceinline__ void BlockInit(int block_id,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id,
                                               Int2Type<GRID_MAPPING_RAKE> /*strategy_tag*/)
     {
         block_stride = TILE_ITEMS;
@@ -178,7 +178,7 @@ public:
      *        of input tiles.
      */
     template <int TILE_ITEMS>
-    __device__ __forceinline__ void BlockInit(int block_id,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id,
                                               Int2Type<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
     {
         block_stride = grid_size * TILE_ITEMS;
@@ -192,7 +192,7 @@ public:
      *        separated by a stride equal to the the extent of the grid.
      */
     template <int TILE_ITEMS, GridMappingStrategy STRATEGY>
-    __device__ __forceinline__ void BlockInit()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit()
     {
         BlockInit<TILE_ITEMS>(blockIdx.x, Int2Type<STRATEGY>());
     }
@@ -209,7 +209,7 @@ public:
      *   Threadblock end offset (exclusive)
      */
     template <int TILE_ITEMS>
-    __device__ __forceinline__ void BlockInit(OffsetT block_offset, OffsetT block_end)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(OffsetT block_offset, OffsetT block_end)
     {
         this->block_offset = block_offset;
         this->block_end = block_end;

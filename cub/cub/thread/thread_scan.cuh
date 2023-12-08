@@ -66,7 +66,7 @@ namespace internal {
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>
-__device__ __forceinline__ T ThreadScanExclusive(T inclusive,
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanExclusive(T inclusive,
                                                  T exclusive,
                                                  T *input,
                                                  T *output,
@@ -116,7 +116,7 @@ __device__ __forceinline__ T ThreadScanExclusive(T inclusive,
  *   (Handy for preventing thread-0 from applying a prefix.)
  */
 template <int LENGTH, typename T, typename ScanOp>
-__device__ __forceinline__ T
+_CCCL_DEVICE _CCCL_FORCEINLINE T
 ThreadScanExclusive(T *input, T *output, ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
     T inclusive = input[0];
@@ -161,7 +161,7 @@ ThreadScanExclusive(T *input, T *output, ScanOp scan_op, T prefix, bool apply_pr
  *   (Handy for preventing thread-0 from applying a prefix.)
  */
 template <int LENGTH, typename T, typename ScanOp>
-__device__ __forceinline__ T ThreadScanExclusive(T (&input)[LENGTH],
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanExclusive(T (&input)[LENGTH],
                                                  T (&output)[LENGTH],
                                                  ScanOp scan_op,
                                                  T prefix,
@@ -181,7 +181,7 @@ __device__ __forceinline__ T ThreadScanExclusive(T (&input)[LENGTH],
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>
-__device__ __forceinline__ T
+_CCCL_DEVICE _CCCL_FORCEINLINE T
 ThreadScanInclusive(T inclusive, T *input, T *output, ScanOp scan_op, Int2Type<LENGTH> /*length*/)
 {
     #pragma unroll
@@ -218,7 +218,7 @@ ThreadScanInclusive(T inclusive, T *input, T *output, ScanOp scan_op, Int2Type<L
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>
-__device__ __forceinline__ T ThreadScanInclusive(T *input, T *output, ScanOp scan_op)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T *input, T *output, ScanOp scan_op)
 {
     T inclusive = input[0];
     output[0] = inclusive;
@@ -251,7 +251,7 @@ __device__ __forceinline__ T ThreadScanInclusive(T *input, T *output, ScanOp sca
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>
-__device__ __forceinline__ T ThreadScanInclusive(T (&input)[LENGTH],
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T (&input)[LENGTH],
                                                  T (&output)[LENGTH],
                                                  ScanOp scan_op)
 {
@@ -290,7 +290,7 @@ __device__ __forceinline__ T ThreadScanInclusive(T (&input)[LENGTH],
  *   (Handy for preventing thread-0 from applying a prefix.)
  */
 template <int LENGTH, typename T, typename ScanOp>
-__device__ __forceinline__ T
+_CCCL_DEVICE _CCCL_FORCEINLINE T
 ThreadScanInclusive(T *input, T *output, ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
     T inclusive = input[0];
@@ -336,7 +336,7 @@ ThreadScanInclusive(T *input, T *output, ScanOp scan_op, T prefix, bool apply_pr
  *   (Handy for preventing thread-0 from applying a prefix.)
  */
 template <int LENGTH, typename T, typename ScanOp>
-__device__ __forceinline__ T ThreadScanInclusive(T (&input)[LENGTH],
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T (&input)[LENGTH],
                                                  T (&output)[LENGTH],
                                                  ScanOp scan_op,
                                                  T prefix,

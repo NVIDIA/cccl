@@ -75,7 +75,7 @@ struct integer_sequence
   using value_type = T;
   using size_type = ::cuda::std::size_t;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static constexpr size_type size() noexcept
   {
     return sizeof...(Is);

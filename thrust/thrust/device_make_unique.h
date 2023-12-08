@@ -45,7 +45,7 @@ THRUST_NAMESPACE_BEGIN
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename... Args>
-__host__
+_CCCL_HOST
 auto device_make_unique(Args&&... args)
   THRUST_TRAILING_RETURN(decltype(
     uninitialized_allocate_unique<T>(device_allocator<T>{})

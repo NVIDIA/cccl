@@ -41,7 +41,7 @@ struct par_t : thrust::system::cpp::detail::execution_policy<par_t>,
   thrust::detail::allocator_aware_execution_policy<
     thrust::system::cpp::detail::execution_policy>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr par_t() : thrust::system::cpp::detail::execution_policy<par_t>() {}
 };
 

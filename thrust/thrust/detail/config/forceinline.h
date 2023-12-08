@@ -32,7 +32,7 @@
 
 #if defined(__CUDACC__) || defined(_NVHPC_CUDA)
 
-#define __thrust_forceinline__ __forceinline__
+#define __thrust_forceinline__ _CCCL_FORCEINLINE
 
 #else
 

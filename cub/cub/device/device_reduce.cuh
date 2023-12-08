@@ -84,7 +84,7 @@ struct DeviceReduce
 {
   //! @rst
   //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor and initial value ``init``.
-  //! 
+  //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -93,7 +93,7 @@ struct DeviceReduce
   //!   because CUB can employ different tile-sizing for different architectures.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -104,17 +104,17 @@ struct DeviceReduce
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_radix_sort.cuh>
-  //!    
+  //!
   //!    // CustomMin functor
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        __device__ __forceinline__
+  //!        _CCCL_DEVICE _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
   //!    };
-  //!    
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int          num_items;  // e.g., 7
@@ -123,64 +123,64 @@ struct DeviceReduce
   //!    CustomMin    min_op;
   //!    int          init;       // e.g., INT_MAX
   //!    ...
-  //!    
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::Reduce(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_out, num_items, min_op, init);
-  //!    
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!    
+  //!
   //!    // Run reduction
   //!    cub::DeviceReduce::Reduce(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_out, num_items, min_op, init);
-  //!    
+  //!
   //!    // d_out <-- [0]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
-  //! 
+  //!
   //! @tparam ReductionOpT
   //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @tparam T
   //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
-  //! 
-  //! @tparam NumItemsT 
+  //!
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_in`)
-  //! 
+  //!
   //! @param[in] reduction_op
   //!   Binary reduction functor
-  //! 
+  //!
   //! @param[in] init
   //!   Initial value of the reduction
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -246,7 +246,7 @@ struct DeviceReduce
 
   //! @rst
   //! Computes a device-wide sum using the addition (``+``) operator.
-  //! 
+  //!
   //! - Uses ``0`` as the initial value of the reduction.
   //! - Does not support ``+`` operators that are non-commutative..
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -256,7 +256,7 @@ struct DeviceReduce
   //!   because CUB can employ different tile-sizing for different architectures.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -266,55 +266,55 @@ struct DeviceReduce
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_radix_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int  num_items;      // e.g., 7
   //!    int  *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int  *d_out;         // e.g., [-]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::Sum(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sum-reduction
   //!    cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
-  //! 
+  //!
   //!    // d_out <-- [38]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
-  //! 
-  //! @tparam NumItemsT 
+  //!
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -375,7 +375,7 @@ struct DeviceReduce
 
   //! @rst
   //! Computes a device-wide minimum using the less-than (``<``) operator.
-  //! 
+  //!
   //! - Uses ``std::numeric_limits<T>::max()`` as the initial value of the reduction.
   //! - Does not support ``<`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -385,7 +385,7 @@ struct DeviceReduce
   //!   because CUB can employ different tile-sizing for different architectures.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -395,56 +395,56 @@ struct DeviceReduce
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_radix_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int  num_items;      // e.g., 7
   //!    int  *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int  *d_out;         // e.g., [-]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::Min(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run min-reduction
   //!    cub::DeviceReduce::Min(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
-  //! 
+  //!
   //!    // d_out <-- [0]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
-  //! 
-  //! @tparam NumItemsT 
+  //!
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -506,8 +506,8 @@ struct DeviceReduce
 
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator, also returning the index of that item.
-  //! 
-  //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>`` 
+  //!
+  //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
   //!
   //!   - The minimum is written to ``d_out.value`` and its offset in the input array is written to ``d_out.key``.
@@ -521,7 +521,7 @@ struct DeviceReduce
   //!   because CUB can employ different tile-sizing for different architectures.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap `d_out`.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -531,53 +531,53 @@ struct DeviceReduce
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_radix_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int                      num_items;      // e.g., 7
   //!    int                      *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    KeyValuePair<int, int>   *d_out;         // e.g., [{-,-}]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_argmin, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run argmin-reduction
   //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_argmin, num_items);
-  //! 
+  //!
   //!    // d_out <-- [{5, 0}]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items
   //!   (of some type `T`) @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
   //!   (having value type `cub::KeyValuePair<int, T>`) @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -655,7 +655,7 @@ struct DeviceReduce
 
   //! @rst
   //! Computes a device-wide maximum using the greater-than (``>``) operator.
-  //! 
+  //!
   //! - Uses ``std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -665,7 +665,7 @@ struct DeviceReduce
   //!   because CUB can employ different tile-sizing for different architectures.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -674,54 +674,54 @@ struct DeviceReduce
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_radix_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int  num_items;      // e.g., 7
   //!    int  *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int  *d_out;         // e.g., [-]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_max, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run max-reduction
   //!    cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_max, num_items);
-  //! 
+  //!
   //!    // d_out <-- [9]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
-  //! 
-  //! @tparam NumItemsT 
+  //!
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -785,7 +785,7 @@ struct DeviceReduce
   //! @rst
   //! Finds the first device-wide maximum using the greater-than (``>``)
   //! operator, also returning the index of that item
-  //! 
+  //!
   //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
   //!
@@ -801,7 +801,7 @@ struct DeviceReduce
   //!   because CUB can employ different tile-sizing for different architectures.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -812,54 +812,54 @@ struct DeviceReduce
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_reduce.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int                      num_items;      // e.g., 7
   //!    int                      *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    KeyValuePair<int, int>   *d_out;         // e.g., [{-,-}]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ArgMax(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_argmax, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run argmax-reduction
   //!    cub::DeviceReduce::ArgMax(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_argmax, num_items);
-  //! 
+  //!
   //!    // d_out <-- [{6, 9}]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items (of some type `T`) @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
   //!   (having value type `cub::KeyValuePair<int, T>`) @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -938,7 +938,7 @@ struct DeviceReduce
 
   //! @rst
   //! Fuses transform and reduce operations
-  //! 
+  //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -947,7 +947,7 @@ struct DeviceReduce
   //!   because CUB can employ different tile-sizing for different architectures.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -958,15 +958,15 @@ struct DeviceReduce
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_reduce.cuh>
-  //! 
+  //!
   //!    thrust::device_vector<int> in = { 1, 2, 3, 4 };
   //!    thrust::device_vector<int> out(1);
-  //! 
+  //!
   //!    std::size_t temp_storage_bytes = 0;
   //!    std::uint8_t *d_temp_storage = nullptr;
-  //! 
+  //!
   //!    const int init = 42;
-  //! 
+  //!
   //!    cub::DeviceReduce::TransformReduce(
   //!      d_temp_storage,
   //!      temp_storage_bytes,
@@ -976,10 +976,10 @@ struct DeviceReduce
   //!      cub::Sum{},
   //!      square_t{},
   //!      init);
-  //! 
+  //!
   //!    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   //!    d_temp_storage = temp_storage.data().get();
-  //! 
+  //!
   //!    cub::DeviceReduce::TransformReduce(
   //!      d_temp_storage,
   //!      temp_storage_bytes,
@@ -989,54 +989,54 @@ struct DeviceReduce
   //!      cub::Sum{},
   //!      square_t{},
   //!      init);
-  //! 
+  //!
   //!    // out[0] <-- 72
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
-  //! 
+  //!
   //! @tparam ReductionOpT
   //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @tparam TransformOpT
   //!   **[inferred]** Unary reduction functor type having member `auto operator()(const T &a)`
-  //! 
+  //!
   //! @tparam T
   //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
-  //! 
-  //! @tparam NumItemsT 
+  //!
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output aggregate
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_in`)
-  //! 
+  //!
   //! @param[in] reduction_op
   //!   Binary reduction functor
-  //! 
+  //!
   //! @param[in] transform_op
   //!   Unary transform functor
-  //! 
+  //!
   //! @param[in] init
   //!   Initial value of the reduction
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -1074,13 +1074,13 @@ struct DeviceReduce
 
   //! @rst
   //! Reduces segments of values, where segments are demarcated by corresponding runs of identical keys.
-  //! 
+  //!
   //! This operation computes segmented reductions within ``d_values_in`` using the specified binary ``reduction_op``
   //! functor. The segments are identified by "runs" of corresponding keys in `d_keys_in`, where runs are maximal
-  //! ranges of consecutive, identical keys. For the *i*\ :sup:`th` run encountered, the first key of the run and 
+  //! ranges of consecutive, identical keys. For the *i*\ :sup:`th` run encountered, the first key of the run and
   //! the corresponding value aggregate of that run are written to ``d_unique_out[i]`` and ``d_aggregates_out[i]``,
   //! respectively. The total number of runs encountered is written to ``d_num_runs_out``.
-  //! 
+  //!
   //! - The ``==`` equality operator is used to determine whether keys are equivalent
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -1094,28 +1094,28 @@ struct DeviceReduce
   //!   ``[d_keys_in, d_keys_in + num_items)``,
   //!   ``[d_values_in, d_values_in + num_items)`` nor ``out`` in any way.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! The code snippet below illustrates the segmented reduction of ``int`` values grouped by runs of 
+  //! The code snippet below illustrates the segmented reduction of ``int`` values grouped by runs of
   //! associated ``int`` keys.
   //!
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_reduce.cuh>
-  //! 
+  //!
   //!    // CustomMin functor
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int          num_items;          // e.g., 8
@@ -1126,7 +1126,7 @@ struct DeviceReduce
   //!    int          *d_num_runs_out;    // e.g., [-]
   //!    CustomMin    reduction_op;
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
@@ -1134,74 +1134,74 @@ struct DeviceReduce
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_keys_in, d_unique_out, d_values_in,
   //!      d_aggregates_out, d_num_runs_out, reduction_op, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run reduce-by-key
   //!    cub::DeviceReduce::ReduceByKey(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_keys_in, d_unique_out, d_values_in,
   //!      d_aggregates_out, d_num_runs_out, reduction_op, num_items);
-  //! 
+  //!
   //!    // d_unique_out      <-- [0, 2, 9, 5, 8]
   //!    // d_aggregates_out  <-- [0, 1, 6, 2, 4]
   //!    // d_num_runs_out    <-- [5]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeysInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
-  //! 
+  //!
   //! @tparam UniqueOutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing unique output keys @iterator
-  //! 
+  //!
   //! @tparam ValuesInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input values @iterator
-  //! 
+  //!
   //! @tparam AggregatesOutputIterator
   //!   **[inferred]** Random-access output iterator type for writing output value aggregates @iterator
-  //! 
+  //!
   //! @tparam NumRunsOutputIteratorT
   //!   **[inferred]** Output iterator type for recording the number of runs encountered @iterator
-  //! 
+  //!
   //! @tparam ReductionOpT
   //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
-  //! 
-  //! @tparam NumItemsT 
+  //!
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_keys_in
   //!   Pointer to the input sequence of keys
-  //! 
+  //!
   //! @param[out] d_unique_out
   //!   Pointer to the output sequence of unique keys (one key per run)
-  //! 
+  //!
   //! @param[in] d_values_in
   //!   Pointer to the input sequence of corresponding values
-  //! 
+  //!
   //! @param[out] d_aggregates_out
   //!   Pointer to the output sequence of value aggregates
   //!   (one aggregate per run)
-  //! 
+  //!
   //! @param[out] d_num_runs_out
   //!   Pointer to total number of runs encountered
   //!   (i.e., the length of `d_unique_out`)
-  //! 
+  //!
   //! @param[in] reduction_op
   //!   Binary reduction functor
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of associated key+value pairs
   //!   (i.e., the length of `d_in_keys` and `d_in_values`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -1213,7 +1213,7 @@ struct DeviceReduce
             typename NumRunsOutputIteratorT,
             typename ReductionOpT,
             typename NumItemsT>
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   ReduceByKey(void *d_temp_storage,
               size_t &temp_storage_bytes,
               KeysInputIteratorT d_keys_in,
@@ -1262,7 +1262,7 @@ struct DeviceReduce
             typename NumRunsOutputIteratorT,
             typename ReductionOpT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   ReduceByKey(void *d_temp_storage,
               size_t &temp_storage_bytes,
               KeysInputIteratorT d_keys_in,

@@ -26,7 +26,7 @@
  *
  ******************************************************************************/
 
-//! @file cub::DeviceScan provides device-wide, parallel operations for computing a prefix scan across 
+//! @file cub::DeviceScan provides device-wide, parallel operations for computing a prefix scan across
 //!       a sequence of data items residing within device-accessible memory.
 
 #pragma once
@@ -76,7 +76,7 @@ CUB_NAMESPACE_BEGIN
 //! typically proceeds at "memcpy" speeds. Our algorithm supports inplace operations.
 //!
 //! .. [1] Duane Merrill and Michael Garland. `Single-pass Parallel Prefix Scan with Decoupled Look-back
-//!    <https://research.nvidia.com/publication/single-pass-parallel-prefix-scan-decoupled-look-back>`_, 
+//!    <https://research.nvidia.com/publication/single-pass-parallel-prefix-scan-decoupled-look-back>`_,
 //!    *NVIDIA Technical Report NVR-2016-002*, 2016.
 //!
 //! Usage Considerations
@@ -95,9 +95,9 @@ struct DeviceScan
   //! @name Exclusive scans
   //! @{
 
-  
+
   //! @rst
-  //! Computes a device-wide exclusive prefix sum. 
+  //! Computes a device-wide exclusive prefix sum.
   //! The value of ``0`` is applied as the initial value, and is assigned to ``*d_out``.
   //!
   //! - Supports non-commutative sum operators.
@@ -105,7 +105,7 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
-  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. 
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
   //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
   //! - @devicestorage
@@ -217,16 +217,16 @@ struct DeviceScan
   }
 
   //! @rst
-  //! Computes a device-wide exclusive prefix sum in-place. 
+  //! Computes a device-wide exclusive prefix sum in-place.
   //! The value of ``0`` is applied as the initial value, and is assigned to ``*d_data``.
-  //! 
+  //!
   //! - Supports non-commutative sum operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -236,48 +236,48 @@ struct DeviceScan
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_scan.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int  num_items;      // e.g., 7
   //!    int  *d_data;        // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveSum(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_data, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run exclusive prefix sum
   //!    cub::DeviceScan::ExclusiveSum(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_data, num_items);
-  //! 
+  //!
   //!    // d_data <-- [0, 8, 14, 21, 26, 29, 29]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam IteratorT
   //!   **[inferred]** Random-access iterator type for reading scan inputs and wrigin scan outputs
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_data
   //!   Random-access iterator to the sequence of data items
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -321,7 +321,7 @@ struct DeviceScan
   //! Computes a device-wide exclusive prefix scan using the specified
   //! binary ``scan_op`` functor. The ``init_value`` value is applied as
   //! the initial value, and is assigned to ``*d_out``.
-  //! 
+  //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -331,7 +331,7 @@ struct DeviceScan
   //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -341,17 +341,17 @@ struct DeviceScan
   //!
   //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
   //!    #include <climits>       // for INT_MAX
-  //! 
+  //!
   //!    // CustomMin functor
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int          num_items;      // e.g., 7
@@ -359,7 +359,7 @@ struct DeviceScan
   //!    int          *d_out;         // e.g., [ ,  ,  ,  ,  ,  ,  ]
   //!    CustomMin    min_op;
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
   //!    void     *d_temp_storage = NULL;
@@ -367,54 +367,54 @@ struct DeviceScan
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_out, min_op, (int) INT_MAX, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage for exclusive prefix scan
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run exclusive prefix min-scan
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_out, min_op, (int) INT_MAX, num_items);
-  //! 
+  //!
   //!    // d_out <-- [2147483647, 8, 6, 6, 5, 3, 0]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
-  //! 
+  //!
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Random-access iterator to the output sequence of data items
-  //! 
+  //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  //! 
+  //!
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -484,14 +484,14 @@ struct DeviceScan
   //! Computes a device-wide exclusive prefix scan using the specified
   //! binary ``scan_op`` functor. The ``init_value`` value is applied as
   //! the initial value, and is assigned to ``*d_data``.
-  //! 
+  //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -502,24 +502,24 @@ struct DeviceScan
   //!
   //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
   //!    #include <climits>       // for INT_MAX
-  //! 
+  //!
   //!    // CustomMin functor
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int          num_items;      // e.g., 7
   //!    int          *d_data;        // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    CustomMin    min_op;
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
   //!    void     *d_temp_storage = NULL;
@@ -527,48 +527,48 @@ struct DeviceScan
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_data, min_op, (int) INT_MAX, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage for exclusive prefix scan
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run exclusive prefix min-scan
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_data, min_op, (int) INT_MAX, num_items);
-  //! 
+  //!
   //!    // d_data <-- [2147483647, 8, 6, 6, 5, 3, 0]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam IteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
-  //! 
+  //!
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_data
   //!   Random-access iterator to the sequence of data items
-  //! 
+  //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  //! 
+  //!
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -623,17 +623,17 @@ struct DeviceScan
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
   //! binary ``scan_op`` functor. The ``init_value`` value is provided as a future value.
-  //! 
+  //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
-  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. 
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
   //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -643,17 +643,17 @@ struct DeviceScan
   //!
   //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
   //!    #include <climits>       // for INT_MAX
-  //! 
+  //!
   //!    // CustomMin functor
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int          num_items;      // e.g., 7
@@ -661,12 +661,12 @@ struct DeviceScan
   //!    int          *d_out;         // e.g., [ ,  ,  ,  ,  ,  ,  ]
   //!    int          *d_init_iter;   // e.g., INT_MAX
   //!    CustomMin    min_op;
-  //! 
+  //!
   //!    auto future_init_value =
   //!      cub::FutureValue<InitialValueT, IterT>(d_init_iter);
-  //! 
+  //!
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
   //!    void     *d_temp_storage = NULL;
@@ -674,54 +674,54 @@ struct DeviceScan
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_out, min_op, future_init_value, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage for exclusive prefix scan
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run exclusive prefix min-scan
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_out, min_op, future_init_value, num_items);
-  //! 
+  //!
   //!    // d_out <-- [2147483647, 8, 6, 6, 5, 3, 0]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
-  //! 
+  //!
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Pointer to the output sequence of data items
-  //! 
+  //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  //! 
+  //!
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -793,16 +793,16 @@ struct DeviceScan
   }
 
   //! @rst
-  //! Computes a device-wide exclusive prefix scan using the specified binary ``scan_op`` functor. 
+  //! Computes a device-wide exclusive prefix scan using the specified binary ``scan_op`` functor.
   //! The ``init_value`` value is provided as a future value.
-  //! 
+  //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -812,29 +812,29 @@ struct DeviceScan
   //!
   //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
   //!    #include <climits>       // for INT_MAX
-  //! 
+  //!
   //!    // CustomMin functor
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int          num_items;      // e.g., 7
   //!    int          *d_data;        // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int          *d_init_iter;   // e.g., INT_MAX
   //!    CustomMin    min_op;
-  //! 
+  //!
   //!    auto future_init_value =
   //!      cub::FutureValue<InitialValueT, IterT>(d_init_iter);
-  //! 
+  //!
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
   //!    void     *d_temp_storage = NULL;
@@ -842,48 +842,48 @@ struct DeviceScan
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_data, min_op, future_init_value, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage for exclusive prefix scan
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run exclusive prefix min-scan
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_data, min_op, future_init_value, num_items);
-  //! 
+  //!
   //!    // d_data <-- [2147483647, 8, 6, 6, 5, 3, 0]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam IteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
-  //! 
+  //!
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_data
   //!   Pointer to the sequence of data items
-  //! 
+  //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  //! 
+  //!
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -944,7 +944,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide inclusive prefix sum.
-  //! 
+  //!
   //! - Supports non-commutative sum operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -954,23 +954,23 @@ struct DeviceScan
   //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the inclusive prefix sum of an ``int`` device vector.
-  //! 
+  //!
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int  num_items;      // e.g., 7
   //!    int  *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int  *d_out;         // e.g., [ ,  ,  ,  ,  ,  ,  ]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements for inclusive
   //!    // prefix sum
   //!    void     *d_temp_storage = nullptr;
@@ -978,41 +978,41 @@ struct DeviceScan
   //!    cub::DeviceScan::InclusiveSum(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_out, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage for inclusive prefix sum
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run inclusive prefix sum
   //!    cub::DeviceScan::InclusiveSum(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_out, num_items);
-  //! 
+  //!
   //!    // d_out <-- [8, 14, 21, 26, 29, 29, 38]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Random-access iterator to the output sequence of data items
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -1066,29 +1066,29 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide inclusive prefix sum in-place.
-  //! 
+  //!
   //! - Supports non-commutative sum operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the inclusive prefix sum of an ``int`` device vector.
-  //! 
+  //!
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int  num_items;      // e.g., 7
   //!    int  *d_data;        // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements for inclusive
   //!    // prefix sum
   //!    void     *d_temp_storage = nullptr;
@@ -1096,35 +1096,35 @@ struct DeviceScan
   //!    cub::DeviceScan::InclusiveSum(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_data, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage for inclusive prefix sum
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run inclusive prefix sum
   //!    cub::DeviceScan::InclusiveSum(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_data, num_items);
-  //! 
+  //!
   //!    // d_data <-- [8, 14, 21, 26, 29, 29, 38]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam IteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_data
   //!   Random-access iterator to the sequence of data items
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -1166,7 +1166,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
-  //! 
+  //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -1176,7 +1176,7 @@ struct DeviceScan
   //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -1186,17 +1186,17 @@ struct DeviceScan
   //!
   //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
   //!    #include <climits>       // for INT_MAX
-  //! 
+  //!
   //!    // CustomMin functor
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int          num_items;      // e.g., 7
@@ -1204,7 +1204,7 @@ struct DeviceScan
   //!    int          *d_out;         // e.g., [ ,  ,  ,  ,  ,  ,  ]
   //!    CustomMin    min_op;
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements for inclusive
   //!    // prefix scan
   //!    void *d_temp_storage = nullptr;
@@ -1212,48 +1212,48 @@ struct DeviceScan
   //!    cub::DeviceScan::InclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_out, min_op, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage for inclusive prefix scan
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run inclusive prefix min-scan
   //!    cub::DeviceScan::InclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_out, min_op, num_items);
-  //! 
+  //!
   //!    // d_out <-- [8, 6, 6, 5, 3, 0, 0]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs @iterator
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
-  //! 
+  //!
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @param[in]
   //!   d_temp_storage Device-accessible allocation of temporary storage.
   //!   When `nullptr`, the required allocation size is written to
   //!   `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
-  //! 
+  //!
   //! @param[out] d_out
   //!   Random-access iterator to the output sequence of data items
-  //! 
+  //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -1311,41 +1311,41 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
-  //! 
+  //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the inclusive prefix min-scan of an ``int`` device vector.
-  //! 
+  //!
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
   //!    #include <climits>       // for INT_MAX
-  //! 
+  //!
   //!    // CustomMin functor
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int          num_items;      // e.g., 7
   //!    int          *d_data;        // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    CustomMin    min_op;
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements for inclusive
   //!    // prefix scan
   //!    void *d_temp_storage = nullptr;
@@ -1353,42 +1353,42 @@ struct DeviceScan
   //!    cub::DeviceScan::InclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_data, min_op, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage for inclusive prefix scan
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run inclusive prefix min-scan
   //!    cub::DeviceScan::InclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_out, min_op, num_items);
-  //! 
+  //!
   //!    // d_data <-- [8, 6, 6, 5, 3, 0, 0]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam IteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
-  //! 
+  //!
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @param[in]
   //!   d_temp_storage Device-accessible allocation of temporary storage.
   //!   When `nullptr`, the required allocation size is written to
   //!   `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_data
   //!   Random-access iterator to the sequence of data items
-  //! 
+  //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -1436,7 +1436,7 @@ struct DeviceScan
   //! Computes a device-wide exclusive prefix sum-by-key with key equality
   //! defined by ``equality_op``. The value of ``0`` is applied as the initial
   //! value, and is assigned to the beginning of each segment in ``d_values_out``.
-  //! 
+  //!
   //! - Supports non-commutative sum operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -1449,7 +1449,7 @@ struct DeviceScan
   //!   ``[d_values_in, d_values_in + num_items)`` and the range
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -1458,7 +1458,7 @@ struct DeviceScan
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int num_items;      // e.g., 7
@@ -1466,62 +1466,62 @@ struct DeviceScan
   //!    int *d_values_in;   // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int *d_values_out;  // e.g., [ ,  ,  ,  ,  ,  ,  ]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveSumByKey(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_keys_in, d_values_in, d_values_out, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run exclusive prefix sum
   //!    cub::DeviceScan::ExclusiveSumByKey(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_keys_in, d_values_in, d_values_out, num_items);
-  //! 
+  //!
   //!    // d_values_out <-- [0, 8, 0, 7, 12, 0, 0]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeysInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan keys inputs @iterator
-  //! 
+  //!
   //! @tparam ValuesInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan values inputs @iterator
-  //! 
+  //!
   //! @tparam ValuesOutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
-  //! 
+  //!
   //! @tparam EqualityOpT
   //!   **[inferred]** Functor type having member
   //!   `T operator()(const T &a, const T &b)` for binary operations that defines the equality of keys
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
-  //! 
+  //!
   //! @param[in] d_values_in
   //!   Random-access input iterator to the input sequence of value items
-  //! 
+  //!
   //! @param[out] d_values_out
   //!   Random-access output iterator to the output sequence of value items
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_keys_in` and `d_values_in`)
-  //! 
+  //!
   //! @param[in] equality_op
   //!   Binary functor that defines the equality of keys.
   //!   Default is cub::Equality().
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -1601,7 +1601,7 @@ struct DeviceScan
   //! specified binary ``scan_op`` functor. The key equality is defined by
   //! ``equality_op``.  The ``init_value`` value is applied as the initial
   //! value, and is assigned to the beginning of each segment in ``d_values_out``.
-  //! 
+  //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -1614,7 +1614,7 @@ struct DeviceScan
   //!   ``[d_values_in, d_values_in + num_items)`` and the range
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -1624,27 +1624,27 @@ struct DeviceScan
   //!
   //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
   //!    #include <climits>       // for INT_MAX
-  //! 
+  //!
   //!    // CustomMin functor
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
   //!    };
-  //! 
+  //!
   //!    // CustomEqual functor
   //!    struct CustomEqual
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return a == b;
   //!        }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int          num_items;      // e.g., 7
@@ -1654,7 +1654,7 @@ struct DeviceScan
   //!    CustomMin    min_op;
   //!    CustomEqual  equality_op;
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
   //!    void     *d_temp_storage = NULL;
@@ -1663,71 +1663,71 @@ struct DeviceScan
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_keys_in, d_values_in, d_values_out, min_op,
   //!      (int) INT_MAX, num_items, equality_op);
-  //! 
+  //!
   //!    // Allocate temporary storage for exclusive prefix scan
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run exclusive prefix min-scan
   //!    cub::DeviceScan::ExclusiveScanByKey(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_keys_in, d_values_in, d_values_out, min_op,
   //!      (int) INT_MAX, num_items, equality_op);
-  //! 
+  //!
   //!    // d_values_out <-- [2147483647, 8, 2147483647, 7, 5, 2147483647, 0]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeysInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan keys inputs @iterator
-  //! 
+  //!
   //! @tparam ValuesInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan values inputs @iterator
-  //! 
+  //!
   //! @tparam ValuesOutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
-  //! 
+  //!
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @tparam InitValueT
   //!   **[inferred]** Type of the `init_value` value used in Binary scan
   //!   functor type having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @tparam EqualityOpT
   //!   **[inferred]** Functor type having member
   //!   `T operator()(const T &a, const T &b)` for binary operations that defines the equality of keys
-  //! 
+  //!
   //!  @param[in] d_temp_storage
   //!    Device-accessible allocation of temporary storage. When `nullptr`, the
   //!    required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //!  @param[in,out] temp_storage_bytes
   //!    Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //!  @param[in] d_keys_in
   //!    Random-access input iterator to the input sequence of key items
-  //! 
+  //!
   //!  @param[in] d_values_in
   //!    Random-access input iterator to the input sequence of value items
-  //! 
+  //!
   //!  @param[out] d_values_out
   //!    Random-access output iterator to the output sequence of value items
-  //! 
+  //!
   //!  @param[in] scan_op
   //!    Binary scan functor
-  //! 
+  //!
   //!  @param[in] init_value
   //!    Initial value to seed the exclusive scan (and is assigned to the
   //!    beginning of each segment in `d_values_out`)
-  //! 
+  //!
   //!  @param[in] num_items
   //!    Total number of input items (i.e., the length of `d_keys_in` and
   //!    `d_values_in`)
-  //! 
+  //!
   //!  @param[in] equality_op
   //!    Binary functor that defines the equality of keys.
   //!    Default is cub::Equality().
-  //! 
+  //!
   //!  @param[in] stream
   //!    @rst
   //!    **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -1812,7 +1812,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide inclusive prefix sum-by-key with key equality defined by ``equality_op``.
-  //! 
+  //!
   //! - Supports non-commutative sum operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -1825,7 +1825,7 @@ struct DeviceScan
   //!   ``[d_values_in, d_values_in + num_items)`` and the range
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -1834,7 +1834,7 @@ struct DeviceScan
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int num_items;      // e.g., 7
@@ -1842,62 +1842,62 @@ struct DeviceScan
   //!    int *d_values_in;   // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int *d_values_out;  // e.g., [ ,  ,  ,  ,  ,  ,  ]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements for inclusive prefix sum
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::InclusiveSumByKey(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_keys_in, d_values_in, d_values_out, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage for inclusive prefix sum
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run inclusive prefix sum
   //!    cub::DeviceScan::InclusiveSumByKey(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_keys_in, d_values_in, d_values_out, num_items);
-  //! 
+  //!
   //!    // d_out <-- [8, 14, 7, 12, 15, 0, 9]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeysInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan keys inputs @iterator
-  //! 
+  //!
   //! @tparam ValuesInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan values inputs @iterator
-  //! 
+  //!
   //! @tparam ValuesOutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
-  //! 
+  //!
   //! @tparam EqualityOpT
   //!   **[inferred]** Functor type having member
   //!   `T operator()(const T &a, const T &b)` for binary operations that defines the equality of keys
-  //! 
+  //!
   //!  @param[in] d_temp_storage
   //!    Device-accessible allocation of temporary storage.
   //!    When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //!  @param[in,out] temp_storage_bytes
   //!    Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //!  @param[in] d_keys_in
   //!    Random-access input iterator to the input sequence of key items
-  //! 
+  //!
   //!  @param[in] d_values_in
   //!    Random-access input iterator to the input sequence of value items
-  //! 
+  //!
   //!  @param[out] d_values_out
   //!    Random-access output iterator to the output sequence of value items
-  //! 
+  //!
   //!  @param[in] num_items
   //!    Total number of input items (i.e., the length of `d_keys_in` and `d_values_in`)
-  //! 
+  //!
   //!  @param[in] equality_op
   //!    Binary functor that defines the equality of keys.
   //!    Default is cub::Equality().
-  //! 
+  //!
   //!  @param[in] stream
   //!    @rst
   //!    **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -1971,7 +1971,7 @@ struct DeviceScan
   //! @rst
   //! Computes a device-wide inclusive prefix scan-by-key using the
   //! specified binary ``scan_op`` functor. The key equality is defined by ``equality_op``.
-  //! 
+  //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -1984,7 +1984,7 @@ struct DeviceScan
   //!   ``[d_values_in, d_values_in + num_items)`` and the range
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -1994,27 +1994,27 @@ struct DeviceScan
   //!
   //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
   //!    #include <climits>       // for INT_MAX
-  //! 
+  //!
   //!    // CustomMin functor
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
   //!    };
-  //! 
+  //!
   //!    // CustomEqual functor
   //!    struct CustomEqual
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   //!        T operator()(const T &a, const T &b) const {
   //!            return a == b;
   //!        }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int          num_items;      // e.g., 7
@@ -2024,68 +2024,68 @@ struct DeviceScan
   //!    CustomMin    min_op;
   //!    CustomEqual  equality_op;
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements for inclusive prefix scan
   //!    void *d_temp_storage = NULL;
   //!    size_t temp_storage_bytes = 0;
   //!    cub::DeviceScan::InclusiveScanByKey(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_keys_in, d_values_in, d_values_out, min_op, num_items, equality_op);
-  //! 
+  //!
   //!    // Allocate temporary storage for inclusive prefix scan
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run inclusive prefix min-scan
   //!    cub::DeviceScan::InclusiveScanByKey(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_keys_in, d_values_in, d_values_out, min_op, num_items, equality_op);
-  //! 
+  //!
   //!    // d_out <-- [8, 6, 7, 5, 3, 0, 0]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeysInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan keys inputs @iterator
-  //! 
+  //!
   //! @tparam ValuesInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan values inputs @iterator
-  //! 
+  //!
   //! @tparam ValuesOutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
-  //! 
+  //!
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
-  //! 
+  //!
   //! @tparam EqualityOpT
   //!   **[inferred]** Functor type having member
   //!   `T operator()(const T &a, const T &b)` for binary operations that defines the equality of keys
-  //! 
+  //!
   //!  @param[in] d_temp_storage
   //!    Device-accessible allocation of temporary storage.
   //!    When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //!  @param[in,out] temp_storage_bytes
   //!    Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //!  @param[in] d_keys_in
   //!    Random-access input iterator to the input sequence of key items
-  //! 
+  //!
   //!  @param[in] d_values_in
   //!    Random-access input iterator to the input sequence of value items
-  //! 
+  //!
   //!  @param[out] d_values_out
   //!    Random-access output iterator to the output sequence of value items
-  //! 
+  //!
   //!  @param[in] scan_op
   //!    Binary scan functor
-  //! 
+  //!
   //!  @param[in] num_items
   //!    Total number of input items (i.e., the length of `d_keys_in` and `d_values_in`)
-  //! 
+  //!
   //!  @param[in] equality_op
   //!    Binary functor that defines the equality of keys.
   //!    Default is cub::Equality().
-  //! 
+  //!
   //!  @param[in] stream
   //!    @rst
   //!    **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.

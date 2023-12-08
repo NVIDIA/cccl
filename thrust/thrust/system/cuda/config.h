@@ -54,8 +54,8 @@
 /**
  * \def THRUST_RUNTIME_FUNCTION
  *
- * Execution space for functions that can use the CUDA runtime API (`__host__`
- * when RDC is off, `__host__ __device__` when RDC is on).
+ * Execution space for functions that can use the CUDA runtime API (`_CCCL_HOST`
+ * when RDC is off, `_CCCL_HOST_DEVICE` when RDC is on).
  */
 #define THRUST_RUNTIME_FUNCTION CUB_RUNTIME_FUNCTION
 
@@ -102,19 +102,19 @@
 #ifdef THRUST_AGENT_ENTRY_NOINLINE
 #define THRUST_AGENT_ENTRY_INLINE_ATTR __noinline__
 #else
-#define THRUST_AGENT_ENTRY_INLINE_ATTR __forceinline__
+#define THRUST_AGENT_ENTRY_INLINE_ATTR _CCCL_FORCEINLINE
 #endif
 
-#define THRUST_DEVICE_FUNCTION __device__ __forceinline__
-#define THRUST_HOST_FUNCTION __host__     __forceinline__
-#define THRUST_FUNCTION __host__ __device__ __forceinline__
+#define THRUST_DEVICE_FUNCTION _CCCL_DEVICE _CCCL_FORCEINLINE
+#define THRUST_HOST_FUNCTION _CCCL_HOST     _CCCL_FORCEINLINE
+#define THRUST_FUNCTION _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 
 #if 0
 #define THRUST_ARGS(...) __VA_ARGS__
 #define THRUST_STRIP_PARENS(X) X
 #define THRUST_AGENT_ENTRY(ARGS) THRUST_FUNCTION static void entry(THRUST_STRIP_PARENS(THRUST_ARGS ARGS))
 #else
-#define THRUST_AGENT_ENTRY(...) THRUST_AGENT_ENTRY_INLINE_ATTR __device__ static void entry(__VA_ARGS__)
+#define THRUST_AGENT_ENTRY(...) THRUST_AGENT_ENTRY_INLINE_ATTR _CCCL_DEVICE static void entry(__VA_ARGS__)
 #endif
 
 #ifndef THRUST_IGNORE_CUB_VERSION_CHECK

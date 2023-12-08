@@ -39,9 +39,9 @@ namespace detail
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename InputIterator>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::difference_type
     distance(InputIterator first, InputIterator last, thrust::incrementable_traversal_tag)
 {
@@ -57,9 +57,9 @@ inline __host__ __device__
 } // end advance()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename InputIterator>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::difference_type
     distance(InputIterator first, InputIterator last, thrust::random_access_traversal_tag)
 {
@@ -69,9 +69,9 @@ inline __host__ __device__
 
 } // end detail
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename InputIterator>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::difference_type
     distance(InputIterator first, InputIterator last)
 {

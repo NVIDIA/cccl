@@ -58,7 +58,7 @@ THRUST_NAMESPACE_BEGIN
 template <typename DerivedPolicy,
           typename ForwardIterator,
           typename BinaryPredicate>
-__host__ __device__ ForwardIterator
+_CCCL_HOST_DEVICE ForwardIterator
 unique(
     const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
     ForwardIterator                                             first,
@@ -69,7 +69,7 @@ template <typename DerivedPolicy,
           typename InputIterator,
           typename OutputIterator,
           typename BinaryPredicate>
-__host__ __device__ OutputIterator
+_CCCL_HOST_DEVICE OutputIterator
 unique_copy(
     const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
     InputIterator                                               first,
@@ -80,7 +80,7 @@ unique_copy(
 template <typename DerivedPolicy,
           typename ForwardIterator,
           typename BinaryPredicate>
-__host__ __device__ typename thrust::iterator_traits<ForwardIterator>::difference_type
+_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type
 unique_count(
     const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
     ForwardIterator                                             first,
@@ -721,12 +721,12 @@ namespace __unique {
 // Thrust API entry points
 //-------------------------
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived,
           class InputIt,
           class OutputIt,
           class BinaryPred>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 unique_copy(execution_policy<Derived> &policy,
             InputIt                    first,
             InputIt                    last,
@@ -746,7 +746,7 @@ unique_copy(execution_policy<Derived> &policy,
 template <class Derived,
           class InputIt,
           class OutputIt>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 unique_copy(execution_policy<Derived> &policy,
             InputIt                    first,
             InputIt                    last,
@@ -758,11 +758,11 @@ unique_copy(execution_policy<Derived> &policy,
 
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived,
           class ForwardIt,
           class BinaryPred>
-ForwardIt __host__ __device__
+ForwardIt _CCCL_HOST_DEVICE
 unique(execution_policy<Derived> &policy,
        ForwardIt                  first,
        ForwardIt                  last,
@@ -780,7 +780,7 @@ unique(execution_policy<Derived> &policy,
 
 template <class Derived,
           class ForwardIt>
-ForwardIt __host__ __device__
+ForwardIt _CCCL_HOST_DEVICE
 unique(execution_policy<Derived> &policy,
        ForwardIt                  first,
        ForwardIt                  last)
@@ -793,7 +793,7 @@ unique(execution_policy<Derived> &policy,
 template <typename BinaryPred>
 struct zip_adj_not_predicate {
   template <typename TupleType>
-  bool __host__ __device__ operator()(TupleType&& tuple) {
+  bool _CCCL_HOST_DEVICE operator()(TupleType&& tuple) {
       return !binary_pred(thrust::get<0>(tuple), thrust::get<1>(tuple));
   }
 
@@ -801,12 +801,12 @@ struct zip_adj_not_predicate {
 };
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived,
           class ForwardIt,
           class BinaryPred>
 typename thrust::iterator_traits<ForwardIt>::difference_type
-__host__ __device__
+_CCCL_HOST_DEVICE
 unique_count(execution_policy<Derived> &policy,
        ForwardIt                  first,
        ForwardIt                  last,

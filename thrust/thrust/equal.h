@@ -83,7 +83,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see https://en.cppreference.com/w/cpp/algorithm/equal
  */
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool equal(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
 
 
@@ -161,7 +161,7 @@ bool equal(InputIterator1 first1, InputIterator1 last1,
  *
  *  struct compare_modulo_two
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(int x, int y) const
  *    {
  *      return (x % 2) == (y % 2);
@@ -179,7 +179,7 @@ bool equal(InputIterator1 first1, InputIterator1 last1,
  *  \see https://en.cppreference.com/w/cpp/algorithm/equal
  */
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool equal(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred);
 
 
@@ -211,7 +211,7 @@ bool equal(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, Inp
  *
  *  struct compare_modulo_two
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    bool operator()(int x, int y) const
  *    {
  *      return (x % 2) == (y % 2);

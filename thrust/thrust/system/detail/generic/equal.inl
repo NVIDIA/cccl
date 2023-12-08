@@ -40,7 +40,7 @@ namespace generic
 
 
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool equal(thrust::execution_policy<DerivedPolicy> &exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
   typedef typename thrust::iterator_traits<InputIterator1>::value_type InputType1;
@@ -49,11 +49,11 @@ bool equal(thrust::execution_policy<DerivedPolicy> &exec, InputIterator1 first1,
 }
 
 
-// the == below could be a __host__ function in the case of std::vector::iterator::operator==
-// we make this exception for equal and use __thrust_exec_check_disable__ because it is used in vector's implementation
-__thrust_exec_check_disable__
+// the == below could be a _CCCL_HOST function in the case of std::vector::iterator::operator==
+// we make this exception for equal and use _CCCL_EXEC_CHECK_DISABLE because it is used in vector's implementation
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool equal(thrust::execution_policy<DerivedPolicy> &exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred)
 {
   return thrust::mismatch(exec, first1, last1, first2, binary_pred).first == last1;

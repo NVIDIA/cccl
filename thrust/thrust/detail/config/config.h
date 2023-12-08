@@ -42,10 +42,8 @@
 // because other config headers depend on it
 #include <thrust/detail/config/host_system.h>
 #include <thrust/detail/config/device_system.h>
-#include <thrust/detail/config/host_device.h>
 #include <thrust/detail/config/debug.h>
 #include <thrust/detail/config/forceinline.h>
-#include <thrust/detail/config/exec_check_disable.h>
 #include <thrust/detail/config/global_workarounds.h>
 #include <thrust/detail/config/namespace.h>
 

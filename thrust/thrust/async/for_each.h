@@ -55,7 +55,7 @@ template <
   typename DerivedPolicy
 , typename ForwardIt, typename Sentinel, typename UnaryFunction
 >
-__host__
+_CCCL_HOST
 event<DerivedPolicy>
 async_for_each(
   thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, UnaryFunction
@@ -81,7 +81,7 @@ struct for_each_fn final
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel, typename UnaryFunction
   >
-  __host__
+  _CCCL_HOST
   static auto call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
   , ForwardIt&& first, Sentinel&& last
@@ -97,7 +97,7 @@ struct for_each_fn final
   )
 
   template <typename ForwardIt, typename Sentinel, typename UnaryFunction>
-  __host__
+  _CCCL_HOST
   static auto call(ForwardIt&& first, Sentinel&& last, UnaryFunction&& f)
   THRUST_RETURNS(
     for_each_fn::call(
@@ -110,7 +110,7 @@ struct for_each_fn final
   )
 
   template <typename... Args>
-  THRUST_NODISCARD __host__
+  THRUST_NODISCARD _CCCL_HOST
   auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)

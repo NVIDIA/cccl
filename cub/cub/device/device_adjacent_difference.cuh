@@ -54,7 +54,7 @@ CUB_NAMESPACE_BEGIN
 //! DeviceAdjacentDifference provides device-wide, parallel operations for
 //! computing the differences of adjacent elements residing within
 //! device-accessible memory.
-//! 
+//!
 //! Overview
 //! ++++++++++++++++++++++++++
 //!
@@ -76,13 +76,13 @@ CUB_NAMESPACE_BEGIN
 //!   assigned to ``*(result + (i - first))`` without modification.
 //! - For SubtractRight, if the right element is out of bounds, the iterator is
 //!   assigned to ``*(result + (i - first))`` without modification.
-//! 
+//!
 //! Snippet
 //! ++++++++++++++++++++++++++
 //!
 //! The code snippet below illustrates how to use ``DeviceAdjacentDifference`` to
 //! compute the left difference between adjacent elements.
-//! 
+//!
 //! .. code-block:: c++
 //!
 //!    #include <cub/cub.cuh>
@@ -150,67 +150,67 @@ public:
 
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements residing within device-accessible memory
-  //! 
+  //!
   //! Overview
   //! ++++++++++++++++++++++++++
   //!
-  //! - Calculates the differences of adjacent elements in ``d_input``. 
+  //! - Calculates the differences of adjacent elements in ``d_input``.
   //!   That is, ``*d_input`` is assigned to ``*d_output``, and, for each iterator ``i`` in the
   //!   range ``[d_input + 1, d_input + num_items)``, the result of
   //!   ``difference_op(*i, *(i - 1))`` is assigned to ``*(d_output + (i - d_input))``.
   //! - Note that the behavior is undefined if the input and output ranges
   //!   overlap in any way.
-  //! 
+  //!
   //! Snippet
   //! ++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates how to use ``DeviceAdjacentDifference``
   //! to compute the difference between adjacent elements.
-  //! 
+  //!
   //!
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_adjacent_difference.cuh>
-  //! 
+  //!
   //!    struct CustomDifference
   //!    {
   //!      template <typename DataType>
-  //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+  //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
   //!      {
   //!        return lhs - rhs;
   //!      }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    int  num_items;      // e.g., 8
   //!    int  *d_input;       // e.g., [1, 2, 1, 2, 1, 2, 1, 2]
   //!    int  *d_output;
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
-  //! 
+  //!
   //!    cub::DeviceAdjacentDifference::SubtractLeftCopy(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_input, d_output,
   //!      num_items, CustomDifference());
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run operation
   //!    cub::DeviceAdjacentDifference::SubtractLeftCopy(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_input, d_output,
   //!      num_items, CustomDifference());
-  //! 
+  //!
   //!    // d_input  <-- [1, 2, 1, 2, 1, 2, 1, 2]
   //!    // d_output <-- [1, 1, -1, 1, -1, 1, -1, 1]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   @rst
   //!   is a model of `Input Iterator <https://en.cppreference.com/w/cpp/iterator/input_iterator>`_,
@@ -220,37 +220,37 @@ public:
   //!   of ``x - y`` is convertible to a type in ``OutputIteratorT``'s set of
   //!   ``value_types``.
   //!   @endrst
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   @rst
   //!   is a model of `Output Iterator <https://en.cppreference.com/w/cpp/iterator/output_iterator>`_.
   //!   @endrst
-  //! 
+  //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `OutputIteratorT`'s set of `value_types`.
-  //! 
-  //! @tparam NumItemsT 
+  //!
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_input
   //!   Pointer to the input sequence
-  //! 
+  //!
   //! @param[out] d_output
   //!   Pointer to the output sequence
-  //! 
+  //!
   //! @param[in] num_items
   //!   Number of items in the input sequence
-  //! 
+  //!
   //! @param[in] difference_op
   //!   The binary function used to compute differences
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`
@@ -308,7 +308,7 @@ public:
 
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements residing within device-accessible memory.
-  //! 
+  //!
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -316,52 +316,52 @@ public:
   //! each iterator ``i`` in the range ``[d_input + 1, d_input + num_items)``, the
   //! result of ``difference_op(*i, *(i - 1))`` is assigned to
   //! ``*(d_input + (i - d_input))``.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates how to use ``DeviceAdjacentDifference``
   //! to compute the difference between adjacent elements.
-  //! 
+  //!
   //!
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_adjacent_difference.cuh>
-  //! 
+  //!
   //!    struct CustomDifference
   //!    {
   //!      template <typename DataType>
-  //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+  //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
   //!      {
   //!        return lhs - rhs;
   //!      }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    int  num_items;     // e.g., 8
   //!    int  *d_data;       // e.g., [1, 2, 1, 2, 1, 2, 1, 2]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceAdjacentDifference::SubtractLeft(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_data, num_items, CustomDifference());
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run operation
   //!    cub::DeviceAdjacentDifference::SubtractLeft(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_data, num_items, CustomDifference());
-  //! 
+  //!
   //!    // d_data <-- [1, 1, -1, 1, -1, 1, -1, 1]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam RandomAccessIteratorT
   //!   @rst
   //!   is a model of `Random Access Iterator <https://en.cppreference.com/w/cpp/iterator/random_access_iterator>`_,
@@ -370,31 +370,31 @@ public:
   //!   return type of ``x - y`` should be convertible to a type in
   //!   ``RandomAccessIteratorT``'s set of ``value_types``.
   //!   @endrst
-  //! 
+  //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `RandomAccessIteratorT`'s
   //!   set of `value_types`.
-  //! 
-  //! @tparam NumItemsT 
+  //!
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of `num_items`
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_input
   //!   Pointer to the input sequence and the result
-  //! 
+  //!
   //! @param[in] num_items
   //!   Number of items in the input sequence
-  //! 
+  //!
   //! @param[in] difference_op
   //!   The binary function used to compute differences
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -447,11 +447,11 @@ public:
 
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
-  //! 
+  //!
   //! Overview
   //! ++++++++++++++++++++++++++
   //!
-  //! - Calculates the right differences of adjacent elements in ``d_input``. 
+  //! - Calculates the right differences of adjacent elements in ``d_input``.
   //!   That is, ``*(d_input + num_items - 1)`` is assigned to
   //!   ``*(d_output + num_items - 1)``, and, for each iterator ``i`` in the range
   //!   ``[d_input, d_input + num_items - 1)``, the result of
@@ -459,54 +459,54 @@ public:
   //!   ``*(d_output + (i - d_input))``.
   //! - Note that the behavior is undefined if the input and output ranges
   //!   overlap in any way.
-  //! 
+  //!
   //! Snippet
   //! ++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates how to use ``DeviceAdjacentDifference``
   //! to compute the difference between adjacent elements.
-  //! 
+  //!
   //!
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_adjacent_difference.cuh>
-  //! 
+  //!
   //!    struct CustomDifference
   //!    {
   //!      template <typename DataType>
-  //!      __device__ DataType operator()(DataType &lhs, DataType &rhs)
+  //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
   //!      {
   //!        return lhs - rhs;
   //!      }
   //!    };
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    int  num_items;     // e.g., 8
   //!    int  *d_input;      // e.g., [1, 2, 1, 2, 1, 2, 1, 2]
   //!    int  *d_output;
   //!    ..
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void *d_temp_storage = nullptr;
   //!    size_t temp_storage_bytes = 0;
   //!    cub::DeviceAdjacentDifference::SubtractRightCopy(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_input, d_output, num_items, CustomDifference());
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run operation
   //!    cub::DeviceAdjacentDifference::SubtractRightCopy(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_input, d_output, num_items, CustomDifference());
-  //! 
+  //!
   //!    // d_input <-- [1, 2, 1, 2, 1, 2, 1, 2]
   //!    // d_data  <-- [-1, 1, -1, 1, -1, 1, -1, 2]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   @rst
   //!   is a model of `Input Iterator <https://en.cppreference.com/w/cpp/iterator/input_iterator>`_,
@@ -516,39 +516,39 @@ public:
   //!   of ``x - y`` is convertible to a type in ``OutputIteratorT``'s set of
   //!   ``value_types``.
   //!   @endrst
-  //! 
+  //!
   //! @tparam OutputIteratorT
   //!   @rst
   //!   is a model of `Output Iterator <https://en.cppreference.com/w/cpp/iterator/output_iterator>`_.
   //!   @endrst
-  //! 
+  //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `RandomAccessIteratorT`'s
   //!   set of `value_types`.
-  //! 
-  //! @tparam NumItemsT 
+  //!
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_input
   //!   Pointer to the input sequence
-  //! 
+  //!
   //! @param[out] d_output
   //!   Pointer to the output sequence
-  //! 
+  //!
   //! @param[in] num_items
   //!   Number of items in the input sequence
-  //! 
+  //!
   //! @param[in] difference_op
   //!   The binary function used to compute differences.
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -606,49 +606,49 @@ public:
 
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
-  //! 
+  //!
   //! Overview
   //! ++++++++++++++++++++++++++
   //!
-  //! Calculates the right differences of adjacent elements in ``d_input``. 
+  //! Calculates the right differences of adjacent elements in ``d_input``.
   //! That is, for each iterator ``i`` in the range
   //! ``[d_input, d_input + num_items - 1)``, the result of
   //! ``difference_op(*i, *(i + 1))`` is assigned to ``*(d_input + (i - d_input))``.
-  //! 
+  //!
   //! Snippet
   //! ++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates how to use ``DeviceAdjacentDifference``
   //! to compute the difference between adjacent elements.
-  //! 
+  //!
   //!
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_adjacent_difference.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    int  num_items;    // e.g., 8
   //!    int  *d_data;      // e.g., [1, 2, 1, 2, 1, 2, 1, 2]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void *d_temp_storage = NULL;
   //!    size_t temp_storage_bytes = 0;
   //!    cub::DeviceAdjacentDifference::SubtractRight(
   //!      d_temp_storage, temp_storage_bytes, d_data, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run operation
   //!    cub::DeviceAdjacentDifference::SubtractRight(
   //!      d_temp_storage, temp_storage_bytes, d_data, num_items);
-  //! 
+  //!
   //!    // d_data  <-- [-1, 1, -1, 1, -1, 1, -1, 2]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam RandomAccessIteratorT
   //!   @rst
   //!   is a model of `Random Access Iterator <https://en.cppreference.com/w/cpp/iterator/random_access_iterator>`_,
@@ -657,31 +657,31 @@ public:
   //!   return type of ``x - y`` should be convertible to a type in
   //!   ``RandomAccessIteratorT``'s set of ``value_types``.
   //!   @endrst
-  //! 
+  //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `RandomAccessIteratorT`'s
   //!   set of `value_types`.
-  //! 
-  //! @tparam NumItemsT 
+  //!
+  //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_input
   //!   Pointer to the input sequence
-  //! 
+  //!
   //! @param[in] num_items
   //!   Number of items in the input sequence
-  //! 
+  //!
   //! @param[in] difference_op
   //!   The binary function used to compute differences
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.

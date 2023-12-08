@@ -41,7 +41,6 @@
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/system/cuda/detail/core/util.h>
-#include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 
 #include <cassert>
 

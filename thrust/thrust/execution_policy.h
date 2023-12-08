@@ -283,7 +283,7 @@ template<typename DerivedPolicy>
  *
  *  struct printf_functor
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    void operator()(int x)
  *    {
  *      printf("%d\n", x);
@@ -331,7 +331,7 @@ static const detail::host_t host;
  *
  *  struct printf_functor
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    void operator()(int x)
  *    {
  *      printf("%d\n", x);
@@ -371,7 +371,7 @@ THRUST_INLINE_CONSTANT detail::device_t device;
  *
  *  struct printf_functor
  *  {
- *    __host__ __device__
+ *    _CCCL_HOST_DEVICE
  *    void operator()(int x)
  *    {
  *      printf("%d\n", x);
