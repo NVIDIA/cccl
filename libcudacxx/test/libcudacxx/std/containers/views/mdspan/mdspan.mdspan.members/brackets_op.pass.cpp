@@ -147,7 +147,7 @@ int main(int, char**)
     }
 
     // Constraint: nonthrow-constructibility
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
     {
         using element_t = int;
         using   index_t = int;
@@ -159,7 +159,7 @@ int main(int, char**)
 
         static_assert( is_bracket_op_span_avail_v < mdspan_t, my_int_non_nothrow_constructible, 1 > == false, "" );
     }
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
 
     return 0;
 }

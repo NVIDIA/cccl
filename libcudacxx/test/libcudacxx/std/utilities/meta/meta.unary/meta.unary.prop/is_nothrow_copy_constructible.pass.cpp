@@ -61,9 +61,9 @@ struct A
 int main(int, char**)
 {
     test_has_not_nothrow_copy_constructor<void>();
-#if !defined(TEST_COMPILER_NVHPC) && !defined(TEST_COMPILER_ICC)
+#ifndef TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
     test_has_not_nothrow_copy_constructor<A>();
-#endif // !TEST_COMPILER_NVHPC && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
 
     test_is_nothrow_copy_constructible<int&>();
     test_is_nothrow_copy_constructible<Union>();

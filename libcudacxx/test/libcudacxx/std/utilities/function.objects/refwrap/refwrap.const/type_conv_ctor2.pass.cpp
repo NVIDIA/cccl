@@ -38,14 +38,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     A1 a{};
-#if !defined(TEST_COMPILER_NVHPC) && !defined(TEST_COMPILER_ICC) && !defined(TEST_COMPILER_ICC_LLVM)
+#ifndef TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
     ASSERT_NOT_NOEXCEPT(implicitly_convert(a));
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
     cuda::std::reference_wrapper<B> b1 = a;
     assert(&b1.get() == &a.b_);
-#if !defined(TEST_COMPILER_NVHPC) && !defined(TEST_COMPILER_ICC) && !defined(TEST_COMPILER_ICC_LLVM)
+#ifndef TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
     ASSERT_NOT_NOEXCEPT(b1 = a);
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
     b1 = a;
     assert(&b1.get() == &a.b_);
   }

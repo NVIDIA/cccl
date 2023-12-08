@@ -62,10 +62,10 @@ int main(int, char**)
     test_is_not_nothrow_assignable<int, int> ();
 
     test_is_not_nothrow_assignable<A, B> ();
-#if !defined(TEST_COMPILER_NVHPC) && !defined(TEST_COMPILER_ICC)
+#ifndef TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
     test_is_not_nothrow_assignable<B, A> ();
     test_is_not_nothrow_assignable<C, C&> ();
-#endif // !TEST_COMPILER_NVHPC && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
 
   return 0;
 }

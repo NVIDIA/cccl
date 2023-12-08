@@ -62,7 +62,12 @@
 #define TEST_HAS_BUILTIN_IDENTIFIER(X) 0
 #endif
 
-#if defined(__NVCOMPILER)
+
+#if defined(__INTEL_LLVM_COMPILER)
+#  define TEST_COMPILER_ICC_LLVM
+#elif defined(__INTEL_COMPILER)
+#  define TEST_COMPILER_ICC
+#elif defined(__NVCOMPILER)
 # define TEST_COMPILER_NVHPC
 #elif defined(__clang__)
 # define TEST_COMPILER_CLANG
@@ -440,6 +445,10 @@ constexpr bool unused(T &&) {return true;}
 #define TEST_COMPILER_MSVC_2022
 #endif
 #endif // defined(TEST_COMPILER_MSVC)
+
+#if defined(TEST_COMPILER_NVHPC) || defined(TEST_COMPILER_ICC)
+#define TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER_NVHPC || TEST_COMPILER_ICC
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop

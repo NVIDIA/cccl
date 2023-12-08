@@ -178,21 +178,21 @@ __host__ __device__ void test_noexcept() {
         using Tuple = cuda::std::tuple<int, NothrowMoveable>;
         Tuple tup; unused(tup);
         Tuple const& ctup = tup; unused(ctup);
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
         ASSERT_NOT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(ctup));
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
         LIBCPP_ASSERT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(cuda::std::move(tup)));
     }
     {
         using Tuple = cuda::std::pair<int, NothrowMoveable>;
         Tuple tup; unused(tup);
         Tuple const& ctup = tup; unused(ctup);
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
         ASSERT_NOT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(ctup));
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
         LIBCPP_ASSERT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(cuda::std::move(tup)));
     }
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
     {
         using Tuple = cuda::std::tuple<int, int, int>;
         Tuple tup; unused(tup);
@@ -209,7 +209,7 @@ __host__ __device__ void test_noexcept() {
         Tuple tup; unused(tup);
         ASSERT_NOT_NOEXCEPT(cuda::std::make_from_tuple<TestType>(tup));
     }
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
     {
         using Tuple = cuda::std::array<long, 3>;
         Tuple tup; unused(tup);

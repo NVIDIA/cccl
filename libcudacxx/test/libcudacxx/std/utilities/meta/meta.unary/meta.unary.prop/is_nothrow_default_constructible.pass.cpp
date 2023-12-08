@@ -74,12 +74,12 @@ int main(int, char**)
 {
     test_has_not_nothrow_default_constructor<void>();
     test_has_not_nothrow_default_constructor<int&>();
-#if !defined(TEST_COMPILER_NVHPC) && !defined(TEST_COMPILER_ICC)
+#ifndef TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
     test_has_not_nothrow_default_constructor<A>();
 #if !defined(TEST_COMPILER_MSVC_2017)
     test_has_not_nothrow_default_constructor<DThrows>(); // This is LWG2116
 #endif // !TEST_COMPILER_MSVC_2017
-#endif // !TEST_COMPILER_NVHPC && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
 
     test_is_nothrow_default_constructible<Union>();
     test_is_nothrow_default_constructible<Empty>();

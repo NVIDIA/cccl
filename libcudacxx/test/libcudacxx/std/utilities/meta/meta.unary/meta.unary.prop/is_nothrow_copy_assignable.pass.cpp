@@ -70,9 +70,9 @@ int main(int, char**)
 
     test_has_not_nothrow_assign<const int>();
     test_has_not_nothrow_assign<void>();
-#if !defined(TEST_COMPILER_NVHPC) && !defined(TEST_COMPILER_ICC)
+#ifndef TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
     test_has_not_nothrow_assign<A>();
-#endif // !TEST_COMPILER_NVHPC && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
 
   return 0;
 }
