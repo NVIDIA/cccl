@@ -39,6 +39,7 @@
 #include <climits>
 #include <limits>
 
+#include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 #include "cub/util_type.cuh"
@@ -266,54 +267,10 @@ CUB_TEST("Device radix sort can sort pairs with custom i128_t keys", "[radix][so
   REQUIRE(reference.second == out_values);
 }
 
-struct double_buffer_sort_t
-{
-  bool is_descending;
-  int *selector;
-
-  template <class... As>
-  CUB_RUNTIME_FUNCTION cudaError_t operator()(std::uint8_t *d_temp_storage,
-                                              std::size_t &temp_storage_bytes,
-                                              cub::DoubleBuffer<key> keys,
-                                              As... as)
-  {
-    const cudaError_t status =
-      is_descending
-        ? cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, keys, as...)
-        : cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, keys, as...);
-
-    *selector = keys.selector;
-    return status;
-  }
-
-  template <class... As>
-  CUB_RUNTIME_FUNCTION cudaError_t operator()(std::uint8_t *d_temp_storage,
-                                              std::size_t &temp_storage_bytes,
-                                              cub::DoubleBuffer<key> keys,
-                                              cub::DoubleBuffer<value> values,
-                                              As... as)
-  {
-    const cudaError_t status =
-      is_descending
-        ? cub::DeviceRadixSort::SortPairsDescending(d_temp_storage,
-                                                    temp_storage_bytes,
-                                                    keys,
-                                                    values,
-                                                    as...)
-        : cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, keys, values, as...);
-
-    *selector = keys.selector;
-    return status;
-  }
-};
-
 CUB_TEST("Device radix sort works with custom i128_t (db)", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
   const int num_items = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
-
-  int *selector = nullptr;
-  cudaMallocHost(&selector, sizeof(int));
 
   thrust::device_vector<key> keys_1(num_items);
   thrust::device_vector<key> keys_2(num_items);
@@ -326,10 +283,13 @@ CUB_TEST("Device radix sort works with custom i128_t (db)", "[radix][sort][devic
 
   const bool is_descending = GENERATE(false, true);
   auto reference_keys      = reference_sort_keys(keys_1, is_descending, 0, 128);
-  launch(double_buffer_sort_t{is_descending, selector}, keys, num_items, pair_decomposer_t{});
 
-  keys.selector = *selector;
-  cudaFreeHost(selector);
+  double_buffer_sort_t action(is_descending);
+  action.initialize();
+  launch(action, keys, num_items, pair_decomposer_t{});
+
+  keys.selector = action.selector();
+  action.finalize();
 
   thrust::device_vector<key> &out_keys = keys.Current() == d_keys_1 ? keys_1 : keys_2;
 
@@ -340,9 +300,6 @@ CUB_TEST("Device radix sort works with custom i128_t keys (db)", "[radix][sort][
 {
   constexpr int max_items = 1 << 18;
   const int num_items = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
-
-  int *selector = nullptr;
-  cudaMallocHost(&selector, sizeof(int));
 
   thrust::device_vector<key> keys_1(num_items);
   thrust::device_vector<key> keys_2(num_items);
@@ -364,15 +321,18 @@ CUB_TEST("Device radix sort works with custom i128_t keys (db)", "[radix][sort][
   const bool is_descending = GENERATE(false, true);
 
   auto reference_keys = reference_sort_pairs(keys_1, values_1, is_descending, 0, 128);
-  launch(double_buffer_sort_t{is_descending, selector},
+
+  double_buffer_sort_t action(is_descending);
+  action.initialize();
+  launch(action,
          keys,
          values,
          num_items,
          pair_decomposer_t{});
 
-  keys.selector   = *selector;
-  values.selector = *selector;
-  cudaFreeHost(selector);
+  keys.selector   = action.selector();
+  values.selector = action.selector();
+  action.finalize();
 
   thrust::device_vector<key> &out_keys     = keys.Current() == d_keys_1 ? keys_1 : keys_2;
   thrust::device_vector<value> &out_values = values.Current() == d_values_1 ? values_1 : values_2;
@@ -470,9 +430,6 @@ CUB_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sor
   constexpr int max_items = 1 << 18;
   const int num_items = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
 
-  int *selector = nullptr;
-  cudaMallocHost(&selector, sizeof(int));
-
   thrust::device_vector<key> keys_1(num_items);
   thrust::device_vector<key> keys_2(num_items);
   c2h::gen(CUB_SEED(2), keys_1);
@@ -487,15 +444,18 @@ CUB_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sor
   const bool is_descending = GENERATE(false, true);
 
   auto reference_keys = reference_sort_keys(keys_1, is_descending, begin_bit, end_bit);
-  launch(double_buffer_sort_t{is_descending, selector},
+
+  double_buffer_sort_t action(is_descending);
+  action.initialize();
+  launch(action,
          keys,
          num_items,
          pair_decomposer_t{},
          begin_bit,
          end_bit);
 
-  keys.selector = *selector;
-  cudaFreeHost(selector);
+  keys.selector = action.selector();
+  action.finalize();
 
   thrust::device_vector<key> &out_keys = keys.Current() == d_keys_1 ? keys_1 : keys_2;
 
@@ -532,7 +492,10 @@ CUB_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix
   const bool is_descending = GENERATE(false, true);
 
   auto reference_keys = reference_sort_pairs(keys_1, values_1, is_descending, begin_bit, end_bit);
-  launch(double_buffer_sort_t{is_descending, selector},
+
+  double_buffer_sort_t action(is_descending);
+  action.initialize();
+  launch(action,
          keys,
          values,
          num_items,
@@ -540,9 +503,9 @@ CUB_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix
          begin_bit,
          end_bit);
 
-  keys.selector   = *selector;
-  values.selector = *selector;
-  cudaFreeHost(selector);
+  keys.selector   = action.selector();
+  values.selector = action.selector();
+  action.finalize();
 
   thrust::device_vector<key> &out_keys     = keys.Current() == d_keys_1 ? keys_1 : keys_2;
   thrust::device_vector<value> &out_values = values.Current() == d_values_1 ? values_1 : values_2;
@@ -578,8 +541,8 @@ struct decomposer_t
 };
 // example-end custom-type
 
-static __host__ std::ostream &operator<<(std::ostream &os, const custom_t &self) 
-{ 
+static __host__ std::ostream &operator<<(std::ostream &os, const custom_t &self)
+{
   return os << "{ " << self.f << ", " << self.lli << " }";
 }
 
@@ -1100,14 +1063,14 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = 01000001110000011001100110011010 00100000000000...0000
     // decompose(in[1]) = 01000010001010011001100110011010 00010000000000...0000
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
     //
     // The bit subrange `[60, 68)` specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
 
     thrust::device_vector<custom_t> out(num_items);
 
@@ -1156,7 +1119,7 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     constexpr int num_items = 2;
     thrust::device_vector<custom_t> in = {
       {42.4f, 1ll << 60},
-      {24.2f, 1ll << 61} 
+      {24.2f, 1ll << 61}
     };
 
     constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
@@ -1167,14 +1130,14 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = 01000010001010011001100110011010 00010000000000...0000
     // decompose(in[1]) = 01000001110000011001100110011010 00100000000000...0000
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
     //
     // The bit subrange `[60, 68)` specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
 
     thrust::device_vector<custom_t> out(num_items);
 
@@ -1236,7 +1199,7 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = 01000001110000011001100110011010 00100000000000...0000
     // decompose(in[1]) = 01000010001010011001100110011010 00010000000000...0000
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
     //
     // The bit subrange `[60, 68)` specifies differentiating key bits:
     //
@@ -1302,7 +1265,7 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     constexpr int num_items = 2;
     thrust::device_vector<custom_t> keys_in = {
       {42.4f, 1ll << 60},
-      {24.2f, 1ll << 61} 
+      {24.2f, 1ll << 61}
     };
 
     thrust::device_vector<int> vals_in = { 1, 0 };
@@ -1315,14 +1278,14 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = 01000010001010011001100110011010 00010000000000...0000
     // decompose(in[1]) = 01000001110000011001100110011010 00100000000000...0000
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
     //
     // The bit subrange `[60, 68)` specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
-    //                    <-----------  higher bits  /  lower bits  -----------> 
+    //                    <-----------  higher bits  /  lower bits  ----------->
 
     thrust::device_vector<custom_t> keys_out(num_items);
     thrust::device_vector<int> vals_out(num_items);

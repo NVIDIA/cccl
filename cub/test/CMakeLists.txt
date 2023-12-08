@@ -185,7 +185,7 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       target_include_directories(${config_c2h_target} PUBLIC "${CUB_SOURCE_DIR}/test")
       cub_clone_target_properties(${config_c2h_target} ${cub_target})
       cub_configure_cuda_target(${config_c2h_target} RDC ${cdp_val})
-      target_link_libraries(${config_c2h_target} PRIVATE ${cub_target} 
+      target_link_libraries(${config_c2h_target} PRIVATE ${cub_target}
                                                  PUBLIC CUDA::nvrtc CUDA::cuda_driver)
       if (CUB_C2H_ENABLE_CURAND)
         target_link_libraries(${config_c2h_target} PRIVATE CUDA::curand)
@@ -283,8 +283,8 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       set_target_properties(${test_target} PROPERTIES EXCLUDE_FROM_ALL true
                                            EXCLUDE_FROM_DEFAULT_BUILD true)
       add_test(NAME ${test_target}
-               COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}" 
-                                        --target ${test_target} 
+               COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
+                                        --target ${test_target}
                                         --config $<CONFIGURATION>)
       string(REGEX MATCH "err_([0-9]+)" MATCH_RESULT "${test_name}")
       file(READ ${test_src} test_content)
