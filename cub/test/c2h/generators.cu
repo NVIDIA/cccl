@@ -28,6 +28,7 @@
 #define C2H_EXPORTS
 
 #include <cub/device/device_copy.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/distance.h>
@@ -127,12 +128,13 @@ struct random_to_item_t
 template <typename T>
 struct random_to_item_t<T, cub::FLOATING_POINT>
 {
-  float m_min;
-  float m_max;
+  using storage_t = cub::detail::conditional_t<(sizeof(T) > 4), double, float>;
+  storage_t m_min;
+  storage_t m_max;
 
   __host__ __device__ random_to_item_t(T min, T max)
-      : m_min(static_cast<float>(min))
-      , m_max(static_cast<float>(max))
+      : m_min(static_cast<storage_t>(min))
+      , m_max(static_cast<storage_t>(max))
   {}
 
   __device__ T operator()(float random_value)
@@ -525,6 +527,9 @@ INSTANTIATE(__nv_fp8_e4m3);
 #endif // defined(__CUDA_FP8_TYPES_EXIST__)
 INSTANTIATE(float);
 INSTANTIATE(double);
+
+INSTANTIATE(bool);
+INSTANTIATE(char);
 
 #ifdef TEST_HALF_T
 INSTANTIATE(half_t);

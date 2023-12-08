@@ -1181,7 +1181,7 @@ void Test(
 
     int compare = 0;
 
-    // If in/out API is used, we are not allowed to overwrite the input. 
+    // If in/out API is used, we are not allowed to overwrite the input.
     // Let's check that the input buffer is not overwritten by the algorithm.
     CUB_IF_CONSTEXPR(BACKEND == CUB_NO_OVERWRITE) 
     {
@@ -1192,7 +1192,7 @@ void Test(
             // For small input sizes, temporary storage is not large enough to fit keys.
             compare = CompareDeviceResults(h_keys, d_input_keys, num_items, true, g_verbose);
         }
-        else 
+        else
         {
             // If overwrite is not allowed, temporary storage is large enough to fit keys.
             KeyT* temp_keys = reinterpret_cast<KeyT*>(d_temp_storage);
@@ -1202,7 +1202,7 @@ void Test(
         }
     }
 
-    // After the previous check is done, we can safely reuse alternative buffer to store 
+    // After the previous check is done, we can safely reuse alternative buffer to store
     // the reference results and compare current output.
     compare |= compare_device_arrays(h_reference_keys,
                                      reinterpret_cast<KeyT *>(d_keys.Alternate()),
@@ -1649,8 +1649,8 @@ void TestSegments(
     }
 }
 
-/** 
- * Test different NumItemsT, i.e. types of num_items 
+/**
+ * Test different NumItemsT, i.e. types of num_items
  */
 template <typename KeyT>
 void TestNumItems(KeyT *h_keys, std::size_t num_items, int max_segments, bool pre_sorted)
@@ -1875,10 +1875,10 @@ void TestUnspecifiedRanges()
 
       for (std::size_t sid = 0; sid < max_segments; sid++)
       {
-        const int segment_size = 
+        const int segment_size =
           static_cast<int>(RandomValue(avg_segment_size));
 
-        const bool segment_is_utilized = segment_size > 0 
+        const bool segment_is_utilized = segment_size > 0
                                        && RandomValue(100) > 60;
 
         if (segment_is_utilized)
@@ -1926,20 +1926,20 @@ void TestUnspecifiedRanges()
 
     {
       cub::DoubleBuffer<int> keys_buffer(
-          thrust::raw_pointer_cast(keys.data()), 
+          thrust::raw_pointer_cast(keys.data()),
           thrust::raw_pointer_cast(result_keys.data()));
 
       cub::DoubleBuffer<int> values_buffer(
-          thrust::raw_pointer_cast(values.data()), 
+          thrust::raw_pointer_cast(values.data()),
           thrust::raw_pointer_cast(result_values.data()));
 
       std::size_t temp_storage_bytes{};
       std::uint8_t *d_temp_storage{nullptr};
 
       CubDebugExit(cub::DeviceSegmentedRadixSort::SortPairs(
-          d_temp_storage, temp_storage_bytes, 
-          keys_buffer, values_buffer, 
-          num_items, num_segments, 
+          d_temp_storage, temp_storage_bytes,
+          keys_buffer, values_buffer,
+          num_items, num_segments,
           thrust::raw_pointer_cast(d_offsets_begin.data()),
           thrust::raw_pointer_cast(d_offsets_end.data()),
           0, sizeof(int) * 8));
@@ -1948,9 +1948,9 @@ void TestUnspecifiedRanges()
       d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
       CubDebugExit(cub::DeviceSegmentedRadixSort::SortPairs(
-          d_temp_storage, temp_storage_bytes, 
-          keys_buffer, values_buffer, 
-          num_items, num_segments, 
+          d_temp_storage, temp_storage_bytes,
+          keys_buffer, values_buffer,
+          num_items, num_segments,
           thrust::raw_pointer_cast(d_offsets_begin.data()),
           thrust::raw_pointer_cast(d_offsets_end.data()),
           0, sizeof(int) * 8));
@@ -1967,7 +1967,7 @@ void TestUnspecifiedRanges()
               keys.begin() + segment_end,
               result_keys.begin() + segment_begin);
         }
-                       
+
         if (values_buffer.selector == 0)
         {
           thrust::copy(
@@ -1978,7 +1978,7 @@ void TestUnspecifiedRanges()
       }
     }
 
-    AssertEquals(result_keys, expected_keys); 
+    AssertEquals(result_keys, expected_keys);
     AssertEquals(result_values, expected_values);
 
     thrust::sequence(keys.rbegin(), keys.rend());
@@ -1992,12 +1992,12 @@ void TestUnspecifiedRanges()
       std::uint8_t *d_temp_storage{};
 
       CubDebugExit(cub::DeviceSegmentedRadixSort::SortPairs(
-          d_temp_storage, temp_storage_bytes, 
-          thrust::raw_pointer_cast(keys.data()), 
-          thrust::raw_pointer_cast(result_keys.data()), 
-          thrust::raw_pointer_cast(values.data()), 
-          thrust::raw_pointer_cast(result_values.data()), 
-          num_items, num_segments, 
+          d_temp_storage, temp_storage_bytes,
+          thrust::raw_pointer_cast(keys.data()),
+          thrust::raw_pointer_cast(result_keys.data()),
+          thrust::raw_pointer_cast(values.data()),
+          thrust::raw_pointer_cast(result_values.data()),
+          num_items, num_segments,
           thrust::raw_pointer_cast(d_offsets_begin.data()),
           thrust::raw_pointer_cast(d_offsets_end.data()),
           0, sizeof(int) * 8));
@@ -2006,12 +2006,12 @@ void TestUnspecifiedRanges()
       d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
       CubDebugExit(cub::DeviceSegmentedRadixSort::SortPairs(
-          d_temp_storage, temp_storage_bytes, 
-          thrust::raw_pointer_cast(keys.data()), 
-          thrust::raw_pointer_cast(result_keys.data()), 
-          thrust::raw_pointer_cast(values.data()), 
-          thrust::raw_pointer_cast(result_values.data()), 
-          num_items, num_segments, 
+          d_temp_storage, temp_storage_bytes,
+          thrust::raw_pointer_cast(keys.data()),
+          thrust::raw_pointer_cast(result_keys.data()),
+          thrust::raw_pointer_cast(values.data()),
+          thrust::raw_pointer_cast(result_values.data()),
+          num_items, num_segments,
           thrust::raw_pointer_cast(d_offsets_begin.data()),
           thrust::raw_pointer_cast(d_offsets_end.data()),
           0, sizeof(int) * 8));
@@ -2024,12 +2024,12 @@ void TestUnspecifiedRanges()
 #endif
 
 #if TEST_KEY_BYTES == 4
-// Following tests check that new decomposer API doesn't break old API. 
+// Following tests check that new decomposer API doesn't break old API.
 // It's disabled because some compilers don't like implicit conversions, which
 // is required for the test. Once we figure out how to temporarily enable conversion, we can
 // re-enable the test.
 #define ENABLING_CONVERSION_IS_FIGURED_OUT 0
-#if ENABLING_CONVERSION_IS_FIGURED_OUT 
+#if ENABLING_CONVERSION_IS_FIGURED_OUT
 struct bit_selector
 {
   int bit;
@@ -2197,7 +2197,7 @@ void device_radix_sort_allows_implicit_conversions_for_bits()
   device_radix_sort_allows_implicit_conversions_for_bits(begin_bs, end_lli);
   device_radix_sort_allows_implicit_conversions_for_bits(begin_bs, end_bs);
 }
-#endif // ENABLING_CONVERSION_IS_FIGURED_OUT 
+#endif // ENABLING_CONVERSION_IS_FIGURED_OUT
 #endif // TEST_KEY_BYTES == 4
 
 //---------------------------------------------------------------------
@@ -2288,7 +2288,7 @@ int main(int argc, char** argv)
     TestUnspecifiedRanges();
 #endif
 
-#if ENABLING_CONVERSION_IS_FIGURED_OUT 
+#if ENABLING_CONVERSION_IS_FIGURED_OUT
     device_radix_sort_allows_implicit_conversions_for_bits();
 #endif
 
@@ -2308,7 +2308,7 @@ int main(int argc, char** argv)
 
 #elif TEST_KEY_BYTES == 16
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
     TestGen<__int128_t,  false>(num_items, num_segments);
     TestGen<__uint128_t, false>(num_items, num_segments);
 #else
