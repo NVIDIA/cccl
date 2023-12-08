@@ -461,11 +461,14 @@ operator/(const T0 &x, const complex<T1> &y)
 
 // The using declarations allows imports all necessary functions for thurst::complex.
 // However, they also lead to thrust::abs(1.0F) being valid code after include <thurst/complex.h>.
+// We are importing those for the plain value taking overloads and specialize for those taking
+// or returning a `thrust::complex` below
 using ::cuda::std::abs;
 using ::cuda::std::arg;
 using ::cuda::std::conj;
 using ::cuda::std::norm;
-using ::cuda::std::polar;
+// polar only takes a T but returns a complex<T> so we cannot pull that one in.
+// using ::cuda::std::polar;
 using ::cuda::std::proj;
 
 using ::cuda::std::exp;
@@ -486,6 +489,90 @@ using ::cuda::std::sin;
 using ::cuda::std::sinh;
 using ::cuda::std::tan;
 using ::cuda::std::tanh;
+
+// Those functions return `cuda::std::complex<T>` so we must provide an explicit overload that returns `thrust::complex<T>`
+template<class T>
+__host__ __device__ complex<T> conj(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::conj(c));
+}
+template<class T>
+__host__ __device__ complex<T> polar(const T& rho, const T& theta = T{}) {
+  return static_cast<complex<T>>(::cuda::std::polar(rho, theta));
+}
+template<class T>
+__host__ __device__ complex<T> proj(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::proj(c));
+}
+
+template<class T>
+__host__ __device__ complex<T> exp(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::exp(c));
+}
+template<class T>
+__host__ __device__ complex<T> log(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::log(c));
+}
+template<class T>
+__host__ __device__ complex<T> log10(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::log10(c));
+}
+template<class T>
+__host__ __device__ complex<T> pow(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::pow(c));
+}
+template<class T>
+__host__ __device__ complex<T> sqrt(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::sqrt(c));
+}
+
+template<class T>
+__host__ __device__ complex<T> acos(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::acos(c));
+}
+template<class T>
+__host__ __device__ complex<T> acosh(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::acosh(c));
+}
+template<class T>
+__host__ __device__ complex<T> asin(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::asin(c));
+}
+template<class T>
+__host__ __device__ complex<T> asinh(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::asinh(c));
+}
+template<class T>
+__host__ __device__ complex<T> atan(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::atan(c));
+}
+template<class T>
+__host__ __device__ complex<T> atanh(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::atanh(c));
+}
+template<class T>
+__host__ __device__ complex<T> cos(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::cos(c));
+}
+template<class T>
+__host__ __device__ complex<T> cosh(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::cosh(c));
+}
+template<class T>
+__host__ __device__ complex<T> sin(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::sin(c));
+}
+template<class T>
+__host__ __device__ complex<T> sinh(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::sinh(c));
+}
+template<class T>
+__host__ __device__ complex<T> tan(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::tan(c));
+}
+template<class T>
+__host__ __device__ complex<T> tanh(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::tanh(c));
+}
 
 template <typename T>
 struct proclaim_trivially_relocatable<complex<T>> : thrust::true_type
