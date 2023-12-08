@@ -63,7 +63,7 @@ pull_request:
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc8,     std: [11, 14, 17],     jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc9,     std: [11, 14, 17],     jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc10,    std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc11,    std: [11, 14, 17, 20], jobs: ['build'], extra_build_args: "-cmake-options \"-Dlibcudacxx_LIT_FLAGS=\'-sv;--show-unsupported;--show-xfail\'\""}
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc11,    std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc12,    std: [11, 14, 17, 20], jobs: ['build', 'test']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'arm64', compiler: *gcc12,    std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm9,    std: [11, 14, 17],     jobs: ['build']}
