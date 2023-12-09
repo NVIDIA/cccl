@@ -37,9 +37,9 @@
 
 #include <algorithm>
 
+#include "c2h/huge_type.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
-#include "test_util.h"
 
 template<class T>
 inline T to_bound(const unsigned long long bound) {
@@ -99,7 +99,7 @@ using all_types = c2h::type_list<std::uint8_t,
                                  long2,
                                  c2h::custom_type_t<c2h::equal_comparable_t>>;
 
-using huge_types = c2h::type_list<HugeDataType<128>, HugeDataType<256>>;
+using huge_types = c2h::type_list<c2h::detail::huge_data_type_t<128>, c2h::detail::huge_data_type_t<256>>;
 
 using types = c2h::type_list<std::uint8_t,
                              std::uint32_t>;

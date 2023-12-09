@@ -46,6 +46,7 @@
 
 #include <cstdio>
 
+#include "c2h/huge_type.cuh"
 #include "test_util.h"
 
 using namespace cub;
@@ -76,11 +77,11 @@ struct ValueToKey
 };
 
 template <int ELEMENTS_PER_OBJECT, typename ValueType>
-struct ValueToKey<HugeDataType<ELEMENTS_PER_OBJECT>, ValueType>
+struct ValueToKey<c2h::detail::huge_data_type_t<ELEMENTS_PER_OBJECT>, ValueType>
 {
-  __device__ __host__ HugeDataType<ELEMENTS_PER_OBJECT> operator()(const ValueType& val)
+  __device__ __host__ c2h::detail::huge_data_type_t<ELEMENTS_PER_OBJECT> operator()(const ValueType& val)
   {
-    return HugeDataType<ELEMENTS_PER_OBJECT>(val);
+    return c2h::detail::huge_data_type_t<ELEMENTS_PER_OBJECT>(val);
   }
 };
 
