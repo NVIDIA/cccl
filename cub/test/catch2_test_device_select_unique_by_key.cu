@@ -37,6 +37,7 @@
 
 #include <algorithm>
 
+#include "c2h/huge_type.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
