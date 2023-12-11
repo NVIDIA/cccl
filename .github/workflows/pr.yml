@@ -90,7 +90,7 @@ jobs:
       project_name: "thrust"
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ matrix.cuda_host_combination ]) }}
       devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
-      is_windows: ${{ contains(matrix.compiler, 'cl') }}
+      is_windows: ${{ contains(matrix.cuda_host_combination, 'cl') }}
 
   cub:
     name: CUB CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
