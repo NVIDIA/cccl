@@ -447,7 +447,7 @@ constexpr bool unused(T &&) {return true;}
 #endif // defined(TEST_COMPILER_MSVC)
 
 #if defined(TEST_COMPILER_NVHPC) || defined(TEST_COMPILER_ICC)
-#define TEST_COMPILER_BROCKEN_SMF_NOEXCEPT
+#define TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 #endif // TEST_COMPILER_NVHPC || TEST_COMPILER_ICC
 
 #if defined(__GNUC__)
