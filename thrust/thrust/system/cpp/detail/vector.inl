@@ -58,7 +58,7 @@ template<typename T, typename Allocator>
       : super_t(x)
 {}
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   template<typename T, typename Allocator>
     vector<T,Allocator>
       ::vector(vector &&x)
@@ -96,7 +96,7 @@ template<typename T, typename Allocator>
   return *this;
 }
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   template<typename T, typename Allocator>
     vector<T,Allocator> &
       vector<T,Allocator>

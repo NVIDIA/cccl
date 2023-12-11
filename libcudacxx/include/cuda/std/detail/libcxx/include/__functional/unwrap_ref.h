@@ -36,7 +36,7 @@ struct __unwrap_reference<reference_wrapper<_Tp> > { typedef _LIBCUDACXX_NODEBUG
 template <class _Tp>
 struct decay;
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Tp>
 struct unwrap_reference : __unwrap_reference<_Tp> { };
 
@@ -48,11 +48,11 @@ struct unwrap_ref_decay : unwrap_reference<typename decay<_Tp>::type> { };
 
 template <class _Tp>
 using unwrap_ref_decay_t = typename unwrap_ref_decay<_Tp>::type;
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
 template <class _Tp>
 struct __unwrap_ref_decay
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
     : unwrap_ref_decay<_Tp>
 #else
     : __unwrap_reference<typename decay<_Tp>::type>

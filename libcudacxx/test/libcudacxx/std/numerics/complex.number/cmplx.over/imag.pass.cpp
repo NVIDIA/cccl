@@ -26,7 +26,7 @@ test(typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
 {
     static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), double>::value), "");
     assert(cuda::std::imag(x) == 0);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     constexpr T val {x};
     static_assert(cuda::std::imag(val) == 0, "");
     constexpr cuda::std::complex<T> t{val, val};
@@ -40,7 +40,7 @@ test(typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0
 {
     static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), T>::value), "");
     assert(cuda::std::imag(x) == 0);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     constexpr T val {x};
     static_assert(cuda::std::imag(val) == 0, "");
     constexpr cuda::std::complex<T> t{val, val};

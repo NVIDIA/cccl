@@ -39,7 +39,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_scalar
     : public integral_constant<bool, _LIBCUDACXX_IS_SCALAR(_Tp)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_scalar_v = _LIBCUDACXX_IS_SCALAR(_Tp);
 #endif
@@ -61,7 +61,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_scalar
 
 template <> struct _LIBCUDACXX_TEMPLATE_VIS is_scalar<nullptr_t> : public true_type {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_scalar_v = is_scalar<_Tp>::value;
 #endif

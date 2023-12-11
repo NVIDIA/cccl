@@ -19,7 +19,7 @@
 #include <cuda/std/utility>
 #include "test_iterators.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template <class ...Args>
 concept has_ranges_prev = requires (Args&& ...args) {
   { cuda::std::ranges::prev(cuda::std::forward<Args>(args)...) };

@@ -178,15 +178,15 @@ function(_thrust_build_target_list_multiconfig)
       THRUST_MULTICONFIG_ENABLE_DIALECT_LATEST)
     message(STATUS "Testing for supported language standards...")
     include("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/DetectSupportedStandards.cmake")
-    detect_supported_standards(THRUST CXX ${THRUST_CPP_DIALECT_OPTIONS})
+    detect_supported_standards(THRUST CXX ${_CCCL_STD_VER_OPTIONS})
     if (THRUST_CUDA_FOUND)
-      detect_supported_standards(THRUST CUDA ${THRUST_CPP_DIALECT_OPTIONS})
+      detect_supported_standards(THRUST CUDA ${_CCCL_STD_VER_OPTIONS})
     endif()
 
     # Take the union of supported standards in CXX and CUDA:
     set(supported_dialects)
     set(latest_dialect 11)
-    foreach(standard IN LISTS THRUST_CPP_DIALECT_OPTIONS)
+    foreach(standard IN LISTS _CCCL_STD_VER_OPTIONS)
       if ((THRUST_CXX_${standard}_SUPPORTED) AND
           ((NOT THRUST_CUDA_FOUND) OR THRUST_CUDA_${standard}_SUPPORTED))
 
@@ -203,7 +203,7 @@ function(_thrust_build_target_list_multiconfig)
     endforeach()
 
     if (THRUST_MULTICONFIG_ENABLE_DIALECT_ALL)
-      foreach(standard IN LISTS THRUST_CPP_DIALECT_OPTIONS)
+      foreach(standard IN LISTS _CCCL_STD_VER_OPTIONS)
         if (standard IN_LIST supported_dialects)
           set(THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${standard} ON CACHE BOOL
               "Generate C++${dialect} build configurations." FORCE
@@ -215,7 +215,7 @@ function(_thrust_build_target_list_multiconfig)
         endif()
       endforeach()
     elseif(THRUST_MULTICONFIG_ENABLE_DIALECT_LATEST)
-      foreach(standard IN LISTS THRUST_CPP_DIALECT_OPTIONS)
+      foreach(standard IN LISTS _CCCL_STD_VER_OPTIONS)
         if (standard EQUAL latest_dialect)
           set(THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${standard} ON CACHE BOOL
             "Generate C++${dialect} build configurations." FORCE
@@ -243,7 +243,7 @@ function(_thrust_build_target_list_multiconfig)
   # Build THRUST_TARGETS
   foreach(host IN LISTS THRUST_HOST_SYSTEM_OPTIONS)
     foreach(device IN LISTS THRUST_DEVICE_SYSTEM_OPTIONS)
-      foreach(dialect IN LISTS THRUST_CPP_DIALECT_OPTIONS)
+      foreach(dialect IN LISTS _CCCL_STD_VER_OPTIONS)
         _thrust_is_config_valid(config_valid ${host} ${device} ${dialect})
         if (config_valid)
           set(prefix "thrust.${host}.${device}.cpp${dialect}")
@@ -277,7 +277,7 @@ endfunction()
 function(_thrust_build_target_list_singleconfig)
   set(host ${THRUST_HOST_SYSTEM})
   set(device ${THRUST_DEVICE_SYSTEM})
-  set(dialect ${THRUST_CPP_DIALECT})
+  set(dialect ${_CCCL_STD_VER})
   set(prefix "thrust") # single config
 
   _thrust_add_target_to_target_list(thrust ${host} ${device} ${dialect} ${prefix})

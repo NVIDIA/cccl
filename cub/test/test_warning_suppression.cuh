@@ -34,7 +34,7 @@
 // This can be fixed with `if constexpr` when available, but there's no way to
 // silence these pre-C++17.
 #if CUB_HOST_COMPILER == CUB_HOST_COMPILER_MSVC
-#  if CUB_CPP_DIALECT < 2017
+#  if _CCCL_STD_VER < 2017
 #    pragma warning(disable:4127)
 #  endif
 #endif

@@ -100,7 +100,7 @@ int main(int, char**)
     assert(g.target<A>() == 0);
     assert(!g);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     assert(globalMemCounter.checkOutstandingNewEq(0));
     { // Test rvalue references
         std::function<int(int)> f = A();
@@ -109,7 +109,7 @@ int main(int, char**)
         assert(f.target<A>());
         assert(f.target<int(*)(int)>() == 0);
 		LIBCPP_ASSERT_NOEXCEPT(std::function<int(int)>(std::move(f)));
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 		ASSERT_NOEXCEPT(std::function<int(int)>(std::move(f)));
 #endif
         std::function<int(int)> f2 = std::move(f);
@@ -133,7 +133,7 @@ int main(int, char**)
         assert(f.target<A>() == nullptr);
         assert(f.target<Ref>());
 		LIBCPP_ASSERT_NOEXCEPT(std::function<int(int)>(std::move(f)));
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 		ASSERT_NOEXCEPT(std::function<int(int)>(std::move(f)));
 #endif
         std::function<int(int)> f2(std::move(f));
@@ -152,7 +152,7 @@ int main(int, char**)
         assert(f.target<A>() == nullptr);
         assert(f.target<Ptr>());
 		LIBCPP_ASSERT_NOEXCEPT(std::function<int(int)>(std::move(f)));
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 		ASSERT_NOEXCEPT(std::function<int(int)>(std::move(f)));
 #endif
         std::function<int(int)> f2(std::move(f));
@@ -160,7 +160,7 @@ int main(int, char**)
         assert(f2.target<Ptr>());
         LIBCPP_ASSERT(f.target<Ptr>()); // f is unchanged because the target is small
     }
-#endif  // TEST_STD_VER >= 11
+#endif  // TEST_STD_VER >= 2011
 
   return 0;
 }

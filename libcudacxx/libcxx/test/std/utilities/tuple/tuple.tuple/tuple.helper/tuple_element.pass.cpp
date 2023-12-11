@@ -30,7 +30,7 @@ void test()
     static_assert((std::is_same<typename std::tuple_element<N, const T>::type, const U>::value), "");
     static_assert((std::is_same<typename std::tuple_element<N, volatile T>::type, volatile U>::value), "");
     static_assert((std::is_same<typename std::tuple_element<N, const volatile T>::type, const volatile U>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((std::is_same<typename std::tuple_element_t<N, T>, U>::value), "");
     static_assert((std::is_same<typename std::tuple_element_t<N, const T>, const U>::value), "");
     static_assert((std::is_same<typename std::tuple_element_t<N, volatile T>, volatile U>::value), "");

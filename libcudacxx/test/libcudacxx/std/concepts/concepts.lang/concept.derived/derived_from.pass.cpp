@@ -16,7 +16,7 @@
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 #define TEST_IF_CONSTEXPR if constexpr
 #else
 #define TEST_IF_CONSTEXPR if
@@ -159,7 +159,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromPointer() {
     static_assert(!derived_from<const volatile From*, const volatile To*>, "");
   }
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   // From as the return type of a pointer-to-function
   TEST_IF_CONSTEXPR (!cuda::std::is_array_v<From>) {
     static_assert(!derived_from<From (*)(), To>, "");
@@ -311,7 +311,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromReference() {
         !derived_from<const volatile From&&, const volatile To&&>, "");
   }
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   // From as the return type of a reference-to-function
   TEST_IF_CONSTEXPR (!cuda::std::is_array_v<From>) {
     static_assert(!derived_from<From (&)(), To>, "");
@@ -327,7 +327,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromReference() {
     static_assert(!derived_from<From (&)(), To (&)()>, "");
     static_assert(!derived_from<From (&)(int), To (&)(double)>, "");
   }
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 }
 
 template <typename From, typename To>
@@ -392,7 +392,7 @@ int main(int, char**) {
     CheckNotDerivedFrom<int, Enumeration>();
     CheckNotDerivedFrom<int, ScopedEnumeration>();
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     CheckNotDerivedFrom<void, void>();
 #endif
     CheckNotDerivedFrom<int, int>();
@@ -422,7 +422,7 @@ int main(int, char**) {
 
   { // Base1 is the subject.
     CheckDerivedFrom<Base1, Base1>();
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     CheckNotDerivedFrom<Base1, void>();
 #endif
     CheckNotDerivedFrom<Base1, DerivedPrivate>();
@@ -437,7 +437,7 @@ int main(int, char**) {
     CheckDerivedFrom<Derived1, Base1>();
     CheckDerivedFrom<Derived1, Derived1>();
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     CheckNotDerivedFromPointer<Derived1, void>();
 #endif
     CheckNotDerivedFrom<Derived1, DerivedPrivate>();

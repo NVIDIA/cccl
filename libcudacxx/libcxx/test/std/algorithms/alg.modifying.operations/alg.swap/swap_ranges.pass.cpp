@@ -36,7 +36,7 @@ test()
     assert(j[2] == 3);
 }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 template<class Iter1, class Iter2>
 void
 test1()
@@ -56,7 +56,7 @@ test1()
     assert(*j[1] == 2);
     assert(*j[2] == 3);
 }
-#endif // TEST_STD_VER >= 11
+#endif // TEST_STD_VER >= 2011
 
 void test2()
 {
@@ -105,7 +105,7 @@ void test2()
     }
 }
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 constexpr bool test_swap_constexpr()
 {
     int i[3] = {1, 2, 3};
@@ -118,7 +118,7 @@ constexpr bool test_swap_constexpr()
            j[1] == 2 &&
            j[2] == 3;
 }
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**)
 {
@@ -142,7 +142,7 @@ int main(int, char**)
     test<int*, random_access_iterator<int*> >();
     test<int*, int*>();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test1<forward_iterator<std::unique_ptr<int>*>, forward_iterator<std::unique_ptr<int>*> >();
     test1<forward_iterator<std::unique_ptr<int>*>, bidirectional_iterator<std::unique_ptr<int>*> >();
     test1<forward_iterator<std::unique_ptr<int>*>, random_access_iterator<std::unique_ptr<int>*> >();
@@ -162,11 +162,11 @@ int main(int, char**)
     test1<std::unique_ptr<int>*, bidirectional_iterator<std::unique_ptr<int>*> >();
     test1<std::unique_ptr<int>*, random_access_iterator<std::unique_ptr<int>*> >();
     test1<std::unique_ptr<int>*, std::unique_ptr<int>*>();
-#endif // TEST_STD_VER >= 11
+#endif // TEST_STD_VER >= 2011
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_swap_constexpr());
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
     test2();
 

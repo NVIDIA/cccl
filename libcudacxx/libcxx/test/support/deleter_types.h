@@ -22,7 +22,7 @@
 #include "test_macros.h"
 #include "min_allocator.h"
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 
 template <class T>
 class Deleter
@@ -90,7 +90,7 @@ public:
     void operator()(T* p) {delete [] p;}
 };
 
-#else // TEST_STD_VER < 11
+#else // TEST_STD_VER < 2011
 
 template <class T>
 class Deleter
@@ -366,7 +366,7 @@ public:
     void set_state(int i) {state_ = i;}
 
     void operator()(T* p) {assert(state_ >= 0); ++dealloc_count; delete p;}
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test_deleter* operator&() const = delete;
 #else
 private:
@@ -383,7 +383,7 @@ swap(test_deleter<T>& x, test_deleter<T>& y)
     y = std::move(t);
 }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 
 template <class T, size_t ID = 0>
 class PointerDeleter
@@ -440,6 +440,6 @@ private:
             typename std::enable_if<!std::is_same<U, T>::value>::type* = 0);
 };
 
-#endif // TEST_STD_VER >= 11
+#endif // TEST_STD_VER >= 2011
 
 #endif  // SUPPORT_DELETER_TYPES_H

@@ -1321,7 +1321,7 @@ int main(int, char**) {
     test(L"abcdefghijklmnopqrst", 10, 0, L"abcdefghij", 10, -10);
     }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     test(U"", 0, 0, U"abcde", 0, 0);
     test(U"", 0, 0, U"abcde", 1, -1);
@@ -1339,7 +1339,7 @@ int main(int, char**) {
     }
 #endif
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     typedef std::basic_string_view<char, constexpr_char_traits<char>> SV;
     constexpr SV  sv1;

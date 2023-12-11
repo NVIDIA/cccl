@@ -30,7 +30,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template<class _Tp>
 _LIBCUDACXX_CONCEPT __class_or_enum = _LIBCUDACXX_TRAIT(is_class, _Tp) || _LIBCUDACXX_TRAIT(is_union, _Tp) || _LIBCUDACXX_TRAIT(is_enum, _Tp);
@@ -40,7 +40,7 @@ _LIBCUDACXX_CONCEPT __class_or_enum = _LIBCUDACXX_TRAIT(is_class, _Tp) || _LIBCU
 template<class _Tp>
 _LIBCUDACXX_CONCEPT __workaround_52970 = _LIBCUDACXX_TRAIT(is_class, remove_cvref_t<_Tp>) || _LIBCUDACXX_TRAIT(is_union, remove_cvref_t<_Tp>);
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -31,7 +31,7 @@ template<class It>
 struct EvilSentinel {
   It p_;
   __host__ __device__ friend constexpr bool operator==(EvilSentinel s, It p) { return s.p_ == p; }
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ friend constexpr bool operator==(It p, EvilSentinel s) { return s.p_ == p; }
   __host__ __device__ friend constexpr bool operator!=(EvilSentinel s, It p) { return s.p_ != p; }
   __host__ __device__ friend constexpr bool operator!=(It p, EvilSentinel s) { return s.p_ != p; }

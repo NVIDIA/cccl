@@ -31,7 +31,7 @@ int main(int, char**)
         assert(l2 == l);
         assert(l2.get_allocator() == l.get_allocator());
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::list<int, other_allocator<int> > l(3, 2, other_allocator<int>(5));
         std::list<int, other_allocator<int> > l2 = l;

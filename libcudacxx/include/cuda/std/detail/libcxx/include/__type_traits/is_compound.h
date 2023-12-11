@@ -34,7 +34,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_compound
     : public integral_constant<bool, _LIBCUDACXX_IS_COMPOUND(_Tp)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_compound_v = _LIBCUDACXX_IS_COMPOUND(_Tp);
 #endif
@@ -44,7 +44,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_compound_v = _LIBCUDACXX_IS_COMPOUND(_T
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_compound
     : public integral_constant<bool, !is_fundamental<_Tp>::value> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_compound_v = is_compound<_Tp>::value;
 #endif

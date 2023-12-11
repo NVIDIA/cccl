@@ -30,7 +30,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [concept.constructible]
 template<class _Tp, class... _Args>
@@ -58,7 +58,7 @@ concept copy_constructible =
   constructible_from<_Tp, const _Tp&> && convertible_to<const _Tp&, _Tp> &&
   constructible_from<_Tp, const _Tp> && convertible_to<const _Tp, _Tp>;
 
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 
 template<class _Tp, class... _Args>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -118,7 +118,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class _Tp>
 _LIBCUDACXX_CONCEPT copy_constructible =  _LIBCUDACXX_FRAGMENT(__copy_constructible_, _Tp);
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

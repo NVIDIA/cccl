@@ -211,7 +211,7 @@ test()
     assert(ig[5] == 2);
 }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 
 template <class Iter>
 void
@@ -417,7 +417,7 @@ test1()
     assert(*ig[5] == 2);
 }
 
-#endif  // TEST_STD_VER >= 11
+#endif  // TEST_STD_VER >= 2011
 
 int main(int, char**)
 {
@@ -426,7 +426,7 @@ int main(int, char**)
     test<random_access_iterator<int*> >();
     test<int*>();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 
     test1<forward_iterator<std::unique_ptr<int>*> >();
     test1<bidirectional_iterator<std::unique_ptr<int>*> >();

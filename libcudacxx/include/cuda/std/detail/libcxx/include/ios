@@ -272,7 +272,7 @@ public:
 
     enum seekdir {beg, cur, end};
 
-#if _LIBCUDACXX_STD_VER <= 14
+#if _CCCL_STD_VER <= 2014
     typedef iostate      io_state;
     typedef openmode     open_mode;
     typedef seekdir      seek_dir;

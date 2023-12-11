@@ -25,7 +25,7 @@ int main(int, char**)
     assert(_5() == 5);
 
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert ( _5{}() == 5, "" );
     static_assert ( cuda::std::true_type{}(), "" );
 #endif

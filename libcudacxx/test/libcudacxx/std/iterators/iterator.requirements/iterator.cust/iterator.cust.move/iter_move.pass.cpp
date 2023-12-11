@@ -47,7 +47,7 @@ public:
   __host__ __device__ constexpr void operator++(int) noexcept { ++base_; }
 
   __host__ __device__ constexpr bool operator==(iterator_wrapper const& other) const noexcept { return base_ == other.base_; }
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ constexpr bool operator!=(iterator_wrapper const& other) const noexcept { return base_ != other.base_; }
 #endif
 
@@ -205,7 +205,7 @@ static_assert(!cuda::std::is_invocable_v<IterMoveT, int*, int*>); // too many ar
 static_assert(!cuda::std::is_invocable_v<IterMoveT, int>);
 #endif // _LIBCUDACXX_CUDACC_BELOW_11_3
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 // Test ADL-proofing.
 struct Incomplete;
 template<class T> struct Holder { T t; };

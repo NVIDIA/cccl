@@ -46,7 +46,7 @@ using __remove_cv_t = __remove_volatile_t<__remove_const_t<_Tp> >;
 
 #endif // defined(_LIBCUDACXX_REMOVE_CV) && !defined(_LIBCUDACXX_USE_REMOVE_CV_FALLBACK)
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using remove_cv_t = __remove_cv_t<_Tp>;
 #endif
 

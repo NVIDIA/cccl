@@ -61,9 +61,9 @@ struct CopyOnly {
   CopyOnly(const CopyOnly&) = default;
   __host__ __device__ CopyOnly(CopyOnly&&)      = delete;
   __host__ __device__ friend constexpr bool operator==(const CopyOnly& mi, int ii) { return mi.i == ii; }
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ friend constexpr bool operator!=(const CopyOnly& mi, int ii) { return mi.i != ii; }
-#endif // TEST_STD_VER < 20
+#endif // TEST_STD_VER < 2020
 };
 
 template <class T>
@@ -139,9 +139,9 @@ __host__ __device__ void testException() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");
-#endif // TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   testException();
   return 0;
 }

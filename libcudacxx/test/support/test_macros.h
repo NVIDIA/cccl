@@ -105,33 +105,33 @@
 #ifndef TEST_STD_VER
 #  if defined(TEST_COMPILER_MSVC)
 #    if   !defined(_MSVC_LANG)
-#      define TEST_STD_VER 3
+#      define TEST_STD_VER 2003
 #    elif _MSVC_LANG <= 201103L
-#      define TEST_STD_VER 11
+#      define TEST_STD_VER 2011
 #    elif _MSVC_LANG <= 201402L
-#      define TEST_STD_VER 14
+#      define TEST_STD_VER 2014
 #    elif _MSVC_LANG <= 201703L
-#      define TEST_STD_VER 17
+#      define TEST_STD_VER 2017
 #    elif _MSVC_LANG <= 202002L
-#      define TEST_STD_VER 20
+#      define TEST_STD_VER 2020
 #    else
-#      define TEST_STD_VER 99  // Greater than current standard.
-       // This is deliberately different than _LIBCUDACXX_STD_VER to discourage matching them up.
+#      define TEST_STD_VER 2099  // Greater than current standard.
+       // This is deliberately different than _CCCL_STD_VER to discourage matching them up.
 #    endif
 #  else
 #    if   __cplusplus <= 199711L
-#      define TEST_STD_VER 3
+#      define TEST_STD_VER 2003
 #    elif __cplusplus <= 201103L
-#      define TEST_STD_VER 11
+#      define TEST_STD_VER 2011
 #    elif __cplusplus <= 201402L
-#      define TEST_STD_VER 14
+#      define TEST_STD_VER 2014
 #    elif __cplusplus <= 201703L
-#      define TEST_STD_VER 17
+#      define TEST_STD_VER 2017
 #    elif __cplusplus <= 202002L
-#      define TEST_STD_VER 20
+#      define TEST_STD_VER 2020
 #    else
-#      define TEST_STD_VER 99  // Greater than current standard.
-       // This is deliberately different than _LIBCUDACXX_STD_VER to discourage matching them up.
+#      define TEST_STD_VER 2099  // Greater than current standard.
+       // This is deliberately different than _CCCL_STD_VER to discourage matching them up.
 #    endif
 #  endif
 #endif  // TEST_STD_VER
@@ -152,22 +152,22 @@
 #define TEST_NOEXCEPT noexcept
 #define TEST_NOEXCEPT_FALSE noexcept(false)
 #define TEST_NOEXCEPT_COND(...) noexcept(__VA_ARGS__)
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
 #  define TEST_CONSTEXPR_CXX14 constexpr
 #else
 #  define TEST_CONSTEXPR_CXX14
 #endif
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
 #  define TEST_CONSTEXPR_CXX17 constexpr
 #else
 #  define TEST_CONSTEXPR_CXX17
 #endif
-#if TEST_STD_VER >= 20
+#if TEST_STD_VER >= 2020
 #  define TEST_CONSTEXPR_CXX20 constexpr
 #else
 #  define TEST_CONSTEXPR_CXX20
 #endif
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 #  define TEST_THROW_SPEC(...)
 #else
 #  define TEST_THROW_SPEC(...) throw(__VA_ARGS__)
@@ -200,17 +200,17 @@
 #endif
 
 /* Features that were introduced in C++14 */
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
 #define TEST_HAS_EXTENDED_CONSTEXPR
 #define TEST_HAS_VARIABLE_TEMPLATES
 #endif
 
 /* Features that were introduced in C++17 */
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
 #endif
 
 /* Features that were introduced after C++17 */
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 #endif
 
 
@@ -242,7 +242,7 @@
 #endif
 
 #if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) || \
-  (!(TEST_STD_VER > 14 || \
+  (!(TEST_STD_VER > 2014 || \
     (defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606L)))
 #define TEST_HAS_NO_ALIGNED_ALLOCATION
 #endif
@@ -263,13 +263,13 @@
 #define ASSERT_NOT_NOEXCEPT(...) \
     static_assert(!noexcept(__VA_ARGS__), "Operation must NOT be noexcept")
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 #define STATIC_ASSERT_CXX14(Pred) static_assert(Pred, "")
 #else
 #define STATIC_ASSERT_CXX14(Pred) assert(Pred)
 #endif
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 #define STATIC_ASSERT_CXX17(Pred) static_assert(Pred, "")
 #else
 #define STATIC_ASSERT_CXX17(Pred) assert(Pred)

@@ -324,18 +324,18 @@ static_assert(!invocable<lvalue_qualified, S const&&>, "");
 static_assert(!invocable<lvalue_qualified, S volatile&&>, "");
 static_assert(!invocable<lvalue_qualified, S const volatile&&>, "");
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(check_member_is_invocable<int (S::*)() const&, S>(), "");
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 using lvalue_const_qualified = void (S::*)() const&;
 static_assert(invocable<lvalue_const_qualified, S&>, "");
 static_assert(invocable<lvalue_const_qualified, S const&>, "");
 static_assert(!invocable<lvalue_const_qualified, S volatile&>, "");
 static_assert(!invocable<lvalue_const_qualified, S const volatile&>, "");
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(invocable<lvalue_const_qualified, S&&>, "");
 static_assert(invocable<lvalue_const_qualified, S const&&>, "");
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 static_assert(!invocable<lvalue_const_qualified, S volatile&&>, "");
 static_assert(!invocable<lvalue_const_qualified, S const volatile&&>, "");
 
@@ -421,13 +421,13 @@ __host__ __device__ constexpr bool is_invocable(F, Args&&...) {
 }
 
 // execution space annotations on lambda require --extended-lambda flag with nvrtc
-#if TEST_STD_VER > 14 && !defined(TEST_COMPILER_NVRTC)
+#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_NVRTC)
 static_assert(is_invocable([] {}), "");
 static_assert(is_invocable([](int) {}, 0), "");
 static_assert(is_invocable([](int) {}, 0L), "");
 static_assert(!is_invocable([](int) {}, nullptr), "");
 int i = 0;
 static_assert(is_invocable([](int&) {}, i), "");
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
 
 int main(int, char**) { return 0; }

@@ -61,7 +61,7 @@ test1()
     static_assert((E::tempering_c == 0xefc60000), "");
     static_assert((E::tempering_l == 18), "");
     static_assert((E::initialization_multiplier == 1812433253), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((E::min() == 0), "");
     static_assert((E::max() == 0xFFFFFFFF), "");
 #else
@@ -102,7 +102,7 @@ test2()
     static_assert((E::tempering_c == 0xfff7eee000000000ull), "");
     static_assert((E::tempering_l == 43), "");
     static_assert((E::initialization_multiplier == 6364136223846793005ull), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((E::min() == 0), "");
     static_assert((E::max() == 0xFFFFFFFFFFFFFFFFull), "");
 #else

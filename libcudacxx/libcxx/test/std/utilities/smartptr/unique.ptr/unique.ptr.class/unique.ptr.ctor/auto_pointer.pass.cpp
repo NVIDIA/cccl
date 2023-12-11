@@ -87,7 +87,7 @@ int main(int, char**) {
   }
   assert(A::count == 0);
   assert(B::count == 0);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     static_assert(std::is_nothrow_constructible<std::unique_ptr<A>,
                                                 std::auto_ptr<B>&&>::value,

@@ -178,7 +178,7 @@ bool operator!=(const allocator<T, MR> & lhs, const allocator<T, MR> & rhs) noex
     return !(lhs == rhs);
 }
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 template<typename T, typename Pointer>
 using polymorphic_allocator = allocator<T, polymorphic_adaptor_resource<Pointer> >;
@@ -245,7 +245,7 @@ public:
     stateless_resource_allocator(const stateless_resource_allocator<U, Upstream> & other)
         : base(other) {}
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
     stateless_resource_allocator & operator=(const stateless_resource_allocator &) = default;
 #endif
 

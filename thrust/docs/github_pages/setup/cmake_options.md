@@ -58,7 +58,7 @@ The CMake options are divided into these categories:
   - Selects the host system. Default: `CPP`
 - `THRUST_DEVICE_SYSTEM={CUDA, TBB, OMP, CPP}`
   - Selects the device system. Default: `CUDA`
-- `THRUST_CPP_DIALECT={11, 14, 17}`
+- `_CCCL_STD_VER={11, 14, 17}`
   - Selects the C++ standard dialect to use. Default is `14` (C++14).
 
 ## Multi Config CMake Options

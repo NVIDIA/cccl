@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 
 template <class T>
 class A1
@@ -185,6 +185,6 @@ bool operator!=(const A3<T>& x, const A3<U>& y)
     return !(x == y);
 }
 
-#endif  // TEST_STD_VER >= 11
+#endif  // TEST_STD_VER >= 2011
 
 #endif  // ALLOCATORS_H

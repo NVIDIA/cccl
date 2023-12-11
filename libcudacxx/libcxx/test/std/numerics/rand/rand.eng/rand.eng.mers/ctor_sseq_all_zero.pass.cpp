@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 #include <initializer_list>
 
 #include "test_macros.h"
@@ -38,7 +38,7 @@ struct all_zero_seed_seq {
 
   template <typename InputIterator>
   all_zero_seed_seq(InputIterator, InputIterator) {}
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   all_zero_seed_seq(std::initializer_list<result_type>) {}
 #endif
 

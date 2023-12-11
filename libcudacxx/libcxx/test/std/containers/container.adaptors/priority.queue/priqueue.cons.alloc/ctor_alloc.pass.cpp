@@ -30,7 +30,7 @@ struct test
         : base(comp, c, a) {}
     test(const value_compare& comp, const container_type& c,
         const test_allocator<int>& a) : base(comp, c, a) {}
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test(const value_compare& comp, container_type&& c,
          const test_allocator<int>& a) : base(comp, std::move(c), a) {}
     test(test&& q, const test_allocator<int>& a) : base(std::move(q), a) {}

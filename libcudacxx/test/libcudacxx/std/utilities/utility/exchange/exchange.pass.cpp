@@ -25,7 +25,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_constexpr() {
     int v = 12;
 
@@ -122,7 +122,7 @@ int main(int, char**)
     }
 #endif
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(test_constexpr(), "");
 #endif
 

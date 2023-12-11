@@ -56,7 +56,7 @@ int getNumIncompleteTypeAlive();
 IncompleteType* getNewIncomplete();
 IncompleteType* getNewIncompleteArray(int size);
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 template <class ThisT, class ...Args>
 struct args_is_this_type : std::false_type {};
 
@@ -72,7 +72,7 @@ struct StoresIncomplete {
 
   std::unique_ptr<IncompleteT, Del> m_ptr;
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   StoresIncomplete(StoresIncomplete const&) = delete;
   StoresIncomplete(StoresIncomplete&&) = default;
 
@@ -93,7 +93,7 @@ public:
   Del& get_deleter() { return m_ptr.get_deleter(); }
 };
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 template <class IncompleteT = IncompleteType,
           class Del = std::default_delete<IncompleteT>, class... Args>
 void doIncompleteTypeTest(int expect_alive, Args&&... ctor_args) {
@@ -139,7 +139,7 @@ void doIncompleteTypeTest(int expect_alive, Args&&... ctor_args) {
 #pragma GCC diagnostic ignored "-Wvariadic-macros"
 #endif
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 #define DEFINE_AND_RUN_IS_INCOMPLETE_TEST(...)                                 \
   static int is_incomplete_test() { __VA_ARGS__ return 0; }                    \
   INCOMPLETE_TEST_EPILOGUE()

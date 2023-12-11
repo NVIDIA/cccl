@@ -32,7 +32,7 @@ int main(int, char**)
         c.pop_front();
         assert(distance(c.begin(), c.end()) == 0);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef MoveOnly T;
         typedef std::forward_list<T> C;

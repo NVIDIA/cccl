@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Arithmetic operations
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -47,7 +47,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS plus
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(plus);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS plus<void>
 {
@@ -62,7 +62,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS plus<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -78,7 +78,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS minus
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(minus);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS minus<void>
 {
@@ -93,7 +93,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS minus<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -109,7 +109,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS multiplies
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(multiplies);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS multiplies<void>
 {
@@ -124,7 +124,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS multiplies<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -140,7 +140,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS divides
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(divides);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS divides<void>
 {
@@ -155,7 +155,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS divides<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -171,7 +171,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS modulus
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(modulus);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS modulus<void>
 {
@@ -186,7 +186,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS modulus<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -202,7 +202,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS negate
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(negate);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS negate<void>
 {
@@ -219,7 +219,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS negate<void>
 
 // Bitwise operations
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -235,7 +235,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_and
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_and);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_and<void>
 {
@@ -250,7 +250,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_and<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_not
     : __unary_function<_Tp, _Tp>
@@ -276,7 +276,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_not<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -292,7 +292,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_or
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_or);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_or<void>
 {
@@ -307,7 +307,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_or<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -323,7 +323,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_xor
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_xor);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_xor<void>
 {
@@ -340,7 +340,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_xor<void>
 
 // Comparison operations
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -356,7 +356,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS equal_to
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(equal_to);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS equal_to<void>
 {
@@ -371,7 +371,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS equal_to<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -387,7 +387,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS not_equal_to
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(not_equal_to);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS not_equal_to<void>
 {
@@ -402,7 +402,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS not_equal_to<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -418,7 +418,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS less
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(less);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS less<void>
 {
@@ -433,7 +433,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS less<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -449,7 +449,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS less_equal
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(less_equal);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS less_equal<void>
 {
@@ -464,7 +464,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS less_equal<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -480,7 +480,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS greater_equal
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(greater_equal);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS greater_equal<void>
 {
@@ -495,7 +495,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS greater_equal<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -511,7 +511,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS greater
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(greater);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS greater<void>
 {
@@ -528,7 +528,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS greater<void>
 
 // Logical operations
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -544,7 +544,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_and
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_and);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS logical_and<void>
 {
@@ -559,7 +559,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_and<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -575,7 +575,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_not
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_not);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS logical_not<void>
 {
@@ -590,7 +590,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_not<void>
 };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 #else
 template <class _Tp>
@@ -606,7 +606,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_or
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_or);
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS logical_or<void>
 {

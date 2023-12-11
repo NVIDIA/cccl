@@ -93,7 +93,7 @@ int main(int, char**)
     assert( (s1 <= s2));
     assert( (s1 >= s2));
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     constexpr std::chrono::seconds s1(3);
     constexpr std::chrono::seconds s2(3);

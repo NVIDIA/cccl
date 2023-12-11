@@ -79,11 +79,11 @@ public:
   }
 };
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 
 template <class Predicate>
 counting_predicate(Predicate pred, int& count) -> counting_predicate<Predicate>;
 
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
 
 #endif // TEST_SUPPORT_COUNTING_PREDICATES_H

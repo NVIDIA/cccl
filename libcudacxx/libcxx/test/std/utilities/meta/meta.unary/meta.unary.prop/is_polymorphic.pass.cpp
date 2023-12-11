@@ -20,7 +20,7 @@ void test_is_polymorphic()
     static_assert( std::is_polymorphic<const T>::value, "");
     static_assert( std::is_polymorphic<volatile T>::value, "");
     static_assert( std::is_polymorphic<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_polymorphic_v<T>, "");
     static_assert( std::is_polymorphic_v<const T>, "");
     static_assert( std::is_polymorphic_v<volatile T>, "");
@@ -35,7 +35,7 @@ void test_is_not_polymorphic()
     static_assert(!std::is_polymorphic<const T>::value, "");
     static_assert(!std::is_polymorphic<volatile T>::value, "");
     static_assert(!std::is_polymorphic<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_polymorphic_v<T>, "");
     static_assert(!std::is_polymorphic_v<const T>, "");
     static_assert(!std::is_polymorphic_v<volatile T>, "");
@@ -64,7 +64,7 @@ class Abstract
     virtual ~Abstract() = 0;
 };
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 class Final final {
 };
 #else

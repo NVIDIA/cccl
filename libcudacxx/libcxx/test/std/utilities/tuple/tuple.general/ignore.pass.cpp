@@ -19,7 +19,7 @@
 
 constexpr bool test_ignore_constexpr()
 {
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     { // Test that std::ignore provides constexpr converting assignment.
         auto& res = (std::ignore = 42);
         assert(&res == &std::ignore);

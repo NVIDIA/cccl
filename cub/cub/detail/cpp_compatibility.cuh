@@ -27,7 +27,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if CUB_CPP_DIALECT >= 2017 && __cpp_if_constexpr
+#if _CCCL_STD_VER >= 2017 && __cpp_if_constexpr
 #  define CUB_IF_CONSTEXPR if constexpr
 #  define CUB_ELSE_IF_CONSTEXPR else if constexpr
 #else

@@ -28,7 +28,7 @@ public:
     return false;
   }
 
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   template<class It, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<It>, int> = 0>
   __host__ __device__ friend constexpr bool operator==(It const&, distance_apriori_sentinel const) {
     assert(false && "difference op should take precedence");
@@ -71,7 +71,7 @@ public:
     __host__ __device__ constexpr explicit assignable_sentinel(const It& it) : base_(base(it)) {}
     __host__ __device__ constexpr operator It() const { return It(base_); }
     __host__ __device__ friend constexpr bool operator==(const assignable_sentinel& s, const It& other) { return s.base_ == base(other); }
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
     __host__ __device__ friend constexpr bool operator==(const It& other, const assignable_sentinel& s) { return s.base_ == base(other); }
     __host__ __device__ friend constexpr bool operator!=(const assignable_sentinel& s, const It& other) { return s.base_ != base(other); }
     __host__ __device__ friend constexpr bool operator!=(const It& other, const assignable_sentinel& s) { return s.base_ != base(other); }

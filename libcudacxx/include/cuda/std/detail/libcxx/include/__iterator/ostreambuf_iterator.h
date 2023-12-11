@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
 template <class _CharT, class _Traits>
 class _LIBCUDACXX_TEMPLATE_VIS ostreambuf_iterator
-#if _LIBCUDACXX_STD_VER <= 14 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
+#if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<output_iterator_tag, void, void, void, void>
 #endif
 {
@@ -41,7 +41,7 @@ _LIBCUDACXX_SUPPRESS_DEPRECATED_POP
 public:
     typedef output_iterator_tag                 iterator_category;
     typedef void                                value_type;
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
     typedef ptrdiff_t                           difference_type;
 #else
     typedef void                                difference_type;

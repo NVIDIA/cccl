@@ -43,7 +43,7 @@ int main(int, char**)
     test<std::vector<bool> >(random_access_iterator<const bool*>(a), random_access_iterator<const bool*>(an), alloc);
     test<std::vector<bool> >(a, an, alloc);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     min_allocator<bool> alloc;
     test<std::vector<bool, min_allocator<bool>> >(cpp17_input_iterator<const bool*>(a), cpp17_input_iterator<const bool*>(an), alloc);

@@ -49,7 +49,7 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first
   return _CUDA_VSTD::equal(__first1, __last1, __first2, __equal_to{});
 }
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _BinaryPredicate, class _InputIterator1, class _InputIterator2>
 _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
 __equal(_InputIterator1 __first1,
@@ -119,7 +119,7 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first
     typename iterator_traits<_InputIterator1>::iterator_category(),
     typename iterator_traits<_InputIterator2>::iterator_category());
 }
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

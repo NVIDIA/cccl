@@ -38,7 +38,7 @@
 #endif
 
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 // [iterator.cust.move]
 
@@ -144,7 +144,7 @@ _LIBCUDACXX_END_NAMESPACE_RANGES
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template<__dereferenceable _Tp>
   requires requires(_Tp& __t) { { _CUDA_VRANGES::iter_move(__t) } -> __can_reference; }
 using iter_rvalue_reference_t = decltype(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Tp&>()));
@@ -172,7 +172,7 @@ using iter_rvalue_reference_t = enable_if_t<__can_iter_rvalue_reference_t<_Tp>,
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 #if defined(__clang__)
 #pragma clang diagnostic pop

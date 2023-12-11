@@ -46,7 +46,7 @@ int main(int, char**)
     test<random_access_iterator<const Base*> >(random_access_iterator<Derived*>(&d));
     test<Base*>(&d);
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr const Derived *p = nullptr;
     constexpr cuda::std::move_iterator<const Derived *>     it1 = cuda::std::make_move_iterator(p);

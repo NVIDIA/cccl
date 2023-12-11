@@ -48,7 +48,7 @@ int main(int, char**)
     TEST_IGNORE_NODISCARD cuda::std::make_move_iterator(a); // test for LWG issue 2061
     }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr const char *p = "123456789";
     constexpr auto iter = cuda::std::make_move_iterator<const char *>(p);

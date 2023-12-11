@@ -67,7 +67,7 @@ int main(int, char**)
     ASSERT_SAME_TYPE(decltype(true ? purr() : 0), int);
   }
 #endif // !defined(TEST_COMPILER_MSVC)
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 #if (!defined(__GNUC__) || __GNUC__ >= 8) // gcc-7 is broken wrt ctad
   {
     int i = 0;

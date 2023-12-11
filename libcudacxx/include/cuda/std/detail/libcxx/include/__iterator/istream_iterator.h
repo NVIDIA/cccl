@@ -36,7 +36,7 @@ _LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _CharT = char,
           class _Traits = char_traits<_CharT>, class _Distance = ptrdiff_t>
 class _LIBCUDACXX_TEMPLATE_VIS istream_iterator
-#if _LIBCUDACXX_STD_VER <= 14 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
+#if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<input_iterator_tag, _Tp, _Distance, const _Tp*, const _Tp&>
 #endif
 {
@@ -55,9 +55,9 @@ private:
     _Tp __value_;
 public:
     _LIBCUDACXX_INLINE_VISIBILITY constexpr istream_iterator() : __in_stream_(nullptr), __value_() {}
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     _LIBCUDACXX_INLINE_VISIBILITY constexpr istream_iterator(default_sentinel_t) : istream_iterator() {}
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
     _LIBCUDACXX_INLINE_VISIBILITY istream_iterator(istream_type& __s) : __in_stream_(_CUDA_VSTD::addressof(__s))
         {
             if (!(*__in_stream_ >> __value_))
@@ -81,11 +81,11 @@ public:
     operator==(const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __x,
                const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __y);
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     friend _LIBCUDACXX_INLINE_VISIBILITY bool operator==(const istream_iterator& __i, default_sentinel_t) {
       return __i.__in_stream_ == nullptr;
     }
-#if _LIBCUDACXX_STD_VER < 20
+#if _CCCL_STD_VER < 2020
     friend _LIBCUDACXX_INLINE_VISIBILITY bool operator==(default_sentinel_t, const istream_iterator& __i) {
       return __i.__in_stream_ == nullptr;
     }
@@ -95,8 +95,8 @@ public:
     friend _LIBCUDACXX_INLINE_VISIBILITY bool operator!=(default_sentinel_t, const istream_iterator& __i) {
       return __i.__in_stream_ != nullptr;
     }
-#endif // _LIBCUDACXX_STD_VER < 20
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER < 2020
+#endif // _CCCL_STD_VER > 2014
 };
 
 template <class _Tp, class _CharT, class _Traits, class _Distance>

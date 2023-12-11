@@ -58,7 +58,7 @@ static_assert(cuda::std::indirect_strict_weak_order<decltype(lambda), int*, long
 #endif
 
 // Should fail when either of the iterators is not indirectly_readable
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 struct NotIndirectlyReadable { };
 static_assert(!cuda::std::indirect_strict_weak_order<GoodOrder<It1, NotIndirectlyReadable>, It1, NotIndirectlyReadable>);
 static_assert(!cuda::std::indirect_strict_weak_order<GoodOrder<NotIndirectlyReadable, It2>, NotIndirectlyReadable, It2>);

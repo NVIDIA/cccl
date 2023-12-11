@@ -20,7 +20,7 @@ template <class T, class U>
 void test_remove_all_extents()
 {
     ASSERT_SAME_TYPE(U, typename std::remove_all_extents<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(U,        std::remove_all_extents_t<T>);
 #endif
 }

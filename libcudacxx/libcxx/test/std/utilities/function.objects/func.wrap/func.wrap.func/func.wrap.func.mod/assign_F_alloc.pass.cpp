@@ -50,7 +50,7 @@ int A::count = 0;
 
 int main(int, char**)
 {
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     {
     std::function<int(int)> f;
     f.assign(A(), test_allocator<A>());

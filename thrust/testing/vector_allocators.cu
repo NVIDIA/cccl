@@ -27,7 +27,7 @@ public:
         return *this;
     }
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
     stateful_allocator(stateful_allocator && other)
         : BaseAlloc(std::move(other)), state(other.state)
     {
@@ -148,7 +148,7 @@ void TestVectorAllocatorConstructors()
     ASSERT_EQUAL(Alloc::last_allocated, 2);
     Alloc::last_allocated = 0;
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
     // FIXME: uncomment this after the vector_base(vector_base&&, const Alloc&)
     // is fixed and implemented
     // Vector v5(std::move(v3), alloc2);
@@ -207,7 +207,7 @@ void TestVectorAllocatorPropagateOnCopyAssignmentDevice()
 }
 DECLARE_UNITTEST(TestVectorAllocatorPropagateOnCopyAssignmentDevice);
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 template<typename Vector>
 void TestVectorAllocatorPropagateOnMoveAssignment()
 {

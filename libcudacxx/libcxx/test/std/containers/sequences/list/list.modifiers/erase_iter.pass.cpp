@@ -39,7 +39,7 @@ int main(int, char**)
     assert(l1.size() == 0);
     assert(distance(l1.begin(), l1.end()) == 0);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     int a1[] = {1, 2, 3};
     std::list<int, min_allocator<int>> l1(a1, a1+3);

@@ -38,7 +38,7 @@ struct B
 {
     typedef T value_type;
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     template <class U, class ...Args>
     void construct(U* p, Args&& ...args)
     {
@@ -114,7 +114,7 @@ int main(int, char**)
       std::aligned_storage<sizeof(VT)>::type store;
       std::allocator_traits<Alloc>::construct(a, (VT*)&store, nullptr);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         A0::count = 0;
         b_construct = 0;

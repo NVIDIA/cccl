@@ -86,7 +86,7 @@ int main(int, char**)
     test<Copyable, test_allocator<Copyable> >();
     static_assert((std::is_same<std::vector<char>::allocator_type,
                                 std::allocator<char> >::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
 
     typedef std::vector<int, min_allocator<int> > C;

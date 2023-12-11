@@ -16,7 +16,7 @@
 
 #include <cuda/std/concepts>
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template <class T>
 inline constexpr bool has_no_iter_difference_t = !requires { typename cuda::std::iter_difference_t<T>; };
 

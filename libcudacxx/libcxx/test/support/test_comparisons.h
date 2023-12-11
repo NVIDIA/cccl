@@ -147,7 +147,7 @@ void AssertComparisonsConvertibleToBool()
     static_assert((std::is_convertible<decltype(std::declval<const T&>() >= std::declval<const U&>()), bool>::value), "");
 }
 
-#if TEST_STD_VER > 17 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#if TEST_STD_VER > 2017 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
 template <class T, class U = T>
 constexpr void AssertOrderAreNoexcept() {
     AssertComparisonsAreNoexcept<T, U>();
@@ -174,7 +174,7 @@ TEST_NODISCARD constexpr bool testOrderValues(Param val1, Param val2) {
   return testOrder(T(val1), T(val2), val1 <=> val2);
 }
 
-#endif // TEST_STD_VER > 17 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#endif // TEST_STD_VER > 2017 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
 
 //  Test all two comparison operations for sanity
 template <class T, class U = T>
@@ -243,7 +243,7 @@ struct LessAndEqComp {
   }
 };
 
-#if TEST_STD_VER > 17 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#if TEST_STD_VER > 2017 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
 struct StrongOrder {
   int value;
   constexpr StrongOrder(int v) : value(v) {}
@@ -269,6 +269,6 @@ struct PartialOrder {
   }
 };
 
-#endif // TEST_STD_VER > 17 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#endif // TEST_STD_VER > 2017 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
 
 #endif // TEST_COMPARISONS_H

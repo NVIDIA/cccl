@@ -40,7 +40,7 @@ using __common_type_t = typename common_type<_Tp...>::type;
 template <class _Tp, class _Up>
 using __cond_type = decltype(false ? declval<_Tp>() : declval<_Up>());
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Tp, class _Up, class = void>
 struct __common_type3 {};
 
@@ -112,7 +112,7 @@ template <class _Tp, class _Up, class _Vp, class... _Rest>
 struct _LIBCUDACXX_TEMPLATE_VIS common_type<_Tp, _Up, _Vp, _Rest...>
     : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...> > {};
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class ..._Tp> using common_type_t = typename common_type<_Tp...>::type;
 
 template<class, class, class = void>

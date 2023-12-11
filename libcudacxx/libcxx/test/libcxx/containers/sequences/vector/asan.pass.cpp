@@ -30,7 +30,7 @@ void do_exit() {
 
 int main(int, char**)
 {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef std::vector<T, min_allocator<T>> C;

@@ -74,7 +74,7 @@ int main(int, char**)
         }
         catch (...)
         {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
             assert(A::count == 1);
             assert(B::count == 1);
             assert(ptr.get() == raw_ptr);
@@ -91,7 +91,7 @@ int main(int, char**)
     { // LWG 2399
         fn(std::unique_ptr<int>(new int));
     }
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     { // LWG 2415
         std::unique_ptr<int, void (*)(int*)> p(nullptr, assert_deleter<int>);
         std::shared_ptr<int> p2(std::move(p)); // should not call deleter when going out of scope

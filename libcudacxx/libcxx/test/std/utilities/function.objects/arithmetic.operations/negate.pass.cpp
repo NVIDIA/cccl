@@ -22,12 +22,12 @@ int main(int, char**)
 {
     typedef std::negate<int> F;
     const F f = F();
-#if TEST_STD_VER <= 17
+#if TEST_STD_VER <= 2017
     static_assert((std::is_same<F::argument_type, int>::value), "" );
     static_assert((std::is_same<F::result_type, int>::value), "" );
 #endif
     assert(f(36) == -36);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     typedef std::negate<> F2;
     const F2 f2 = F2();
     assert(f2(36) == -36);

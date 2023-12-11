@@ -168,7 +168,7 @@ template<class R>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <class _Tp>
 struct __is_span_impl : public false_type {};
@@ -406,7 +406,7 @@ public:
     span& operator=(const span&) noexcept = default;
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr span(pointer __ptr, size_type __count) : __data{__ptr}, __size{__count} {}
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     _LIBCUDACXX_INLINE_VISIBILITY constexpr span(pointer __f, pointer __l) : __data{__f}, __size{static_cast<size_t>(distance(__f, __l))} {}
 #else
     _LIBCUDACXX_INLINE_VISIBILITY constexpr span(pointer __f, pointer __l) : __data{__f}, __size{static_cast<size_t>(__l - __f)} {}
@@ -553,9 +553,9 @@ auto as_writable_bytes(span<_Tp, _Extent> __s) noexcept
 -> enable_if_t<!is_const<_Tp>::value, decltype(__s.__as_writable_bytes())>
 { return __s.__as_writable_bytes(); }
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
-#if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 
 //  Deduction guides
 template<class _Tp, size_t _Sz>
@@ -573,7 +573,7 @@ _LIBCUDACXX_HOST_DEVICE span(_Container&) -> span<typename _Container::value_typ
 template<class _Container>
 _LIBCUDACXX_HOST_DEVICE span(const _Container&) -> span<const typename _Container::value_type>;
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

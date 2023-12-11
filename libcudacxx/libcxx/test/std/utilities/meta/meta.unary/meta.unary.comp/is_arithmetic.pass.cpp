@@ -21,7 +21,7 @@ void test_is_arithmetic()
     static_assert( std::is_arithmetic<const T>::value, "");
     static_assert( std::is_arithmetic<volatile T>::value, "");
     static_assert( std::is_arithmetic<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_arithmetic_v<T>, "");
     static_assert( std::is_arithmetic_v<const T>, "");
     static_assert( std::is_arithmetic_v<volatile T>, "");
@@ -36,7 +36,7 @@ void test_is_not_arithmetic()
     static_assert(!std::is_arithmetic<const T>::value, "");
     static_assert(!std::is_arithmetic<volatile T>::value, "");
     static_assert(!std::is_arithmetic<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_arithmetic_v<T>, "");
     static_assert(!std::is_arithmetic_v<const T>, "");
     static_assert(!std::is_arithmetic_v<volatile T>, "");

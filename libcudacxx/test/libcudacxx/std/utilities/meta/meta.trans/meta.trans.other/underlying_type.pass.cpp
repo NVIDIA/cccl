@@ -24,7 +24,7 @@
 #endif
 
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template <class, class = cuda::std::void_t<>>
 struct has_type_member : cuda::std::false_type {};
 
@@ -41,7 +41,7 @@ __host__ __device__
 void check()
 {
     ASSERT_SAME_TYPE(Expected, typename cuda::std::underlying_type<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(Expected, typename cuda::std::underlying_type_t<T>);
 #endif
 }
@@ -74,7 +74,7 @@ int main(int, char**)
     check<K, short>();
 
 //  SFINAE-able underlying_type
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert( has_type_member<E>::value, "");
 #ifdef TEST_UNSIGNED_UNDERLYING_TYPE
     static_assert( has_type_member<F>::value, "");

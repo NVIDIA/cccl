@@ -6,14 +6,14 @@ function(thrust_configure_multiconfig)
   option(THRUST_ENABLE_MULTICONFIG "Enable multiconfig options for coverage testing." OFF)
 
   # Dialects:
-  set(THRUST_CPP_DIALECT_OPTIONS
+  set(_CCCL_STD_VER_OPTIONS
     11 14 17 20
     CACHE INTERNAL "C++ dialects supported by Thrust." FORCE
   )
 
   if (THRUST_ENABLE_MULTICONFIG)
     # Handle dialect options:
-    foreach (dialect IN LISTS THRUST_CPP_DIALECT_OPTIONS)
+    foreach (dialect IN LISTS _CCCL_STD_VER_OPTIONS)
       set(default_value OFF)
       if (dialect EQUAL 14) # Default to just 14 on:
         set(default_value ON)
@@ -100,8 +100,8 @@ function(thrust_configure_multiconfig)
       set_property(CACHE THRUST_HOST_SYSTEM PROPERTY TYPE INTERNAL)
       set_property(CACHE THRUST_DEVICE_SYSTEM PROPERTY TYPE INTERNAL)
     endif()
-    if (DEFINED THRUST_CPP_DIALECT)
-      set_property(CACHE THRUST_CPP_DIALECT PROPERTY TYPE INTERNAL)
+    if (DEFINED _CCCL_STD_VER)
+      set_property(CACHE _CCCL_STD_VER PROPERTY TYPE INTERNAL)
     endif()
 
   else() # Single config:
@@ -112,16 +112,16 @@ function(thrust_configure_multiconfig)
       set_property(CACHE THRUST_DEVICE_SYSTEM PROPERTY TYPE STRING)
     endif()
 
-    set(THRUST_CPP_DIALECT 14
-      CACHE STRING "The C++ standard to target: ${THRUST_CPP_DIALECT_OPTIONS}"
+    set(_CCCL_STD_VER 14
+      CACHE STRING "The C++ standard to target: ${_CCCL_STD_VER_OPTIONS}"
     )
-    set_property(CACHE THRUST_CPP_DIALECT
+    set_property(CACHE _CCCL_STD_VER
       PROPERTY STRINGS
-      ${THRUST_CPP_DIALECT_OPTIONS}
+      ${_CCCL_STD_VER_OPTIONS}
     )
 
     # CMake fixed C++17 support for NVCC + MSVC targets in 3.18.3:
-    if (THRUST_CPP_DIALECT EQUAL 17 AND
+    if (_CCCL_STD_VER EQUAL 17 AND
         THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
       cmake_minimum_required(VERSION 3.18.3)
     endif()

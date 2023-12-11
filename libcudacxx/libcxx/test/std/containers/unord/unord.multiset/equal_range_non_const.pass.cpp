@@ -53,7 +53,7 @@ int main(int, char**)
         ++r.first;
         assert(*r.first == 50);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_multiset<int, std::hash<int>,
                                       std::equal_to<int>, min_allocator<int>> C;

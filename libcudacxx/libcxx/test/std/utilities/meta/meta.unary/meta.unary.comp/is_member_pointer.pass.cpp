@@ -21,7 +21,7 @@ void test_is_member_pointer()
     static_assert( std::is_member_pointer<const T>::value, "");
     static_assert( std::is_member_pointer<volatile T>::value, "");
     static_assert( std::is_member_pointer<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_member_pointer_v<T>, "");
     static_assert( std::is_member_pointer_v<const T>, "");
     static_assert( std::is_member_pointer_v<volatile T>, "");
@@ -36,7 +36,7 @@ void test_is_not_member_pointer()
     static_assert(!std::is_member_pointer<const T>::value, "");
     static_assert(!std::is_member_pointer<volatile T>::value, "");
     static_assert(!std::is_member_pointer<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_member_pointer_v<T>, "");
     static_assert(!std::is_member_pointer_v<const T>, "");
     static_assert(!std::is_member_pointer_v<volatile T>, "");

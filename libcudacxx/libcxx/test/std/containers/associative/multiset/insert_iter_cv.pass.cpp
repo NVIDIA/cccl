@@ -44,7 +44,7 @@ int main(int, char**)
         assert(m.size() == 4);
         assert(*r == 3);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::multiset<int, std::less<int>, min_allocator<int>> M;
         typedef M::iterator R;

@@ -26,7 +26,7 @@ void test_is_destructible()
     static_assert( std::is_destructible<const T>::value, "");
     static_assert( std::is_destructible<volatile T>::value, "");
     static_assert( std::is_destructible<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_destructible_v<T>, "");
     static_assert( std::is_destructible_v<const T>, "");
     static_assert( std::is_destructible_v<volatile T>, "");
@@ -41,7 +41,7 @@ void test_is_not_destructible()
     static_assert(!std::is_destructible<const T>::value, "");
     static_assert(!std::is_destructible<volatile T>::value, "");
     static_assert(!std::is_destructible<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_destructible_v<T>, "");
     static_assert(!std::is_destructible_v<const T>, "");
     static_assert(!std::is_destructible_v<volatile T>, "");
@@ -86,7 +86,7 @@ struct PurePublicDestructor              { public:    virtual ~PurePublicDestruc
 struct PureProtectedDestructor           { protected: virtual ~PureProtectedDestructor() = 0; };
 struct PurePrivateDestructor             { private:   virtual ~PurePrivateDestructor() = 0; };
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 struct DeletedPublicDestructor           { public:    ~DeletedPublicDestructor() = delete; };
 struct DeletedProtectedDestructor        { protected: ~DeletedProtectedDestructor() = delete; };
 struct DeletedPrivateDestructor          { private:   ~DeletedPrivateDestructor() = delete; };
@@ -121,7 +121,7 @@ int main(int, char**)
     test_is_not_destructible<void>();
     test_is_not_destructible<Function>();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     // Test access controlled destructors
     test_is_not_destructible<ProtectedDestructor>();
     test_is_not_destructible<PrivateDestructor>();

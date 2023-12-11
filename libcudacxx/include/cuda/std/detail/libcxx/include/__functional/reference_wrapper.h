@@ -63,7 +63,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     typename __invoke_of<type&, _ArgTypes...>::type
     operator() (_ArgTypes&&... __args) const
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
         // Since is_nothrow_invocable requires C++11 LWG3764 is not backported
         // to earlier versions.
         noexcept(_LIBCUDACXX_TRAIT(is_nothrow_invocable, _Tp&, _ArgTypes...))
@@ -73,7 +73,7 @@ public:
     }
 };
 
-#if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 template <class _Tp>
 _LIBCUDACXX_HOST_DEVICE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
 #endif

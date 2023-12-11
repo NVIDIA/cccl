@@ -50,7 +50,7 @@ int main(int, char**)
         assert(!is.fail());
         assert(std::string(s) == "abcdefghijk");
     }
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     {
         testbuf<char> sb("   abcdefghijk    ");
         std::istream is(&sb);
@@ -82,7 +82,7 @@ int main(int, char**)
         assert(std::wstring(s) == L"abcdefghijk");
         assert(is.width() == 0);
     }
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     {
         testbuf<wchar_t> sb(L"   abcdefghijk");
         std::wistream is(&sb);
@@ -104,7 +104,7 @@ int main(int, char**)
         assert(std::string(s) == "");
         assert(is.width() == 0);
     }
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     {
         testbuf<char> sb("   abcdefghijk");
         std::istream is(&sb);

@@ -170,7 +170,7 @@ template<typename T, typename Alloc>
     __host__ __device__
     void propagate_allocator(const contiguous_storage &other);
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
     __host__ __device__
     void propagate_allocator(contiguous_storage &other);
 
@@ -223,7 +223,7 @@ template<typename T, typename Alloc>
     __host__ __device__
     void propagate_allocator_dispatch(false_type, const contiguous_storage &other);
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
     __host__ __device__
     void propagate_allocator_dispatch(true_type, contiguous_storage &other);
 

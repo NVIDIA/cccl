@@ -22,7 +22,7 @@ TEST_CONSTEXPR_CXX20
 void
 test_constexpr()
 {
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     constexpr std::complex<T> c1;
     static_assert(c1.real() == 0, "");
     static_assert(c1.imag() == 0, "");
@@ -66,7 +66,7 @@ int main(int, char**) {
     test<long double>();
     test_constexpr<int>();
 
-#if TEST_STD_VER >= 20
+#if TEST_STD_VER >= 2020
     static_assert(test<float>());
     static_assert(test<double>());
     static_assert(test<long double>());

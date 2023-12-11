@@ -43,7 +43,7 @@ static_assert(cuda::std::indirect_binary_predicate<decltype(lambda), int*, int*>
 #endif
 
 // Should fail when either of the iterators is not indirectly_readable
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 struct NotIndirectlyReadable { };
 static_assert(!cuda::std::indirect_binary_predicate<GoodPredicate<It1, NotIndirectlyReadable>, It1, NotIndirectlyReadable>);
 static_assert(!cuda::std::indirect_binary_predicate<GoodPredicate<NotIndirectlyReadable, It2>, NotIndirectlyReadable, It2>);

@@ -3,7 +3,7 @@
 #include <thrust/type_traits/is_operator_less_or_greater_function_object.h>
 #include <thrust/type_traits/is_operator_plus_function_object.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 THRUST_STATIC_ASSERT((thrust::is_operator_less_function_object<
   std::less<>
 >::value));

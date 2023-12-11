@@ -4,7 +4,7 @@
 #include <thrust/mr/pool.h>
 #include <thrust/mr/new.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 #include <thrust/mr/sync_pool.h>
 #endif
 
@@ -243,7 +243,7 @@ void TestUnsynchronizedPool()
 }
 DECLARE_UNITTEST(TestUnsynchronizedPool);
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 void TestSynchronizedPool()
 {
     TestPool<thrust::mr::synchronized_pool_resource>();
@@ -326,7 +326,7 @@ void TestUnsynchronizedPoolCachingOversized()
 }
 DECLARE_UNITTEST(TestUnsynchronizedPoolCachingOversized);
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 void TestSynchronizedPoolCachingOversized()
 {
     TestPoolCachingOversized<thrust::mr::synchronized_pool_resource>();
@@ -350,7 +350,7 @@ void TestUnsynchronizedGlobalPool()
 }
 DECLARE_UNITTEST(TestUnsynchronizedGlobalPool);
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 void TestSynchronizedGlobalPool()
 {
     TestGlobalPool<thrust::mr::synchronized_pool_resource>();

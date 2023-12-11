@@ -68,7 +68,7 @@ __host__ __device__ constexpr bool test() {
         __host__ __device__ ThrowingCopyNoexceptDecrement operator++(int);
         __host__ __device__ ThrowingCopyNoexceptDecrement& operator--() noexcept;
         __host__ __device__ ThrowingCopyNoexceptDecrement operator--(int) noexcept;
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
         bool operator==(const ThrowingCopyNoexceptDecrement&) const = default;
 #else
         __host__ __device__ bool operator==(const ThrowingCopyNoexceptDecrement&) const;
@@ -98,7 +98,7 @@ __host__ __device__ constexpr bool test() {
         __host__ __device__ NoexceptCopyThrowingDecrement& operator--();
         __host__ __device__ NoexceptCopyThrowingDecrement operator--(int);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
         bool operator==(const NoexceptCopyThrowingDecrement&) const = default;
 #else
         __host__ __device__ bool operator==(const NoexceptCopyThrowingDecrement&) const;
@@ -128,7 +128,7 @@ __host__ __device__ constexpr bool test() {
         __host__ __device__ NoexceptCopyAndDecrement& operator--() noexcept;
         __host__ __device__ NoexceptCopyAndDecrement operator--(int) noexcept;
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
         bool operator==(const NoexceptCopyAndDecrement&) const = default;
 #else
         __host__ __device__ bool operator==(const NoexceptCopyAndDecrement&) const;

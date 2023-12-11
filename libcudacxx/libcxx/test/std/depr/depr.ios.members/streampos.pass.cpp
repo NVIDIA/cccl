@@ -22,7 +22,7 @@
 
 int main(int, char**)
 {
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     static_assert((std::is_same<std::ios_base::streampos, std::streampos>::value), "");
 #endif
 

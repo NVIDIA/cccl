@@ -30,7 +30,7 @@ template <class T> struct B1 {};
 template <class T>
 struct B
 {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     template <class U> using rebind = B1<U>;
 #else
     template <class U> struct rebind {typedef B1<U> other;};
@@ -47,7 +47,7 @@ template <class T, class U> struct D1 {};
 template <class T, class U>
 struct D
 {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     template <class V> using rebind = D1<V, U>;
 #else
     template <class V> struct rebind {typedef D1<V, U> other;};
@@ -62,7 +62,7 @@ struct E
 };
 
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 template <class T, class U>
 struct F {
 private:
@@ -71,7 +71,7 @@ private:
 };
 #endif
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
 template <class T, class U>
 struct G
 {
@@ -83,7 +83,7 @@ struct G
 
 int main(int, char**)
 {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((std::is_same<std::pointer_traits<A<int*> >::rebind<double*>, A<double*> >::value), "");
     static_assert((std::is_same<std::pointer_traits<B<int> >::rebind<double>, B1<double> >::value), "");
     static_assert((std::is_same<std::pointer_traits<C<char, int> >::rebind<double>, C<double, int> >::value), "");
@@ -91,10 +91,10 @@ int main(int, char**)
     static_assert((std::is_same<std::pointer_traits<E<char, int> >::rebind<double>, E<double, int> >::value), "");
     static_assert((std::is_same<std::pointer_traits<F<char, int> >::rebind<double>, F<double, int> >::value), "");
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     static_assert((std::is_same<std::pointer_traits<G<char, int> >::rebind<double>, G<double, int> >::value), "");
 #endif
-#else  // TEST_STD_VER < 11
+#else  // TEST_STD_VER < 2011
     static_assert((std::is_same<std::pointer_traits<A<int*> >::rebind<double*>::other, A<double*> >::value), "");
     static_assert((std::is_same<std::pointer_traits<B<int> >::rebind<double>::other, B1<double> >::value), "");
     static_assert((std::is_same<std::pointer_traits<C<char, int> >::rebind<double>::other, C<double, int> >::value), "");

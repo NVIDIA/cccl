@@ -28,7 +28,7 @@ int main(int, char**)
     assert(cf.real() == cd.real());
     assert(cf.imag() == cd.imag());
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     constexpr std::complex<long double> cd(2.5, 3.5);
     constexpr std::complex<double> cf(cd);

@@ -23,7 +23,7 @@ int main(int, char**)
     {
         typedef std::vector<bool> C;
         C c;
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
         typedef C::reference Ref;
         Ref r1 = c.emplace_back();
         assert(c.size() == 1);
@@ -57,7 +57,7 @@ int main(int, char**)
         typedef std::vector<bool, min_allocator<bool>> C;
         C c;
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
         typedef C::reference Ref;
         Ref r1 = c.emplace_back();
         assert(c.size() == 1);

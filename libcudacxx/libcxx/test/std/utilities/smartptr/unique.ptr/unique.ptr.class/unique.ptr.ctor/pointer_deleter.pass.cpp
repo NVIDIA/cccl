@@ -32,7 +32,7 @@ bool my_free_called = false;
 
 void my_free(void*) { my_free_called = true; }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 struct DeleterBase {
   void operator()(void*) const {}
 };
@@ -53,7 +53,7 @@ struct NoCopyMoveDeleter : DeleterBase {
 
 template <bool IsArray>
 void test_sfinae() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   typedef typename std::conditional<!IsArray, int, int[]>::type VT;
   {
     using D = CopyOnlyDeleter;
@@ -103,7 +103,7 @@ void test_sfinae() {
 
 template <bool IsArray>
 void test_noexcept() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   typedef typename std::conditional<!IsArray, int, int[]>::type VT;
   {
     using D = CopyOnlyDeleter;
@@ -134,7 +134,7 @@ void test_noexcept() {
 }
 
 void test_sfinae_runtime() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     using D = CopyOnlyDeleter;
     using U = std::unique_ptr<A[], D>;
@@ -290,7 +290,7 @@ void test_basic_single() {
 
 template <bool IsArray>
 void test_nullptr() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   typedef typename std::conditional<!IsArray, A, A[]>::type VT;
   {
     std::unique_ptr<VT, Deleter<VT> > u(nullptr, Deleter<VT>{});

@@ -19,7 +19,7 @@ void test_is_nothrow_move_constructible()
 {
     static_assert( cuda::std::is_nothrow_move_constructible<T>::value, "");
     static_assert( cuda::std::is_nothrow_move_constructible<const T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert( cuda::std::is_nothrow_move_constructible_v<T>, "");
     static_assert( cuda::std::is_nothrow_move_constructible_v<const T>, "");
 #endif
@@ -35,7 +35,7 @@ void test_has_not_nothrow_move_constructor()
 #endif // !defined(TEST_COMPILER_NVHPC) && !defined(__INTEL_COMPILER) && !defined(__INTEL_LLVM_COMPILER)
     static_assert(!cuda::std::is_nothrow_move_constructible<volatile T>::value, "");
     static_assert(!cuda::std::is_nothrow_move_constructible<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 #ifndef TEST_COMPILER_NVHPC
     static_assert(!cuda::std::is_nothrow_move_constructible_v<T>, "");
     static_assert(!cuda::std::is_nothrow_move_constructible_v<const T>, "");

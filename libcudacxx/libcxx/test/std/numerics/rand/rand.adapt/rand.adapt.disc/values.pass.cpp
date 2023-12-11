@@ -36,7 +36,7 @@ test1()
     typedef std::ranlux24 E;
     static_assert((E::block_size == 223), "");
     static_assert((E::used_block == 23), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((E::min() == 0), "");
     static_assert((E::max() == 0xFFFFFF), "");
 #else
@@ -53,7 +53,7 @@ test2()
     typedef std::ranlux48 E;
     static_assert((E::block_size == 389), "");
     static_assert((E::used_block == 11), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((E::min() == 0), "");
     static_assert((E::max() == 0xFFFFFFFFFFFFull), "");
 #else

@@ -21,7 +21,7 @@ void test_is_same()
     static_assert((!std::is_same<const T, U>::value), "");
     static_assert((!std::is_same<T, const U>::value), "");
     static_assert(( std::is_same<const T, const U>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(( std::is_same_v<T, U>), "");
     static_assert((!std::is_same_v<const T, U>), "");
     static_assert((!std::is_same_v<T, const U>), "");
@@ -36,7 +36,7 @@ void test_is_same_ref()
     static_assert((std::is_same<const T, U>::value), "");
     static_assert((std::is_same<T, const U>::value), "");
     static_assert((std::is_same<const T, const U>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert((std::is_same_v<T, U>), "");
     static_assert((std::is_same_v<const T, U>), "");
     static_assert((std::is_same_v<T, const U>), "");

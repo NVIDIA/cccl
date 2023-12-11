@@ -328,7 +328,7 @@ struct __to_address_helper<_Pointer, decltype((void)pointer_traits<_Pointer>::to
     }
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 auto to_address(_Tp *__p) noexcept {

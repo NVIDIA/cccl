@@ -56,7 +56,7 @@ int main(int, char**)
     assert( (t1 != t2));
     }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr T1 t1(Duration1(3));
     constexpr T1 t2(Duration1(3));

@@ -62,7 +62,7 @@ TEST_CONSTEXPR_CXX17 bool test()
   test_one<int*>();
   test_one<const int*>();
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   test_one<contiguous_iterator<int*>>();
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
   test_one<three_way_contiguous_iterator<int*>>();
@@ -75,7 +75,7 @@ TEST_CONSTEXPR_CXX17 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   static_assert(test());
 #endif
 

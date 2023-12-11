@@ -102,7 +102,7 @@ int main(int, char**)
     }
   }
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   {
     typedef std::reverse_iterator<const C *> RI;
     constexpr RI it1 = std::make_reverse_iterator(&gC+1);

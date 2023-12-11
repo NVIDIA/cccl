@@ -82,7 +82,7 @@ template<typename Alloc, typename U>
 
 // The following fields of std::allocator have been deprecated (since C++17).
 // There's no way to detect it other than explicit specialization.
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 #define THRUST_SPECIALIZE_DEPRECATED(trait_name)                               \
 template <typename T>                                                          \
 struct trait_name<std::allocator<T>> : false_type {};
@@ -192,7 +192,7 @@ template<class Alloc, class U, bool = has_rebind<Alloc, U>::value>
     typedef typename Alloc::template rebind<U>::other type;
 };
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 template<template<typename, typename...> class Alloc,
          typename T, typename... Args, typename U>
   struct rebind_alloc<Alloc<T, Args...>, U, true>
@@ -350,7 +350,7 @@ template<typename Alloc>
   // XXX rebind and rebind_traits are alias templates
   //     and so are omitted while c++11 is unavailable
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   template <typename U>
   using rebind_alloc =
     typename allocator_traits_detail::rebind_alloc<allocator_type, U>::type;
@@ -396,7 +396,7 @@ template<typename Alloc>
   template<typename T, typename Arg1>
   inline __host__ __device__ static void construct(allocator_type &a, T *p, const Arg1 &arg1);
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   template<typename T, typename... Args>
   inline __host__ __device__ static void construct(allocator_type &a, T *p, Args&&... args);
 #endif
