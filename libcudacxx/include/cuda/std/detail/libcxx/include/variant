@@ -182,13 +182,12 @@ C++20
 
   // 20.7.8, monostate relational operators
   constexpr bool operator==(monostate, monostate) noexcept;
-  constexpr bool operator!=(monostate, monostate) noexcept;             // until
-C++20 constexpr bool operator<(monostate, monostate) noexcept;              //
-until C++20 constexpr bool operator>(monostate, monostate) noexcept; // until
-C++20 constexpr bool operator<=(monostate, monostate) noexcept;             //
-until C++20 constexpr bool operator>=(monostate, monostate) noexcept; // until
-C++20 constexpr strong_ordering operator<=>(monostate, monostate) noexcept; //
-since C++20
+  constexpr bool operator!=(monostate, monostate) noexcept;             // until C++20
+  constexpr bool operator<(monostate, monostate) noexcept;              // until C++20
+  constexpr bool operator>(monostate, monostate) noexcept;              // until C++20
+  constexpr bool operator<=(monostate, monostate) noexcept;             // until C++20
+  constexpr bool operator>=(monostate, monostate) noexcept;             // until C++20
+  constexpr strong_ordering operator<=>(monostate, monostate) noexcept; // since C++20
 
   // 20.7.9, specialized algorithms
   template <class... Types>
