@@ -1,4 +1,3 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -7,9 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11, c++14
 
-// XFAIL: dylib-has-no-bad_variant_access && !libcpp-no-exceptions
+// Throwing bad_variant_access is supported starting in macosx10.13
+// XFAIL: use_system_cxx_lib && target={{.+}}-apple-macosx10.{{9|10|11|12}} && !no-exceptions
 
 // <variant>
 
@@ -392,7 +392,7 @@ void test_swap_different_alternatives() {
     assert(std::get<1>(v2).value == 100);
   }
 // FIXME: The tests below are just very libc++ specific
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _LIBCPP_VERSION
   {
     using T1 = ThrowsOnSecondMove;
     using T2 = NonThrowingNonNoexceptType;
@@ -426,7 +426,7 @@ void test_swap_different_alternatives() {
 // testing libc++ extension. If either variant stores a nothrow move
 // constructible type v1.swap(v2) provides the strong exception safety
 // guarantee.
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _LIBCPP_VERSION
   {
 
     using T1 = ThrowingTypeWithNothrowSwap;
@@ -466,7 +466,7 @@ void test_swap_different_alternatives() {
     assert(std::get<0>(v1).value == 42);
     assert(std::get<1>(v2).value == 100);
   }
-#endif // _LIBCUDACXX_VERSION
+#endif // _LIBCPP_VERSION
 #endif
 }
 
@@ -578,7 +578,7 @@ void test_swap_noexcept() {
   }
 }
 
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _LIBCPP_VERSION
 // This is why variant should SFINAE member swap. :-)
 template class std::variant<int, NotSwappable>;
 #endif

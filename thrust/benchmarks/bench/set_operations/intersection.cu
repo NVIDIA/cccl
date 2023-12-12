@@ -29,16 +29,18 @@
 
 struct op_t
 {
-  template <typename InputIterator1,
-            typename InputIterator2,
-            typename OutputIterator>
-  __host__ OutputIterator operator()(InputIterator1 first1,
+  template <class PolicyT,
+            class InputIterator1,
+            class InputIterator2,
+            class OutputIterator>
+  __host__ OutputIterator operator()(const PolicyT& policy,
+                                     InputIterator1 first1,
                                      InputIterator1 last1,
                                      InputIterator2 first2,
                                      InputIterator2 last2,
                                      OutputIterator result) const
   {
-    return thrust::set_intersection(first1, last1, first2, last2, result);
+    return thrust::set_intersection(policy, first1, last1, first2, last2, result);
   }
 };
 

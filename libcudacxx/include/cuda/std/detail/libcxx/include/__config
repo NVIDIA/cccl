@@ -526,7 +526,7 @@ extern "C++" {
 
 #if __check_builtin(builtin_is_constant_evaluated)           \
  || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 900) \
- || (defined(_LIBCUDACXX_COMPILER_MSVC) && _MSC_VER  > 1924)
+ || (defined(_LIBCUDACXX_COMPILER_MSVC) && _MSC_VER  > 1924 && !defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
 #define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // __check_builtin(builtin_is_constant_evaluated)
 

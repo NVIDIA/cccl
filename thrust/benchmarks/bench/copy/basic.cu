@@ -25,7 +25,7 @@
  *
  ******************************************************************************/
 
-#include <nvbench/nvbench.cuh>
+#include <nvbench_helper.cuh>
 
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
@@ -45,11 +45,14 @@ static void basic(nvbench::state &state,
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(elements);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
-    thrust::copy(input.cbegin(),
-                 input.cend(),
-                 output.begin());
-  });
+  caching_allocator_t alloc;
+  thrust::copy(policy(alloc), input.cbegin(), input.cend(), output.begin());
+
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch) {
+               thrust::copy(policy(alloc, launch), input.cbegin(), input.cend(),
+                            output.begin());
+             });
 }
 
 using types = nvbench::type_list<nvbench::uint8_t,

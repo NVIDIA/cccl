@@ -406,9 +406,9 @@ inline void DoNotOptimize(Tp const& value) {
     return v; \
   }
 
-template <class T>
+template <class... T>
 __host__ __device__
-constexpr bool unused(T &&) {return true;}
+constexpr bool unused(T&&...) {return true;}
 
 // Define a helper macro to properly suppress warnings
 #define _TEST_TOSTRING2(x) #x
