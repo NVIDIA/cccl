@@ -1,4 +1,3 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -7,9 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11, c++14
 
-// XFAIL: dylib-has-no-bad_variant_access && !libcpp-no-exceptions
+// Throwing bad_variant_access is supported starting in macosx10.13
+// XFAIL: use_system_cxx_lib && target={{.+}}-apple-macosx10.{{9|10|11|12}} && !no-exceptions
 
 // <variant>
 
@@ -111,7 +111,7 @@ void test_basic() {
     assert(std::get<2>(v) == &x);
     assert(&ref2 == &std::get<2>(v));
     // emplace with multiple args
-    auto& ref3 = v.emplace<std::string>(3, 'a');
+    auto& ref3 = v.emplace<std::string>(3u, 'a');
     static_assert(std::is_same_v<std::string&, decltype(ref3)>, "");
     assert(std::get<4>(v) == "aaa");
     assert(&ref3 == &std::get<4>(v));
@@ -145,7 +145,7 @@ void test_basic() {
     assert(&std::get<int &&>(v) == &z);
     assert(&ref4 == &std::get<int &&>(v));
     // emplace with multiple args
-    auto& ref5 = v.emplace<std::string>(3, 'a');
+    auto& ref5 = v.emplace<std::string>(3u, 'a');
     static_assert(std::is_same_v<std::string&, decltype(ref5)>, "");
     assert(std::get<std::string>(v) == "aaa");
     assert(&ref5 == &std::get<std::string>(v));

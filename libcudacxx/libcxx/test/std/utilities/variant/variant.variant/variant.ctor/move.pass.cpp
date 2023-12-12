@@ -1,4 +1,3 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -7,15 +6,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11, c++14
 
-// XFAIL: dylib-has-no-bad_variant_access && !libcpp-no-exceptions
+// Throwing bad_variant_access is supported starting in macosx10.13
+// XFAIL: use_system_cxx_lib && target={{.+}}-apple-macosx10.{{9|10|11|12}} && !no-exceptions
 
 // <variant>
 
 // template <class ...Types> class variant;
 
-// variant(variant&&) noexcept(see below); // constexpr in C++20
+// constexpr variant(variant&&) noexcept(see below);
 
 #include <cassert>
 #include <string>
@@ -141,7 +141,6 @@ void test_move_ctor_sfinae() {
   }
 
   // Make sure we properly propagate triviality (see P0602R4).
-#if TEST_STD_VER > 17
   {
     using V = std::variant<int, long>;
     static_assert(std::is_trivially_move_constructible<V>::value, "");
@@ -159,7 +158,6 @@ void test_move_ctor_sfinae() {
     using V = std::variant<int, TMoveNTCopy>;
     static_assert(std::is_trivially_move_constructible<V>::value, "");
   }
-#endif // > C++17
 }
 
 template <typename T>
@@ -210,7 +208,6 @@ void test_move_ctor_basic() {
   }
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
-#if TEST_STD_VER > 17
   {
     struct {
       constexpr Result<int> operator()() const {
@@ -283,7 +280,6 @@ void test_move_ctor_basic() {
     static_assert(result.index == 1, "");
     static_assert(result.value.value == 42, "");
   }
-#endif // > C++17
 }
 
 void test_move_ctor_valueless_by_exception() {
@@ -307,22 +303,20 @@ constexpr bool test_constexpr_ctor_imp(std::variant<long, void*, const int> cons
 
 void test_constexpr_move_ctor() {
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
-#if TEST_STD_VER > 17
   using V = std::variant<long, void*, const int>;
-#ifdef TEST_WORKAROUND_C1XX_BROKEN_IS_TRIVIALLY_COPYABLE
+#ifdef TEST_WORKAROUND_MSVC_BROKEN_IS_TRIVIALLY_COPYABLE
   static_assert(std::is_trivially_destructible<V>::value, "");
   static_assert(std::is_trivially_copy_constructible<V>::value, "");
   static_assert(std::is_trivially_move_constructible<V>::value, "");
   static_assert(!std::is_copy_assignable<V>::value, "");
   static_assert(!std::is_move_assignable<V>::value, "");
-#else // TEST_WORKAROUND_C1XX_BROKEN_IS_TRIVIALLY_COPYABLE
+#else // TEST_WORKAROUND_MSVC_BROKEN_IS_TRIVIALLY_COPYABLE
   static_assert(std::is_trivially_copyable<V>::value, "");
-#endif // TEST_WORKAROUND_C1XX_BROKEN_IS_TRIVIALLY_COPYABLE
+#endif // TEST_WORKAROUND_MSVC_BROKEN_IS_TRIVIALLY_COPYABLE
   static_assert(std::is_trivially_move_constructible<V>::value, "");
   static_assert(test_constexpr_ctor_imp<0>(V(42l)), "");
   static_assert(test_constexpr_ctor_imp<1>(V(nullptr)), "");
   static_assert(test_constexpr_ctor_imp<2>(V(101)), "");
-#endif // > C++17
 }
 
 int main(int, char**) {

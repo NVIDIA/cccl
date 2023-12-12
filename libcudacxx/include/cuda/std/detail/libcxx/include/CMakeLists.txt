@@ -327,6 +327,7 @@ set(files
   __utility/swap.h
   __utility/to_underlying.h
   __utility/unreachable.h
+  __variant/monostate.h
   __verbose_abort
   algorithm
   any

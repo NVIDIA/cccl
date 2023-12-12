@@ -31,6 +31,7 @@ AttributeMacros: [
                   '_ALIGNAS',
                   '_LIBCUDACXX_ALIGNOF',
                   '_LIBCUDACXX_ALWAYS_INLINE',
+                  '_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS',
                   '_LIBCUDACXX_CONSTEXPR_AFTER_CXX11',
                   '_LIBCUDACXX_CONSTEXPR_AFTER_CXX14',
                   '_LIBCUDACXX_CONSTEXPR_AFTER_CXX20',
