@@ -69,7 +69,7 @@ CUB_NAMESPACE_BEGIN
 //!    struct CustomLess
 //!    {
 //!      template <typename DataType>
-//!      _CCCL_DEVICE bool operator()(const DataType &lhs, const DataType &rhs)
+//!      __host__ bool operator()(const DataType &lhs, const DataType &rhs)
 //!      {
 //!        return lhs < rhs;
 //!      }

@@ -68,7 +68,7 @@ struct DeviceMemcpy
   //!
   //!    struct GetPtrToStringItem
   //!    {
-  //!      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void *operator()(uint32_t index)
+  //!      __host__ __device__ __forceinline__ void *operator()(uint32_t index)
   //!      {
   //!        return &d_string_data_in[d_string_offsets[index]];
   //!      }
@@ -78,7 +78,7 @@ struct DeviceMemcpy
   //!
   //!    struct GetStringItemSize
   //!    {
-  //!      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t index)
+  //!      __host__ __device__ __forceinline__ uint32_t operator()(uint32_t index)
   //!      {
   //!        return d_string_offsets[index + 1] - d_string_offsets[index];
   //!      }

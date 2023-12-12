@@ -108,7 +108,7 @@ struct DeviceSegmentedReduce
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
+  //!        CUB_RUNTIME_FUNCTION __forceinline__
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }

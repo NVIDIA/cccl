@@ -116,7 +116,7 @@ several minor bugfixes and cleanups.
 - NVIDIA/thrust#1605: Fix some execution space warnings in the allocator
   library.
 - NVIDIA/thrust#1683: Fix bug in `iterator_category_to_traversal` metafunctions.
-- NVIDIA/thrust#1715: Add missing `_CCCL_EXEC_CHECK_DISABLE` annotation
+- NVIDIA/thrust#1715: Add missing `__thrust_exec_check_disable__` annotation
   to `thrust::make_zip_function`. Thanks to @mfbalin for this contribution.
 - NVIDIA/thrust#1722: Remove CUDA-specific error handler from code that may be
   executed on non-CUDA backends. Thanks to @dkolsen-pgi for this contribution.

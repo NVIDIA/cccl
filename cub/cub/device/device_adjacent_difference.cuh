@@ -176,7 +176,7 @@ public:
   //!    struct CustomDifference
   //!    {
   //!      template <typename DataType>
-  //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
+  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
   //!      {
   //!        return lhs - rhs;
   //!      }
@@ -332,7 +332,7 @@ public:
   //!    struct CustomDifference
   //!    {
   //!      template <typename DataType>
-  //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
+  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
   //!      {
   //!        return lhs - rhs;
   //!      }
@@ -475,7 +475,7 @@ public:
   //!    struct CustomDifference
   //!    {
   //!      template <typename DataType>
-  //!      _CCCL_DEVICE DataType operator()(DataType &lhs, DataType &rhs)
+  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
   //!      {
   //!        return lhs - rhs;
   //!      }

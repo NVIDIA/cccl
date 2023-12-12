@@ -63,7 +63,7 @@ template<typename RandomAccessIterator,
         : binary_pred(binary_pred), iter(first), n(last - first)
       {}
 
-      _CCCL_HOST_DEVICE __thrust_forceinline__
+      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
       result_type operator()(const IndexType &i)
       {
         return (i == (n - 1) || !binary_pred(iter[i], iter[i+1]));

@@ -397,10 +397,10 @@ struct DeviceSelect
   //!    {
   //!        int compare;
   //!
-  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
+  //!        CUB_RUNTIME_FUNCTION __forceinline__
   //!        LessThan(int compare) : compare(compare) {}
   //!
-  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
+  //!        CUB_RUNTIME_FUNCTION __forceinline__
   //!        bool operator()(const int &a) const {
   //!            return (a < compare);
   //!        }
@@ -562,10 +562,10 @@ struct DeviceSelect
   //!    {
   //!        int compare;
   //!
-  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
+  //!        CUB_RUNTIME_FUNCTION __forceinline__
   //!        LessThan(int compare) : compare(compare) {}
   //!
-  //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
+  //!        CUB_RUNTIME_FUNCTION __forceinline__
   //!        bool operator()(const int &a) const {
   //!            return (a < compare);
   //!        }

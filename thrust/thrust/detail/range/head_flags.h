@@ -67,7 +67,7 @@ template<typename RandomAccessIterator,
       {}
 
       template<typename Tuple>
-      _CCCL_HOST_DEVICE __thrust_forceinline__
+      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
       result_type operator()(const Tuple &t)
       {
         const IndexType i = thrust::get<0>(t);
@@ -157,7 +157,7 @@ template<typename RandomAccessIterator,
       {}
 
       template<typename Tuple>
-      _CCCL_HOST_DEVICE __thrust_forceinline__
+      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
       result_type operator()(const Tuple &t)
       {
         const IndexType i = thrust::get<0>(t);

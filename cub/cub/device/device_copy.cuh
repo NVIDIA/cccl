@@ -68,7 +68,7 @@ struct DeviceCopy
   //!
   //!    struct GetIteratorToRange
   //!    {
-  //!      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(uint32_t index)
+  //!      __host__ __device__ __forceinline__ auto operator()(uint32_t index)
   //!      {
   //!        return thrust::make_constant_iterator(d_data_in[index]);
   //!      }
@@ -77,7 +77,7 @@ struct DeviceCopy
   //!
   //!    struct GetPtrToRange
   //!    {
-  //!      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(uint32_t index)
+  //!      __host__ __device__ __forceinline__ auto operator()(uint32_t index)
   //!      {
   //!        return d_data_out + d_offsets[index];
   //!      }
@@ -87,7 +87,7 @@ struct DeviceCopy
   //!
   //!    struct GetRunLength
   //!    {
-  //!      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t index)
+  //!      __host__ __device__ __forceinline__ uint32_t operator()(uint32_t index)
   //!      {
   //!        return d_offsets[index + 1] - d_offsets[index];
   //!      }

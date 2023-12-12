@@ -50,7 +50,7 @@ struct wrapped_function
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Argument>
-  __thrust_forceinline__ _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE
   Result operator()(Argument& x) const
   {
     return static_cast<Result>(m_f(thrust::raw_reference_cast(x)));
@@ -58,7 +58,7 @@ struct wrapped_function
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Argument>
-  __thrust_forceinline__ _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE
   Result operator()(const Argument& x) const
   {
     return static_cast<Result>(m_f(thrust::raw_reference_cast(x)));
@@ -66,7 +66,7 @@ struct wrapped_function
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Argument1, typename Argument2>
-  __thrust_forceinline__ _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE
   Result operator()(Argument1& x, Argument2& y) const
   {
     return static_cast<Result>(m_f(thrust::raw_reference_cast(x),
@@ -75,7 +75,7 @@ struct wrapped_function
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Argument1, typename Argument2>
-  __thrust_forceinline__ _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE
   Result operator()(const Argument1& x, Argument2& y) const
   {
     return static_cast<Result>(m_f(thrust::raw_reference_cast(x),
@@ -84,7 +84,7 @@ struct wrapped_function
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Argument1, typename Argument2>
-  __thrust_forceinline__ _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE
   Result operator()(const Argument1& x, const Argument2& y) const
   {
     return static_cast<Result>(m_f(thrust::raw_reference_cast(x),
@@ -93,7 +93,7 @@ struct wrapped_function
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Argument1, typename Argument2>
-  __thrust_forceinline__ _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE
   Result operator()(Argument1& x, const Argument2& y) const
   {
     return static_cast<Result>(m_f(thrust::raw_reference_cast(x),
@@ -119,7 +119,7 @@ struct wrapped_function<Function, void>
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Argument>
-  __thrust_forceinline__ _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE
   void operator()(Argument& x) const
   {
     m_f(thrust::raw_reference_cast(x));
@@ -127,7 +127,7 @@ struct wrapped_function<Function, void>
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Argument>
-  __thrust_forceinline__ _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE
   void operator()(const Argument& x) const
   {
     m_f(thrust::raw_reference_cast(x));
@@ -135,7 +135,7 @@ struct wrapped_function<Function, void>
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Argument1, typename Argument2>
-  __thrust_forceinline__ _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE
   void operator()(Argument1& x, Argument2& y) const
   {
     m_f(thrust::raw_reference_cast(x), thrust::raw_reference_cast(y));
@@ -143,21 +143,21 @@ struct wrapped_function<Function, void>
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Argument1, typename Argument2>
-  __thrust_forceinline__ _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE
   void operator()(const Argument1& x, Argument2& y) const
   {
     m_f(thrust::raw_reference_cast(x), thrust::raw_reference_cast(y));
   }
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Argument1, typename Argument2>
-  __thrust_forceinline__ _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE
   void operator()(const Argument1& x, const Argument2& y) const
   {
     m_f(thrust::raw_reference_cast(x), thrust::raw_reference_cast(y));
   }
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Argument1, typename Argument2>
-  __thrust_forceinline__ _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE
   void operator()(Argument1& x, const Argument2& y) const
   {
     m_f(thrust::raw_reference_cast(x), thrust::raw_reference_cast(y));

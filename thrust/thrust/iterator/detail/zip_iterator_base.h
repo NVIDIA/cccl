@@ -98,7 +98,7 @@ struct dereference_iterator
     type;
   }; // end apply
 
-  // XXX silence warnings of the form "calling a _CCCL_HOST function from a _CCCL_HOST_DEVICE function is not allowed
+  // XXX silence warnings of the form "calling a __host__ function from a __host__ __device__ function is not allowed
   _CCCL_EXEC_CHECK_DISABLE
   template<typename Iterator>
   _CCCL_HOST_DEVICE

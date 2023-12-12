@@ -131,7 +131,7 @@ template<typename RealType>
 {
   // XXX this solution is pretty terrible
   // we can't use numeric_traits<RealType>::max because nvcc will
-  // complain that it is a _CCCL_HOST function
+  // complain that it is a __host__ function
   union
   {
     thrust::detail::uint32_t inf_as_int;

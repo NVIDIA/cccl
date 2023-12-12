@@ -49,8 +49,8 @@ bool equal(thrust::execution_policy<DerivedPolicy> &exec, InputIterator1 first1,
 }
 
 
-// the == below could be a _CCCL_HOST function in the case of std::vector::iterator::operator==
-// we make this exception for equal and use _CCCL_EXEC_CHECK_DISABLE because it is used in vector's implementation
+// the == below could be a __host__ function in the case of std::vector::iterator::operator==
+// we make this exception for equal and use nv_exec_check_disable because it is used in vector's implementation
 _CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
 _CCCL_HOST_DEVICE

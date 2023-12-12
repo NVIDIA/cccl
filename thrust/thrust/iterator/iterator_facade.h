@@ -158,14 +158,14 @@ class iterator_core_access
 
     // XXX TODO: Investigate whether we need both of these cases
     //template <class Facade1, class Facade2>
-    //_CCCL_HOST_DEVICE
+    //__host__ __device__
     //static bool equal(Facade1 const& f1, Facade2 const& f2, mpl::true_)
     //{
     //  return f1.equal(f2);
     //}
 
     //template <class Facade1, class Facade2>
-    //_CCCL_HOST_DEVICE
+    //__host__ __device__
     //static bool equal(Facade1 const& f1, Facade2 const& f2, mpl::false_)
     //{
     //  return f2.equal(f1);

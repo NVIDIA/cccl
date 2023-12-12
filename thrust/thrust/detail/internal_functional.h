@@ -448,7 +448,7 @@ template<typename T>
 template<typename T>
   struct device_destroy_functor
 {
-  // add _CCCL_HOST to allow the omp backend to compile with nvcc
+  // add __host__ to allow the omp backend to compile with nvcc
   _CCCL_HOST_DEVICE
   void operator()(T &x) const
   {

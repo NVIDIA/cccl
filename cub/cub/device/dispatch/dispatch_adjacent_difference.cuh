@@ -80,7 +80,7 @@ DeviceAdjacentDifferenceDifferenceKernel(InputIteratorT input,
     typename ChainedPolicyT::ActivePolicy::AdjacentDifferencePolicy;
 
   // It is OK to introspect the return type or parameter types of the
-  // `operator()` function of `_CCCL_DEVICE` extended lambda within device code.
+  // `operator()` function of `__device__` extended lambda within device code.
   using OutputT = detail::invoke_result_t<DifferenceOpT, InputT, InputT>;
 
   using Agent = AgentDifference<ActivePolicyT,

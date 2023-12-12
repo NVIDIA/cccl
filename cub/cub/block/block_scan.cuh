@@ -453,11 +453,11 @@ public:
     //!        int running_total;
     //!
     //!        // Constructor
-    //!        _CCCL_DEVICE BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
+    //!        __host__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
     //!
     //!        // Callback operator to be entered by the first warp of threads in the block.
     //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
-    //!        _CCCL_DEVICE int operator()(int block_aggregate)
+    //!        __host__ int operator()(int block_aggregate)
     //!        {
     //!            int old_prefix = running_total;
     //!            running_total += block_aggregate;
@@ -692,11 +692,11 @@ public:
     //!        int running_total;
     //!
     //!        // Constructor
-    //!        _CCCL_DEVICE BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
+    //!        __host__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
     //!
     //!        // Callback operator to be entered by the first warp of threads in the block.
     //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
-    //!        _CCCL_DEVICE int operator()(int block_aggregate)
+    //!        __host__ int operator()(int block_aggregate)
     //!        {
     //!            int old_prefix = running_total;
     //!            running_total += block_aggregate;
@@ -941,11 +941,11 @@ public:
     //!        int running_total;
     //!
     //!        // Constructor
-    //!        _CCCL_DEVICE BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
+    //!        __host__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
     //!
     //!        // Callback operator to be entered by the first warp of threads in the block.
     //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
-    //!        _CCCL_DEVICE int operator()(int block_aggregate)
+    //!        __host__ int operator()(int block_aggregate)
     //!        {
     //!            int old_prefix = running_total;
     //!            running_total = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
@@ -1218,11 +1218,11 @@ public:
     //!        int running_total;
     //!
     //!        // Constructor
-    //!        _CCCL_DEVICE BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
+    //!        __host__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
     //!
     //!        // Callback operator to be entered by the first warp of threads in the block.
     //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
-    //!        _CCCL_DEVICE int operator()(int block_aggregate)
+    //!        __host__ int operator()(int block_aggregate)
     //!        {
     //!            int old_prefix = running_total;
     //!            running_total = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
@@ -1614,11 +1614,11 @@ public:
     //!        int running_total;
     //!
     //!        // Constructor
-    //!        _CCCL_DEVICE BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
+    //!        __host__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
     //!
     //!        // Callback operator to be entered by the first warp of threads in the block.
     //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
-    //!        _CCCL_DEVICE int operator()(int block_aggregate)
+    //!        __host__ int operator()(int block_aggregate)
     //!        {
     //!            int old_prefix = running_total;
     //!            running_total += block_aggregate;
@@ -1875,11 +1875,11 @@ public:
     //!        int running_total;
     //!
     //!        // Constructor
-    //!        _CCCL_DEVICE BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
+    //!        __host__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
     //!
     //!        // Callback operator to be entered by the first warp of threads in the block.
     //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
-    //!        _CCCL_DEVICE int operator()(int block_aggregate)
+    //!        __host__ int operator()(int block_aggregate)
     //!        {
     //!            int old_prefix = running_total;
     //!            running_total += block_aggregate;
@@ -2130,11 +2130,11 @@ public:
     //!        int running_total;
     //!
     //!        // Constructor
-    //!        _CCCL_DEVICE BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
+    //!        __host__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
     //!
     //!        // Callback operator to be entered by the first warp of threads in the block.
     //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
-    //!        _CCCL_DEVICE int operator()(int block_aggregate)
+    //!        __host__ int operator()(int block_aggregate)
     //!        {
     //!            int old_prefix = running_total;
     //!            running_total = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
@@ -2408,11 +2408,11 @@ public:
     //!        int running_total;
     //!
     //!        // Constructor
-    //!        _CCCL_DEVICE BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
+    //!        __host__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
     //!
     //!        // Callback operator to be entered by the first warp of threads in the block.
     //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
-    //!        _CCCL_DEVICE int operator()(int block_aggregate)
+    //!        __host__ int operator()(int block_aggregate)
     //!        {
     //!            int old_prefix = running_total;
     //!            running_total = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;

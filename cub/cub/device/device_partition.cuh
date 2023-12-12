@@ -264,10 +264,10 @@ struct DevicePartition
     //!    {
     //!        int compare;
     //!
-    //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
+    //!        CUB_RUNTIME_FUNCTION __forceinline__
     //!        explicit LessThan(int compare) : compare(compare) {}
     //!
-    //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
+    //!        CUB_RUNTIME_FUNCTION __forceinline__
     //!        bool operator()(const int &a) const
     //!        {
     //!            return (a < compare);
@@ -462,10 +462,10 @@ struct DevicePartition
     //!    {
     //!        int compare;
     //!
-    //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
+    //!        CUB_RUNTIME_FUNCTION __forceinline__
     //!        explicit LessThan(int compare) : compare(compare) {}
     //!
-    //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
+    //!        CUB_RUNTIME_FUNCTION __forceinline__
     //!        bool operator()(const int &a) const
     //!        {
     //!            return a < compare;
@@ -477,10 +477,10 @@ struct DevicePartition
     //!    {
     //!        int compare;
     //!
-    //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
+    //!        CUB_RUNTIME_FUNCTION __forceinline__
     //!        explicit GreaterThan(int compare) : compare(compare) {}
     //!
-    //!        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
+    //!        CUB_RUNTIME_FUNCTION __forceinline__
     //!        bool operator()(const int &a) const
     //!        {
     //!            return a > compare;
