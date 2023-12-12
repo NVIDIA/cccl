@@ -41,9 +41,13 @@ static void basic(nvbench::state &state, nvbench::type_list<T>)
   state.add_element_count(elements);
   state.add_global_memory_writes<T>(elements);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
-    thrust::fill(output.begin(), output.end(), T{42});
-  });
+  caching_allocator_t alloc;
+  thrust::fill(policy(alloc), output.begin(), output.end(), T{42});
+
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch) {
+               thrust::fill(policy(alloc, launch), output.begin(), output.end(), T{42});
+             });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

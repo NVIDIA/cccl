@@ -1,14 +1,16 @@
 #pragma once
 
-#include <cuda/std/complex>
-
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+
+#include <cuda/std/complex>
+#include <cuda/std/span>
 
 #include <limits>
+#include <map>
 #include <stdexcept>
 
 #include <nvbench/nvbench.cuh>
-#include <cuda/std/span>
 
 #if defined(_MSC_VER)
 #define NVBENCH_HELPER_HAS_I128 0
@@ -478,3 +480,118 @@ struct max_t
     return less(lhs, rhs) ? rhs : lhs;
   }
 };
+
+namespace
+{
+struct caching_allocator_t
+{
+  using value_type = char;
+
+  caching_allocator_t() = default;
+  ~caching_allocator_t()
+  {
+    free_all();
+  }
+
+  char* allocate(std::ptrdiff_t num_bytes)
+  {
+    value_type* result{};
+    auto free_block = free_blocks.find(num_bytes);
+
+    if (free_block != free_blocks.end())
+    {
+      result = free_block->second;
+      free_blocks.erase(free_block);
+    }
+    else
+    {
+      result = do_allocate(num_bytes);
+    }
+
+    allocated_blocks.insert(std::make_pair(result, num_bytes));
+    return result;
+  }
+
+  void deallocate(char* ptr, size_t)
+  {
+    auto iter = allocated_blocks.find(ptr);
+    if (iter == allocated_blocks.end())
+    {
+      throw std::runtime_error("Memory was not allocated by this allocator");
+    }
+
+    std::ptrdiff_t num_bytes = iter->second;
+    allocated_blocks.erase(iter);
+    free_blocks.insert(std::make_pair(num_bytes, ptr));
+  }
+
+private:
+  using free_blocks_type      = std::multimap<std::ptrdiff_t, char*>;
+  using allocated_blocks_type = std::map<char*, std::ptrdiff_t>;
+
+  free_blocks_type free_blocks;
+  allocated_blocks_type allocated_blocks;
+
+  void free_all()
+  {
+    for (auto i : free_blocks)
+    {
+      do_deallocate(i.second);
+    }
+
+    for (auto i : allocated_blocks)
+    {
+      do_deallocate(i.first);
+    }
+  }
+
+  value_type* do_allocate(std::size_t num_bytes)
+  {
+    value_type* result{};
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+    const cudaError_t status = cudaMalloc(&result, num_bytes);
+    if (cudaSuccess != status)
+    {
+      throw std::runtime_error(std::string("Failed to allocate device memory: ") + cudaGetErrorString(status));
+    }
+#else
+    result = new value_type[num_bytes];
+#endif
+    return result;
+  }
+
+  void do_deallocate(value_type* ptr)
+  {
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+    cudaFree(ptr);
+#else
+    delete[] ptr;
+#endif
+  }
+};
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+auto policy(caching_allocator_t& alloc)
+{
+  return thrust::cuda::par(alloc);
+}
+#else
+auto policy(caching_allocator_t&)
+{
+  return thrust::device;
+}
+#endif
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+auto policy(caching_allocator_t& alloc, nvbench::launch& launch)
+{
+  return thrust::cuda::par(alloc).on(launch.get_stream());
+}
+#else
+auto policy(caching_allocator_t&, nvbench::launch&)
+{
+  return thrust::device;
+}
+#endif
+
+} // namespace
