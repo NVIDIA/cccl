@@ -50,24 +50,22 @@ static void basic(nvbench::state &state, nvbench::type_list<T>, OpT op)
   thrust::sort(input.begin(), input.begin() + elements_in_A);
   thrust::sort(input.begin() + elements_in_A, input.end());
 
-  const std::size_t elements_in_AB = thrust::distance(output.begin(),
-                                                      op(input.cbegin(),
-                                                         input.cbegin() + elements_in_A,
-                                                         input.cbegin() + elements_in_A,
-                                                         input.cend(),
-                                                         output.begin()));
+  caching_allocator_t alloc;
+  const std::size_t elements_in_AB = thrust::distance(
+      output.begin(),
+      op(policy(alloc), input.cbegin(), input.cbegin() + elements_in_A,
+         input.cbegin() + elements_in_A, input.cend(), output.begin()));
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(elements_in_AB);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
-    op(input.cbegin(),
-       input.cbegin() + elements_in_A,
-       input.cbegin() + elements_in_A,
-       input.cend(),
-       output.begin());
-  });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch) {
+               op(policy(alloc, launch), input.cbegin(),
+                  input.cbegin() + elements_in_A,
+                  input.cbegin() + elements_in_A, input.cend(), output.begin());
+             });
 }
 
 using types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t>;

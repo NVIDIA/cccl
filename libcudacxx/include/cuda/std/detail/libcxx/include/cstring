@@ -57,10 +57,14 @@ size_t strlen(const char* s);
 */
 
 #ifndef __cuda_std__
-#include <__config>
-#include <string.h>
-#include <__pragma_push>
-#endif //__simet__ <- a tribute to ogiroux
+#  include <__config>
+#endif // __cuda_std__
+
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#include <cstring>
+#else // ^^^ _LIBCUDACXX_COMPILER_MSVC ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC vvv
+#include "string.h"
+#endif // !_LIBCUDACXX_COMPILER_MSVC
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -72,36 +76,35 @@ size_t strlen(const char* s);
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-using ::size_t;
 using ::memcpy;
-using ::memmove;
-using ::strcpy;
-using ::strncpy;
-using ::strcat;
-using ::strncat;
-using ::memcmp;
-using ::strcmp;
-using ::strncmp;
-using ::strcoll;
-using ::strxfrm;
+using ::memset;
+using ::size_t;
+
+#ifndef _LIBCUDACXX_COMPILER_NVRTC
 using ::memchr;
+using ::memcmp;
+using ::memmove;
+using ::strcat;
 using ::strchr;
+using ::strcmp;
+using ::strcoll;
+using ::strcpy;
 using ::strcspn;
+using ::strncat;
+using ::strncmp;
+using ::strncpy;
 using ::strpbrk;
 using ::strrchr;
 using ::strspn;
 using ::strstr;
+using ::strxfrm;
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_UNSAFE_C_FUNCTIONS
 using ::strtok;
 #endif
-using ::memset;
 using ::strerror;
 using ::strlen;
+#endif // _LIBCUDACXX_COMPILER_NVRTC
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#ifndef __cuda_std__
-#include <__pragma_pop>
-#endif //__cuda_std__
-
-#endif  // _LIBCUDACXX_CSTRING
+#endif // _LIBCUDACXX_CSTRING

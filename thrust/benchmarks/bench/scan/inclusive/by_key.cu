@@ -45,9 +45,16 @@ static void scan(nvbench::state &state, nvbench::type_list<KeyT, ValueT>)
   state.add_global_memory_reads<ValueT>(elements);
   state.add_global_memory_writes<ValueT>(elements);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
-    thrust::inclusive_scan_by_key(keys.cbegin(), keys.cend(), in_vals.cbegin(), out_vals.begin());
-  });
+  caching_allocator_t alloc;
+  thrust::inclusive_scan_by_key(policy(alloc), keys.cbegin(), keys.cend(),
+                                in_vals.cbegin(), out_vals.begin());
+
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch) {
+               thrust::inclusive_scan_by_key(
+                   policy(alloc, launch), keys.cbegin(), keys.cend(),
+                   in_vals.cbegin(), out_vals.begin());
+             });
 }
 
 using key_types = all_types;
