@@ -48,13 +48,13 @@ template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
 __dispatch_memmove(_Up* __result, _Tp* __first, const size_t __n)
 {
-#if _LIBCUDACXX_STD_VER >= 20
+#if _CCCL_STD_VER >= 2020
   if (_CUDA_VSTD::is_constant_evaluated())
   {
     return false;
   }
   else
-#endif // _LIBCUDACXX_STD_VER >= 20
+#endif // _CCCL_STD_VER >= 2020
   {
     // For now, we only ever use memmove on host
     // clang-format off

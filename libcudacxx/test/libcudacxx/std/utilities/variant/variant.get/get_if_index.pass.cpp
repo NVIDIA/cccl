@@ -37,7 +37,7 @@ void test_const_get_if() {
     constexpr V v(42);
     ASSERT_NOEXCEPT(cuda::std::get_if<0>(&v));
     ASSERT_SAME_TYPE(decltype(cuda::std::get_if<0>(&v)), const int *);
-#if TEST_STD_VER > 14 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2014 && defined(_LIBCUDACXX_ADDRESSOF)
     static_assert(*cuda::std::get_if<0>(&v) == 42, "");
 #endif
     static_assert(cuda::std::get_if<1>(&v) == nullptr, "");
@@ -46,7 +46,7 @@ void test_const_get_if() {
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42l);
     ASSERT_SAME_TYPE(decltype(cuda::std::get_if<1>(&v)), const long *);
-#if TEST_STD_VER > 14 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2014 && defined(_LIBCUDACXX_ADDRESSOF)
     static_assert(*cuda::std::get_if<1>(&v) == 42, "");
 #endif
     static_assert(cuda::std::get_if<0>(&v) == nullptr, "");

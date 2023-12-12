@@ -28,10 +28,10 @@ constexpr bool test(bool do_it)
         std::variant<Holder<Incomplete>*, int> v = nullptr;
         std::visit([](auto){}, v);
         std::visit([](auto) -> Holder<Incomplete>* { return nullptr; }, v);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
         std::visit<void>([](auto){}, v);
         std::visit<void*>([](auto) -> Holder<Incomplete>* { return nullptr; }, v);
-#endif
+#endif // TEST_STD_VER > 2017
     }
     return true;
 }
@@ -39,8 +39,8 @@ constexpr bool test(bool do_it)
 int main(int, char**)
 {
     test(true);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test(true));
-#endif
+#endif // TEST_STD_VER > 2017
     return 0;
 }
