@@ -76,7 +76,7 @@ jobs:
         ./ci/nvrtc_libcudacxx.sh -cxx g++ -std ${{matrix.std}}
 
   thrust:
-    name: Thrust CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+    name: Thrust CUDA${{ matrix.cuda_host_combination.split('-')[0] }} ${{ matrix.cuda_host_combination.split('-')[1] }}
     permissions:
       id-token: write
       contents: read
@@ -93,7 +93,7 @@ jobs:
       is_windows: ${{ contains(matrix.cuda_host_combination, 'cl') }}
 
   cub:
-    name: CUB CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+    name: CUB CUDA${{ matrix.cuda_host_combination.split('-')[0] }} ${{ matrix.cuda_host_combination.split('-')[1] }}
     permissions:
       id-token: write
       contents: read
@@ -107,10 +107,10 @@ jobs:
       project_name: "cub"
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ matrix.cuda_host_combination ]) }}
       devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
-      is_windows: ${{ contains(matrix.compiler, 'cl') }}
+      is_windows: ${{ contains(matrix.cuda_host_combination, 'cl') }}
 
   libcudacxx:
-    name: libcudacxx CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+    name: libcudacxx CUDA${{ matrix.cuda_host_combination.split('-')[0] }} ${{ matrix.cuda_host_combination.split('-')[1] }}
     permissions:
       id-token: write
       contents: read
@@ -124,7 +124,7 @@ jobs:
       project_name: "libcudacxx"
       per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ matrix.cuda_host_combination ]) }}
       devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
-      is_windows: ${{ contains(matrix.compiler, 'cl') }}
+      is_windows: ${{ contains(matrix.cuda_host_combination, 'cl') }}
 
   clang-cuda:
     name: ${{matrix.lib}} ${{matrix.cpu}}/CTK${{matrix.cuda}}/clang-cuda
