@@ -283,7 +283,7 @@ _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 #endif // __cuda_std__
 
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -1426,14 +1426,14 @@ template <size_t _Idx>
 struct __overload<bool const volatile, _Idx> : __overload_bool<bool const volatile, _Idx>
 {};
 
-#  if _LIBCUDACXX_STD_VER > 14
+#  if _CCCL_STD_VER > 2014
 template <class... _Bases>
 struct __all_overloads : _Bases...
 {
   _LIBCUDACXX_INLINE_VISIBILITY void operator()() const;
   using _Bases::operator()...;
 };
-#  else
+#  else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
 template <class... _Bases>
 struct __all_overloads;
 
@@ -1451,7 +1451,7 @@ struct __all_overloads<_Only> : _Only
 {
   using _Only::operator();
 };
-#  endif
+#  endif // _CCCL_STD_VER <= 2014
 
 template <class IdxSeq>
 struct __make_overloads_imp;
@@ -2184,6 +2184,6 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr auto&& __unchecked_get(variant<_Types...
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_STD_VER >= 14
+#endif // _CCCL_STD_VER >= 2014
 
 #endif // _LIBCUDACXX_VARIANT

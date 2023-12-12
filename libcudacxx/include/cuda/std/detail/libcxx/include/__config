@@ -112,9 +112,7 @@ extern "C++" {
 #  define _LIBCUDACXX_ABI_VERSION 1
 #endif
 
-#ifndef _LIBCUDACXX_STD_VER
 #define _LIBCUDACXX_STD_VER _CCCL_STD_VER
-#endif // !_LIBCUDACXX_STD_VER
 
 #if _CCCL_STD_VER < 2011
 #  error libcu++ requires C++11 or later
@@ -985,7 +983,7 @@ typedef __char32_t char32_t;
 // NVCC cannot properly handle some deductions occuring within NOEXCEPT
 // C++17 mode causes reference instatiation errors in tuple
 #if (_GNUC_VER >= 702 && _GNUC_VER <= 805)
-#if defined(_LIBCUDACXX_COMPILER_NVCC) && _CCCL_STD_VER == 17
+#if defined(_LIBCUDACXX_COMPILER_NVCC) && _CCCL_STD_VER == 2017
 #define _LIBCUDACXX_NO_TUPLE_NOEXCEPT
 #endif
 #endif

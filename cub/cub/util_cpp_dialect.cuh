@@ -73,10 +73,7 @@
 #  define CUB_IGNORE_DEPRECATED_COMPILER
 #endif
 
-// Define this to override the built-in detection.
-#ifndef CUB_CPP_DIALECT
-#  define CUB_CPP_DIALECT _CCCL_STD_VER
-#endif // !CUB_CPP_DIALECT
+#define CUB_CPP_DIALECT _CCCL_STD_VER
 
 // Define CUB_COMPILER_DEPRECATION macro:
 #if CUB_HOST_COMPILER == CUB_HOST_COMPILER_MSVC

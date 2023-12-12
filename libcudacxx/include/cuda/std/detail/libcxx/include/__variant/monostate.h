@@ -31,25 +31,25 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER >= 11
+#if _CCCL_STD_VER >= 2011
 
 struct _LIBCUDACXX_TEMPLATE_VIS monostate {};
 
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator==(monostate, monostate) noexcept { return true; }
 
-#if _LIBCUDACXX_STD_VER < 20
+#if _CCCL_STD_VER < 2020
 
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator!=(monostate, monostate) noexcept { return false; }
 
-#endif // _LIBCUDACXX_STD_VER < 20
+#endif // _CCCL_STD_VER < 2020
 
-#if _LIBCUDACXX_STD_VER >= 20 && !defined(_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR)
+#if _CCCL_STD_VER >= 2020 && !defined(_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR)
 
 _LIBCUDACXX_INLINE_VISIBILITY constexpr strong_ordering operator<=>(monostate, monostate) noexcept {
   return strong_ordering::equal;
 }
 
-#else // _LIBCUDACXX_STD_VER >= 20
+#else // _CCCL_STD_VER >= 2020
 
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<(monostate, monostate) noexcept { return false; }
 
@@ -59,7 +59,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<=(monostate, monostate) no
 
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>=(monostate, monostate) noexcept { return true; }
 
-#  endif // _LIBCUDACXX_STD_VER >= 20
+#  endif // _CCCL_STD_VER >= 2020
 
 #ifndef __cuda_std__
 template <>
@@ -73,7 +73,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<monostate> {
 };
 #endif // __cuda_std__
 
-#endif // _LIBCUDACXX_STD_VER >= 11
+#endif // _CCCL_STD_VER >= 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
