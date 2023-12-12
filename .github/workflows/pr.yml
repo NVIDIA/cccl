@@ -76,7 +76,7 @@ jobs:
         ./ci/nvrtc_libcudacxx.sh -cxx g++ -std ${{matrix.std}}
 
   thrust:
-    name: Thrust ${{ matrix.cuda_host_combination }}
+    name: Thrust CUDA${{ matrix.cuda_host_combination }}
     permissions:
       id-token: write
       contents: read
@@ -93,7 +93,7 @@ jobs:
       is_windows: ${{ contains(matrix.cuda_host_combination, 'cl') }}
 
   cub:
-    name: CUB ${{ matrix.cuda_host_combination }}
+    name: CUB CUDA${{ matrix.cuda_host_combination }}
     permissions:
       id-token: write
       contents: read
@@ -110,7 +110,7 @@ jobs:
       is_windows: ${{ contains(matrix.cuda_host_combination, 'cl') }}
 
   libcudacxx:
-    name: libcudacxx ${{ matrix.cuda_host_combination }}
+    name: CUDAlibcudacxx ${{ matrix.cuda_host_combination }}
     permissions:
       id-token: write
       contents: read
