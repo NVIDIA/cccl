@@ -119,16 +119,17 @@ add_lit_testsuite(check-cudacxx
 
 find_program(libcudacxx_LIT lit REQUIRED)
 
+set(libcudacxx_LIT_FLAGS "" CACHE STRING "Semi-colon separated list of flags passed to the invocation of lit.")
+message(STATUS "libcudacxx_LIT_FLAGS: ${libcudacxx_LIT_FLAGS}")
+
 if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
   # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
   # Only executed if explicitly requested.
   add_custom_target(libcudacxx.test.lit.precompile
-    "${CMAKE_COMMAND}" -E env
-      "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-    "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests
-      "-Dexecutor=\"NoopExecutor()\"" # Don't run the compiled tests.
-      "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+    COMMAND "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
+    "${libcudacxx_LIT}" -vv --no-progress-bar ${libcudacxx_LIT_FLAGS} "-Dexecutor=\"NoopExecutor()\"" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
   )
+
 endif()
 
 # Restricted to avoid oversubscribing the GPU:
@@ -139,7 +140,7 @@ set(libcudacxx_LIT_PARALLEL_LEVEL 8 CACHE STRING
 add_test(NAME libcudacxx.test.lit COMMAND
   "${CMAKE_COMMAND}" -E env
     "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-  "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests
+  "${libcudacxx_LIT}" -vv --no-progress-bar ${libcudacxx_LIT_FLAGS}
     -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
       "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
 )

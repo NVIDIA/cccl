@@ -10,6 +10,7 @@ HOST_COMPILER=${CXX:-g++} # $CXX if set, otherwise `g++`
 CXX_STANDARD=17
 CUDA_COMPILER=${CUDACXX:-nvcc} # $CUDACXX if set, otherwise `nvcc`
 CUDA_ARCHS= # Empty, use presets by default.
+GLOBAL_CMAKE_OPTIONS=()
 
 # Check if the correct number of arguments has been provided
 function usage {
@@ -23,12 +24,14 @@ function usage {
     echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise g++)"
     echo "  -std: CUDA/C++ standard (Defaults to 17)"
     echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
+    echo "  -cmake-options: Additional options to pass to CMake"
     echo
     echo "Examples:"
     echo "  $ PARALLEL_LEVEL=8 $0"
     echo "  $ PARALLEL_LEVEL=8 $0 -cxx g++-9"
     echo "  $ $0 -cxx clang++-8"
     echo "  $ $0 -cxx g++-8 -std 14 -arch 80-real -v -cuda /usr/local/bin/nvcc"
+    echo "  $ $0 -cmake-options \"-DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-Wfatal-errors\""
     exit 1
 }
 
@@ -45,6 +48,17 @@ while [ "${#args[@]}" -ne 0 ]; do
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
     -disable-benchmarks) ENABLE_CUB_BENCHMARKS="false"; args=("${args[@]:1}");;
+    -cmake-options)
+        if [ -n "${args[1]}" ]; then
+            IFS=' ' read -ra split_args <<< "${args[1]}"
+            GLOBAL_CMAKE_OPTIONS+=("${split_args[@]}")
+            args=("${args[@]:2}")
+        else
+            echo "Error: No arguments provided for -cmake-options"
+            usage
+            exit 1
+        fi
+        ;;
     -h | -help | --help) usage ;;
     *) echo "Unrecognized option: ${args[0]}"; usage ;;
     esac
@@ -54,9 +68,8 @@ done
 HOST_COMPILER=$(which ${HOST_COMPILER})
 CUDA_COMPILER=$(which ${CUDA_COMPILER})
 
-GLOBAL_CMAKE_OPTIONS=""
 if [[ -n "${CUDA_ARCHS}" ]]; then
-    GLOBAL_CMAKE_OPTIONS+="-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS} "
+    GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
 fi
 
 if [ $VERBOSE ]; then
@@ -227,7 +240,6 @@ print_environment_details() {
   end_group "⚙️ Environment Details"
 }
 
-
 function configure_preset()
 {
     local BUILD_NAME=$1
@@ -236,7 +248,7 @@ function configure_preset()
     local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
     pushd .. > /dev/null
-    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $GLOBAL_CMAKE_OPTIONS $CMAKE_OPTIONS
+    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE "${GLOBAL_CMAKE_OPTIONS[@]}" $CMAKE_OPTIONS
     status=$?
     popd > /dev/null
     return $status
