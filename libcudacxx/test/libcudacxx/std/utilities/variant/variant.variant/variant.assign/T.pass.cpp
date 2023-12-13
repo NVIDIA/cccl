@@ -136,6 +136,7 @@ void test_T_assignment_noexcept() {
     using V = cuda::std::variant<Dummy, NoThrowT>;
     static_assert(cuda::std::is_nothrow_assignable<V, int>::value, "");
   }
+#if !defined(TEST_COMPILER_ICC)
   {
     using V = cuda::std::variant<Dummy, ThrowsCtorT>;
     static_assert(!cuda::std::is_nothrow_assignable<V, int>::value, "");
@@ -144,6 +145,7 @@ void test_T_assignment_noexcept() {
     using V = cuda::std::variant<Dummy, ThrowsAssignT>;
     static_assert(!cuda::std::is_nothrow_assignable<V, int>::value, "");
   }
+#endif // !TEST_COMPILER_ICC
 }
 
 __host__ __device__

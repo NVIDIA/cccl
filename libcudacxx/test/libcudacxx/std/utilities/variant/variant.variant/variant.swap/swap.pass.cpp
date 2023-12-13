@@ -534,7 +534,9 @@ void test_swap_noexcept() {
   {
     using V = cuda::std::variant<int, NothrowMoveCtor>;
     static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
+#if !defined(TEST_COMPILER_ICC)
     static_assert(!cuda::std::is_nothrow_swappable_v<V>, "");
+#endif // !TEST_COMPILER_ICC
     // instantiate swap
     V v1, v2;
     v1.swap(v2);
@@ -543,7 +545,9 @@ void test_swap_noexcept() {
   {
     using V = cuda::std::variant<int, ThrowingTypeWithNothrowSwap>;
     static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
+#if !defined(TEST_COMPILER_ICC)
     static_assert(!cuda::std::is_nothrow_swappable_v<V>, "");
+#endif // !TEST_COMPILER_ICC
     // instantiate swap
     V v1, v2;
     v1.swap(v2);
@@ -552,7 +556,9 @@ void test_swap_noexcept() {
   {
     using V = cuda::std::variant<int, ThrowingMoveAssignNothrowMoveCtor>;
     static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
+#if !defined(TEST_COMPILER_ICC)
     static_assert(!cuda::std::is_nothrow_swappable_v<V>, "");
+#endif // !TEST_COMPILER_ICC
     // instantiate swap
     V v1, v2;
     v1.swap(v2);

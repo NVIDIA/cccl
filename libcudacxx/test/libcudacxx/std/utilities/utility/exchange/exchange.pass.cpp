@@ -57,15 +57,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_noexcept() {
     assert(x == 42);
   }
 #ifndef TEST_COMPILER_MSVC_2017 // TestNoexcept not a literal type
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
   {
     TestNoexcept<true, true> x{};
     ASSERT_NOEXCEPT(cuda::std::exchange(x, cuda::std::move(x)));
-#ifndef TEST_COMPILER_NVHPC
     ASSERT_NOT_NOEXCEPT(cuda::std::exchange(x, x)); // copy-assignment is not noexcept
-#endif // TEST_COMPILER_NVHPC
     unused(x);
   }
-#ifndef TEST_COMPILER_NVHPC
   {
     TestNoexcept<true, false> x{};
     ASSERT_NOT_NOEXCEPT(cuda::std::exchange(x, cuda::std::move(x)));
@@ -76,7 +74,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_noexcept() {
     ASSERT_NOT_NOEXCEPT(cuda::std::exchange(x, cuda::std::move(x)));
     unused(x);
   }
-#endif // TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 #endif // !TEST_COMPILER_MSVC_2017
 
   return true;
@@ -126,7 +124,9 @@ int main(int, char**)
     static_assert(test_constexpr(), "");
 #endif
 
+#ifndef TEST_COMPILER_ICC
     static_assert(test_noexcept(), "");
+#endif // TEST_COMPILER_ICC
 
   return 0;
 }

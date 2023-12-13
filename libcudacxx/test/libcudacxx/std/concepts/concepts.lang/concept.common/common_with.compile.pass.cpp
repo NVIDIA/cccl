@@ -92,9 +92,9 @@ static_assert(CheckCommonWith<const volatile int*, volatile int*>(), "");
 static_assert(CheckCommonWith<const volatile int*, const volatile int*>(), "");
 
 static_assert(CheckCommonWith<int (*)(), int (*)()>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (*)(), int (*)() noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 #ifdef INVESTIGATE_COMPILER_BUG
 static_assert(CheckCommonWith<int (&)(), int (&)()>(), "");
 #endif // INVESTIGATE_COMPILER_BUG
@@ -102,33 +102,33 @@ static_assert(CheckCommonWith<int (&)(), int (&)()>(), "");
 static_assert(CheckCommonWith<int (&)(), int (&)() noexcept>(), "");
 #endif // TEST_STD_VER > 2017
 static_assert(CheckCommonWith<int (&)(), int (*)()>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (&)(), int (*)() noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 
 struct S {};
 static_assert(CheckCommonWith<int S::*, int S::*>(), "");
 static_assert(CheckCommonWith<int S::*, const int S::*>(), "");
 static_assert(CheckCommonWith<int (S::*)(), int (S::*)()>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (S::*)(), int (S::*)() noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (S::*)() const, int (S::*)() const>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(
     CheckCommonWith<int (S::*)() const, int (S::*)() const noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (S::*)() volatile, int (S::*)() volatile>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(
     CheckCommonWith<int (S::*)() volatile, int (S::*)() volatile noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (S::*)() const volatile,
                               int (S::*)() const volatile>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (S::*)() const volatile,
                               int (S::*)() const volatile noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 
 // nonsense
 static_assert(!CheckCommonWith<double, float*>(), "");

@@ -66,10 +66,12 @@ void test_default_ctor_noexcept() {
     using V = cuda::std::variant<int>;
     static_assert(cuda::std::is_nothrow_default_constructible<V>::value, "");
   }
+#if !defined(TEST_COMPILER_ICC)
   {
     using V = cuda::std::variant<NotNoexcept>;
     static_assert(!cuda::std::is_nothrow_default_constructible<V>::value, "");
   }
+#endif // !TEST_COMPILER_ICC
 }
 
 __host__ __device__

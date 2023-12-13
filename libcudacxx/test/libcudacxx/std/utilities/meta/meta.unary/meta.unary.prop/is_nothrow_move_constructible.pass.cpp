@@ -29,20 +29,20 @@ template <class T>
 __host__ __device__
 void test_has_not_nothrow_move_constructor()
 {
-#if !defined(TEST_COMPILER_NVHPC) && !defined(__INTEL_COMPILER) && !defined(__INTEL_LLVM_COMPILER)
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
     static_assert(!cuda::std::is_nothrow_move_constructible<T>::value, "");
     static_assert(!cuda::std::is_nothrow_move_constructible<const T>::value, "");
-#endif // !defined(TEST_COMPILER_NVHPC) && !defined(__INTEL_COMPILER) && !defined(__INTEL_LLVM_COMPILER)
+#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
     static_assert(!cuda::std::is_nothrow_move_constructible<volatile T>::value, "");
     static_assert(!cuda::std::is_nothrow_move_constructible<const volatile T>::value, "");
 #if TEST_STD_VER > 2011
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
     static_assert(!cuda::std::is_nothrow_move_constructible_v<T>, "");
     static_assert(!cuda::std::is_nothrow_move_constructible_v<const T>, "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
     static_assert(!cuda::std::is_nothrow_move_constructible_v<volatile T>, "");
     static_assert(!cuda::std::is_nothrow_move_constructible_v<const volatile T>, "");
-#endif
+#endif // TEST_STD_VER > 2011
 }
 
 class Empty

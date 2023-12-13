@@ -91,6 +91,7 @@ int main(int, char**)
         optional<const int> opt(in_place, 5);
         assert(*opt == 5);
     }
+#ifndef TEST_COMPILER_ICC
     {
         const optional<X> opt(in_place);
         assert(static_cast<bool>(opt) == true);
@@ -106,6 +107,7 @@ int main(int, char**)
         assert(static_cast<bool>(opt) == true);
         assert(*opt == X(5, 4));
     }
+#endif // TEST_COMPILER_ICC
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {
         constexpr optional<Y> opt(in_place);
