@@ -25,13 +25,13 @@ extract_matrix() {
   local matrix=$(yq -o=json "$file" | jq -cr ".$type")
   local nvcc_full_linux_matrix="$(echo "$matrix" | jq -cr '.nvcc.linux' | explode_std_versions )"
   local linux_per_cuda_compiler_matrix="$(echo "$nvcc_full_linux_matrix" | jq -cr ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')"
-  write_output "LINUX_PER_CUDA_COMPILER_MATRIX"  "$per_cuda_compiler_linux_matrix"
-  write_output "LINUX_PER_CUDA_COMPILER_KEYS" "$(echo "$per_cuda_compiler_linux_matrix" | jq -r 'keys | @json')"
+  write_output "LINUX_PER_CUDA_COMPILER_MATRIX"  "$linux_per_cuda_compiler_matrix"
+  write_output "LINUX_PER_CUDA_COMPILER_KEYS" "$(echo "$linux_per_cuda_compiler_matrix" | jq -r 'keys | @json')"
 
   local nvcc_full_windows_matrix="$(echo "$matrix" | jq -cr '.nvcc.windows' | explode_std_versions )"
   local windows_per_cuda_compiler_matrix="$(echo "$nvcc_full_windows_matrix" | jq -cr ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')"
-  write_output "WINDOWS_PER_CUDA_COMPILER_MATRIX"  "$per_cuda_compiler_windows_matrix"
-  write_output "WINDOWS_PER_CUDA_COMPILER_KEYS" "$(echo "$per_cuda_compiler_windows_matrix" | jq -r 'keys | @json')"
+  write_output "WINDOWS_PER_CUDA_COMPILER_MATRIX"  "$windows_per_cuda_compiler_matrix"
+  write_output "WINDOWS_PER_CUDA_COMPILER_KEYS" "$(echo "$windows_per_cuda_compiler_matrix" | jq -r 'keys | @json')"
 
   write_output "NVRTC_MATRIX" "$(echo "$matrix" | jq '.nvrtc' | explode_std_versions)"
 
