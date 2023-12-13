@@ -28,7 +28,7 @@ void
 test()
 {
     typedef std::hash<T> H;
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     static_assert((std::is_same<typename H::argument_type, T>::value), "" );
     static_assert((std::is_same<typename H::result_type, std::size_t>::value), "" );
 #endif
@@ -45,7 +45,7 @@ test()
 int main(int, char**)
 {
     test<std::string>();
-#if _LIBCUDACXX_STD_VER > 17 && !defined(TEST_HAS_NO_CHAR8_T)
+#if _CCCL_STD_VER > 2017 && !defined(TEST_HAS_NO_CHAR8_T)
     test<std::u8string>();
 #endif
 #ifndef TEST_HAS_NO_UNICODE_CHARS

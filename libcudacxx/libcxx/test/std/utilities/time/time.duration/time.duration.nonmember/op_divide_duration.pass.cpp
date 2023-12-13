@@ -43,7 +43,7 @@ int main(int, char**)
     std::chrono::duration<double, std::ratio<3, 5> > s2(5);
     assert(s1 / s2 == truncate_fp(20./3));
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     constexpr std::chrono::nanoseconds ns1(15);
     constexpr std::chrono::nanoseconds ns2(5);

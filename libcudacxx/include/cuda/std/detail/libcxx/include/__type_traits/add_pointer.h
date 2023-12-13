@@ -54,7 +54,7 @@ struct add_pointer {
   using type _LIBCUDACXX_NODEBUG_TYPE = __add_pointer_t<_Tp>;
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using add_pointer_t = __add_pointer_t<_Tp>;
 #endif
 

@@ -47,7 +47,7 @@ int main(int, char**)
     A a;
     test(&a+1, A());
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         constexpr const char *p = "123456789";
         typedef cuda::std::reverse_iterator<const char *> RI;

@@ -24,7 +24,7 @@ A source() TEST_NOEXCEPT {return A();}
 const A csource() TEST_NOEXCEPT {return A();}
 
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 constexpr bool test_constexpr_forward() {
     int x = 42;
     const int cx = 101;
@@ -68,7 +68,7 @@ int main(int, char**)
     ASSERT_NOEXCEPT(std::forward<const A>(ca));
     ASSERT_NOEXCEPT(std::forward<const A>(csource()));
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr int i2 = std::forward<int>(42);
     static_assert(std::forward<int>(42) == 42, "");
@@ -76,7 +76,7 @@ int main(int, char**)
     static_assert(test_constexpr_forward(), "");
     }
 #endif
-#if TEST_STD_VER == 11 && defined(_LIBCUDACXX_VERSION)
+#if TEST_STD_VER == 2011 && defined(_LIBCUDACXX_VERSION)
     // Test that std::forward is constexpr in C++11. This is an extension
     // provided by both libc++ and libstdc++.
     {

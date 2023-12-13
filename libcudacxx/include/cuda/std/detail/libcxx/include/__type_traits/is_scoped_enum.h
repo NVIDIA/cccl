@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 20
+#if _CCCL_STD_VER > 2020
 template <class _Tp, bool = is_enum_v<_Tp> >
 struct __is_scoped_enum_helper : false_type {};
 

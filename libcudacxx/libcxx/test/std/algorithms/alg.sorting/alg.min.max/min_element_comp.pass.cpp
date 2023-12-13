@@ -78,14 +78,14 @@ void test_eq()
     delete [] a;
 }
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
 constexpr int il[] = { 2, 4, 6, 8, 7, 5, 3, 1 };
 struct less { constexpr bool operator ()( const int &x, const int &y) const { return x < y; }};
 #endif
 
 void constexpr_test()
 {
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     constexpr auto p = std::min_element(il, il+8, less());
     static_assert(*p == 1, "");
 #endif

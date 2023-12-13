@@ -22,7 +22,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 
 struct Empty {};
 
@@ -70,7 +70,7 @@ int main(int, char**)
         assert(std::get<2>(t) == 4);
         assert(d == 2.5);
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     { // get on an rvalue tuple
         static_assert ( std::get<0> ( std::make_tuple ( 0.0f, 1, 2.0, 3L )) == 0, "" );
         static_assert ( std::get<1> ( std::make_tuple ( 0.0f, 1, 2.0, 3L )) == 1, "" );

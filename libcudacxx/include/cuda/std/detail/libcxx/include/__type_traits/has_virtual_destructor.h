@@ -38,7 +38,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS has_virtual_destructor
 
 #endif // defined(_LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_VIRTUAL_DESTRUCTOR_FALLBACK)
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool has_virtual_destructor_v
     = has_virtual_destructor<_Tp>::value;

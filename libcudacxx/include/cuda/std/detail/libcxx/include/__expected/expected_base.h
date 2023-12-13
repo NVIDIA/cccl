@@ -53,7 +53,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -1043,6 +1043,6 @@ using __expected_void_sfinae_assign_base_t = __sfinae_assign_base<
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 #endif // _LIBCUDACXX___EXPECTED_EXPECTED_BASE_H

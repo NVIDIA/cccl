@@ -399,7 +399,7 @@ int main(int, char**)
         ++i;
         assert(*i == 6);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::list<int, min_allocator<int>> l1;
         std::list<int, min_allocator<int>> l2;

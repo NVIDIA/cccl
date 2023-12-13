@@ -46,7 +46,7 @@ int main(int, char**)
     test(x, y, y, x);
     test(y, x, y, x);
     }
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     {
 //  Note that you can't take a reference to a local var, since
 //  its address is not a compile-time constant.

@@ -15,7 +15,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 #  include <thrust/detail/memory_wrapper.h>
 #endif
 

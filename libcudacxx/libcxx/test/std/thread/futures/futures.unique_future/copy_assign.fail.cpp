@@ -20,7 +20,7 @@
 
 int main(int, char**)
 {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::future<int> f0, f;
         f = f0; // expected-error {{overload resolution selected deleted operator '='}}

@@ -49,7 +49,7 @@ int main(int, char**)
         assert(distance(l1.cbegin(), l1.cend()) == 0);
         assert(i == l1.begin());
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::list<int, min_allocator<int>> l1(a1, a1+3);
         std::list<int, min_allocator<int>>::iterator i = l1.erase(l1.cbegin(), l1.cbegin());

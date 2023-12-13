@@ -19,7 +19,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 // Ensure that static initialization happens; this is PR#37226
 extern std::atomic_flag global;
 struct X { X() { global.test_and_set(); }};
@@ -29,7 +29,7 @@ std::atomic_flag global = ATOMIC_FLAG_INIT;
 
 int main(int, char**)
 {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     assert(global.test_and_set() == 1);
 #endif
     {

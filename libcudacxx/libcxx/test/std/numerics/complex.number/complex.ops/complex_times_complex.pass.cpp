@@ -124,7 +124,7 @@ int main(int, char**)
     test<long double>();
     test_edges();
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test<float>());
     static_assert(test<double>());
     static_assert(test<long double>());

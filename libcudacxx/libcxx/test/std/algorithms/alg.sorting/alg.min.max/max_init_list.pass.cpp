@@ -33,7 +33,7 @@ int main(int, char**)
     assert(i == 3);
     i = std::max({1, 3, 2});
     assert(i == 3);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     {
     static_assert(std::max({1, 3, 2}) == 3, "");
     static_assert(std::max({2, 1, 3}) == 3, "");

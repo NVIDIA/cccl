@@ -147,7 +147,7 @@ struct type_with_swap
     return m_x == other.m_x && m_swapped == other.m_swapped;
   }
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   type_with_swap & operator=(const type_with_swap &) = default;
 #endif
 

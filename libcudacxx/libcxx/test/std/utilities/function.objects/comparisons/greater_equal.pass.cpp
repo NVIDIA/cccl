@@ -23,7 +23,7 @@ int main(int, char**)
 {
     typedef std::greater_equal<int> F;
     const F f = F();
-#if TEST_STD_VER <= 17
+#if TEST_STD_VER <= 2017
     static_assert((std::is_same<int, F::first_argument_type>::value), "" );
     static_assert((std::is_same<int, F::second_argument_type>::value), "" );
     static_assert((std::is_same<bool, F::result_type>::value), "" );
@@ -36,7 +36,7 @@ int main(int, char**)
         // greater_equal<void>.
         do_pointer_comparison_test<std::greater_equal>();
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     typedef std::greater_equal<> F2;
     const F2 f2 = F2();
     assert(f2(36, 36));

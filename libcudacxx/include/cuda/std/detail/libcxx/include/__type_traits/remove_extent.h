@@ -48,7 +48,7 @@ using __remove_extent_t = typename remove_extent<_Tp>::type;
 
 #endif // defined(_LIBCUDACXX_REMOVE_EXTENT) && !defined(_LIBCUDACXX_USE_REMOVE_EXTENT_FALLBACK)
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using remove_extent_t = __remove_extent_t<_Tp>;
 #endif
 

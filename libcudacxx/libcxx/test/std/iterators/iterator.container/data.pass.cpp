@@ -22,7 +22,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 #include <string_view>
 #endif
 
@@ -75,7 +75,7 @@ int main(int, char**)
     test_const_container ( a );
     test_const_container ( il );
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     std::string_view sv{"ABC"};
     test_container ( sv );
     test_const_container ( sv );

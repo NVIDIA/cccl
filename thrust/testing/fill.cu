@@ -334,7 +334,7 @@ struct TypeWithNonTrivialAssigment
   __host__ __device__
   TypeWithNonTrivialAssigment() : x(0), y(0), z(0) {}
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   TypeWithNonTrivialAssigment(const TypeWithNonTrivialAssigment &) = default;
 #endif
 

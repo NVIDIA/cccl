@@ -22,7 +22,7 @@
 
 int main(int, char**)
 {
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     static_assert((std::is_integral<std::ios_base::streamoff>::value), "");
     static_assert((std::is_signed<std::ios_base::streamoff>::value), "");
 #endif

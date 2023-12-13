@@ -45,7 +45,7 @@ int main(int, char**)
         for (size_t i = 0; i < 13; ++i)
             LIBCPP_ASSERT(c.bucket(i) == i % bc);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_multimap<int, std::string, std::hash<int>, std::equal_to<int>,
                             min_allocator<std::pair<const int, std::string>>> C;

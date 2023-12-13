@@ -36,7 +36,7 @@ namespace mr
 template<typename MR>
 struct validator
 {
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   static_assert(
     std::is_base_of<memory_resource<typename MR::pointer>, MR>::value,
     "a type used as a memory resource must derive from memory_resource"

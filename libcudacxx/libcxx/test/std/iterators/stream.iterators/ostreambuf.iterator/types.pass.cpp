@@ -37,13 +37,13 @@ int main(int, char**)
 {
     {
     typedef std::ostreambuf_iterator<char> I1;
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     typedef std::iterator<std::output_iterator_tag, void, void, void, void> iterator_base;
     static_assert((std::is_base_of<iterator_base, I1>::value), "");
 #endif
     static_assert((std::is_same<I1::iterator_category, std::output_iterator_tag>::value), "");
     static_assert((std::is_same<I1::value_type, void>::value), "");
-#if TEST_STD_VER <= 17
+#if TEST_STD_VER <= 2017
     static_assert((std::is_same<I1::difference_type, void>::value), "");
 #else
     static_assert((std::is_same<I1::difference_type, std::ptrdiff_t>::value), "");
@@ -59,13 +59,13 @@ int main(int, char**)
 #ifndef TEST_HAS_NO_WIDE_CHARACTERS
     {
     typedef std::ostreambuf_iterator<wchar_t> I2;
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     typedef std::iterator<std::output_iterator_tag, void, void, void, void> iterator_base;
     static_assert((std::is_base_of<iterator_base, I2>::value), "");
 #endif
     static_assert((std::is_same<I2::iterator_category, std::output_iterator_tag>::value), "");
     static_assert((std::is_same<I2::value_type, void>::value), "");
-#if TEST_STD_VER <= 17
+#if TEST_STD_VER <= 2017
     static_assert((std::is_same<I2::difference_type, void>::value), "");
 #else
     static_assert((std::is_same<I2::difference_type, std::ptrdiff_t>::value), "");

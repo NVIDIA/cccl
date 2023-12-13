@@ -72,7 +72,7 @@ int main(int, char**)
         test_sfinae<NonCopyable, false>();
         test_sfinae<ExplicitTypes::NonCopyable, false>();
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         typedef std::pair<float, short*> P;
         constexpr P p(3.5f, 0);

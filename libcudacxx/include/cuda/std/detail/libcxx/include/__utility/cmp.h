@@ -37,7 +37,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template<class _Tp, class... _Up>
 struct _IsSameAsAny : _Or<_IsSame<_Tp, _Up>...> {};
 
@@ -111,7 +111,7 @@ bool in_range(_Up __u) noexcept
   return _CUDA_VSTD::cmp_less_equal(__u, numeric_limits<_Tp>::max()) &&
          _CUDA_VSTD::cmp_greater_equal(__u, numeric_limits<_Tp>::min());
 }
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

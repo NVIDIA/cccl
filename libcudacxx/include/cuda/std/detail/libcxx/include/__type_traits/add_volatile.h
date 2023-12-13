@@ -28,7 +28,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_volatile {
   typedef _LIBCUDACXX_NODEBUG_TYPE volatile _Tp type;
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using add_volatile_t = typename add_volatile<_Tp>::type;
 #endif
 

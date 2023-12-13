@@ -44,7 +44,7 @@ struct ThrowingCopyNoexceptDecrement {
   __host__ __device__ ThrowingCopyNoexceptDecrement& operator--() noexcept;
   __host__ __device__ ThrowingCopyNoexceptDecrement operator--(int) noexcept;
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   bool operator==(const ThrowingCopyNoexceptDecrement&) const = default;
 #else
   __host__ __device__ bool operator==(const ThrowingCopyNoexceptDecrement&) const;
@@ -66,7 +66,7 @@ struct NoexceptCopyThrowingDecrement {
   __host__ __device__ NoexceptCopyThrowingDecrement& operator--();
   __host__ __device__ NoexceptCopyThrowingDecrement operator--(int);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   bool operator==(const NoexceptCopyThrowingDecrement&) const = default;
 #else
   __host__ __device__ bool operator==(const NoexceptCopyThrowingDecrement&) const;
@@ -88,7 +88,7 @@ struct NoexceptCopyAndDecrement {
   __host__ __device__ NoexceptCopyAndDecrement& operator--() noexcept;
   __host__ __device__ NoexceptCopyAndDecrement operator--(int) noexcept;
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   bool operator==(const NoexceptCopyAndDecrement&) const = default;
 #else
   __host__ __device__ bool operator==(const NoexceptCopyAndDecrement&) const;
@@ -136,7 +136,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
       static_assert(!cuda::std::is_nothrow_copy_constructible_v<ThrowingCopyNoexceptDecrement>);
 #endif // TEST_COMPILER_ICC
       static_assert( cuda::std::is_nothrow_copy_constructible_v<int*>);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
       ASSERT_NOEXCEPT(cuda::std::ranges::iter_swap(--cuda::std::declval<ThrowingCopyNoexceptDecrement&>(), --cuda::std::declval<int*&>()));
 #endif
       using RI1 = cuda::std::reverse_iterator<ThrowingCopyNoexceptDecrement>;
@@ -152,7 +152,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
 
       static_assert( cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyThrowingDecrement>);
       static_assert( cuda::std::is_nothrow_copy_constructible_v<int*>);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
       ASSERT_NOT_NOEXCEPT(cuda::std::ranges::iter_swap(--cuda::std::declval<NoexceptCopyThrowingDecrement&>(), --cuda::std::declval<int*&>()));
 #endif
       using RI1 = cuda::std::reverse_iterator<NoexceptCopyThrowingDecrement>;
@@ -168,7 +168,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
 
       static_assert( cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyAndDecrement>);
       static_assert( cuda::std::is_nothrow_copy_constructible_v<int*>);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
       ASSERT_NOEXCEPT(cuda::std::ranges::iter_swap(--cuda::std::declval<NoexceptCopyAndDecrement&>(), --cuda::std::declval<int*&>()));
 #endif
       using RI1 = cuda::std::reverse_iterator<NoexceptCopyAndDecrement>;
@@ -183,7 +183,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   static_assert(test());
 #endif
 

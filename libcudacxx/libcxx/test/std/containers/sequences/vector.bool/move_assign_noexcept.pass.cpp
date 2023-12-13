@@ -75,7 +75,7 @@ int main(int, char**)
     }
 #endif // _LIBCUDACXX_VERSION
     {
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 #if defined(_LIBCUDACXX_VERSION)
         typedef std::vector<bool, some_alloc<bool>> C;
         static_assert( std::is_nothrow_move_assignable<C>::value, "");
@@ -85,7 +85,7 @@ int main(int, char**)
         static_assert(!std::is_nothrow_move_assignable<C>::value, "");
 #endif
     }
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 #if defined(_LIBCUDACXX_VERSION)
     {  // POCMA false, is_always_equal true
         typedef std::vector<bool, some_alloc2<bool>> C;

@@ -31,7 +31,7 @@ int main(int, char**)
         assert(p.first == 0.0f);
         assert(p.second == nullptr);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::pair<float, short*> P;
         constexpr P p;

@@ -23,7 +23,7 @@ void test_is_null_pointer()
     static_assert( std::is_null_pointer<const T>::value, "");
     static_assert( std::is_null_pointer<volatile T>::value, "");
     static_assert( std::is_null_pointer<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_null_pointer_v<T>, "");
     static_assert( std::is_null_pointer_v<const T>, "");
     static_assert( std::is_null_pointer_v<volatile T>, "");
@@ -38,7 +38,7 @@ void test_is_not_null_pointer()
     static_assert(!std::is_null_pointer<const T>::value, "");
     static_assert(!std::is_null_pointer<volatile T>::value, "");
     static_assert(!std::is_null_pointer<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_null_pointer_v<T>, "");
     static_assert(!std::is_null_pointer_v<const T>, "");
     static_assert(!std::is_null_pointer_v<volatile T>, "");

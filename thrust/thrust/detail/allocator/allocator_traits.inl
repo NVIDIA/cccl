@@ -29,7 +29,7 @@
 #include <thrust/detail/type_traits/is_call_possible.h>
 #include <thrust/detail/integer_traits.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   #include <thrust/detail/type_deduction.h>
 #endif
 
@@ -40,7 +40,7 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 // std::allocator's member functions are deprecated in C++17 and removed in
 // C++20, so we can't just use the generic implementation for allocator_traits
@@ -236,7 +236,7 @@ template<typename Alloc, typename T, typename Arg1>
   ::new(static_cast<void*>(p)) T(arg1);
 }
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 __THRUST_DEFINE_IS_CALL_POSSIBLE(has_member_constructN_impl, construct)
 
@@ -427,7 +427,7 @@ template<typename Alloc>
   return allocator_traits_detail::construct(a,p,arg1);
 }
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 template<typename Alloc>
   template<typename T, typename... Args>

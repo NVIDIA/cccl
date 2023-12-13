@@ -78,7 +78,7 @@ struct InequalityWrapper
   }
 };
 
-#if CUB_CPP_DIALECT > 2011
+#if _CCCL_STD_VER > 2011
 using Equality = ::cuda::std::equal_to<>;
 using Inequality = ::cuda::std::not_equal_to<>;
 using Sum = ::cuda::std::plus<>;

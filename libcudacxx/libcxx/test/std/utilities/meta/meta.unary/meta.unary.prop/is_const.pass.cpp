@@ -20,7 +20,7 @@ void test_is_const()
     static_assert( std::is_const<const T>::value, "");
     static_assert(!std::is_const<volatile T>::value, "");
     static_assert( std::is_const<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_const_v<T>, "");
     static_assert( std::is_const_v<const T>, "");
     static_assert(!std::is_const_v<volatile T>, "");

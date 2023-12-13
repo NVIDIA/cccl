@@ -96,7 +96,7 @@ public:
       assert(a.data_ != destructed_value && a.id_ != destructed_value &&
              "copying from destroyed allocator");
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test_allocator(test_allocator&& a) TEST_NOEXCEPT : data_(a.data_),
                                                        id_(a.id_) {
       ++count;
@@ -139,7 +139,7 @@ public:
         {assert(data_ >= 0); --alloc_count; ::operator delete((void*)p);}
     size_type max_size() const TEST_NOEXCEPT
         {return UINT_MAX / sizeof(T);}
-#if TEST_STD_VER < 11
+#if TEST_STD_VER < 2011
     void construct(pointer p, const T& val)
         {::new(static_cast<void*>(p)) T(val);}
 #else
@@ -203,7 +203,7 @@ public:
         {assert(data_ >= 0); --alloc_count; ::operator delete((void*)p); }
     size_type max_size() const TEST_NOEXCEPT
         {return UINT_MAX / sizeof(T);}
-#if TEST_STD_VER < 11
+#if TEST_STD_VER < 2011
     void construct(pointer p, const T& val)
         {::new(static_cast<void*>(p)) T(val);}
 #else
@@ -284,14 +284,14 @@ public:
     typedef std::true_type propagate_on_container_move_assignment;
     typedef std::true_type propagate_on_container_swap;
 
-#if TEST_STD_VER < 11
+#if TEST_STD_VER < 2011
     std::size_t max_size() const
         {return UINT_MAX / sizeof(T);}
 #endif
 
 };
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 
 struct Ctor_Tag {};
 

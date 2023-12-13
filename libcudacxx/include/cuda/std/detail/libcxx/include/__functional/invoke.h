@@ -507,7 +507,7 @@ struct __invoke_void_return_wrapper<_Ret, true>
     }
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 // is_invocable
 
@@ -558,7 +558,7 @@ invoke(_Fn&& __f, _Args&&... __args)
     return _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
 }
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

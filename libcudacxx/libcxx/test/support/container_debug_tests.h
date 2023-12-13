@@ -30,7 +30,7 @@
 #include "test_macros.h"
 
 // These test make use of 'if constexpr'.
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
 #error This header may only be used in C++17 and greater
 #endif
 

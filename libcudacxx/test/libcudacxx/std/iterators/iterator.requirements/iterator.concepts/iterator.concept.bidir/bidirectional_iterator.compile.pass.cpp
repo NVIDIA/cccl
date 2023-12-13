@@ -59,7 +59,7 @@ struct wrong_iterator_category {
 
   __host__ __device__ wrong_iterator_category& operator--();
   __host__ __device__ wrong_iterator_category operator--(int);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   bool operator==(wrong_iterator_category const&) const = default;
 #else
   __host__ __device__ bool operator==(const wrong_iterator_category&) const { return true; };
@@ -81,7 +81,7 @@ struct wrong_iterator_concept {
   __host__ __device__ wrong_iterator_concept& operator--();
   __host__ __device__ wrong_iterator_concept operator--(int);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   bool operator==(wrong_iterator_concept const&) const = default;
 #else
   __host__ __device__ bool operator==(const wrong_iterator_concept&) const { return true; };
@@ -102,7 +102,7 @@ struct no_predecrement {
 
   __host__ __device__ no_predecrement operator--(int);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   bool operator==(no_predecrement const&) const = default;
 #else
   __host__ __device__ bool operator==(const no_predecrement&) const { return true; };
@@ -124,7 +124,7 @@ struct bad_predecrement {
   __host__ __device__ bad_predecrement operator--();
   __host__ __device__ bad_predecrement operator--(int);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   bool operator==(bad_predecrement const&) const = default;
 #else
   __host__ __device__ bool operator==(const bad_predecrement&) const { return true; };
@@ -148,7 +148,7 @@ struct no_postdecrement {
   __host__ __device__ no_postdecrement& operator--(int) = delete;
 #endif // TEST_COMPILER_MSVC
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   bool operator==(no_postdecrement const&) const = default;
 #else
   __host__ __device__ bool operator==(const no_postdecrement&) const { return true; };
@@ -170,7 +170,7 @@ struct bad_postdecrement {
   __host__ __device__ bad_postdecrement& operator--();
   __host__ __device__ bad_postdecrement& operator--(int);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   bool operator==(bad_postdecrement const&) const = default;
 #else
   __host__ __device__ bool operator==(const bad_postdecrement&) const { return true; };

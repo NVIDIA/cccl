@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef __cuda_std__
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 // default searcher
 template<class _ForwardIterator, class _BinaryPredicate = equal_to<>>
@@ -61,7 +61,7 @@ private:
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(default_searcher);
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 #endif // __cuda_std__
 
 _LIBCUDACXX_END_NAMESPACE_STD

@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template<class _T1, class _T2 = _T1>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 _T1 exchange(_T1& __obj, _T2&& __new_value)
@@ -39,7 +39,7 @@ _T1 exchange(_T1& __obj, _T2&& __new_value)
     __obj = _CUDA_VSTD::forward<_T2>(__new_value);
     return __old_value;
 }
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

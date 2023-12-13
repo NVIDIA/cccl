@@ -516,10 +516,10 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   }
 };
 
-#if _LIBCUDACXX_STD_VER >= 17
+#if _CCCL_STD_VER >= 2017
 template <class _Tp, class... _Args, class = __enable_if_t<(is_same_v<_Tp, _Args> && ...)> >
 _LIBCUDACXX_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
-#endif // _LIBCUDACXX_STD_VER >= 17
+#endif // _CCCL_STD_VER >= 2017
 
 template <class _Tp, size_t _Size>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
@@ -612,7 +612,7 @@ get(const array<_Tp, _Size>&& __a) noexcept
   return _CUDA_VSTD::move(__a.__elems_[_Ip]);
 }
 
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
 
 template <typename _Tp, size_t _Size, size_t... _Index>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 array<remove_cv_t<_Tp>, _Size>
@@ -650,7 +650,7 @@ to_array(_Tp (&&__arr)[_Size]) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constr
   return _CUDA_VSTD::__to_array_rvalue_impl(_CUDA_VSTD::move(__arr), make_index_sequence<_Size>());
 }
 
-#endif // _LIBCUDACXX_STD_VER >= 14
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

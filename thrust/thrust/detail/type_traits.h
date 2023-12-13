@@ -254,7 +254,7 @@ template<typename T1, typename T2>
 {
 }; // end lazy_is_different
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 template<class From, class To>
 using is_convertible = ::cuda::std::is_convertible<From, To>;
@@ -539,7 +539,7 @@ template<typename T1, typename T2>
       >
 {};
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 template<class Base, class Derived>
 using is_base_of = ::cuda::std::is_base_of<Base, Derived>;
@@ -683,7 +683,7 @@ template<typename T>
 
 template <typename Invokable, typename... Args>
 using invoke_result_t =
-#if THRUST_CPP_DIALECT < 2017
+#if _CCCL_STD_VER < 2017
   typename ::cuda::std::result_of<Invokable(Args...)>::type;
 #else // 2017+
   ::cuda::std::invoke_result_t<Invokable, Args...>;

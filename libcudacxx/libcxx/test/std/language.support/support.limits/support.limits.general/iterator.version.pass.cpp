@@ -25,7 +25,7 @@
 #include <iterator>
 #include "test_macros.h"
 
-#if TEST_STD_VER < 14
+#if TEST_STD_VER < 2014
 
 # ifdef __cpp_lib_array_constexpr
 #   error "__cpp_lib_array_constexpr should not be defined before c++17"
@@ -51,7 +51,7 @@
 #   error "__cpp_lib_ranges should not be defined before c++2a"
 # endif
 
-#elif TEST_STD_VER == 14
+#elif TEST_STD_VER == 2014
 
 # ifdef __cpp_lib_array_constexpr
 #   error "__cpp_lib_array_constexpr should not be defined before c++17"
@@ -83,7 +83,7 @@
 #   error "__cpp_lib_ranges should not be defined before c++2a"
 # endif
 
-#elif TEST_STD_VER == 17
+#elif TEST_STD_VER == 2017
 
 # ifndef __cpp_lib_array_constexpr
 #   error "__cpp_lib_array_constexpr should be defined in c++17"
@@ -121,7 +121,7 @@
 #   error "__cpp_lib_ranges should not be defined before c++2a"
 # endif
 
-#elif TEST_STD_VER > 17
+#elif TEST_STD_VER > 2017
 
 # ifndef __cpp_lib_array_constexpr
 #   error "__cpp_lib_array_constexpr should be defined in c++2a"
@@ -177,6 +177,6 @@
 #   endif
 # endif
 
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**) { return 0; }

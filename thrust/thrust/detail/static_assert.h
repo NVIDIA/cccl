@@ -48,9 +48,9 @@ struct depend_on_instantiation
   THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT bool value = x;
 };
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
-#  if THRUST_CPP_DIALECT >= 2017
+#  if _CCCL_STD_VER >= 2017
 #    define THRUST_STATIC_ASSERT(B)        static_assert(B)
 #  else
 #    define THRUST_STATIC_ASSERT(B)        static_assert(B, "static assertion failed")
@@ -90,7 +90,7 @@ template <int x> struct static_assert_test {};
 
 #define THRUST_STATIC_ASSERT_MSG(B, msg) THRUST_STATIC_ASSERT(B)
 
-#endif // THRUST_CPP_DIALECT >= 2011
+#endif // _CCCL_STD_VER >= 2011
 
 } // namespace detail
 

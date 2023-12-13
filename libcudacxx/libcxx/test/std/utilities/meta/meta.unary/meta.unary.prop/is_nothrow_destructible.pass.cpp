@@ -25,7 +25,7 @@ void test_is_nothrow_destructible()
     static_assert( std::is_nothrow_destructible<const T>::value, "");
     static_assert( std::is_nothrow_destructible<volatile T>::value, "");
     static_assert( std::is_nothrow_destructible<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_nothrow_destructible_v<T>, "");
     static_assert( std::is_nothrow_destructible_v<const T>, "");
     static_assert( std::is_nothrow_destructible_v<volatile T>, "");
@@ -40,7 +40,7 @@ void test_is_not_nothrow_destructible()
     static_assert(!std::is_nothrow_destructible<const T>::value, "");
     static_assert(!std::is_nothrow_destructible<volatile T>::value, "");
     static_assert(!std::is_nothrow_destructible<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_nothrow_destructible_v<T>, "");
     static_assert(!std::is_nothrow_destructible_v<const T>, "");
     static_assert(!std::is_nothrow_destructible_v<volatile T>, "");
@@ -92,7 +92,7 @@ int main(int, char**)
     test_is_nothrow_destructible<const int*>();
     test_is_nothrow_destructible<char[3]>();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     // requires noexcept. These are all destructible.
     test_is_nothrow_destructible<PublicDestructor>();
     test_is_nothrow_destructible<VirtualPublicDestructor>();

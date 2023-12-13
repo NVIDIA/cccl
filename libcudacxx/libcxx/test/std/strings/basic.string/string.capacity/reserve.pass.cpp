@@ -50,7 +50,7 @@ test(S s, typename S::size_type res_arg)
         assert(s == s0);
         assert(s.capacity() >= res_arg);
         assert(s.capacity() >= s.size());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
         assert(s.capacity() >= old_cap); // resize never shrinks as of P0966
 #endif
     }
@@ -103,7 +103,7 @@ int main(int, char**)
     test(s, S::npos);
     }
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     {

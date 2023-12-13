@@ -17,7 +17,7 @@ template <class T>
 void test_is_move_constructible()
 {
     static_assert( std::is_move_constructible<T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_move_constructible_v<T>, "");
 #endif
 }
@@ -26,7 +26,7 @@ template <class T>
 void test_is_not_move_constructible()
 {
     static_assert(!std::is_move_constructible<T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_move_constructible_v<T>, "");
 #endif
 }
@@ -66,7 +66,7 @@ struct B
 
 int main(int, char**)
 {
-#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 20
+#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 2020
     test_is_not_move_constructible<char[3]>();
     test_is_not_move_constructible<char[]>();
 #endif

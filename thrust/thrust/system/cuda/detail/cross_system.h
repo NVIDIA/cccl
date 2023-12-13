@@ -61,7 +61,7 @@ namespace cuda_cub {
     }
   };
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   // Device to host.
   template <class Sys1, class Sys2>
   constexpr _CCCL_HOST_DEVICE

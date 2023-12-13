@@ -46,7 +46,7 @@ int main(int, char**)
     A a;
     test(&a+1, A());
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     {
         constexpr const char *p = "123456789";
         typedef std::reverse_iterator<const char *> RI;

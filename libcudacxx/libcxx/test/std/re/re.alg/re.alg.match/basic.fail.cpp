@@ -21,7 +21,7 @@
 #include <cassert>
 #include "test_macros.h"
 
-#if TEST_STD_VER < 14
+#if TEST_STD_VER < 2014
 #error
 #endif
 

@@ -40,7 +40,7 @@
 
 #include <thrust/detail/allocator_aware_execution_policy.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 #  include <thrust/detail/dependencies_aware_execution_policy.h>
 #endif
 
@@ -140,7 +140,7 @@ struct execute_on_stream_nosync : execute_on_stream_nosync_base<execute_on_strea
 struct par_t : execution_policy<par_t>,
   thrust::detail::allocator_aware_execution_policy<
     execute_on_stream_base>
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 , thrust::detail::dependencies_aware_execution_policy<
     execute_on_stream_base>
 #endif
@@ -163,7 +163,7 @@ struct par_t : execution_policy<par_t>,
 struct par_nosync_t : execution_policy<par_nosync_t>,
   thrust::detail::allocator_aware_execution_policy<
     execute_on_stream_nosync_base>
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 , thrust::detail::dependencies_aware_execution_policy<
     execute_on_stream_nosync_base>
 #endif

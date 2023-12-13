@@ -48,7 +48,7 @@ int main(int, char**)
         assert(*r.first == 5.5);
         assert(r.second);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_set<MoveOnly> C;
         typedef std::pair<C::iterator, bool> R;
@@ -126,7 +126,7 @@ int main(int, char**)
         assert(*r.first == 5);
         assert(r.second);
     }
-#endif // TEST_STD_VER >= 11
+#endif // TEST_STD_VER >= 2011
 
   return 0;
 }

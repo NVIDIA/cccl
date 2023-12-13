@@ -48,7 +48,7 @@ static_assert(!cuda::std::is_convertible_v<const cuda::std::unexpected<int>&, cu
 struct MyInt {
   int i;
   __host__ __device__ constexpr MyInt(int ii) : i(ii) {}
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   __host__ __device__ friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
 #else
   __host__ __device__ friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept {
@@ -57,7 +57,7 @@ struct MyInt {
   __host__ __device__ friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept {
     return lhs.i != rhs.i;
   };
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 };
 
 template <class T>
@@ -97,9 +97,9 @@ __host__ __device__ void testException() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");
-#endif // TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   testException();
   return 0;
 }

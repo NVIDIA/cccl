@@ -30,7 +30,7 @@ struct __type_identity { typedef _Tp type; };
 template <class _Tp>
 using __type_identity_t _LIBCUDACXX_NODEBUG_TYPE = typename __type_identity<_Tp>::type;
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template<class _Tp> struct type_identity { typedef _Tp type; };
 template<class _Tp> using type_identity_t = typename type_identity<_Tp>::type;
 #endif

@@ -8,7 +8,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER < 11
+#if TEST_STD_VER < 2011
 #error
 #else
 

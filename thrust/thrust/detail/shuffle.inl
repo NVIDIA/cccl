@@ -27,7 +27,7 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/shuffle.h>

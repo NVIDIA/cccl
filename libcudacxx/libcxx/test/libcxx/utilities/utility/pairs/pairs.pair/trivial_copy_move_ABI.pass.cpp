@@ -34,12 +34,12 @@ template <class T>
 struct HasTrivialABI : std::integral_constant<bool,
     std::is_trivially_destructible<T>::value
     && (!std::is_copy_constructible<T>::value || std::is_trivially_copy_constructible<T>::value)
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
    && (!std::is_move_constructible<T>::value || std::is_trivially_move_constructible<T>::value)
 #endif
 > {};
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 struct NonTrivialDtor {
     NonTrivialDtor(NonTrivialDtor const&) = default;
     ~NonTrivialDtor();
@@ -85,7 +85,7 @@ void test_trivial()
         static_assert(std::is_copy_constructible<P>::value, "");
         static_assert(HasTrivialABI<P>::value, "");
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::pair<int, short> P;
         static_assert(std::is_move_constructible<P>::value, "");

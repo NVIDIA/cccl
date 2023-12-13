@@ -105,7 +105,7 @@ struct __is_nothrow_swappable
 {
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <class _Tp, class _Up>
 struct _LIBCUDACXX_TEMPLATE_VIS is_swappable_with
@@ -155,7 +155,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_swappable_with_v = is_nothrow_s
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_Tp>::value;
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

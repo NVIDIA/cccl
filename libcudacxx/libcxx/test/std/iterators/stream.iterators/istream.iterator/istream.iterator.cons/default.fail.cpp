@@ -21,7 +21,7 @@ struct S { S(); }; // not constexpr
 
 int main(int, char**)
 {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     constexpr std::istream_iterator<S> it;
     }

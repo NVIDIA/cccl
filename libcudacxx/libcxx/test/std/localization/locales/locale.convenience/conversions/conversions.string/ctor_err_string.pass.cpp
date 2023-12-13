@@ -23,7 +23,7 @@ int main(int, char**)
 {
     typedef std::codecvt_utf8<wchar_t> Codecvt;
     typedef std::wstring_convert<Codecvt> Myconv;
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!std::is_convertible<std::string, Myconv>::value, "");
     static_assert( std::is_constructible<Myconv, std::string>::value, "");
 #endif

@@ -21,7 +21,7 @@ void
 test()
 {
     static_assert((std::is_error_condition_enum<T>::value == Expected), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert((std::is_error_condition_enum_v<T>        == Expected), "");
 #endif
 }

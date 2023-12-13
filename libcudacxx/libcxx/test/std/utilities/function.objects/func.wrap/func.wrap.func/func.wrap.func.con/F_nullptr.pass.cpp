@@ -113,7 +113,7 @@ struct MemFun03 {
     int foo(int, int, int, ...) const volatile { return 42; }
 };
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 struct MemFun11 {
     int foo() & { return 42; }
     int foo() const & { return 42; }
@@ -135,7 +135,7 @@ struct MemFun11 {
     int foo(...) volatile && { return 42; }
     int foo(...) const volatile && { return 42; }
 };
-#endif // TEST_STD_VER >= 11
+#endif // TEST_STD_VER >= 2011
 
 struct MemData {
     int foo;
@@ -214,7 +214,7 @@ void test_mf() {
     test_imp<int(MemFun03::*)(int, int) const volatile, int(MemFun03&, int, int)>();
     test_imp<int(MemFun03::*)(int, int, ...) const volatile, int(MemFun03&, int, int)>();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test_imp<int(MemFun11::*)() &, int(MemFun11&)>();
     test_imp<int(MemFun11::*)(...) &, int(MemFun11&)>();
     test_imp<int(MemFun11::*)() const &, int(MemFun11&)>();

@@ -88,7 +88,7 @@ union ResourceInitHelper {
 
 // When compiled in C++14 this initialization should be a constant expression.
 // Only in C++11 is "init_priority" needed to ensure initialization order.
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 _LIBCUDACXX_SAFE_STATIC
 #endif
 ResourceInitHelper res_init _LIBCUDACXX_INIT_PRIORITY_MAX;

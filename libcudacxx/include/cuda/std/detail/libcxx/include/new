@@ -118,7 +118,7 @@ void  operator delete[](void* ptr, void*) noexcept;
 #define _LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION
 #endif
 
-#if !defined(_LIBCUDACXX_BUILDING_LIBRARY) && _LIBCUDACXX_STD_VER < 14 && \
+#if !defined(_LIBCUDACXX_BUILDING_LIBRARY) && _CCCL_STD_VER < 2014 && \
     defined(_LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION)
 # define _LIBCUDACXX_HAS_NO_LIBRARY_SIZED_DEALLOCATION
 #endif
@@ -171,14 +171,14 @@ _LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void __throw_bad_alloc();  // not in C
 enum class _LIBCUDACXX_ENUM_VIS align_val_t : size_t { };
 #endif
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 // Enable the declaration even if the compiler doesn't support the language
 // feature.
 struct destroying_delete_t {
   explicit destroying_delete_t() = default;
 };
 _LIBCUDACXX_INLINE_VAR constexpr destroying_delete_t destroying_delete{};
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
 }  // std
 
@@ -359,7 +359,7 @@ constexpr _Tp* __launder(_Tp* __p) noexcept
 }
 
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _Tp>
 _LIBCUDACXX_NODISCARD_AFTER_CXX17 inline _LIBCUDACXX_INLINE_VISIBILITY
 constexpr _Tp* launder(_Tp* __p) noexcept

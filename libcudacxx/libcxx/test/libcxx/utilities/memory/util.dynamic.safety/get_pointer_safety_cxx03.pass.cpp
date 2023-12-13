@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 // libc++ doesn't offer std::pointer_safety in C++03 under the new ABI
-#if TEST_STD_VER < 11 && defined(_LIBCUDACXX_ABI_POINTER_SAFETY_ENUM_TYPE)
+#if TEST_STD_VER < 2011 && defined(_LIBCUDACXX_ABI_POINTER_SAFETY_ENUM_TYPE)
 #define TEST_IS_UNSUPPORTED
 #endif
 

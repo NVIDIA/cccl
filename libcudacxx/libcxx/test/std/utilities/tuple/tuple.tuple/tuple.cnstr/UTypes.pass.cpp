@@ -23,7 +23,7 @@
 #include "test_convertible.h"
 #include "MoveOnly.h"
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 
 struct Empty {};
 struct A
@@ -143,7 +143,7 @@ int main(int, char**)
         assert(std::get<2>(t) == E());
     }
 #endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         constexpr std::tuple<Empty> t0{Empty()};
         (void)t0;

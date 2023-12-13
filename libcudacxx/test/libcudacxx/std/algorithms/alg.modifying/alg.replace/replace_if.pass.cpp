@@ -49,9 +49,9 @@ int main(int, char**)
 {
   test();
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 14
+#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

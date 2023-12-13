@@ -32,7 +32,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <typename _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY static void __test_noexcept(_Tp) noexcept;
@@ -54,7 +54,7 @@ struct is_nothrow_convertible : _Or<
 template <typename _Fm, typename _To>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_convertible_v = is_nothrow_convertible<_Fm, _To>::value;
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

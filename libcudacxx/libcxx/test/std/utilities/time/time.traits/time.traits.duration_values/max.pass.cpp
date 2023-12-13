@@ -25,7 +25,7 @@ int main(int, char**)
            std::numeric_limits<double>::max());
     assert(std::chrono::duration_values<Rep>::max() ==
            std::numeric_limits<Rep>::max());
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert(std::chrono::duration_values<int>::max() ==
            std::numeric_limits<int>::max(), "");
     static_assert(std::chrono::duration_values<double>::max() ==
@@ -37,7 +37,7 @@ int main(int, char**)
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<int>::max());
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<double>::max());
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<Rep>::max());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     ASSERT_NOEXCEPT(std::chrono::duration_values<int>::max());
     ASSERT_NOEXCEPT(std::chrono::duration_values<double>::max());
     ASSERT_NOEXCEPT(std::chrono::duration_values<Rep>::max());

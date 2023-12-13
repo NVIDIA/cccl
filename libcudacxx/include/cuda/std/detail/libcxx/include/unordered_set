@@ -413,7 +413,7 @@ public:
     typedef typename __table::const_local_iterator local_iterator;
     typedef typename __table::const_local_iterator const_local_iterator;
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     typedef __set_node_handle<typename __table::__node, allocator_type> node_type;
     typedef __insert_return_type<iterator, node_type> insert_return_type;
 #endif
@@ -433,7 +433,7 @@ public:
         }
     explicit unordered_set(size_type __n, const hasher& __hf = hasher(),
                            const key_equal& __eql = key_equal());
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     inline _LIBCUDACXX_INLINE_VISIBILITY
     unordered_set(size_type __n, const allocator_type& __a)
         : unordered_set(__n, hasher(), key_equal(), __a) {}
@@ -453,7 +453,7 @@ public:
         unordered_set(_InputIterator __first, _InputIterator __last,
                       size_type __n, const hasher& __hf, const key_equal& __eql,
                       const allocator_type& __a);
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     template <class _InputIterator>
     inline _LIBCUDACXX_INLINE_VISIBILITY
         unordered_set(_InputIterator __first, _InputIterator __last,
@@ -479,7 +479,7 @@ public:
     unordered_set(initializer_list<value_type> __il, size_type __n,
                   const hasher& __hf, const key_equal& __eql,
                   const allocator_type& __a);
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     inline _LIBCUDACXX_INLINE_VISIBILITY
     unordered_set(initializer_list<value_type> __il, size_type __n,
                                                       const allocator_type& __a)
@@ -599,7 +599,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     void clear() noexcept {__table_.clear();}
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     _LIBCUDACXX_INLINE_VISIBILITY
     insert_return_type insert(node_type&& __nh)
     {
@@ -677,10 +677,10 @@ public:
     const_iterator find(const key_type& __k) const {return __table_.find(__k);}
     _LIBCUDACXX_INLINE_VISIBILITY
     size_type count(const key_type& __k) const {return __table_.__count_unique(__k);}
-    #if _LIBCUDACXX_STD_VER > 17
+    #if _CCCL_STD_VER > 2017
         _LIBCUDACXX_INLINE_VISIBILITY
         bool contains(const key_type& __k) const {return find(__k) != end();}
-    #endif // _LIBCUDACXX_STD_VER > 17
+    #endif // _CCCL_STD_VER > 2017
     _LIBCUDACXX_INLINE_VISIBILITY
     pair<iterator, iterator>             equal_range(const key_type& __k)
         {return __table_.__equal_range_unique(__k);}
@@ -999,7 +999,7 @@ swap(unordered_set<_Value, _Hash, _Pred, _Alloc>& __x,
     __x.swap(__y);
 }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Value, class _Hash, class _Pred, class _Alloc, class _Predicate>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void erase_if(unordered_set<_Value, _Hash, _Pred, _Alloc>& __c, _Predicate __pred)
@@ -1066,7 +1066,7 @@ public:
     typedef typename __table::const_local_iterator local_iterator;
     typedef typename __table::const_local_iterator const_local_iterator;
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     typedef __set_node_handle<typename __table::__node, allocator_type> node_type;
 #endif
 
@@ -1087,7 +1087,7 @@ public:
                                 const key_equal& __eql = key_equal());
     unordered_multiset(size_type __n, const hasher& __hf,
                        const key_equal& __eql, const allocator_type& __a);
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     inline _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multiset(size_type __n, const allocator_type& __a)
         : unordered_multiset(__n, hasher(), key_equal(), __a) {}
@@ -1105,7 +1105,7 @@ public:
         unordered_multiset(_InputIterator __first, _InputIterator __last,
                       size_type __n , const hasher& __hf,
                       const key_equal& __eql, const allocator_type& __a);
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     template <class _InputIterator>
     inline _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multiset(_InputIterator __first, _InputIterator __last,
@@ -1132,7 +1132,7 @@ public:
     unordered_multiset(initializer_list<value_type> __il, size_type __n,
                        const hasher& __hf, const key_equal& __eql,
                        const allocator_type& __a);
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     inline _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multiset(initializer_list<value_type> __il, size_type __n, const allocator_type& __a)
       : unordered_multiset(__il, __n, hasher(), key_equal(), __a) {}
@@ -1209,7 +1209,7 @@ public:
         _LIBCUDACXX_INLINE_VISIBILITY
         void insert(_InputIterator __first, _InputIterator __last);
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     _LIBCUDACXX_INLINE_VISIBILITY
     iterator insert(node_type&& __nh)
     {
@@ -1298,10 +1298,10 @@ public:
     const_iterator find(const key_type& __k) const {return __table_.find(__k);}
     _LIBCUDACXX_INLINE_VISIBILITY
     size_type count(const key_type& __k) const {return __table_.__count_multi(__k);}
-    #if _LIBCUDACXX_STD_VER > 17
+    #if _CCCL_STD_VER > 2017
         _LIBCUDACXX_INLINE_VISIBILITY
         bool contains(const key_type& __k) const {return find(__k) != end();}
-    #endif // _LIBCUDACXX_STD_VER > 17
+    #endif // _CCCL_STD_VER > 2017
     _LIBCUDACXX_INLINE_VISIBILITY
     pair<iterator, iterator>             equal_range(const key_type& __k)
         {return __table_.__equal_range_multi(__k);}
@@ -1620,7 +1620,7 @@ swap(unordered_multiset<_Value, _Hash, _Pred, _Alloc>& __x,
     __x.swap(__y);
 }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Value, class _Hash, class _Pred, class _Alloc, class _Predicate>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void erase_if(unordered_multiset<_Value, _Hash, _Pred, _Alloc>& __c, _Predicate __pred)

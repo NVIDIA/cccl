@@ -17,7 +17,7 @@
 #include "DefaultOnly.h"
 #include "min_allocator.h"
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 #include "container_test_types.h"
 #endif
 
@@ -53,7 +53,7 @@ int main(int, char**)
         assert(*next(c.begin(), 4) == 10);
         assert(*next(c.begin(), 5) == 10);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef std::forward_list<T, min_allocator<T>> C;

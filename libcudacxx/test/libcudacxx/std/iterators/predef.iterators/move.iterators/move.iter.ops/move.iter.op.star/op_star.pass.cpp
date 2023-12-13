@@ -57,7 +57,7 @@ int main(int, char**) {
     test(&a, A());
   }
 #if defined(_LIBCUDACXX_HAS_MEMORY)
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     int i;
     cuda::std::unique_ptr<int, do_nothing> p(&i);
@@ -65,7 +65,7 @@ int main(int, char**) {
   }
 #endif
 #endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
   {
     constexpr const char *p = "123456789";
     typedef cuda::std::move_iterator<const char *> MI;
@@ -76,7 +76,7 @@ int main(int, char**) {
   }
 #endif
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   // Ensure the `iter_move` customization point is being used.
   {
     int a[] = {0, 1, 2};

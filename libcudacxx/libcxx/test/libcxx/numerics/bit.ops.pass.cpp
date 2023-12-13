@@ -17,8 +17,8 @@
 int main(int, char **)
 {
 
-    
-#if TEST_STD_VER > 11
+
+#if TEST_STD_VER > 2011
     {
     constexpr unsigned v = 0x1237U;
 
@@ -29,7 +29,7 @@ int main(int, char **)
     static_assert( std::__countr_one(v)  == 3, "");
     static_assert( std::__countl_zero(v) == 19, "");
     static_assert( std::__countr_zero(v) == 0, "");
-    
+
     static_assert( std::__libcpp_popcount(v) == 7, "");
     static_assert( std::__bit_log2(v) == 12, "");
     static_assert(!std::__has_single_bit(v), "");
@@ -64,7 +64,7 @@ int main(int, char **)
     assert( std::__bit_log2(v) == 28);
     assert(!std::__has_single_bit(v));
     }
-    
+
     return 0;
 }
 

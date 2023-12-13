@@ -655,7 +655,7 @@ enum __legacy_memory_order {
 
 typedef underlying_type<__legacy_memory_order>::type __memory_order_underlying_t;
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 enum class memory_order : __memory_order_underlying_t {
   relaxed = __mo_relaxed,
@@ -684,7 +684,7 @@ typedef enum memory_order {
   memory_order_seq_cst = __mo_seq_cst,
 } memory_order;
 
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
 template <typename _Tp> _LIBCUDACXX_INLINE_VISIBILITY
 bool __cxx_nonatomic_compare_equal(_Tp const& __lhs, _Tp const& __rhs) {

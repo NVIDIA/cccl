@@ -20,7 +20,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 template <class It>
 __host__ __device__ void test_single_pass(It i, It x) {
   cuda::std::move_iterator<It> r(cuda::std::move(i));
@@ -39,7 +39,7 @@ __host__ __device__ void test(It i, It x) {
 
 int main(int, char**) {
   char s[] = "123";
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
   test_single_pass(cpp17_input_iterator<char*>(s), cpp17_input_iterator<char*>(s + 1));
 #else
   test(cpp17_input_iterator<char*>(s), cpp17_input_iterator<char*>(s+1));
@@ -49,7 +49,7 @@ int main(int, char**) {
   test(random_access_iterator<char*>(s), random_access_iterator<char*>(s+1));
   test(s, s+1);
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
   {
     constexpr const char *p = "123456789";
     typedef cuda::std::move_iterator<const char *> MI;
@@ -62,7 +62,7 @@ int main(int, char**) {
   }
 #endif
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
   // Forward iterators return a copy.
   {
     int a[] = {1, 2, 3};
@@ -74,9 +74,9 @@ int main(int, char**) {
     assert(base(j.base()) == a);
     assert(base(i.base()) == a + 1);
   }
-#endif // TEST_STD_VER > 11
+#endif // TEST_STD_VER > 2011
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   // Non-forward iterators return void.
   {
     int a[] = {1, 2, 3};
@@ -87,7 +87,7 @@ int main(int, char**) {
     i++;
     assert(base(i.base()) == a + 1);
   }
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
 
   return 0;
 }

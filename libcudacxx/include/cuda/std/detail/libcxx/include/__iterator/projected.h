@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_TEMPLATE(class _It, class _Proj)
   _LIBCUDACXX_REQUIRES( indirectly_readable<_It> _LIBCUDACXX_AND indirectly_regular_unary_invocable<_Proj, _It>)
@@ -38,7 +38,7 @@ struct projected {
   _LIBCUDACXX_INLINE_VISIBILITY indirect_result_t<_Proj&, _It> operator*() const; // not defined
 };
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template<weakly_incrementable _It, class _Proj>
 struct incrementable_traits<projected<_It, _Proj>> {
   using difference_type = iter_difference_t<_It>;
@@ -48,9 +48,9 @@ template<class _It, class _Proj>
 struct incrementable_traits<projected<_It, _Proj>, enable_if_t<weakly_incrementable<_It>>> {
   using difference_type = iter_difference_t<_It>;
 };
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

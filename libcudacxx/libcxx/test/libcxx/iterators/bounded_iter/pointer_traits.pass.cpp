@@ -36,7 +36,7 @@ TEST_CONSTEXPR_CXX14 bool tests() {
     std::__bounded_iter<Iter> const iter2 = std::__make_bounded_iter(Iter(e), Iter(b), Iter(e));
     assert(std::__to_address(iter1) == b); // in-bounds iterator
     assert(std::__to_address(iter2) == e); // out-of-bounds iterator
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     assert(std::to_address(iter1) == b); // in-bounds iterator
     assert(std::to_address(iter2) == e); // out-of-bounds iterator
 #endif
@@ -47,11 +47,11 @@ TEST_CONSTEXPR_CXX14 bool tests() {
 
 int main(int, char**) {
   tests<int*>();
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
   static_assert(tests<int*>(), "");
 #endif
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   tests<contiguous_iterator<int*> >();
   static_assert(tests<contiguous_iterator<int*> >(), "");
 #endif

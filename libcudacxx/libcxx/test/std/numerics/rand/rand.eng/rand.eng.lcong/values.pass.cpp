@@ -38,7 +38,7 @@ test1()
     static_assert((LCE::multiplier == a), "");
     static_assert((LCE::increment == c), "");
     static_assert((LCE::modulus == m), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((LCE::min() == (c == 0u ? 1u: 0u)), "");
 #else
     assert((LCE::min() == (c == 0u ? 1u: 0u)));
@@ -49,7 +49,7 @@ test1()
     #pragma warning(disable: 4310) // cast truncates constant value
 #endif // TEST_COMPILER_MSVC
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((LCE::max() == result_type(m - 1u)), "");
 #else
     assert((LCE::max() == result_type(m - 1u)));

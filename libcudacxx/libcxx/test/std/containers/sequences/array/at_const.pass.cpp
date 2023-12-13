@@ -98,7 +98,7 @@ int main(int, char**)
     tests();
     test_exceptions();
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     static_assert(tests(), "");
 #endif
     return 0;

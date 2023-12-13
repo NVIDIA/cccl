@@ -55,7 +55,7 @@ TEST_CONSTEXPR_CXX17 bool test()
   test_one<int*>();
   test_one<const int*>();
   test_one<random_access_iterator<int*> >();
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   test_one<contiguous_iterator<int*>>();
 #endif
   return true;
@@ -64,7 +64,7 @@ TEST_CONSTEXPR_CXX17 bool test()
 int main(int, char**)
 {
   assert(test());
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   static_assert(test());
 #endif
 

@@ -32,7 +32,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS integral_constant
   typedef integral_constant type;
   _LIBCUDACXX_INLINE_VISIBILITY
   constexpr operator value_type() const noexcept {return value;}
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
   _LIBCUDACXX_INLINE_VISIBILITY
   constexpr value_type operator ()() const noexcept {return value;}
 #endif
@@ -47,12 +47,12 @@ typedef integral_constant<bool, false> false_type;
 template <bool _Val>
 using _BoolConstant _LIBCUDACXX_NODEBUG_TYPE = integral_constant<bool, _Val>;
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <bool __b>
 using bool_constant = integral_constant<bool, __b>;
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 #define _LIBCUDACXX_BOOL_CONSTANT(__b) bool_constant<(__b)>
 #else
 #define _LIBCUDACXX_BOOL_CONSTANT(__b) integral_constant<bool,(__b)>

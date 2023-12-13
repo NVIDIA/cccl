@@ -22,7 +22,7 @@ __host__ __device__
 void test_add_rvalue_reference()
 {
     ASSERT_SAME_TYPE(U, typename cuda::std::add_rvalue_reference<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(U, cuda::std::add_rvalue_reference_t<T>);
 #endif
 }
@@ -32,7 +32,7 @@ __host__ __device__
 void test_function0()
 {
     ASSERT_SAME_TYPE(F&&, typename cuda::std::add_rvalue_reference<F>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(F&&, cuda::std::add_rvalue_reference_t<F>);
 #endif
 }
@@ -42,7 +42,7 @@ __host__ __device__
 void test_function1()
 {
     ASSERT_SAME_TYPE(F, typename cuda::std::add_rvalue_reference<F>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(F, cuda::std::add_rvalue_reference_t<F>);
 #endif
 }

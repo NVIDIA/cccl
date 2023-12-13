@@ -21,7 +21,7 @@ void test_is_compound()
     static_assert( std::is_compound<const T>::value, "");
     static_assert( std::is_compound<volatile T>::value, "");
     static_assert( std::is_compound<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_compound_v<T>, "");
     static_assert( std::is_compound_v<const T>, "");
     static_assert( std::is_compound_v<volatile T>, "");
@@ -36,7 +36,7 @@ void test_is_not_compound()
     static_assert(!std::is_compound<const T>::value, "");
     static_assert(!std::is_compound<volatile T>::value, "");
     static_assert(!std::is_compound<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_compound_v<T>, "");
     static_assert(!std::is_compound_v<const T>, "");
     static_assert(!std::is_compound_v<volatile T>, "");

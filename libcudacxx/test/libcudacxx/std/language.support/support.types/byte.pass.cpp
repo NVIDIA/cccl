@@ -18,7 +18,7 @@
 // cuda::std::byte is not an integer type, nor a character type.
 // It is a distinct type for accessing the bits that ultimately make up object storage.
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 static_assert( cuda::std::is_trivial<cuda::std::byte>::value, "" );   // P0767
 #else
 static_assert( cuda::std::is_pod<cuda::std::byte>::value, "" );

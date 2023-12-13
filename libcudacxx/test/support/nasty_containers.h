@@ -88,7 +88,7 @@ public:
 #endif
     void pop_back()                         { v_.pop_back(); }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     template <class... Args>
     iterator emplace(const_iterator pos, Args&&... args)
     { return v_.emplace(pos, std::forward<Args>(args)...); }
@@ -111,7 +111,7 @@ public:
     void resize(size_type sz, const value_type& c) { v_.resize(sz, c); }
 
     void swap(nasty_vector &nv)
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     noexcept(std::is_nothrow_swappable<nested_container>::value)
 #elif defined(_LIBCUDACXX_VERSION)
     TEST_NOEXCEPT_COND(cuda::std::__is_nothrow_swappable<nested_container>::value)
@@ -152,7 +152,7 @@ public:
     nasty_list(size_type n, const value_type& value)  : l_(n,value) {}
     template <class Iter>
     nasty_list(Iter first, Iter last)  : l_(first, last) {}
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     nasty_list(std::initializer_list<value_type> il) : l_(il) {}
 
     ~nasty_list() {}
@@ -200,7 +200,7 @@ public:
     void pop_front()                        { l_.pop_front(); }
     void pop_back()                         { l_.pop_back(); }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     template <class... Args>
     iterator emplace(const_iterator pos, Args&&... args)
     { return l_.emplace(pos, std::forward<Args>(args)...); }
@@ -221,7 +221,7 @@ public:
     void resize(size_type, const value_type& c) { l_.resize(c); }
 
     void swap(nasty_list &nl)
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     noexcept(std::is_nothrow_swappable<nested_container>::value)
 #elif defined(_LIBCUDACXX_VERSION)
     TEST_NOEXCEPT_COND(cuda::std::__is_nothrow_swappable<nested_container>::value)

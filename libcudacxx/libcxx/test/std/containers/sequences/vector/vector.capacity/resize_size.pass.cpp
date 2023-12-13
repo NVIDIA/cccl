@@ -44,7 +44,7 @@ int main(int, char**)
         assert(v.capacity() >= 200);
         assert(is_contiguous_container_asan_correct(v));
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::vector<MoveOnly> v(100);
         v.resize(50);

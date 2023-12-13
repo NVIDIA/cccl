@@ -66,7 +66,7 @@ int main(int, char**)
     typedef std::owner_less<std::shared_ptr<int> > CS;
     CS cs;
 
-#if TEST_STD_VER <= 17
+#if TEST_STD_VER <= 2017
     static_assert((std::is_same<std::shared_ptr<int>, CS::first_argument_type>::value), "" );
     static_assert((std::is_same<std::shared_ptr<int>, CS::second_argument_type>::value), "" );
     static_assert((std::is_same<bool, CS::result_type>::value), "" );
@@ -89,7 +89,7 @@ int main(int, char**)
     typedef std::owner_less<std::weak_ptr<int> > CS;
     CS cs;
 
-#if TEST_STD_VER <= 17
+#if TEST_STD_VER <= 2017
     static_assert((std::is_same<std::weak_ptr<int>, CS::first_argument_type>::value), "" );
     static_assert((std::is_same<std::weak_ptr<int>, CS::second_argument_type>::value), "" );
     static_assert((std::is_same<bool, CS::result_type>::value), "" );
@@ -108,7 +108,7 @@ int main(int, char**)
     ASSERT_NOEXCEPT(cs(w1, p1));
     ASSERT_NOEXCEPT(cs(p1, w1));
     }
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     {
     std::shared_ptr<int> sp1;
     std::shared_ptr<void> sp2;

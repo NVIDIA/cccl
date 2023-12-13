@@ -19,7 +19,7 @@
 #include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/modern_gcc_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011 && !defined(THRUST_LEGACY_GCC)
+#if _CCCL_STD_VER >= 2011 && !defined(THRUST_LEGACY_GCC)
 
 #include <thrust/tuple.h>
 #include <thrust/type_traits/integer_sequence.h>
@@ -40,7 +40,7 @@ namespace detail {
 namespace zip_detail {
 
 // Add workaround for decltype(auto) on C++11-only compilers:
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Function, typename Tuple, std::size_t... Is>
@@ -58,7 +58,7 @@ decltype(auto) apply(Function&& func, Tuple&& args)
   return apply_impl(THRUST_FWD(func), THRUST_FWD(args), make_index_sequence<tuple_size>{});
 }
 
-#else // THRUST_CPP_DIALECT
+#else // _CCCL_STD_VER
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Function, typename Tuple, std::size_t... Is>
@@ -77,7 +77,7 @@ THRUST_DECLTYPE_RETURNS(
         thrust::tuple_size<typename std::decay<Tuple>::type>::value>{})
 )
 
-#endif // THRUST_CPP_DIALECT
+#endif // _CCCL_STD_VER
 
 } // namespace zip_detail
 } // namespace detail
@@ -165,7 +165,7 @@ class zip_function
     zip_function(Function func) : func(std::move(func)) {}
 
 // Add workaround for decltype(auto) on C++11-only compilers:
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
     template <typename Tuple>
     _CCCL_HOST_DEVICE
@@ -174,7 +174,7 @@ class zip_function
         return detail::zip_detail::apply(func, THRUST_FWD(args));
     }
 
-#else // THRUST_CPP_DIALECT
+#else // _CCCL_STD_VER
 
     // Can't just use THRUST_DECLTYPE_RETURNS here since we need to use
     // std::declval for the signature components:
@@ -187,7 +187,7 @@ class zip_function
         return detail::zip_detail::apply(func, THRUST_FWD(args));
     }
 
-#endif // THRUST_CPP_DIALECT
+#endif // _CCCL_STD_VER
 
   private:
     mutable Function func;

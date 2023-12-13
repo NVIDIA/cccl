@@ -39,7 +39,7 @@ struct test_nondefault_initialization {
     TEST_CONSTEXPR_CXX14 void operator()() const
     {
         // Check direct-list-initialization syntax (introduced in C++11)
-    #if TEST_STD_VER >= 11
+    #if TEST_STD_VER >= 2011
         {
             {
                 std::array<T, 0> a0_0{}; (void)a0_0;
@@ -179,7 +179,7 @@ int main(int, char**)
     with_all_types<test_nondefault_initialization>();
     with_all_types<test_default_initialization>(); // not constexpr
     test_initializer_list();
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     static_assert(with_all_types<test_nondefault_initialization>(), "");
     static_assert(test_initializer_list(), "");
 #endif

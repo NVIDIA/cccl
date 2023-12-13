@@ -35,7 +35,7 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 #include <type_traits>
 
@@ -56,7 +56,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see conjunction_value
  *  \see <a href="https://en.cppreference.com/w/cpp/types/conjunction"><tt>std::conjunction</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 template <typename... Ts>
 using conjunction = std::conjunction<Ts...>;
 #else // Older than C++17.
@@ -89,7 +89,7 @@ struct conjunction<T0, T1, T2, TN...>
  *  \see conjunction_value
  *  \see <a href="https://en.cppreference.com/w/cpp/types/conjunction"><tt>std::conjunction</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 template <typename... Ts>
 constexpr bool conjunction_v = conjunction<Ts...>::value;
 #endif
@@ -101,7 +101,7 @@ constexpr bool conjunction_v = conjunction<Ts...>::value;
  *  \see disjunction_value
  *  \see <a href="https://en.cppreference.com/w/cpp/types/disjunction"><tt>std::disjunction</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 template <typename... Ts>
 using disjunction = std::disjunction<Ts...>;
 #else // Older than C++17.
@@ -131,7 +131,7 @@ struct disjunction<T0, TN...>
  *  \see disjunction_value
  *  \see <a href="https://en.cppreference.com/w/cpp/types/disjunction"><tt>std::disjunction</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 template <typename... Ts>
 constexpr bool disjunction_v = disjunction<Ts...>::value;
 #endif
@@ -143,7 +143,7 @@ constexpr bool disjunction_v = disjunction<Ts...>::value;
  *  \see negation_value
  *  \see <a href="https://en.cppreference.com/w/cpp/types/negation"><tt>std::negation</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 template <typename T>
 using negation = std::negation<T>;
 #else // Older than C++17.
@@ -166,7 +166,7 @@ struct negation : std::integral_constant<bool, !T::value> {};
  *  \see negation_value
  *  \see <a href="https://en.cppreference.com/w/cpp/types/negation"><tt>std::negation</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 template <typename T>
 constexpr bool negation_v = negation<T>::value;
 #endif
@@ -183,7 +183,7 @@ constexpr bool negation_v = negation<T>::value;
 template <bool... Bs>
 struct conjunction_value;
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> whose value is <tt>(... && Bs)</tt>.
  *
  *  \see conjunction_value
@@ -222,7 +222,7 @@ struct conjunction_value<B, Bs...>
 template <bool... Bs>
 struct disjunction_value;
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> whose value is <tt>(... || Bs)</tt>.
  *
  *  \see disjunction_value
@@ -261,7 +261,7 @@ struct disjunction_value<B, Bs...>
 template <bool B>
 struct negation_value;
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> whose value is <tt>!Ts::value</tt>.
  *
  *  \see negation_value
@@ -291,5 +291,5 @@ struct negation_value : std::integral_constant<bool, !B> {};
 
 THRUST_NAMESPACE_END
 
-#endif // THRUST_CPP_DIALECT >= 2011
+#endif // _CCCL_STD_VER >= 2011
 

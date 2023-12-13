@@ -26,7 +26,7 @@ std::mutex m;
 int foo __attribute__((guarded_by(m)));
 
 static void scoped() {
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
   std::scoped_lock<std::mutex> lock(m);
   foo++;
 #endif

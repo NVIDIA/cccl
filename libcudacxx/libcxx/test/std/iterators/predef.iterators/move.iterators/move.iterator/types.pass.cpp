@@ -44,7 +44,7 @@ struct FooIter {
   FooIter operator--(int);
 };
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 template <>
 struct std::indirectly_readable_traits<FooIter> {
   using value_type = int;
@@ -55,7 +55,7 @@ struct std::incrementable_traits<FooIter> {
 };
 #endif
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 // Not using `FooIter::value_type`.
 static_assert(std::is_same_v<typename std::move_iterator<FooIter>::value_type, int>, "");
 // Not using `FooIter::difference_type`.
@@ -85,13 +85,13 @@ void test() {
   static_assert((std::is_same<typename R::pointer, It>::value), "");
   static_assert((std::is_same<typename R::value_type, typename T::value_type>::value), "");
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   static_assert((std::is_same_v<typename R::reference, std::iter_rvalue_reference_t<It>>), "");
 #else
   static_assert((std::is_same<typename R::reference, typename R::value_type&&>::value), "");
 #endif
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   if constexpr (std::is_same_v<typename T::iterator_category, std::contiguous_iterator_tag>) {
     static_assert((std::is_same<typename R::iterator_category, std::random_access_iterator_tag>::value), "");
   } else {
@@ -101,7 +101,7 @@ void test() {
   static_assert((std::is_same<typename R::iterator_category, typename T::iterator_category>::value), "");
 #endif
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   static_assert(
       std::is_same_v<typename R::iterator_concept,
                      std::conditional_t<std::is_same_v<typename R::iterator_concept, std::contiguous_iterator_tag>,
@@ -117,7 +117,7 @@ int main(int, char**) {
   test<random_access_iterator<char*> >();
   test<char*>();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
       typedef DummyIt<int, int> T;
       typedef std::move_iterator<T> It;
@@ -147,7 +147,7 @@ int main(int, char**) {
   }
 #endif
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   test<contiguous_iterator<char*>>();
   static_assert(std::is_same_v<typename std::move_iterator<forward_iterator<char*>>::iterator_concept, std::forward_iterator_tag>);
   static_assert(std::is_same_v<typename std::move_iterator<bidirectional_iterator<char*>>::iterator_concept, std::bidirectional_iterator_tag>);

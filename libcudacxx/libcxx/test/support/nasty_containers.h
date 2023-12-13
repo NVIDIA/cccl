@@ -38,7 +38,7 @@ public:
     explicit nasty_vector(size_type n) : v_(n) {}
     nasty_vector(size_type n, const value_type& value) : v_(n, value) {}
     template <class InputIterator> nasty_vector(InputIterator first, InputIterator last) : v_(first, last) {}
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     nasty_vector(std::initializer_list<value_type> il) : v_(il) {}
 #endif
     ~nasty_vector() {}
@@ -46,7 +46,7 @@ public:
     template <class InputIterator>
         void assign(InputIterator first, InputIterator last) { v_.assign(first, last); }
     void assign(size_type n, const value_type& u) { v_.assign(n, u); }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     void assign(std::initializer_list<value_type> il)  { v_.assign(il); }
 #endif
 
@@ -86,20 +86,20 @@ public:
     const value_type* data() const TEST_NOEXCEPT { return v_.data(); }
 
     void push_back(const value_type& x)     { v_.push_back(x); }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     void push_back(value_type&& x)          { v_.push_back(std::forward<value_type&&>(x)); }
     template <class... Args>
         void emplace_back(Args&&... args)   { v_.emplace_back(std::forward<Args>(args)...); }
 #endif
     void pop_back()                         { v_.pop_back(); }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     template <class... Args> iterator emplace(const_iterator pos, Args&&... args)
     { return v_.emplace(pos, std::forward<Args>(args)...); }
 #endif
 
     iterator insert(const_iterator pos, const value_type& x) { return v_.insert(pos, x); }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     iterator insert(const_iterator pos, value_type&& x)      { return v_.insert(pos, std::forward<value_type>(x)); }
 #endif
     iterator insert(const_iterator pos, size_type n, const value_type& x) { return v_.insert(pos, n, x); }
@@ -107,7 +107,7 @@ public:
         iterator insert(const_iterator pos, InputIterator first, InputIterator last)
     { return v_.insert(pos, first, last); }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     iterator insert(const_iterator pos, std::initializer_list<value_type> il) { return v_.insert(pos, il); }
 #endif
 
@@ -120,7 +120,7 @@ public:
     void resize(size_type sz, const value_type& c) { v_.resize(sz, c); }
 
     void swap(nasty_vector &nv)
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     noexcept(std::is_nothrow_swappable<nested_container>::value)
 #elif defined(_LIBCUDACXX_VERSION)
     TEST_NOEXCEPT_COND(std::__is_nothrow_swappable<nested_container>::value)
@@ -161,19 +161,19 @@ public:
     nasty_list(size_type n, const value_type& value)  : l_(n,value) {}
     template <class Iter>
         nasty_list(Iter first, Iter last)  : l_(first, last) {}
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     nasty_list(std::initializer_list<value_type> il) : l_(il) {}
 #endif
 
     ~nasty_list() {}
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     nasty_list& operator=(std::initializer_list<value_type> il) { l_ = il; return *this; }
 #endif
     template <class Iter>
         void assign(Iter first, Iter last) { l_.assign(first, last); }
     void assign(size_type n, const value_type& t) { l_.assign(n, t); }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     void assign(std::initializer_list<value_type> il) { l_.assign(il); }
 #endif
 
@@ -204,7 +204,7 @@ public:
 
     void push_front(const value_type& x)    { l_.push_front(x); }
     void push_back(const value_type& x)     { l_.push_back(x); }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     void push_back(value_type&& x)          { l_.push_back(std::forward<value_type&&>(x)); }
     void push_front(value_type&& x)         { l_.push_back(std::forward<value_type&&>(x)); }
     template <class... Args>
@@ -215,13 +215,13 @@ public:
     void pop_front()                        { l_.pop_front(); }
     void pop_back()                         { l_.pop_back(); }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     template <class... Args> iterator emplace(const_iterator pos, Args&&... args)
     { return l_.emplace(pos, std::forward<Args>(args)...); }
 #endif
 
     iterator insert(const_iterator pos, const value_type& x) { return l_.insert(pos, x); }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     iterator insert(const_iterator pos, value_type&& x)      { return l_.insert(pos, std::forward<value_type>(x)); }
 #endif
     iterator insert(const_iterator pos, size_type n, const value_type& x) { return l_.insert(pos, n, x); }
@@ -229,7 +229,7 @@ public:
         iterator insert(const_iterator pos, InputIterator first, InputIterator last)
     { return l_.insert(pos, first, last); }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     iterator insert(const_iterator pos, std::initializer_list<value_type> il) { return l_.insert(pos, il); }
 #endif
 
@@ -240,7 +240,7 @@ public:
     void resize(size_type, const value_type& c) { l_.resize(c); }
 
     void swap(nasty_list &nl)
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     noexcept(std::is_nothrow_swappable<nested_container>::value)
 #elif defined(_LIBCUDACXX_VERSION)
     TEST_NOEXCEPT_COND(std::__is_nothrow_swappable<nested_container>::value)

@@ -21,7 +21,7 @@ void test_is_trivially_copy_constructible()
 {
     static_assert( cuda::std::is_trivially_copy_constructible<T>::value, "");
     static_assert( cuda::std::is_trivially_copy_constructible<const T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert( cuda::std::is_trivially_copy_constructible_v<T>, "");
     static_assert( cuda::std::is_trivially_copy_constructible_v<const T>, "");
 #endif
@@ -33,7 +33,7 @@ void test_has_not_trivial_copy_constructor()
 {
     static_assert(!cuda::std::is_trivially_copy_constructible<T>::value, "");
     static_assert(!cuda::std::is_trivially_copy_constructible<const T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!cuda::std::is_trivially_copy_constructible_v<T>, "");
     static_assert(!cuda::std::is_trivially_copy_constructible_v<const T>, "");
 #endif

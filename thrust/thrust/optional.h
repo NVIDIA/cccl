@@ -25,7 +25,7 @@
 #include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/type_traits.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 #include <thrust/addressof.h>
 #include <thrust/swap.h>
@@ -157,12 +157,12 @@ THRUST_NAMESPACE_END
 
 #endif
 
-#if THRUST_CPP_DIALECT > 2011
+#if _CCCL_STD_VER > 2011
 #define THRUST_OPTIONAL_CPP14
 #endif
 
 // constexpr implies const in C++11, not C++14
-#if (THRUST_CPP_DIALECT == 2011 || defined(THRUST_OPTIONAL_MSVC2015) ||                \
+#if (_CCCL_STD_VER == 2011 || defined(THRUST_OPTIONAL_MSVC2015) ||                \
      defined(THRUST_OPTIONAL_GCC49))
 /// \exclude
 #define THRUST_OPTIONAL_CPP11_CONSTEXPR
@@ -209,7 +209,7 @@ template <class B, class... Bs>
 struct conjunction<B, Bs...>
     : std::conditional<bool(B::value), conjunction<Bs...>, B>::type {};
 
-#if defined(_LIBCPP_VERSION) && THRUST_CPP_DIALECT == 2011
+#if defined(_LIBCPP_VERSION) && _CCCL_STD_VER == 2011
 #define THRUST_OPTIONAL_LIBCXX_MEM_FN_WORKAROUND
 #endif
 
@@ -2030,7 +2030,7 @@ inline constexpr optional<T> make_optional(std::initializer_list<U> il,
   return optional<T>(in_place, il, std::forward<Args>(args)...);
 }
 
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 template <class T> optional(T)->optional<T>;
 #endif
 
@@ -2880,5 +2880,5 @@ template <class T> struct hash<THRUST_NS_QUALIFIER::optional<T>> {
 };
 } // namespace std
 
-#endif // THRUST_CPP_DIALECT >= 2011
+#endif // _CCCL_STD_VER >= 2011
 

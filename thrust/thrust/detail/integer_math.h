@@ -102,7 +102,7 @@ Integer log2_ri(Integer x)
 // Used to determine # of blocks/warps etc.
 template <typename Integer0, typename Integer1>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 // FIXME: Should use common_type.
 auto divide_ri(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS((x + (y - 1)) / y)
@@ -118,7 +118,7 @@ Integer0 divide_ri(Integer0 const x, Integer1 const y)
 // Used to determine # of blocks/warps etc.
 template <typename Integer0, typename Integer1>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 auto divide_rz(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS(x / y)
 #else
@@ -132,7 +132,7 @@ Integer0 divide_rz(Integer0 const x, Integer1 const y)
 // Round x towards infinity to the next multiple of y.
 template <typename Integer0, typename Integer1>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 auto round_i(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS(y * divide_ri(x, y))
 #else
@@ -145,7 +145,7 @@ Integer0 round_i(Integer0 const x, Integer1 const y)
 // Round x towards 0 to the next multiple of y.
 template <typename Integer0, typename Integer1>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 auto round_z(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS(y * divide_rz(x, y))
 #else

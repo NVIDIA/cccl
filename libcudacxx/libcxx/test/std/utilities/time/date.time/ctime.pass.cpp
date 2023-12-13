@@ -19,7 +19,7 @@
 #error CLOCKS_PER_SEC not defined
 #endif
 
-#if TEST_STD_VER > 14 && defined(TEST_HAS_C11_FEATURES)
+#if TEST_STD_VER > 2014 && defined(TEST_HAS_C11_FEATURES)
 #ifndef TIME_UTC
 #error TIME_UTC not defined
 #endif
@@ -41,7 +41,7 @@ int main(int, char**)
     ((void)t); // Prevent unused warning
     ((void)tm); // Prevent unused warning
     ((void)str); // Prevent unused warning
-#if TEST_STD_VER > 14 && defined(TEST_HAS_C11_FEATURES)
+#if TEST_STD_VER > 2014 && defined(TEST_HAS_C11_FEATURES)
     std::timespec tmspec = {};
     ((void)tmspec); // Prevent unused warning
 #endif
@@ -50,7 +50,7 @@ int main(int, char**)
     static_assert((std::is_same<decltype(std::difftime(t,t)), double>::value), "");
     static_assert((std::is_same<decltype(std::mktime(&tm)), std::time_t>::value), "");
     static_assert((std::is_same<decltype(std::time(&t)), std::time_t>::value), "");
-#if TEST_STD_VER > 14 && defined(TEST_HAS_TIMESPEC_GET)
+#if TEST_STD_VER > 2014 && defined(TEST_HAS_TIMESPEC_GET)
     static_assert((std::is_same<decltype(std::timespec_get(nullptr, 0)), int>::value), "");
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_THREAD_UNSAFE_C_FUNCTIONS

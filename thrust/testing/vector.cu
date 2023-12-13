@@ -4,7 +4,7 @@
 #include <thrust/sequence.h>
 #include <thrust/device_malloc_allocator.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 #include <initializer_list>
 #endif
 #include <vector>
@@ -55,7 +55,7 @@ void TestVectorInitializerList(void)
     ASSERT_EQUAL(v[1], 2);
     ASSERT_EQUAL(v[2], 3);
     ASSERT_EQUAL(v[3], 4);
-    
+
     const auto alloc = v.get_allocator();
     Vector v2{{1, 2, 3}, alloc};
     ASSERT_EQUAL(v2.size(), 3lu);
@@ -785,7 +785,7 @@ void TestVectorReversed(void)
 }
 DECLARE_VECTOR_UNITTEST(TestVectorReversed);
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   template <class Vector>
   void TestVectorMove(void)
   {

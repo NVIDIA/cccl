@@ -64,7 +64,7 @@ int main(int, char**)
         assert(*next(c.begin(), 4) == 0);
         assert(*next(c.begin(), 5) == 0);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef DefaultOnly T;
         typedef std::forward_list<T, min_allocator<T>> C;

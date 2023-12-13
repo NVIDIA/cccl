@@ -33,7 +33,7 @@
 
 #include <cstddef> // For `std::size_t` and `std::max_align_t`.
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
     #include <type_traits> // For `std::alignment_of`.
 #endif
 
@@ -51,7 +51,7 @@ namespace detail
 /// inside of a `__declspec(align(#))` attribute. As a workaround, you can
 /// assign the result of \p THRUST_ALIGNOF to a variable and pass the variable
 /// as the argument to `__declspec(align(#))`.
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
     #define THRUST_ALIGNOF(x) alignof(x)
 #else
     #define THRUST_ALIGNOF(x) __alignof(x)
@@ -62,7 +62,7 @@ namespace detail
 /// expression.
 ///
 /// It is an implementation of C++11's \p std::alignment_of.
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
     template <typename T>
     using alignment_of = std::alignment_of<T>;
 #else
@@ -105,7 +105,7 @@ namespace detail
 template <std::size_t Align>
 struct aligned_type;
 
-#if THRUST_CPP_DIALECT >= 2011                                                     \
+#if _CCCL_STD_VER >= 2011                                                     \
   && (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                        \
   && (THRUST_GCC_VERSION >= 40800)
     // C++11 implementation, excluding GCC 4.7, which doesn't have `alignas`.
@@ -166,7 +166,7 @@ struct aligned_type;
 /// strict (as large) as that of every scalar type.
 ///
 /// It is an implementation of C++11's \p std::max_align_t.
-#if THRUST_CPP_DIALECT >= 2011                                                     \
+#if _CCCL_STD_VER >= 2011                                                     \
   && (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                        \
   && (THRUST_GCC_VERSION >= 40900)
     // GCC 4.7 and 4.8 don't have `std::max_align_t`.

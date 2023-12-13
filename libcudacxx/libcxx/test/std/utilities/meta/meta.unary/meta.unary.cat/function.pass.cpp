@@ -18,7 +18,7 @@ using namespace std;
 class Class {};
 
 enum Enum1 {};
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 enum class Enum2 : int {};
 #else
 enum Enum2 {};
@@ -28,7 +28,7 @@ template <class T>
 void test()
 {
     static_assert(!std::is_void<T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!std::is_null_pointer<T>::value, "");
 #endif
     static_assert(!std::is_integral<T>::value, "");
@@ -76,7 +76,7 @@ int main(int, char**)
     TEST_REGULAR( void (int, ...) );
     TEST_REGULAR( int (double, ...) );
     TEST_REGULAR( int (double, char, ...) );
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     TEST_REF_QUALIFIED( void () );
     TEST_REF_QUALIFIED( void (int) );
     TEST_REF_QUALIFIED( int (double) );

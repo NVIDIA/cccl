@@ -143,7 +143,7 @@ int main(int, char**)
 {
     check_swap<int>();
     check_swap<W>();
-#if TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
     static_assert(check_swap<int>());
     static_assert(check_swap<W>());
 #endif

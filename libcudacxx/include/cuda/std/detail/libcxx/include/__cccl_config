@@ -165,6 +165,7 @@
 #  define _CCCL_NV_DIAG_DEFAULT(_WARNING)
 #endif // other compilers
 
+#include "__cccl/dialect.h"
 #include "__cccl/execution_space.h"
 #include "__cccl/visibility.h"
 

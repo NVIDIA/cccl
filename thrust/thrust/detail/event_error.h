@@ -30,7 +30,7 @@
 #endif // no system header
 #include <thrust/detail/cpp14_required.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #include <thrust/detail/type_traits.h>
 #include <thrust/system/error_code.h>

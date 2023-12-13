@@ -123,7 +123,7 @@ template<typename System = use_default>
     discard_iterator(discard_iterator const &rhs)
       : super_t(rhs.base()) {}
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
     discard_iterator & operator=(const discard_iterator &) = default;
 #endif
 

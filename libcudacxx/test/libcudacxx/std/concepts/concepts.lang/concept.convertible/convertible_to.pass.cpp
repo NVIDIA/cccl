@@ -52,7 +52,7 @@ __host__ __device__ void CheckIsConvertibleButNotConvertibleTo() {
 }
 
 // Tests that should objectively return false (except for bool and nullptr_t)
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template <class T>
 #else
 _LIBCUDACXX_TEMPLATE(class T)
@@ -99,7 +99,7 @@ __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
 } // namespace
 
 using Function = void();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 using NoexceptFunction = void() noexcept;
 #endif
 using ConstFunction = void() const;
@@ -154,11 +154,11 @@ int main(int, char**) {
   CheckNotConvertibleTo<void, Function>();
   CheckNotConvertibleTo<void, Function&>();
   CheckNotConvertibleTo<void, Function*>();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   CheckNotConvertibleTo<void, NoexceptFunction>();
   CheckNotConvertibleTo<void, NoexceptFunction&>();
   CheckNotConvertibleTo<void, NoexceptFunction*>();
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
   CheckNotConvertibleTo<void, Array>();
   CheckNotConvertibleTo<void, Array&>();
   CheckNotConvertibleTo<void, char>();
@@ -178,7 +178,7 @@ int main(int, char**) {
   CheckConvertibleTo<Function, Function* const>();
 
   static_assert(convertible_to<Function, Function&&>, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   //static_assert(!convertible_to<Function, NoexceptFunction&&>, "");
 #endif
 
@@ -222,7 +222,7 @@ int main(int, char**) {
   static_assert(!convertible_to<ConstFunction, ConstFunction>, "");
   static_assert(!convertible_to<ConstFunction, void>, "");
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   // NoexceptFunction
   CheckNotConvertibleTo<NoexceptFunction, void>();
   CheckNotConvertibleTo<NoexceptFunction, Function>();
@@ -280,18 +280,18 @@ int main(int, char**) {
   CheckNotConvertibleTo<NoexceptFunction*, char>();
   CheckNotConvertibleTo<NoexceptFunction*, char&>();
   CheckNotConvertibleTo<NoexceptFunction*, char*>();
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
 
   // Array
   CheckNotConvertibleTo<Array, void>();
   CheckNotConvertibleTo<Array, Function>();
   CheckNotConvertibleTo<Array, Function&>();
   CheckNotConvertibleTo<Array, Function*>();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   CheckNotConvertibleTo<Array, NoexceptFunction>();
   CheckNotConvertibleTo<Array, NoexceptFunction&>();
   CheckNotConvertibleTo<Array, NoexceptFunction*>();
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
   CheckNotConvertibleTo<Array, Array>();
 
   static_assert(!convertible_to<Array, Array&>, "");
@@ -299,10 +299,10 @@ int main(int, char**) {
 
   static_assert(!convertible_to<const Array, Array&>, "");
   static_assert(convertible_to<const Array, const Array&>, "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC has a bug where lets the conversion happen
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC has a bug where lets the conversion happen
   static_assert(!convertible_to<Array, volatile Array&>, "");
   static_assert(!convertible_to<Array, const volatile Array&>, "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 
   static_assert(convertible_to<Array, Array&&>, "");
   static_assert(convertible_to<Array, const Array&&>, "");
@@ -331,11 +331,11 @@ int main(int, char**) {
   CheckNotConvertibleTo<Array&, Function>();
   CheckNotConvertibleTo<Array&, Function&>();
   CheckNotConvertibleTo<Array&, Function*>();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   CheckNotConvertibleTo<Array&, NoexceptFunction>();
   CheckNotConvertibleTo<Array&, NoexceptFunction&>();
   CheckNotConvertibleTo<Array&, NoexceptFunction*>();
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
   CheckNotConvertibleTo<Array&, Array>();
 
   static_assert(convertible_to<Array&, Array&>, "");
@@ -359,11 +359,11 @@ int main(int, char**) {
   CheckNotConvertibleTo<char, Function>();
   CheckNotConvertibleTo<char, Function&>();
   CheckNotConvertibleTo<char, Function*>();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   CheckNotConvertibleTo<char, NoexceptFunction>();
   CheckNotConvertibleTo<char, NoexceptFunction&>();
   CheckNotConvertibleTo<char, NoexceptFunction*>();
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
   CheckNotConvertibleTo<char, Array>();
   CheckNotConvertibleTo<char, Array&>();
 
@@ -381,11 +381,11 @@ int main(int, char**) {
   CheckNotConvertibleTo<char&, Function>();
   CheckNotConvertibleTo<char&, Function&>();
   CheckNotConvertibleTo<char&, Function*>();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   CheckNotConvertibleTo<char&, NoexceptFunction>();
   CheckNotConvertibleTo<char&, NoexceptFunction&>();
   CheckNotConvertibleTo<char&, NoexceptFunction*>();
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
   CheckNotConvertibleTo<char&, Array>();
   CheckNotConvertibleTo<char&, Array&>();
 
@@ -403,11 +403,11 @@ int main(int, char**) {
   CheckNotConvertibleTo<char*, Function>();
   CheckNotConvertibleTo<char*, Function&>();
   CheckNotConvertibleTo<char*, Function*>();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   CheckNotConvertibleTo<char*, NoexceptFunction>();
   CheckNotConvertibleTo<char*, NoexceptFunction&>();
   CheckNotConvertibleTo<char*, NoexceptFunction*>();
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
   CheckNotConvertibleTo<char*, Array>();
   CheckNotConvertibleTo<char*, Array&>();
 

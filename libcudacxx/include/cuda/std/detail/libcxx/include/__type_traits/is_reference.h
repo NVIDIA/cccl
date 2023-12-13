@@ -45,7 +45,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_reference
     : public integral_constant<bool, _LIBCUDACXX_IS_REFERENCE(_Tp)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_lvalue_reference_v = _LIBCUDACXX_IS_LVALUE_REFERENCE(_Tp);
 template <class _Tp>
@@ -66,7 +66,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_reference        : publi
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_reference<_Tp&>  : public true_type {};
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_reference<_Tp&&> : public true_type {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_lvalue_reference_v = is_lvalue_reference<_Tp>::value;
 

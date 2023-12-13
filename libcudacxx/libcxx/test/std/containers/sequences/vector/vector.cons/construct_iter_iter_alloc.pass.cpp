@@ -20,7 +20,7 @@
 #include "test_allocator.h"
 #include "min_allocator.h"
 #include "asan_testing.h"
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 #include "emplace_constructible.h"
 #include "container_test_types.h"
 #endif
@@ -36,7 +36,7 @@ void test(Iterator first, Iterator last, const A& a) {
     assert(*i == *first);
 }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 
 template <class T>
 struct implicit_conv_allocator : min_allocator<T> {
@@ -64,7 +64,7 @@ void basic_tests() {
                             random_access_iterator<const int*>(an), alloc);
     test<std::vector<int> >(a, an, alloc);
   }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     int a[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 3, 1, 0};
     int* an = a + sizeof(a) / sizeof(a[0]);
@@ -87,7 +87,7 @@ void basic_tests() {
 }
 
 void emplaceable_concept_tests() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   int arr1[] = {42};
   int arr2[] = {1, 101, 42};
   {
@@ -128,7 +128,7 @@ void emplaceable_concept_tests() {
 }
 
 void test_ctor_under_alloc() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   int arr1[] = {42};
   int arr2[] = {1, 101, 42};
   {
