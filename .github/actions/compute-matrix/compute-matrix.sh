@@ -21,14 +21,14 @@ extract_matrix() {
   local type="$2"
   local matrix=$(yq -o=json "$file" | jq -cr ".$type")
   write_output "DEVCONTAINER_VERSION" "$(yq -o json "$file" | jq -cr '.devcontainer_version')"
+
   local nvcc_full_matrix="$(echo "$matrix" | jq -cr '.nvcc' | explode_std_versions )"
-  write_output "NVCC_FULL_MATRIX" "$nvcc_full_matrix"
-  write_output "CUDA_VERSIONS" "$(echo "$nvcc_full_matrix" | jq -cr '[.[] | .cuda] | unique')"
-  write_output "HOST_COMPILERS" "$(echo "$nvcc_full_matrix" | jq -cr '[.[] | .compiler.name] | unique')"
   local per_cuda_compiler_matrix="$(echo "$nvcc_full_matrix" | jq -cr ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')"
   write_output "PER_CUDA_COMPILER_MATRIX"  "$per_cuda_compiler_matrix"
   write_output "PER_CUDA_COMPILER_KEYS" "$(echo "$per_cuda_compiler_matrix" | jq -r 'keys | @json')"
+
   write_output "NVRTC_MATRIX" "$(echo "$matrix" | jq '.nvrtc' | explode_std_versions)"
+
   local clang_cuda_matrix="$(echo "$matrix" | jq -cr '.["clang-cuda"]' | explode_std_versions | explode_libs)"
   write_output "CLANG_CUDA_MATRIX" "$clang_cuda_matrix"
   write_output "CCCL_INFRA_MATRIX" "$(echo "$matrix" | jq -cr '.["cccl-infra"]' )"
