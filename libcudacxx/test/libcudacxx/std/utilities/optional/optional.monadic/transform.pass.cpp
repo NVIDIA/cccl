@@ -89,7 +89,7 @@ struct RVCRefQual {
   constexpr int operator()(int) const&& { return 1; }
 };
 
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
 struct NoCopy {
   NoCopy() = default;
   __host__ __device__
@@ -222,7 +222,7 @@ TEST_CONSTEXPR_CXX17 bool test() {
   cuda::std::move(copt).transform(never_called);
 
   // the code below depends on guaranteed copy/move elision
-#if TEST_STD_VER >= 17 && (!defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 20)
+#if TEST_STD_VER >= 2017 && (!defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2020)
   cuda::std::optional<NoCopy> nc;
   const auto& cnc = nc;
   cuda::std::move(nc).transform(NoCopy{});
@@ -237,7 +237,7 @@ TEST_CONSTEXPR_CXX17 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   static_assert(test());
 #endif
   return 0;

@@ -118,7 +118,7 @@ public:
 };
 #endif // !_LIBCUDACXX_ABI_VCRUNTIME
 
-#if _LIBCUDACXX_STD_VER <= 14 \
+#if _CCCL_STD_VER <= 2014 \
     || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNEXPECTED_FUNCTIONS) \
     || defined(_LIBCUDACXX_BUILDING_LIBRARY)
 typedef void (*unexpected_handler)();

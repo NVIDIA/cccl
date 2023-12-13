@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <class _Tp, size_t _Np>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
@@ -101,7 +101,7 @@ auto crend(const _Cp& __c) -> decltype(_CUDA_VSTD::rend(__c))
     return _CUDA_VSTD::rend(__c);
 }
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

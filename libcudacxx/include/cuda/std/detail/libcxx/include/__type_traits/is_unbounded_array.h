@@ -29,7 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class>     struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_is_unbounded_array        : false_type {};
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_is_unbounded_array<_Tp[]> : true_type {};
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <class>     struct _LIBCUDACXX_TEMPLATE_VIS is_unbounded_array        : false_type {};
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_unbounded_array<_Tp[]> : true_type {};

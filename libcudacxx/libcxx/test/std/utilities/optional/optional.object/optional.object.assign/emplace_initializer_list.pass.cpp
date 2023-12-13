@@ -101,7 +101,7 @@ int main(int, char**)
 {
     {
         check_X();
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
         static_assert(check_X());
 #endif
     }
@@ -115,7 +115,7 @@ int main(int, char**)
     }
     {
         check_Y();
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
         static_assert(check_Y());
 #endif
     }

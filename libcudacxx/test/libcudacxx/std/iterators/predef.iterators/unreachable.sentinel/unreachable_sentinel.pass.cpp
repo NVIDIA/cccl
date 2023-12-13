@@ -46,9 +46,9 @@ __host__ __device__ constexpr bool test() {
 
   static_assert( cuda::std::__weakly_equality_comparable_with<cuda::std::unreachable_sentinel_t, int>);
   static_assert( cuda::std::__weakly_equality_comparable_with<cuda::std::unreachable_sentinel_t, int*>);
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 20 // gcc 10 has an issue with void
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020 // gcc 10 has an issue with void
   static_assert(!cuda::std::__weakly_equality_comparable_with<cuda::std::unreachable_sentinel_t, void*>);
-#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 20
+#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020
   ASSERT_NOEXCEPT(sentinel == p);
   ASSERT_NOEXCEPT(sentinel != p);
 

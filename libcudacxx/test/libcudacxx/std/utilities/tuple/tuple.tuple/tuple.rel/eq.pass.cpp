@@ -146,7 +146,7 @@ int main(int, char**)
         assert(!(t1 == t2));
         assert(t1 != t2);
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         typedef cuda::std::tuple<long, int, double> T1;
         typedef cuda::std::tuple<double, long, int> T2;

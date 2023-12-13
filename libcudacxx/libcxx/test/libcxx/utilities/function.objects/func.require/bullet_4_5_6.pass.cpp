@@ -84,7 +84,7 @@ private:
             runTestDispatch<E>(M, dref2, &dref2.object.object);
             runTestPropCVDispatch<E>(M, obj_ptr, &obj_ptr->object);
             runTestPropCVDispatch<E>(M, der_ptr, &der_ptr->object);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
             runTestPropCVDispatch<E>(M, rref, &(rref.get().object));
             runTestPropCVDispatch<E>(M, drref, &(drref.get().object));
 #endif
@@ -99,7 +99,7 @@ private:
             runTestDispatch<E>(M, dref2, &dref2.object.object);
             runTestPropCVDispatch<E>(M, obj_ptr, &obj_ptr->object);
             runTestPropCVDispatch<E>(M, der_ptr, &der_ptr->object);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
             runTestPropCVDispatch<E>(M, rref, &(rref.get().object));
             runTestPropCVDispatch<E>(M, drref, &(drref.get().object));
 #endif
@@ -114,7 +114,7 @@ private:
             runTestDispatch<E>(M, dref2, &dref2.object.object);
             runTestPropCVDispatch<E>(M, obj_ptr, &obj_ptr->object);
             runTestPropCVDispatch<E>(M, der_ptr, &der_ptr->object);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
             runTestPropCVDispatch<E>(M, rref, &(rref.get().object));
             runTestPropCVDispatch<E>(M, drref, &(drref.get().object));
 #endif
@@ -129,7 +129,7 @@ private:
             runTestDispatch<E>(M, dref2, &dref2.object.object);
             runTestPropCVDispatch<E>(M, obj_ptr, &obj_ptr->object);
             runTestPropCVDispatch<E>(M, der_ptr, &der_ptr->object);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
             runTestPropCVDispatch<E>(M, rref, &(rref.get().object));
             runTestPropCVDispatch<E>(M, drref, &(drref.get().object));
 #endif
@@ -143,7 +143,7 @@ private:
         runTest<Expect const&>         (M, C_<T const&>(obj),          expect);
         runTest<Expect volatile&>      (M, C_<T volatile&>(obj),       expect);
         runTest<Expect const volatile&>(M, C_<T const volatile&>(obj), expect);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
         runTest<Expect&&>               (M, C_<T&&>(obj),                expect);
         runTest<Expect const&&>         (M, C_<T const&&>(obj),          expect);
         runTest<Expect volatile&&>      (M, C_<T volatile&&>(obj),       expect);
@@ -165,7 +165,7 @@ private:
         runTest<Expect&>(M, C_<T const&>(obj),          expect);
         runTest<Expect&>(M, C_<T volatile&>(obj),       expect);
         runTest<Expect&>(M, C_<T const volatile&>(obj), expect);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
         runTest<Expect&>(M, C_<T&&>(obj),                expect);
         runTest<Expect&>(M, C_<T const&&>(obj),          expect);
         runTest<Expect&>(M, C_<T volatile&&>(obj),       expect);
@@ -183,7 +183,7 @@ private:
     }
 
     template <class Expect, class Fn, class T>
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     void runTest(Fn M, T&& obj, ObjectType* expect) {
 #else
     void runTest(Fn M, T& obj, ObjectType* expect ) {
@@ -195,7 +195,7 @@ private:
             Expect e = std::__invoke(M, std::forward<T>(obj));
             assert(&e == expect);
         }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
         {
             static_assert((std::is_same<
                 decltype(std::__invoke(M, std::forward<T>(obj))), Expect

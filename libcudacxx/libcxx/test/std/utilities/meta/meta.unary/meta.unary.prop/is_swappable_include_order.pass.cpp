@@ -29,7 +29,7 @@ int main(int, char**)
     typedef double T[17][29];
     {
         LIBCPP_STATIC_ASSERT(std::__is_swappable<T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
         static_assert(std::is_swappable_v<T>, "");
 #endif
     }

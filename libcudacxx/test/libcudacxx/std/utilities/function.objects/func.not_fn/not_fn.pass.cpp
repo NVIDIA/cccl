@@ -627,7 +627,7 @@ void call_operator_noexcept_test()
         auto ret = cuda::std::not_fn(value);
         (void)ret;
         LIBCPP_STATIC_ASSERT(noexcept(!_CUDA_VSTD::__invoke(value)), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
         static_assert(noexcept(!cuda::std::invoke(value)), "");
 #endif
 // TODO: nvcc gets this wrong, investigate

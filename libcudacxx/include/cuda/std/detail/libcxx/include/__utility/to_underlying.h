@@ -33,7 +33,7 @@ __to_underlying(_Tp __val) noexcept {
   return static_cast<typename underlying_type<_Tp>::type>(__val);
 }
 
-#if _LIBCUDACXX_STD_VER > 20
+#if _CCCL_STD_VER > 2020
 template <class _Tp>
 _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY constexpr underlying_type_t<_Tp>
 to_underlying(_Tp __val) noexcept {

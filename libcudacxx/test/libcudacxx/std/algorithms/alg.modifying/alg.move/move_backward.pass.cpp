@@ -178,9 +178,9 @@ TEST_CONSTEXPR_CXX20 __host__ __device__ bool test() {
 int main(int, char**) {
   test();
 
-#if TEST_STD_VER >= 20
+#if TEST_STD_VER >= 2020
   static_assert(test());
-#endif // TEST_STD_VER >= 20
+#endif // TEST_STD_VER >= 2020
 
   return 0;
 }

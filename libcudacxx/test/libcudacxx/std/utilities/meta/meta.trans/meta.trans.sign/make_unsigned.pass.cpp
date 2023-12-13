@@ -34,7 +34,7 @@ __host__ __device__
 void test_make_unsigned()
 {
     ASSERT_SAME_TYPE(U, typename cuda::std::make_unsigned<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(U, cuda::std::make_unsigned_t<T>);
 #endif
 }

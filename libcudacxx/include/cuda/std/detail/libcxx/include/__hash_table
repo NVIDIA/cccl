@@ -858,7 +858,7 @@ public:
     template <class> friend class __hash_map_node_destructor;
 };
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _NodeType, class _Alloc>
 struct __generic_container_node_destructor;
 
@@ -1154,7 +1154,7 @@ public:
         return __emplace_unique_key_args(_NodeTypes::__get_key(__x), __x);
     }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     template <class _NodeHandle, class _InsertReturnType>
     _LIBCUDACXX_INLINE_VISIBILITY
     _InsertReturnType __node_handle_insert_unique(_NodeHandle&& __nh);
@@ -1250,7 +1250,7 @@ public:
         __equal_range_multi(const _Key& __k) const;
 
     void swap(__hash_table& __u)
-#if _LIBCUDACXX_STD_VER <= 11
+#if _CCCL_STD_VER <= 2011
         noexcept(
             __is_nothrow_swappable<hasher>::value && __is_nothrow_swappable<key_equal>::value
             && (!allocator_traits<__pointer_allocator>::propagate_on_container_swap::value
@@ -2162,7 +2162,7 @@ __hash_table<_Tp, _Hash, _Equal, _Alloc>::__emplace_hint_multi(
     return __r;
 }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _Tp, class _Hash, class _Equal, class _Alloc>
 template <class _NodeHandle, class _InsertReturnType>
 _LIBCUDACXX_INLINE_VISIBILITY
@@ -2292,7 +2292,7 @@ __hash_table<_Tp, _Hash, _Equal, _Alloc>::__node_handle_merge_multi(
         __node_insert_multi_perform(__src_ptr, __pn);
     }
 }
-#endif  // _LIBCUDACXX_STD_VER > 14
+#endif  // _CCCL_STD_VER > 2014
 
 template <class _Tp, class _Hash, class _Equal, class _Alloc>
 void
@@ -2699,7 +2699,7 @@ __hash_table<_Tp, _Hash, _Equal, _Alloc>::__equal_range_multi(
 template <class _Tp, class _Hash, class _Equal, class _Alloc>
 void
 __hash_table<_Tp, _Hash, _Equal, _Alloc>::swap(__hash_table& __u)
-#if _LIBCUDACXX_STD_VER <= 11
+#if _CCCL_STD_VER <= 2011
     noexcept(
         __is_nothrow_swappable<hasher>::value && __is_nothrow_swappable<key_equal>::value
         && (!allocator_traits<__pointer_allocator>::propagate_on_container_swap::value

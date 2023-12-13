@@ -17,7 +17,7 @@
 
 int main(int, char**)
 {
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     const int *p = std::addressof<const int>(0);
 #else
 #error

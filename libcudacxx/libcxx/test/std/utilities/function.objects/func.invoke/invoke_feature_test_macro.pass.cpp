@@ -16,7 +16,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
 # ifdef __cpp_lib_invoke
 #   error Feature test macro should be defined
 # endif

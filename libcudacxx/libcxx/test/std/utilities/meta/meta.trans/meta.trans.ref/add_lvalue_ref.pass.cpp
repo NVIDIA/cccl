@@ -19,7 +19,7 @@ template <class T, class U>
 void test_add_lvalue_reference()
 {
     ASSERT_SAME_TYPE(U, typename std::add_lvalue_reference<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(U, std::add_lvalue_reference_t<T>);
 #endif
 }
@@ -28,7 +28,7 @@ template <class F>
 void test_function0()
 {
     ASSERT_SAME_TYPE(F&, typename std::add_lvalue_reference<F>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(F&, std::add_lvalue_reference_t<F>);
 #endif
 }
@@ -37,7 +37,7 @@ template <class F>
 void test_function1()
 {
     ASSERT_SAME_TYPE(F, typename std::add_lvalue_reference<F>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(F, std::add_lvalue_reference_t<F>);
 #endif
 }

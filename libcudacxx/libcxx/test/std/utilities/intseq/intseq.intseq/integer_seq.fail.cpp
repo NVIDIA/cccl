@@ -25,7 +25,7 @@
 
 int main(int, char**)
 {
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 
 //  Should fail to compile, since float is not an integral type
     using floatmix = std::integer_sequence<float>;
@@ -35,7 +35,7 @@ int main(int, char**)
 
 X
 
-#endif  // TEST_STD_VER > 11
+#endif  // TEST_STD_VER > 2011
 
   return 0;
 }

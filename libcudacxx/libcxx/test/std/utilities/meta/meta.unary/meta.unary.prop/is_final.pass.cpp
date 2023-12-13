@@ -25,7 +25,7 @@ void test_is_final()
     static_assert( std::is_final<const T>::value, "");
     static_assert( std::is_final<volatile T>::value, "");
     static_assert( std::is_final<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_final_v<T>, "");
     static_assert( std::is_final_v<const T>, "");
     static_assert( std::is_final_v<volatile T>, "");
@@ -40,7 +40,7 @@ void test_is_not_final()
     static_assert(!std::is_final<const T>::value, "");
     static_assert(!std::is_final<volatile T>::value, "");
     static_assert(!std::is_final<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_final_v<T>, "");
     static_assert(!std::is_final_v<const T>, "");
     static_assert(!std::is_final_v<volatile T>, "");

@@ -23,7 +23,7 @@
 #include "../function_types.h"
 
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 struct RValueCallable {
     template <class ...Args>
     void operator()(Args&&...) && {}
@@ -118,7 +118,7 @@ int main(int, char**)
         non_default_test_allocator<DummyClass> non_default_alloc(42);
         test_for_alloc(non_default_alloc);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         using Fn = std::function<void(int, int, int)>;
         static_assert(std::is_constructible<Fn, std::allocator_arg_t, std::allocator<int>, LValueCallable&>::value, "");

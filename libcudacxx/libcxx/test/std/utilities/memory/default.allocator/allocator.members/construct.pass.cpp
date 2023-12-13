@@ -34,7 +34,7 @@ struct A
 
 int move_only_constructed = 0;
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 class move_only
 {
     move_only(const move_only&) = delete;
@@ -51,7 +51,7 @@ public:
     int data; // unused other than to make sizeof(move_only) == sizeof(int).
               // but public to suppress "-Wunused-private-field"
 };
-#endif // TEST_STD_VER >= 11
+#endif // TEST_STD_VER >= 2011
 
 int main(int, char**)
 {
@@ -104,7 +104,7 @@ int main(int, char**)
     assert(globalMemCounter.checkOutstandingNewEq(0));
     assert(A_constructed == 0);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     std::allocator<move_only> a;
     assert(globalMemCounter.checkOutstandingNewEq(0));

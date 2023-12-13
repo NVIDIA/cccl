@@ -1093,7 +1093,7 @@ private:
     valarray& __assign_range(const value_type* __f, const value_type* __l);
 };
 
-#if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 template<class _Tp, size_t _Size>
 valarray(const _Tp(&)[_Size], size_t) -> valarray<_Tp>;
 #endif
@@ -4885,7 +4885,7 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _LIBCUDACXX_POP_MACROS
 
-#if !defined(_LIBCUDACXX_REMOVE_TRANSITIVE_INCLUDES) && _LIBCUDACXX_STD_VER <= 20
+#if !defined(_LIBCUDACXX_REMOVE_TRANSITIVE_INCLUDES) && _CCCL_STD_VER <= 2020
 #  include <algorithm>
 #  include <concepts>
 #  include <cstring>

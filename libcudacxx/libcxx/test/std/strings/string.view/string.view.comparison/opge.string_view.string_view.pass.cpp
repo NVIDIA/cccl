@@ -48,7 +48,7 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), S("abcdefghijklmnopqrst"), true, true);
     }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     typedef std::basic_string_view<char, constexpr_char_traits<char>> SV;
     constexpr SV  sv1;

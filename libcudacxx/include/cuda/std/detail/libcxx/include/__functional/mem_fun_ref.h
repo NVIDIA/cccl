@@ -28,7 +28,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
 template<class _Sp, class _Tp>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 mem_fun_t
@@ -174,7 +174,7 @@ const_mem_fun1_ref_t<_Sp,_Tp,_Ap>
 mem_fun_ref(_Sp (_Tp::*__f)(_Ap) const)
     {return const_mem_fun1_ref_t<_Sp,_Tp,_Ap>(__f);}
 
-#endif // _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
+#endif // _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -18,7 +18,7 @@ int main(int, char**)
 {
     ASSERT_SAME_TYPE(void, cuda::std::enable_if<true>::type);
     ASSERT_SAME_TYPE(int,  cuda::std::enable_if<true, int>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(void, cuda::std::enable_if_t<true, void>);
     ASSERT_SAME_TYPE(int,  cuda::std::enable_if_t<true, int>);
 #endif

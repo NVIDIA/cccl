@@ -39,7 +39,7 @@ int main(int, char**) {
     int a2[] = {1, 2, 4};
     typedef std::list<int> L;
     L c(a1, a1 + 4);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     assert(c.remove(3) == 1);
 	ASSERT_SAME_TYPE(L::size_type, decltype(c.remove(3)));
 #else
@@ -62,7 +62,7 @@ int main(int, char**) {
     std::list<S> c;
     for (int *ip = a1; ip < a1 + 8; ++ip)
       c.push_back(S(*ip));
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     assert(c.remove(c.front()) == 3);
 #else
     c.remove(c.front());
@@ -80,19 +80,19 @@ int main(int, char**) {
     int a1[] = {1, 2, 3, 4};
     int a2[] = {1, 2, 4};
     List c(a1, a1 + 4, Alloc::create());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     assert(c.remove(3) == 1);
 #else
     c.remove(3);
 #endif
     assert(c == List(a2, a2 + 3, Alloc::create()));
   }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     int a1[] = {1, 2, 3, 4};
     int a2[] = {1, 2, 4};
     std::list<int, min_allocator<int>> c(a1, a1 + 4);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     assert(c.remove(3) == 1);
 #else
     c.remove(3);

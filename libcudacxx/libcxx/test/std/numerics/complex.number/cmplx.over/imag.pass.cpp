@@ -26,7 +26,7 @@ test(typename std::enable_if<std::is_integral<T>::value>::type* = 0)
 {
     static_assert((std::is_same<decltype(std::imag(T(x))), double>::value), "");
     assert(std::imag(x) == 0);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     constexpr T val {x};
     static_assert(std::imag(val) == 0, "");
     constexpr std::complex<T> t{val, val};
@@ -40,7 +40,7 @@ test(typename std::enable_if<!std::is_integral<T>::value>::type* = 0)
 {
     static_assert((std::is_same<decltype(std::imag(T(x))), T>::value), "");
     assert(std::imag(x) == 0);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     constexpr T val {x};
     static_assert(std::imag(val) == 0, "");
     constexpr std::complex<T> t{val, val};

@@ -103,7 +103,7 @@
 #include <version>
 #include "test_macros.h"
 
-#if TEST_STD_VER < 14
+#if TEST_STD_VER < 2014
 
 # ifdef __cpp_lib_addressof_constexpr
 #   error "__cpp_lib_addressof_constexpr should not be defined before c++17"
@@ -441,7 +441,7 @@
 #   error "__cpp_lib_void_t should not be defined before c++17"
 # endif
 
-#elif TEST_STD_VER == 14
+#elif TEST_STD_VER == 2014
 
 # ifdef __cpp_lib_addressof_constexpr
 #   error "__cpp_lib_addressof_constexpr should not be defined before c++17"
@@ -857,7 +857,7 @@
 #   error "__cpp_lib_void_t should not be defined before c++17"
 # endif
 
-#elif TEST_STD_VER == 17
+#elif TEST_STD_VER == 2017
 
 # if TEST_HAS_BUILTIN(__builtin_addressof) || TEST_GCC_VER >= 700
 #   ifndef __cpp_lib_addressof_constexpr
@@ -1492,7 +1492,7 @@
 #   error "__cpp_lib_void_t should have the value 201411L in c++17"
 # endif
 
-#elif TEST_STD_VER > 17
+#elif TEST_STD_VER > 2017
 
 # if TEST_HAS_BUILTIN(__builtin_addressof) || TEST_GCC_VER >= 700
 #   ifndef __cpp_lib_addressof_constexpr
@@ -1702,7 +1702,7 @@
 #   endif
 # endif
 
-# if TEST_STD_VER > 17 && defined(__cpp_impl_destroying_delete) && __cpp_impl_destroying_delete >= 201806L
+# if TEST_STD_VER > 2017 && defined(__cpp_impl_destroying_delete) && __cpp_impl_destroying_delete >= 201806L
 #   ifndef __cpp_lib_destroying_delete
 #     error "__cpp_lib_destroying_delete should be defined in c++2a"
 #   endif
@@ -1711,7 +1711,7 @@
 #   endif
 # else
 #   ifdef __cpp_lib_destroying_delete
-#     error "__cpp_lib_destroying_delete should not be defined when TEST_STD_VER > 17 && defined(__cpp_impl_destroying_delete) && __cpp_impl_destroying_delete >= 201806L is not defined!"
+#     error "__cpp_lib_destroying_delete should not be defined when TEST_STD_VER > 2017 && defined(__cpp_impl_destroying_delete) && __cpp_impl_destroying_delete >= 201806L is not defined!"
 #   endif
 # endif
 
@@ -2232,6 +2232,6 @@
 #   error "__cpp_lib_void_t should have the value 201411L in c++2a"
 # endif
 
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**) { return 0; }

@@ -21,7 +21,7 @@ void test_is_class()
     static_assert( std::is_class<const T>::value, "");
     static_assert( std::is_class<volatile T>::value, "");
     static_assert( std::is_class<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_class_v<T>, "");
     static_assert( std::is_class_v<const T>, "");
     static_assert( std::is_class_v<volatile T>, "");
@@ -36,7 +36,7 @@ void test_is_not_class()
     static_assert(!std::is_class<const T>::value, "");
     static_assert(!std::is_class<volatile T>::value, "");
     static_assert(!std::is_class<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_class_v<T>, "");
     static_assert(!std::is_class_v<const T>, "");
     static_assert(!std::is_class_v<volatile T>, "");
@@ -78,14 +78,14 @@ int main(int, char**)
     test_is_class<Abstract>();
     test_is_class<incomplete_type>();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 // In C++03 we have an emulation of std::nullptr_t
     test_is_not_class<std::nullptr_t>();
 #endif
     test_is_not_class<void>();
     test_is_not_class<int>();
     test_is_not_class<int&>();
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test_is_not_class<int&&>();
 #endif
     test_is_not_class<int*>();

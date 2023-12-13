@@ -17,7 +17,7 @@ template <class T, class U>
 void test_remove_pointer()
 {
     ASSERT_SAME_TYPE(U, typename std::remove_pointer<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(U, std::remove_pointer_t<T>);
 #endif
 }

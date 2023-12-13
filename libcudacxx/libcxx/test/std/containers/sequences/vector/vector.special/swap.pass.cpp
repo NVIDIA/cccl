@@ -105,7 +105,7 @@ int main(int, char**)
         assert(is_contiguous_container_asan_correct(c1));
         assert(is_contiguous_container_asan_correct(c2));
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         int a1[] = {1, 3, 7, 9, 10};
         int a2[] = {0, 2, 4, 5, 6, 8, 11};

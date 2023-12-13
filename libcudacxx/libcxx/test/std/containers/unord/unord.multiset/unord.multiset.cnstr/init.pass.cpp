@@ -91,7 +91,7 @@ int main(int, char**)
         assert(fabs(c.load_factor() - (float)c.size()/c.bucket_count()) < FLT_EPSILON);
         assert(c.max_load_factor() == 1);
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         typedef int T;
         typedef test_hash<T> HF;
@@ -160,7 +160,7 @@ int main(int, char**)
         assert(fabs(c.load_factor() - (float)c.size()/c.bucket_count()) < FLT_EPSILON);
         assert(c.max_load_factor() == 1);
     }
-#endif // TEST_STD_VER > 11
+#endif // TEST_STD_VER > 2011
 
   return 0;
 }

@@ -68,7 +68,7 @@ int main(int, char**)
     static_assert(noexcept(std::get<1>(std::move(p))), "");
     }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     typedef std::tuple<double, int> T;
     constexpr const T t(2.718, 5);

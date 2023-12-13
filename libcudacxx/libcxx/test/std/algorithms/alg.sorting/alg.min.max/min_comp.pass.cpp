@@ -46,7 +46,7 @@ int main(int, char**)
     test(x, y, std::greater<int>(), x);
     test(y, x, std::greater<int>(), x);
     }
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     {
     constexpr int x = 1;
     constexpr int y = 0;

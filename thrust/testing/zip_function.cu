@@ -1,6 +1,6 @@
 #include <thrust/detail/config.h>
 
-#if THRUST_CPP_DIALECT >= 2011 && !defined(THRUST_LEGACY_GCC)
+#if _CCCL_STD_VER >= 2011 && !defined(THRUST_LEGACY_GCC)
 
 #include <unittest/unittest.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -67,4 +67,4 @@ struct TestZipFunctionTransform
 };
 VariableUnitTest<TestZipFunctionTransform, ThirtyTwoBitTypes> TestZipFunctionTransformInstance;
 
-#endif // THRUST_CPP_DIALECT
+#endif // _CCCL_STD_VER

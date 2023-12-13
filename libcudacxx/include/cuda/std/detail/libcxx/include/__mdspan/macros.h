@@ -63,7 +63,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 #ifndef __MDSPAN_FORCE_INLINE_FUNCTION
 #  ifdef __MDSPAN_COMPILER_MSVC // Microsoft compilers
@@ -630,7 +630,7 @@ _LIBCUDACXX_END_NAMESPACE_STD
 // </editor-fold> end Pre-C++14 constexpr }}}1
 //==============================================================================
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
 #define _LIBCUDACXX_THROW_RUNTIME_ERROR(_COND, _MESSAGE) \

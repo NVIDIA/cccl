@@ -58,7 +58,7 @@ int main(int, char**) {
   // expected-error-re@+1 {{ignoring return value of function declared with {{'nodiscard'|warn_unused_result}} attribute}}
   std::binary_search(std::begin(arr), std::end(arr), 1, std::greater<int>());
 
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
   // expected-error-re@+1 {{ignoring return value of function declared with {{'nodiscard'|warn_unused_result}} attribute}}
   std::clamp(2, 1, 3);
 
@@ -85,7 +85,7 @@ int main(int, char**) {
   std::equal(std::begin(arr), std::end(arr), std::begin(arr),
              std::greater<int>());
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
   // expected-error-re@+1 {{ignoring return value of function declared with {{'nodiscard'|warn_unused_result}} attribute}}
   std::equal(std::begin(arr), std::end(arr), std::begin(arr), std::end(arr));
 
@@ -150,7 +150,7 @@ int main(int, char**) {
   std::is_permutation(std::begin(arr), std::end(arr), std::begin(arr),
                       std::greater<int>());
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
   // expected-error-re@+1 {{ignoring return value of function declared with {{'nodiscard'|warn_unused_result}} attribute}}
   std::is_permutation(std::begin(arr), std::end(arr), std::begin(arr),
                       std::end(arr));
@@ -247,7 +247,7 @@ int main(int, char**) {
   std::mismatch(std::begin(arr), std::end(arr), std::begin(arr),
                 std::greater<int>());
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
   // expected-error-re@+1 {{ignoring return value of function declared with {{'nodiscard'|warn_unused_result}} attribute}}
   std::mismatch(std::begin(arr), std::end(arr), std::begin(arr), std::end(arr));
 
@@ -278,7 +278,7 @@ int main(int, char**) {
   std::search(std::begin(arr), std::end(arr), std::begin(arr), std::end(arr),
               std::greater<int>());
 
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
   // expected-error-re@+1 {{ignoring return value of function declared with {{'nodiscard'|warn_unused_result}} attribute}}
   std::search(std::begin(arr), std::end(arr),
               std::default_searcher(std::begin(arr), std::end(arr)));

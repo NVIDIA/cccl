@@ -20,7 +20,7 @@ void
 test(const T&)
 {
     static_assert(std::is_bind_expression<T>::value == Expected, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(std::is_bind_expression_v<T> == Expected, "");
 #endif
 }

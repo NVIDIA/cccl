@@ -28,7 +28,7 @@ int main(int, char**)
     LIBCPP_ASSERT(c.__invariants());
     LIBCPP_ASSERT(is_contiguous_container_asan_correct(c));
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     int a[] = {1, 2, 3};
     std::vector<int, min_allocator<int>> c(a, a+3);

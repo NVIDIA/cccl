@@ -44,7 +44,7 @@
   #include <string>
   #include <array>
 
-  #if THRUST_CPP_DIALECT >= 2017
+  #if _CCCL_STD_VER >= 2017
     #include <string_view>
   #endif
 #endif
@@ -84,18 +84,18 @@ struct is_contiguous_iterator_impl;
  * \see THRUST_PROCLAIM_CONTIGUOUS_ITERATOR
  */
 template <typename Iterator>
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 using is_contiguous_iterator =
 #else
 struct is_contiguous_iterator :
 #endif
   detail::is_contiguous_iterator_impl<Iterator>
-#if THRUST_CPP_DIALECT < 2011
+#if _CCCL_STD_VER < 2011
 {}
 #endif
 ;
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c Iterator satisfies
  *  <a href="https://en.cppreference.com/w/cpp/named_req/ContiguousIterator">ContiguousIterator</a>,
  *  aka it points to elements that are contiguous in memory, and \c false
@@ -199,7 +199,7 @@ struct is_msvc_contiguous_iterator<
   ::std::_Array_iterator<T, N>
 > : true_type {};
 
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 template <typename Traits>
 struct is_msvc_contiguous_iterator<
   ::std::_String_view_iterator<Traits>

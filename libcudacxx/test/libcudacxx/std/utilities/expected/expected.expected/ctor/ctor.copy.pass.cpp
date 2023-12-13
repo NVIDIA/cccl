@@ -41,7 +41,7 @@ struct CopyableNonTrivial {
   int i;
   __host__ __device__ constexpr CopyableNonTrivial(int ii) : i(ii) {}
   __host__ __device__ constexpr CopyableNonTrivial(const CopyableNonTrivial& o) : i(o.i) {}
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   __host__ __device__ friend constexpr bool operator==(const CopyableNonTrivial&, const CopyableNonTrivial&) = default;
 #else
   __host__ __device__ friend constexpr bool operator==(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept { return lhs.i == rhs.i; }
@@ -138,9 +138,9 @@ __host__ __device__ void testException() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");
-#endif // TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   testException();
   return 0;
 }

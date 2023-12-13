@@ -46,7 +46,7 @@ int main(int, char**)
         assert(t.val_ == 3.5);
     }
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     {
         typedef double MoveOnly;
         typedef cuda::std::array<MoveOnly, 3> C;

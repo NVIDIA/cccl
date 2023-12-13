@@ -23,7 +23,7 @@ template <class D>
 void test()
 {
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<typename D::rep>::min());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     ASSERT_NOEXCEPT(       std::chrono::duration_values<typename D::rep>::min());
 #endif
     {
@@ -31,7 +31,7 @@ void test()
     Rep min_rep = std::chrono::duration_values<Rep>::min();
     assert(D::min().count() == min_rep);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef typename D::rep Rep;
     constexpr Rep min_rep = std::chrono::duration_values<Rep>::min();

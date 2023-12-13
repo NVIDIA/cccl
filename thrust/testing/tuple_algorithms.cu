@@ -1,6 +1,6 @@
 #include <thrust/detail/config.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 #include <unittest/unittest.h>
 
@@ -58,5 +58,5 @@ void test_tuple_for_each()
 }
 DECLARE_UNITTEST(test_tuple_for_each);
 
-#endif // THRUST_CPP_DIALECT >= 2011
+#endif // _CCCL_STD_VER >= 2011
 

@@ -34,7 +34,7 @@ struct A
     }
 };
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 struct B
 {
     constexpr B(std::initializer_list<int> il)
@@ -49,15 +49,15 @@ struct B
     }
 };
 
-#endif  // TEST_STD_VER > 11
+#endif  // TEST_STD_VER > 2011
 
 int main(int, char**)
 {
     A test1 = {3, 2, 1};
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     constexpr B test2 = {3, 2, 1};
     (void)test2;
-#endif  // TEST_STD_VER > 11
+#endif  // TEST_STD_VER > 2011
 
   return 0;
 }

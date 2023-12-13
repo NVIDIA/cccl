@@ -4,7 +4,7 @@
 #include <thrust/system/cuda/execution_policy.h>
 #include <cassert>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 #include <future>
 #endif
 
@@ -13,7 +13,7 @@
 //
 // The first method wraps a call to thrust::reduce inside a __global__ function. Since __global__ function
 // launches are asynchronous with the launching thread, this achieves asynchrony. The result of the reduction
-// is stored to a pointer to CUDA global memory. The calling thread waits for the result of the reduction to 
+// is stored to a pointer to CUDA global memory. The calling thread waits for the result of the reduction to
 // be ready by synchronizing with the CUDA stream on which the __global__ function is launched.
 //
 // The second method uses the C++11 library function, std::async, to create concurrency. The lambda function
@@ -37,7 +37,7 @@ int main()
 
   // method 1: call thrust::reduce from an asynchronous CUDA kernel launch
 
-  // create a CUDA stream 
+  // create a CUDA stream
   cudaStream_t s;
   cudaStreamCreate(&s);
 
@@ -59,7 +59,7 @@ int main()
   // reset the result
   result[0] = 0;
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   // method 2: use std::async to create asynchrony
 
   // copy all the algorithm parameters

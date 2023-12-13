@@ -317,7 +317,7 @@ struct basic_common_reference<int, BadBasicCommonReference, X, Y> {
 } // namespace cuda
 static_assert(!common_reference_with<BadBasicCommonReference, int>, "");
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 struct StructNotConvertibleToCommonReference {
   __host__ __device__ explicit(false) StructNotConvertibleToCommonReference(int);
 };
@@ -340,7 +340,7 @@ struct basic_common_reference<int, StructNotConvertibleToCommonReference, X,
 } // namespace cuda
 static_assert(
     !common_reference_with<StructNotConvertibleToCommonReference, int>, "");
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 struct IntNotConvertibleToCommonReference {
   __host__ __device__ operator int&() const;
@@ -362,7 +362,7 @@ struct basic_common_reference<int, IntNotConvertibleToCommonReference, X, Y> {
 static_assert(
     !common_reference_with<IntNotConvertibleToCommonReference, int>, "");
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 struct HasCommonReference {
   __host__ __device__ explicit(false) HasCommonReference(int);
   __host__ __device__ operator int&() const;
@@ -384,6 +384,6 @@ struct basic_common_reference<int, HasCommonReference, X, Y> {
 
 static_assert(!common_reference_with<HasCommonReference, int>, "");
 static_assert(common_reference_with<HasCommonReference, int&>, "");
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**) { return 0; }

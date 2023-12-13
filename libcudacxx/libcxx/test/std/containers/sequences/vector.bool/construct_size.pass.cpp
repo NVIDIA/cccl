@@ -23,7 +23,7 @@ void
 test2(typename C::size_type n,
       typename C::allocator_type const& a = typename C::allocator_type ())
 {
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     C c(n, a);
     LIBCPP_ASSERT(c.__invariants());
     assert(c.size() == n);
@@ -59,7 +59,7 @@ test(typename C::size_type n)
 int main(int, char**)
 {
     test<std::vector<bool> >(50);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test<std::vector<bool, min_allocator<bool>> >(50);
     test2<std::vector<bool, test_allocator<bool>> >( 100, test_allocator<bool>(23));
 #endif

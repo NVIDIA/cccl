@@ -28,7 +28,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [concepts.booleantestable]
 
@@ -40,7 +40,7 @@ concept __boolean_testable = __boolean_testable_impl<_Tp> && requires(_Tp&& __t)
   { !_CUDA_VSTD::forward<_Tp>(__t) } -> __boolean_testable_impl;
 };
 
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 
 template<class _Tp>
 _LIBCUDACXX_CONCEPT __boolean_testable_impl = convertible_to<_Tp, bool>;
@@ -56,7 +56,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class _Tp>
 _LIBCUDACXX_CONCEPT __boolean_testable = _LIBCUDACXX_FRAGMENT(__boolean_testable_, _Tp);
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

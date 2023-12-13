@@ -20,7 +20,7 @@ __host__ __device__
 void test_add_const_imp()
 {
     ASSERT_SAME_TYPE(const U, typename cuda::std::add_const<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(const U,        cuda::std::add_const_t<T>);
 #endif
 }

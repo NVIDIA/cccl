@@ -24,7 +24,7 @@ int main(int, char**)
         C c;
         assert(c.empty());
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef std::forward_list<T, min_allocator<T>> C;

@@ -32,7 +32,7 @@ void
 test()
 {
     typedef std::hash<SV> H;
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     static_assert((std::is_same<typename H::argument_type, SV>::value), "" );
     static_assert((std::is_same<typename H::result_type, std::size_t>::value), "" );
 #endif

@@ -17,7 +17,7 @@
 #include "test_macros.h"
 #include "type_id.h"
 
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
 #error This file requires C++17
 #endif
 

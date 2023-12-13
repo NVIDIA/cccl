@@ -27,7 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [concept.relation]
 
@@ -46,7 +46,7 @@ concept equivalence_relation = relation<_Rp, _Tp, _Up>;
 template<class _Rp, class _Tp, class _Up>
 concept strict_weak_order = relation<_Rp, _Tp, _Up>;
 
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 
 template<class _Rp, class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -71,7 +71,7 @@ _LIBCUDACXX_CONCEPT equivalence_relation = relation<_Rp, _Tp, _Up>;
 template<class _Rp, class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT strict_weak_order = relation<_Rp, _Tp, _Up>;
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

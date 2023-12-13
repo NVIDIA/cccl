@@ -45,7 +45,7 @@ struct MoveOnlyIterator {
   friend TEST_CONSTEXPR It base(const MoveOnlyIterator& i) { return i.it_; }
 };
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert( std::input_iterator<MoveOnlyIterator>);
 #endif
 static_assert(!std::is_copy_constructible<MoveOnlyIterator>::value, "");
@@ -57,7 +57,7 @@ TEST_CONSTEXPR_CXX14 void test_one() {
     int a[] = {1, 2, 3};
 
     auto i = std::move_iterator<It>(It(a));
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     ASSERT_SAME_TYPE(decltype(i.base()), const It&);
     ASSERT_NOEXCEPT(i.base());
 #else
@@ -74,7 +74,7 @@ TEST_CONSTEXPR_CXX14 void test_one() {
     int a[] = {1, 2, 3};
 
     const auto i = std::move_iterator<It>(It(a));
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     ASSERT_SAME_TYPE(decltype(i.base()), const It&);
     ASSERT_NOEXCEPT(i.base());
 #else
@@ -100,7 +100,7 @@ TEST_CONSTEXPR_CXX14 bool test() {
   test_one<random_access_iterator<int*> >();
   test_one<int*>();
   test_one<const int*>();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   test_one<contiguous_iterator<int*>>();
 #endif
 
@@ -109,7 +109,7 @@ TEST_CONSTEXPR_CXX14 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   static_assert(test());
 #endif
 

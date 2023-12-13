@@ -12,7 +12,7 @@ template <class T, template<class> class CompareTemplate>
 void do_pointer_comparison_test() {
     typedef CompareTemplate<T*> Compare;
     typedef CompareTemplate<std::uintptr_t> UIntCompare;
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     typedef CompareTemplate<void> VoidCompare;
 #else
     typedef Compare VoidCompare;

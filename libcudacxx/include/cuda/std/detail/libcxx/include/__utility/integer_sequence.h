@@ -92,7 +92,7 @@ using __make_indices_imp =
 
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template<class _Tp, _Tp... _Ip>
 struct _LIBCUDACXX_TEMPLATE_VIS integer_sequence
@@ -145,7 +145,7 @@ template<size_t _Np>
 template<class... _Tp>
     using index_sequence_for = make_index_sequence<sizeof...(_Tp)>;
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

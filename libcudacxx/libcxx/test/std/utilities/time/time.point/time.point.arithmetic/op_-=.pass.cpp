@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 constexpr bool constexpr_test()
 {
     typedef std::chrono::system_clock Clock;
@@ -39,7 +39,7 @@ int main(int, char**)
     assert(t.time_since_epoch() == Duration(1));
     }
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(constexpr_test(), "");
 #endif
 

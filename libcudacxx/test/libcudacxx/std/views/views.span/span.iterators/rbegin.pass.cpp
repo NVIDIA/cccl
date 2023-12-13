@@ -58,14 +58,14 @@ void testRuntimeSpan(Span s)
 struct A{};
 __host__ __device__ bool operator==(A, A) {return true;}
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 constexpr              int iArr1[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9};
 #endif
 STATIC_TEST_GLOBAL_VAR int iArr2[] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 int main(int, char**)
 {
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(testConstexprSpan(cuda::std::span<int>()),            "");
     static_assert(testConstexprSpan(cuda::std::span<long>()),           "");
     static_assert(testConstexprSpan(cuda::std::span<double>()),         "");
@@ -81,7 +81,7 @@ int main(int, char**)
     static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 3)),    "");
     static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 4)),    "");
     static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 5)),    "");
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
 
     testRuntimeSpan(cuda::std::span<int>        ());
     testRuntimeSpan(cuda::std::span<long>       ());

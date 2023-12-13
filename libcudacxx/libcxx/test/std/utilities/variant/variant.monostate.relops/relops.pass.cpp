@@ -32,10 +32,10 @@ constexpr bool test() {
   AssertComparisons6AreNoexcept<M>();
 
 // TODO: enable when <compare> is brought up to speed
-#if TEST_STD_VER > 17 && false
+#if TEST_STD_VER > 2017 && false
   assert(testOrder(m1, m2, std::strong_ordering::equal));
   AssertOrderAreNoexcept<M>();
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
   return true;
 }

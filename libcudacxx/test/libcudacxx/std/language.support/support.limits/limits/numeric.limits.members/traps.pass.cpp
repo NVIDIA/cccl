@@ -39,7 +39,7 @@ int main(int, char**)
     test<signed char, integral_types_trap>();
     test<unsigned char, integral_types_trap>();
     test<wchar_t, integral_types_trap>();
-#if TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
     test<char8_t, integral_types_trap>();
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS

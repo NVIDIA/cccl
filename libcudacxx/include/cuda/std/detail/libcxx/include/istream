@@ -574,7 +574,7 @@ __input_c_string(basic_istream<_CharT, _Traits>& __is, _CharT* __p, size_t __n)
     return __is;
 }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 template<class _CharT, class _Traits, size_t _Np>
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -632,7 +632,7 @@ operator>>(basic_istream<char, _Traits>& __is, signed char* __s)
     return __is >> (char*)__s;
 }
 
-#endif  // _LIBCUDACXX_STD_VER > 17
+#endif  // _CCCL_STD_VER > 2017
 
 template<class _CharT, class _Traits>
 basic_istream<_CharT, _Traits>&

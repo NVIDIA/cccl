@@ -48,7 +48,7 @@ int main(int, char**)
         assert(is_contiguous_container_asan_correct(v));
     }
 #endif
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::vector<int, min_allocator<int>> v(100);
         v.push_back(1);

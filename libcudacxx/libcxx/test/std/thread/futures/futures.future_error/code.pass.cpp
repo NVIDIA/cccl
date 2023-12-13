@@ -43,7 +43,7 @@ int main(int, char**)
         std::future_error f(ec);
         assert(f.code() == ec);
     }
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     {
         std::future_error f(std::future_errc::broken_promise);
         assert(f.code() == std::make_error_code(std::future_errc::broken_promise));

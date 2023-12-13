@@ -115,7 +115,7 @@ template<typename T, typename Alloc>
   range_init(v.begin(), v.end());
 } // end vector_base::vector_base()
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   template<typename T, typename Alloc>
     vector_base<T,Alloc>
       ::vector_base(vector_base &&v)
@@ -144,7 +144,7 @@ template<typename T, typename Alloc>
   return *this;
 } // end vector_base::operator=()
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   template<typename T, typename Alloc>
     vector_base<T,Alloc> &
       vector_base<T,Alloc>

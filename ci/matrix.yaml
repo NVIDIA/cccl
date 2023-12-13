@@ -83,6 +83,7 @@ pull_request:
     - {cuda: *cuda_oldest, os: 'windows2022', cpu: 'amd64', compiler: *msvc2017, std: [14, 17],         jobs: ['build']}
     - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: *msvc2019, std: [14, 17],         jobs: ['build']}
     - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: *msvc2022, std: [14, 17, 20],     jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *oneapi,   std: [11, 14, 17],     jobs: ['build']}
   nvrtc:
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', gpu_build_archs: '70', std: [11, 14, 17, 20]}
   clang-cuda:

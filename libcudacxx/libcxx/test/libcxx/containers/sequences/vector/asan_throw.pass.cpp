@@ -71,7 +71,7 @@ void test_push_back() {
 }
 
 void test_emplace_back() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   std::vector<X> v;
   v.reserve(2);
   v.push_back(X(2));
@@ -122,7 +122,7 @@ void test_insert() {
 }
 
 void test_emplace() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   std::vector<X> v;
   v.reserve(3);
   v.insert(v.end(), X(1));

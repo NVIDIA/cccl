@@ -42,7 +42,7 @@ int main(int, char**)
         assert(v2 == v);
         assert(v2.get_allocator() == v.get_allocator());
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::vector<bool, other_allocator<bool> > v(3, true, other_allocator<bool>(5));
         std::vector<bool, other_allocator<bool> > v2 = v;

@@ -22,13 +22,13 @@ int main(int, char**)
 {
     typedef std::logical_not<int> F;
     const F f = F();
-#if TEST_STD_VER <= 17
+#if TEST_STD_VER <= 2017
     static_assert((std::is_same<F::argument_type, int>::value), "" );
     static_assert((std::is_same<F::result_type, bool>::value), "" );
 #endif
     assert(!f(36));
     assert(f(0));
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     typedef std::logical_not<> F2;
     const F2 f2 = F2();
     assert(!f2(36));

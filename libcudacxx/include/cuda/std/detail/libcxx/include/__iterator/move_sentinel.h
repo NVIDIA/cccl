@@ -27,11 +27,11 @@
 #  pragma system_header
 #endif // no system header
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <semiregular _Sent>
 #else
 template<class _Sent, enable_if_t<semiregular<_Sent>, int> = 0>
@@ -64,6 +64,6 @@ private:
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 #endif // _LIBCUDACXX___ITERATOR_MOVE_SENTINEL_H

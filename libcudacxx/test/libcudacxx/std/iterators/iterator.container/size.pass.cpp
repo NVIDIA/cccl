@@ -30,7 +30,7 @@
 #include "test_macros.h"
 
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 #include <cuda/std/string_view>
 #endif
 #endif
@@ -107,7 +107,7 @@ int main(int, char**)
     test_const_container ( il );
 
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     cuda::std::string_view sv{"ABC"};
     test_container ( sv );
     test_const_container ( sv );

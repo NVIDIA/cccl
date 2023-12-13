@@ -174,7 +174,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_constructible
     : public integral_constant<bool, _LIBCUDACXX_IS_CONSTRUCTIBLE(_Tp, _Args...)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class ..._Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_constructible_v = _LIBCUDACXX_IS_CONSTRUCTIBLE(_Tp, _Args...);
 #endif
@@ -184,7 +184,7 @@ template <class _Tp, class... _Args>
 struct _LIBCUDACXX_TEMPLATE_VIS is_constructible
     : public __libcpp_is_constructible<_Tp, _Args...>::type {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class ..._Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_constructible_v = is_constructible<_Tp, _Args...>::value;
 #endif

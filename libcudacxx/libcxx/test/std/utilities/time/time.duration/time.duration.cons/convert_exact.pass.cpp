@@ -27,7 +27,7 @@ int main(int, char**)
     std::chrono::microseconds us = ms;
     assert(us.count() == 1000);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     constexpr std::chrono::milliseconds ms(1);
     constexpr std::chrono::microseconds us = ms;

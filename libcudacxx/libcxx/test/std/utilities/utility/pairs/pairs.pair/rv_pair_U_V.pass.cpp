@@ -161,7 +161,7 @@ int main(int, char**)
         test_pair_rv<ExplicitTypes::ConvertingType, ExplicitTypes::ConvertingType&, true, false>();
         test_pair_rv<ExplicitTypes::ConvertingType, ExplicitTypes::ConvertingType&&, true, false>();
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     { // explicit constexpr test
         constexpr std::pair<int, int> p1(42, 43);
         constexpr std::pair<ExplicitT, ExplicitT> p2(std::move(p1));

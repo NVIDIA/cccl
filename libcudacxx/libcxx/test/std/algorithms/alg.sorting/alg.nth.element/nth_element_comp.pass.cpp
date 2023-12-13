@@ -76,7 +76,7 @@ int main(int, char**)
     test(1000);
     test(1009);
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     std::vector<std::unique_ptr<int> > v(1000);
     for (int i = 0; static_cast<std::size_t>(i) < v.size(); ++i)

@@ -19,7 +19,7 @@ __host__ __device__
 void test_add_volatile_imp()
 {
     ASSERT_SAME_TYPE(volatile U, typename cuda::std::add_volatile<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(volatile U,        cuda::std::add_volatile_t<T>);
 #endif
 }

@@ -32,7 +32,7 @@ struct MySearcherC {
     }
 };
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
     int ia[] = {0, 1, 2, 3};
     int ib[] = {0, 1, 5, 3};
@@ -107,7 +107,7 @@ int main(int, char**)
     test<random_access_iterator<const int*>, bidirectional_iterator<const int*> >();
     test<random_access_iterator<const int*>, random_access_iterator<const int*> >();
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 {
     typedef int * RI;
     static_assert((std::is_same<RI, decltype(std::search(RI(), RI(), MySearcher()))>::value), "" );
@@ -118,7 +118,7 @@ int main(int, char**)
 }
 #endif
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

@@ -67,14 +67,14 @@ int main(int, char**)
 #endif // _LIBCUDACXX_VERSION
     {
         typedef std::basic_string<char, std::char_traits<char>, some_alloc<char>> C;
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     //  In C++14, if POCS is set, swapping the allocator is required not to throw
         static_assert( noexcept(swap(std::declval<C&>(), std::declval<C&>())), "");
 #else
         static_assert(!noexcept(swap(std::declval<C&>(), std::declval<C&>())), "");
 #endif
     }
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     {
         typedef std::basic_string<char, std::char_traits<char>, some_alloc2<char>> C;
     //  if the allocators are always equal, then the swap can be noexcept

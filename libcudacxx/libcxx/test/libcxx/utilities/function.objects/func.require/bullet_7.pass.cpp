@@ -115,7 +115,7 @@ private:
 };
 
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 
 //==============================================================================
 // freeFunction11 - A C++11 free function.
@@ -155,7 +155,7 @@ private:
     Functor11& operator=(Functor11 const&);
 };
 
-#endif // TEST_STD_VER >= 11
+#endif // TEST_STD_VER >= 2011
 
 
 //==============================================================================
@@ -207,7 +207,7 @@ public:
 //==============================================================================
 //                          runTest Helpers
 //==============================================================================
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 template <class Sig, int Arity, class ArgCaster>
 void runFunctionTestCase11() {
     TestCaseFreeFunction<Sig, freeFunction11, Arity, ArgCaster>();
@@ -217,7 +217,7 @@ void runFunctionTestCase11() {
 template <class Sig, int Arity, class ArgCaster>
 void runFunctionTestCase() {
     TestCaseFreeFunction<Sig, freeFunction03, Arity, ArgCaster>();
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     runFunctionTestCase11<Sig, Arity, ArgCaster>();
 #endif
 }
@@ -232,7 +232,7 @@ void runFunctorTestCase() {
     TestCaseFunctorImp<Functor03, Sig, Arity, ObjCaster>::run();
 }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 // runTestCase - Run a test case for C++11 class functor types
 template <class Sig, int Arity, class ObjCaster, class ArgCaster = LValueCaster>
 void runFunctorTestCase11() {
@@ -265,7 +265,7 @@ int main(int, char**) {
     runFunctionTestCase<R(A&, A&, ...),                 2, LValueCaster      >();
     runFunctionTestCase<R(A&, A&, A&, ...),             3, LValueCaster      >();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     runFunctionTestCase11<R(A&&),                       1, MoveCaster        >();
     runFunctionTestCase11<R(A&&, ...),                  1, MoveCaster        >();
 #endif
@@ -302,7 +302,7 @@ int main(int, char**) {
     runFunctorTestCase<R(CA&, CA&, CA&) const volatile, 3, CVCaster,       CC>();
     }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     runFunctorTestCase11<R() &,                    0, LValueCaster          >();
     runFunctorTestCase11<R() const &,              0, ConstCaster           >();
     runFunctorTestCase11<R() volatile &,           0, VolatileCaster        >();

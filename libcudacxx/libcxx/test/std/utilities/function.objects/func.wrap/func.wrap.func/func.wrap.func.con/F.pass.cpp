@@ -49,7 +49,7 @@ int A::count = 0;
 
 int g(int) {return 0;}
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 struct RValueCallable {
     template <class ...Args>
     void operator()(Args&&...) && {}
@@ -102,7 +102,7 @@ int main(int, char**)
         std::function <void()> f(static_cast<void (*)()>(0));
         assert(!f);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         using Fn = std::function<void(int, int, int)>;
         static_assert(std::is_constructible<Fn, LValueCallable&>::value, "");

@@ -30,7 +30,7 @@ int main(int, char**)
     c.clear();
     assert(c.empty());
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef std::vector<bool, min_allocator<bool>> C;
     C c;

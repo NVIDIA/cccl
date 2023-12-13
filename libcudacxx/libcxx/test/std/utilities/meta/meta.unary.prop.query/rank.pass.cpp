@@ -21,7 +21,7 @@ void test_rank()
     static_assert( std::rank<const T>::value == A, "");
     static_assert( std::rank<volatile T>::value == A, "");
     static_assert( std::rank<const volatile T>::value == A, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::rank_v<T> == A, "");
     static_assert( std::rank_v<const T> == A, "");
     static_assert( std::rank_v<volatile T> == A, "");

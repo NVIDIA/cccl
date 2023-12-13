@@ -21,7 +21,7 @@ void test_is_scalar()
     static_assert( std::is_scalar<const T>::value, "");
     static_assert( std::is_scalar<volatile T>::value, "");
     static_assert( std::is_scalar<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_scalar_v<T>, "");
     static_assert( std::is_scalar_v<const T>, "");
     static_assert( std::is_scalar_v<volatile T>, "");
@@ -36,7 +36,7 @@ void test_is_not_scalar()
     static_assert(!std::is_scalar<const T>::value, "");
     static_assert(!std::is_scalar<volatile T>::value, "");
     static_assert(!std::is_scalar<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_scalar_v<T>, "");
     static_assert(!std::is_scalar_v<const T>, "");
     static_assert(!std::is_scalar_v<volatile T>, "");

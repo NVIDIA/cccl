@@ -259,7 +259,7 @@ private:
         {
         }
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
         pool & operator=(const pool &) = default;
 #endif
 

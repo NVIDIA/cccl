@@ -22,7 +22,7 @@ int main(int, char**)
 {
 //  ensure that the macros that are supposed to be defined in <concepts> are defined.
 
-#if TEST_STD_VER < 14
+#if TEST_STD_VER < 2014
 
 # ifdef __cpp_lib_concepts
 #   error "__cpp_lib_concepts should not be defined before c++14"
@@ -34,7 +34,7 @@ int main(int, char**)
 #elif __cpp_lib_concepts < 202002L
 # error "__cpp_lib_concepts has an invalid value"
 #endif
-#endif // TEST_STD_VER < 14
+#endif // TEST_STD_VER < 2014
 
   return 0;
 }

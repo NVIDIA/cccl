@@ -21,7 +21,7 @@
 #include "test_macros.h"
 #include "min_allocator.h"
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 template <typename Unordered>
 bool only_deletions ( const Unordered &whole, const Unordered &part ) {
     typename Unordered::const_iterator w = whole.begin();
@@ -95,7 +95,7 @@ int main(int, char**)
         assert(c.erase(3) == 0);
         assert(c.size() == 0);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_set<int, std::hash<int>, std::equal_to<int>, min_allocator<int>> C;
         typedef int P;

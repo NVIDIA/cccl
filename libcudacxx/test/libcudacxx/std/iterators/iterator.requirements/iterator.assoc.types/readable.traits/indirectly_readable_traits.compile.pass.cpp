@@ -16,7 +16,7 @@
 
 #include <cuda/std/concepts>
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template <class T>
 concept has_no_value_type = !requires {
   typename cuda::std::indirectly_readable_traits<T>::value_type;

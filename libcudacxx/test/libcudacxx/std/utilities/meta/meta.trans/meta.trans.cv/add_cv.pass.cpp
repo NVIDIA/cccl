@@ -19,7 +19,7 @@ __host__ __device__
 void test_add_cv_imp()
 {
     ASSERT_SAME_TYPE(const volatile U, typename cuda::std::add_cv<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(const volatile U,        cuda::std::add_cv_t<T>);
 #endif
 }

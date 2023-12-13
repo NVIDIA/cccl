@@ -34,7 +34,7 @@
 // This is a workaround for the fact that structured bindings require that the specializations of
 // `tuple_size` and `tuple_element` reside in namespace std (https://eel.is/c++draft/dcl.struct.bind#4).
 // See https://github.com/NVIDIA/libcudacxx/issues/316 for a short discussion
-#  if _LIBCUDACXX_STD_VER > 14
+#  if _CCCL_STD_VER > 2014
 namespace std {
 #    if defined(__CUDACC_RTC__)
 template <class... _Tp>
@@ -149,7 +149,7 @@ struct tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
     : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
 {};
 } // namespace std
-#  endif // _LIBCUDACXX_STD_VER > 14
+#  endif // _CCCL_STD_VER > 2014
 
 #  if defined(_LIBCUDACXX_COMPILER_CLANG)
 #    pragma clang diagnostic pop

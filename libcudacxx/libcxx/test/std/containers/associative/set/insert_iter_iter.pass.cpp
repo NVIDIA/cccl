@@ -45,7 +45,7 @@ int main(int, char**)
         assert(*next(m.begin()) == 2);
         assert(*next(m.begin(), 2) == 3);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::set<int, std::less<int>, min_allocator<int>> M;
         typedef int V;

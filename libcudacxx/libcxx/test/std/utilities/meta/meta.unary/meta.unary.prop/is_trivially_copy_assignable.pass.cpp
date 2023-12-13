@@ -17,7 +17,7 @@ template <class T>
 void test_has_trivially_copy_assignable()
 {
     static_assert( std::is_trivially_copy_assignable<T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_trivially_copy_assignable_v<T>, "");
 #endif
 }
@@ -26,7 +26,7 @@ template <class T>
 void test_has_not_trivially_copy_assignable()
 {
     static_assert(!std::is_trivially_copy_assignable<T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_trivially_copy_assignable_v<T>, "");
 #endif
 }

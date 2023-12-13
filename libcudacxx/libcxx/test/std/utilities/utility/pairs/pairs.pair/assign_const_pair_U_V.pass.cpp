@@ -16,7 +16,7 @@
 #include <cassert>
 
 #include "test_macros.h"
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 #include "archetypes.h"
 #endif
 
@@ -31,7 +31,7 @@ int main(int, char**)
         assert(p2.first == 3);
         assert(p2.second == 4);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
        using C = TestTypes::TestType;
        using P = std::pair<int, C>;

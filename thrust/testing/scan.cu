@@ -37,7 +37,7 @@ void TestScanSimple(void)
       return;
     }
 #endif
-    
+
     typename Vector::iterator iter;
 
     Vector input(5);
@@ -54,21 +54,21 @@ void TestScanSimple(void)
     ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
     ASSERT_EQUAL(input,  input_copy);
     ASSERT_EQUAL(output, result);
-    
+
     // exclusive scan
     iter = thrust::exclusive_scan(input.begin(), input.end(), output.begin(), T(0));
     result[0] = 0; result[1] = 1; result[2] = 4; result[3] = 2; result[4] = 6;
     ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
     ASSERT_EQUAL(input,  input_copy);
     ASSERT_EQUAL(output, result);
-    
+
     // exclusive scan with init
     iter = thrust::exclusive_scan(input.begin(), input.end(), output.begin(), T(3));
     result[0] = 3; result[1] = 4; result[2] = 7; result[3] = 5; result[4] = 9;
     ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
     ASSERT_EQUAL(input,  input_copy);
     ASSERT_EQUAL(output, result);
-    
+
     // inclusive scan with op
     iter = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), thrust::plus<T>());
     result[0] = 1; result[1] = 4; result[2] = 2; result[3] = 6; result[4] = 1;
@@ -214,7 +214,7 @@ void TestInclusiveScan32(void)
 
     thrust::host_vector<T>   h_input = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_input = h_input;
-    
+
     thrust::host_vector<T>   h_output(n);
     thrust::device_vector<T> d_output(n);
 
@@ -234,7 +234,7 @@ void TestExclusiveScan32(void)
 
     thrust::host_vector<T>   h_input = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_input = h_input;
-    
+
     thrust::host_vector<T>   h_output(n);
     thrust::device_vector<T> d_output(n);
 
@@ -330,11 +330,11 @@ struct TestScanWithOperator
 
     thrust::host_vector<T>   h_output(n);
     thrust::device_vector<T> d_output(n);
-    
+
     thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), max_functor<T>());
     thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), max_functor<T>());
     ASSERT_EQUAL(d_output, h_output);
-    
+
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), T(13), max_functor<T>());
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), T(13), max_functor<T>());
     ASSERT_EQUAL(d_output, h_output);
@@ -352,16 +352,16 @@ struct TestScanWithOperatorToDiscardIterator
     thrust::device_vector<T> d_input = h_input;
 
     thrust::discard_iterator<> reference(n);
-    
+
     thrust::discard_iterator<> h_result =
       thrust::inclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), max_functor<T>());
 
     thrust::discard_iterator<> d_result =
       thrust::inclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), max_functor<T>());
-    
+
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
-    
+
     h_result =
       thrust::exclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), T(13), max_functor<T>());
 
@@ -385,26 +385,26 @@ struct TestScan
 
     thrust::host_vector<T>   h_output(n);
     thrust::device_vector<T> d_output(n);
-    
+
     thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin());
     thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin());
     ASSERT_EQUAL(d_output, h_output);
-    
+
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin());
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin());
     ASSERT_EQUAL(d_output, h_output);
-    
+
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), (T) 11);
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), (T) 11);
     ASSERT_EQUAL(d_output, h_output);
-    
+
     // in-place scans
     h_output = h_input;
     d_output = d_input;
     thrust::inclusive_scan(h_output.begin(), h_output.end(), h_output.begin());
     thrust::inclusive_scan(d_output.begin(), d_output.end(), d_output.begin());
     ASSERT_EQUAL(d_output, h_output);
-    
+
     h_output = h_input;
     d_output = d_input;
     thrust::exclusive_scan(h_output.begin(), h_output.end(), h_output.begin());
@@ -422,7 +422,7 @@ struct TestScanToDiscardIterator
   {
     thrust::host_vector<T>   h_input = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_input = h_input;
-    
+
     thrust::discard_iterator<> h_result =
       thrust::inclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator());
 
@@ -433,7 +433,7 @@ struct TestScanToDiscardIterator
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
-    
+
     h_result =
       thrust::exclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), (T) 11);
 
@@ -465,19 +465,19 @@ void TestScanMixedTypes(void)
     thrust::inclusive_scan(h_input.begin(), h_input.end(), h_float_output.begin());
     thrust::inclusive_scan(d_input.begin(), d_input.end(), d_float_output.begin());
     ASSERT_EQUAL(d_float_output, h_float_output);
-    
+
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_float_output.begin(), (float) 3.5);
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_float_output.begin(), (float) 3.5);
     ASSERT_EQUAL(d_float_output, h_float_output);
-    
+
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_float_output.begin(), (int) 3);
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_float_output.begin(), (int) 3);
     ASSERT_EQUAL(d_float_output, h_float_output);
-    
+
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_int_output.begin(), (int) 3);
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_int_output.begin(), (int) 3);
     ASSERT_EQUAL(d_int_output, h_int_output);
-    
+
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_int_output.begin(), (float) 3.5);
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_int_output.begin(), (float) 3.5);
     ASSERT_EQUAL(d_int_output, h_int_output);
@@ -500,15 +500,15 @@ void _TestScanWithLargeTypes(void)
 
     thrust::device_vector< FixedVector<T,N> > d_input = h_input;
     thrust::device_vector< FixedVector<T,N> > d_output(n);
-    
+
     thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin());
     thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin());
 
     ASSERT_EQUAL_QUIET(h_output, d_output);
-    
+
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), FixedVector<T,N>(0));
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), FixedVector<T,N>(0));
-    
+
     ASSERT_EQUAL_QUIET(h_output, d_output);
 }
 
@@ -564,7 +564,7 @@ void TestInclusiveScanWithIndirection(void)
     table[5] = 2;
 
     thrust::inclusive_scan(data.begin(), data.end(), data.begin(), plus_mod3<T>(thrust::raw_pointer_cast(&table[0])));
-    
+
     ASSERT_EQUAL(data[0], T(0));
     ASSERT_EQUAL(data[1], T(1));
     ASSERT_EQUAL(data[2], T(0));
@@ -613,7 +613,7 @@ void TestInclusiveScanWithConstAccumulator(void)
     table[5] = 2;
 
     thrust::inclusive_scan(data.begin(), data.end(), data.begin(), const_ref_plus_mod3<T>(thrust::raw_pointer_cast(&table[0])));
-    
+
     ASSERT_EQUAL(data[0], T(0));
     ASSERT_EQUAL(data[1], T(1));
     ASSERT_EQUAL(data[2], T(0));
@@ -713,7 +713,7 @@ void TestExclusiveScanWithBigIndexes()
 
 DECLARE_UNITTEST(TestExclusiveScanWithBigIndexes);
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 struct Int {
     int i{};

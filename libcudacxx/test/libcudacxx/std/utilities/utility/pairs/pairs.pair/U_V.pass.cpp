@@ -92,7 +92,7 @@ int main(int, char**)
         test_sfinae<ExplicitTypes::ConvertingType, int&&, true, false>();
         test_sfinae<ExplicitTypes::ConvertingType, const int&&, true, false>();
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     { // explicit constexpr test
         constexpr cuda::std::pair<ExplicitT, ExplicitT> p(42, 43);
         static_assert(p.first.value == 42, "");

@@ -69,7 +69,7 @@ int main(int, char**)
   test<char*>();
   test<const char*>();
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   static_assert(test<cpp17_input_iterator<char*>>());
   static_assert(test<forward_iterator<char*>>());
   static_assert(test<bidirectional_iterator<char*>>());
@@ -78,7 +78,7 @@ int main(int, char**)
   static_assert(test<const char*>());
 #endif
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   test<contiguous_iterator<char*>>();
   test_moveonly<cpp20_input_iterator<char*>>();
   static_assert(test<contiguous_iterator<char*>>());

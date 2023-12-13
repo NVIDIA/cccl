@@ -29,7 +29,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS enable_if<true, _Tp> {typed
 
 template <bool _Bp, class _Tp = void> using __enable_if_t _LIBCUDACXX_NODEBUG_TYPE = typename enable_if<_Bp, _Tp>::type;
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <bool _Bp, class _Tp = void> using enable_if_t = typename enable_if<_Bp, _Tp>::type;
 #endif
 

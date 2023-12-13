@@ -37,7 +37,7 @@ struct CustomIt {
   __host__ __device__ int& operator*() const;
   __host__ __device__ CustomIt& operator++();
   __host__ __device__ CustomIt operator++(int);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   __host__ __device__ friend constexpr bool operator==(const CustomIt& a, const CustomIt& b) { return a.p_ == b.p_; }
   __host__ __device__ friend bool operator!=(const CustomIt& a, const CustomIt& b) = delete;
 #else
@@ -71,7 +71,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   test_one<int*>();
   test_one<const int*>();
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   test_one<contiguous_iterator<int*>>();
 #endif
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
@@ -84,7 +84,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
   static_assert(test(), "");
 #endif
 

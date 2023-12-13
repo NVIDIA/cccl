@@ -76,7 +76,7 @@ int main(int, char**)
         assert(c.front() == N);
         assert(c.back() == N + 9);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::vector<int, min_allocator<int>> C;
         const int N = 34;

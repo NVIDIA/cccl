@@ -51,7 +51,7 @@ template <bool IsArray>
 void test_basic() {
   typedef typename std::conditional<IsArray, TT[], TT>::type VT;
   const int expect_alive = IsArray ? 5 : 1;
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     using U = std::unique_ptr<VT, Deleter<VT> >;
     U u; ((void)u);
