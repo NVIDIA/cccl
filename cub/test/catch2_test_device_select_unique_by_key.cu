@@ -82,6 +82,23 @@ struct index_to_huge_type_op_t
   }
 };
 
+template <typename ValueT>
+struct index_to_value_t
+{
+  template <typename IndexT>
+  __host__ __device__ __forceinline__ ValueT operator()(IndexT index)
+  {
+    if (static_cast<std::uint64_t>(index) == 4300000000ULL)
+    {
+      return static_cast<ValueT>(1);
+    }
+    else
+    {
+      return static_cast<ValueT>(0);
+    }
+  }
+};
+
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::UniqueByKey, select_unique_by_key);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -402,4 +419,60 @@ CUB_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
   reference_vals.resize(num_selected_out[0]);
   REQUIRE(reference_keys == keys_out);
   REQUIRE(reference_vals == vals_out);
+}
+
+CUB_TEST("DeviceSelect::UniqueByKey works for very large input that need 64-bit offset types",
+         "[device][select_unique_by_key]")
+{
+  using type       = std::int32_t;
+  using index_type = std::int64_t;
+
+  const std::size_t num_items = 4400000000ULL;
+  thrust::host_vector<type> reference_keys{static_cast<type>(0), static_cast<type>(1), static_cast<type>(0)};
+  thrust::host_vector<index_type> reference_values{0, 4300000000ULL, 4300000001ULL};
+
+  auto keys_in   = thrust::make_transform_iterator(thrust::make_counting_iterator(0ULL), index_to_value_t<type>{});
+  auto values_in = thrust::make_counting_iterator(0ULL);
+  thrust::device_vector<type> keys_out(reference_keys.size());
+  thrust::device_vector<index_type> values_out(reference_values.size());
+
+  // Needs to be device accessible
+  thrust::device_vector<int> num_selected_out(1, 0);
+  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  // Run test
+  select_unique_by_key(keys_in, values_in, keys_out.begin(), values_out.begin(), d_first_num_selected_out, num_items);
+
+  // Ensure that we created the correct output
+  REQUIRE(reference_keys.size() == num_selected_out[0]);
+  REQUIRE(reference_keys == keys_out);
+  REQUIRE(reference_values == values_out);
+}
+
+CUB_TEST("DeviceSelect::UniqueByKey works for very large outputs that needs 64-bit offset types",
+         "[device][select_unique_by_key]")
+{
+  using type       = std::int32_t;
+  using index_type = std::int64_t;
+
+  constexpr std::size_t num_items = 4400000000ULL;
+
+  auto keys_in   = thrust::make_counting_iterator(0ULL);
+  auto values_in = thrust::make_counting_iterator(0ULL);
+
+  // Needs to be device accessible
+  thrust::device_vector<index_type> num_selected_out(1, 0);
+  index_type* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  // Run test
+  select_unique_by_key(
+    keys_in,
+    values_in,
+    thrust::make_discard_iterator(),
+    thrust::make_discard_iterator(),
+    d_first_num_selected_out,
+    num_items);
+
+  // Ensure that we created the correct output
+  REQUIRE(num_items == num_selected_out[0]);
 }
