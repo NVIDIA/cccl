@@ -45,11 +45,14 @@ static void basic(nvbench::state &state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(elements);
 
+  caching_allocator_t alloc;
+  thrust::sort(policy(alloc), vec.begin(), vec.end());
+
   state.exec(nvbench::exec_tag::timer | nvbench::exec_tag::sync,
-             [&](nvbench::launch &/* launch */, auto &timer) {
+             [&](nvbench::launch &launch, auto &timer) {
                vec = input;
                timer.start();
-               thrust::sort(vec.begin(), vec.end());
+               thrust::sort(policy(alloc, launch), vec.begin(), vec.end());
                timer.stop();
              });
 }

@@ -68,6 +68,7 @@ constexpr bool MemberSwapNoexcept<E, true> = noexcept(cuda::std::declval<cuda::s
 
 static_assert(MemberSwapNoexcept<int>, "");
 
+#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_constructible_v<E>
 static_assert(!MemberSwapNoexcept<MoveMayThrow>, "");
 
@@ -77,6 +78,7 @@ struct SwapMayThrow {
 
 // !is_nothrow_swappable_v<E>
 static_assert(!MemberSwapNoexcept<SwapMayThrow>, "");
+#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // this->has_value() && rhs.has_value()

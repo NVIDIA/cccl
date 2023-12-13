@@ -31,14 +31,16 @@ struct op_t
 {
   static constexpr bool read_all_values = false;
   
-  template <class InputIterator1,
+  template <class PolicyT,
+            class InputIterator1,
             class InputIterator2,
             class InputIterator3,
             class InputIterator4,
             class OutputIterator1,
             class OutputIterator2>
   __host__ thrust::pair<OutputIterator1, OutputIterator2>
-  operator()(InputIterator1 keys_first1,
+  operator()(const PolicyT& policy,
+             InputIterator1 keys_first1,
              InputIterator1 keys_last1,
              InputIterator2 keys_first2,
              InputIterator2 keys_last2,
@@ -47,7 +49,8 @@ struct op_t
              OutputIterator1 keys_result,
              OutputIterator2 values_result) const
   {
-    return thrust::set_intersection_by_key(keys_first1,
+    return thrust::set_intersection_by_key(policy,
+                                           keys_first1,
                                            keys_last1,
                                            keys_first2,
                                            keys_last2,

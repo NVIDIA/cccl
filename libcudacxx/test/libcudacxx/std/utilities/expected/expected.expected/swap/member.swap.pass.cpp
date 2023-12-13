@@ -73,8 +73,10 @@ static_assert(HasMemberSwap<MoveMayThrow, int>, "");
 // is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
 static_assert(HasMemberSwap<int, MoveMayThrow>, "");
 
+#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
 static_assert(!HasMemberSwap<MoveMayThrow, MoveMayThrow>, "");
+#endif // TEST_COMPILER_ICC
 
 // Test noexcept
 template <class T, class E, bool = HasMemberSwap<T, E>>
@@ -85,6 +87,7 @@ constexpr bool MemberSwapNoexcept<T, E, true> = noexcept(cuda::std::declval<cuda
 
 static_assert(MemberSwapNoexcept<int, int>, "");
 
+#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_constructible_v<T>
 static_assert(!MemberSwapNoexcept<MoveMayThrow, int>, "");
 
@@ -100,6 +103,7 @@ static_assert(!MemberSwapNoexcept<SwapMayThrow, int>, "");
 
 // !is_nothrow_swappable_v<E>
 static_assert(!MemberSwapNoexcept<int, SwapMayThrow>, "");
+#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // this->has_value() && rhs.has_value()

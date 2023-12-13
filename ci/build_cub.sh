@@ -29,6 +29,10 @@ else
     echo "nvcc version is not determined (likely using a non-NVCC compiler). Not building CUB benchmarks."
 fi
 
+if [[ "$HOST_COMPILER" == *icpc* ]]; then
+    ENABLE_CUB_BENCHMARKS="false"
+fi
+
 PRESET="cub-cpp$CXX_STANDARD"
 
 CMAKE_OPTIONS="
