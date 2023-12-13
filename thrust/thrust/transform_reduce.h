@@ -88,7 +88,7 @@ THRUST_NAMESPACE_BEGIN
  *  template<typename T>
  *  struct absolute_value : public unary_function<T,T>
  *  {
- *    _CCCL_HOST_DEVICE T operator()(const T &x) const
+ *    __host__ __device__ T operator()(const T &x) const
  *    {
  *      return x < T(0) ? -x : x;
  *    }
@@ -163,7 +163,7 @@ _CCCL_HOST_DEVICE
  *  template<typename T>
  *  struct absolute_value : public unary_function<T,T>
  *  {
- *    _CCCL_HOST_DEVICE T operator()(const T &x) const
+ *    __host__ __device__ T operator()(const T &x) const
  *    {
  *      return x < T(0) ? -x : x;
  *    }

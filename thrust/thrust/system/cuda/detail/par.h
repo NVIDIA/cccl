@@ -211,7 +211,7 @@ THRUST_INLINE_CONSTANT par_t par;
  *    #include <thrust/execution_policy.h>
  *
  *    struct IncFunctor{
- *        _CCCL_HOST_DEVICE
+ *        __host__ __device__
  *        void operator()(std::size_t& x){ x = x + 1; };
  *    };
  *

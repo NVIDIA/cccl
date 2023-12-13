@@ -155,7 +155,7 @@ template <typename InputIterator, typename EqualityComparable>
  *  ...
  *  struct is_odd
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int &x)
  *    {
  *      return x & 1;
@@ -203,7 +203,7 @@ _CCCL_HOST_DEVICE
  *  ...
  *  struct is_odd
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int &x)
  *    {
  *      return x & 1;

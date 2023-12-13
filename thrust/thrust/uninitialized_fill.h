@@ -71,7 +71,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  struct Int
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
  *  };
@@ -127,7 +127,7 @@ _CCCL_HOST_DEVICE
  *
  *  struct Int
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
  *  };
@@ -187,7 +187,7 @@ template<typename ForwardIterator, typename T>
  *
  *  struct Int
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
  *  };
@@ -244,7 +244,7 @@ _CCCL_HOST_DEVICE
  *
  *  struct Int
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
  *  };

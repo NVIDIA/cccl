@@ -77,7 +77,7 @@ THRUST_NAMESPACE_BEGIN
  *  // note: functor inherits from unary_function
  *  struct square_root : public thrust::unary_function<float,float>
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    float operator()(float x) const
  *    {
  *      return sqrtf(x);
@@ -120,7 +120,7 @@ THRUST_NAMESPACE_BEGIN
  *  // note: functor inherits from unary_function
  *  struct square : public thrust::unary_function<float,float>
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    float operator()(float x) const
  *    {
  *      return x * x;
@@ -161,7 +161,7 @@ THRUST_NAMESPACE_BEGIN
  *  // note: functor *does not* inherit from unary_function
  *  struct square_root
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    float operator()(float x) const
  *    {
  *      return sqrtf(x);

@@ -83,7 +83,7 @@ THRUST_NAMESPACE_BEGIN
  *        Iterator
  *      > super_t;
  *
- *      _CCCL_HOST_DEVICE
+ *      __host__ __device__
  *      repeat_iterator(const Iterator &x, int n) : super_t(x), begin(x), n(n) {}
  *
  *      // befriend thrust::iterator_core_access to allow it access to the private interface below
@@ -97,7 +97,7 @@ THRUST_NAMESPACE_BEGIN
  *      const Iterator begin;
  *
  *      // it is private because only thrust::iterator_core_access needs access to it
- *      _CCCL_HOST_DEVICE
+ *      __host__ __device__
  *      typename super_t::reference dereference() const
  *      {
  *        return *(begin + (this->base() - begin) / n);

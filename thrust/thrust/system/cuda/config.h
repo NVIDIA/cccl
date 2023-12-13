@@ -54,8 +54,8 @@
 /**
  * \def THRUST_RUNTIME_FUNCTION
  *
- * Execution space for functions that can use the CUDA runtime API (`_CCCL_HOST`
- * when RDC is off, `_CCCL_HOST_DEVICE` when RDC is on).
+ * Execution space for functions that can use the CUDA runtime API (`__host__`
+ * when RDC is off, `__host__ __device__` when RDC is on).
  */
 #define THRUST_RUNTIME_FUNCTION CUB_RUNTIME_FUNCTION
 

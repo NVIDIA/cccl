@@ -323,7 +323,7 @@ template<typename InputIterator1,
  *
  *  struct is_even
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(const int x)
  *    {
  *      return (x % 2) == 0;
@@ -403,7 +403,7 @@ _CCCL_HOST_DEVICE
  *
  *  struct is_even
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(const int x)
  *    {
  *      return (x % 2) == 0;

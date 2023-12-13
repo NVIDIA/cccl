@@ -63,7 +63,7 @@ THRUST_NAMESPACE_BEGIN
  *  // note: functor inherits from unary_function
  *  struct square_root : public thrust::unary_function<float,float>
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    float operator()(float x) const
  *    {
  *      return sqrtf(x);

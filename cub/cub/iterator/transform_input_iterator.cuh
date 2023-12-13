@@ -81,7 +81,7 @@ CUB_NAMESPACE_BEGIN
  * // Functor for tripling integer values and converting to doubles
  * struct TripleDoubler
  * {
- *     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+ *     __host__ __device__ __forceinline__
  *     double operator()(const int &a) const {
  *         return double(a * 3);
  *     }

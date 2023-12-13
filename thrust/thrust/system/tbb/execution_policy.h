@@ -133,7 +133,7 @@ struct tag : thrust::system::tbb::execution_policy<tag> { unspecified };
  *
  *  struct printf_functor
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    void operator()(int x)
  *    {
  *      printf("%d\n", x);

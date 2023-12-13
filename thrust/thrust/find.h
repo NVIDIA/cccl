@@ -154,7 +154,7 @@ InputIterator find(InputIterator first,
  *
  *  struct greater_than_four
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x > 4;
@@ -163,7 +163,7 @@ InputIterator find(InputIterator first,
  *
  *  struct greater_than_ten
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x > 10;
@@ -215,7 +215,7 @@ InputIterator find_if(const thrust::detail::execution_policy_base<DerivedPolicy>
  *
  *  struct greater_than_four
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x > 4;
@@ -224,7 +224,7 @@ InputIterator find_if(const thrust::detail::execution_policy_base<DerivedPolicy>
  *
  *  struct greater_than_ten
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x > 10;
@@ -280,7 +280,7 @@ InputIterator find_if(InputIterator first,
  *
  *  struct greater_than_four
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x > 4;
@@ -289,7 +289,7 @@ InputIterator find_if(InputIterator first,
  *
  *  struct greater_than_ten
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x > 10;
@@ -341,7 +341,7 @@ InputIterator find_if_not(const thrust::detail::execution_policy_base<DerivedPol
  *
  *  struct greater_than_four
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x > 4;
@@ -350,7 +350,7 @@ InputIterator find_if_not(const thrust::detail::execution_policy_base<DerivedPol
  *
  *  struct greater_than_ten
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x > 10;

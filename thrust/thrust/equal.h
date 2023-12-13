@@ -161,7 +161,7 @@ bool equal(InputIterator1 first1, InputIterator1 last1,
  *
  *  struct compare_modulo_two
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x, int y) const
  *    {
  *      return (x % 2) == (y % 2);
@@ -211,7 +211,7 @@ bool equal(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, Inp
  *
  *  struct compare_modulo_two
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x, int y) const
  *    {
  *      return (x % 2) == (y % 2);

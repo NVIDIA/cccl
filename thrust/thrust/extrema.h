@@ -57,7 +57,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  struct compare_key_value
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(key_value lhs, key_value rhs)
  *    {
  *      return lhs.key < rhs.key;
@@ -133,7 +133,7 @@ _CCCL_HOST_DEVICE
  *
  *  struct compare_key_value
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(key_value lhs, key_value rhs)
  *    {
  *      return lhs.key < rhs.key;
@@ -315,7 +315,7 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
  *
  *  struct compare_key_value
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(key_value lhs, key_value rhs)
  *    {
  *      return lhs.key < rhs.key;
@@ -375,7 +375,7 @@ ForwardIterator min_element(const thrust::detail::execution_policy_base<DerivedP
  *
  *  struct compare_key_value
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(key_value lhs, key_value rhs)
  *    {
  *      return lhs.key < rhs.key;
@@ -519,7 +519,7 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
  *
  *  struct compare_key_value
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(key_value lhs, key_value rhs)
  *    {
  *      return lhs.key < rhs.key;
@@ -579,7 +579,7 @@ ForwardIterator max_element(const thrust::detail::execution_policy_base<DerivedP
  *
  *  struct compare_key_value
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(key_value lhs, key_value rhs)
  *    {
  *      return lhs.key < rhs.key;
@@ -714,7 +714,7 @@ thrust::pair<ForwardIterator,ForwardIterator> minmax_element(ForwardIterator fir
  *
  *  struct compare_key_value
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(key_value lhs, key_value rhs)
  *    {
  *      return lhs.key < rhs.key;
@@ -772,7 +772,7 @@ thrust::pair<ForwardIterator,ForwardIterator> minmax_element(const thrust::detai
  *
  *  struct compare_key_value
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(key_value lhs, key_value rhs)
  *    {
  *      return lhs.key < rhs.key;

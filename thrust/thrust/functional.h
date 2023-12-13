@@ -60,7 +60,7 @@ template<typename Operation> struct binary_traits;
  *  \code
  *  struct sine : public thrust::unary_function<float,float>
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    float operator()(float x) { return sinf(x); }
  *  };
  *  \endcode
@@ -100,7 +100,7 @@ struct unary_function
  *  \code
  *  struct exponentiate : public thrust::binary_function<float,float,float>
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    float operator()(float x, float y) { return powf(x,y); }
  *  };
  *  \endcode

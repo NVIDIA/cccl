@@ -153,12 +153,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(KeyT *keys_shared,
  *                            ITEMS_PER_THREAD,
  *                            BlockMergeSort>;
  * public:
- *   _CCCL_DEVICE _CCCL_FORCEINLINE explicit BlockMergeSort(
+ *   __device__ __forceinline__ explicit BlockMergeSort(
  *     typename BlockMergeSortStrategyT::TempStorage &temp_storage)
  *       : BlockMergeSortStrategyT(temp_storage, threadIdx.x)
  *   {}
  *
- *   _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const
+ *   __device__ __forceinline__ void SyncImplementation() const
  *   {
  *     __syncthreads();
  *   }
@@ -722,7 +722,7 @@ private:
  * struct CustomLess
  * {
  *   template <typename DataType>
- *   _CCCL_DEVICE bool operator()(const DataType &lhs, const DataType &rhs)
+ *   __device__ bool operator()(const DataType &lhs, const DataType &rhs)
  *   {
  *     return lhs < rhs;
  *   }

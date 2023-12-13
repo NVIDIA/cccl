@@ -73,7 +73,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  struct printf_functor
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    void operator()(int x)
  *    {
  *      // note that using printf in a __device__ function requires
@@ -136,7 +136,7 @@ InputIterator for_each(const thrust::detail::execution_policy_base<DerivedPolicy
  *
  *  struct printf_functor
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    void operator()(int x)
  *    {
  *      // note that using printf in a __device__ function requires
@@ -194,7 +194,7 @@ InputIterator for_each_n(const thrust::detail::execution_policy_base<DerivedPoli
  *
  *  struct printf_functor
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    void operator()(int x)
  *    {
  *      // note that using printf in a __device__ function requires
@@ -249,7 +249,7 @@ InputIterator for_each(InputIterator first,
  *
  *  struct printf_functor
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    void operator()(int x)
  *    {
  *      // note that using printf in a __device__ function requires

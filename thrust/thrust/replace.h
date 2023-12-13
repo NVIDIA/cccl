@@ -176,7 +176,7 @@ template<typename ForwardIterator, typename T>
  *  ...
  *  struct is_less_than_zero
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -237,7 +237,7 @@ _CCCL_HOST_DEVICE
  *  ...
  *  struct is_less_than_zero
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -305,7 +305,7 @@ template<typename ForwardIterator, typename Predicate, typename T>
  *
  *  struct is_less_than_zero
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -375,7 +375,7 @@ _CCCL_HOST_DEVICE
  *
  *  struct is_less_than_zero
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -563,7 +563,7 @@ template<typename InputIterator, typename OutputIterator, typename T>
  *
  *  struct is_less_than_zero
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -630,7 +630,7 @@ _CCCL_HOST_DEVICE
  *
  *  struct is_less_than_zero
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -703,7 +703,7 @@ template<typename InputIterator, typename OutputIterator, typename Predicate, ty
  *
  *  struct is_less_than_zero
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x < 0;
@@ -778,7 +778,7 @@ _CCCL_HOST_DEVICE
  *
  *  struct is_less_than_zero
  *  {
- *    _CCCL_HOST_DEVICE
+ *    __host__ __device__
  *    bool operator()(int x)
  *    {
  *      return x < 0;
