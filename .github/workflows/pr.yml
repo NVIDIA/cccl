@@ -127,7 +127,7 @@ jobs:
       is_windows: ${{ contains(matrix.cuda_host_combination, 'cl') }}
 
   clang-cuda:
-    name: Clang CUDA
+    name: ${{matrix.lib}} Clang CUDA
     permissions:
       id-token: write
       contents: read
