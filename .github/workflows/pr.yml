@@ -54,7 +54,7 @@ jobs:
           .github/actions/compute-matrix/compute-matrix.sh ci/matrix.yaml pull_request
 
   nvrtc:
-    name: NVRTC CUDA${{matrix.cuda}} C++${{matrix.std}}
+    name: NVRTC CUDA${{matrix.cuda}}
     permissions:
       id-token: write
       contents: read
@@ -66,7 +66,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.compute-matrix.outputs.NVRTC_MATRIX) }}
     with:
-      name: NVRTC CUDA${{matrix.cuda}} C++${{matrix.std}}
+      name: Build and Test libcudacxx CUDA${{matrix.cuda}} C++${{matrix.std}}
       runner: linux-${{matrix.cpu}}-gpu-v100-latest-1
       image: rapidsai/devcontainers:${{needs.compute-matrix.outputs.DEVCONTAINER_VERSION}}-cpp-gcc12-cuda${{matrix.cuda}}-${{matrix.os}}
       command: |
