@@ -49,7 +49,7 @@ using __remove_all_extents_t = typename remove_all_extents<_Tp>::type;
 
 #endif // defined(_LIBCUDACXX_REMOVE_ALL_EXTENTS) && !defined(_LIBCUDACXX_USE_REMOVE_ALL_EXTENTS_FALLBACK)
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using remove_all_extents_t = __remove_all_extents_t<_Tp>;
 #endif
 

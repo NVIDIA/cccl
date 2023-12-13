@@ -92,7 +92,7 @@ constexpr bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test());
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))

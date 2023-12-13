@@ -78,7 +78,7 @@ int main(int, char**)
 {
     test_all<short, int>();
     test_all<int, X>();
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_all<short, int>());
     static_assert(test_all<int, X>());
 #endif

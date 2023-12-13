@@ -18,7 +18,7 @@
 int main(int, char**)
 {
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 //  P0767
     static_assert(std::is_trivial<std::max_align_t>::value,
                   "std::is_trivial<std::max_align_t>::value");

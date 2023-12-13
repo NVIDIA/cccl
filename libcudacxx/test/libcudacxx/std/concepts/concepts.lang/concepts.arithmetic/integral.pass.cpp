@@ -71,9 +71,9 @@ static_assert(CheckIntegralQualifiers<__uint128_t>(), "");
 static_assert(CheckIntegralQualifiers<wchar_t>(), "");
 static_assert(CheckIntegralQualifiers<bool>(), "");
 static_assert(CheckIntegralQualifiers<char>(), "");
-#if TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
 static_assert(CheckIntegralQualifiers<char8_t>(), "");
-#endif // TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#endif // TEST_STD_VER > 2017 && defined(__cpp_char8_t)
 static_assert(CheckIntegralQualifiers<char16_t>(), "");
 static_assert(CheckIntegralQualifiers<char32_t>(), "");
 
@@ -91,9 +91,9 @@ static_assert(!CheckIntegralQualifiers<EmptyStruct>(), "");
 static_assert(!CheckIntegralQualifiers<int EmptyStruct::*>(), "");
 static_assert(!CheckIntegralQualifiers<int (EmptyStruct::*)()>(), "");
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(CheckSubsumption(0), "");
 static_assert(CheckSubsumption(0U), "");
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**) { return 0; }

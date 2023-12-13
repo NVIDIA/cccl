@@ -21,7 +21,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 #define CONSTEXPR_CXX14 constexpr
 #define STATIC_ASSERT_CXX14(Pred) static_assert(Pred, "")
 #else

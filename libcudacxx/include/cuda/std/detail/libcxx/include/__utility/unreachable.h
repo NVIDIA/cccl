@@ -32,12 +32,12 @@ inline void __libcpp_unreachable()
   _LIBCUDACXX_UNREACHABLE();
 }
 
-#if _LIBCUDACXX_STD_VER > 20
+#if _CCCL_STD_VER > 2020
 
 [[noreturn]] _LIBCUDACXX_INLINE_VISIBILITY
 inline void unreachable() { _LIBCUDACXX_UNREACHABLE(); }
 
-#endif // _LIBCUDACXX_STD_VER > 20
+#endif // _CCCL_STD_VER > 2020
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

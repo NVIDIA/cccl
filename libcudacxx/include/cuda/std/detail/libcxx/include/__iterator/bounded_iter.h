@@ -49,7 +49,7 @@ struct __bounded_iter {
   using pointer           = typename iterator_traits<_Iterator>::pointer;
   using reference         = typename iterator_traits<_Iterator>::reference;
   using iterator_category = typename iterator_traits<_Iterator>::iterator_category;
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
   using iterator_concept = contiguous_iterator_tag;
 #endif
 
@@ -241,7 +241,7 @@ constexpr __bounded_iter<_It> __make_bounded_iter(_It __it, _It __begin, _It __e
   return __bounded_iter<_It>(_CUDA_VSTD::move(__it), _CUDA_VSTD::move(__begin), _CUDA_VSTD::move(__end));
 }
 
-#if _LIBCUDACXX_STD_VER <= 17
+#if _CCCL_STD_VER <= 2017
 template <class _Iterator>
 struct __is_cpp17_contiguous_iterator<__bounded_iter<_Iterator> > : true_type {};
 #endif

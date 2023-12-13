@@ -24,7 +24,7 @@ int main(int, char**)
     std::chrono::minutes m2 = -m;
     assert(m2.count() == -m.count());
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     constexpr std::chrono::minutes m(3);
     constexpr std::chrono::minutes m2 = -m;

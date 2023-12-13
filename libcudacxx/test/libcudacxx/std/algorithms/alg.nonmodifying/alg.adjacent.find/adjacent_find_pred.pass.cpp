@@ -42,7 +42,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
 int main(int, char**)
 {
     test();
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(test(), "");
 #endif
 

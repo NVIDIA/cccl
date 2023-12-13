@@ -42,7 +42,7 @@ struct Test {
     assert(cuda::std::equal(Iter1(a), Iter1(a + s), Iter2(a)));
     assert(!cuda::std::equal(Iter1(a), Iter1(a + s), Iter2(b)));
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::equal(Iter1(a), Iter1(a + s), Iter2(a), cuda::std::equal_to<>()));
     assert(!cuda::std::equal(Iter1(a), Iter1(a + s), Iter2(b), cuda::std::equal_to<>()));
 
@@ -74,7 +74,7 @@ struct TestNarrowingEqualTo {
         UnderlyingType(0x1604)};
 
     assert(cuda::std::equal(a, a + 5, b, cuda::std::equal_to<char>()));
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::equal(a, a + 5, b, b + 5, cuda::std::equal_to<char>()));
 #endif
   }
@@ -103,7 +103,7 @@ struct AddressCompare {
   }
 };
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
 class trivially_equality_comparable {
 public:
   __host__ __device__  constexpr trivially_equality_comparable(int i) : i_(i) {}
@@ -113,7 +113,7 @@ private:
   int i_;
 };
 
-#endif // TEST_STD_VER >= 14
+#endif // TEST_STD_VER >= 2014
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   types::for_each(types::cpp17_input_iterator_list<int*>(), TestIter2<int, types::cpp17_input_iterator_list<int*> >());
@@ -124,11 +124,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
 
   types::for_each(types::integral_types(), TestNarrowingEqualTo());
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
   types::for_each(
       types::cpp17_input_iterator_list<trivially_equality_comparable*>{},
       TestIter2<trivially_equality_comparable, types::cpp17_input_iterator_list<trivially_equality_comparable*>>{});
-#endif // TEST_STD_VER >= 14
+#endif // TEST_STD_VER >= 2014
 
   return true;
 }
@@ -138,9 +138,9 @@ struct Derived : virtual Base {};
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 14
+#endif // TEST_STD_VER >= 2014
 
   types::for_each(types::as_pointers<types::cv_qualified_versions<int> >(),
                   TestIter2<int, types::as_pointers<types::cv_qualified_versions<int> > >());
@@ -153,9 +153,9 @@ int main(int, char**) {
     Base* b[]    = {&d, nullptr};
 
     assert(cuda::std::equal(a, a + 2, b));
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::equal(a, a + 2, b, b + 2));
-#endif // TEST_STD_VER >= 14
+#endif // TEST_STD_VER >= 2014
   }
 
   return 0;

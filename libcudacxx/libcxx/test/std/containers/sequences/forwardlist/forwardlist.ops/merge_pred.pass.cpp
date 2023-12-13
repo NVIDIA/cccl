@@ -32,7 +32,7 @@ int main(int, char**)
         C c3(std::begin(t3), std::end(t3));
         assert(c1 == c3);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef std::forward_list<T, min_allocator<T>> C;

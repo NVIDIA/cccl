@@ -21,7 +21,7 @@ void test_is_const()
     static_assert( cuda::std::is_const<const T>::value, "");
     static_assert(!cuda::std::is_const<volatile T>::value, "");
     static_assert( cuda::std::is_const<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!cuda::std::is_const_v<T>, "");
     static_assert( cuda::std::is_const_v<const T>, "");
     static_assert(!cuda::std::is_const_v<volatile T>, "");

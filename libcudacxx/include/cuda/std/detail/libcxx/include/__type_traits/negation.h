@@ -29,12 +29,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Pred>
 struct _Not : _BoolConstant<!_Pred::value> {};
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp>
 struct negation : _Not<_Tp> {};
 template<class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool negation_v = !_Tp::value;
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

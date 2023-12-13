@@ -1113,7 +1113,7 @@ private:
 
 public:
     _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator() noexcept
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     : __seg_(nullptr), __ctz_(0)
 #endif
     {}

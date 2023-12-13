@@ -24,10 +24,10 @@ int main(int, char**)
     std::initializer_list<A> il;
     assert(il.size() == 0);
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     constexpr std::initializer_list<A> il2;
     static_assert(il2.size() == 0, "");
-#endif  // TEST_STD_VER > 11
+#endif  // TEST_STD_VER > 2011
 
   return 0;
 }

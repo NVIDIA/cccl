@@ -32,7 +32,7 @@ template <class _Bp, class _Dp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_base_of
     : public integral_constant<bool, _LIBCUDACXX_IS_BASE_OF(_Bp, _Dp)> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Bp, class _Dp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_base_of_v = _LIBCUDACXX_IS_BASE_OF(_Bp, _Dp);
 #endif
@@ -62,7 +62,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_base_of
     : public integral_constant<bool, is_class<_Bp>::value &&
                                      sizeof(__is_base_of_imp::__test<_Bp, _Dp>(0)) == 2> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Bp, class _Dp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_base_of_v = is_base_of<_Bp, _Dp>::value;
 #endif

@@ -28,7 +28,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_cv {
   typedef _LIBCUDACXX_NODEBUG_TYPE const volatile _Tp type;
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using add_cv_t = typename add_cv<_Tp>::type;
 #endif
 

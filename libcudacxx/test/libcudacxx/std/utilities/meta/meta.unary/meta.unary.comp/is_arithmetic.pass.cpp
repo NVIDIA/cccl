@@ -22,7 +22,7 @@ void test_is_arithmetic()
     static_assert( cuda::std::is_arithmetic<const T>::value, "");
     static_assert( cuda::std::is_arithmetic<volatile T>::value, "");
     static_assert( cuda::std::is_arithmetic<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert( cuda::std::is_arithmetic_v<T>, "");
     static_assert( cuda::std::is_arithmetic_v<const T>, "");
     static_assert( cuda::std::is_arithmetic_v<volatile T>, "");
@@ -38,7 +38,7 @@ void test_is_not_arithmetic()
     static_assert(!cuda::std::is_arithmetic<const T>::value, "");
     static_assert(!cuda::std::is_arithmetic<volatile T>::value, "");
     static_assert(!cuda::std::is_arithmetic<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!cuda::std::is_arithmetic_v<T>, "");
     static_assert(!cuda::std::is_arithmetic_v<const T>, "");
     static_assert(!cuda::std::is_arithmetic_v<volatile T>, "");

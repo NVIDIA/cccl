@@ -20,25 +20,25 @@
 #include <bit>
 #include "test_macros.h"
 
-#if TEST_STD_VER < 14
+#if TEST_STD_VER < 2014
 
 # ifdef __cpp_lib_bit_cast
 #   error "__cpp_lib_bit_cast should not be defined before c++2a"
 # endif
 
-#elif TEST_STD_VER == 14
+#elif TEST_STD_VER == 2014
 
 # ifdef __cpp_lib_bit_cast
 #   error "__cpp_lib_bit_cast should not be defined before c++2a"
 # endif
 
-#elif TEST_STD_VER == 17
+#elif TEST_STD_VER == 2017
 
 # ifdef __cpp_lib_bit_cast
 #   error "__cpp_lib_bit_cast should not be defined before c++2a"
 # endif
 
-#elif TEST_STD_VER > 17
+#elif TEST_STD_VER > 2017
 
 # if !defined(_LIBCUDACXX_VERSION)
 #   ifndef __cpp_lib_bit_cast
@@ -53,6 +53,6 @@
 #   endif
 # endif
 
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**) { return 0; }

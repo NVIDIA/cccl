@@ -48,6 +48,9 @@ set(files
   __bsd_locale_fallbacks.h
   __errc
   __cccl_config
+  __cccl/dialect.h
+  __cccl/version.h
+  __cccl/visibility.h
   __concepts/__concept_macros.h
   __concepts/_One_of.h
   __concepts/arithmetic.h

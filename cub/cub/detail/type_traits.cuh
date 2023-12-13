@@ -53,7 +53,7 @@ namespace detail {
 
 template <typename Invokable, typename... Args>
 using invoke_result_t =
-#if CUB_CPP_DIALECT < 2017
+#if _CCCL_STD_VER < 2017
   typename ::cuda::std::result_of<Invokable(Args...)>::type;
 #else // 2017+
   ::cuda::std::invoke_result_t<Invokable, Args...>;

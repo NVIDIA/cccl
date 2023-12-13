@@ -37,7 +37,7 @@ int main(int, char**)
     m.erase(m.begin());
     assert(m.size() == 0);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef std::map<int, double, std::less<int>, min_allocator<std::pair<const int, double>>> M;
     M m;

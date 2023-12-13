@@ -52,7 +52,7 @@ struct add_rvalue_reference {
   using type = __add_rvalue_reference_t<_Tp>;
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp>
 using add_rvalue_reference_t = __add_rvalue_reference_t<_Tp>;
 #endif

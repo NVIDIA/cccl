@@ -25,7 +25,7 @@ struct is_odd {
   TEST_CONSTEXPR bool operator()(const int &i) const { return i & 1; }
 };
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
     int ia[] = {1, 3, 5, 2, 4, 6};
     int ib[] = {1, 2, 3, 4, 5, 6};
@@ -91,7 +91,7 @@ int main(int, char**) {
            std::distance(std::begin(ia), std::end(ia)));
   }
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

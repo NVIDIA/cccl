@@ -16,7 +16,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template<class T> concept HasMinus = requires (T t) { t - t; };
 #else
 template<class T>

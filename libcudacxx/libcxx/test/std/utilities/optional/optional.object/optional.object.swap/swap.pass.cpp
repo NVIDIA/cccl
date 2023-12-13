@@ -131,7 +131,7 @@ int main(int, char**)
 {
     check_swap<int>();
     check_swap<W>();
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(check_swap<int>());
     static_assert(check_swap<W>());
 #endif

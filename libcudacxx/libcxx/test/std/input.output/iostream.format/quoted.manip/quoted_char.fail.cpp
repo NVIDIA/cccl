@@ -19,7 +19,7 @@
 
 //  Test that mismatches between strings and wide streams are diagnosed
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 
 void round_trip ( const char *p ) {
     std::wstringstream ss;

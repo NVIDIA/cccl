@@ -79,12 +79,14 @@ const AssertionDialogAvoider assertion_dialog_avoider{};
 
 #include <ciso646>
 
-#if _HAS_CXX20
-    #define TEST_STD_VER 99
+#if _HAS_CXX23
+    #define TEST_STD_VER 2023
+#elif _HAS_CXX20
+    #define TEST_STD_VER 2020
 #elif _HAS_CXX17
-    #define TEST_STD_VER 17
+    #define TEST_STD_VER 2017
 #else // !(_HAS_CXX20 || _HAS_CXX17)
-    #define TEST_STD_VER 14
+    #define TEST_STD_VER 2014
 #endif
 
 #define _LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST

@@ -37,7 +37,7 @@ int main(int, char**)
         assert(std::get<0>(t) == "high");
         assert(std::get<1>(t) == 5);
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         typedef std::tuple<double, int> T;
         constexpr T t(2.718, 5);

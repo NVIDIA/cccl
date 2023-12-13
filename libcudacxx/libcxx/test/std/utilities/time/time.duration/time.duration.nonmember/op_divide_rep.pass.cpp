@@ -30,7 +30,7 @@ int main(int, char**)
     ns = ns / 5;
     assert(ns.count() == 3);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     constexpr std::chrono::nanoseconds ns(15);
     constexpr std::chrono::nanoseconds ns2 = ns / 5;
@@ -38,7 +38,7 @@ int main(int, char**)
     }
 #endif
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     { // This is PR#41130
     typedef std::chrono::nanoseconds Duration;
     Duration d(5);

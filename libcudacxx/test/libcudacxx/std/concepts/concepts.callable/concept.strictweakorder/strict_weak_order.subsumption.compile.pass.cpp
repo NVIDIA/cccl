@@ -16,7 +16,7 @@
 #include <cuda/std/concepts>
 
 #include "test_macros.h"
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 
 struct S1 {};
 struct S2 {};
@@ -83,7 +83,7 @@ __host__ __device__ constexpr bool check_strict_weak_order_subsumes_itself() {
 static_assert(check_strict_weak_order_subsumes_itself<int (*)(int, int), int, int>(), "");
 static_assert(check_strict_weak_order_subsumes_itself<R, S1, S1>(), "");
 
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**)
 {

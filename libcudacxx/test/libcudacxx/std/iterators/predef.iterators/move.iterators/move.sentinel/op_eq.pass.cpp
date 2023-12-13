@@ -22,7 +22,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template<class T, class U> concept HasEquals = requires (T t, U u) { t == u; };
 template<class T, class U> concept HasNotEquals = requires (T t, U u) { t != u; };
 template<class T, class U> concept HasLess = requires (T t, U u) { t < u; };

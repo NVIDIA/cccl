@@ -40,7 +40,7 @@ test()
     assert(c.real() == 10.5);
     assert(c.imag() == -9.5);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     constexpr std::complex<T> c;
     static_assert(c.real() == 0, "");

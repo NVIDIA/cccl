@@ -28,13 +28,13 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _Ty, class... _Others>
 _LIBCUDACXX_CONCEPT _One_of = (is_same_v<_Ty, _Others> || ...);
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 template <class _Ty, class... _Others>
 _LIBCUDACXX_CONCEPT _One_of = _LIBCUDACXX_TRAIT(disjunction, is_same<_Ty, _Others>...);
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

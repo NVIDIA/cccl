@@ -76,7 +76,7 @@ using ::time_t;
 #ifndef _LIBCUDACXX_COMPILER_NVRTC
 
 using ::tm;
-#if _LIBCUDACXX_STD_VER > 14 && defined(_LIBCUDACXX_HAS_C11_FEATURES)
+#if _CCCL_STD_VER > 2014 && defined(_LIBCUDACXX_HAS_C11_FEATURES)
 using ::timespec;
 #endif
 using ::clock;
@@ -90,7 +90,7 @@ using ::gmtime;
 using ::localtime;
 #endif
 using ::strftime;
-#if _LIBCUDACXX_STD_VER > 14 && defined(_LIBCUDACXX_HAS_TIMESPEC_GET)
+#if _CCCL_STD_VER > 2014 && defined(_LIBCUDACXX_HAS_TIMESPEC_GET)
 using ::timespec_get;
 #endif
 #endif // _LIBCUDACXX_COMPILER_NVRTC

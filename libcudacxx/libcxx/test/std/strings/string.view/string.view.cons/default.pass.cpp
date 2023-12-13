@@ -18,7 +18,7 @@
 
 template<typename T>
 void test () {
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     ASSERT_NOEXCEPT(T());
 

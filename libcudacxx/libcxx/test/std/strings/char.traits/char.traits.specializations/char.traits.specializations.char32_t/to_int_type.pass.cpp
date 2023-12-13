@@ -20,7 +20,7 @@
 int main(int, char**)
 {
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     assert(std::char_traits<char32_t>::to_int_type(U'a') == U'a');
     assert(std::char_traits<char32_t>::to_int_type(U'A') == U'A');
 #endif

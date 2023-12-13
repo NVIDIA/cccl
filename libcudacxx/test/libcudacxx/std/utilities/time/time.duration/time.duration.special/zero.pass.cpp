@@ -23,7 +23,7 @@ __host__ __device__
 void test()
 {
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<typename D::rep>::zero());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     ASSERT_NOEXCEPT(       cuda::std::chrono::duration_values<typename D::rep>::zero());
 #endif
     {

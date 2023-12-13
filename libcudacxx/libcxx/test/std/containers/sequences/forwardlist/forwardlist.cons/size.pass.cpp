@@ -22,7 +22,7 @@
 template <class T, class Allocator>
 void check_allocator(unsigned n, Allocator const &alloc = Allocator())
 {
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     typedef std::forward_list<T, Allocator> C;
     C d(n, alloc);
     assert(d.get_allocator() == alloc);
@@ -48,7 +48,7 @@ int main(int, char**)
         unsigned n = 0;
 
         for (C::const_iterator i = c.begin(), e = c.end(); i != e; ++i, (void)++n) {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
             assert(*i == T());
 #else
             ((void)0);
@@ -56,7 +56,7 @@ int main(int, char**)
         }
         assert(n == N);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef DefaultOnly T;
         typedef std::forward_list<T, min_allocator<T>> C;

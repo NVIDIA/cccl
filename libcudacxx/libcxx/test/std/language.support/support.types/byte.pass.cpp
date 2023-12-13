@@ -19,7 +19,7 @@
 // std::byte is not an integer type, nor a character type.
 // It is a distinct type for accessing the bits that ultimately make up object storage.
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert( std::is_trivial<std::byte>::value, "" );   // P0767
 #else
 static_assert( std::is_pod<std::byte>::value, "" );

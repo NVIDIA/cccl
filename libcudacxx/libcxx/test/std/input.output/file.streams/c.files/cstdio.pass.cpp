@@ -141,7 +141,7 @@ int main(int, char**)
 
 #ifndef _LIBCUDACXX_HAS_NO_STDIN
     static_assert((std::is_same<decltype(std::getchar()), int>::value), "");
-#if TEST_STD_VER <= 11
+#if TEST_STD_VER <= 2011
     static_assert((std::is_same<decltype(std::gets(cp)), char*>::value), "");
 #endif
     static_assert((std::is_same<decltype(std::scanf(" ")), int>::value), "");

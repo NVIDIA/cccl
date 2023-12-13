@@ -22,7 +22,7 @@ __host__ __device__
 constexpr bool test_ignore_constexpr()
 {
 // NVCC does not support constexpr non-integral types
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     NV_IF_TARGET(NV_IS_HOST,(
     { // Test that std::ignore provides constexpr converting assignment.
         auto& res = (cuda::std::ignore = 42);
@@ -41,7 +41,7 @@ constexpr bool test_ignore_constexpr()
         unused(moved);
     }
     ))
-#endif // TEST_STD_VER > 11
+#endif // TEST_STD_VER > 2011
     return true;
 }
 

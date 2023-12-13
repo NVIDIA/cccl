@@ -34,7 +34,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_integral
     : public integral_constant<bool, _LIBCUDACXX_IS_INTEGRAL(_Tp)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_integral_v = _LIBCUDACXX_IS_INTEGRAL(_Tp);
 #endif
@@ -71,7 +71,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_integral
     : public integral_constant<bool, __libcpp_is_integral<__remove_cv_t<_Tp> >::value>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_integral_v = is_integral<_Tp>::value;
 #endif

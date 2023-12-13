@@ -17,7 +17,7 @@
 #include "test_macros.h"
 #include <MoveOnly.h>
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 #define DELETE_FUNCTION = delete
 #else
 #define DELETE_FUNCTION
@@ -55,7 +55,7 @@ int main(int, char**)
         assert(A_constructed == i+1);
     }
     }
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     {
     typedef MoveOnly S;
     typedef std::aligned_storage<3*sizeof(S), std::alignment_of<S>::value>::type

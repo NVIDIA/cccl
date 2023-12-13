@@ -1226,7 +1226,7 @@ max(::std::initializer_list<_Tp> __t)
     return *_CUDA_VSTD::max_element(__t.begin(), __t.end(), __less{});
 }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 // clamp
 template<class _Tp, class _Compare>
 _LIBCUDACXX_NODISCARD_EXT inline
@@ -1623,7 +1623,7 @@ _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
     return static_cast<result_type>(__u + __p.a());
 }
 
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_RANDOM_SHUFFLE) \
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_RANDOM_SHUFFLE) \
   || defined(_LIBCUDACXX_BUILDING_LIBRARY)
 class _LIBCUDACXX_TYPE_VIS __rs_default;
 
@@ -1754,7 +1754,7 @@ _SampleIterator __sample(_PopulationIterator __first,
       __g, _PopCategory());
 }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _PopulationIterator, class _SampleIterator, class _Distance,
           class _UniformRandomNumberGenerator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -1763,7 +1763,7 @@ _SampleIterator sample(_PopulationIterator __first,
                        _Distance __n, _UniformRandomNumberGenerator&& __g) {
     return _CUDA_VSTD::__sample(__first, __last, __output_iter, __n, __g);
 }
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 template<class _RandomAccessIterator, class _UniformRandomNumberGenerator>
 _LIBCUDACXX_INLINE_VISIBILITY
@@ -4273,7 +4273,7 @@ _LIBCUDACXX_END_NAMESPACE_STD
 _LIBCUDACXX_POP_MACROS
 #endif
 
-#if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _LIBCUDACXX_STD_VER >= 17
+#if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _CCCL_STD_VER >= 2017
 #   include <__pstl_algorithm>
 #endif
 

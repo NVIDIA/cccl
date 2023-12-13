@@ -39,11 +39,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
     tests();
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     static_assert(tests(), "");
 #endif
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     // Sanity check for constexpr in C++11
     {
         constexpr cuda::std::array<int, 3> array = {};

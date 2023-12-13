@@ -86,7 +86,7 @@ int main(int, char**)
 {
     for (int i = 0; i < 40; ++i)
         test<std::forward_list<int> >(i);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     for (int i = 0; i < 40; ++i)
         test<std::forward_list<int, min_allocator<int>> >(i);
 #endif

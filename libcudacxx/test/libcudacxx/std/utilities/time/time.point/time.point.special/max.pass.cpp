@@ -23,7 +23,7 @@ int main(int, char**)
     typedef cuda::std::chrono::milliseconds Duration;
     typedef cuda::std::chrono::time_point<Clock, Duration> TP;
     LIBCPP_ASSERT_NOEXCEPT(TP::max());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     ASSERT_NOEXCEPT(       TP::max());
 #endif
     assert(TP::max() == TP(Duration::max()));

@@ -58,7 +58,7 @@ int main(int, char**)
     test(10);
     test(1000);
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     const int N = 1000;
     std::unique_ptr<int>* ia = new std::unique_ptr<int> [N];

@@ -143,7 +143,7 @@ template<typename T, typename Alloc = std::allocator<T> >
     host_vector(const host_vector &v, const Alloc &alloc)
       :Parent(v,alloc) {}
 
-  #if THRUST_CPP_DIALECT >= 2011
+  #if _CCCL_STD_VER >= 2011
     /*! Move constructor moves from another host_vector.
      *  \param v The host_vector to move.
      */
@@ -167,7 +167,7 @@ template<typename T, typename Alloc = std::allocator<T> >
   host_vector &operator=(const host_vector &v)
   { Parent::operator=(v); return *this; }
 
-  #if THRUST_CPP_DIALECT >= 2011
+  #if _CCCL_STD_VER >= 2011
     /*! Move assign operator moves from another host_vector.
      *  \param v The host_vector to move.
      */

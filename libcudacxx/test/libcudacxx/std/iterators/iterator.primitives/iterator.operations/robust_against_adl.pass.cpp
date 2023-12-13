@@ -25,7 +25,7 @@ struct Intable {
 int main(int, char**) {
     Holder<Incomplete> *a[2] = {};
     Holder<Incomplete> **p = a;
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     p = cuda::std::next(p);
     p = cuda::std::prev(p);
     p = cuda::std::next(p, 2);

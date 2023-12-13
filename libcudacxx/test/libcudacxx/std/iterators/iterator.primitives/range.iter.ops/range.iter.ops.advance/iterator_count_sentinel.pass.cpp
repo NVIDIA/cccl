@@ -111,7 +111,7 @@ struct iota_iterator {
     __host__ __device__ constexpr int operator*() const { return x; }
     __host__ __device__ constexpr iota_iterator& operator++() { ++x; return *this; }
     __host__ __device__ constexpr iota_iterator operator++(int) { ++x; return iota_iterator{x - 1}; }
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     constexpr bool operator==(const iota_iterator&) const = default;
 #else
     __host__ __device__ constexpr bool operator==(const iota_iterator& other) const { return x == other.x; }

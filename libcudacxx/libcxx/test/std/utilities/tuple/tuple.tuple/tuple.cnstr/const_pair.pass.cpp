@@ -30,7 +30,7 @@ int main(int, char**)
         assert(std::get<0>(t1) == 2);
         assert(std::get<1>(t1) == short('a'));
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         typedef std::pair<long, char> P0;
         typedef std::tuple<long long, short> T1;

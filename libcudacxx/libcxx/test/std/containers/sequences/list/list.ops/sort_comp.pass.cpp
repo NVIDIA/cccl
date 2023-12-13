@@ -112,7 +112,7 @@ int main(int, char**)
     }
 #endif
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     int a1[] = {4, 8, 1, 0, 5, 7, 2, 3, 6, 11, 10, 9};
     int a2[] = {11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};

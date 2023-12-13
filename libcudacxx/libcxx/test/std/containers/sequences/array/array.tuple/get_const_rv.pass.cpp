@@ -33,7 +33,7 @@ int main(int, char**)
         assert(*t == 3.5);
     }
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     {
         typedef double T;
         typedef std::array<T, 3> C;

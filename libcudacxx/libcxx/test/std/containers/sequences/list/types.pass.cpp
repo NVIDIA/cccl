@@ -48,7 +48,7 @@ int main(int, char**)
         typename std::iterator_traits<typename C::const_iterator>::difference_type>::value), "");
     }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef std::list<int, min_allocator<int>> C;
     static_assert((std::is_same<C::value_type, int>::value), "");

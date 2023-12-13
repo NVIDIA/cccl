@@ -26,7 +26,7 @@ int main(int, char**)
     std::vector<bool>::reference r1 = v[0];
     std::vector<bool>::reference r2 = v[3];
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((noexcept(v.swap(r1,r2))), "");
 #endif
 

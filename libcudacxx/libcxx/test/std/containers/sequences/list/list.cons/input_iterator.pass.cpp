@@ -17,7 +17,7 @@
 #include "test_iterators.h"
 #include "test_allocator.h"
 #include "min_allocator.h"
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 #include "emplace_constructible.h"
 #include "container_test_types.h"
 #endif
@@ -56,7 +56,7 @@ void basic_test()
         for (std::list<int>::const_iterator i = l.begin(), e = l.end(); i != e; ++i, ++j)
             assert(*i == j);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         int a[] = {0, 1, 2, 3};
         std::list<int, min_allocator<int>> l(cpp17_input_iterator<const int*>(a),
@@ -84,7 +84,7 @@ void basic_test()
 
 
 void test_emplacable_concept() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   int arr1[] = {42};
   int arr2[] = {1, 101, 42};
   {
@@ -131,7 +131,7 @@ void test_emplacable_concept() {
 
 
 void test_emplacable_concept_with_alloc() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   int arr1[] = {42};
   int arr2[] = {1, 101, 42};
   {
@@ -178,7 +178,7 @@ void test_emplacable_concept_with_alloc() {
 }
 
 void test_ctor_under_alloc() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   int arr1[] = {42};
   int arr2[] = {1, 101, 42};
   {
@@ -209,7 +209,7 @@ void test_ctor_under_alloc() {
 }
 
 void test_ctor_under_alloc_with_alloc() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   int arr1[] = {42};
   int arr2[] = {1, 101, 42};
   {

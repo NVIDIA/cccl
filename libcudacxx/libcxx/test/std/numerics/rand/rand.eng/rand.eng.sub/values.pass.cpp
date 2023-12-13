@@ -39,7 +39,7 @@ test1()
     static_assert((E::word_size == 24), "");
     static_assert((E::short_lag == 10), "");
     static_assert((E::long_lag == 24), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((E::min() == 0), "");
     static_assert((E::max() == 0xFFFFFF), "");
 #else
@@ -60,7 +60,7 @@ test2()
     static_assert((E::word_size == 48), "");
     static_assert((E::short_lag == 5), "");
     static_assert((E::long_lag == 12), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((E::min() == 0), "");
     static_assert((E::max() == 0xFFFFFFFFFFFFull), "");
 #else

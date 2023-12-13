@@ -18,7 +18,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 #include "min_allocator.h"
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 #include "emplace_constructible.h"
 #endif
 
@@ -93,7 +93,7 @@ void basic_test()
                 testN<std::deque<int> >(rng[i], rng[j], rng[k]);
     testNI<std::deque<int> >(1500, 2000, 1000);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     int rng[] = {0, 1, 2, 3, 1023, 1024, 1025, 2047, 2048, 2049};
     const int N = sizeof(rng)/sizeof(rng[0]);
@@ -107,7 +107,7 @@ void basic_test()
 }
 
 void test_emplacable_concept() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   int arr1[] = {42};
   int arr2[] = {1, 101, 42};
   {

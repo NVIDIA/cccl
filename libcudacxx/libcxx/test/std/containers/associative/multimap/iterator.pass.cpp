@@ -122,7 +122,7 @@ int main(int, char**)
                 assert(i->second == d);
             }
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::pair<const int, double> V;
         V ar[] =
@@ -212,7 +212,7 @@ int main(int, char**)
             }
     }
 #endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     { // N3644 testing
         typedef std::multimap<int, double> C;
         C::iterator ii1{}, ii2{};

@@ -33,7 +33,7 @@ int main(int, char**)
     }
     {
         typedef std::basic_string<char, std::char_traits<char>, limited_allocator<char, 10>> C;
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
         static_assert(!std::is_nothrow_move_constructible<C>::value, "");
 #else
         static_assert( std::is_nothrow_move_constructible<C>::value, "");

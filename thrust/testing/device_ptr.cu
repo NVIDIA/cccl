@@ -13,12 +13,12 @@ void TestDevicePointerManipulation(void)
 
     begin++;
     begin--;
-    
+
     ASSERT_EQUAL(end - begin, 5);
 
     begin += 1;
     begin -= 1;
-    
+
     ASSERT_EQUAL(end - begin, 5);
 
     begin = begin + (int) 1;
@@ -28,9 +28,9 @@ void TestDevicePointerManipulation(void)
 
     begin = begin + (unsigned int) 1;
     begin = begin - (unsigned int) 1;
-    
+
     ASSERT_EQUAL(end - begin, 5);
-    
+
     begin = begin + (size_t) 1;
     begin = begin - (size_t) 1;
 
@@ -75,7 +75,7 @@ void TestRawPointerCast(void)
 
     T * first;
     T * last;
-    
+
     first = thrust::raw_pointer_cast(&vec[0]);
     last  = thrust::raw_pointer_cast(&vec[3]);
     ASSERT_EQUAL(last - first, 3);
@@ -92,7 +92,7 @@ void TestRawPointerCast(void)
 DECLARE_VECTOR_UNITTEST(TestRawPointerCast);
 
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 template<typename T>
 void TestDevicePointerNullptrCompatibility()
 {

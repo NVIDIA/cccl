@@ -37,7 +37,7 @@ struct test
 
     explicit test(const test_allocator<int>& a) : base(a) {}
     test(const container_type& c, const test_allocator<int>& a) : base(c, a) {}
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test(container_type&& c, const test_allocator<int>& a) : base(std::move(c), a) {}
     test(test&& q, const test_allocator<int>& a) : base(std::move(q), a) {}
 #endif

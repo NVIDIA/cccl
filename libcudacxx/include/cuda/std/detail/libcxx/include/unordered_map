@@ -633,7 +633,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     value_type& __get_value()
     {
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
         return *_CUDA_VSTD::launder(_CUDA_VSTD::addressof(__cc));
 #else
         return __cc;
@@ -643,7 +643,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     const value_type& __get_value() const
     {
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
         return *_CUDA_VSTD::launder(_CUDA_VSTD::addressof(__cc));
 #else
         return __cc;
@@ -858,7 +858,7 @@ public:
     typedef __hash_map_iterator<typename __table::local_iterator> local_iterator;
     typedef __hash_map_const_iterator<typename __table::const_local_iterator> const_local_iterator;
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     typedef __map_node_handle<__node, allocator_type> node_type;
     typedef __insert_return_type<iterator, node_type> insert_return_type;
 #endif
@@ -906,7 +906,7 @@ public:
     unordered_map(initializer_list<value_type> __il, size_type __n,
                   const hasher& __hf, const key_equal& __eql,
                   const allocator_type& __a);
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_map(size_type __n, const allocator_type& __a)
       : unordered_map(__n, hasher(), key_equal(), __a) {}
@@ -1049,7 +1049,7 @@ public:
         return __table_.__emplace_unique(_CUDA_VSTD::forward<_Args>(__args)...).first;
     }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     template <class... _Args>
         _LIBCUDACXX_INLINE_VISIBILITY
         pair<iterator, bool> try_emplace(const key_type& __k, _Args&&... __args)
@@ -1135,7 +1135,7 @@ public:
         // FIXME: Add debug mode checking for the iterator input
         return insert_or_assign(_CUDA_VSTD::move(__k), _CUDA_VSTD::forward<_Vp>(__v)).first;
      }
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
     _LIBCUDACXX_INLINE_VISIBILITY
     iterator erase(const_iterator __p) {return __table_.erase(__p.__i_);}
@@ -1149,7 +1149,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
         void clear() noexcept {__table_.clear();}
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     _LIBCUDACXX_INLINE_VISIBILITY
     insert_return_type insert(node_type&& __nh)
     {
@@ -1230,10 +1230,10 @@ public:
     const_iterator find(const key_type& __k) const {return __table_.find(__k);}
     _LIBCUDACXX_INLINE_VISIBILITY
     size_type count(const key_type& __k) const {return __table_.__count_unique(__k);}
-    #if _LIBCUDACXX_STD_VER > 17
+    #if _CCCL_STD_VER > 2017
         _LIBCUDACXX_INLINE_VISIBILITY
         bool contains(const key_type& __k) const {return find(__k) != end();}
-    #endif // _LIBCUDACXX_STD_VER > 17
+    #endif // _CCCL_STD_VER > 2017
     _LIBCUDACXX_INLINE_VISIBILITY
     pair<iterator, iterator>             equal_range(const key_type& __k)
         {return __table_.__equal_range_unique(__k);}
@@ -1614,7 +1614,7 @@ swap(unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
     __x.swap(__y);
 }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc, class _Predicate>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void erase_if(unordered_map<_Key, _Tp, _Hash, _Pred, _Alloc>& __c, _Predicate __pred)
@@ -1699,7 +1699,7 @@ public:
     typedef __hash_map_iterator<typename __table::local_iterator> local_iterator;
     typedef __hash_map_const_iterator<typename __table::const_local_iterator> const_local_iterator;
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     typedef __map_node_handle<__node, allocator_type> node_type;
 #endif
 
@@ -1747,7 +1747,7 @@ public:
     unordered_multimap(initializer_list<value_type> __il, size_type __n,
                        const hasher& __hf, const key_equal& __eql,
                        const allocator_type& __a);
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     _LIBCUDACXX_INLINE_VISIBILITY
     unordered_multimap(size_type __n, const allocator_type& __a)
       : unordered_multimap(__n, hasher(), key_equal(), __a) {}
@@ -1867,7 +1867,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     void clear() noexcept {__table_.clear();}
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     _LIBCUDACXX_INLINE_VISIBILITY
     iterator insert(node_type&& __nh)
     {
@@ -1948,10 +1948,10 @@ public:
     const_iterator find(const key_type& __k) const {return __table_.find(__k);}
     _LIBCUDACXX_INLINE_VISIBILITY
     size_type count(const key_type& __k) const {return __table_.__count_multi(__k);}
-    #if _LIBCUDACXX_STD_VER > 17
+    #if _CCCL_STD_VER > 2017
         _LIBCUDACXX_INLINE_VISIBILITY
         bool contains(const key_type& __k) const {return find(__k) != end();}
-    #endif // _LIBCUDACXX_STD_VER > 17
+    #endif // _CCCL_STD_VER > 2017
     _LIBCUDACXX_INLINE_VISIBILITY
     pair<iterator, iterator>             equal_range(const key_type& __k)
         {return __table_.__equal_range_multi(__k);}
@@ -2289,7 +2289,7 @@ swap(unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
     __x.swap(__y);
 }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Key, class _Tp, class _Hash, class _Pred, class _Alloc, class _Predicate>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void erase_if(unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>& __c, _Predicate __pred)

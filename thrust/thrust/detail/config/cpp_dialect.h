@@ -62,38 +62,7 @@
 #  define THRUST_IGNORE_DEPRECATED_COMPILER
 #endif
 
-// Define this to override the built-in detection.
-#ifndef THRUST_CPP_DIALECT
-
-// MSVC does not define __cplusplus correctly. _MSVC_LANG is used instead.
-// This macro is only defined in MSVC 2015U3+.
-#  ifdef _MSVC_LANG // Do not replace with THRUST_HOST_COMPILER test (see above)
-// MSVC2015 reports C++14 but lacks extended constexpr support. Treat as C++11.
-#    if THRUST_MSVC_VERSION < 1910 && _MSVC_LANG > 201103L /* MSVC < 2017 && CPP > 2011 */
-#      define THRUST_CPLUSPLUS 201103L /* Fix to 2011 */
-#    else
-#      define THRUST_CPLUSPLUS _MSVC_LANG /* We'll trust this for now. */
-#    endif // MSVC 2015 C++14 fix
-#  else
-#    define THRUST_CPLUSPLUS __cplusplus
-#  endif
-
-// Detect current dialect:
-#  if THRUST_CPLUSPLUS < 201103L
-#    define THRUST_CPP_DIALECT 2003
-#  elif THRUST_CPLUSPLUS < 201402L
-#    define THRUST_CPP_DIALECT 2011
-#  elif THRUST_CPLUSPLUS < 201703L
-#    define THRUST_CPP_DIALECT 2014
-#  elif THRUST_CPLUSPLUS == 201703L
-#    define THRUST_CPP_DIALECT 2017
-#  elif THRUST_CPLUSPLUS > 201703L // unknown, but is higher than 2017.
-#    define THRUST_CPP_DIALECT 2020
-#  endif
-
-#  undef THRUST_CPLUSPLUS // cleanup
-
-#endif // !THRUST_CPP_DIALECT
+#define THRUST_CPP_DIALECT _CCCL_STD_VER
 
 // Define THRUST_COMPILER_DEPRECATION macro:
 #if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC
@@ -133,10 +102,10 @@
 #ifndef THRUST_IGNORE_DEPRECATED_DIALECT
 
 // Dialect checks:
-#  if THRUST_CPP_DIALECT < 2011
+#  if _CCCL_STD_VER < 2011
      // <C++11. Hard upgrade message:
      THRUST_COMPILER_DEPRECATION(C++14);
-#  elif THRUST_CPP_DIALECT == 2011 && !defined(THRUST_IGNORE_DEPRECATED_CPP_11)
+#  elif _CCCL_STD_VER == 2011 && !defined(THRUST_IGNORE_DEPRECATED_CPP_11)
      // =C++11. Soft upgrade message:
      THRUST_COMPILER_DEPRECATION_SOFT(C++14, C++11);
 #  endif

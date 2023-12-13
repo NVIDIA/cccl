@@ -28,7 +28,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + 0),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + 0),
                                      forward_iterator<const int*>(ib),
@@ -38,7 +38,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -59,7 +59,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -75,7 +75,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -96,7 +96,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -112,7 +112,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -128,7 +128,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -144,7 +144,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -159,7 +159,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -179,7 +179,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -195,7 +195,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -211,7 +211,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -226,7 +226,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -241,7 +241,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -257,7 +257,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -273,7 +273,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -289,7 +289,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -305,7 +305,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -320,7 +320,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -337,7 +337,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -353,7 +353,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -369,7 +369,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -385,7 +385,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -401,7 +401,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -417,7 +417,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -433,7 +433,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -449,7 +449,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -465,7 +465,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -480,7 +480,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -501,7 +501,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -516,7 +516,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -536,7 +536,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -556,7 +556,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -576,7 +576,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -597,7 +597,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -612,7 +612,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -637,7 +637,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -663,7 +663,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib)) ==
            false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(cuda::std::is_permutation(forward_iterator<const int*>(ia),
                                      forward_iterator<const int*>(ia + sa),
                                      forward_iterator<const int*>(ib),
@@ -678,7 +678,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
 int main(int, char**) {
     test();
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
   static_assert(test(), "");
 #endif
 

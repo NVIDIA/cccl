@@ -41,7 +41,7 @@
 int main(int, char**)
 {
     typedef std::istream_iterator<double> I1; // double is trivially destructible
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     static_assert((std::is_convertible<I1,
         std::iterator<std::input_iterator_tag, double, std::ptrdiff_t,
         const double*, const double&> >::value), "");
@@ -59,7 +59,7 @@ int main(int, char**)
     static_assert( std::is_trivially_destructible<I1>::value, "");
 
     typedef std::istream_iterator<unsigned, wchar_t> I2; // unsigned is trivially destructible
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     static_assert((std::is_convertible<I2,
         std::iterator<std::input_iterator_tag, unsigned, std::ptrdiff_t,
         const unsigned*, const unsigned&> >::value), "");

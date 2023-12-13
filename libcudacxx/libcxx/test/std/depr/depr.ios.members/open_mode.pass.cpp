@@ -22,7 +22,7 @@
 
 int main(int, char**)
 {
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     std::strstream::open_mode b = std::strstream::app;
     assert(b == std::ios::app);
 #endif

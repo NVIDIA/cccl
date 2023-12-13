@@ -32,7 +32,7 @@ struct GoodInvocable {
 static_assert(cuda::std::indirectly_unary_invocable<GoodInvocable<It>, It>);
 
 // Should fail when the iterator is not indirectly_readable
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 struct NotIndirectlyReadable { };
 static_assert(!cuda::std::indirectly_unary_invocable<GoodInvocable<NotIndirectlyReadable>, NotIndirectlyReadable>);
 #endif

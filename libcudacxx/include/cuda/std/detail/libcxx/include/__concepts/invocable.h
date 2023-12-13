@@ -28,7 +28,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [concept.invocable]
 
@@ -48,7 +48,7 @@ concept __invoke_constructible = requires(_Fun&& __fun, _Args&&... __args) {
         _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...));
 };
 
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 
 template<class _Fn, class... _Args>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -73,7 +73,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template <class _Fun, class... _Args>
 _LIBCUDACXX_CONCEPT __invoke_constructible = _LIBCUDACXX_FRAGMENT(__invoke_constructible_, _Fun, _Args...);
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

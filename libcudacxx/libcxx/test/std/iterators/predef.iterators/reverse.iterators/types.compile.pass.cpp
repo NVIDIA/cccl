@@ -48,11 +48,11 @@ void test() {
   static_assert((std::is_same<typename R::reference, typename T::reference>::value), "");
   static_assert((std::is_same<typename R::pointer, typename std::iterator_traits<It>::pointer>::value), "");
 
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
   typedef std::iterator<typename T::iterator_category, typename T::value_type> iterator_base;
   static_assert((std::is_base_of<iterator_base, R>::value), "");
 #endif
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   if constexpr (std::is_same_v<typename T::iterator_category, std::contiguous_iterator_tag>) {
     static_assert((std::is_same<typename R::iterator_category, std::random_access_iterator_tag>::value), "");
   } else {
@@ -63,7 +63,7 @@ void test() {
 #endif
 }
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 
 struct FooIter {
   using iterator_category = std::bidirectional_iterator_tag;
@@ -101,7 +101,7 @@ struct std::iterator_traits<BarIter> {
   using iterator_category = std::bidirectional_iterator_tag;
 };
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   static_assert(std::is_same_v<typename std::reverse_iterator<BarIter>::reference, bool&>);
 #else
   static_assert(std::is_same<typename std::reverse_iterator<BarIter>::reference, char&>::value, "");
@@ -112,7 +112,7 @@ void test_all() {
   test<random_access_iterator<char*> >();
   test<char*>();
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   test<contiguous_iterator<char*>>();
   static_assert(std::is_same_v<typename std::reverse_iterator<bidirectional_iterator<char*>>::iterator_concept, std::bidirectional_iterator_tag>);
   static_assert(std::is_same_v<typename std::reverse_iterator<random_access_iterator<char*>>::iterator_concept, std::random_access_iterator_tag>);

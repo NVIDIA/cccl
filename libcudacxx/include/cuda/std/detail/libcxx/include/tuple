@@ -1007,7 +1007,7 @@ get(const tuple<_Tp...>&& __t) noexcept
   return _CUDA_VSTD::move(__t).template __get_impl<_Ip>();
 }
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 namespace __find_detail {
 
@@ -1338,7 +1338,7 @@ pair<_T1, _T2>::pair(piecewise_construct_t, tuple<_Args1...> &__first_args,
           _CUDA_VSTD::forward<_Args2>(_CUDA_VSTD::get<_I2>(__second_args))...) {
 }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 #define _LIBCUDACXX_NOEXCEPT_RETURN(...)                                       \
   noexcept(noexcept(__VA_ARGS__)) { return __VA_ARGS__; }
 
@@ -1371,7 +1371,7 @@ __apply_tuple_impl(_Fn &&__f, _Tuple &&__t, __tuple_indices<_Id...>)
 
 #undef _LIBCUDACXX_NOEXCEPT_RETURN
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
             _LIBCUDACXX_END_NAMESPACE_STD
 

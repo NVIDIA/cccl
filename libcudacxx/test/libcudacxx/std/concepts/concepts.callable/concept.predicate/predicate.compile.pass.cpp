@@ -40,9 +40,9 @@ static_assert(!predicate<void (S::*)(), S&>, "");
 
 static_assert(!predicate<bool(S)>, "");
 static_assert(!predicate<bool(S)>, "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // unspecified MSVC bug
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // unspecified MSVC bug
 static_assert(!predicate<bool(S&), S>, "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 static_assert(!predicate<bool(S&), S const&>, "");
 static_assert(predicate<bool(S&), S&>, "");
 
@@ -54,7 +54,7 @@ static_assert(predicate<Predicate&, int, double, char>, "");
 static_assert(!predicate<const Predicate, int, double, char>, "");
 static_assert(!predicate<const Predicate&, int, double, char>, "");
 
-#if TEST_STD_VER > 14 && !defined(TEST_COMPILER_NVRTC) // lambdas are not allowed in a constexpr expression
+#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_NVRTC) // lambdas are not allowed in a constexpr expression
 template<class Fun>
 __host__ __device__
 constexpr bool check_lambda(Fun) { return predicate<Fun>; }
@@ -71,6 +71,6 @@ struct explicit_bool {
   __host__ __device__ explicit operator bool() const noexcept;
 };
 static_assert(!check_lambda([] { return explicit_bool(); }), "");
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
 
 int main(int, char**) { return 0; }

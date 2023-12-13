@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 constexpr bool test_constexpr()
 {
     std::chrono::hours h1(3);
@@ -35,7 +35,7 @@ int main(int, char**)
     assert(h2.count() == 3);
     }
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(test_constexpr(), "");
 #endif
 

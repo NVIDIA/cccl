@@ -68,7 +68,7 @@ int main(int, char**)
         assert(*std::next(mo.begin(), 7) == 3);
         assert(*std::next(mo.begin(), 8) == 3);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef int V;
         V ar[] =

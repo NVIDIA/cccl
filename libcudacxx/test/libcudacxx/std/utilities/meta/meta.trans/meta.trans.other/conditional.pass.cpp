@@ -18,7 +18,7 @@ int main(int, char**)
 {
     ASSERT_SAME_TYPE(char, cuda::std::conditional<true, char, int>::type);
     ASSERT_SAME_TYPE(int,  cuda::std::conditional<false, char, int>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(char, cuda::std::conditional_t<true, char, int>);
     ASSERT_SAME_TYPE(int,  cuda::std::conditional_t<false, char, int>);
 #endif

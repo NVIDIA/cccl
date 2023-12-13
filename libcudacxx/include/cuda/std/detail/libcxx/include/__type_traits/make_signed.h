@@ -85,7 +85,7 @@ struct make_signed {
   using type _LIBCUDACXX_NODEBUG_TYPE = __make_signed_t<_Tp>;
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using make_signed_t = __make_signed_t<_Tp>;
 #endif
 

@@ -147,7 +147,7 @@ int main(int, char**)
     test0<S>();
     test1<S>();
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test0<S>();

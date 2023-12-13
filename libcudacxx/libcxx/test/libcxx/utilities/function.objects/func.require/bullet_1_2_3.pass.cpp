@@ -89,7 +89,7 @@ private:
 };
 
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 
 //==============================================================================
 // MemFun11 - C++11 reference qualified test member functions.
@@ -122,7 +122,7 @@ private:
     MemFun11& operator=(MemFun11 const&);
 };
 
-#endif // TEST_STD_VER >= 11
+#endif // TEST_STD_VER >= 2011
 
 
 
@@ -166,7 +166,7 @@ private:
         runTestDispatchIf(NotRValue, tag, dref);
         runTestDispatchIf(NotRValue, tag, obj_ptr);
         runTestDispatchIf(NotRValue, tag, der_ptr);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
         runTestDispatchIf(NotRValue, tag, rref);
         runTestDispatchIf(NotRValue, tag, drref);
 #endif
@@ -241,7 +241,7 @@ private:
 template <class Sig, int Arity, class CV>
 struct TestCase : public TestCaseImp<MemFun03, Sig, Arity, CV> {};
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 template <class Sig, int Arity, class CV, bool RValue = false>
 struct TestCase11 : public TestCaseImp<MemFun11, Sig, Arity, CV, RValue, true> {};
 #endif
@@ -251,7 +251,7 @@ struct DerivedFromRefWrap : public std::reference_wrapper<Tp> {
   DerivedFromRefWrap(Tp& tp) : std::reference_wrapper<Tp>(tp) {}
 };
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 void test_derived_from_ref_wrap() {
     int x = 42;
     std::reference_wrapper<int> r(x);
@@ -307,7 +307,7 @@ int main(int, char**) {
     TestCase<R(A&, A&, A&, ...) volatile,           3, Q_Volatile>::run();
     TestCase<R(A&, A&, A&, ...) const volatile,     3, Q_CV>::run();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     TestCase11<R() &,                               0, Q_None>::run();
     TestCase11<R() const &,                         0, Q_Const>::run();
     TestCase11<R() volatile &,                      0, Q_Volatile>::run();

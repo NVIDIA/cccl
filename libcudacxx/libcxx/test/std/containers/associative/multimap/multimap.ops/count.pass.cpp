@@ -56,7 +56,7 @@ int main(int, char**)
         assert(r == 0);
     }
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef std::multimap<int, double, std::less<int>, min_allocator<std::pair<const int, double>>> M;
     {
@@ -92,7 +92,7 @@ int main(int, char**)
     }
 #endif
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     typedef std::multimap<int, double, std::less<>> M;
     typedef M::size_type R;

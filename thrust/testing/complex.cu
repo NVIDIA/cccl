@@ -622,7 +622,7 @@ struct TestComplexTrigonometricFunctions
     ASSERT_ALMOST_EQUAL(thrust::sinh(a), std::sinh(c));
     ASSERT_ALMOST_EQUAL(thrust::tanh(a), std::tanh(c));
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
     ASSERT_ALMOST_EQUAL(thrust::acos(a), std::acos(c));
     ASSERT_ALMOST_EQUAL(thrust::asin(a), std::asin(c));
@@ -655,7 +655,7 @@ struct TestComplexStreamOperators
 };
 SimpleUnitTest<TestComplexStreamOperators, FloatingPointTypes> TestComplexStreamOperatorsInstance;
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 template <typename T>
 struct TestComplexStdComplexDeviceInterop
 {

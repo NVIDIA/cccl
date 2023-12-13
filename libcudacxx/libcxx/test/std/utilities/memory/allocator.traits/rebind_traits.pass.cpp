@@ -64,7 +64,7 @@ struct E
 
 int main(int, char**)
 {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((std::is_same<std::allocator_traits<A<char> >::rebind_traits<double>, std::allocator_traits<ReboundA<double> > >::value), "");
     static_assert((std::is_same<std::allocator_traits<B<int, char> >::rebind_traits<double>, std::allocator_traits<ReboundB<double, char> > >::value), "");
     static_assert((std::is_same<std::allocator_traits<C<char> >::rebind_traits<double>, std::allocator_traits<C<double> > >::value), "");

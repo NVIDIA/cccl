@@ -24,7 +24,7 @@ struct A {
   std::forward_list<A>::const_iterator it2;
 };
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 struct B {
   typedef std::forward_list<B, min_allocator<B>> FList;
   FList d;
@@ -41,7 +41,7 @@ int main(int, char**)
     a.it = a.d.begin();
     a.it2 = a.d.cbefore_begin();
   }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     B b;
     assert(b.d.empty());

@@ -253,7 +253,7 @@ char_traits<char>::compare(const char_type* __s1, const char_type* __s2, size_t 
         return 0;
 #if __has_feature(cxx_constexpr_string_builtins)
     return __builtin_memcmp(__s1, __s2, __n);
-#elif _LIBCUDACXX_STD_VER <= 14
+#elif _CCCL_STD_VER <= 2014
     return memcmp(__s1, __s2, __n);
 #else
     for (; __n; --__n, ++__s1, ++__s2)
@@ -275,7 +275,7 @@ char_traits<char>::find(const char_type* __s, size_t __n, const char_type& __a) 
         return nullptr;
 #if __has_feature(cxx_constexpr_string_builtins)
     return __builtin_char_memchr(__s, to_int_type(__a), __n);
-#elif _LIBCUDACXX_STD_VER <= 14
+#elif _CCCL_STD_VER <= 2014
     return (const char_type*) memchr(__s, to_int_type(__a), __n);
 #else
     for (; __n; --__n)
@@ -343,7 +343,7 @@ char_traits<wchar_t>::compare(const char_type* __s1, const char_type* __s2, size
         return 0;
 #if __has_feature(cxx_constexpr_string_builtins)
     return __builtin_wmemcmp(__s1, __s2, __n);
-#elif _LIBCUDACXX_STD_VER <= 14
+#elif _CCCL_STD_VER <= 2014
     return wmemcmp(__s1, __s2, __n);
 #else
     for (; __n; --__n, ++__s1, ++__s2)
@@ -374,7 +374,7 @@ char_traits<wchar_t>::length(const char_type* __s) noexcept
 {
 #if __has_feature(cxx_constexpr_string_builtins)
     return __builtin_wcslen(__s);
-#elif _LIBCUDACXX_STD_VER <= 14
+#elif _CCCL_STD_VER <= 2014
     return wcslen(__s);
 #else
     size_t __len = 0;
@@ -392,7 +392,7 @@ char_traits<wchar_t>::find(const char_type* __s, size_t __n, const char_type& __
         return nullptr;
 #if __has_feature(cxx_constexpr_string_builtins)
     return __builtin_wmemchr(__s, __a, __n);
-#elif _LIBCUDACXX_STD_VER <= 14
+#elif _CCCL_STD_VER <= 2014
     return wmemchr(__s, __a, __n);
 #else
     for (; __n; --__n)

@@ -27,7 +27,7 @@
 #endif // no system header
 
 #ifndef THRUST_CPP14_REQUIRED_NO_ERROR
-#  if THRUST_CPP_DIALECT < 2014
+#  if _CCCL_STD_VER < 2014
 #    error C++14 is required for this Thrust feature; please upgrade your compiler or pass the appropriate -std=c++14 flag to it.
 #  endif
 #endif

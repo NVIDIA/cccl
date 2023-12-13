@@ -27,7 +27,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 #define DELETE_FUNCTION = delete
 #else
 #define DELETE_FUNCTION
@@ -178,7 +178,7 @@ int main(int, char**)
     static_assert(( std::__libcpp_is_trivial_iterator<std::basic_string<char>::reverse_iterator>      ::value), "");
     static_assert(( std::__libcpp_is_trivial_iterator<std::basic_string<char>::const_reverse_iterator>::value), "");
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 //  Initializer list  (which has no reverse iterators)
     static_assert(( std::__libcpp_is_trivial_iterator<std::initializer_list<char>::iterator>              ::value), "");
     static_assert(( std::__libcpp_is_trivial_iterator<std::initializer_list<char>::const_iterator>        ::value), "");

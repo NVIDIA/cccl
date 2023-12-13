@@ -26,7 +26,7 @@
 #include "test_convertible.h"
 #include "MoveOnly.h"
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 
 struct Empty {};
 struct A
@@ -146,7 +146,7 @@ int main(int, char**)
         assert(cuda::std::get<2>(t2) == E());
     }
 #endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         constexpr cuda::std::tuple<Empty> t0{Empty()};
         (void)t0;

@@ -21,7 +21,7 @@ void test_is_member_pointer()
     static_assert( std::is_member_pointer<const T>::value, "");
     static_assert( std::is_member_pointer<volatile T>::value, "");
     static_assert( std::is_member_pointer<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_member_pointer_v<T>, "");
     static_assert( std::is_member_pointer_v<const T>, "");
     static_assert( std::is_member_pointer_v<volatile T>, "");
@@ -36,7 +36,7 @@ void test_is_not_member_pointer()
     static_assert(!std::is_member_pointer<const T>::value, "");
     static_assert(!std::is_member_pointer<volatile T>::value, "");
     static_assert(!std::is_member_pointer<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_member_pointer_v<T>, "");
     static_assert(!std::is_member_pointer_v<const T>, "");
     static_assert(!std::is_member_pointer_v<volatile T>, "");
@@ -97,7 +97,7 @@ int main(int, char**)
     test_is_not_member_pointer<Abstract>();
     test_is_not_member_pointer<incomplete_type>();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   test_is_member_pointer<int (Empty::*)(int, ...) const>();
   test_is_member_pointer<int (Empty::*)(int, long, long) const noexcept>();
   test_is_member_pointer<int (Empty::*)() & noexcept>();

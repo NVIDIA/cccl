@@ -102,7 +102,7 @@ int main(int, char**)
     tests();
     test_exceptions();
 
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
     static_assert(tests(), "");
 #endif
     return 0;

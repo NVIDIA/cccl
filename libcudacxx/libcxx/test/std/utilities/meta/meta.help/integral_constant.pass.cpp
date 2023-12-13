@@ -21,13 +21,13 @@ int main(int, char**)
     static_assert(_5::value == 5, "");
     static_assert((std::is_same<_5::value_type, int>::value), "");
     static_assert((std::is_same<_5::type, _5>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((_5() == 5), "");
 #endif
     assert(_5() == 5);
 
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert ( _5{}() == 5, "" );
     static_assert ( std::true_type{}(), "" );
 #endif

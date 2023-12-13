@@ -36,7 +36,7 @@ struct __identity {
   using is_transparent = void;
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 struct identity {
     template<class _Tp>
@@ -47,7 +47,7 @@ struct identity {
 
     using is_transparent = void;
 };
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -28,7 +28,7 @@ using cuda::std::totally_ordered;
 
 // `models_totally_ordered` checks that `totally_ordered` subsumes
 // `std::equality_comparable`. This overload should *never* be called.
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 
 template <cuda::std::equality_comparable T>
 __host__ __device__ constexpr bool models_totally_ordered() noexcept {
@@ -48,7 +48,7 @@ __host__ __device__ constexpr bool models_totally_ordered() noexcept {
   return true;
 }
 
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 namespace fundamentals {
 static_assert(models_totally_ordered<int>(), "");
@@ -59,9 +59,9 @@ static_assert(models_totally_ordered<char const*>(), "");
 static_assert(models_totally_ordered<char volatile*>(), "");
 static_assert(models_totally_ordered<char const volatile*>(), "");
 static_assert(models_totally_ordered<wchar_t&>(), "");
-#if TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
 static_assert(models_totally_ordered<char8_t const&>(), "");
-#endif // TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#endif // TEST_STD_VER > 2017 && defined(__cpp_char8_t)
 static_assert(models_totally_ordered<char16_t volatile&>(), "");
 static_assert(models_totally_ordered<char32_t const volatile&>(), "");
 static_assert(models_totally_ordered<unsigned char&&>(), "");
@@ -114,7 +114,7 @@ static_assert(models_totally_ordered<cuda::std::array<int, 10> >(), "");
 } // namespace standard_types
 
 namespace types_fit_for_purpose {
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
 static_assert(models_totally_ordered<member_three_way_comparable>(), "");
 #ifndef __NVCC__  // nvbug3908399
@@ -128,7 +128,7 @@ static_assert(!totally_ordered<cxx20_member_eq>, "");
 static_assert(!totally_ordered<cxx20_friend_eq>, "");
 static_assert(!totally_ordered<one_member_one_friend>, "");
 static_assert(!totally_ordered<equality_comparable_with_ec1>, "");
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 static_assert(!totally_ordered<no_eq>, "");
 static_assert(!totally_ordered<no_neq>, "");
@@ -145,7 +145,7 @@ static_assert(!totally_ordered<wrong_return_type_le>, "");
 static_assert(!totally_ordered<wrong_return_type_ge>, "");
 static_assert(!totally_ordered<wrong_return_type>, "");
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(!totally_ordered<cxx20_member_eq_operator_with_deleted_ne>, "");
 static_assert(!totally_ordered<cxx20_friend_eq_operator_with_deleted_ne>, "");
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
@@ -173,7 +173,7 @@ static_assert(totally_ordered<partial_ordering_totally_ordered_with>, "");
 static_assert(totally_ordered<weak_ordering_totally_ordered_with>, "");
 static_assert(totally_ordered<strong_ordering_totally_ordered_with>, "");
 #endif // TEST_HAS_NO_SPACESHIP_OPERATOR
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 } // namespace types_fit_for_purpose
 
 int main(int, char**) { return 0; }

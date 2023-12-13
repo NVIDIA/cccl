@@ -52,7 +52,7 @@ void do_insert_cv_test()
 int main(int, char**)
 {
     do_insert_cv_test<std::multiset<int> >();
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::multiset<int, std::less<int>, min_allocator<int>> M;
         do_insert_cv_test<M>();

@@ -29,7 +29,7 @@ int main(int, char**)
     assert(m.begin() == m.end());
     assert(m.get_allocator() == A(5));
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef std::less<int> C;
     typedef min_allocator<std::pair<const int, double> > A;

@@ -32,7 +32,7 @@ template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_copy_constructible
     : public is_constructible<_Tp, __add_lvalue_reference_t<typename add_const<_Tp>::type>> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_copy_constructible_v = is_copy_constructible<_Tp>::value;
 #endif

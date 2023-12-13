@@ -17,7 +17,7 @@ template <class T>
 void test_is_copy_constructible()
 {
     static_assert( std::is_copy_constructible<T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_copy_constructible_v<T>, "");
 #endif
 }
@@ -26,7 +26,7 @@ template <class T>
 void test_is_not_copy_constructible()
 {
     static_assert(!std::is_copy_constructible<T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_copy_constructible_v<T>, "");
 #endif
 }
@@ -83,14 +83,14 @@ int main(int, char**)
     test_is_copy_constructible<NotEmpty>();
     test_is_copy_constructible<bit_zero>();
 
-#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 20
+#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 2020
     test_is_not_copy_constructible<char[3]>();
     test_is_not_copy_constructible<char[]>();
 #endif
     test_is_not_copy_constructible<void>();
     test_is_not_copy_constructible<Abstract>();
     test_is_not_copy_constructible<C>();
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test_is_not_copy_constructible<B>();
 #endif
 

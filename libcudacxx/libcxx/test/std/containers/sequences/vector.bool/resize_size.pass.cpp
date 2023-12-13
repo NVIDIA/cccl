@@ -32,7 +32,7 @@ int main(int, char**)
         assert(v.size() == 300);
         assert(v.capacity() >= 400);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::vector<bool, min_allocator<bool>> v(100);
         v.resize(50);

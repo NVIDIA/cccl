@@ -25,7 +25,7 @@ template <class L, class Predicate>
 void do_remove_if(L &l, Predicate pred, typename L::size_type expected)
 {
     typename L::size_type old_size = std::distance(l.begin(), l.end());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     ASSERT_SAME_TYPE(decltype(l.remove_if(pred)), typename L::size_type);
     assert(l.remove_if(pred) == expected);
 #else
@@ -128,7 +128,7 @@ int main(int, char**)
     assert(c.empty());
     }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef unary_counting_predicate<bool(*)(T), T> Predicate;

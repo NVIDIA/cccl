@@ -27,7 +27,7 @@ int main(int, char**)
         typedef Emplaceable T;
         typedef std::forward_list<T> C;
         C c;
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
         T& r1 = c.emplace_front();
         assert(c.front() == Emplaceable());
         assert(&r1 == &c.front());
@@ -49,7 +49,7 @@ int main(int, char**)
         typedef Emplaceable T;
         typedef std::forward_list<T, min_allocator<T>> C;
         C c;
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
         T& r1 = c.emplace_front();
         assert(c.front() == Emplaceable());
         assert(&r1 == &c.front());

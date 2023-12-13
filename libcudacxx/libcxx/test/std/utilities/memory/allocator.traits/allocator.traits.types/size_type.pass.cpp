@@ -69,7 +69,7 @@ int main(int, char**)
                    std::make_unsigned<std::ptrdiff_t>::type>::value), "");
     static_assert((std::is_same<std::allocator_traits<C<char> >::size_type,
                    unsigned char>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((std::is_same<std::allocator_traits<D<char> >::size_type, unsigned short>::value), "");
 #endif
 

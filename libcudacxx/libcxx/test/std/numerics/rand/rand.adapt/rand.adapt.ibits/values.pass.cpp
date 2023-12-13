@@ -29,7 +29,7 @@ void
 test1()
 {
     typedef std::independent_bits_engine<std::ranlux24, 32, unsigned> E;
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((E::min() == 0), "");
     static_assert((E::max() == 0xFFFFFFFF), "");
 #else
@@ -42,7 +42,7 @@ void
 test2()
 {
     typedef std::independent_bits_engine<std::ranlux48, 64, unsigned long long> E;
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((E::min() == 0), "");
     static_assert((E::max() == 0xFFFFFFFFFFFFFFFFull), "");
 #else

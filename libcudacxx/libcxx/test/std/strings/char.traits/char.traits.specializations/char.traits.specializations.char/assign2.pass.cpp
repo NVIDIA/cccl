@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 constexpr bool test_constexpr()
 {
     char c = '1';
@@ -33,7 +33,7 @@ int main(int, char**)
     std::char_traits<char>::assign(c, 'a');
     assert(c == 'a');
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(test_constexpr(), "" );
 #endif
 

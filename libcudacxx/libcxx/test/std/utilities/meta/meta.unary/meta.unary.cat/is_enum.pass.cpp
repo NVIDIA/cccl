@@ -21,7 +21,7 @@ void test_is_enum()
     static_assert( std::is_enum<const T>::value, "");
     static_assert( std::is_enum<volatile T>::value, "");
     static_assert( std::is_enum<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_enum_v<T>, "");
     static_assert( std::is_enum_v<const T>, "");
     static_assert( std::is_enum_v<volatile T>, "");
@@ -36,7 +36,7 @@ void test_is_not_enum()
     static_assert(!std::is_enum<const T>::value, "");
     static_assert(!std::is_enum<volatile T>::value, "");
     static_assert(!std::is_enum<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_enum_v<T>, "");
     static_assert(!std::is_enum_v<const T>, "");
     static_assert(!std::is_enum_v<volatile T>, "");

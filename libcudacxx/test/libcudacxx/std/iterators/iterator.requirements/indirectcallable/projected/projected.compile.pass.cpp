@@ -55,7 +55,7 @@ static_assert(cuda::std::same_as<ContiguousIterator::value_type, S>);
 static_assert(cuda::std::same_as<decltype(*cuda::std::declval<ContiguousIterator>()), S&>);
 static_assert(cuda::std::same_as<cuda::std::iter_difference_t<ContiguousIterator>, cuda::std::ptrdiff_t>);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template <class I, class F>
 constexpr bool projectable = requires {
   typename cuda::std::projected<I, F>;

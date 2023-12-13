@@ -46,7 +46,7 @@ int main(int, char**)
 #endif // _LIBCUDACXX_VERSION
     {
     //  In C++17, move constructors for allocators are not allowed to throw
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 #if defined(_LIBCUDACXX_VERSION)
         typedef std::vector<bool, some_alloc<bool>> C;
         static_assert( std::is_nothrow_move_constructible<C>::value, "");

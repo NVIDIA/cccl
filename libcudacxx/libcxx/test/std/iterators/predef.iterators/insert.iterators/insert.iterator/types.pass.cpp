@@ -55,7 +55,7 @@ test()
     q.test();
     static_assert((std::is_same<typename R::container_type, C>::value), "");
     static_assert((std::is_same<typename R::value_type, void>::value), "");
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert((std::is_same<typename R::difference_type, std::ptrdiff_t>::value), "");
 #else
     static_assert((std::is_same<typename R::difference_type, void>::value), "");
@@ -64,7 +64,7 @@ test()
     static_assert((std::is_same<typename R::pointer, void>::value), "");
     static_assert((std::is_same<typename R::iterator_category, std::output_iterator_tag>::value), "");
 
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     typedef std::iterator<std::output_iterator_tag, void, void, void, void> iterator_base;
     static_assert((std::is_base_of<iterator_base, R>::value), "");
 #endif

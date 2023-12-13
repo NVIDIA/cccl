@@ -84,6 +84,7 @@ doxygen_aliases = [
 # more information on the format can be found at:
 #     https://www.doxygen.nl/manual/config.html#cfg_predefined
 doxygen_predefined = [
+    "_CCCL_STD_VER",
     "CUB_DISABLE_NAMESPACE_MAGIC",
     "CUB_IGNORE_NAMESPACE_MAGIC_ERROR",
     "CUB_NAMESPACE_BEGIN=namespace cub {",

@@ -25,7 +25,7 @@ int main(int, char**)
 
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::zero());
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::zero());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::zero());
     ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::zero());
 #endif

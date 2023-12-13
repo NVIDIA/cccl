@@ -34,7 +34,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_C
     : public integral_constant<bool, _LIBCUDACXX_IS_LITERAL(_Tp)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VAR constexpr bool is_literal_type_v = __is_literal_type(_Tp);
 #endif
@@ -45,7 +45,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_C
     : public integral_constant<bool, is_scalar<__remove_all_extents_t<_Tp>>::value ||
                                      is_reference<__remove_all_extents_t<_Tp>>::value>
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VAR constexpr bool is_literal_type_v
     = is_literal_type<_Tp>::value;

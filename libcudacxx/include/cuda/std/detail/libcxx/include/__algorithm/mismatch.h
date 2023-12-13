@@ -50,7 +50,7 @@ _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VI
   return _CUDA_VSTD::mismatch(__first1, __last1, __first2, __equal_to{});
 }
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
 _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
   pair<_InputIterator1, _InputIterator2>
@@ -77,7 +77,7 @@ _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VI
 {
   return _CUDA_VSTD::mismatch(__first1, __last1, __first2, __last2, __equal_to{});
 }
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
