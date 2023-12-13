@@ -58,12 +58,15 @@ static_assert(cuda::std::is_swappable_v<cuda::std::expected<MoveMayThrow, int>>,
 // is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
 static_assert(cuda::std::is_swappable_v<cuda::std::expected<int, MoveMayThrow>>, "");
 
+#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_swappable_v<cuda::std::expected<MoveMayThrow, MoveMayThrow>>, "");
+#endif // TEST_COMPILER_ICC
 
 // Test noexcept
 static_assert(cuda::std::is_nothrow_swappable_v<cuda::std::expected<int, int>>, "");
 
+#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_constructible_v<T>
 static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<MoveMayThrow, int>>, "");
 
@@ -79,6 +82,7 @@ static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<SwapMayThro
 
 // !is_nothrow_swappable_v<E>
 static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<int, SwapMayThrow>>, "");
+#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // this->has_value() && rhs.has_value()

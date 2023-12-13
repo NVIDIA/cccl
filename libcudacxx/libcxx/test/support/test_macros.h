@@ -68,7 +68,11 @@
 #define TEST_HAS_BUILTIN_IDENTIFIER(X) 0
 #endif
 
-#if defined(__NVCOMPILER)
+#if defined(__INTEL_LLVM_COMPILER)
+#  define TEST_COMPILER_ICC_LLVM
+#elif defined(__INTEL_COMPILER)
+#  define TEST_COMPILER_ICC
+#elif defined(__NVCOMPILER)
 # define TEST_COMPILER_NVHPC
 #elif defined(__clang__)
 # define TEST_COMPILER_CLANG
