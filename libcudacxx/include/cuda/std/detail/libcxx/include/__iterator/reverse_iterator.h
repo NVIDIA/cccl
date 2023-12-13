@@ -286,6 +286,9 @@ public:
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();
     _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
+#if defined(_LIBCUDACXX_COMPILER_ICC)
+  _LIBCUDACXX_UNREACHABLE();
+#endif // _LIBCUDACXX_COMPILER_ICC
   }
 #endif // !_LIBCUDACXX_COMPILER_MSVC_2017
 #endif // _LIBCUDACXX_STD_VER > 14

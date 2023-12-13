@@ -153,9 +153,9 @@ __host__ __device__ void test()
 
     test_true     <Noexcept>();
     test_true     <NoexceptTrue>();
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
     test_false    <NoexceptFalse>();
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 
     test_false    <CtorProtected>();
     test_false    <CtorPrivate>();
@@ -163,9 +163,9 @@ __host__ __device__ void test()
     test_false    <DtorPrivate>();
 
     test_true     <NoexceptDependant<int>>();
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
     test_false    <NoexceptDependant<double>>();
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 
     test_true     <CtorExplicit>();
     test_false    <CtorArgument>();

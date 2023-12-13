@@ -61,7 +61,9 @@ int main(int, char**)
 {
     {
         optional<X> opt; unused(opt);
+#ifndef TEST_COMPILER_ICC
         ASSERT_NOT_NOEXCEPT(opt.value());
+#endif // TEST_COMPILER_ICC
         ASSERT_SAME_TYPE(decltype(opt.value()), X&);
     }
     {
