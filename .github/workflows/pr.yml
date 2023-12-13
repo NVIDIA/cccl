@@ -110,7 +110,7 @@ jobs:
       is_windows: ${{ contains(matrix.cuda_host_combination, 'cl') }}
 
   libcudacxx:
-    name: CUDAlibcudacxx ${{ matrix.cuda_host_combination }}
+    name: libcudacxx CUDA${{ matrix.cuda_host_combination }}
     permissions:
       id-token: write
       contents: read
@@ -127,7 +127,7 @@ jobs:
       is_windows: ${{ contains(matrix.cuda_host_combination, 'cl') }}
 
   clang-cuda:
-    name: ${{matrix.lib}} ${{matrix.cpu}}/CTK${{matrix.cuda}}/clang-cuda
+    name: Clang CUDA
     permissions:
       id-token: write
       contents: read
@@ -138,7 +138,7 @@ jobs:
         include: ${{ fromJSON(needs.compute-matrix.outputs.CLANG_CUDA_MATRIX) }}
     uses: ./.github/workflows/run-as-coder.yml
     with:
-      name: ${{matrix.lib}} CTK${{matrix.cuda}} clang-cuda${{matrix.compiler.version}}/${{matrix.std}}
+      name: Build ${{matrix.lib}} ${{matrix.cpu}}/clang-cuda${{matrix.compiler.version}}/C++${{matrix.std}}
       runner: linux-${{matrix.cpu}}-cpu16
       image: rapidsai/devcontainers:${{needs.compute-matrix.outputs.DEVCONTAINER_VERSION}}-cpp-${{matrix.compiler.name}}${{matrix.compiler.version}}-cuda${{matrix.cuda}}-${{matrix.os}}
       command: |
