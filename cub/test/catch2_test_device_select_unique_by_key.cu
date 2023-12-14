@@ -101,8 +101,8 @@ using all_types = c2h::type_list<std::uint8_t,
                                  long2,
                                  c2h::custom_type_t<c2h::equal_comparable_t>>;
 
-using huge_types = c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t, c2h::huge_data_t<128>::data_t>,
-                                  c2h::custom_type_t<c2h::equal_comparable_t, c2h::huge_data_t<256>::data_t>>;
+using huge_types = c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t, c2h::huge_data<128>::type>,
+                                  c2h::custom_type_t<c2h::equal_comparable_t, c2h::huge_data<256>::type>>;
 
 using types = c2h::type_list<std::uint8_t,
                              std::uint32_t>;

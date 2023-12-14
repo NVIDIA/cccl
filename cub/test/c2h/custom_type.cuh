@@ -57,10 +57,10 @@ public:
 };
 
 template <std::size_t TotalSize>
-struct huge_data_t
+struct huge_data
 {
   template <class CustomType>
-  class data_t
+  class type
   {
     static constexpr auto extra_member_bytes = (TotalSize - sizeof(custom_type_state_t));
     std::uint8_t data[extra_member_bytes];
