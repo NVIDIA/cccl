@@ -40,7 +40,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS plus
     : __binary_function<_Tp, _Tp, _Tp>
 {
     typedef _Tp __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x, const _Tp& __y) const
         {return __x + __y;}
@@ -51,7 +51,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(plus);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS plus<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -71,7 +71,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS minus
     : __binary_function<_Tp, _Tp, _Tp>
 {
     typedef _Tp __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x, const _Tp& __y) const
         {return __x - __y;}
@@ -82,7 +82,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(minus);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS minus<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -102,7 +102,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS multiplies
     : __binary_function<_Tp, _Tp, _Tp>
 {
     typedef _Tp __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x, const _Tp& __y) const
         {return __x * __y;}
@@ -113,7 +113,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(multiplies);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS multiplies<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -133,7 +133,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS divides
     : __binary_function<_Tp, _Tp, _Tp>
 {
     typedef _Tp __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x, const _Tp& __y) const
         {return __x / __y;}
@@ -144,7 +144,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(divides);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS divides<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -164,7 +164,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS modulus
     : __binary_function<_Tp, _Tp, _Tp>
 {
     typedef _Tp __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x, const _Tp& __y) const
         {return __x % __y;}
@@ -175,7 +175,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(modulus);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS modulus<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -195,7 +195,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS negate
     : __unary_function<_Tp, _Tp>
 {
     typedef _Tp __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
         {return -__x;}
@@ -206,7 +206,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(negate);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS negate<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Tp>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_Tp&& __x) const
@@ -228,7 +228,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_and
     : __binary_function<_Tp, _Tp, _Tp>
 {
     typedef _Tp __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x, const _Tp& __y) const
         {return __x & __y;}
@@ -239,7 +239,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_and);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_and<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -255,7 +255,7 @@ template <class _Tp = void>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_not
     : __unary_function<_Tp, _Tp>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x) const
         {return ~__x;}
@@ -265,7 +265,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_not);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_not<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Tp>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_Tp&& __x) const
@@ -285,7 +285,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_or
     : __binary_function<_Tp, _Tp, _Tp>
 {
     typedef _Tp __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x, const _Tp& __y) const
         {return __x | __y;}
@@ -296,7 +296,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_or);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_or<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -316,7 +316,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_xor
     : __binary_function<_Tp, _Tp, _Tp>
 {
     typedef _Tp __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator()(const _Tp& __x, const _Tp& __y) const
         {return __x ^ __y;}
@@ -327,7 +327,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_xor);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_xor<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -349,7 +349,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS equal_to
     : __binary_function<_Tp, _Tp, bool>
 {
     typedef bool __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Tp& __x, const _Tp& __y) const
         {return __x == __y;}
@@ -360,7 +360,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(equal_to);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS equal_to<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -380,7 +380,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS not_equal_to
     : __binary_function<_Tp, _Tp, bool>
 {
     typedef bool __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Tp& __x, const _Tp& __y) const
         {return __x != __y;}
@@ -391,7 +391,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(not_equal_to);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS not_equal_to<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -411,7 +411,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS less
     : __binary_function<_Tp, _Tp, bool>
 {
     typedef bool __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Tp& __x, const _Tp& __y) const
         {return __x < __y;}
@@ -422,7 +422,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(less);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS less<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -442,7 +442,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS less_equal
     : __binary_function<_Tp, _Tp, bool>
 {
     typedef bool __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Tp& __x, const _Tp& __y) const
         {return __x <= __y;}
@@ -453,7 +453,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(less_equal);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS less_equal<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -473,7 +473,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS greater_equal
     : __binary_function<_Tp, _Tp, bool>
 {
     typedef bool __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Tp& __x, const _Tp& __y) const
         {return __x >= __y;}
@@ -484,7 +484,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(greater_equal);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS greater_equal<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -504,7 +504,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS greater
     : __binary_function<_Tp, _Tp, bool>
 {
     typedef bool __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Tp& __x, const _Tp& __y) const
         {return __x > __y;}
@@ -515,7 +515,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(greater);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS greater<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -537,7 +537,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_and
     : __binary_function<_Tp, _Tp, bool>
 {
     typedef bool __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Tp& __x, const _Tp& __y) const
         {return __x && __y;}
@@ -548,7 +548,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_and);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS logical_and<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const
@@ -568,7 +568,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_not
     : __unary_function<_Tp, bool>
 {
     typedef bool __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Tp& __x) const
         {return !__x;}
@@ -579,7 +579,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_not);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS logical_not<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Tp>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_Tp&& __x) const
@@ -599,7 +599,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_or
     : __binary_function<_Tp, _Tp, bool>
 {
     typedef bool __result_type;  // used by valarray
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _Tp& __x, const _Tp& __y) const
         {return __x || __y;}
@@ -610,7 +610,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_or);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS logical_or<void>
 {
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _T1, class _T2>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     auto operator()(_T1&& __t, _T2&& __u) const

@@ -42,7 +42,7 @@ template<typename ExecutionPolicy,
          typename UnaryFunction,
          typename OutputType,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputType transform_reduce(thrust::execution_policy<ExecutionPolicy> &exec,
                               InputIterator first,
                               InputIterator last,

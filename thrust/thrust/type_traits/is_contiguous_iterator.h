@@ -240,7 +240,7 @@ using contiguous_iterator_raw_pointer_t =
 
 // Converts a contiguous iterator to a raw pointer:
 template <typename Iterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 contiguous_iterator_raw_pointer_t<Iterator>
 contiguous_iterator_raw_pointer_cast(Iterator it)
 {
@@ -257,7 +257,7 @@ struct try_unwrap_contiguous_iterator_impl
 {
   using type = Iterator;
 
-  static __host__ __device__ type get(Iterator it) { return it; }
+  static _CCCL_HOST_DEVICE type get(Iterator it) { return it; }
 };
 
 // Implementation for contiguous iterators -- unwraps to raw pointer.
@@ -266,7 +266,7 @@ struct try_unwrap_contiguous_iterator_impl<Iterator, true /*is_contiguous*/>
 {
   using type = contiguous_iterator_raw_pointer_t<Iterator>;
 
-  static __host__ __device__ type get(Iterator it)
+  static _CCCL_HOST_DEVICE type get(Iterator it)
   {
     return contiguous_iterator_raw_pointer_cast(it);
   }
@@ -279,7 +279,7 @@ using try_unwrap_contiguous_iterator_return_t =
 // Casts to a raw pointer if iterator is marked as contiguous, otherwise returns
 // the input iterator.
 template <typename Iterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 try_unwrap_contiguous_iterator_return_t<Iterator>
 try_unwrap_contiguous_iterator(Iterator it)
 {

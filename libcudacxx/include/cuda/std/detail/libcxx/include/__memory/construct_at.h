@@ -106,7 +106,7 @@ struct __can_optimize_construct_at
 // construct_at
 #if _CCCL_STD_VER > 2017
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
@@ -125,7 +125,7 @@ _LIBCUDACXX_INLINE_VISIBILITY
   return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
 }
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
@@ -151,7 +151,7 @@ _LIBCUDACXX_INLINE_VISIBILITY
 
 #endif // _CCCL_STD_VER > 2017
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VISIBILITY
   _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
@@ -168,7 +168,7 @@ _LIBCUDACXX_INLINE_VISIBILITY
   return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
 }
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VISIBILITY
   _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>

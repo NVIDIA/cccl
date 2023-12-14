@@ -376,7 +376,7 @@ struct AgentSpmv
      * @param spmv_params
      *   SpMV input parameter bundle
      */
-    __device__ __forceinline__ AgentSpmv(TempStorage &temp_storage,
+    _CCCL_DEVICE _CCCL_FORCEINLINE AgentSpmv(TempStorage &temp_storage,
                                          SpmvParams<ValueT, OffsetT> &spmv_params)
         : temp_storage(temp_storage.Alias())
         , spmv_params(spmv_params)
@@ -396,7 +396,7 @@ struct AgentSpmv
      * @param is_direct_load
      *   Marker type indicating whether to load nonzeros directly during path-discovery or beforehand in batch
      */
-    __device__ __forceinline__ KeyValuePairT ConsumeTile(int tile_idx,
+    _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePairT ConsumeTile(int tile_idx,
                                                          CoordinateT tile_start_coord,
                                                          CoordinateT tile_end_coord,
                                                          Int2Type<true> is_direct_load)
@@ -523,7 +523,7 @@ struct AgentSpmv
      * @param is_direct_load
      *   Marker type indicating whether to load nonzeros directly during path-discovery or beforehand in batch
      */
-    __device__ __forceinline__ KeyValuePairT ConsumeTile(int tile_idx,
+    _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePairT ConsumeTile(int tile_idx,
                                                          CoordinateT tile_start_coord,
                                                          CoordinateT tile_end_coord,
                                                          Int2Type<false> is_direct_load)
@@ -719,7 +719,7 @@ struct AgentSpmv
      * @param[in] num_merge_tiles
      *   Number of merge tiles
      */
-    __device__ __forceinline__ void ConsumeTile(CoordinateT *d_tile_coordinates,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(CoordinateT *d_tile_coordinates,
                                                 KeyValuePairT *d_tile_carry_pairs,
                                                 int num_merge_tiles)
     {

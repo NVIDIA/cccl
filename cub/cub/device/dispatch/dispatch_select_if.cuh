@@ -301,7 +301,7 @@ struct DispatchSelectIf : SelectedPolicy
      * @param stream
      *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
      */
-    CUB_RUNTIME_FUNCTION __forceinline__ DispatchSelectIf(void *d_temp_storage,
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSelectIf(void *d_temp_storage,
                                                           size_t &temp_storage_bytes,
                                                           InputIteratorT d_in,
                                                           FlagsInputIteratorT d_flags,
@@ -334,7 +334,7 @@ struct DispatchSelectIf : SelectedPolicy
      * specified kernel functions.
      */
     template <typename ActivePolicyT, typename ScanInitKernelPtrT, typename SelectIfKernelPtrT>
-    CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke(ScanInitKernelPtrT scan_init_kernel,
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ScanInitKernelPtrT scan_init_kernel,
                                                             SelectIfKernelPtrT select_if_kernel)
     {
         cudaError error = cudaSuccess;
@@ -497,7 +497,7 @@ struct DispatchSelectIf : SelectedPolicy
     }
 
     template <typename ActivePolicyT>
-    CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
     {
         using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
 
@@ -549,7 +549,7 @@ struct DispatchSelectIf : SelectedPolicy
      * @param stream
      *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
      */
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              InputIteratorT d_in,
@@ -585,7 +585,7 @@ struct DispatchSelectIf : SelectedPolicy
     }
 
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     static cudaError_t Dispatch(
         void*                       d_temp_storage,
         size_t&                     temp_storage_bytes,

@@ -68,7 +68,7 @@ template <int LENGTH,
           typename ReductionOp,
           typename PrefixT,
           typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
-__device__ __forceinline__ AccumT
+_CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(T *input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH> /*length*/)
 {
     AccumT retval = prefix;
@@ -108,7 +108,7 @@ template <int LENGTH,
           typename ReductionOp,
           typename PrefixT,
           typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
-__device__ __forceinline__ AccumT ThreadReduce(T *input, ReductionOp reduction_op, PrefixT prefix)
+_CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T *input, ReductionOp reduction_op, PrefixT prefix)
 {
     return ThreadReduce(input, reduction_op, prefix, Int2Type<LENGTH>());
 }
@@ -134,7 +134,7 @@ __device__ __forceinline__ AccumT ThreadReduce(T *input, ReductionOp reduction_o
  *   Binary reduction operator
  */
 template <int LENGTH, typename T, typename ReductionOp>
-__device__ __forceinline__ T ThreadReduce(T *input, ReductionOp reduction_op)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T *input, ReductionOp reduction_op)
 {
     T prefix = input[0];
     return ThreadReduce<LENGTH - 1>(input + 1, reduction_op, prefix);
@@ -168,7 +168,7 @@ template <int LENGTH,
           typename ReductionOp,
           typename PrefixT,
           typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
-__device__ __forceinline__ AccumT ThreadReduce(T (&input)[LENGTH],
+_CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T (&input)[LENGTH],
                                                ReductionOp reduction_op,
                                                PrefixT prefix)
 {
@@ -195,7 +195,7 @@ __device__ __forceinline__ AccumT ThreadReduce(T (&input)[LENGTH],
  *   Binary reduction operator
  */
 template <int LENGTH, typename T, typename ReductionOp>
-__device__ __forceinline__ T ThreadReduce(T (&input)[LENGTH], ReductionOp reduction_op)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T (&input)[LENGTH], ReductionOp reduction_op)
 {
     return ThreadReduce<LENGTH>((T*) input, reduction_op);
 }

@@ -61,7 +61,7 @@ THRUST_NAMESPACE_BEGIN
 template <typename DerivedPolicy,
           typename ForwardIterator1,
           typename ForwardIterator2>
-__host__ __device__ thrust::pair<ForwardIterator1, ForwardIterator2>
+_CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2>
 unique_by_key(
     const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
     ForwardIterator1                                            keys_first,
@@ -72,7 +72,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-__host__ __device__ thrust::pair<OutputIterator1, OutputIterator2>
+_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2>
 unique_by_key_copy(
     const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
     InputIterator1                                              keys_first,
@@ -813,14 +813,14 @@ namespace __unique_by_key {
 //-------------------------
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived,
           class KeyInputIt,
           class ValInputIt,
           class KeyOutputIt,
           class ValOutputIt,
           class BinaryPred>
-pair<KeyOutputIt, ValOutputIt> __host__ __device__
+pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE
 unique_by_key_copy(execution_policy<Derived> &policy,
                    KeyInputIt                 keys_first,
                    KeyInputIt                 keys_last,
@@ -853,7 +853,7 @@ template <class Derived,
           class ValInputIt,
           class KeyOutputIt,
           class ValOutputIt>
-pair<KeyOutputIt, ValOutputIt> __host__ __device__
+pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE
 unique_by_key_copy(execution_policy<Derived> &policy,
                    KeyInputIt                 keys_first,
                    KeyInputIt                 keys_last,
@@ -875,7 +875,7 @@ template <class Derived,
           class KeyInputIt,
           class ValInputIt,
           class BinaryPred>
-pair<KeyInputIt, ValInputIt> __host__ __device__
+pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE
 unique_by_key(execution_policy<Derived> &policy,
               KeyInputIt                 keys_first,
               KeyInputIt                 keys_last,
@@ -902,7 +902,7 @@ unique_by_key(execution_policy<Derived> &policy,
 template <class Derived,
           class KeyInputIt,
           class ValInputIt>
-pair<KeyInputIt, ValInputIt> __host__ __device__
+pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE
 unique_by_key(execution_policy<Derived> &policy,
               KeyInputIt                 keys_first,
               KeyInputIt                 keys_last,

@@ -232,7 +232,7 @@ struct AgentUniqueByKey
     //---------------------------------------------------------------------
 
     // Constructor
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     AgentUniqueByKey(
         TempStorage                  &temp_storage_,
         WrappedKeyInputIteratorT     d_keys_in_,
@@ -260,12 +260,12 @@ struct AgentUniqueByKey
     struct KeyTagT {};
     struct ValueTagT {};
 
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     KeyExchangeT &GetShared(KeyTagT)
     {
         return temp_storage.shared_keys.Alias();
     }
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     ValueExchangeT &GetShared(ValueTagT)
     {
         return temp_storage.shared_values.Alias();
@@ -278,7 +278,7 @@ struct AgentUniqueByKey
     template <typename Tag,
               typename OutputIt,
               typename T>
-    __device__ __forceinline__ void Scatter(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
         Tag      tag,
         OutputIt items_out,
         T (&items)[ITEMS_PER_THREAD],
@@ -332,7 +332,7 @@ struct AgentUniqueByKey
      * @return The running count of selections (including this tile)
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ OffsetT ConsumeFirstTile(int num_tile_items,
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT ConsumeFirstTile(int num_tile_items,
                                                         OffsetT tile_offset,
                                                         ScanTileStateT &tile_state)
     {
@@ -459,7 +459,7 @@ struct AgentUniqueByKey
      * @return Returns the running count of selections (including this tile)
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ OffsetT ConsumeSubsequentTile(int num_tile_items,
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT ConsumeSubsequentTile(int num_tile_items,
                                                              int tile_idx,
                                                              OffsetT tile_offset,
                                                              ScanTileStateT &tile_state)
@@ -587,7 +587,7 @@ struct AgentUniqueByKey
      *   Global tile state descriptor
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ OffsetT
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
     ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT &tile_state)
     {
         OffsetT num_selections;
@@ -620,7 +620,7 @@ struct AgentUniqueByKey
      *
      */
     template <typename NumSelectedIteratorT>
-    __device__ __forceinline__ void ConsumeRange(int num_tiles,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(int num_tiles,
                                                  ScanTileStateT &tile_state,
                                                  NumSelectedIteratorT d_num_selected_out)
     {

@@ -221,7 +221,7 @@ struct DeviceRleDispatch
   OffsetT num_items;
   cudaStream_t stream;
 
-  CUB_RUNTIME_FUNCTION __forceinline__ DeviceRleDispatch(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DeviceRleDispatch(void *d_temp_storage,
                                                          size_t &temp_storage_bytes,
                                                          InputIteratorT d_in,
                                                          OffsetsOutputIteratorT d_offsets_out,
@@ -294,7 +294,7 @@ struct DeviceRleDispatch
    *   Kernel function pointer to parameterization of cub::DeviceRleSweepKernel
    */
   template <typename ActivePolicyT, typename DeviceScanInitKernelPtr, typename DeviceRleSweepKernelPtr>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   Invoke(DeviceScanInitKernelPtr device_scan_init_kernel,
          DeviceRleSweepKernelPtr device_rle_sweep_kernel)
   {
@@ -458,7 +458,7 @@ struct DeviceRleDispatch
   }
 
   template <class ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
     return Invoke<ActivePolicyT>(DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
@@ -505,7 +505,7 @@ struct DeviceRleDispatch
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,
@@ -551,7 +551,7 @@ struct DeviceRleDispatch
     return error;
   }
 
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,

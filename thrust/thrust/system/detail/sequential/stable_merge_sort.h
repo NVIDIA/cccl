@@ -39,7 +39,7 @@ namespace sequential
 template<typename DerivedPolicy,
          typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void stable_merge_sort(sequential::execution_policy<DerivedPolicy> &exec,
                        RandomAccessIterator begin,
                        RandomAccessIterator end,
@@ -50,7 +50,7 @@ template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void stable_merge_sort_by_key(sequential::execution_policy<DerivedPolicy> &exec,
                               RandomAccessIterator1 keys_begin,
                               RandomAccessIterator1 keys_end,

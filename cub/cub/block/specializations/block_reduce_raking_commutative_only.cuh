@@ -135,7 +135,7 @@ struct BlockReduceRakingCommutativeOnly
 
 
     /// Constructor
-    __device__ __forceinline__ BlockReduceRakingCommutativeOnly(
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceRakingCommutativeOnly(
         TempStorage &temp_storage)
     :
         temp_storage(temp_storage.Alias()),
@@ -154,7 +154,7 @@ struct BlockReduceRakingCommutativeOnly
      *   Number of valid elements (may be less than BLOCK_THREADS)
      */
     template <bool FULL_TILE>
-    __device__ __forceinline__ T Sum(T partial, int num_valid)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
     {
         if (USE_FALLBACK || !FULL_TILE)
         {
@@ -198,7 +198,7 @@ struct BlockReduceRakingCommutativeOnly
      *   Binary reduction operator
      */
     template <bool FULL_TILE, typename ReductionOp>
-    __device__ __forceinline__ T Reduce(T partial, int num_valid, ReductionOp reduction_op)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T partial, int num_valid, ReductionOp reduction_op)
     {
         if (USE_FALLBACK || !FULL_TILE)
         {

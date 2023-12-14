@@ -312,7 +312,7 @@ struct DispatchScan : SelectedPolicy
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchScan(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScan(void *d_temp_storage,
                                                     size_t &temp_storage_bytes,
                                                     InputIteratorT d_in,
                                                     OutputIteratorT d_out,
@@ -333,7 +333,7 @@ struct DispatchScan : SelectedPolicy
   {}
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchScan(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScan(void *d_temp_storage,
                                                     size_t &temp_storage_bytes,
                                                     InputIteratorT d_in,
                                                     OutputIteratorT d_out,
@@ -357,7 +357,7 @@ struct DispatchScan : SelectedPolicy
   }
 
   template <typename ActivePolicyT, typename InitKernel, typename ScanKernel>
-  CUB_RUNTIME_FUNCTION __host__ __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
   Invoke(InitKernel init_kernel, ScanKernel scan_kernel)
   {
     typedef typename ActivePolicyT::ScanPolicyT Policy;
@@ -528,7 +528,7 @@ struct DispatchScan : SelectedPolicy
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __host__ __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     typedef typename DispatchScan::MaxPolicy MaxPolicyT;
     typedef typename cub::ScanTileState<AccumT> ScanTileStateT;
@@ -575,7 +575,7 @@ struct DispatchScan : SelectedPolicy
    *   Default is stream<sub>0</sub>.
    *
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,
@@ -621,7 +621,7 @@ struct DispatchScan : SelectedPolicy
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,

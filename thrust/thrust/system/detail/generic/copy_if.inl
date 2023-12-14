@@ -57,7 +57,7 @@ template<typename IndexType,
          typename InputIterator2,
          typename OutputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
                        InputIterator1 first,
                        InputIterator1 last,
@@ -107,7 +107,7 @@ template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
                          InputIterator first,
                          InputIterator last,
@@ -127,7 +127,7 @@ template<typename DerivedPolicy,
          typename InputIterator2,
          typename OutputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
    OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
                           InputIterator1 first,
                           InputIterator1 last,

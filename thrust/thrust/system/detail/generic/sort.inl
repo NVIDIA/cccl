@@ -47,7 +47,7 @@ namespace generic
 
 template<typename DerivedPolicy,
          typename RandomAccessIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort(thrust::execution_policy<DerivedPolicy> &exec,
             RandomAccessIterator first,
             RandomAccessIterator last)
@@ -60,7 +60,7 @@ __host__ __device__
 template<typename DerivedPolicy,
          typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort(thrust::execution_policy<DerivedPolicy> &exec,
             RandomAccessIterator first,
             RandomAccessIterator last,
@@ -74,7 +74,7 @@ __host__ __device__
 template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort_by_key(thrust::execution_policy<DerivedPolicy> &exec,
                    RandomAccessIterator1 keys_first,
                    RandomAccessIterator1 keys_last,
@@ -89,7 +89,7 @@ template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort_by_key(thrust::execution_policy<DerivedPolicy> &exec,
                    RandomAccessIterator1 keys_first,
                    RandomAccessIterator1 keys_last,
@@ -103,7 +103,7 @@ __host__ __device__
 
 template<typename DerivedPolicy,
          typename RandomAccessIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void stable_sort(thrust::execution_policy<DerivedPolicy> &exec,
                    RandomAccessIterator first,
                    RandomAccessIterator last)
@@ -116,7 +116,7 @@ __host__ __device__
 template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void stable_sort_by_key(thrust::execution_policy<DerivedPolicy> &exec,
                           RandomAccessIterator1 keys_first,
                           RandomAccessIterator1 keys_last,
@@ -128,7 +128,7 @@ __host__ __device__
 
 
 template<typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   bool is_sorted(thrust::execution_policy<DerivedPolicy> &exec,
                  ForwardIterator first,
                  ForwardIterator last)
@@ -140,7 +140,7 @@ __host__ __device__
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename Compare>
-__host__ __device__
+_CCCL_HOST_DEVICE
   bool is_sorted(thrust::execution_policy<DerivedPolicy> &exec,
                  ForwardIterator first,
                  ForwardIterator last,
@@ -151,7 +151,7 @@ __host__ __device__
 
 
 template<typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator is_sorted_until(thrust::execution_policy<DerivedPolicy> &exec,
                                   ForwardIterator first,
                                   ForwardIterator last)
@@ -165,7 +165,7 @@ __host__ __device__
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename Compare>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator is_sorted_until(thrust::execution_policy<DerivedPolicy> &exec,
                                   ForwardIterator first,
                                   ForwardIterator last,
@@ -189,7 +189,7 @@ __host__ __device__
 template<typename DerivedPolicy,
          typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void stable_sort(thrust::execution_policy<DerivedPolicy> &,
                    RandomAccessIterator,
                    RandomAccessIterator,
@@ -206,7 +206,7 @@ template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void stable_sort_by_key(thrust::execution_policy<DerivedPolicy> &,
                           RandomAccessIterator1,
                           RandomAccessIterator1,

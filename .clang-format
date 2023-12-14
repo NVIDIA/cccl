@@ -23,6 +23,10 @@ AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterReturnType: None
 AlwaysBreakTemplateDeclarations: Yes
 AttributeMacros: [
+                  '_CCCL_DEVICE',
+                  '_CCCL_FORCEINLINE',
+                  '_CCCL_HOST_DEVICE',
+                  '_CCCL_HOST',
                   'CUB_RUNTIME_FUNCTION',
                   'CUB_DETAIL_KERNEL_ATTRIBUTES',
                   'THRUST_RUNTIME_FUNCTION',
@@ -156,7 +160,7 @@ SpacesInParentheses: false
 SpacesInSquareBrackets: false
 Standard: c++20
 StatementMacros: [
-  '__thrust_exec_check_disable__',
+  '_CCCL_EXEC_CHECK_DISABLE',
   'CUB_NAMESPACE_BEGIN',
   'CUB_NAMESPACE_END',
   'THRUST_NAMESPACE_BEGIN',

@@ -40,7 +40,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY explicit _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     binary_negate(const _Predicate& __pred) : __pred_(__pred) {}
 
-    _LIBCUDACXX_DISABLE_EXEC_CHECK
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const typename _Predicate::first_argument_type& __x,
                     const typename _Predicate::second_argument_type& __y) const

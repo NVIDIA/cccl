@@ -129,34 +129,34 @@ struct DeviceCopy
   //! @tparam InputIt
   //!   **[inferred]** Device-accessible random-access input iterator type providing the iterators to the source ranges
   //!
-  //! @tparam OutputIt 
-  //!  **[inferred]** Device-accessible random-access input iterator type providing the iterators to 
+  //! @tparam OutputIt
+  //!  **[inferred]** Device-accessible random-access input iterator type providing the iterators to
   //!  the destination ranges
   //!
-  //! @tparam SizeIteratorT 
-  //!   **[inferred]** Device-accessible random-access input iterator type providing the number of items to be 
+  //! @tparam SizeIteratorT
+  //!   **[inferred]** Device-accessible random-access input iterator type providing the number of items to be
   //!   copied for each pair of ranges
   //!
-  //! @param[in] d_temp_storage 
-  //!   Device-accessible allocation of temporary storage.  
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage.
   //!   When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
-  //! @param[in,out] temp_storage_bytes 
+  //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] input_it 
+  //! @param[in] input_it
   //!   Device-accessible iterator providing the iterators to the source ranges
   //!
-  //! @param[in] output_it 
+  //! @param[in] output_it
   //!   Device-accessible iterator providing the iterators to the destination ranges
   //!
-  //! @param[in] sizes 
+  //! @param[in] sizes
   //!   Device-accessible iterator providing the number of elements to be copied for each pair of ranges
   //!
-  //! @param[in] num_ranges 
+  //! @param[in] num_ranges
   //!   The total number of range pairs
   //!
-  //! @param[in] stream 
+  //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst

@@ -80,7 +80,7 @@ struct empty_problem_init_t
 {
   T init;
 
-  __host__ __device__ operator T() const { return init; }
+  _CCCL_HOST_DEVICE operator T() const { return init; }
 };
 
 /**
@@ -92,7 +92,7 @@ struct empty_problem_init_t
  * @param block_aggregate Aggregate value computed by the block
  */
 template <class OutputIteratorT, class ReductionOpT, class InitT, class AccumT>
-__host__ __device__ void finalize_and_store_aggregate(OutputIteratorT d_out,
+_CCCL_HOST_DEVICE void finalize_and_store_aggregate(OutputIteratorT d_out,
                                                       ReductionOpT reduction_op,
                                                       InitT init,
                                                       AccumT block_aggregate)
@@ -107,7 +107,7 @@ __host__ __device__ void finalize_and_store_aggregate(OutputIteratorT d_out,
  * @param block_aggregate Aggregate value computed by the block
  */
 template <class OutputIteratorT, class ReductionOpT, class InitT, class AccumT>
-__host__ __device__ void finalize_and_store_aggregate(OutputIteratorT d_out,
+_CCCL_HOST_DEVICE void finalize_and_store_aggregate(OutputIteratorT d_out,
                                                       ReductionOpT,
                                                       empty_problem_init_t<InitT>,
                                                       AccumT block_aggregate)
@@ -290,14 +290,14 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(ChainedPolicyT::ActivePolicy:
 
 /// Normalize input iterator to segment offset
 template <typename T, typename OffsetT, typename IteratorT>
-__device__ __forceinline__ void NormalizeReductionOutput(T & /*val*/,
+_CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(T & /*val*/,
                                                          OffsetT /*base_offset*/,
                                                          IteratorT /*itr*/)
 {}
 
 /// Normalize input iterator to segment offset (specialized for arg-index)
 template <typename KeyValuePairT, typename OffsetT, typename WrappedIteratorT, typename OutputValueT>
-__device__ __forceinline__ void
+_CCCL_DEVICE _CCCL_FORCEINLINE void
 NormalizeReductionOutput(KeyValuePairT &val,
                          OffsetT base_offset,
                          ArgIndexInputIterator<WrappedIteratorT, OffsetT, OutputValueT> /*itr*/)
@@ -586,7 +586,7 @@ struct DispatchReduce : SelectedPolicy
   //---------------------------------------------------------------------------
 
   /// Constructor
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchReduce(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduce(void *d_temp_storage,
                                                       size_t &temp_storage_bytes,
                                                       InputIteratorT d_in,
                                                       OutputIteratorT d_out,
@@ -609,7 +609,7 @@ struct DispatchReduce : SelectedPolicy
   {}
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchReduce(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduce(void *d_temp_storage,
                                                       size_t &temp_storage_bytes,
                                                       InputIteratorT d_in,
                                                       OutputIteratorT d_out,
@@ -650,7 +650,7 @@ struct DispatchReduce : SelectedPolicy
    *   cub::DeviceReduceSingleTileKernel
    */
   template <typename ActivePolicyT, typename SingleTileKernelT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   InvokeSingleTile(SingleTileKernelT single_tile_kernel)
   {
     cudaError error = cudaSuccess;
@@ -722,7 +722,7 @@ struct DispatchReduce : SelectedPolicy
    *   cub::DeviceReduceSingleTileKernel
    */
   template <typename ActivePolicyT, typename ReduceKernelT, typename SingleTileKernelT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   InvokePasses(ReduceKernelT reduce_kernel, SingleTileKernelT single_tile_kernel)
   {
     cudaError error = cudaSuccess;
@@ -869,7 +869,7 @@ struct DispatchReduce : SelectedPolicy
 
   /// Invocation
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     typedef typename ActivePolicyT::SingleTilePolicy SingleTilePolicyT;
     typedef typename DispatchReduce::MaxPolicy MaxPolicyT;
@@ -941,7 +941,7 @@ struct DispatchReduce : SelectedPolicy
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(void *d_temp_storage,
                                                                    size_t &temp_storage_bytes,
                                                                    InputIteratorT d_in,
                                                                    OutputIteratorT d_out,
@@ -988,7 +988,7 @@ struct DispatchReduce : SelectedPolicy
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(void *d_temp_storage,
                                                                    size_t &temp_storage_bytes,
                                                                    InputIteratorT d_in,
                                                                    OutputIteratorT d_out,
@@ -1144,7 +1144,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
   //---------------------------------------------------------------------------
 
   /// Constructor
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchSegmentedReduce(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedReduce(void *d_temp_storage,
                                                                size_t &temp_storage_bytes,
                                                                InputIteratorT d_in,
                                                                OutputIteratorT d_out,
@@ -1169,7 +1169,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
   {}
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchSegmentedReduce(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedReduce(void *d_temp_storage,
                                                                size_t &temp_storage_bytes,
                                                                InputIteratorT d_in,
                                                                OutputIteratorT d_out,
@@ -1214,7 +1214,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
    *   cub::DeviceSegmentedReduceKernel
    */
   template <typename ActivePolicyT, typename DeviceSegmentedReduceKernelT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   InvokePasses(DeviceSegmentedReduceKernelT segmented_reduce_kernel)
   {
     cudaError error = cudaSuccess;
@@ -1284,7 +1284,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
 
   /// Invocation
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     typedef typename DispatchSegmentedReduce::MaxPolicy MaxPolicyT;
 
@@ -1347,7 +1347,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,
@@ -1403,7 +1403,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,

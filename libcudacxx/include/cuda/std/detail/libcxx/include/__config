@@ -2235,21 +2235,6 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
   _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(_LOCATION), __VA_ARGS__)
 #endif
 
-#if !defined(_LIBCUDACXX_DISABLE_EXEC_CHECK)
-#if defined(_LIBCUDACXX_CUDACC)               \
- && !defined(_LIBCUDACXX_COMPILER_NVRTC)      \
- && !defined(_LIBCUDACXX_COMPILER_NVHPC_CUDA) \
- && !defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
-#  if defined(_LIBCUDACXX_COMPILER_MSVC)
-#    define _LIBCUDACXX_DISABLE_EXEC_CHECK __pragma("nv_exec_check_disable")
-#  else // ^^^ _LIBCUDACXX_COMPILER_MSVC ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC vvv
-#    define _LIBCUDACXX_DISABLE_EXEC_CHECK _Pragma("nv_exec_check_disable")
-#  endif // !_LIBCUDACXX_COMPILER_MSVC
-#else // ^^^ !NVRTC && !NVHPC-cuda && !clang-cuda ^^^ / vvv NVRTC || NVHPC-cuda || clang-cuda vvv
-#  define _LIBCUDACXX_DISABLE_EXEC_CHECK
-#endif // NVRTC || NVHPC-cuda || clang-cuda
-#endif // !_LIBCUDACXX_DISABLE_EXEC_CHECK
-
 #define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 
 #endif // __cplusplus

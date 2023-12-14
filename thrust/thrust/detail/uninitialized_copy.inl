@@ -35,9 +35,9 @@
 THRUST_NAMESPACE_BEGIN
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator uninitialized_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                      InputIterator first,
                                      InputIterator last,
@@ -48,9 +48,9 @@ __host__ __device__
 } // end uninitialized_copy()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename Size, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator uninitialized_copy_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                        InputIterator first,
                                        Size n,

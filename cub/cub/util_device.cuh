@@ -130,7 +130,7 @@ public:
    * passed to the agent, specialized for the case when we can use native shared memory as temporary
    * storage.
    */
-  static __device__ __forceinline__ typename AgentT::TempStorage&
+  static _CCCL_DEVICE _CCCL_FORCEINLINE typename AgentT::TempStorage&
   get_temp_storage(typename AgentT::TempStorage& static_temp_storage, vsmem_t&)
   {
     return static_temp_storage;
@@ -141,7 +141,7 @@ public:
    * passed to the agent, specialized for the case when we have to use global memory-backed
    * virtual shared memory as temporary storage.
    */
-  static __device__ __forceinline__ typename AgentT::TempStorage&
+  static _CCCL_DEVICE _CCCL_FORCEINLINE typename AgentT::TempStorage&
   get_temp_storage(cub::NullType& static_temp_storage, vsmem_t& vsmem)
   {
     return *reinterpret_cast<typename AgentT::TempStorage*>(
@@ -156,7 +156,7 @@ public:
    * supposed to be reused after this function call.
    */
   template <bool needs_vsmem_ = needs_vsmem, typename ::cuda::std::enable_if<!needs_vsmem_, int>::type = 0>
-  static __device__ __forceinline__ bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
   {
     return false;
   }
@@ -169,7 +169,7 @@ public:
    * supposed to be reused after this function call.
    */
   template <bool needs_vsmem_ = needs_vsmem, typename ::cuda::std::enable_if<needs_vsmem_, int>::type = 0>
-  static __device__ __forceinline__ bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(typename AgentT::TempStorage& temp_storage)
   {
     // Ensure all threads finished using temporary storage
     CTA_SYNC();
@@ -282,14 +282,14 @@ private:
     int const old_device;
     bool const needs_reset;
 public:
-    __host__ inline SwitchDevice(int new_device)
+    _CCCL_HOST inline SwitchDevice(int new_device)
       : old_device(CurrentDevice()), needs_reset(old_device != new_device)
     {
         if (needs_reset)
             CubDebug(cudaSetDevice(new_device));
     }
 
-    __host__ inline ~SwitchDevice()
+    _CCCL_HOST inline ~SwitchDevice()
     {
         if (needs_reset)
             CubDebug(cudaSetDevice(old_device));
@@ -323,13 +323,13 @@ struct ValueCache
      * \brief Call the nullary function to produce the value and construct the
      *        cache.
      */
-    __host__ inline ValueCache() : value(Function()) {}
+    _CCCL_HOST inline ValueCache() : value(Function()) {}
 };
 
 // Host code, only safely usable in C++11 or newer, where thread-safe
 // initialization of static locals is guaranteed.  This is a separate function
 // to avoid defining a local static in a host/device function.
-__host__ inline int DeviceCountCachedValue()
+_CCCL_HOST inline int DeviceCountCachedValue()
 {
     static ValueCache<int, DeviceCountUncached> cache;
     return cache.value;
@@ -389,7 +389,7 @@ public:
     /**
      * \brief Construct the cache.
      */
-    __host__ inline PerDeviceAttributeCache() : entries_()
+    _CCCL_HOST inline PerDeviceAttributeCache() : entries_()
     {
         assert(DeviceCount() <= CUB_MAX_DEVICES);
     }
@@ -401,7 +401,7 @@ public:
      *       this function has undefined behavior.
      */
     template <typename Invocable>
-    __host__ DevicePayload operator()(Invocable&& f, int device)
+    _CCCL_HOST DevicePayload operator()(Invocable&& f, int device)
     {
         if (device >= DeviceCount())
             return DevicePayload{0, cudaErrorInvalidDevice};
@@ -516,7 +516,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
 /**
  * \brief Retrieves the PTX version that will be used on \p device (major * 100 + minor * 10).
  */
-__host__ inline cudaError_t PtxVersionUncached(int& ptx_version, int device)
+_CCCL_HOST inline cudaError_t PtxVersionUncached(int& ptx_version, int device)
 {
     SwitchDevice sd(device);
     (void)sd;
@@ -524,7 +524,7 @@ __host__ inline cudaError_t PtxVersionUncached(int& ptx_version, int device)
 }
 
 template <typename Tag>
-__host__ inline PerDeviceAttributeCache& GetPerDeviceAttributeCache()
+_CCCL_HOST inline PerDeviceAttributeCache& GetPerDeviceAttributeCache()
 {
     // C++11 guarantees that initialization of static locals is thread safe.
     static PerDeviceAttributeCache cache;
@@ -541,7 +541,7 @@ struct SmVersionCacheTag {};
  *
  * \note This function is thread safe.
  */
-__host__ inline cudaError_t PtxVersion(int& ptx_version, int device)
+_CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
 {
     auto const payload = GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
       // If this call fails, then we get the error code back in the payload,
@@ -819,11 +819,11 @@ struct KernelConfig
     int tile_size;
     int sm_occupancy;
 
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     KernelConfig() : block_threads(0), items_per_thread(0), tile_size(0), sm_occupancy(0) {}
 
     template <typename AgentPolicyT, typename KernelPtrT>
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     cudaError_t Init(KernelPtrT kernel_ptr)
     {
         block_threads        = AgentPolicyT::BLOCK_THREADS;
@@ -848,7 +848,7 @@ struct ChainedPolicy
 
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION __forceinline__
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   static cudaError_t Invoke(int ptx_version, FunctorT& op)
   {
       if (ptx_version < PTX_VERSION) {
@@ -867,7 +867,7 @@ struct ChainedPolicy<PTX_VERSION, PolicyT, PolicyT>
 
     /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
     template <typename FunctorT>
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     static cudaError_t Invoke(int /*ptx_version*/, FunctorT& op) {
         return op.template Invoke<PolicyT>();
     }

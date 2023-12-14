@@ -91,11 +91,11 @@
 #if defined(__CUDACC_RDC__) && !defined(CUB_DISABLE_CDP)
 
 #define CUB_RDC_ENABLED
-#define CUB_RUNTIME_FUNCTION __host__ __device__
+#define CUB_RUNTIME_FUNCTION _CCCL_HOST_DEVICE
 
 #else // RDC disabled:
 
-#define CUB_RUNTIME_FUNCTION __host__
+#define CUB_RUNTIME_FUNCTION _CCCL_HOST
 
 #endif // RDC enabled
 

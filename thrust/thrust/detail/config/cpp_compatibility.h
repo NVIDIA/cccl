@@ -63,10 +63,10 @@
 //#    define THRUST_INLINE_CONSTANT                 inline constexpr
 //#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
 #  if _CCCL_STD_VER >= 2011
-#    define THRUST_INLINE_CONSTANT                 static const __device__
+#    define THRUST_INLINE_CONSTANT                 static const _CCCL_DEVICE
 #    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
 #  else
-#    define THRUST_INLINE_CONSTANT                 static const __device__
+#    define THRUST_INLINE_CONSTANT                 static const _CCCL_DEVICE
 #    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static const
 #  endif
 #else

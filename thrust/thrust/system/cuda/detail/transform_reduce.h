@@ -125,9 +125,9 @@ THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
 
 } // namespace detail
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class TransformOp, class T, class ReduceOp>
-T __host__ __device__ transform_reduce(
+T _CCCL_HOST_DEVICE transform_reduce(
   execution_policy<Derived>& policy, InputIt first, InputIt last, TransformOp transform_op, T init, ReduceOp reduce_op)
 {
   typedef typename iterator_traits<InputIt>::difference_type size_type;

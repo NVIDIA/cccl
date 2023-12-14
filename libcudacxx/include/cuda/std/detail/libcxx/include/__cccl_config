@@ -166,6 +166,7 @@
 #endif // other compilers
 
 #include "__cccl/dialect.h"
+#include "__cccl/execution_space.h"
 #include "__cccl/visibility.h"
 
 #endif // __CCCL_CONFIG

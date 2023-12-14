@@ -57,7 +57,7 @@ CUB_NAMESPACE_BEGIN
 //! DeviceRunLengthEncode provides device-wide, parallel operations for
 //! demarcating "runs" of same-valued items within a sequence residing
 //! within device-accessible memory.
-//! 
+//!
 //! Overview
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -66,12 +66,12 @@ CUB_NAMESPACE_BEGIN
 //! such that each maximal "run" of consecutive same-valued data items is
 //! encoded as a single data value along with a count of the elements in that
 //! run.
-//! 
+//!
 //! Usage Considerations
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! @cdp_class{DeviceRunLengthEncode}
-//! 
+//!
 //! Performance
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -82,7 +82,7 @@ struct DeviceRunLengthEncode
 {
   //! @rst
   //! Computes a run-length encoding of the sequence ``d_in``.
-  //! 
+  //!
   //! - For the *i*\ :sup:`th` run encountered, the first key of the run and
   //!   its length are written to ``d_unique_out[i]`` and ``d_counts_out[i]``, respectively.
   //! - The total number of runs encountered is written to ``d_num_runs_out``.
@@ -95,7 +95,7 @@ struct DeviceRunLengthEncode
   //!   - ``[d_in, d_in + num_items)``
   //!
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -104,7 +104,7 @@ struct DeviceRunLengthEncode
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_run_length_encode.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input and output
   //!    int          num_items;          // e.g., 8
@@ -113,62 +113,62 @@ struct DeviceRunLengthEncode
   //!    int          *d_counts_out;      // e.g., [ ,  ,  ,  ,  ,  ,  ,  ]
   //!    int          *d_num_runs_out;    // e.g., [ ]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceRunLengthEncode::Encode(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run encoding
   //!    cub::DeviceRunLengthEncode::Encode(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items);
-  //! 
+  //!
   //!    // d_unique_out      <-- [0, 2, 9, 5, 8]
   //!    // d_counts_out      <-- [1, 2, 1, 3, 1]
   //!    // d_num_runs_out    <-- [5]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items @iterator
-  //! 
+  //!
   //! @tparam UniqueOutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing unique output items @iterator
-  //! 
+  //!
   //! @tparam LengthsOutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing output counts @iterator
-  //! 
+  //!
   //! @tparam NumRunsOutputIteratorT
   //!   **[inferred]** Output iterator type for recording the number of runs encountered @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of keys
-  //! 
+  //!
   //! @param[out] d_unique_out
   //!   Pointer to the output sequence of unique keys (one key per run)
-  //! 
+  //!
   //! @param[out] d_counts_out
   //!   Pointer to the output sequence of run-lengths (one count per run)
-  //! 
+  //!
   //! @param[out] d_num_runs_out
   //!   Pointer to total number of runs
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of associated key+value pairs (i.e., the length of `d_in_keys` and `d_in_values`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -177,7 +177,7 @@ struct DeviceRunLengthEncode
             typename UniqueOutputIteratorT,
             typename LengthsOutputIteratorT,
             typename NumRunsOutputIteratorT>
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Encode(void *d_temp_storage,
          size_t &temp_storage_bytes,
          InputIteratorT d_in,
@@ -232,7 +232,7 @@ struct DeviceRunLengthEncode
             typename LengthsOutputIteratorT,
             typename NumRunsOutputIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Encode(void *d_temp_storage,
          size_t &temp_storage_bytes,
          InputIteratorT d_in,
@@ -261,7 +261,7 @@ struct DeviceRunLengthEncode
   //! @rst
   //! Enumerates the starting offsets and lengths of all non-trivial runs
   //! (of ``length > 1``) of same-valued keys in the sequence ``d_in``.
-  //! 
+  //!
   //! - For the *i*\ :sup:`th` non-trivial run, the run's starting offset and
   //!   its length are written to ``d_offsets_out[i]`` and ``d_lengths_out[i]``, respectively.
   //! - The total number of runs encountered is written to ``d_num_runs_out``.
@@ -274,7 +274,7 @@ struct DeviceRunLengthEncode
   //!   - ``[d_in, d_in + num_items)``
   //!
   //! - @devicestorage
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -284,7 +284,7 @@ struct DeviceRunLengthEncode
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_run_length_encode.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int          num_items;          // e.g., 8
@@ -293,63 +293,63 @@ struct DeviceRunLengthEncode
   //!    int          *d_lengths_out;     // e.g., [ ,  ,  ,  ,  ,  ,  ,  ]
   //!    int          *d_num_runs_out;    // e.g., [ ]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceRunLengthEncode::NonTrivialRuns(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_offsets_out, d_lengths_out, d_num_runs_out, num_items);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run encoding
   //!    cub::DeviceRunLengthEncode::NonTrivialRuns(
   //!      d_temp_storage, temp_storage_bytes,
   //!      d_in, d_offsets_out, d_lengths_out, d_num_runs_out, num_items);
-  //! 
+  //!
   //!    // d_offsets_out         <-- [1, 4]
   //!    // d_lengths_out         <-- [2, 3]
   //!    // d_num_runs_out        <-- [2]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input items @iterator
-  //! 
+  //!
   //! @tparam OffsetsOutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing run-offset values @iterator
-  //! 
+  //!
   //! @tparam LengthsOutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing run-length values @iterator
-  //! 
+  //!
   //! @tparam NumRunsOutputIteratorT
   //!   **[inferred]** Output iterator type for recording the number of runs encountered @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_in
   //!   Pointer to input sequence of data items
-  //! 
+  //!
   //! @param[out] d_offsets_out
   //!   Pointer to output sequence of run-offsets
   //!   (one offset per non-trivial run)
-  //! 
+  //!
   //! @param[out] d_lengths_out
   //!   Pointer to output sequence of run-lengths (one count per non-trivial run)
-  //! 
+  //!
   //! @param[out] d_num_runs_out
   //!   Pointer to total number of runs (i.e., length of `d_offsets_out`)
-  //! 
+  //!
   //! @param[in] num_items
   //!   Total number of associated key+value pairs (i.e., the length of `d_in_keys` and `d_in_values`)
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
@@ -358,7 +358,7 @@ struct DeviceRunLengthEncode
             typename OffsetsOutputIteratorT,
             typename LengthsOutputIteratorT,
             typename NumRunsOutputIteratorT>
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   NonTrivialRuns(void *d_temp_storage,
                  size_t &temp_storage_bytes,
                  InputIteratorT d_in,
@@ -392,7 +392,7 @@ struct DeviceRunLengthEncode
             typename LengthsOutputIteratorT,
             typename NumRunsOutputIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   NonTrivialRuns(void *d_temp_storage,
                  size_t &temp_storage_bytes,
                  InputIteratorT d_in,

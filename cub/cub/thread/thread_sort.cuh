@@ -46,7 +46,7 @@ CUB_NAMESPACE_BEGIN
 
 
 template <typename T>
-__device__ __forceinline__ void Swap(T &lhs, T &rhs)
+_CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T &lhs, T &rhs)
 {
   T temp = lhs;
   lhs    = rhs;
@@ -87,7 +87,7 @@ template <typename KeyT,
           typename ValueT,
           typename CompareOp,
           int ITEMS_PER_THREAD>
-__device__ __forceinline__ void
+_CCCL_DEVICE _CCCL_FORCEINLINE void
 StableOddEvenSort(KeyT (&keys)[ITEMS_PER_THREAD],
                   ValueT (&items)[ITEMS_PER_THREAD],
                   CompareOp compare_op)

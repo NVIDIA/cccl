@@ -58,7 +58,7 @@ struct BlockHistogramAtomic
 
 
     /// Constructor
-    __device__ __forceinline__ BlockHistogramAtomic(
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramAtomic(
         TempStorage &temp_storage)
     {}
 
@@ -72,7 +72,7 @@ struct BlockHistogramAtomic
      *   Reference to shared/device-accessible memory histogram
      */
     template <typename T, typename CounterT, int ITEMS_PER_THREAD>
-    __device__ __forceinline__ void Composite(T (&items)[ITEMS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD],
                                               CounterT histogram[BINS])
     {
       // Update histogram

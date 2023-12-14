@@ -89,7 +89,7 @@ enum RadixRankAlgorithm
 template <int BINS_PER_THREAD>
 struct BlockRadixRankEmptyCallback
 {
-    __device__ __forceinline__ void operator()(int (&bins)[BINS_PER_THREAD]) {}
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(int (&bins)[BINS_PER_THREAD]) {}
 };
 
 
@@ -100,7 +100,7 @@ namespace detail
 template <int Bits, int PartialWarpThreads, int PartialWarpId>
 struct warp_in_block_matcher_t
 {
-  static __device__ ::cuda::std::uint32_t match_any(::cuda::std::uint32_t label, ::cuda::std::uint32_t warp_id)
+  static _CCCL_DEVICE ::cuda::std::uint32_t match_any(::cuda::std::uint32_t label, ::cuda::std::uint32_t warp_id)
   {
     if (warp_id == static_cast<::cuda::std::uint32_t>(PartialWarpId))
     {
@@ -114,7 +114,7 @@ struct warp_in_block_matcher_t
 template <int Bits, int PartialWarpId>
 struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 {
-  static __device__ ::cuda::std::uint32_t match_any(::cuda::std::uint32_t label, ::cuda::std::uint32_t warp_id)
+  static _CCCL_DEVICE ::cuda::std::uint32_t match_any(::cuda::std::uint32_t label, ::cuda::std::uint32_t warp_id)
   {
     return MatchAny<Bits>(label);
   }
@@ -303,7 +303,7 @@ private:
     /**
      * Internal storage allocator
      */
-    __device__ __forceinline__ _TempStorage& PrivateStorage()
+    _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
     {
         __shared__ _TempStorage private_storage;
         return private_storage;
@@ -312,7 +312,7 @@ private:
     /**
      * Performs upsweep raking reduction, returning the aggregate
      */
-    __device__ __forceinline__ PackedCounter Upsweep()
+    _CCCL_DEVICE _CCCL_FORCEINLINE PackedCounter Upsweep()
     {
         PackedCounter *smem_raking_ptr = temp_storage.aliasable.raking_grid[linear_tid];
         PackedCounter *raking_ptr;
@@ -337,7 +337,7 @@ private:
 
 
     /// Performs exclusive downsweep raking scan
-    __device__ __forceinline__ void ExclusiveDownsweep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveDownsweep(
         PackedCounter raking_partial)
     {
         PackedCounter *smem_raking_ptr = temp_storage.aliasable.raking_grid[linear_tid];
@@ -364,7 +364,7 @@ private:
     /**
      * Reset shared memory digit counters
      */
-    __device__ __forceinline__ void ResetCounters()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ResetCounters()
     {
         // Reset shared memory digit counters
         #pragma unroll
@@ -380,7 +380,7 @@ private:
      */
     struct PrefixCallBack
     {
-        __device__ __forceinline__ PackedCounter operator()(PackedCounter block_aggregate)
+        _CCCL_DEVICE _CCCL_FORCEINLINE PackedCounter operator()(PackedCounter block_aggregate)
         {
             PackedCounter block_prefix = 0;
 
@@ -399,7 +399,7 @@ private:
     /**
      * Scan shared memory digit counters.
      */
-    __device__ __forceinline__ void ScanCounters()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ScanCounters()
     {
         // Upsweep scan
         PackedCounter raking_partial = Upsweep();
@@ -423,7 +423,7 @@ public:
     //! @{
 
     //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
-    __device__ __forceinline__ BlockRadixRank()
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRank()
     :
         temp_storage(PrivateStorage()),
         linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
@@ -435,7 +435,7 @@ public:
      * @param[in] temp_storage
      *   Reference to memory allocation having layout type TempStorage
      */
-    __device__ __forceinline__ BlockRadixRank(TempStorage &temp_storage)
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRank(TempStorage &temp_storage)
         : temp_storage(temp_storage.Alias())
         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
@@ -458,7 +458,7 @@ public:
      *   The digit extractor
      */
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
                                              int (&ranks)[KEYS_PER_THREAD],
                                              DigitExtractorT digit_extractor)
     {
@@ -535,7 +535,7 @@ public:
      *    (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
      */
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
                                              int (&ranks)[KEYS_PER_THREAD],
                                              DigitExtractorT digit_extractor,
                                              int (&exclusive_digit_prefix)[BINS_TRACKED_PER_THREAD])
@@ -672,7 +672,7 @@ public:
      * @param[in] temp_storage
      *   Reference to memory allocation having layout type TempStorage
      */
-    __device__ __forceinline__ BlockRadixRankMatch(TempStorage &temp_storage)
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRankMatch(TempStorage &temp_storage)
         : temp_storage(temp_storage.Alias())
         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
@@ -697,7 +697,7 @@ public:
      * separate output parameter of RankKeys().
      */
     template <int KEYS_PER_THREAD, typename CountsCallback>
-    __device__ __forceinline__ void CallBack(CountsCallback callback)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void CallBack(CountsCallback callback)
     {
         int bins[BINS_TRACKED_PER_THREAD];
         // Get count for each digit
@@ -743,7 +743,7 @@ public:
               int KEYS_PER_THREAD,
               typename DigitExtractorT,
               typename CountsCallback>
-    __device__ __forceinline__ void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
                                              int (&ranks)[KEYS_PER_THREAD],
                                              DigitExtractorT digit_extractor,
                                              CountsCallback callback)
@@ -840,7 +840,7 @@ public:
         typename        UnsignedBits,
         int             KEYS_PER_THREAD,
         typename        DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
         UnsignedBits    (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD],
         DigitExtractorT digit_extractor)
     {
@@ -871,7 +871,7 @@ public:
               int KEYS_PER_THREAD,
               typename DigitExtractorT,
               typename CountsCallback>
-    __device__ __forceinline__ void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
                                              int (&ranks)[KEYS_PER_THREAD],
                                              DigitExtractorT digit_extractor,
                                              int (&exclusive_digit_prefix)[BINS_TRACKED_PER_THREAD],
@@ -909,7 +909,7 @@ public:
      *    (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
      */
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
                                              int (&ranks)[KEYS_PER_THREAD],
                                              DigitExtractorT digit_extractor,
                                              int (&exclusive_digit_prefix)[BINS_TRACKED_PER_THREAD])
@@ -985,19 +985,19 @@ struct BlockRadixRankMatchEarlyCounts
         int warp;
         int lane;
 
-        __device__ __forceinline__ ::cuda::std::uint32_t Digit(UnsignedBits key)
+        _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t Digit(UnsignedBits key)
         {
             ::cuda::std::uint32_t digit =  digit_extractor.Digit(key);
             return IS_DESCENDING ? RADIX_DIGITS - 1 - digit : digit;
         }
 
-        __device__ __forceinline__ int ThreadBin(int u)
+        _CCCL_DEVICE _CCCL_FORCEINLINE int ThreadBin(int u)
         {
             int bin = threadIdx.x * BINS_PER_THREAD + u;
             return IS_DESCENDING ? RADIX_DIGITS - 1 - bin : bin;
         }
 
-        __device__ __forceinline__
+        _CCCL_DEVICE _CCCL_FORCEINLINE
         void ComputeHistogramsWarp(UnsignedBits (&keys)[KEYS_PER_THREAD])
         {
             //int* warp_offsets = &s.warp_offsets[warp][0];
@@ -1058,7 +1058,7 @@ struct BlockRadixRankMatchEarlyCounts
             }
         }
 
-        __device__ __forceinline__
+        _CCCL_DEVICE _CCCL_FORCEINLINE
         void ComputeOffsetsWarpUpsweep(int (&bins)[BINS_PER_THREAD])
         {
             // sum up warp-private histograms
@@ -1080,7 +1080,7 @@ struct BlockRadixRankMatchEarlyCounts
             }
         }
 
-        __device__ __forceinline__
+        _CCCL_DEVICE _CCCL_FORCEINLINE
         void ComputeOffsetsWarpDownsweep(int (&offsets)[BINS_PER_THREAD])
         {
             #pragma unroll
@@ -1099,7 +1099,7 @@ struct BlockRadixRankMatchEarlyCounts
             }
         }
 
-        __device__ __forceinline__
+        _CCCL_DEVICE _CCCL_FORCEINLINE
         void ComputeRanksItem(
             UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD],
             Int2Type<WARP_MATCH_ATOMIC_OR>)
@@ -1131,7 +1131,7 @@ struct BlockRadixRankMatchEarlyCounts
             }
         }
 
-        __device__ __forceinline__
+        _CCCL_DEVICE _CCCL_FORCEINLINE
         void ComputeRanksItem(
             UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD],
             Int2Type<WARP_MATCH_ANY>)
@@ -1159,7 +1159,7 @@ struct BlockRadixRankMatchEarlyCounts
             }
         }
 
-        __device__ __forceinline__ void RankKeys(
+        _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
             UnsignedBits (&keys)[KEYS_PER_THREAD],
             int (&ranks)[KEYS_PER_THREAD],
             int (&exclusive_digit_prefix)[BINS_PER_THREAD])
@@ -1178,14 +1178,14 @@ struct BlockRadixRankMatchEarlyCounts
             ComputeRanksItem(keys, ranks, Int2Type<MATCH_ALGORITHM>());
         }
 
-        __device__ __forceinline__ BlockRadixRankMatchInternal
+        _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRankMatchInternal
         (TempStorage& temp_storage, DigitExtractorT digit_extractor, CountsCallback callback)
             : s(temp_storage), digit_extractor(digit_extractor),
               callback(callback), warp(threadIdx.x / WARP_THREADS), lane(LaneId())
             {}
     };
 
-    __device__ __forceinline__ BlockRadixRankMatchEarlyCounts
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRankMatchEarlyCounts
     (TempStorage& temp_storage) : temp_storage(temp_storage) {}
 
     /**
@@ -1194,7 +1194,7 @@ struct BlockRadixRankMatchEarlyCounts
      */
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT,
         typename CountsCallback>
-    __device__ __forceinline__ void RankKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
         UnsignedBits    (&keys)[KEYS_PER_THREAD],
         int             (&ranks)[KEYS_PER_THREAD],
         DigitExtractorT digit_extractor,
@@ -1207,7 +1207,7 @@ struct BlockRadixRankMatchEarlyCounts
     }
 
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
         UnsignedBits    (&keys)[KEYS_PER_THREAD],
         int             (&ranks)[KEYS_PER_THREAD],
         DigitExtractorT digit_extractor,
@@ -1220,7 +1220,7 @@ struct BlockRadixRankMatchEarlyCounts
     }
 
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
         UnsignedBits    (&keys)[KEYS_PER_THREAD],
         int             (&ranks)[KEYS_PER_THREAD],
         DigitExtractorT digit_extractor)

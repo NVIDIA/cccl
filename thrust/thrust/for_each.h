@@ -97,7 +97,7 @@ THRUST_NAMESPACE_BEGIN
 template<typename DerivedPolicy,
          typename InputIterator,
          typename UnaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator for_each(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                        InputIterator first,
                        InputIterator last,
@@ -161,7 +161,7 @@ template<typename DerivedPolicy,
          typename InputIterator,
          typename Size,
          typename UnaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator for_each_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                          InputIterator first,
                          Size n,
