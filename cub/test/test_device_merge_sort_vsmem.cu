@@ -35,8 +35,8 @@
 #include <cstdio>
 #include <new> // for std::bad_alloc
 
-#include "c2h/huge_type.cuh"
 #include "test_device_merge_sort.cuh"
+#include "test_util.h"
 
 int main(int argc, char** argv)
 {
@@ -54,9 +54,9 @@ int main(int argc, char** argv)
     {
       const unsigned int num_items = 1 << pow2;
       // Testing vsmem facility with a fallback policy
-      TestHelper<true>::AllocateAndTest<c2h::detail::huge_data_type_t<128>, DataType>(rng, num_items);
+      TestHelper<true>::AllocateAndTest<HugeDataType<128>, DataType>(rng, num_items);
       // Testing vsmem facility with virtual shared memory
-      TestHelper<true>::AllocateAndTest<c2h::detail::huge_data_type_t<256>, DataType>(rng, num_items);
+      TestHelper<true>::AllocateAndTest<HugeDataType<256>, DataType>(rng, num_items);
     }
     catch (std::bad_alloc& e)
     {

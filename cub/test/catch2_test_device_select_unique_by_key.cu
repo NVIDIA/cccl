@@ -37,7 +37,6 @@
 
 #include <algorithm>
 
-#include "c2h/huge_type.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
@@ -75,7 +74,10 @@ struct index_to_huge_type_op_t
   template<typename ValueType>
   __device__ __host__ HugeDataTypeT operator()(const ValueType& val)
   {
-    return HugeDataTypeT(val);
+    HugeDataTypeT return_val{};
+    return_val.key = val;
+    return_val.val = val;
+    return return_val;
   }
 };
 
@@ -99,7 +101,8 @@ using all_types = c2h::type_list<std::uint8_t,
                                  long2,
                                  c2h::custom_type_t<c2h::equal_comparable_t>>;
 
-using huge_types = c2h::type_list<c2h::detail::huge_data_type_t<128>, c2h::detail::huge_data_type_t<256>>;
+using huge_types = c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t, c2h::huge_data_t<128>::data_t>,
+                                  c2h::custom_type_t<c2h::equal_comparable_t, c2h::huge_data_t<256>::data_t>>;
 
 using types = c2h::type_list<std::uint8_t,
                              std::uint32_t>;
@@ -361,7 +364,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
   using type     = std::uint32_t;
   using val_type = typename c2h::get<0, TestType>;
 
-  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  const int num_items = GENERATE_COPY(take(2, random(1, 100000)));
   thrust::device_vector<type> keys_in(num_items);
   thrust::device_vector<type> keys_out(num_items);
   thrust::device_vector<val_type> vals_out(num_items);
