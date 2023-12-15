@@ -29,19 +29,17 @@ test0()
 {
 #if TEST_STD_VER > 2014
     LIBCPP_STATIC_ASSERT((noexcept(C{})), "" );
-#elif TEST_STD_VER >= 2011
+#else
     LIBCPP_STATIC_ASSERT((noexcept(C()) == noexcept(typename C::allocator_type())), "" );
 #endif
     C c;
     LIBCPP_ASSERT(c.__invariants());
     assert(c.empty());
     assert(c.get_allocator() == typename C::allocator_type());
-#if TEST_STD_VER >= 2011
     C c1 = {};
     LIBCPP_ASSERT(c1.__invariants());
     assert(c1.empty());
     assert(c1.get_allocator() == typename C::allocator_type());
-#endif
 }
 
 template <class C>
@@ -50,7 +48,7 @@ test1(const typename C::allocator_type& a)
 {
 #if TEST_STD_VER > 2014
     LIBCPP_STATIC_ASSERT((noexcept(C{typename C::allocator_type{}})), "" );
-#elif TEST_STD_VER >= 2011
+#else
     LIBCPP_STATIC_ASSERT((noexcept(C(typename C::allocator_type())) == std::is_nothrow_copy_constructible<typename C::allocator_type>::value), "" );
 #endif
     C c(a);
@@ -65,7 +63,6 @@ int main(int, char**)
     test0<std::vector<bool> >();
     test1<std::vector<bool, test_allocator<bool> > >(test_allocator<bool>(3));
     }
-#if TEST_STD_VER >= 2011
     {
     test0<std::vector<bool, min_allocator<bool>> >();
     test1<std::vector<bool, min_allocator<bool> > >(min_allocator<bool>());
@@ -74,7 +71,6 @@ int main(int, char**)
     test0<std::vector<bool, explicit_allocator<bool>> >();
     test1<std::vector<bool, explicit_allocator<bool> > >(explicit_allocator<bool>());
     }
-#endif
 
   return 0;
 }

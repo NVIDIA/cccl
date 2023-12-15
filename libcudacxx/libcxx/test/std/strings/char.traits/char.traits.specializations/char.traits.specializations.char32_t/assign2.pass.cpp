@@ -30,11 +30,9 @@ constexpr bool test_constexpr()
 int main(int, char**)
 {
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-#if TEST_STD_VER >= 2011
     char32_t c = U'\0';
     std::char_traits<char32_t>::assign(c, U'a');
     assert(c == U'a');
-#endif
 
 #if TEST_STD_VER > 2014
     static_assert(test_constexpr(), "" );

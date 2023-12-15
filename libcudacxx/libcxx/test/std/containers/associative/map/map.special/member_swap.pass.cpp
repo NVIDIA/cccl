@@ -96,7 +96,6 @@ int main(int, char**)
         assert(m2 == m1_save);
     }
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::map<int, double, std::less<int>, min_allocator<V>> M;
     {
@@ -172,7 +171,6 @@ int main(int, char**)
         assert(m2 == m1_save);
     }
     }
-#endif
 
   return 0;
 }

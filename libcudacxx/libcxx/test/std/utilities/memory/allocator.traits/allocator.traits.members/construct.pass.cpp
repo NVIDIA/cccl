@@ -38,14 +38,12 @@ struct B
 {
     typedef T value_type;
 
-#if TEST_STD_VER >= 2011
     template <class U, class ...Args>
     void construct(U* p, Args&& ...args)
     {
         ++b_construct;
         ::new ((void*)p) U(std::forward<Args>(args)...);
     }
-#endif
 };
 
 struct A0
@@ -114,7 +112,6 @@ int main(int, char**)
       std::aligned_storage<sizeof(VT)>::type store;
       std::allocator_traits<Alloc>::construct(a, (VT*)&store, nullptr);
     }
-#if TEST_STD_VER >= 2011
     {
         A0::count = 0;
         b_construct = 0;
@@ -148,7 +145,6 @@ int main(int, char**)
         assert(A2::count == 1);
         assert(b_construct == 1);
     }
-#endif
 
   return 0;
 }

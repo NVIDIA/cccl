@@ -116,7 +116,6 @@ int main(int, char**) {
   test<random_access_iterator<char*> >();
   test<char*>();
 
-#if TEST_STD_VER >= 2011
   {
       typedef DummyIt<int, int> T;
       typedef cuda::std::move_iterator<T> It;
@@ -145,7 +144,6 @@ int main(int, char**) {
       typedef cuda::std::move_iterator<T> It;
       static_assert(cuda::std::is_same<It::reference, int&&>::value, "");
   }
-#endif
 
 #if TEST_STD_VER > 2014
   test<contiguous_iterator<char*>>();

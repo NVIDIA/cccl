@@ -34,7 +34,6 @@ int main(int, char**)
     test(S("abcdefghij", A(2)), A(2));
     test(S("abcdefghijklmnopqrst", A(3)), A(3));
     }
-#if TEST_STD_VER >= 2011
     {
     typedef min_allocator<char> A;
     typedef std::basic_string<char, std::char_traits<char>, A> S;
@@ -43,7 +42,6 @@ int main(int, char**)
     test(S("abcdefghij", A()), A());
     test(S("abcdefghijklmnopqrst", A()), A());
     }
-#endif
 
   return 0;
 }

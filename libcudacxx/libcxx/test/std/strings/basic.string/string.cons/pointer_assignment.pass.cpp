@@ -49,7 +49,6 @@ int main(int, char**)
            "1234567890123456789012345678901234567890123456789012345678901234567890"),
          "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(), "");
@@ -68,7 +67,6 @@ int main(int, char**)
            "1234567890123456789012345678901234567890123456789012345678901234567890"),
          "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
     }
-#endif
 
   return 0;
 }

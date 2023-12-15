@@ -198,7 +198,6 @@ int main(int, char**)
     test(S("abcdefghij"), S(""));
     test(S("abcdefghijklmnopqrst"), S(""));
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(""), 0, 0, S(""));
@@ -302,7 +301,6 @@ int main(int, char**)
     test(S("abcdefghij"), S(""));
     test(S("abcdefghijklmnopqrst"), S(""));
     }
-#endif
 
   return 0;
 }

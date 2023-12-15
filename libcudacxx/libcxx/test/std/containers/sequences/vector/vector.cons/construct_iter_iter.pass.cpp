@@ -19,10 +19,8 @@
 #include "test_allocator.h"
 #include "min_allocator.h"
 #include "asan_testing.h"
-#if TEST_STD_VER >= 2011
 #include "emplace_constructible.h"
 #include "container_test_types.h"
-#endif
 
 template <class C, class Iterator>
 void test(Iterator first, Iterator last) {
@@ -60,7 +58,6 @@ static void basic_test_cases() {
       random_access_iterator<const int*>(a),
       random_access_iterator<const int*>(an));
   test<std::vector<int, limited_allocator<int, 18 + 1> > >(a, an);
-#if TEST_STD_VER >= 2011
   test<std::vector<int, min_allocator<int> > >(cpp17_input_iterator<const int*>(a),
                                                cpp17_input_iterator<const int*>(an));
   test<std::vector<int, min_allocator<int> > >(
@@ -72,11 +69,9 @@ static void basic_test_cases() {
       random_access_iterator<const int*>(a),
       random_access_iterator<const int*>(an));
   test<std::vector<int> >(a, an);
-#endif
 }
 
 void emplaceable_concept_tests() {
-#if TEST_STD_VER >= 2011
   int arr1[] = {42};
   int arr2[] = {1, 101, 42};
   {
@@ -111,11 +106,9 @@ void emplaceable_concept_tests() {
       assert(v[2].value == 42);
     }
   }
-#endif
 }
 
 void test_ctor_under_alloc() {
-#if TEST_STD_VER >= 2011
   int arr1[] = {42};
   int arr2[] = {1, 101, 42};
   {
@@ -142,7 +135,6 @@ void test_ctor_under_alloc() {
       //C v(It(arr2), It(std::end(arr2)), a);
     }
   }
-#endif
 }
 
 // In C++03, you can't instantiate a template with a local type.

@@ -53,10 +53,8 @@ test1(unsigned n)
     assert(static_cast<unsigned>(DefaultOnly::count) == n);
     assert(d.size() == n);
     assert(static_cast<std::size_t>(distance(d.begin(), d.end())) == d.size());
-#if TEST_STD_VER >= 2011
     for (const_iterator i = d.begin(), e = d.end(); i != e; ++i)
         assert(*i == T());
-#endif
     }
     assert(DefaultOnly::count == 0);
 }
@@ -103,9 +101,7 @@ int main(int, char**)
 
     LIBCPP_ONLY(test1<DefaultOnly, limited_allocator<DefaultOnly, 4096> >(4095));
 
-#if TEST_STD_VER >= 2011
     test<DefaultOnly, min_allocator<DefaultOnly> >(4095);
-#endif
 
 #if TEST_STD_VER > 2011
     test3<DefaultOnly, std::allocator<DefaultOnly>> (1023);

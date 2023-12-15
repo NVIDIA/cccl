@@ -44,12 +44,10 @@ int main(int, char**)
          std::chrono::duration<double, std::ratio<3600> >(7265./3600));
     test(std::chrono::duration<int, std::ratio<2, 3> >(9),
          std::chrono::duration<int, std::ratio<3, 5> >(10));
-#if TEST_STD_VER >= 2011
     {
     constexpr std::chrono::hours h = std::chrono::duration_cast<std::chrono::hours>(std::chrono::milliseconds(7265000));
     static_assert(h.count() == 2, "");
     }
-#endif
 
   return 0;
 }

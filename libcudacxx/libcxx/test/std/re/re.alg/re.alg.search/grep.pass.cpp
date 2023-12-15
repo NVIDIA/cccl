@@ -45,9 +45,7 @@ extern "C" void LLVMFuzzerTestOneInput(const char *data)
 void fuzz_tests()  // patterns that the fuzzer has found
 {
 // Raw string literals are a C++11 feature.
-#if TEST_STD_VER >= 2011
     LLVMFuzzerTestOneInput(R"XX(Õ)_%()()((\8'_%()_%()_%()_%(()_%()_%()_%(.t;)()¥f()_%()(.)_%;)()!¥f(((()()XX");
-#endif
 }
 
 int main(int, char**)

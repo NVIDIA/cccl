@@ -59,10 +59,8 @@ test(typename C::size_type n)
 int main(int, char**)
 {
     test<std::vector<bool> >(50);
-#if TEST_STD_VER >= 2011
     test<std::vector<bool, min_allocator<bool>> >(50);
     test2<std::vector<bool, test_allocator<bool>> >( 100, test_allocator<bool>(23));
-#endif
 
   return 0;
 }

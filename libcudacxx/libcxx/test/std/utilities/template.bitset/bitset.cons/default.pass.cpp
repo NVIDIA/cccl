@@ -26,12 +26,10 @@ void test_default_ctor()
         for (std::size_t i = 0; i < N; ++i)
             assert(v1[i] == false);
     }
-#if TEST_STD_VER >= 2011
     {
         constexpr std::bitset<N> v1;
         static_assert(v1.size() == N, "");
     }
-#endif
 }
 
 

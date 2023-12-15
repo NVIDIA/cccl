@@ -26,10 +26,8 @@ test()
 {
     D d;
     assert(d.count() == typename D::rep());
-#if TEST_STD_VER >= 2011
     constexpr D d2 = D();
     static_assert(d2.count() == typename D::rep(), "");
-#endif
 }
 
 int main(int, char**)

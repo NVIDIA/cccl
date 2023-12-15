@@ -21,15 +21,6 @@ struct NoDefault {
     TEST_CONSTEXPR NoDefault(int) { }
 };
 
-#if TEST_STD_VER < 2011
-struct natural_alignment {
-    long t1;
-    long long t2;
-    double t3;
-    long double t4;
-};
-#endif
-
 TEST_CONSTEXPR_CXX17 bool tests()
 {
     {
@@ -76,11 +67,7 @@ int main(int, char**)
 
     // Test the alignment of data()
     {
-#if TEST_STD_VER < 2011
-        typedef natural_alignment T;
-#else
         typedef std::max_align_t T;
-#endif
         typedef std::array<T, 0> C;
         const C c = {};
         const T* p = c.data();

@@ -18,21 +18,13 @@
 #include <type_traits>
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 2011 && defined(_LIBCUDACXX_VERSION)
-#define LIBCPP11_STATIC_ASSERT(...) static_assert(__VA_ARGS__)
-#else
-#define LIBCPP11_STATIC_ASSERT(...) ((void)0)
-#endif
-
 
 struct A
 {
     explicit A(int);
     A(int, double);
     A(int, long, double);
-#if TEST_STD_VER >= 2011
 private:
-#endif
     A(char);
 };
 
@@ -57,9 +49,7 @@ private:
 
 struct S {
    template <class T>
-#if TEST_STD_VER >= 2011
    explicit
-#endif
    operator T () const;
 };
 
@@ -68,19 +58,17 @@ struct ImplicitTo {
   operator To();
 };
 
-#if TEST_STD_VER >= 2011
 template <class To>
 struct ExplicitTo {
    explicit operator To ();
 };
-#endif
 
 
 template <class T>
 void test_is_constructible()
 {
     static_assert( (std::is_constructible<T>::value), "");
-    LIBCPP11_STATIC_ASSERT((std::__libcpp_is_constructible<T>::type::value), "");
+    static_assert((std::__libcpp_is_constructible<T>::type::value), "");
 #if TEST_STD_VER > 2014
     static_assert( std::is_constructible_v<T>, "");
 #endif
@@ -90,7 +78,7 @@ template <class T, class A0>
 void test_is_constructible()
 {
     static_assert(( std::is_constructible<T, A0>::value), "");
-    LIBCPP11_STATIC_ASSERT((std::__libcpp_is_constructible<T, A0>::type::value), "");
+    static_assert((std::__libcpp_is_constructible<T, A0>::type::value), "");
 #if TEST_STD_VER > 2014
     static_assert(( std::is_constructible_v<T, A0>), "");
 #endif
@@ -100,7 +88,7 @@ template <class T, class A0, class A1>
 void test_is_constructible()
 {
     static_assert(( std::is_constructible<T, A0, A1>::value), "");
-    LIBCPP11_STATIC_ASSERT((std::__libcpp_is_constructible<T, A0, A1>::type::value), "");
+    static_assert((std::__libcpp_is_constructible<T, A0, A1>::type::value), "");
 #if TEST_STD_VER > 2014
     static_assert(( std::is_constructible_v<T, A0, A1>), "");
 #endif
@@ -110,7 +98,7 @@ template <class T, class A0, class A1, class A2>
 void test_is_constructible()
 {
     static_assert(( std::is_constructible<T, A0, A1, A2>::value), "");
-    LIBCPP11_STATIC_ASSERT((std::__libcpp_is_constructible<T, A0, A1, A2>::type::value), "");
+    static_assert((std::__libcpp_is_constructible<T, A0, A1, A2>::type::value), "");
 #if TEST_STD_VER > 2014
     static_assert(( std::is_constructible_v<T, A0, A1, A2>), "");
 #endif
@@ -120,7 +108,7 @@ template <class T>
 void test_is_not_constructible()
 {
     static_assert((!std::is_constructible<T>::value), "");
-    LIBCPP11_STATIC_ASSERT((!std::__libcpp_is_constructible<T>::type::value), "");
+    static_assert((!std::__libcpp_is_constructible<T>::type::value), "");
 #if TEST_STD_VER > 2014
     static_assert((!std::is_constructible_v<T>), "");
 #endif
@@ -130,13 +118,12 @@ template <class T, class A0>
 void test_is_not_constructible()
 {
     static_assert((!std::is_constructible<T, A0>::value), "");
-    LIBCPP11_STATIC_ASSERT((!std::__libcpp_is_constructible<T, A0>::type::value), "");
+    static_assert((!std::__libcpp_is_constructible<T, A0>::type::value), "");
 #if TEST_STD_VER > 2014
     static_assert((!std::is_constructible_v<T, A0>), "");
 #endif
 }
 
-#if TEST_STD_VER >= 2011
 template <class T = int, class = decltype(static_cast<T&&>(std::declval<double&>()))>
 constexpr bool  clang_disallows_valid_static_cast_test(int) { return false; };
 
@@ -144,7 +131,6 @@ constexpr bool clang_disallows_valid_static_cast_test(long) { return true; }
 
 static constexpr bool clang_disallows_valid_static_cast_bug =
     clang_disallows_valid_static_cast_test(0);
-#endif
 
 
 int main(int, char**)
@@ -160,11 +146,9 @@ int main(int, char**)
     test_is_constructible<int&, int&> ();
 
     test_is_not_constructible<A> ();
-#if TEST_STD_VER >= 2011
     test_is_not_constructible<A, char> ();
 #else
     test_is_constructible<A, char> ();
-#endif
     test_is_not_constructible<A, void> ();
     test_is_not_constructible<int, void()>();
     test_is_not_constructible<int, void(&)()>();
@@ -186,13 +170,10 @@ int main(int, char**)
 
     test_is_constructible<void(&)(), void(&)()>();
     test_is_constructible<void(&)(), void()>();
-#if TEST_STD_VER >= 2011
     test_is_constructible<void(&&)(), void(&&)()>();
     test_is_constructible<void(&&)(), void()>();
     test_is_constructible<void(&&)(), void(&)()>();
-#endif
 
-#if TEST_STD_VER >= 2011
     test_is_constructible<int const&, int>();
     test_is_constructible<int const&, int&&>();
 
@@ -214,7 +195,6 @@ int main(int, char**)
  && (!defined(TEST_COMPILER_CLANG) && __clang__ < 16))  \
  || TEST_STD_VER < 2020
     test_is_not_constructible<Derived&, Base&>();
-#endif
     test_is_constructible<Base const&, Derived const&>();
 #if (!defined(TEST_COMPILER_GCC)                        \
  && (!defined(TEST_COMPILER_CLANG) && __clang__ < 16))  \
@@ -316,7 +296,6 @@ int main(int, char**)
     test_is_not_constructible<void() &> ();
     test_is_not_constructible<void() &&> ();
 #endif
-#endif // TEST_STD_VER >= 2011
 
   return 0;
 }

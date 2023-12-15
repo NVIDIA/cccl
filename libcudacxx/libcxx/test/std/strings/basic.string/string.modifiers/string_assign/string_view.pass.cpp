@@ -70,7 +70,6 @@ int main(int, char**)
     testAlloc(S(), SV("12345678901234567890"), std::allocator<char>());
     }
 
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string     <char, std::char_traits<char>, min_allocator<char>> S;
     typedef std::basic_string_view<char, std::char_traits<char> > SV;
@@ -100,7 +99,6 @@ int main(int, char**)
     testAlloc(S(), SV("1234567890"), min_allocator<char>());
     testAlloc(S(), SV("12345678901234567890"), min_allocator<char>());
     }
-#endif
 
   return 0;
 }

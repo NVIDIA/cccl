@@ -62,14 +62,12 @@ int main(int, char**) {
     typedef std::map<int, int, std::less<int>, Alloc> Map;
     testMap<Map, ValueTp, ValueTp*, ValueTp const*>();
   }
-#if TEST_STD_VER >= 2011
   {
     typedef std::pair<const int, int> ValueTp;
     typedef min_allocator<ValueTp> Alloc;
     typedef std::map<int, int, std::less<int>, Alloc> Map;
     testMap<Map, ValueTp, min_pointer<ValueTp>, min_pointer<const ValueTp>>();
   }
-#endif
   {
     typedef std::multimap<int, int> Map;
     typedef std::pair<const int, int> ValueTp;
@@ -81,14 +79,12 @@ int main(int, char**) {
     typedef std::multimap<int, int, std::less<int>, Alloc> Map;
     testMap<Map, ValueTp, ValueTp*, ValueTp const*>();
   }
-#if TEST_STD_VER >= 2011
   {
     typedef std::pair<const int, int> ValueTp;
     typedef min_allocator<ValueTp> Alloc;
     typedef std::multimap<int, int, std::less<int>, Alloc> Map;
     testMap<Map, ValueTp, min_pointer<ValueTp>, min_pointer<const ValueTp>>();
   }
-#endif
   {
     typedef int ValueTp;
     typedef std::set<ValueTp> Set;
@@ -100,14 +96,12 @@ int main(int, char**) {
     typedef std::set<ValueTp, std::less<ValueTp>, Alloc> Set;
     testSet<Set, ValueTp, ValueTp const*>();
   }
-#if TEST_STD_VER >= 2011
   {
     typedef int ValueTp;
     typedef min_allocator<ValueTp> Alloc;
     typedef std::set<ValueTp, std::less<ValueTp>, Alloc> Set;
     testSet<Set, ValueTp, min_pointer<const ValueTp>>();
   }
-#endif
   {
     typedef int ValueTp;
     typedef std::multiset<ValueTp> Set;
@@ -119,14 +113,12 @@ int main(int, char**) {
     typedef std::multiset<ValueTp, std::less<ValueTp>, Alloc> Set;
     testSet<Set, ValueTp, ValueTp const*>();
   }
-#if TEST_STD_VER >= 2011
   {
     typedef int ValueTp;
     typedef min_allocator<ValueTp> Alloc;
     typedef std::multiset<ValueTp, std::less<ValueTp>, Alloc> Set;
     testSet<Set, ValueTp, min_pointer<const ValueTp>>();
   }
-#endif
 
   return 0;
 }

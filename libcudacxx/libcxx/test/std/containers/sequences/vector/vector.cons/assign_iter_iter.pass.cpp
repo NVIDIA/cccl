@@ -17,14 +17,11 @@
 #include "min_allocator.h"
 #include "asan_testing.h"
 #include "test_iterators.h"
-#if TEST_STD_VER >= 2011
 #include "emplace_constructible.h"
 #include "container_test_types.h"
-#endif
 
 
 void test_emplaceable_concept() {
-#if TEST_STD_VER >= 2011
   int arr1[] = {42};
   int arr2[] = {1, 101, 42};
   {
@@ -63,7 +60,6 @@ void test_emplaceable_concept() {
       assert(v[2].value == 42);
     }
   }
-#endif
 }
 
 

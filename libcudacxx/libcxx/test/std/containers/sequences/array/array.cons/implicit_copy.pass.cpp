@@ -15,15 +15,6 @@
 #include <cassert>
 #include "test_macros.h"
 
-// In C++03 the copy assignment operator is not deleted when the implicitly
-// generated operator would be ill-formed; like in the case of a struct with a
-// const member.
-#if TEST_STD_VER < 2011
-#   define TEST_NOT_COPY_ASSIGNABLE(T) ((void)0)
-#else
-#   define TEST_NOT_COPY_ASSIGNABLE(T) static_assert(!std::is_copy_assignable<T>::value, "")
-#endif
-
 struct NoDefault {
     TEST_CONSTEXPR NoDefault(int) { }
 };
@@ -49,7 +40,7 @@ TEST_CONSTEXPR_CXX14 bool tests()
         Array array = {1.1, 2.2, 3.3};
         Array copy = array; (void)copy;
         static_assert(std::is_copy_constructible<Array>::value, "");
-        TEST_NOT_COPY_ASSIGNABLE(Array);
+        static_assert(!std::is_copy_assignable<T>::value, "");
     }
     {
         typedef std::array<double, 0> Array;
@@ -65,7 +56,7 @@ TEST_CONSTEXPR_CXX14 bool tests()
         Array array = {};
         Array copy = array; (void)copy;
         static_assert(std::is_copy_constructible<Array>::value, "");
-        TEST_NOT_COPY_ASSIGNABLE(Array);
+        static_assert(!std::is_copy_assignable<T>::value, "");
     }
     {
         typedef std::array<NoDefault, 0> Array;
@@ -80,7 +71,7 @@ TEST_CONSTEXPR_CXX14 bool tests()
         Array array = {};
         Array copy = array; (void)copy;
         static_assert(std::is_copy_constructible<Array>::value, "");
-        TEST_NOT_COPY_ASSIGNABLE(Array);
+        static_assert(!std::is_copy_assignable<T>::value, "");
     }
 
     // Make sure we can implicitly copy a std::array of a non-trivially copyable type

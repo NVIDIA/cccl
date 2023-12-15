@@ -39,7 +39,6 @@ struct test_nondefault_initialization {
     TEST_CONSTEXPR_CXX14 void operator()() const
     {
         // Check direct-list-initialization syntax (introduced in C++11)
-    #if TEST_STD_VER >= 2011
         {
             {
                 std::array<T, 0> a0_0{}; (void)a0_0;
@@ -62,7 +61,6 @@ struct test_nondefault_initialization {
 
             std::array<NoDefault, 0> nodefault{}; (void)nodefault;
         }
-    #endif
 
         // Check copy-list-initialization syntax
         {

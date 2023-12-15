@@ -55,13 +55,11 @@ void do_insert_hint_const_lvalue_test()
 int main(int, char**)
 {
     do_insert_hint_const_lvalue_test<std::unordered_set<double> >();
-#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_set<double, std::hash<double>,
                                 std::equal_to<double>, min_allocator<double>> C;
         do_insert_hint_const_lvalue_test<C>();
     }
-#endif
 #if _LIBCUDACXX_DEBUG >= 1
     {
         typedef std::unordered_set<double> C;

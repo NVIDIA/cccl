@@ -99,26 +99,20 @@ int main(int, char**) {
   std::max_element(std::begin(arr), std::end(arr), std::greater<int>());
   std::max(1, 2);
   std::max(1, 2, std::greater<int>());
-#if TEST_STD_VER >= 2011
   std::max({1, 2, 3});
   std::max({1, 2, 3}, std::greater<int>());
-#endif
   std::min_element(std::begin(arr), std::end(arr));
   std::min_element(std::begin(arr), std::end(arr), std::greater<int>());
   std::min(1, 2);
   std::min(1, 2, std::greater<int>());
-#if TEST_STD_VER >= 2011
   std::min({1, 2, 3});
   std::min({1, 2, 3}, std::greater<int>());
-#endif
   std::minmax_element(std::begin(arr), std::end(arr));
   std::minmax_element(std::begin(arr), std::end(arr), std::greater<int>());
   std::minmax(1, 2);
   std::minmax(1, 2, std::greater<int>());
-#if TEST_STD_VER >= 2011
   std::minmax({1, 2, 3});
   std::minmax({1, 2, 3}, std::greater<int>());
-#endif
   std::mismatch(std::begin(arr), std::end(arr), std::begin(arr));
   std::mismatch(std::begin(arr), std::end(arr), std::begin(arr),
                 std::greater<int>());

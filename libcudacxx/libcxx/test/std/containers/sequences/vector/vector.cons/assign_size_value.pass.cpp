@@ -40,7 +40,6 @@ int main(int, char**)
     test(d2);
     }
 
-#if TEST_STD_VER >= 2011
     {
     typedef std::vector<int, min_allocator<int>> V;
     V d1;
@@ -49,7 +48,6 @@ int main(int, char**)
     test(d1);
     test(d2);
     }
-#endif
 
   return 0;
 }

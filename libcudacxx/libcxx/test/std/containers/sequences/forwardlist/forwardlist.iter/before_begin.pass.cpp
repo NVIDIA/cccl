@@ -60,7 +60,6 @@ int main(int, char**)
         C::const_iterator i = c.before_begin();
         assert(std::distance(i, c.end()) == 11);
     }
-#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef std::forward_list<T, min_allocator<T>> C;
@@ -100,7 +99,6 @@ int main(int, char**)
         C::const_iterator i = c.before_begin();
         assert(std::distance(i, c.end()) == 11);
     }
-#endif
 
   return 0;
 }

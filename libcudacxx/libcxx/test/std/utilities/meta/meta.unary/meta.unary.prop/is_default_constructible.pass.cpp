@@ -103,7 +103,6 @@ int main(int, char**)
 
     test_is_not_default_constructible<Abstract>();
     test_is_not_default_constructible<NoDefaultConstructor>();
-#if TEST_STD_VER >= 2011
     test_is_not_default_constructible<B>();
     test_is_not_default_constructible<int&&>();
 
@@ -120,7 +119,6 @@ int main(int, char**)
     test_is_not_default_constructible<void() volatile> ();
     test_is_not_default_constructible<void() &> ();
     test_is_not_default_constructible<void() &&> ();
-#endif
 #endif
 
   return 0;

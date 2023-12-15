@@ -70,7 +70,6 @@ int main(int, char**)
 {
     test();
 
-#if TEST_STD_VER >= 2011
     {
     std::vector<std::unique_ptr<int> > v(1000);
     for (int i = 0; static_cast<std::size_t>(i) < v.size(); ++i)
@@ -81,7 +80,6 @@ int main(int, char**)
     assert(*v[1] == 1);
     assert(*v[2] == 2);
     }
-#endif
 
   return 0;
 }

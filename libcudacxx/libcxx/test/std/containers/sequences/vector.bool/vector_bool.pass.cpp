@@ -40,14 +40,12 @@ int main(int, char**)
     H h;
     assert(h(vb) != 0);
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::vector<bool, min_allocator<bool>> T;
     typedef std::hash<T> H;
 #if TEST_STD_VER <= 2014
     static_assert((std::is_same<H::argument_type, T>::value), "" );
     static_assert((std::is_same<H::result_type, std::size_t>::value), "" );
-#endif
     ASSERT_NOEXCEPT(H()(T()));
     bool ba[] = {true, false, true, true, false};
     T vb(std::begin(ba), std::end(ba));

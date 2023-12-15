@@ -24,14 +24,12 @@ struct A {
   std::forward_list<A>::const_iterator it2;
 };
 
-#if TEST_STD_VER >= 2011
 struct B {
   typedef std::forward_list<B, min_allocator<B>> FList;
   FList d;
   FList::iterator it;
   FList::const_iterator it2;
 };
-#endif
 
 int main(int, char**)
 {
@@ -41,14 +39,12 @@ int main(int, char**)
     a.it = a.d.begin();
     a.it2 = a.d.cbefore_begin();
   }
-#if TEST_STD_VER >= 2011
   {
     B b;
     assert(b.d.empty());
     b.it = b.d.begin();
     b.it2 = b.d.cbefore_begin();
   }
-#endif
 
   return 0;
 }

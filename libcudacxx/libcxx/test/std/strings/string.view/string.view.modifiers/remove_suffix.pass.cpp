@@ -56,7 +56,6 @@ int main(int, char**) {
     test ( L"a", 1 );
     test ( L"", 0 );
 
-#if TEST_STD_VER >= 2011
     test ( u"ABCDE", 5 );
     test ( u"a", 1 );
     test ( u"", 0 );
@@ -64,7 +63,6 @@ int main(int, char**) {
     test ( U"ABCDE", 5 );
     test ( U"a", 1 );
     test ( U"", 0 );
-#endif
 
 #if TEST_STD_VER > 2011
     {

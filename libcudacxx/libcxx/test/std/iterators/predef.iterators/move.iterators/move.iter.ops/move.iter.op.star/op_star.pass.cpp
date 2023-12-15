@@ -53,13 +53,11 @@ int main(int, char**) {
     A a;
     test(&a, A());
   }
-#if TEST_STD_VER >= 2011
   {
     int i;
     std::unique_ptr<int, do_nothing> p(&i);
     test(&p, std::unique_ptr<int, do_nothing>(&i));
   }
-#endif
 #if TEST_STD_VER > 2014
   {
     constexpr const char *p = "123456789";

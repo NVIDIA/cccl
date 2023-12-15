@@ -29,13 +29,11 @@ constexpr bool test_constexpr()
 int main(int, char**)
 {
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-#if TEST_STD_VER >= 2011
     assert(std::char_traits<char16_t>::length(u"") == 0);
     assert(std::char_traits<char16_t>::length(u"a") == 1);
     assert(std::char_traits<char16_t>::length(u"aa") == 2);
     assert(std::char_traits<char16_t>::length(u"aaa") == 3);
     assert(std::char_traits<char16_t>::length(u"aaaa") == 4);
-#endif
 
 #if TEST_STD_VER > 2014
     static_assert(test_constexpr(), "" );

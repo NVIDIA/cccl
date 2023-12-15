@@ -84,7 +84,6 @@ int main(int, char**)
     }
     }
 
-#if TEST_STD_VER >= 2011
     {
     int a1[] = {1, 2, 3, 4};
     int a2[] = {3, 4};
@@ -98,7 +97,6 @@ int main(int, char**)
     assert((c == std::list<int, min_allocator<int>>(a2, a2+2)));
     assert(cp.count() == 4);
     }
-#endif
 
   return 0;
 }

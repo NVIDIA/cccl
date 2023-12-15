@@ -61,9 +61,7 @@ int main(int, char**)
     static_assert((std::is_same<std::allocator_traits<A<char> >::void_pointer, Ptr<void> >::value), "");
     static_assert((std::is_same<std::allocator_traits<B<char> >::void_pointer, void*>::value), "");
     static_assert((std::is_same<std::allocator_traits<C<char> >::void_pointer, CPtr<void> >::value), "");
-#if TEST_STD_VER >= 2011
     static_assert((std::is_same<std::allocator_traits<D<char> >::void_pointer, void*>::value), "");
-#endif
 
   return 0;
 }

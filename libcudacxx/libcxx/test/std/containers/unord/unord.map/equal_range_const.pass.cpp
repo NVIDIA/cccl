@@ -46,7 +46,6 @@ int main(int, char**)
         r = c.equal_range(5);
         assert(std::distance(r.first, r.second) == 0);
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_map<int, std::string, std::hash<int>, std::equal_to<int>,
                             min_allocator<std::pair<const int, std::string>>> C;
@@ -71,7 +70,6 @@ int main(int, char**)
         r = c.equal_range(5);
         assert(std::distance(r.first, r.second) == 0);
     }
-#endif
 
   return 0;
 }

@@ -50,7 +50,6 @@ int main(int, char**)
     static_assert((std::is_same<C::size_type, std::size_t>::value), "");
     static_assert((std::is_same<C::difference_type, std::ptrdiff_t>::value), "");
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::map<int, double, std::less<int>, min_allocator<std::pair<const int, double>>> C;
     static_assert((std::is_same<C::key_type, int>::value), "");
@@ -66,7 +65,6 @@ int main(int, char**)
     static_assert((std::is_same<C::size_type, std::make_unsigned<C::difference_type>::type>::value), "");
     static_assert((std::is_same<C::difference_type, std::ptrdiff_t>::value), "");
     }
-#endif
 
   return 0;
 }

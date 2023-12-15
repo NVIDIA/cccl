@@ -35,9 +35,7 @@ int main(int, char**)
     test<std::vector<int> >(50, 3);
     // Add 1 for implementations that dynamically allocate a container proxy.
     test<std::vector<int, limited_allocator<int, 50 + 1> > >(50, 5);
-#if TEST_STD_VER >= 2011
     test<std::vector<int, min_allocator<int>> >(50, 3);
-#endif
 
   return 0;
 }

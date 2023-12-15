@@ -74,9 +74,7 @@ int main(int, char**)
     test<std::allocator<bool> >();
     static_assert((std::is_same<std::vector<bool>::allocator_type,
                                 std::allocator<bool> >::value), "");
-#if TEST_STD_VER >= 2011
     test<min_allocator<bool> >();
-#endif
 
   return 0;
 }

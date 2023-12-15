@@ -32,7 +32,6 @@ int main(int, char**)
             assert(*i == n);
         assert(n == std::end(t) - std::begin(t));
     }
-#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef std::forward_list<T, min_allocator<T>> C;
@@ -44,7 +43,6 @@ int main(int, char**)
             assert(*i == n);
         assert(n == std::end(t) - std::begin(t));
     }
-#endif
 
   return 0;
 }

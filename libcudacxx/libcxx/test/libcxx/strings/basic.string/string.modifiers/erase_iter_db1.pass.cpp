@@ -30,7 +30,6 @@ int main(int, char**)
     l1.erase(i);
     assert(false);
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     S l1("123");
@@ -38,7 +37,6 @@ int main(int, char**)
     l1.erase(i);
     assert(false);
     }
-#endif
 }
 
 #else

@@ -80,7 +80,6 @@ int main(int, char**) {
     test ( L"a" );
     test ( L"" );
 
-#if TEST_STD_VER >= 2011
     test ( u"ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE" );
     test ( u"ABCDE" );
     test ( u"a" );
@@ -90,7 +89,6 @@ int main(int, char**) {
     test ( U"ABCDE" );
     test ( U"a" );
     test ( U"" );
-#endif
 
 #if TEST_STD_VER > 2011
     {

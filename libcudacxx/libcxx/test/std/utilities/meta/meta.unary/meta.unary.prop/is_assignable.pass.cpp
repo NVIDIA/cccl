@@ -42,7 +42,6 @@ void test_is_not_assignable()
 
 struct D;
 
-#if TEST_STD_VER >= 2011
 struct C
 {
     template <class U>
@@ -53,7 +52,6 @@ struct E
 {
     C operator=(int);
 };
-#endif
 
 template <typename T>
 struct X { T t; };
@@ -66,12 +64,10 @@ int main(int, char**)
     test_is_assignable<B, A> ();
     test_is_assignable<void*&, void*> ();
 
-#if TEST_STD_VER >= 2011
     test_is_assignable<E, int> ();
 
     test_is_not_assignable<int, int&> ();
     test_is_not_assignable<int, int> ();
-#endif
     test_is_not_assignable<A, B> ();
     test_is_not_assignable<void, const void> ();
     test_is_not_assignable<const void, const void> ();

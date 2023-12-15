@@ -77,7 +77,6 @@ int main(int, char**)
         test3<int, min_allocator<int>> (3);
     }
 #endif
-#if TEST_STD_VER >= 2011
     {
         std::list<DefaultOnly> l(3);
         assert(l.size() == 3);
@@ -99,7 +98,6 @@ int main(int, char**)
         assert(l.size() == 3);
         assert(std::distance(l.begin(), l.end()) == 3);
     }
-#endif
 
   return 0;
 }

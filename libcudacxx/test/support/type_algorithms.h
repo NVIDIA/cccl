@@ -92,11 +92,9 @@ using character_types =
               ,
               char8_t
 #endif
-#if TEST_STD_VER >= 2011
               ,
               char16_t,
               char32_t
-#endif
               >;
 
 using signed_integer_types =

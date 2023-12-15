@@ -83,7 +83,6 @@ int main(int, char**)
         assert(r == m.end());
     }
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::multimap<int, double, std::less<int>, min_allocator<std::pair<const int, double>>> M;
     {
@@ -143,7 +142,6 @@ int main(int, char**)
         assert(r == m.end());
     }
     }
-#endif
 #if TEST_STD_VER > 2011
     {
     typedef std::multimap<int, double, std::less<>> M;

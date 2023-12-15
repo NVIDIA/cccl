@@ -57,11 +57,7 @@ int main(int, char**)
     static_assert(std::__libcpp_string_gets_noexcept_iterator<random_access_iterator<char *> >::value == expected, "");
     static_assert(std::__libcpp_string_gets_noexcept_iterator<ThrowingIterator      <char *> >::value == expected, "");
 
-#if TEST_STD_VER >= 2011
     static_assert(( std::__libcpp_string_gets_noexcept_iterator<NonThrowingIterator   <char *> >::value), "");
-#else
-    static_assert(std::__libcpp_string_gets_noexcept_iterator<NonThrowingIterator   <char *> >::value == expected, "");
-#endif
 
 //
 //  iterators from libc++'s containers
@@ -79,11 +75,9 @@ int main(int, char**)
     static_assert(( std::__libcpp_string_gets_noexcept_iterator<std::basic_string<char>::reverse_iterator>      ::value), "");
     static_assert(( std::__libcpp_string_gets_noexcept_iterator<std::basic_string<char>::const_reverse_iterator>::value), "");
 
-#if TEST_STD_VER >= 2011
 //  Initializer list  (which has no reverse iterators)
     static_assert(( std::__libcpp_string_gets_noexcept_iterator<std::initializer_list<char>::iterator>              ::value), "");
     static_assert(( std::__libcpp_string_gets_noexcept_iterator<std::initializer_list<char>::const_iterator>        ::value), "");
-#endif
 
   return 0;
 }

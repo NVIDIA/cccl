@@ -375,7 +375,6 @@ int main(int, char**)
     test1<S, SV>();
     test2<S, SV>();
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     typedef std::string_view SV;
@@ -383,7 +382,6 @@ int main(int, char**)
     test1<S, SV>();
     test2<S, SV>();
     }
-#endif
 
   return 0;
 }

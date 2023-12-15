@@ -35,11 +35,9 @@ int main(int, char**) {
 #if defined(__cpp_lib_char8_t) && __cpp_lib_char8_t >= 201811L
     assert( test<std::u8string_view>  (u8"1234"));
 #endif
-#if TEST_STD_VER >= 2011
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
     assert( test<std::u16string_view> ( u"1234"));
     assert( test<std::u32string_view> ( U"1234"));
-#endif
 #endif
     assert( test<std::wstring_view>   ( L"1234"));
 

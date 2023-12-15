@@ -33,11 +33,6 @@ private:
     static_assert(Min < Max, "rand1 invalid parameters");
 public:
 
-#if TEST_STD_VER < 2011 && defined(_LIBCUDACXX_VERSION)
-    // Workaround for lack of constexpr in C++03
-    static const result_type _Min = Min;
-    static const result_type _Max = Max;
-#endif
 
     static TEST_CONSTEXPR result_type min() {return Min;}
     static TEST_CONSTEXPR result_type max() {return Max;}

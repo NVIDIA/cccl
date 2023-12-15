@@ -54,7 +54,6 @@ int main(int, char**)
         assert(in.eof());
         assert(s == L"   ghij");
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
         std::istringstream in(" abc*  def**   ghij");
@@ -89,7 +88,6 @@ int main(int, char**)
         assert(in.eof());
         assert(s == L"   ghij");
     }
-#endif
 #ifndef TEST_HAS_NO_EXCEPTIONS
     {
         std::basic_stringbuf<char> sb("hello");

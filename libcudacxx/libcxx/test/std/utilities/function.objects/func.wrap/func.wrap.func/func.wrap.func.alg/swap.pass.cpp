@@ -63,9 +63,7 @@ int main(int, char**)
     {
     std::function<int(int)> f1 = A(1);
     std::function<int(int)> f2 = A(2);
-#if TEST_STD_VER >= 2011
     static_assert(noexcept(swap(f1, f2)), "" );
-#endif
     assert(A::count == 2);
     assert(globalMemCounter.checkOutstandingNewEq(2));
     assert(f1.target<A>()->id() == 1);
@@ -81,9 +79,7 @@ int main(int, char**)
     {
     std::function<int(int)> f1 = A(1);
     std::function<int(int)> f2 = g;
-#if TEST_STD_VER >= 2011
     static_assert(noexcept(swap(f1, f2)), "" );
-#endif
     assert(A::count == 1);
     assert(globalMemCounter.checkOutstandingNewEq(1));
     assert(f1.target<A>()->id() == 1);
@@ -99,9 +95,7 @@ int main(int, char**)
     {
     std::function<int(int)> f1 = g;
     std::function<int(int)> f2 = A(1);
-#if TEST_STD_VER >= 2011
     static_assert(noexcept(swap(f1, f2)), "" );
-#endif
     assert(A::count == 1);
     assert(globalMemCounter.checkOutstandingNewEq(1));
     assert(*f1.target<int(*)(int)>() == g);
@@ -117,9 +111,7 @@ int main(int, char**)
     {
     std::function<int(int)> f1 = g;
     std::function<int(int)> f2 = h;
-#if TEST_STD_VER >= 2011
     static_assert(noexcept(swap(f1, f2)), "" );
-#endif
     assert(A::count == 0);
     assert(globalMemCounter.checkOutstandingNewEq(0));
     assert(*f1.target<int(*)(int)>() == g);

@@ -57,7 +57,6 @@ int main(int, char**) {
     }
 #endif
 
-#if TEST_STD_VER >= 2011
     test ( u"QBCDE", 5 );
     test ( u"QBCDE", 2 );
     test ( u"", 0 );
@@ -68,7 +67,6 @@ int main(int, char**) {
     static_assert ( sv1.size() == 2, "" );
     static_assert ( sv1.data() == s, "" );
     }
-#endif
 
     test ( U"QBCDE", 5 );
     test ( U"QBCDE", 2 );

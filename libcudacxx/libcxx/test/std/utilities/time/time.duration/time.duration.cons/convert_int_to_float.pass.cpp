@@ -27,13 +27,11 @@ int main(int, char**)
     std::chrono::duration<double, std::milli> d = i;
     assert(d.count() == 3000);
     }
-#if TEST_STD_VER >= 2011
     {
     constexpr std::chrono::duration<int> i(3);
     constexpr std::chrono::duration<double, std::milli> d = i;
     static_assert(d.count() == 3000, "");
     }
-#endif
 
   return 0;
 }

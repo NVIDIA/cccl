@@ -203,7 +203,6 @@ int main(int, char**)
         assert(std::distance(i, j) == 1);
         assert(*i == 4);
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_set<int, std::hash<int>,
                                       std::equal_to<int>, min_allocator<int>> C;
@@ -384,7 +383,6 @@ int main(int, char**)
         assert(std::distance(i, j) == 1);
         assert(*i == 4);
     }
-#endif
 
   return 0;
 }

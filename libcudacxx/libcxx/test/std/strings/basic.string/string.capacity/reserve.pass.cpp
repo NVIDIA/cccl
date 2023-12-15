@@ -103,7 +103,6 @@ int main(int, char**)
     test(s, S::npos);
     }
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     {
@@ -135,7 +134,6 @@ int main(int, char**)
     test(s, S::npos);
     }
     }
-#endif
 
   return 0;
 }

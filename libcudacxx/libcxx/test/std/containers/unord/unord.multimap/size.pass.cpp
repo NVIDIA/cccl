@@ -38,7 +38,6 @@ int main(int, char**)
     m.erase(m.begin());
     assert(m.size() == 0);
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::unordered_multimap<int, double, std::hash<int>, std::equal_to<int>, min_allocator<std::pair<const int, double>>> M;
     M m;
@@ -57,7 +56,6 @@ int main(int, char**)
     m.erase(m.begin());
     assert(m.size() == 0);
     }
-#endif
 
   return 0;
 }

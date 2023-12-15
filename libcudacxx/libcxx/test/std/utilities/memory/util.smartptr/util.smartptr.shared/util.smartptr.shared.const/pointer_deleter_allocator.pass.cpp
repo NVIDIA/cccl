@@ -68,7 +68,6 @@ int main(int, char**)
     assert(test_deleter<A>::count == 0);
     assert(test_deleter<A>::dealloc_count == 1);
     test_deleter<A>::dealloc_count = 0;
-#if TEST_STD_VER >= 2011
     // Test an allocator that returns class-type pointers
     {
     A* ptr = new A;
@@ -85,7 +84,6 @@ int main(int, char**)
     assert(A::count == 0);
     assert(test_deleter<A>::count == 0);
     assert(test_deleter<A>::dealloc_count == 1);
-#endif
 
   return 0;
 }

@@ -66,11 +66,8 @@ TEST_CONSTEXPR_CXX20 bool tests()
         C0 l = {};
         C0 r = {};
         swap(l, r);
-#if TEST_STD_VER >= 2011
         static_assert(noexcept(swap(l, r)), "");
-#endif
     }
-#if TEST_STD_VER >= 2011
     {
         // NonSwappable is still considered swappable in C++03 because there
         // is no access control SFINAE.
@@ -78,7 +75,6 @@ TEST_CONSTEXPR_CXX20 bool tests()
         typedef std::array<T, 42> C1;
         static_assert(!can_swap<C1&>::value, "");
     }
-#endif
 
     return true;
 }

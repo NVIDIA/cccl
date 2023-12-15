@@ -125,7 +125,6 @@ int main(int, char**)
         assert(r == next(m.begin(), 8));
     }
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::pair<const int, double> V;
     typedef std::map<int, double, std::less<int>, min_allocator<V>> M;
@@ -228,7 +227,6 @@ int main(int, char**)
         assert(r == next(m.begin(), 8));
     }
     }
-#endif
 #if TEST_STD_VER > 2011
     {
     typedef std::pair<const int, double> V;

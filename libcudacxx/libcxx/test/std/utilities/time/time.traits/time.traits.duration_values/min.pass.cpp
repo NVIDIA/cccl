@@ -25,14 +25,12 @@ int main(int, char**)
            std::numeric_limits<double>::lowest());
     assert(std::chrono::duration_values<Rep>::min() ==
            std::numeric_limits<Rep>::lowest());
-#if TEST_STD_VER >= 2011
     static_assert(std::chrono::duration_values<int>::min() ==
            std::numeric_limits<int>::lowest(), "");
     static_assert(std::chrono::duration_values<double>::min() ==
            std::numeric_limits<double>::lowest(), "");
     static_assert(std::chrono::duration_values<Rep>::min() ==
            std::numeric_limits<Rep>::lowest(), "");
-#endif
 
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<int>::min());
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<double>::min());
