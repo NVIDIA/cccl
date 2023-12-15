@@ -45,8 +45,8 @@
 #include <cub/agent/agent_unique_by_key.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
-#include <cub/config.cuh>
 #include <cub/util_deprecated.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
 #include <iterator>
@@ -112,6 +112,9 @@ CUB_NAMESPACE_BEGIN
  *
  * @param[in] num_tiles
  *   Total number of tiles for the entire problem
+ *
+ * @param[in] vsmem
+ *   Memory to support virtual shared memory
  */
 template <typename ChainedPolicyT,
           typename KeyInputIteratorT,
@@ -122,39 +125,57 @@ template <typename ChainedPolicyT,
           typename ScanTileStateT,
           typename EqualityOpT,
           typename OffsetT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT::BLOCK_THREADS))
-  CUB_DETAIL_KERNEL_ATTRIBUTES
-  void DeviceUniqueByKeySweepKernel(KeyInputIteratorT d_keys_in,
-                                    ValueInputIteratorT d_values_in,
-                                    KeyOutputIteratorT d_keys_out,
-                                    ValueOutputIteratorT d_values_out,
-                                    NumSelectedIteratorT d_num_selected_out,
-                                    ScanTileStateT tile_state,
-                                    EqualityOpT equality_op,
-                                    OffsetT num_items,
-                                    int num_tiles)
+__launch_bounds__(int(
+  cub::detail::vsmem_helper_default_fallback_policy_t<
+    typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
+    AgentUniqueByKey,
+    KeyInputIteratorT,
+    ValueInputIteratorT,
+    KeyOutputIteratorT,
+    ValueOutputIteratorT,
+    EqualityOpT,
+    OffsetT>::agent_policy_t::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
+    KeyInputIteratorT d_keys_in,
+    ValueInputIteratorT d_values_in,
+    KeyOutputIteratorT d_keys_out,
+    ValueOutputIteratorT d_values_out,
+    NumSelectedIteratorT d_num_selected_out,
+    ScanTileStateT tile_state,
+    EqualityOpT equality_op,
+    OffsetT num_items,
+    int num_tiles,
+    cub::detail::vsmem_t vsmem)
 {
-    using AgentUniqueByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT;
+  using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
+    typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
+    AgentUniqueByKey,
+    KeyInputIteratorT,
+    ValueInputIteratorT,
+    KeyOutputIteratorT,
+    ValueOutputIteratorT,
+    EqualityOpT,
+    OffsetT>;
 
-    // Thread block type for selecting data from input tiles
-    using AgentUniqueByKeyT = AgentUniqueByKey<AgentUniqueByKeyPolicyT,
-                                               KeyInputIteratorT,
-                                               ValueInputIteratorT,
-                                               KeyOutputIteratorT,
-                                               ValueOutputIteratorT,
-                                               EqualityOpT,
-                                               OffsetT>;
+  using AgentUniqueByKeyPolicyT = typename VsmemHelperT::agent_policy_t;
 
-    // Shared memory for AgentUniqueByKey
-    __shared__ typename AgentUniqueByKeyT::TempStorage temp_storage;
+  // Thread block type for selecting data from input tiles
+  using AgentUniqueByKeyT = typename VsmemHelperT::agent_t;
 
-    // Process tiles
-    AgentUniqueByKeyT(temp_storage, d_keys_in, d_values_in, d_keys_out, d_values_out, equality_op, num_items).ConsumeRange(
-        num_tiles,
-        tile_state,
-        d_num_selected_out);
+  // Static shared memory allocation
+  __shared__ typename VsmemHelperT::static_temp_storage_t static_temp_storage;
+
+  // Get temporary storage
+  typename AgentUniqueByKeyT::TempStorage& temp_storage =
+    VsmemHelperT::get_temp_storage(static_temp_storage, vsmem, (blockIdx.x * gridDim.y) + blockIdx.y);
+
+  // Process tiles
+  AgentUniqueByKeyT(temp_storage, d_keys_in, d_values_in, d_keys_out, d_values_out, equality_op, num_items)
+    .ConsumeRange(num_tiles, tile_state, d_num_selected_out);
+
+  // If applicable, hints to discard modified cache lines for vsmem
+  VsmemHelperT::discard_temp_storage(temp_storage);
 }
-
 
 /******************************************************************************
  * Dispatch
@@ -338,13 +359,16 @@ struct DispatchUniqueByKey : SelectedPolicy
     cudaError_t Invoke(InitKernel init_kernel, ScanKernel scan_kernel)
     {
         using Policy = typename ActivePolicyT::UniqueByKeyPolicyT;
-        using UniqueByKeyAgentT = AgentUniqueByKey<Policy,
-                                                   KeyInputIteratorT,
-                                                   ValueInputIteratorT,
-                                                   KeyOutputIteratorT,
-                                                   ValueOutputIteratorT,
-                                                   EqualityOpT,
-                                                   OffsetT>;
+
+        using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
+          Policy,
+          AgentUniqueByKey,
+          KeyInputIteratorT,
+          ValueInputIteratorT,
+          KeyOutputIteratorT,
+          ValueOutputIteratorT,
+          EqualityOpT,
+          OffsetT>;
 
         cudaError error = cudaSuccess;
         do
@@ -358,23 +382,14 @@ struct DispatchUniqueByKey : SelectedPolicy
             }
 
             // Number of input tiles
-            int tile_size = Policy::BLOCK_THREADS * Policy::ITEMS_PER_THREAD;
-            int num_tiles = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
-
-            // Size of virtual shared memory
-            int max_shmem = 0;
-
-            error = CubDebug(cudaDeviceGetAttribute(&max_shmem,
-                                                    cudaDevAttrMaxSharedMemoryPerBlock,
-                                                    device_ordinal));
-            if (cudaSuccess != error)
-            {
-                break;
-            }
-            std::size_t vshmem_size = detail::VshmemSize(max_shmem, sizeof(typename UniqueByKeyAgentT::TempStorage), num_tiles);
+            constexpr auto block_threads    = VsmemHelperT::agent_policy_t::BLOCK_THREADS;
+            constexpr auto items_per_thread = VsmemHelperT::agent_policy_t::ITEMS_PER_THREAD;
+            int tile_size                   = block_threads * items_per_thread;
+            int num_tiles                   = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
+            const auto vsmem_size          = num_tiles * VsmemHelperT::vsmem_per_block;
 
             // Specify temporary storage allocation requirements
-            size_t allocation_sizes[2] = {0, vshmem_size};
+            size_t allocation_sizes[2] = {0, vsmem_size};
 
             // Bytes needed for tile status descriptors
             error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
@@ -459,7 +474,7 @@ struct DispatchUniqueByKey : SelectedPolicy
               int scan_sm_occupancy;
               error = CubDebug(MaxSmOccupancy(scan_sm_occupancy, // out
                                               scan_kernel,
-                                              Policy::BLOCK_THREADS));
+                                              block_threads));
               if (cudaSuccess != error)
               {
                 break;
@@ -470,26 +485,27 @@ struct DispatchUniqueByKey : SelectedPolicy
                       scan_grid_size.x,
                       scan_grid_size.y,
                       scan_grid_size.z,
-                      Policy::BLOCK_THREADS,
+                      block_threads,
                       (long long)stream,
-                      Policy::ITEMS_PER_THREAD,
+                      items_per_thread,
                       scan_sm_occupancy);
             }
             #endif
 
             // Invoke select_if_kernel
-            error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-                scan_grid_size, Policy::BLOCK_THREADS, 0, stream
-            ).doit(scan_kernel,
-                   d_keys_in,
-                   d_values_in,
-                   d_keys_out,
-                   d_values_out,
-                   d_num_selected_out,
-                   tile_state,
-                   equality_op,
-                   num_items,
-                   num_tiles);
+            error =
+              THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
+                .doit(scan_kernel,
+                      d_keys_in,
+                      d_values_in,
+                      d_keys_out,
+                      d_values_out,
+                      d_num_selected_out,
+                      tile_state,
+                      equality_op,
+                      num_items,
+                      num_tiles,
+                      cub::detail::vsmem_t{allocations[1]});
 
             // Check for failure to launch
             error = CubDebug(error);

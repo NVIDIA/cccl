@@ -138,6 +138,17 @@ public:
 
   /**
    * @brief Used from within the device algorithm's kernel to get the temporary storage that can be
+   * passed to the agent, specialized for the case when we can use native shared memory as temporary
+   * storage and taking a linear block id.
+   */
+  static __device__ __forceinline__ typename AgentT::TempStorage&
+  get_temp_storage(typename AgentT::TempStorage& static_temp_storage, vsmem_t&, std::size_t)
+  {
+    return static_temp_storage;
+  }
+
+  /**
+   * @brief Used from within the device algorithm's kernel to get the temporary storage that can be
    * passed to the agent, specialized for the case when we have to use global memory-backed
    * virtual shared memory as temporary storage.
    */
@@ -146,6 +157,18 @@ public:
   {
     return *reinterpret_cast<typename AgentT::TempStorage*>(
       static_cast<char*>(vsmem.gmem_ptr) + (vsmem_per_block * blockIdx.x));
+  }
+
+  /**
+   * @brief Used from within the device algorithm's kernel to get the temporary storage that can be
+   * passed to the agent, specialized for the case when we have to use global memory-backed
+   * virtual shared memory as temporary storage and taking a linear block id.
+   */
+  static __device__ __forceinline__ typename AgentT::TempStorage&
+  get_temp_storage(cub::NullType& static_temp_storage, vsmem_t& vsmem, std::size_t linear_block_id)
+  {
+    return *reinterpret_cast<typename AgentT::TempStorage*>(
+      static_cast<char*>(vsmem.gmem_ptr) + (vsmem_per_block * linear_block_id));
   }
 
   /**
