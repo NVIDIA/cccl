@@ -44,6 +44,7 @@ It then shows how the same reduction can be done using Thrust's `reduce` algorit
 [Try it live on Godbolt!](https://godbolt.org/z/x4G73af9a)
 
 ```cpp
+#include <thrust/execution_policy.h>
 #include <thrust/device_vector.h>
 #include <cub/block/block_reduce.cuh>
 #include <cuda/atomic>
@@ -90,11 +91,13 @@ int main() {
     return -1;
   }
 
+  int const custom_result = kernel_result[0];
+
   // Compute the same sum reduction using Thrust
   int const thrust_result = thrust::reduce(thrust::device, data.begin(), data.end(), 0);
 
   // Ensure the two solutions are identical
-  std::printf("Custom kernel sum: %d\n", kernel_result[0]);
+  std::printf("Custom kernel sum: %d\n", custom_result);
   std::printf("Thrust reduce sum: %d\n", thrust_result);
   assert(kernel_result[0] == thrust_result);
   return 0;
