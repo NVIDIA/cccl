@@ -2837,7 +2837,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
         typedef typename DispatchSegmentedRadixSort::MaxPolicy MaxPolicyT;
 
         // Return if empty problem, or if no bits to sort and double-buffering is used
-        if (num_items == 0 || (begin_bit == end_bit && is_overwrite_okay))
+        if (num_items == 0 || num_segments == 0 || (begin_bit == end_bit && is_overwrite_okay))
         {
             if (d_temp_storage == nullptr)
             {
@@ -2991,4 +2991,3 @@ CUB_NAMESPACE_END
 #if defined(__clang__)
 #  pragma clang diagnostic pop
 #endif
-
