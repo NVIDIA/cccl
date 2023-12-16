@@ -474,7 +474,8 @@ using ::cuda::std::proj;
 using ::cuda::std::exp;
 using ::cuda::std::log;
 using ::cuda::std::log10;
-using ::cuda::std::pow;
+// pow always returns a complex.
+// using ::cuda::std::pow;
 using ::cuda::std::sqrt;
 
 using ::cuda::std::acos;
@@ -516,15 +517,25 @@ template<class T>
 __host__ __device__ complex<T> log10(const complex<T>& c) {
   return static_cast<complex<T>>(::cuda::std::log10(c));
 }
-template<class T>
-__host__ __device__ complex<T> pow(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::pow(c));
+template<class T0, class T1>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+pow(const complex<T0>& x, const complex<T1>& y) {
+  return static_cast<complex<typename detail::promoted_numerical_type<T0, T1>::type>>(::cuda::std::pow(x, y));
+}
+template<class T0, class T1, ::cuda::std::__enable_if_t<::cuda::std::is_arithmetic<T1>::value, int> = 0>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+pow(const complex<T0>& x, const T1& y) {
+  return static_cast<complex<typename detail::promoted_numerical_type<T0, T1>::type>>(::cuda::std::pow(x, y));
+}
+template<class T0, class T1, ::cuda::std::__enable_if_t<::cuda::std::is_arithmetic<T0>::value, int> = 0>
+__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+pow(const T0& x, const complex<T1>& y) {
+  return static_cast<complex<typename detail::promoted_numerical_type<T0, T1>::type>>(::cuda::std::pow(x, y));
 }
 template<class T>
 __host__ __device__ complex<T> sqrt(const complex<T>& c) {
   return static_cast<complex<T>>(::cuda::std::sqrt(c));
 }
-
 template<class T>
 __host__ __device__ complex<T> acos(const complex<T>& c) {
   return static_cast<complex<T>>(::cuda::std::acos(c));
