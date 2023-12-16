@@ -189,11 +189,11 @@ THRUST_RUNTIME_FUNCTION pair<KeyOutputIt, ValOutputIt> unique_by_key(
 
   // 32-bit offset-type dispatch
   using dispatch32_t =
-    DispatchUniqueByKey<Derived, KeyInputIt, ValInputIt, KeyOutputIt, ValOutputIt, BinaryPred, thrust::detail::int32_t>;
+    DispatchUniqueByKey<Derived, KeyInputIt, ValInputIt, KeyOutputIt, ValOutputIt, BinaryPred, thrust::detail::uint32_t>;
 
   // 64-bit offset-type dispatch
   using dispatch64_t =
-    DispatchUniqueByKey<Derived, KeyInputIt, ValInputIt, KeyOutputIt, ValOutputIt, BinaryPred, thrust::detail::int64_t>;
+    DispatchUniqueByKey<Derived, KeyInputIt, ValInputIt, KeyOutputIt, ValOutputIt, BinaryPred, thrust::detail::uint64_t>;
 
   // Query temporary storage requirements
   THRUST_INDEX_TYPE_DISPATCH2(
