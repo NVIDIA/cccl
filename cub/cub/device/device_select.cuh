@@ -989,7 +989,7 @@ struct DeviceSelect
                          d_values_out,
                          d_num_selected_out,
                          equality_op,
-                         num_items,
+                         static_cast<OffsetT>(num_items),
                          stream);
   }
 
@@ -1156,7 +1156,8 @@ struct DeviceSelect
                        ValueInputIteratorT,
                        KeyOutputIteratorT,
                        ValueOutputIteratorT,
-                       NumSelectedIteratorT>(
+                       NumSelectedIteratorT,
+                       NumItemsT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
