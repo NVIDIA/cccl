@@ -536,7 +536,7 @@ struct DeviceReduce
   //!    // for input and output
   //!    int                      num_items;      // e.g., 7
   //!    int                      *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
-  //!    KeyValuePair<int, int>   *d_out;         // e.g., [{-,-}]
+  //!    KeyValuePair<int, int>   *d_argmin;      // e.g., [{-,-}]
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
@@ -550,7 +550,7 @@ struct DeviceReduce
   //!    // Run argmin-reduction
   //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_argmin, num_items);
   //!
-  //!    // d_out <-- [{5, 0}]
+  //!    // d_argmin <-- [{5, 0}]
   //!
   //! @endrst
   //!
@@ -679,7 +679,7 @@ struct DeviceReduce
   //!    // for input and output
   //!    int  num_items;      // e.g., 7
   //!    int  *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
-  //!    int  *d_out;         // e.g., [-]
+  //!    int  *d_max;         // e.g., [-]
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
@@ -693,7 +693,7 @@ struct DeviceReduce
   //!    // Run max-reduction
   //!    cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_max, num_items);
   //!
-  //!    // d_out <-- [9]
+  //!    // d_max <-- [9]
   //!
   //! @endrst
   //!
@@ -817,7 +817,7 @@ struct DeviceReduce
   //!    // for input and output
   //!    int                      num_items;      // e.g., 7
   //!    int                      *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
-  //!    KeyValuePair<int, int>   *d_out;         // e.g., [{-,-}]
+  //!    KeyValuePair<int, int>   *d_argmax;      // e.g., [{-,-}]
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
@@ -833,7 +833,7 @@ struct DeviceReduce
   //!    cub::DeviceReduce::ArgMax(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_argmax, num_items);
   //!
-  //!    // d_out <-- [{6, 9}]
+  //!    // d_argmax <-- [{6, 9}]
   //!
   //! @endrst
   //!
