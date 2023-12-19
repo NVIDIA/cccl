@@ -1370,6 +1370,25 @@ template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTE
 template <typename T>
 struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type> {};
 
+namespace detail 
+{
+
+template <::cuda::std::size_t Alignment, class... T> 
+struct max_alignment_t;
+
+template <::cuda::std::size_t Alignment> 
+struct max_alignment_t<Alignment> 
+{
+  constexpr static ::cuda::std::size_t value = Alignment;
+};
+
+template <::cuda::std::size_t Alignment, class Head, class... Tail>
+struct max_alignment_t<Alignment, Head, Tail...> 
+{
+  constexpr static ::cuda::std::size_t value = max_alignment_t<(cub::max)(Alignment, alignof(Head)), Tail...>::value;
+};
+
+} // namespace detail
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 

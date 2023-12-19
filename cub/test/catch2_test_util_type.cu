@@ -66,3 +66,17 @@ CUB_TEST("Tests non_void_value_t", "[util][type]")
     ::cuda::std::is_same<int, //
                          cub::detail::non_void_value_t<non_void_fancy_it, fallback_t>>::value);
 }
+
+namespace {
+struct alignas(32) test32_t {};
+} // namespace
+
+CUB_TEST("Maximal alignment is computed correctly", "[util][type]")
+{
+  STATIC_REQUIRE(cub::detail::max_alignment_t<8>::value == 8);
+  STATIC_REQUIRE(cub::detail::max_alignment_t<1, int>::value == alignof(int));
+  STATIC_REQUIRE(cub::detail::max_alignment_t<1, int, double>::value == alignof(double));
+  STATIC_REQUIRE(cub::detail::max_alignment_t<1, int, double>::value == alignof(double));
+  STATIC_REQUIRE(cub::detail::max_alignment_t<1, int, double, test32_t>::value == 32);
+  STATIC_REQUIRE(cub::detail::max_alignment_t<128, int, double, test32_t>::value == 128);
+}

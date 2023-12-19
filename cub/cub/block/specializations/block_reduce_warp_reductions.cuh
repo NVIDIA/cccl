@@ -46,6 +46,7 @@
 
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/util_ptx.cuh>
+#include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -92,16 +93,18 @@ struct BlockReduceWarpReductions
 
 
     ///  WarpReduce utility type
-    typedef typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce WarpReduce;
+    using WarpReduce = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
+    using WarpReduceStorage = typename WarpReduce::TempStorage;
 
     /// Shared memory storage layout type
-    struct _TempStorage
+    /// Alignment ensures that loads of `warp_aggregates` can be vectorized
+    struct alignas(detail::max_alignment_t<16, T, WarpReduceStorage>::value) _TempStorage
     {
-      /// Buffer for warp-synchronous reduction
-      typename WarpReduce::TempStorage warp_reduce[WARPS];
-
       /// Shared totals from each warp-synchronous reduction
       T warp_aggregates[WARPS];
+
+      /// Buffer for warp-synchronous reduction
+      WarpReduceStorage warp_reduce[WARPS];
 
       /// Shared prefix for the entire thread block
       T block_prefix;
