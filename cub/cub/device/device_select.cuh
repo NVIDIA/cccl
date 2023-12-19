@@ -960,17 +960,21 @@ struct DeviceSelect
             typename NumSelectedIteratorT,
             typename NumItemsT,
             typename EqualityOpT>
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t UniqueByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputIteratorT d_keys_in,
-    ValueInputIteratorT d_values_in,
-    KeyOutputIteratorT d_keys_out,
-    ValueOutputIteratorT d_values_out,
-    NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
-    EqualityOpT equality_op,
-    cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION __forceinline__ static //
+    typename ::cuda::std::enable_if< //
+      !::cuda::std::is_convertible<EqualityOpT, cudaStream_t>::value, //
+      cudaError_t>::type
+    UniqueByKey(
+      void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      KeyInputIteratorT d_keys_in,
+      ValueInputIteratorT d_values_in,
+      KeyOutputIteratorT d_keys_out,
+      ValueOutputIteratorT d_values_out,
+      NumSelectedIteratorT d_num_selected_out,
+      NumItemsT num_items,
+      EqualityOpT equality_op,
+      cudaStream_t stream = 0)
   {
     using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
 
