@@ -294,7 +294,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template<class _Tp>
 struct __is_complex_float {
-    static const constexpr auto value = is_floating_point<_Tp>::value
+    static constexpr auto value = is_floating_point<_Tp>::value
 #ifdef __cuda_std__
         || is_same<_Tp, __half>::value
         || is_same<_Tp, __nv_bfloat16>::value
@@ -304,7 +304,7 @@ struct __is_complex_float {
 
 template<class _Tp>
 struct __is_complex_arithmetic {
-    static const constexpr auto value = is_arithmetic<_Tp>::value || __is_complex_float<_Tp>::value;
+    static constexpr auto value = is_arithmetic<_Tp>::value || __is_complex_float<_Tp>::value;
 };
 
 template<class _Tp> class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(_Tp)) complex;
@@ -1021,6 +1021,15 @@ operator-(const _Tp& __x, const complex<_Tp>& __y)
 }
 
 template<class _Tp>
+struct __type_to_vector;
+
+template<class _Tp, typename = void>
+struct __has_vector_type : _CUDA_VSTD::false_type {};
+
+template<class _Tp>
+struct __has_vector_type<_Tp, _CUDA_VSTD::void_t<typename __type_to_vector<_Tp>::__type>> : _CUDA_VSTD::true_type {};
+
+template<class _Tp>
 struct __abcd_results
 {
     _Tp __ac;
@@ -1036,7 +1045,7 @@ struct __ab_results
     _Tp __b;
 };
 
-template<class _Tp>
+template<class _Tp, typename = __enable_if_t<!__has_vector_type<_Tp>::value>>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX
 __abcd_results<_Tp>
 __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d)
@@ -1049,7 +1058,7 @@ __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d)
     };
 }
 
-template<class _Tp>
+template<class _Tp, typename = __enable_if_t<!__has_vector_type<_Tp>::value>>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX
 __ab_results<_Tp>
 __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2)
@@ -1061,17 +1070,14 @@ __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2)
 }
 
 #ifdef __cuda_std__
-template<class _Tp>
-struct __type_to_vector;
-
 template<>
 struct __type_to_vector<__half> { using __type = __half2; };
 template<>
 struct __type_to_vector<__nv_bfloat16> { using __type = __nv_bfloat162; };
 
-template<class _Tp, typename = typename __type_to_vector<_Tp>::type>
+template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-__abcd_results<_Tp>
+__enable_if_t<__has_vector_type<_Tp>::value, __abcd_results<_Tp>>
 __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d)
 {
     __abcd_results<_Tp> __ret;
@@ -1093,9 +1099,9 @@ __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d)
     return __ret;
 }
 
-template<class _Tp, typename = typename __type_to_vector<_Tp>::type>
+template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-__ab_results<_Tp>
+__enable_if_t<__has_vector_type<_Tp>::value, __ab_results<_Tp>>
 __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2)
 {
     __ab_results<_Tp> __ret;
@@ -1107,8 +1113,8 @@ __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2)
 
     _Vec __result = __v1 * __v2;
 
-    __ret.__a = __v1.x;
-    __ret.__b = __v2.y;
+    __ret.__a = __result.x;
+    __ret.__b = __result.y;
 
     return __ret;
 }

@@ -618,12 +618,35 @@ hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
 #endif // _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 
 #ifdef __cuda_std__
+
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half sin(__half __v)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
         (return hsin(__v);),
-        (return __half(_CUDA_VSTD::sin(float(__v)));)
+        ({
+            float __vf = __v;
+            __vf = _CUDA_VSTD::sin(__vf);
+            __half_raw __ret_repr = __float2half_rn(__vf);
+
+            uint16_t __repr = __half_raw(__v).x;
+            switch (__repr) {
+            case 12979:
+            case 45747:
+                __ret_repr.x += 1;
+                break;
+
+            case 23728:
+            case 56496:
+                __ret_repr.x -= 1;
+                break;
+
+            default:
+                ;
+            }
+
+            return __ret_repr;
+        })
     )
 }
 
@@ -649,20 +672,37 @@ __nv_bfloat16 sinh(__nv_bfloat16 __v)
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
+__half cos(__half __v)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+        (return hcos(__v);),
+        ({
+            float __vf = __v;
+            __vf = _CUDA_VSTD::cos(__vf);
+            __half_raw __ret_repr = __float2half_rn(__vf);
+
+            uint16_t __repr = __half_raw(__v).x;
+            switch (__repr) {
+            case 11132:
+            case 43900:
+                __ret_repr.x += 1;
+                break;
+
+            default:
+                ;
+            }
+
+            return __ret_repr;
+        })
+    )
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 cos(__nv_bfloat16 __v)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
         (return hcos(__v);),
         (return __nv_bfloat16(_CUDA_VSTD::cos(float(__v)));)
-    )
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY
-__half cos(__half __v)
-{
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-        (return hcos(__v);),
-        (return __half(_CUDA_VSTD::cos(float(__v)));)
     )
 }
 
@@ -683,7 +723,24 @@ __half exp(__half __v)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
         (return hexp(__v);),
-        (return __half(_CUDA_VSTD::exp(float(__v)));)
+        ({
+            float __vf = __v;
+            __vf = _CUDA_VSTD::exp(__vf);
+            __half_raw __ret_repr = __float2half_rn(__vf);
+
+            uint16_t __repr = __half_raw(__v).x;
+            switch (__repr) {
+            case 8057:
+            case 9679:
+                __ret_repr.x -= 1;
+                break;
+
+            default:
+                ;
+            }
+
+            return __ret_repr;
+        })
     )
 }
 
@@ -725,7 +782,23 @@ __half log(__half __x)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
         (return hlog(__x);),
-        (return __half(_CUDA_VSTD::log(float(__x)));)
+        ({
+            float __vf = __x;
+            __vf = _CUDA_VSTD::log(__vf);
+            __half_raw __ret_repr = __float2half_rn(__vf);
+
+            uint16_t __repr = __half_raw(__x).x;
+            switch (__repr) {
+            case 7544:
+                __ret_repr.x -= 1;
+                break;
+
+            default:
+                ;
+            }
+
+            return __ret_repr;
+        })
     )
 }
 
@@ -865,29 +938,13 @@ bool isinf(__nv_bfloat16 __v)
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half hypot(__half __x, __half __y)
 {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-        (
-            if (__constexpr_isinf(__x) || __constexpr_isinf(__y)) {
-                return __half(INFINITY);
-            }
-            return hsqrt(__x * __x + __y * __y);
-        ),
-        (return __half(_CUDA_VSTD::hypot(float(__x), float(__y)));)
-    )
+    return __half(_CUDA_VSTD::hypot(float(__x), float(__y)));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y)
 {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-        (
-            if (__constexpr_isinf(__x) || __constexpr_isinf(__y)) {
-                return __nv_bfloat16(INFINITY);
-            }
-            return hsqrt(__x * __x + __y * __y);
-        ),
-        (return __nv_bfloat16(_CUDA_VSTD::hypot(float(__x), float(__y)));)
-    )
+    return __nv_bfloat16(_CUDA_VSTD::hypot(float(__x), float(__y)));
 }
 #endif
 
