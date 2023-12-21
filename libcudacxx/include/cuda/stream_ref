@@ -139,7 +139,7 @@ public:
    */
   void wait() const
   {
-    const auto __result = ::cudaStreamQuery(get());
+    const auto __result = ::cudaStreamSynchronize(get());
     switch (__result)
     {
       case ::cudaSuccess:
