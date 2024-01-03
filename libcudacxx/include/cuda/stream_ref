@@ -44,22 +44,23 @@ private:
 #include <cuda_runtime_api.h> // cuda_runtime_api needs to come first
 // clang-format on
 
-#include <cuda/std/detail/__config>
-
-#include <cuda/std/detail/__pragma_push>
+#include <cuda/__cccl_config>
 
 #include <cuda/std/array>
 #include <cuda/std/type_traits>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 /**
  * \brief A non-owning wrapper for a `cudaStream_t`.
- *
- * `stream_view` is a non-owning "view" type similar to `std::span` or
- * `std::string_view`. \see https://en.cppreference.com/w/cpp/container/span and
- * \see https://en.cppreference.com/w/cpp/string/basic_string_view
- *
  */
 class stream_ref
 {
@@ -183,8 +184,6 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
-
-#include <cuda/std/detail/__pragma_pop>
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
