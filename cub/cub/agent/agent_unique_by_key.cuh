@@ -302,6 +302,9 @@ struct AgentUniqueByKey
 
         CTA_SYNC();
 
+        // Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
+        // types
+        #pragma unroll(1)
         for (int item = threadIdx.x;
              item < num_tile_selections;
              item += BLOCK_THREADS)
