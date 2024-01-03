@@ -455,7 +455,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works for very large input that need 64-bit 
   select_unique_by_key(keys_in, values_in, keys_out.begin(), values_out.begin(), d_first_num_selected_out, num_items);
 
   // Ensure that we created the correct output
-  REQUIRE(reference_keys.size() == num_selected_out[0]);
+  REQUIRE(reference_keys.size() == static_cast<std::size_t>(num_selected_out[0]));
   REQUIRE(reference_keys == keys_out);
   REQUIRE(reference_values == values_out);
 }
@@ -485,7 +485,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works for very large outputs that needs 64-b
     num_items);
 
   // Ensure that we created the correct output
-  REQUIRE(num_items == num_selected_out[0]);
+  REQUIRE(num_items == static_cast<std::size_t>(num_selected_out[0]));
 }
 
 CUB_TEST("DeviceSelect::UniqueByKey works with a custom equality operator",
@@ -524,7 +524,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works with a custom equality operator",
   const auto zip_begin = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end   = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
   const auto boundary  = std::unique(zip_begin, zip_end, project_first<custom_op_t>{custom_op_t{static_cast<type>(8)}});
-  REQUIRE((boundary - zip_begin) == num_selected_out[0]);
+  REQUIRE((boundary - zip_begin) == static_cast<std::ptrdiff_t>(num_selected_out[0]));
 
   keys_out.resize(num_selected_out[0]);
   vals_out.resize(num_selected_out[0]);
