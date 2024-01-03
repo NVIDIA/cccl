@@ -102,6 +102,14 @@ defaults:
       nav_order: 6
   -
     scope:
+      path: extended_api/memory_resource.md
+    values:
+      parent: Extended API
+      has_children: true
+      has_toc: false
+      nav_order: 7
+  -
+    scope:
       path: releases/changelog.md
     values:
       parent: Releases
