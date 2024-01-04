@@ -844,7 +844,7 @@ struct DeviceSelect
   //! to ``d_keys_out`` and ``d_values_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
-  //! - The ``==`` equality operator is used to determine whether keys are equivalent
+  //! - The user-provided equality operator, `equality_op`, is used to determine whether keys are equivalent
   //! - Copies of the selected items are compacted into ``d_out`` and maintain
   //!   their original relative ordering.
   //! - In-place operations are not supported. There must be no overlap between

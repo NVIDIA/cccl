@@ -491,14 +491,14 @@ CUB_TEST("DeviceSelect::UniqueByKey works for very large outputs that needs 64-b
 CUB_TEST("DeviceSelect::UniqueByKey works with a custom equality operator",
          "[device][select_unique_by_key]")
 {
-  using type       = std::int32_t;
+  using type        = std::int32_t;
   using custom_op_t = custom_equality_op<type>;
-  using val_type       = std::uint64_t;
-  using index_type = std::int64_t;
+  using val_type    = std::uint64_t;
+  using index_type  = std::int64_t;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  auto keys_in = thrust::make_counting_iterator(0ULL);
-  auto values_in = thrust::make_counting_iterator(0ULL);
+  auto keys_in        = thrust::make_counting_iterator(static_cast<type>(0));
+  auto values_in      = thrust::make_counting_iterator(0ULL);
   thrust::device_vector<type> keys_out(num_items);
   thrust::device_vector<val_type> vals_out(num_items);
 
@@ -515,9 +515,9 @@ CUB_TEST("DeviceSelect::UniqueByKey works with a custom equality operator",
     d_first_num_selected_out,
     num_items,
     custom_op_t{static_cast<type>(8)});
-  
+
   // Ensure that we create the same output as std
-  thrust::host_vector<type>     reference_keys(num_items);
+  thrust::host_vector<type> reference_keys(num_items);
   thrust::host_vector<val_type> reference_vals(num_items);
   thrust::copy(keys_in, keys_in + num_items, reference_keys.begin());
   thrust::copy(values_in, values_in + num_items, reference_vals.begin());
