@@ -29,6 +29,7 @@
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/tuple_transform.h>
+#include <thrust/iterator/detail/tuple_of_iterator_references.h>
 
 
 // the order of declarations and definitions in this file is totally goofy
@@ -40,8 +41,6 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-template<typename... Ts>
-class tuple_of_iterator_references;
 
 __THRUST_DEFINE_HAS_NESTED_TYPE(is_wrapped_reference, wrapped_reference_hint)
 

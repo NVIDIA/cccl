@@ -211,7 +211,8 @@ template <class AdaptableUnaryFunction, class Iterator, class Reference = use_de
   public:
     /*! Null constructor does nothing.
      */
-    transform_iterator() = default;
+    __host__ __device__
+    transform_iterator() {}
 
 #if THRUST_CPP_DIALECT >= 2011
     transform_iterator(transform_iterator const&) = default;
