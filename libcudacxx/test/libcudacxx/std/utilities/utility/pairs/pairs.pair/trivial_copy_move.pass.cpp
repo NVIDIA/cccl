@@ -30,24 +30,18 @@ int main(int, char**)
     typedef cuda::std::pair<int, short> P;
     {
         static_assert(cuda::std::is_copy_constructible<P>::value, "");
-#if !defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
         static_assert(cuda::std::is_trivially_copy_constructible<P>::value, "");
-#endif
     }
     {
         static_assert(cuda::std::is_move_constructible<P>::value, "");
-#if !defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
         static_assert(cuda::std::is_trivially_move_constructible<P>::value, "");
-#endif
     }
     {
         using P1 = cuda::std::pair<Dummy, int>;
         static_assert(!cuda::std::is_copy_constructible<P1>::value, "");
         static_assert(!cuda::std::is_trivially_copy_constructible<P1>::value, "");
         static_assert(cuda::std::is_move_constructible<P1>::value, "");
-#if !defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
         static_assert(cuda::std::is_trivially_move_constructible<P1>::value, "");
-#endif
     }
 
   return 0;

@@ -69,21 +69,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
-template <class, class>
-struct __non_trivially_copyable_base {
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __non_trivially_copyable_base() noexcept {}
-  _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
-  __non_trivially_copyable_base(__non_trivially_copyable_base const&) noexcept {}
-};
-#endif
-
 template <class _T1, class _T2>
 struct _LIBCUDACXX_TEMPLATE_VIS pair
-#if defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
-: private __non_trivially_copyable_base<_T1, _T2>
-#endif
 {
     typedef _T1 first_type;
     typedef _T2 second_type;
