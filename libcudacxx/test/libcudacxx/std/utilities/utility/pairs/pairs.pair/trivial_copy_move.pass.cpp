@@ -44,5 +44,18 @@ int main(int, char**)
         static_assert(cuda::std::is_trivially_move_constructible<P1>::value, "");
     }
 
+    // extensions to ensure pair is trivially_copyable
+    {
+        static_assert(cuda::std::is_copy_assignable<P>::value, "");
+        static_assert(cuda::std::is_trivially_copy_assignable<P>::value, "");
+    }
+    {
+        static_assert(cuda::std::is_move_assignable<P>::value, "");
+        static_assert(cuda::std::is_trivially_move_assignable<P>::value, "");
+    }
+    {
+        static_assert(cuda::std::is_trivially_copyable<P>::value, "");
+    }
+
   return 0;
 }
