@@ -95,12 +95,14 @@ int main(int, char**) {
     static_assert(!cuda::std::is_nothrow_invocable<const int&>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable<int&&>::value, "");
 
+#ifdef _LIBCUDACXX_HAS_VECTOR
     static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::vector<int> >::value,
                   "");
     static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::vector<int*> >::value,
                   "");
     static_assert(!cuda::std::is_nothrow_invocable<int, cuda::std::vector<int**> >::value,
                   "");
+#endif // _LIBCUDACXX_HAS_VECTOR
 
 #if TEST_STD_VER >= 2017
     static_assert(!cuda::std::is_nothrow_invocable<AbominableFunc>::value, "");
@@ -138,12 +140,14 @@ int main(int, char**) {
     static_assert(!cuda::std::is_nothrow_invocable_r<int, const int&>::value, "");
     static_assert(!cuda::std::is_nothrow_invocable_r<int, int&&>::value, "");
 
+#ifdef _LIBCUDACXX_HAS_VECTOR
     static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::vector<int> >::value,
                   "");
     static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::vector<int*> >::value,
                   "");
     static_assert(!cuda::std::is_nothrow_invocable_r<int, cuda::std::vector<int**> >::value,
                   "");
+#endif // _LIBCUDACXX_HAS_VECTOR
 #if TEST_STD_VER >= 2017
     static_assert(!cuda::std::is_nothrow_invocable_r<void, AbominableFunc>::value,
                   "");
