@@ -58,7 +58,9 @@
 
 #include <iterator>
 
+_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
+_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
 
 #include <stdio.h>
 

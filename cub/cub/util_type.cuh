@@ -68,6 +68,8 @@
 #include <cub/detail/uninitialized_copy.cuh>
 
 #include <cuda/std/type_traits>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #if !defined(_LIBCUDACXX_COMPILER_NVRTC)
 #  include <iterator>
