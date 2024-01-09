@@ -534,6 +534,7 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include "__functional/unwrap_ref.h"
 #include "__functional/weak_result_type.h"
 
+#include "iosfwd" // for forward declarations of vector and string.
 #include "version"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
