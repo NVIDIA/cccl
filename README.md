@@ -321,7 +321,9 @@ For example, adding a new data member to a struct is an ABI Breaking Change as i
 In CCCL, the guarantees about ABI are as follows:
 
 - Symbols in the `thrust::` and `cub::` namespaces may break ABI at any time without warning.
-- The ABI of `cub::` symbols includes the CUDA architectures used for compilation. Therefore, a single `cub::` symbol may have a different ABI if compiled with different architectures.
+- The ABI of `thrust::` and `cub::` symbols includes the CUDA architectures used for compilation. Therefore, a single `cub::` symbol may have a different ABI if:
+    - compiled with different architectures
+    - compiled with nvcc vs host compiler only
 - Symbols in the `cuda::` namespace may also break ABI at any time. However, `cuda::` symbols embed an ABI version number that is incremented whenever an ABI break occurs. Multiple ABI versions may be supported concurrently, and therefore users have the option to revert to a prior ABI version. For more information, see [here](libcudacxx/docs/releases/versioning.md).
 
 **Who should care about ABI?**
