@@ -8,7 +8,7 @@
 
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
-// UNSUPPORTED: no-exceptions
+// UNSUPPORTED: true
 
 // <cuda/std/variant>
 
