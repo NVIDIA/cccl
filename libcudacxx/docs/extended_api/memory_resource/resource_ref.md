@@ -6,9 +6,9 @@ nav_order: 3
 
 ### `resource_ref`: a type-constrained resource wrapper
 
-With the property design shown above a library has flexibility in checking constraints and querying custom properties. However, there is also a cost in providing function templates for a potentially wide range of inputs. Depending on the number of different memory resources, both compile time and binary size might increase considerably.
+With the property design depicted in [`cuda::get_property`](cuda::get_property), a library has flexibility in checking constraints and querying custom properties. However, there is also a cost in providing function templates for a potentially wide range of inputs. Depending on the number of different memory resources, both compile time and binary size might increase considerably.
 
-The type-erased `resource_ref` and `async_resource_ref` resource wrappers aid in efficiently coalesce such APIs into a single function.
+The type-erased `resource_ref` and `async_resource_ref` resource wrappers aid in efficiently coalescing such APIs into a single function.
 
 ```c++
 void* do_allocate_async(cuda::mr::async_resource_ref<> resource, std::size_t size, std::size_t align, cuda::stream_ref stream) {
@@ -46,4 +46,4 @@ void* buggy_allocate_async_with_alignment(cuda::mr::async_resource_ref<> resourc
 }
 ```
 
-So, choose wisely. If your library has a well-defined set of fixed properties that you expect to always be available, then `cuda::mr::{async_}resource_ref` is an amazing tool to improve compile times and binary size. If you need to your interface to be flexible then constraining trough `cuda::mr::{async_}resource_with` is the proper solution.
+So, choose wisely. If your library has a well-defined set of fixed properties that you expect to always be available, then `cuda::mr::{async_}resource_ref` is an amazing tool to improve compile times and binary size. If you need a flexible interface then constraining trough `cuda::mr::{async_}resource_with` is the proper solution.
