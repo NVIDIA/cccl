@@ -363,7 +363,7 @@ function(thrust_debug_internal_targets)
   thrust_debug_target(OpenMP::OpenMP_CXX "${THRUST_OMP_VERSION}")
 
   _thrust_debug_backend_targets(TBB "${THRUST_TBB_VERSION}")
-  thrust_debug_target(TBB:tbb "${THRUST_TBB_VERSION}")
+  thrust_debug_target(TBB::tbb "${THRUST_TBB_VERSION}")
 
   _thrust_debug_backend_targets(CUDA "CUB ${THRUST_CUB_VERSION}")
   thrust_debug_target(CUB::CUB "${THRUST_CUB_VERSION}")
