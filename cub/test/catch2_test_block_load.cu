@@ -168,7 +168,7 @@ using load_algorithm   = c2h::enum_type_list<
   cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED,
   cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
   cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE,
-  cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,             
+  cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
   cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED>;
 
 using odd_load_algorithm = c2h::enum_type_list<
@@ -186,7 +186,7 @@ struct params_t
   static constexpr int items_per_thread = c2h::get<1, TestType>::value;
   static constexpr int threads_in_block = c2h::get<2, TestType>::value;
   static constexpr int tile_size = items_per_thread * threads_in_block;
-  static constexpr cub::BlockLoadAlgorithm load_algorithm = 
+  static constexpr cub::BlockLoadAlgorithm load_algorithm =
     c2h::get<3, TestType>::value;
 };
 
@@ -200,11 +200,11 @@ CUB_TEST("Block load works with even block sizes",
   using params = params_t<TestType>;
   using type = typename params::type;
 
-  thrust::device_vector<type> d_input(
+  c2h::device_vector<type> d_input(
     GENERATE_COPY(take(10, random(0, params::tile_size))));
   c2h::gen(CUB_SEED(10), d_input);
 
-  thrust::device_vector<type> d_output(d_input.size());
+  c2h::device_vector<type> d_output(d_input.size());
 
   block_load<params::items_per_thread,
              params::threads_in_block,
@@ -225,11 +225,11 @@ CUB_TEST("Block load works with even odd sizes",
   using params = params_t<TestType>;
   using type = typename params::type;
 
-  thrust::device_vector<type> d_input(
+  c2h::device_vector<type> d_input(
     GENERATE_COPY(take(10, random(0, params::tile_size))));
   c2h::gen(CUB_SEED(10), d_input);
 
-  thrust::device_vector<type> d_output(d_input.size());
+  c2h::device_vector<type> d_output(d_input.size());
 
   block_load<params::items_per_thread,
              params::threads_in_block,
@@ -250,11 +250,11 @@ CUB_TEST("Block load works with even vector types",
   using params = params_t<TestType>;
   using type = typename params::type;
 
-  thrust::device_vector<type> d_input(
+  c2h::device_vector<type> d_input(
     GENERATE_COPY(take(10, random(0, params::tile_size))));
   c2h::gen(CUB_SEED(10), d_input);
 
-  thrust::device_vector<type> d_output(d_input.size());
+  c2h::device_vector<type> d_output(d_input.size());
 
   block_load<params::items_per_thread,
              params::threads_in_block,
@@ -274,14 +274,14 @@ CUB_TEST("Block load works with custom types",
   constexpr int items_per_thread = c2h::get<0, TestType>::value;
   constexpr int threads_in_block = 64;
   constexpr int tile_size = items_per_thread * threads_in_block;
-  static constexpr cub::BlockLoadAlgorithm load_algorithm = 
+  static constexpr cub::BlockLoadAlgorithm load_algorithm =
     c2h::get<1, TestType>::value;
 
-  thrust::device_vector<type> d_input(
+  c2h::device_vector<type> d_input(
     GENERATE_COPY(take(10, random(0, tile_size))));
   c2h::gen(CUB_SEED(10), d_input);
 
-  thrust::device_vector<type> d_output(d_input.size());
+  c2h::device_vector<type> d_output(d_input.size());
 
   block_load<items_per_thread,
              threads_in_block,
@@ -301,17 +301,17 @@ CUB_TEST("Block load works with caching iterators",
   constexpr int items_per_thread = c2h::get<0, TestType>::value;
   constexpr int threads_in_block = 64;
   constexpr int tile_size = items_per_thread * threads_in_block;
-  static constexpr cub::BlockLoadAlgorithm load_algorithm = 
+  static constexpr cub::BlockLoadAlgorithm load_algorithm =
     c2h::get<1, TestType>::value;
 
-  thrust::device_vector<type> d_input(
+  c2h::device_vector<type> d_input(
     GENERATE_COPY(take(10, random(0, tile_size))));
   c2h::gen(CUB_SEED(10), d_input);
 
   cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, type> in(
     thrust::raw_pointer_cast(d_input.data()));
 
-  thrust::device_vector<type> d_output(d_input.size());
+  c2h::device_vector<type> d_output(d_input.size());
 
   block_load<items_per_thread,
              threads_in_block,
@@ -321,4 +321,3 @@ CUB_TEST("Block load works with caching iterators",
 
   REQUIRE( d_input == d_output );
 }
-

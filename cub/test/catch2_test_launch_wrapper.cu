@@ -141,8 +141,8 @@ CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]")
   INFO("Launch = " << TEST_LAUNCH);
 
   int n = 42;
-  thrust::device_vector<int> in(n, 21);
-  thrust::device_vector<int> out(n);
+  c2h::device_vector<int> in(n, 21);
+  c2h::device_vector<int> out(n);
 
   int *d_in  = thrust::raw_pointer_cast(in.data());
   int *d_out = thrust::raw_pointer_cast(out.data());
@@ -207,8 +207,8 @@ struct custom_x0_5_invocable
 CUB_TEST("Launch wrapper works with custom invocables", "[test][utils]")
 {
   int n = 42;
-  thrust::device_vector<int> in(n, 21);
-  thrust::device_vector<int> out(n);
+  c2h::device_vector<int> in(n, 21);
+  c2h::device_vector<int> out(n);
 
   int *d_in  = thrust::raw_pointer_cast(in.data());
   int *d_out = thrust::raw_pointer_cast(out.data());

@@ -29,8 +29,6 @@
 
 #include <cub/block/block_adjacent_difference.cuh>
 
-#include <thrust/host_vector.h>
-
 template <int ThreadsInBlock,
           int ItemsPerThread,
           class T,
@@ -139,7 +137,7 @@ struct last_tile_op_t
   }
 };
 
-template <class T, 
+template <class T,
           bool ReadLeft>
 struct middle_tile_op_t
 {
@@ -188,7 +186,7 @@ struct last_tile_with_pred_op_t
   }
 
   template <int ITEMS_PER_THREAD, typename BlockAdjDiff>
-  __device__ void operator()(BlockAdjDiff &block_adj_diff, 
+  __device__ void operator()(BlockAdjDiff &block_adj_diff,
                              T (&input)[ITEMS_PER_THREAD],
                              T (&output)[ITEMS_PER_THREAD]) const
   {
@@ -202,7 +200,7 @@ struct last_tile_with_pred_op_t
 };
 
 template <int ItemsPerThread, int ThreadsInBlock, class T, class ActionT>
-void block_adj_diff(thrust::device_vector<T> &data,
+void block_adj_diff(c2h::device_vector<T> &data,
                     bool in_place,
                     ActionT action)
 {
@@ -215,9 +213,9 @@ void block_adj_diff(thrust::device_vector<T> &data,
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
-template <bool ReadLeft, 
+template <bool ReadLeft,
           class T>
-void host_adj_diff(thrust::host_vector<T> &h_data, int valid_items)
+void host_adj_diff(c2h::host_vector<T> &h_data, int valid_items)
 {
   custom_difference_t<T> diff{};
 
@@ -238,7 +236,7 @@ void host_adj_diff(thrust::host_vector<T> &h_data, int valid_items)
 }
 
 template <bool ReadLeft, class T>
-void host_adj_diff(thrust::host_vector<T> &h_data,
+void host_adj_diff(c2h::host_vector<T> &h_data,
                    int valid_items,
                    T neighbour_value)
 {
@@ -292,12 +290,12 @@ CUB_TEST("Block adjacent difference works with full tiles",
   using params = params_t<TestType>;
   using key_t = typename params::key_t;
 
-  thrust::device_vector<key_t> d_data(params::tile_size);
+  c2h::device_vector<key_t> d_data(params::tile_size);
   c2h::gen(CUB_SEED(10), d_data);
 
   const bool in_place = GENERATE(false, true);
 
-  thrust::host_vector<key_t> h_data = d_data;
+  c2h::host_vector<key_t> h_data = d_data;
   host_adj_diff<params::read_left>(h_data, params::tile_size);
 
   block_adj_diff<params::items_per_thread, params::threads_in_block>(
@@ -318,13 +316,13 @@ CUB_TEST("Block adjacent difference works with last tiles",
   using params = params_t<TestType>;
   using key_t = typename params::key_t;
 
-  thrust::device_vector<key_t> d_data(params::tile_size);
+  c2h::device_vector<key_t> d_data(params::tile_size);
   c2h::gen(CUB_SEED(10), d_data);
 
   const bool in_place = GENERATE(false, true);
   const int valid_items = GENERATE_COPY(take(10, random(0, params::tile_size)));
 
-  thrust::host_vector<key_t> h_data = d_data;
+  c2h::host_vector<key_t> h_data = d_data;
   host_adj_diff<params::read_left>(h_data, valid_items);
 
   block_adj_diff<params::items_per_thread, params::threads_in_block>(
@@ -345,14 +343,14 @@ CUB_TEST("Block adjacent difference works with single tiles",
   using params = params_t<TestType>;
   using key_t = typename params::key_t;
 
-  thrust::device_vector<key_t> d_data(params::tile_size);
+  c2h::device_vector<key_t> d_data(params::tile_size);
   c2h::gen(CUB_SEED(10), d_data);
 
   const bool in_place = GENERATE(false, true);
   const int valid_items = GENERATE_COPY(take(10, random(0, params::tile_size)));
   constexpr bool read_left = true;
 
-  thrust::host_vector<key_t> h_data = d_data;
+  c2h::host_vector<key_t> h_data = d_data;
   key_t neighbour_value = h_data[h_data.size() / 2];
 
   host_adj_diff<read_left>(h_data, valid_items, neighbour_value);
@@ -375,13 +373,13 @@ CUB_TEST("Block adjacent difference works with middle tiles",
   using params = params_t<TestType>;
   using key_t = typename params::key_t;
 
-  thrust::device_vector<key_t> d_data(params::tile_size);
+  c2h::device_vector<key_t> d_data(params::tile_size);
   c2h::gen(CUB_SEED(10), d_data);
 
   const bool in_place = GENERATE(false, true);
 
-  thrust::host_vector<key_t> h_data = d_data;
-  key_t neighbour_value = h_data[h_data.size() / 2]; 
+  c2h::host_vector<key_t> h_data = d_data;
+  key_t neighbour_value = h_data[h_data.size() / 2];
 
   host_adj_diff<params::read_left>(h_data, params::tile_size, neighbour_value);
 
@@ -406,10 +404,10 @@ CUB_TEST("Block adjacent difference supports custom types",
   constexpr bool read_left = true;
   constexpr bool in_place = true;
 
-  thrust::device_vector<key_t> d_data(tile_size);
+  c2h::device_vector<key_t> d_data(tile_size);
   c2h::gen(CUB_SEED(10), d_data);
 
-  thrust::host_vector<key_t> h_data = d_data;
+  c2h::host_vector<key_t> h_data = d_data;
   host_adj_diff<read_left>(h_data, tile_size);
 
   block_adj_diff<items_per_thread, threads_in_block>(d_data,
@@ -420,4 +418,3 @@ CUB_TEST("Block adjacent difference supports custom types",
 }
 
 // TODO Test different input/output types
-

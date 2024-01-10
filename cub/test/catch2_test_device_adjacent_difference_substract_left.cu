@@ -27,8 +27,6 @@
 
 #include <cub/device/device_adjacent_difference.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/discard_iterator.h>
 
 #include <algorithm>
@@ -58,7 +56,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft can run with empty input", "[de
   using type = typename c2h::get<0, TestType>;
 
   constexpr int num_items = 0;
-  thrust::device_vector<type> in(num_items);
+  c2h::device_vector<type> in(num_items);
 
   adjacent_difference_subtract_left(in.begin(),
                                     num_items,
@@ -70,8 +68,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy can run with empty input", 
   using type = typename c2h::get<0, TestType>;
 
   constexpr int num_items = 0;
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
 
   adjacent_difference_subtract_left_copy(in.begin(),
                                          out.begin(),
@@ -84,10 +82,10 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy does not change the input",
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
+  c2h::device_vector<type> in(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::device_vector<type> reference = in;
+  c2h::device_vector<type> reference = in;
   adjacent_difference_subtract_left_copy(in.begin(),
                                          thrust::discard_iterator<>(),
                                          num_items,
@@ -101,11 +99,11 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft works with iterators", "[device
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
+  c2h::device_vector<type> in(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::host_vector<type> h_in = in;
-  thrust::host_vector<type> reference(num_items);
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items);
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
   adjacent_difference_subtract_left(in.begin(),
@@ -120,12 +118,12 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with iterators", "[de
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::host_vector<type> h_in = in;
-  thrust::host_vector<type> reference(num_items);
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items);
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
   adjacent_difference_subtract_left_copy(in.begin(),
@@ -141,11 +139,11 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft works with pointers", "[device]
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
+  c2h::device_vector<type> in(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::host_vector<type> h_in = in;
-  thrust::host_vector<type> reference(num_items);
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items);
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
   adjacent_difference_subtract_left(thrust::raw_pointer_cast(in.data()),
@@ -160,12 +158,12 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with pointers", "[dev
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::host_vector<type> h_in = in;
-  thrust::host_vector<type> reference(num_items);
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items);
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
   adjacent_difference_subtract_left_copy(thrust::raw_pointer_cast(in.data()),
@@ -193,11 +191,11 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft works with custom difference", 
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
+  c2h::device_vector<type> in(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::host_vector<type> h_in = in;
-  thrust::host_vector<type> reference(num_items);
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items);
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), cust_diff<type>{});
 
   adjacent_difference_subtract_left(in.begin(),
@@ -212,12 +210,12 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with custom differenc
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::host_vector<type> h_in = in;
-  thrust::host_vector<type> reference(num_items);
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items);
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), cust_diff<type>{});
 
   adjacent_difference_subtract_left_copy(in.begin(),
@@ -246,12 +244,12 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with a different outp
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<convertible_from_T<type>> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<convertible_from_T<type>> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::host_vector<type> h_in = in;
-  thrust::host_vector<type> reference(num_items);
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items);
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), cust_diff<type>{});
 
   adjacent_difference_subtract_left_copy(in.begin(),
@@ -309,7 +307,7 @@ private:
 CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy uses right number of invocations", "[device][adjacent_difference]")
 {
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<unsigned long long> counts(1, 0);
+  c2h::device_vector<unsigned long long> counts(1, 0);
   adjacent_difference_subtract_left_copy(thrust::counting_iterator<cuda::std::size_t>{0},
                                          thrust::discard_iterator<>(),
                                          num_items,

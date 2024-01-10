@@ -32,13 +32,11 @@
 #include <cstdint>
 #include <tuple>
 
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
-
 #include <cub/util_compiler.cuh>
 #include "test_util_vec.h"
 
 #include "c2h/utility.cuh"
+#include "c2h/vector.cuh"
 
 #include "catch2_main.cuh"
 #include "test_warning_suppression.cuh"
@@ -84,14 +82,14 @@ using iota = metal::iota<metal::number<start>, metal::number<size>, metal::numbe
 namespace detail
 {
   template <class T>
-  std::vector<T> to_vec(thrust::device_vector<T> const& vec)
+  std::vector<T> to_vec(c2h::device_vector<T> const& vec)
   {
-    thrust::host_vector<T> tmp = vec;
+    c2h::host_vector<T> tmp = vec;
     return std::vector<T>{tmp.begin(), tmp.end()};
   }
 
   template <class T>
-  std::vector<T> to_vec(thrust::host_vector<T> const& vec)
+  std::vector<T> to_vec(c2h::host_vector<T> const& vec)
   {
     return std::vector<T>{vec.begin(), vec.end()};
   }

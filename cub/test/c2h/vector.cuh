@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,61 +25,55 @@
  *
  ******************************************************************************/
 
-#include <cub/device/device_reduce.cuh>
+#pragma once
 
-#include <cuda/std/limits>
+#include <thrust/detail/vector_base.h>
+#include <thrust/device_allocator.h>
+#include <thrust/system/cuda/memory.h>
+#include <thrust/system/cuda/memory_resource.h>
+#include <thrust/system/cuda/pointer.h>
+#include <thrust/system/cuda/vector.h>
 
-#include "catch2_test_launch_helper.h"
-#include "catch2_test_helper.h"
+#include <memory>
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
-
-// %PARAM% TEST_LAUNCH lid 0:1
-
-CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
+namespace c2h
 {
-  using in_t     = float;
-  using offset_t = int;
-  using out_t    = cub::KeyValuePair<offset_t, in_t>;
+namespace detail
+{
 
-  constexpr int n     = 10;
-  constexpr float inf = ::cuda::std::numeric_limits<float>::infinity();
-
-  c2h::device_vector<out_t> out(1);
-  out_t *d_out = thrust::raw_pointer_cast(out.data());
-
-  /**
-   * ArgMin should return max value for empty input. This interferes with
-   * input data containing infinity values. This test checks that ArgMin
-   * works correctly with infinity values.
-   */
-  SECTION("InfInArgMin")
+  // Check available memory prior to calling cudaMalloc.
+  // This avoids hangups and slowdowns from allocating swap / non-device memory
+  // on some platforms, namely tegra.
+  inline cudaError_t checked_cuda_malloc(void **ptr, std::size_t bytes)
   {
-    c2h::device_vector<in_t> in(n, inf);
-    const in_t *d_in = thrust::raw_pointer_cast(in.data());
+    std::size_t free_bytes{};
+    std::size_t total_bytes{};
+    cudaError_t status = cudaMemGetInfo(&free_bytes, &total_bytes);
+    if (status != cudaSuccess)
+    {
+      return status;
+    }
 
-    device_arg_min(d_in, d_out, n);
+    if (free_bytes < bytes)
+    {
+      return cudaErrorMemoryAllocation;
+    }
 
-    const out_t result = out[0];
-    REQUIRE(result.key == 0);
-    REQUIRE(result.value == inf);
+    return cudaMalloc(ptr, bytes);
   }
 
-  /**
-   * ArgMax should return lowest value for empty input. This interferes with
-   * input data containing infinity values. This test checks that ArgMax
-   * works correctly with infinity values.
-   */
-  SECTION("InfInArgMax")
-  {
-    c2h::device_vector<in_t> in(n, -inf);
-    const in_t *d_in = thrust::raw_pointer_cast(in.data());
+  using checked_memory_resource =
+    thrust::system::cuda::detail::cuda_memory_resource<checked_cuda_malloc, cudaFree, thrust::cuda::pointer<void>>;
+  template <typename T>
+  using checked_allocator =
+    thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_memory_resource>>;
 
-    device_arg_max(d_in, d_out, n);
+} // namespace detail
 
-    const out_t result = out[0];
-    REQUIRE(result.key == 0);
-    REQUIRE(result.value == -inf);
-  }
-}
+template <typename T>
+using host_vector = thrust::detail::vector_base<T, std::allocator<T>>;
+
+template <typename T>
+using device_vector = thrust::detail::vector_base<T, detail::checked_allocator<T>>;
+
+} // namespace c2h

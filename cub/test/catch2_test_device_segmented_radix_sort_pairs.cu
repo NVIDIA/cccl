@@ -25,8 +25,6 @@
  *
  ******************************************************************************/
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
@@ -64,22 +62,22 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: Basic testing", "[pairs][segmente
   const std::size_t num_items         = GENERATE_COPY(take(3, random(min_num_items, max_num_items)));
   const std::size_t num_segments      = GENERATE_COPY(take(2, random(std::size_t{2}, num_items / 2)));
 
-  thrust::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
 
-  thrust::device_vector<value_t> in_values(num_items);
+  c2h::device_vector<value_t> in_values(num_items);
   const int num_value_seeds = 1;
   c2h::gen(CUB_SEED(num_value_seeds), in_values);
 
-  thrust::device_vector<offset_t> offsets(num_segments + 1);
+  c2h::device_vector<offset_t> offsets(num_segments + 1);
   const int num_segment_seeds = 1;
   generate_segment_offsets(CUB_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
 
   // Initialize the output vectors by copying the inputs since not all items
   // may belong to a segment.
-  thrust::device_vector<key_t> out_keys(in_keys);
-  thrust::device_vector<value_t> out_values(in_values);
+  c2h::device_vector<key_t> out_keys(in_keys);
+  c2h::device_vector<value_t> out_values(in_values);
 
   const bool is_descending = GENERATE(false, true);
 
@@ -134,22 +132,22 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: DoubleBuffer API", "[pairs][segme
   const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
   const std::size_t num_segments      = GENERATE_COPY(take(1, random(std::size_t{2}, num_items / 2)));
 
-  thrust::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
 
-  thrust::device_vector<value_t> in_values(num_items);
+  c2h::device_vector<value_t> in_values(num_items);
   const int num_value_seeds = 1;
   c2h::gen(CUB_SEED(num_value_seeds), in_values);
 
-  thrust::device_vector<offset_t> offsets(num_segments + 1);
+  c2h::device_vector<offset_t> offsets(num_segments + 1);
   const int num_segment_seeds = 1;
   generate_segment_offsets(CUB_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
 
   // Initialize the output vectors by copying the inputs since not all items
   // may belong to a segment.
-  thrust::device_vector<key_t> out_keys(in_keys);
-  thrust::device_vector<value_t> out_values(in_values);
+  c2h::device_vector<key_t> out_keys(in_keys);
+  c2h::device_vector<value_t> out_values(in_values);
 
   const bool is_descending = GENERATE(false, true);
 
@@ -200,31 +198,31 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
   const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
   const std::size_t num_segments      = GENERATE_COPY(take(1, random(std::size_t{2}, num_items / 2)));
 
-  thrust::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
 
-  thrust::device_vector<value_t> in_values(num_items);
+  c2h::device_vector<value_t> in_values(num_items);
   const int num_value_seeds = 1;
   c2h::gen(CUB_SEED(num_value_seeds), in_values);
 
   // Initialize the output vectors by copying the inputs since not all items
   // may belong to a segment.
-  thrust::device_vector<key_t> out_keys(in_keys);
-  thrust::device_vector<value_t> out_values(in_values);
+  c2h::device_vector<key_t> out_keys(in_keys);
+  c2h::device_vector<value_t> out_values(in_values);
 
-  thrust::device_vector<offset_t> begin_offsets(num_segments + 1);
+  c2h::device_vector<offset_t> begin_offsets(num_segments + 1);
   const int num_segment_seeds = 1;
   generate_segment_offsets(CUB_SEED(num_segment_seeds), begin_offsets, static_cast<offset_t>(num_items));
 
   // Create separate begin/end offsets arrays and remove some of the segments by
   // setting both offsets to 0.
-  thrust::device_vector<offset_t> end_offsets(begin_offsets.cbegin() + 1, begin_offsets.cend());
+  c2h::device_vector<offset_t> end_offsets(begin_offsets.cbegin() + 1, begin_offsets.cend());
   begin_offsets.pop_back();
 
   {
     std::size_t num_empty_segments = num_segments / 16;
-    thrust::device_vector<std::size_t> indices(num_empty_segments);
+    c2h::device_vector<std::size_t> indices(num_empty_segments);
     c2h::gen(CUB_SEED(1), indices, std::size_t{0}, num_segments - 1);
     auto begin = thrust::make_constant_iterator(key_t{0});
     auto end = begin + num_empty_segments;

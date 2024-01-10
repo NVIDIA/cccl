@@ -27,9 +27,6 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
@@ -46,7 +43,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_redu
 using types = c2h::type_list<std::uint32_t, std::uint64_t>;
 
 template <class T>
-struct square_t 
+struct square_t
 {
   __host__ __device__ T operator()(const T& x) const
   {
@@ -68,15 +65,15 @@ CUB_TEST("Device transform reduce works with pointers", "[reduce][device]", type
   const int num_items = GENERATE_COPY(take(3, random(min_items, max_items)));
 
   item_t init{42};
-  thrust::device_vector<item_t> out(1);
-  thrust::device_vector<item_t> in(num_items + 1);
+  c2h::device_vector<item_t> out(1);
+  c2h::device_vector<item_t> in(num_items + 1);
   c2h::gen(CUB_SEED(2), in);
 
   item_t* d_in  = thrust::raw_pointer_cast(in.data());
   item_t* d_out = thrust::raw_pointer_cast(out.data());
 
-  const thrust::host_vector<item_t> h_in = in;
-  thrust::host_vector<item_t> h_transformed_in(h_in.size() - 1);
+  const c2h::host_vector<item_t> h_in = in;
+  c2h::host_vector<item_t> h_transformed_in(h_in.size() - 1);
 
   SECTION("when aligned")
   {
@@ -115,8 +112,8 @@ CUB_TEST("Device transform reduce works with iterators", "[reduce][device]", typ
   const int num_items = GENERATE_COPY(take(3, random(min_items, max_items)));
 
   const item_t magic_val{2};
-  thrust::device_vector<item_t> in(num_items, magic_val);
-  thrust::device_vector<item_t> out(1);
+  c2h::device_vector<item_t> in(num_items, magic_val);
+  c2h::device_vector<item_t> out(1);
 
   device_transform_reduce(in.begin(), out.begin(), num_items, reduction_op_t{}, transform_op_t{}, init_t{});
 
@@ -139,13 +136,13 @@ struct transformed_input_t
   std::uint64_t b;
 };
 
-struct init_t 
+struct init_t
 {
   char a;
   char b;
 };
 
-struct accum_t 
+struct accum_t
 {
   std::uint64_t a;
   std::uint64_t b;
@@ -173,7 +170,7 @@ struct accum_t
   }
 };
 
-struct output_t 
+struct output_t
 {
   std::uint64_t a;
   std::uint64_t b;
@@ -223,8 +220,8 @@ CUB_TEST("Device transform reduce doesn't let input type into reduction op", "[r
   const init_t init{3, 3};
   const input_t magic_val{2, 2};
 
-  thrust::device_vector<input_t> in(num_items, magic_val);
-  thrust::device_vector<output_t> out(1);
+  c2h::device_vector<input_t> in(num_items, magic_val);
+  c2h::device_vector<output_t> out(1);
 
   input_t *d_in = thrust::raw_pointer_cast(in.data());
   output_t *d_out = thrust::raw_pointer_cast(out.data());

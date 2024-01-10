@@ -27,8 +27,6 @@
 
 #include <cub/device/device_segmented_reduce.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
@@ -79,7 +77,7 @@ CUB_TEST("Device segmented reduce works with fancy input iterators",
                                 << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  thrust::device_vector<offset_t> segment_offsets =
+  c2h::device_vector<offset_t> segment_offsets =
     c2h::gen_uniform_offsets<offset_t>(CUB_SEED(1),
                                        num_items,
                                        std::get<0>(seg_size_range),
@@ -100,7 +98,7 @@ CUB_TEST("Device segmented reduce works with fancy input iterators",
 
   // Prepare verification data
   using accum_t = cub::detail::accumulator_t<op_t, init_t, item_t>;
-  thrust::host_vector<output_t> expected_result(num_segments);
+  c2h::host_vector<output_t> expected_result(num_segments);
   compute_segmented_problem_reference(in_it,
                                       segment_offsets,
                                       reduction_op,
@@ -108,7 +106,7 @@ CUB_TEST("Device segmented reduce works with fancy input iterators",
                                       expected_result.begin());
 
   // Run test
-  thrust::device_vector<output_t> out_result(num_segments);
+  c2h::device_vector<output_t> out_result(num_segments);
   auto d_out_it = thrust::raw_pointer_cast(out_result.data());
   device_segmented_reduce(in_it,
                           d_out_it,
