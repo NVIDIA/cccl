@@ -137,8 +137,24 @@ __host__ __device__ void test_edges()
         }
         else
         {
-            assert(!cuda::std::signbit(r.real()));
+            assert(!cuda::std::signbit(r.real()) || (cuda::std::cosh(r.real()) == 1));
             assert(cuda::std::signbit(r.imag()) == cuda::std::signbit(testcases[i].imag()));
+        }
+
+        const auto acosh_conj = cuda::std::acosh(cuda::std::conj(testcases[i]));
+        const auto conj_acosh = cuda::std::conj(cuda::std::acosh(testcases[i]));
+        if (acosh_conj != conj_acosh) {
+            if (cuda::std::isnan(acosh_conj.real())) {
+                assert(cuda::std::isnan(conj_acosh.real()));
+            } else if (cuda::std::isinf(acosh_conj.real())) {
+                assert(cuda::std::isinf(conj_acosh.real()));
+            } else if (cuda::std::isnan(acosh_conj.imag())) {
+                assert(cuda::std::isnan(conj_acosh.imag()));
+            } else if (cuda::std::isinf(acosh_conj.imag())) {
+                assert(cuda::std::isinf(conj_acosh.imag()));
+            } else {
+                assert(false);
+            }
         }
     }
 }

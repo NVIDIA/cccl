@@ -117,6 +117,39 @@ __host__ __device__ void test_edges()
             assert(cuda::std::signbit(r.real()) == cuda::std::signbit(testcases[i].real()));
             assert(cuda::std::signbit(r.imag()) == cuda::std::signbit(testcases[i].imag()));
         }
+
+        const auto asinh_conj = cuda::std::asinh(cuda::std::conj(testcases[i]));
+        const auto conj_asinh = cuda::std::conj(cuda::std::asinh(testcases[i]));
+        if (asinh_conj != conj_asinh) {
+            if (cuda::std::isnan(asinh_conj.real())) {
+                assert(cuda::std::isnan(conj_asinh.real()));
+            } else if (cuda::std::isinf(asinh_conj.real())) {
+                assert(cuda::std::isinf(conj_asinh.real()));
+            } else if (cuda::std::isnan(asinh_conj.imag())) {
+                assert(cuda::std::isnan(conj_asinh.imag()));
+            } else if (cuda::std::isinf(asinh_conj.imag())) {
+                assert(cuda::std::isinf(conj_asinh.imag()));
+            } else {
+                assert(false);
+            }
+        }
+
+        const auto neg_asinh = -cuda::std::asinh(testcases[i]);
+        const auto asinh_neg = cuda::std::asinh(-testcases[i]);
+        if (neg_asinh != asinh_neg) {
+            if (cuda::std::isnan(neg_asinh.real())) {
+                assert(cuda::std::isnan(asinh_neg.real()));
+            } else if (cuda::std::isinf(neg_asinh.real())) {
+                assert(cuda::std::isinf(asinh_neg.real()));
+            } else if (cuda::std::isnan(neg_asinh.imag())) {
+                assert(cuda::std::isnan(asinh_neg.imag()));
+            } else if (cuda::std::isinf(neg_asinh.imag())) {
+                assert(cuda::std::isinf(asinh_neg.imag()));
+            } else {
+                assert(cuda::std::abs((neg_asinh.real()-asinh_neg.real())) < 1.e-3);
+                assert(cuda::std::abs((neg_asinh.imag()-asinh_neg.imag())) < 1.e-3);
+            }
+        }
     }
 }
 
