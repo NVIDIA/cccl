@@ -50,7 +50,7 @@ if (MSVC)
 endif()
 
 # Intel OneAPI compiler has fast math enabled by default which breaks almost all floating point tests
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM")
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
   set(LIBCUDACXX_TEST_COMPILER_FLAGS
     "${LIBCUDACXX_TEST_COMPILER_FLAGS} \
     --compiler-options=-fno-fast-math")

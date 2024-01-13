@@ -1509,6 +1509,18 @@ struct HugeDataType
     }
   }
 
+  __device__ __host__ HugeDataType& operator=(const HugeDataType& rhs)
+  {
+    if (this != &rhs)
+    {
+      for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+      {
+        data[i] = rhs.data[i];
+      }
+    }
+    return *this;
+  }
+
   int data[ELEMENTS_PER_OBJECT];
 };
 
@@ -1554,4 +1566,23 @@ __device__ __host__ bool operator!=(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs
   }
 
   return false;
+}
+
+
+template <int ELEMENTS_PER_OBJECT>
+std::ostream& 
+operator<<(std::ostream& os, 
+const HugeDataType<ELEMENTS_PER_OBJECT>& val)
+{
+  os << '(';
+  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  {
+    os << CoutCast(val.data[i]);
+    if (i < ELEMENTS_PER_OBJECT - 1)
+    {
+      os << ',';
+    }
+  }
+  os << ')';
+  return os;
 }
