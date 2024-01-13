@@ -29,12 +29,14 @@
 
 #include <thrust/detail/vector_base.h>
 #include <thrust/device_allocator.h>
+#include <thrust/execution_policy.h>
 #include <thrust/system/cuda/memory.h>
 #include <thrust/system/cuda/memory_resource.h>
 #include <thrust/system/cuda/pointer.h>
 #include <thrust/system/cuda/vector.h>
 
 #include <memory>
+#include <type_traits>
 
 namespace c2h
 {
@@ -61,19 +63,24 @@ namespace detail
 
     return cudaMalloc(ptr, bytes);
   }
-
-  using checked_memory_resource =
-    thrust::system::cuda::detail::cuda_memory_resource<checked_cuda_malloc, cudaFree, thrust::cuda::pointer<void>>;
-  template <typename T>
-  using checked_allocator =
-    thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_memory_resource>>;
-
 } // namespace detail
+
+using checked_memory_resource =
+  thrust::system::cuda::detail::cuda_memory_resource<detail::checked_cuda_malloc, cudaFree, thrust::cuda::pointer<void>>;
+template <typename T>
+using checked_allocator =
+  thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_memory_resource>>;
+
+using par_t = typename std::remove_reference<decltype(thrust::device(checked_allocator<char>{}))>::type;
+inline par_t par()
+{
+  return thrust::device(checked_allocator<char>{});
+}
 
 template <typename T>
 using host_vector = thrust::detail::vector_base<T, std::allocator<T>>;
 
 template <typename T>
-using device_vector = thrust::detail::vector_base<T, detail::checked_allocator<T>>;
+using device_vector = thrust::detail::vector_base<T, checked_allocator<T>>;
 
 } // namespace c2h
