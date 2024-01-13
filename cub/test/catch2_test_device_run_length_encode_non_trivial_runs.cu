@@ -150,7 +150,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all equal",
   c2h::device_vector<int> out_lengths(1, -1);
   c2h::device_vector<int> out_num_runs(1, -1);
   c2h::gen(CUB_SEED(2), in);
-  thrust::fill(in.begin(), in.end(), in.front());
+  thrust::fill(c2h::device_policy(), in.begin(), in.end(), in.front());
 
   run_length_encode(in.begin(),
                     out_offsets.begin(),

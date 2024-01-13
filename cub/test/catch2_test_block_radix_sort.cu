@@ -117,7 +117,7 @@ bool binary_equal(
   auto d_output_ptr    = reinterpret_cast<const bit_ordered_t*>(thrust::raw_pointer_cast(d_output.data()));
   auto d_reference_ptr = reinterpret_cast<const bit_ordered_t*>(thrust::raw_pointer_cast(d_tmp.data()));
 
-  return thrust::equal(thrust::device, d_output_ptr, d_output_ptr + d_output.size(), d_reference_ptr);
+  return thrust::equal(c2h::device_policy(), d_output_ptr, d_output_ptr + d_output.size(), d_reference_ptr);
 }
 
 CUB_TEST("Block radix sort can sort keys",

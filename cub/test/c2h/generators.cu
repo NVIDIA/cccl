@@ -194,7 +194,7 @@ void generator_t::generate()
 #if C2H_HAS_CURAND
   curandGenerateUniform(m_gen, this->distribution(), this->m_distribution.size());
 #else
-  thrust::tabulate(this->m_distribution.begin(), this->m_distribution.end(), i_to_rnd_t{m_re});
+  thrust::tabulate(c2h::device_policy(), this->m_distribution.begin(), this->m_distribution.end(), i_to_rnd_t{m_re});
   m_re.discard(this->m_distribution.size());
 #endif
 }
@@ -252,7 +252,8 @@ void generator_t::operator()(seed_t seed, c2h::device_vector<T> &data, T min, T 
 {
   prepare_random_generator(seed, data.size());
 
-  thrust::transform(m_distribution.begin(),
+  thrust::transform(c2h::device_policy(),
+                    m_distribution.begin(),
                     m_distribution.end(),
                     data.begin(),
                     random_to_item_t<T>(min, max));
@@ -278,7 +279,7 @@ struct count_to_item_t
 template <typename T>
 void generator_t::operator()(modulo_t mod, c2h::device_vector<T> &data)
 {
-  thrust::tabulate(data.begin(), data.end(), count_to_item_t<T>{mod.get()});
+  thrust::tabulate(c2h::device_policy(), data.begin(), data.end(), count_to_item_t<T>{mod.get()});
 }
 
 generator_t &generator_t::instance()
@@ -303,14 +304,14 @@ void gen(seed_t seed,
   generator_t &generator = generator_t::instance();
   float *d_in            = generator.prepare_random_generator(seed, elements);
 
-  thrust::for_each(thrust::device,
+  thrust::for_each(c2h::device_policy(),
                    cnt_begin,
                    cnt_end,
                    random_to_custom_t<true>{d_in, d_out, element_size});
 
   generator.generate();
 
-  thrust::for_each(thrust::device,
+  thrust::for_each(c2h::device_policy(),
                    cnt_begin,
                    cnt_end,
                    random_to_custom_t<false>{d_in, d_out, element_size});
@@ -462,9 +463,10 @@ gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_seg
   c2h::device_vector<T> segment_offsets(total_elements + 2);
   gen(seed, segment_offsets, min_segment_size, max_segment_size);
   segment_offsets[total_elements] = total_elements + 1;
-  thrust::exclusive_scan(segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
+  thrust::exclusive_scan(c2h::device_policy(), segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
   typename c2h::device_vector<T>::iterator iter =
-    thrust::find_if(segment_offsets.begin(),
+    thrust::find_if(c2h::device_policy(),
+                    segment_offsets.begin(),
                     segment_offsets.end(),
                     detail::greater_equal_op<T>{total_elements});
   *iter = total_elements;
@@ -562,7 +564,7 @@ struct vec_gen_helper_t
 
     generator.generate();
 
-    thrust::for_each(thrust::device,
+    thrust::for_each(c2h::device_policy(),
                      cnt_begin,
                      cnt_end,
                      random_to_vec_item_t<T, VecItem>{min, max, d_in, d_out});
@@ -622,7 +624,7 @@ struct vec_gen_t
   template <>                                                                                      \
   void gen<VEC_TYPE>(modulo_t mod, c2h::device_vector<VEC_TYPE> & data)                         \
   {                                                                                                \
-    thrust::tabulate(data.begin(), data.end(), vec_gen_t<VEC_TYPE, SCALAR_TYPE>{mod.get()});       \
+    thrust::tabulate(c2h::device_policy(), data.begin(), data.end(), vec_gen_t<VEC_TYPE, SCALAR_TYPE>{mod.get()});       \
   }
 
 VEC_GEN_MOD_SPECIALIZATION(short2, short);

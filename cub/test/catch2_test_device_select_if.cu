@@ -208,7 +208,7 @@ CUB_TEST("DeviceSelect::If is stable", "[device][select_if]")
 
   // Ensure that we did not overwrite other elements
   const auto boundary = out.begin() + num_selected_out[0];
-  REQUIRE(thrust::all_of(boundary, out.end(), equal_to_default_t{}));
+  REQUIRE(thrust::all_of(c2h::device_policy(), boundary, out.end(), equal_to_default_t{}));
 
   out.resize(num_selected_out[0]);
   reference.resize(num_selected_out[0]);
@@ -238,8 +238,8 @@ CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_typ
             le);
 
   const auto boundary = out.begin() + num_selected_out[0];
-  REQUIRE(thrust::all_of(out.begin(), boundary, le));
-  REQUIRE(thrust::all_of(boundary, out.end(), equal_to_default_t{}));
+  REQUIRE(thrust::all_of(c2h::device_policy(), out.begin(), boundary, le));
+  REQUIRE(thrust::all_of(c2h::device_policy(), boundary, out.end(), equal_to_default_t{}));
 }
 
 CUB_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
@@ -265,8 +265,8 @@ CUB_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
             le);
 
   const auto boundary = out.begin() + num_selected_out[0];
-  REQUIRE(thrust::all_of(out.begin(), boundary, le));
-  REQUIRE(thrust::all_of(boundary, out.end(), equal_to_default_t{}));
+  REQUIRE(thrust::all_of(c2h::device_policy(), out.begin(), boundary, le));
+  REQUIRE(thrust::all_of(c2h::device_policy(), boundary, out.end(), equal_to_default_t{}));
 }
 
 CUB_TEST("DeviceSelect::If works in place", "[device][select_if]", types)
@@ -334,6 +334,6 @@ CUB_TEST("DeviceSelect::If works with a different output type", "[device][select
             le);
 
   const auto boundary = out.begin() + num_selected_out[0];
-  REQUIRE(thrust::all_of(out.begin(), boundary, le));
-  REQUIRE(thrust::all_of(boundary, out.end(), equal_to_default_t{}));
+  REQUIRE(thrust::all_of(c2h::device_policy(), out.begin(), boundary, le));
+  REQUIRE(thrust::all_of(c2h::device_policy(), boundary, out.end(), equal_to_default_t{}));
 }

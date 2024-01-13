@@ -459,5 +459,10 @@ void generate_segment_offsets(c2h::seed_t seed, c2h::device_vector<OffsetT>& off
   const OffsetT max_segment_length      = (expected_segment_length * 2) + 1;
   c2h::gen(seed, offsets, OffsetT{0}, max_segment_length);
   thrust::exclusive_scan(
-    offsets.begin(), offsets.end(), offsets.begin(), OffsetT{0}, offset_scan_op_t<OffsetT>{static_cast<OffsetT>(num_items)});
+    c2h::device_policy(),
+    offsets.begin(),
+    offsets.end(),
+    offsets.begin(),
+    OffsetT{0},
+    offset_scan_op_t<OffsetT>{static_cast<OffsetT>(num_items)});
 }

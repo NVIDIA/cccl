@@ -150,7 +150,7 @@ CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]")
   {
     x2_0(d_in, d_out, n);
 
-    const auto actual   = static_cast<std::size_t>(thrust::count(out.begin(), out.end(), 42));
+    const auto actual   = static_cast<std::size_t>(thrust::count(c2h::device_policy(), out.begin(), out.end(), 42));
     const auto expected = static_cast<std::size_t>(n);
 
     REQUIRE(actual == expected);
@@ -159,7 +159,7 @@ CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]")
   {
     x0_5(d_out, d_out, n);
 
-    const auto actual   = static_cast<std::size_t>(thrust::count(out.begin(), out.end(), 21));
+    const auto actual   = static_cast<std::size_t>(thrust::count(c2h::device_policy(), out.begin(), out.end(), 21));
     const auto expected = static_cast<std::size_t>(n);
 
     REQUIRE(actual == expected);
@@ -216,7 +216,7 @@ CUB_TEST("Launch wrapper works with custom invocables", "[test][utils]")
   {
     launch(custom_x2_0_invocable{}, d_in, d_out, n);
 
-    const auto actual   = static_cast<std::size_t>(thrust::count(out.begin(), out.end(), 42));
+    const auto actual   = static_cast<std::size_t>(thrust::count(c2h::device_policy(), out.begin(), out.end(), 42));
     const auto expected = static_cast<std::size_t>(n);
 
     REQUIRE(actual == expected);
@@ -225,7 +225,7 @@ CUB_TEST("Launch wrapper works with custom invocables", "[test][utils]")
   {
     launch(custom_x0_5_invocable{}, d_out, d_out, n);
 
-    const auto actual   = static_cast<std::size_t>(thrust::count(out.begin(), out.end(), 21));
+    const auto actual   = static_cast<std::size_t>(thrust::count(c2h::device_policy(), out.begin(), out.end(), 21));
     const auto expected = static_cast<std::size_t>(n);
 
     REQUIRE(actual == expected);

@@ -65,22 +65,22 @@ namespace detail
   }
 } // namespace detail
 
-using checked_memory_resource =
+using checked_cuda_memory_resource =
   thrust::system::cuda::detail::cuda_memory_resource<detail::checked_cuda_malloc, cudaFree, thrust::cuda::pointer<void>>;
 template <typename T>
-using checked_allocator =
-  thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_memory_resource>>;
+using checked_cuda_allocator =
+  thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_cuda_memory_resource>>;
 
-using par_t = typename std::remove_reference<decltype(thrust::device(checked_allocator<char>{}))>::type;
-inline par_t par()
+using device_policy_t = typename std::remove_reference<decltype(thrust::device(checked_cuda_allocator<char>{}))>::type;
+inline device_policy_t device_policy()
 {
-  return thrust::device(checked_allocator<char>{});
+  return thrust::device(checked_cuda_allocator<char>{});
 }
 
 template <typename T>
 using host_vector = thrust::detail::vector_base<T, std::allocator<T>>;
 
 template <typename T>
-using device_vector = thrust::detail::vector_base<T, checked_allocator<T>>;
+using device_vector = thrust::detail::vector_base<T, checked_cuda_allocator<T>>;
 
 } // namespace c2h

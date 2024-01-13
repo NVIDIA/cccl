@@ -138,7 +138,8 @@ c2h::device_vector<T> compute_reference(int valid_items)
   {
     for (int warp_id = 0; warp_id < TOTAL_WARPS; warp_id++)
     {
-      thrust::fill(d_input.begin() + warp_id * tile_size + valid_items,
+      thrust::fill(c2h::device_policy(),
+                   d_input.begin() + warp_id * tile_size + valid_items,
                    d_input.begin() + (warp_id + 1) * tile_size,
                    T{});
     }
