@@ -408,15 +408,15 @@ int main(int argc, char **argv)
   constexpr std::size_t num_rnd_range_tests = 32;
 
   // Each range's size will be random within this interval
-  std::vector<std::pair<std::size_t, std::size_t>> size_ranges = {{0, 1},
-                                                                  {1, 2},
-                                                                  {0, 16},
-                                                                  {1, 32},
-                                                                  {1, 1024},
-                                                                  {1, 32 * 1024},
-                                                                  {128 * 1024, 256 * 1024},
-                                                                  {target_copy_size,
-                                                                   target_copy_size}};
+  c2h::host_vector<std::pair<std::size_t, std::size_t>> size_ranges = {{0, 1},
+                                                                       {1, 2},
+                                                                       {0, 16},
+                                                                       {1, 32},
+                                                                       {1, 1024},
+                                                                       {1, 32 * 1024},
+                                                                       {128 * 1024, 256 * 1024},
+                                                                       {target_copy_size,
+                                                                        target_copy_size}};
 
   std::mt19937 rng(0);
   std::uniform_int_distribution<std::size_t> size_dist(1, 1000000);
