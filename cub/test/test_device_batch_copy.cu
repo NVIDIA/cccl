@@ -42,6 +42,7 @@
 #include <limits>
 #include <numeric>
 #include <random>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -185,6 +186,19 @@ enum class TestDataGen
   CONSECUTIVE
 };
 
+std::string TestDataGenToString(TestDataGen gen)
+{
+  switch (gen)
+  {
+    case TestDataGen::RANDOM:
+      return "TestDataGen::RANDOM";
+    case TestDataGen::CONSECUTIVE:
+      return "TestDataGen::CONSECUTIVE";
+    default:
+      return "Unknown";
+  }
+}
+
 /**
  * @brief
  *
@@ -280,7 +294,12 @@ try
 }
 catch (std::bad_alloc &e)
 {
-  std::cout << "Skipping test due to insufficient memory: " << e.what() << "\n";
+  std::cout << "Skipping test 'RunTest("
+            << num_ranges << ", "
+            << min_range_size << ", "
+            << max_range_size << ", "
+            << TestDataGenToString(output_gen) << ")"
+            << "' due to insufficient memory: " << e.what() << "\n";
 }
 
 struct object_with_non_trivial_ctor
