@@ -9,3 +9,4 @@
 //===----------------------------------------------------------------------===//
 
 #include "libcxx/include/__pragma_push"
+#include "libcxx/include/__undef_macros"
