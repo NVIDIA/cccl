@@ -20,8 +20,8 @@
 
 void CUDART_CB callback(cudaStream_t, cudaError_t, void* flag)
 {
-  using namespace std::chrono_literals;
-  std::this_thread::sleep_for(1000ms);
+  std::chrono::milliseconds sleep_duration{1000};
+  std::this_thread::sleep_for(sleep_duration);
   assert(!reinterpret_cast<std::atomic_flag*>(flag)->test_and_set());
 }
 
