@@ -46,4 +46,4 @@ void* buggy_allocate_async_with_alignment(cuda::mr::async_resource_ref<> resourc
 }
 ```
 
-So, choose wisely. If your library has a well-defined set of fixed properties that you expect to always be available, then `cuda::mr::{async_}resource_ref` is an amazing tool to improve compile times and binary size. If you need a flexible interface then constraining trough `cuda::mr::{async_}resource_with` is the proper solution.
+So, choose wisely. If your library has a well-defined set of fixed properties that you expect to always be available, then `cuda::mr::{async_}resource_ref` is an amazing tool to improve compile times and binary size. If you need a flexible interface then constraining through `cuda::mr::{async_}resource_with` is the proper solution.
