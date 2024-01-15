@@ -22,7 +22,7 @@ void test_is_union()
     static_assert( cuda::std::is_union<const T>::value, "");
     static_assert( cuda::std::is_union<volatile T>::value, "");
     static_assert( cuda::std::is_union<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert( cuda::std::is_union_v<T>, "");
     static_assert( cuda::std::is_union_v<const T>, "");
     static_assert( cuda::std::is_union_v<volatile T>, "");
@@ -38,7 +38,7 @@ void test_is_not_union()
     static_assert(!cuda::std::is_union<const T>::value, "");
     static_assert(!cuda::std::is_union<volatile T>::value, "");
     static_assert(!cuda::std::is_union<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!cuda::std::is_union_v<T>, "");
     static_assert(!cuda::std::is_union_v<const T>, "");
     static_assert(!cuda::std::is_union_v<volatile T>, "");

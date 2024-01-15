@@ -25,7 +25,7 @@ int main(int, char**)
            std::numeric_limits<double>::lowest());
     assert(std::chrono::duration_values<Rep>::min() ==
            std::numeric_limits<Rep>::lowest());
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert(std::chrono::duration_values<int>::min() ==
            std::numeric_limits<int>::lowest(), "");
     static_assert(std::chrono::duration_values<double>::min() ==
@@ -37,7 +37,7 @@ int main(int, char**)
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<int>::min());
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<double>::min());
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<Rep>::min());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     ASSERT_NOEXCEPT(std::chrono::duration_values<int>::min());
     ASSERT_NOEXCEPT(std::chrono::duration_values<double>::min());
     ASSERT_NOEXCEPT(std::chrono::duration_values<Rep>::min());

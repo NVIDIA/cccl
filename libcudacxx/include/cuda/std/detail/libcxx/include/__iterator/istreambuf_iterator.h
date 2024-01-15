@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
 template<class _CharT, class _Traits>
 class _LIBCUDACXX_TEMPLATE_VIS istreambuf_iterator
-#if _LIBCUDACXX_STD_VER <= 14 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
+#if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<input_iterator_tag, _CharT,
                       typename _Traits::off_type, _CharT*,
                       _CharT>
@@ -75,10 +75,10 @@ private:
     }
 public:
     _LIBCUDACXX_INLINE_VISIBILITY constexpr istreambuf_iterator() noexcept : __sbuf_(nullptr) {}
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
     _LIBCUDACXX_INLINE_VISIBILITY constexpr istreambuf_iterator(default_sentinel_t) noexcept
         : istreambuf_iterator() {}
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
     _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(istream_type& __s) noexcept
         : __sbuf_(__s.rdbuf()) {}
     _LIBCUDACXX_INLINE_VISIBILITY istreambuf_iterator(streambuf_type* __s) noexcept
@@ -101,11 +101,11 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY bool equal(const istreambuf_iterator& __b) const
         {return __test_for_eof() == __b.__test_for_eof();}
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     friend _LIBCUDACXX_HIDE_FROM_ABI bool operator==(const istreambuf_iterator& __i, default_sentinel_t) {
       return __i.__test_for_eof();
     }
-#if _LIBCUDACXX_STD_VER < 20
+#if _CCCL_STD_VER < 2020
     friend _LIBCUDACXX_HIDE_FROM_ABI bool operator==(default_sentinel_t, const istreambuf_iterator& __i) {
       return __i.__test_for_eof();
     }
@@ -115,8 +115,8 @@ public:
     friend _LIBCUDACXX_HIDE_FROM_ABI bool operator!=(default_sentinel_t, const istreambuf_iterator& __i) {
       return !__i.__test_for_eof();
     }
-#endif // _LIBCUDACXX_STD_VER < 20
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER < 2020
+#endif // _CCCL_STD_VER > 2014
 };
 
 template <class _CharT, class _Traits>
@@ -125,13 +125,13 @@ bool operator==(const istreambuf_iterator<_CharT,_Traits>& __a,
                 const istreambuf_iterator<_CharT,_Traits>& __b)
                 {return __a.equal(__b);}
 
-#if _LIBCUDACXX_STD_VER <= 17
+#if _CCCL_STD_VER <= 2017
 template <class _CharT, class _Traits>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool operator!=(const istreambuf_iterator<_CharT,_Traits>& __a,
                 const istreambuf_iterator<_CharT,_Traits>& __b)
                 {return !__a.equal(__b);}
-#endif // _LIBCUDACXX_STD_VER <= 17
+#endif // _CCCL_STD_VER <= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

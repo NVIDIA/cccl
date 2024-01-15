@@ -22,7 +22,7 @@ void test_is_literal_type()
     static_assert( std::is_literal_type<const T>::value, "");
     static_assert( std::is_literal_type<volatile T>::value, "");
     static_assert( std::is_literal_type<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_literal_type_v<T>, "");
     static_assert( std::is_literal_type_v<const T>, "");
     static_assert( std::is_literal_type_v<volatile T>, "");
@@ -37,7 +37,7 @@ void test_is_not_literal_type()
     static_assert(!std::is_literal_type<const T>::value, "");
     static_assert(!std::is_literal_type<volatile T>::value, "");
     static_assert(!std::is_literal_type<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_literal_type_v<T>, "");
     static_assert(!std::is_literal_type_v<const T>, "");
     static_assert(!std::is_literal_type_v<volatile T>, "");
@@ -72,13 +72,13 @@ typedef void (*FunctionPtr)();
 
 int main(int, char**)
 {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test_is_literal_type<std::nullptr_t>();
 #endif
 
 // Before C++14, void was not a literal type
 // In C++14, cv-void is a literal type
-#if TEST_STD_VER < 14
+#if TEST_STD_VER < 2014
     test_is_not_literal_type<void>();
 #else
     test_is_literal_type<void>();
@@ -88,7 +88,7 @@ int main(int, char**)
     test_is_literal_type<int*>();
     test_is_literal_type<const int*>();
     test_is_literal_type<int&>();
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test_is_literal_type<int&&>();
 #endif
     test_is_literal_type<double>();

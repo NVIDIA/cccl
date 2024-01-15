@@ -56,7 +56,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER >= 17
+#if _CCCL_STD_VER >= 2017
 template <class _Iter, class = void>
 _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_rev_iter_iter_move = false;
 
@@ -72,12 +72,12 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_rev_iter_iter_swap<_Iter, _Iter
   enable_if_t<indirectly_swappable<_Iter, _Iter2>>> =
   is_nothrow_copy_constructible_v<_Iter> && is_nothrow_copy_constructible_v<_Iter2> &&
   noexcept(_CUDA_VRANGES::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
-#endif // _LIBCUDACXX_STD_VER >= 17
+#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
 template <class _Iter>
 class _LIBCUDACXX_TEMPLATE_VIS reverse_iterator
-#if _LIBCUDACXX_STD_VER <= 14 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
+#if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<typename iterator_traits<_Iter>::iterator_category,
                       typename iterator_traits<_Iter>::value_type,
                       typename iterator_traits<_Iter>::difference_type,
@@ -92,10 +92,10 @@ private:
   _Iter __t_; // no longer used as of LWG #2360, not removed due to ABI break
 #endif
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
   static_assert(__is_cpp17_bidirectional_iterator<_Iter>::value || bidirectional_iterator<_Iter>,
                 "reverse_iterator<It> requires It to be a bidirectional iterator.");
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
 protected:
   _Iter current;
@@ -108,7 +108,7 @@ public:
         random_access_iterator_tag,
         typename iterator_traits<_Iter>::iterator_category>;
   using pointer = typename iterator_traits<_Iter>::pointer;
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
   using iterator_concept = _If<random_access_iterator<_Iter>, random_access_iterator_tag, bidirectional_iterator_tag>;
   using value_type       = iter_value_t<_Iter>;
   using difference_type  = iter_difference_t<_Iter>;
@@ -183,7 +183,7 @@ public:
     return *--__tmp;
   }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr pointer operator->() const
     requires is_pointer_v<_Iter> || requires(const _Iter __i) { __i.operator->(); }
   {
@@ -201,7 +201,7 @@ public:
   {
     return _CUDA_VSTD::addressof(operator*());
   }
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reverse_iterator&
   operator++()
@@ -257,7 +257,7 @@ public:
     return *(*this + __n);
   }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr iter_rvalue_reference_t<_Iter>
   iter_move(const reverse_iterator& __i) noexcept(__noexcept_rev_iter_iter_move<_Iter>)
   {
@@ -286,9 +286,12 @@ public:
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();
     _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
+#if defined(_LIBCUDACXX_COMPILER_ICC)
+  _LIBCUDACXX_UNREACHABLE();
+#endif // _LIBCUDACXX_COMPILER_ICC
   }
 #endif // !_LIBCUDACXX_COMPILER_MSVC_2017
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 };
 
 template <class _Iter>
@@ -302,13 +305,13 @@ struct __is_reverse_iterator<reverse_iterator<_Iter> > : true_type
 template <class _Iter1, class _Iter2>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
 operator==(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
   requires requires {
     {
       __x.base() == __y.base()
     } -> convertible_to<bool>;
   }
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 {
   return __x.base() == __y.base();
 }
@@ -316,13 +319,13 @@ operator==(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& 
 template <class _Iter1, class _Iter2>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
 operator<(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
   requires requires {
     {
       __x.base() > __y.base()
     } -> convertible_to<bool>;
   }
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 {
   return __x.base() > __y.base();
 }
@@ -330,13 +333,13 @@ operator<(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& _
 template <class _Iter1, class _Iter2>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
 operator!=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
   requires requires {
     {
       __x.base() != __y.base()
     } -> convertible_to<bool>;
   }
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 {
   return __x.base() != __y.base();
 }
@@ -344,13 +347,13 @@ operator!=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& 
 template <class _Iter1, class _Iter2>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
 operator>(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
   requires requires {
     {
       __x.base() < __y.base()
     } -> convertible_to<bool>;
   }
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 {
   return __x.base() < __y.base();
 }
@@ -358,13 +361,13 @@ operator>(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& _
 template <class _Iter1, class _Iter2>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
 operator>=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
   requires requires {
     {
       __x.base() <= __y.base()
     } -> convertible_to<bool>;
   }
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 {
   return __x.base() <= __y.base();
 }
@@ -372,13 +375,13 @@ operator>=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& 
 template <class _Iter1, class _Iter2>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
 operator<=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
   requires requires {
     {
       __x.base() >= __y.base()
     } -> convertible_to<bool>;
   }
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 {
   return __x.base() >= __y.base();
 }
@@ -406,13 +409,13 @@ operator+(typename reverse_iterator<_Iter>::difference_type __n, const reverse_i
   return reverse_iterator<_Iter>(__x.base() - __n);
 }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Iter1, class _Iter2>
   requires(!sized_sentinel_for<_Iter1, _Iter2>)
 inline constexpr bool disable_sized_sentinel_for<reverse_iterator<_Iter1>, reverse_iterator<_Iter2>> = true;
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Iter>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reverse_iterator<_Iter>
 make_reverse_iterator(_Iter __i)
@@ -421,7 +424,7 @@ make_reverse_iterator(_Iter __i)
 }
 #endif
 
-#if _LIBCUDACXX_STD_VER <= 17
+#if _CCCL_STD_VER <= 2017
 template <class _Iter>
 using __unconstrained_reverse_iterator = reverse_iterator<_Iter>;
 #else
@@ -608,7 +611,7 @@ template <class _Iter>
 struct __is_reverse_iterator<__unconstrained_reverse_iterator<_Iter>> : true_type
 {};
 
-#endif // _LIBCUDACXX_STD_VER <= 17
+#endif // _CCCL_STD_VER <= 2017
 
 template <template <class> class _RevIter1, template <class> class _RevIter2, class _Iter>
 struct __unwrap_reverse_iter_impl
@@ -631,7 +634,7 @@ struct __unwrap_reverse_iter_impl
 };
 
 #ifdef _LIBCUDACXX_HAS_RANGES
-#  if _LIBCUDACXX_STD_VER > 14
+#  if _CCCL_STD_VER > 2014
 template <_CUDA_VRANGES::bidirectional_range _Range>
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _CUDA_VRANGES::
   subrange<reverse_iterator<_CUDA_VRANGES::iterator_t<_Range>>, reverse_iterator<_CUDA_VRANGES::iterator_t<_Range>>>
@@ -641,7 +644,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _CUDA_VRANGES:
   return {_CUDA_VSTD::make_reverse_iterator(_CUDA_VRANGES::next(__first, _CUDA_VRANGES::end(__range))),
           _CUDA_VSTD::make_reverse_iterator(__first)};
 }
-#  endif // _LIBCUDACXX_STD_VER > 14
+#  endif // _CCCL_STD_VER > 2014
 #endif // _LIBCUDACXX_HAS_RANGES
 
 template <class _Iter, bool __b>
@@ -649,7 +652,7 @@ struct __unwrap_iter_impl<reverse_iterator<reverse_iterator<_Iter> >, __b>
     : __unwrap_reverse_iter_impl<reverse_iterator, reverse_iterator, _Iter>
 {};
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 template <class _Iter, bool __b>
 struct __unwrap_iter_impl<reverse_iterator<__unconstrained_reverse_iterator<_Iter>>, __b>
@@ -666,7 +669,7 @@ struct __unwrap_iter_impl<__unconstrained_reverse_iterator<__unconstrained_rever
     : __unwrap_reverse_iter_impl<__unconstrained_reverse_iterator, __unconstrained_reverse_iterator, _Iter>
 {};
 
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

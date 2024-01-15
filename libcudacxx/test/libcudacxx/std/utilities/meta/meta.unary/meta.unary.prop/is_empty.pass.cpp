@@ -29,7 +29,7 @@ void test_is_empty()
     static_assert( cuda::std::is_empty<const T>::value, "");
     static_assert( cuda::std::is_empty<volatile T>::value, "");
     static_assert( cuda::std::is_empty<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert( cuda::std::is_empty_v<T>, "");
     static_assert( cuda::std::is_empty_v<const T>, "");
     static_assert( cuda::std::is_empty_v<volatile T>, "");
@@ -45,7 +45,7 @@ void test_is_not_empty()
     static_assert(!cuda::std::is_empty<const T>::value, "");
     static_assert(!cuda::std::is_empty<volatile T>::value, "");
     static_assert(!cuda::std::is_empty<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!cuda::std::is_empty_v<T>, "");
     static_assert(!cuda::std::is_empty_v<const T>, "");
     static_assert(!cuda::std::is_empty_v<volatile T>, "");

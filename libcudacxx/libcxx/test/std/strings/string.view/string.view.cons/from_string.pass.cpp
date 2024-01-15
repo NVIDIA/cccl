@@ -47,7 +47,7 @@ int main(int, char**) {
     test ( std::u8string{} );
 #endif
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test ( std::u16string{u"QBCDE"} );
     test ( std::u16string{u""} );
     test ( std::u16string{} );

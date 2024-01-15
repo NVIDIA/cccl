@@ -50,7 +50,7 @@ test(C& c1)
 {
     typedef typename C::iterator I;
     std::size_t c1_osize = c1.size();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     typedef typename C::reference Ref;
     Ref res_ref = c1.emplace_front(Emplaceable(1, 2.5));
 #else
@@ -61,7 +61,7 @@ test(C& c1)
                == static_cast<std::ptrdiff_t>(c1.size()));
     I i = c1.begin();
     assert(*i == Emplaceable(1, 2.5));
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     assert(&res_ref == &(*i));
 #endif
 }

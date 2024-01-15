@@ -107,7 +107,7 @@ private:
 
 
     /// Internal storage allocator
-    __device__ __forceinline__ _TempStorage& PrivateStorage()
+    _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
     {
         __shared__ _TempStorage private_storage;
         return private_storage;
@@ -120,7 +120,7 @@ public:
     //! @{
 
     //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
-    __device__ __forceinline__ BlockShuffle()
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockShuffle()
     :
         temp_storage(PrivateStorage()),
         linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
@@ -133,7 +133,7 @@ public:
      * @param[in] temp_storage
      *   Reference to memory allocation having layout type TempStorage
      */
-    __device__ __forceinline__ BlockShuffle(TempStorage &temp_storage)
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockShuffle(TempStorage &temp_storage)
         : temp_storage(temp_storage.Alias())
         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
@@ -147,16 +147,16 @@ public:
     //!
     //! Each *thread*\ :sub:`i` obtains the ``input`` provided by *thread*\ :sub:`i + distance`.
     //! The offset ``distance`` may be negative.
-    //! 
+    //!
     //! - @smemreuse
     //!
     //! @endrst
-    //! 
+    //!
     //! @param[in] input
     //!   @rst
     //!   The input item from the calling thread (*thread*\ :sub:`i`)
     //!   @endrst
-    //! 
+    //!
     //! @param[out] output
     //!   @rst
     //!   The ``input`` item from the successor (or predecessor) thread
@@ -164,10 +164,10 @@ public:
     //!   This value is only updated for for *thread*\ :sub:`i` when
     //!   ``0 <= (i + distance) < BLOCK_THREADS - 1``
     //!   @endrst
-    //! 
+    //!
     //! @param[in] distance
     //!   Offset distance (may be negative)
-    __device__ __forceinline__ void Offset(T input, T &output, int distance = 1)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Offset(T input, T &output, int distance = 1)
     {
         temp_storage[linear_tid] = input;
 
@@ -182,24 +182,24 @@ public:
 
     //! @rst
     //! Each *thread*\ :sub:`i` obtains the ``input`` provided by *thread*\ :sub:`i + distance`.
-    //! 
+    //!
     //! - @smemreuse
     //!
     //! @endrst
-    //! 
+    //!
     //! @param[in] input
     //!   The calling thread's input item
-    //! 
+    //!
     //! @param[out] output
     //!   @rst
     //!   The ``input`` item from thread
-    //!   *thread*\ :sub:`(i + distance>) % BLOCK_THREADS` (may be aliased to ``input``). 
+    //!   *thread*\ :sub:`(i + distance>) % BLOCK_THREADS` (may be aliased to ``input``).
     //!   This value is not updated for *thread*\ :sub:`BLOCK_THREADS - 1`.
     //!   @endrst
-    //! 
+    //!
     //! @param[in] distance
     //!   Offset distance (`0 < distance < `BLOCK_THREADS`)
-    __device__ __forceinline__ void Rotate(T input, T &output, unsigned int distance = 1)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Rotate(T input, T &output, unsigned int distance = 1)
     {
         temp_storage[linear_tid] = input;
 
@@ -212,26 +212,26 @@ public:
         output = temp_storage[offset];
     }
 
-    //! @rst 
+    //! @rst
     //! The thread block rotates its :ref:`blocked arrangement <flexible-data-arrangement>` of
     //! ``input`` items, shifting it up by one item.
-    //! 
+    //!
     //! - @blocked
     //! - @granularity
     //! - @smemreuse
     //!
-    //! @endrst 
-    //! 
+    //! @endrst
+    //!
     //! @param[in] input
     //!   The calling thread's input items
-    //! 
+    //!
     //! @param[out] prev
     //!   @rst
     //!   The corresponding predecessor items (may be aliased to ``input``).
     //!   The item ``prev[0]`` is not updated for *thread*\ :sub:`0`.
     //!   @endrst
     template <int ITEMS_PER_THREAD>
-    __device__ __forceinline__ void Up(T (&input)[ITEMS_PER_THREAD], T (&prev)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Up(T (&input)[ITEMS_PER_THREAD], T (&prev)[ITEMS_PER_THREAD])
     {
         temp_storage[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
@@ -270,7 +270,7 @@ public:
     //!   The item ``input[ITEMS_PER_THREAD - 1]`` from *thread*\ :sub:`BLOCK_THREADS - 1`, provided to all threads
     //!   @endrst
     template <int ITEMS_PER_THREAD>
-    __device__ __forceinline__ void Up(T (&input)[ITEMS_PER_THREAD], T (&prev)[ITEMS_PER_THREAD], T& block_suffix)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Up(T (&input)[ITEMS_PER_THREAD], T (&prev)[ITEMS_PER_THREAD], T& block_suffix)
     {
       Up(input, prev);
       block_suffix = temp_storage[BLOCK_THREADS - 1];
@@ -295,7 +295,7 @@ public:
     //!   The value ``prev[0]`` is not updated for *thread*\ :sub:`BLOCK_THREADS - 1`.
     //!   @endrst
     template <int ITEMS_PER_THREAD>
-    __device__ __forceinline__ void Down(T (&input)[ITEMS_PER_THREAD], T (&prev)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Down(T (&input)[ITEMS_PER_THREAD], T (&prev)[ITEMS_PER_THREAD])
     {
         temp_storage[linear_tid] = input[0];
 
@@ -309,31 +309,31 @@ public:
             prev[ITEMS_PER_THREAD - 1] = temp_storage[linear_tid + 1];
     }
 
-    //! @rst 
+    //! @rst
     //! The thread block rotates its :ref:`blocked arrangement <flexible-data-arrangement>` of input items,
     //! shifting it down by one item. All threads receive ``input[0]`` provided by *thread*\ :sub:`0`.
-    //! 
+    //!
     //! - @blocked
     //! - @granularity
     //! - @smemreuse
     //!
-    //! @endrst 
-    //! 
+    //! @endrst
+    //!
     //! @param[in] input
     //!   The calling thread's input items
-    //! 
+    //!
     //! @param[out] prev
     //!   @rst
     //!   The corresponding predecessor items (may be aliased to ``input``).
     //!   The value ``prev[0]`` is not updated for *thread*\ :sub:`BLOCK_THREADS - 1`.
     //!   @endrst
-    //! 
+    //!
     //! @param[out] block_prefix
     //!   @rst
     //!   The item ``input[0]`` from *thread*\ :sub:`0`, provided to all threads
     //!   @endrst
     template <int ITEMS_PER_THREAD>
-    __device__ __forceinline__ void Down(T (&input)[ITEMS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Down(T (&input)[ITEMS_PER_THREAD],
                                          T (&prev)[ITEMS_PER_THREAD],
                                          T &block_prefix)
     {

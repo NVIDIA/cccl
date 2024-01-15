@@ -54,7 +54,7 @@ void test_const_container( const C & c, typename C::value_type val ) {
     assert (*cuda::std::begin(c)   ==  val );
     assert ( cuda::std::begin(c)   != c.end());
     assert ( cuda::std::end(c)     == c.end());
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     assert ( cuda::std::cbegin(c)  == c.cbegin());
     assert ( cuda::std::cbegin(c)  != c.cend());
     assert ( cuda::std::cend(c)    == c.cend());
@@ -74,7 +74,7 @@ void test_const_container( const cuda::std::initializer_list<T> & c, T val ) {
     assert (*cuda::std::begin(c)   ==  val );
     assert ( cuda::std::begin(c)   != c.end());
     assert ( cuda::std::end(c)     == c.end());
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 //  initializer_list doesn't have cbegin/cend/rbegin/rend
 //  but cuda::std::cbegin(),etc work (b/c they're general fn templates)
 //     assert ( cuda::std::cbegin(c)  == c.cbegin());
@@ -96,7 +96,7 @@ void test_container( C & c, typename C::value_type val ) {
     assert (*cuda::std::begin(c)   ==  val );
     assert ( cuda::std::begin(c)   != c.end());
     assert ( cuda::std::end(c)     == c.end());
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     assert ( cuda::std::cbegin(c)  == c.cbegin());
     assert ( cuda::std::cbegin(c)  != c.cend());
     assert ( cuda::std::cend(c)    == c.cend());
@@ -116,7 +116,7 @@ void test_container( cuda::std::initializer_list<T> & c, T val ) {
     assert (*cuda::std::begin(c)   ==  val );
     assert ( cuda::std::begin(c)   != c.end());
     assert ( cuda::std::end(c)     == c.end());
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 //  initializer_list doesn't have cbegin/cend/rbegin/rend
 //     assert ( cuda::std::cbegin(c)  == c.cbegin());
 //     assert ( cuda::std::cbegin(c)  != c.cend());
@@ -137,7 +137,7 @@ void test_const_array( const T (&array)[Sz] ) {
     assert (*cuda::std::begin(array)  ==  array[0] );
     assert ( cuda::std::begin(array)  != cuda::std::end(array));
     assert ( cuda::std::end(array)    == array + Sz);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     assert ( cuda::std::cbegin(array) == array );
     assert (*cuda::std::cbegin(array) == array[0] );
     assert ( cuda::std::cbegin(array) != cuda::std::cend(array));
@@ -146,11 +146,11 @@ void test_const_array( const T (&array)[Sz] ) {
     }
 
 STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int global_array [] { 1, 2, 3 };
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
 STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int global_const_array[] = {0,1,2,3,4};
 #endif // nvcc > 11.2
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
 
 int main(int, char**) {
 #if defined(_LIBCUDACXX_HAS_VECTOR)
@@ -181,13 +181,13 @@ int main(int, char**) {
     test_const_container ( il, 4 );
 
     test_const_array ( global_array );
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     constexpr const int *b = cuda::std::cbegin(global_array);
     constexpr const int *e = cuda::std::cend(global_array);
     static_assert(e - b == 3, "");
 #endif
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     {
         typedef cuda::std::array<int, 5> C;
         constexpr const C local_const_array{0,1,2,3,4};
@@ -225,7 +225,7 @@ int main(int, char**) {
         static_assert ( *cuda::std::crbegin(global_const_array) == 4, "" );
     }
 #endif // nvcc > 11.2
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
 
   return 0;
 }

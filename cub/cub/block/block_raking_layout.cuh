@@ -125,7 +125,7 @@ struct BlockRakingLayout
     /**
      * @brief Returns the location for the calling thread to place data into the grid
      */
-    static __device__ __forceinline__ T* PlacementPtr(
+    static _CCCL_DEVICE _CCCL_FORCEINLINE T* PlacementPtr(
         TempStorage &temp_storage,
         unsigned int linear_tid)
     {
@@ -146,7 +146,7 @@ struct BlockRakingLayout
     /**
      * @brief Returns the location for the calling thread to begin sequential raking
      */
-    static __device__ __forceinline__ T* RakingPtr(
+    static _CCCL_DEVICE _CCCL_FORCEINLINE T* RakingPtr(
         TempStorage &temp_storage,
         unsigned int linear_tid)
     {

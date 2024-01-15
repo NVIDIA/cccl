@@ -40,7 +40,7 @@
 #endif // no system header
 #include <thrust/detail/cpp14_required.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
@@ -67,13 +67,13 @@ struct async_transform_fn
   OutputIt output_;
   UnaryOperation op_;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   async_transform_fn(ForwardIt&& first, OutputIt&& output, UnaryOperation&& op)
     : first_(std::move(first)), output_(std::move(output)), op_(std::move(op))
   {}
 
   template <typename Index>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(Index idx)
   {
     output_[idx] = op_(thrust::raw_reference_cast(first_[idx]));

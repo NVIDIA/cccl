@@ -48,7 +48,7 @@ template <class Derived,
           class InputIt1,
           class InputIt2,
           class BinaryPred>
-bool __host__ __device__
+bool _CCCL_HOST_DEVICE
 equal(execution_policy<Derived>& policy,
       InputIt1                   first1,
       InputIt1                   last1,
@@ -61,7 +61,7 @@ equal(execution_policy<Derived>& policy,
 template <class Derived,
           class InputIt1,
           class InputIt2>
-bool __host__ __device__
+bool _CCCL_HOST_DEVICE
 equal(execution_policy<Derived>& policy,
       InputIt1                   first1,
       InputIt1                   last1,

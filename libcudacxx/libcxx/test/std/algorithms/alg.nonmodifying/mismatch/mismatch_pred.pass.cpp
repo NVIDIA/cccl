@@ -30,7 +30,7 @@
 #pragma warning(disable: 4018) // signed/unsigned mismatch
 #endif // TEST_COMPILER_MSVC
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool eq(int a, int b) { return a == b; }
 
 TEST_CONSTEXPR bool test_constexpr() {
@@ -68,7 +68,7 @@ TEST_CONSTEXPR bool test_constexpr() {
 #endif
 
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 #define HAS_FOUR_ITERATOR_VERSION
 #endif
 
@@ -94,7 +94,7 @@ int main(int, char**)
     assert(bcp.count() > 0 && bcp.count() < sa);
     bcp.reset();
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(std::mismatch(II(ia), II(ia + sa), II(ib), II(ib + sb), EQ())
             == (std::pair<II, II>(II(ia+3), II(ib+3))));
     assert(std::mismatch(RAI(ia), RAI(ia + sa), RAI(ib), RAI(ib + sb), EQ())
@@ -108,14 +108,14 @@ int main(int, char**)
     assert(std::mismatch(ia, ia + sa, ib, EQ()) ==
            (std::pair<int*,int*>(ia+3,ib+3)));
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(std::mismatch(ia, ia + sa, ib, ib + sb, EQ()) ==
            (std::pair<int*,int*>(ia+3,ib+3)));
     assert(std::mismatch(ia, ia + sa, ib, ib + 2, EQ()) ==
            (std::pair<int*,int*>(ia+2,ib+2)));
 #endif
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

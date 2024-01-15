@@ -27,16 +27,18 @@
 
 #include <cub/device/device_select.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 
 #include <algorithm>
 
-#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
+#include "catch2_test_launch_helper.h"
 
 template<class T>
 inline T to_bound(const unsigned long long bound) {
@@ -66,6 +68,36 @@ inline c2h::custom_type_t<c2h::equal_comparable_t> to_bound(const unsigned long 
   return val;
 }
 
+template <typename HugeDataTypeT>
+struct index_to_huge_type_op_t
+{
+  template<typename ValueType>
+  __device__ __host__ HugeDataTypeT operator()(const ValueType& val)
+  {
+    HugeDataTypeT return_val{};
+    return_val.key = val;
+    return_val.val = val;
+    return return_val;
+  }
+};
+
+template <typename ValueT>
+struct index_to_value_t
+{
+  template <typename IndexT>
+  __host__ __device__ __forceinline__ ValueT operator()(IndexT index)
+  {
+    if (static_cast<std::uint64_t>(index) == 4300000000ULL)
+    {
+      return static_cast<ValueT>(1);
+    }
+    else
+    {
+      return static_cast<ValueT>(0);
+    }
+  }
+};
+
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::UniqueByKey, select_unique_by_key);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -85,6 +117,9 @@ using all_types = c2h::type_list<std::uint8_t,
                                  int,
                                  long2,
                                  c2h::custom_type_t<c2h::equal_comparable_t>>;
+
+using huge_types = c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t, c2h::huge_data<128>::type>,
+                                  c2h::custom_type_t<c2h::equal_comparable_t, c2h::huge_data<256>::type>>;
 
 using types = c2h::type_list<std::uint8_t,
                              std::uint32_t>;
@@ -197,13 +232,25 @@ CUB_TEST("DeviceSelect::UniqueByKey does not change input", "[device][select_uni
   REQUIRE(reference_vals == vals_in);
 }
 
+template<typename EqualityOpT>
 struct project_first
 {
+    EqualityOpT equality_op;
     template <typename Tuple>
     __host__ __device__ bool operator()(const Tuple& lhs, const Tuple& rhs) const
     {
-        return thrust::get<0>(lhs) == thrust::get<0>(rhs);
+        return equality_op(thrust::get<0>(lhs), thrust::get<0>(rhs));
     }
+};
+
+template<typename T>
+struct custom_equality_op
+{
+  T div_val;
+  __host__ __device__ __forceinline__ bool operator()(const T& lhs, const T& rhs) const
+  {
+    return (lhs / div_val) == (rhs / div_val);
+  }
 };
 
 CUB_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_unique_by_key]", all_types)
@@ -235,7 +282,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_uniq
   thrust::host_vector<val_type> reference_vals = vals_in;
   const auto zip_begin = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end   = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary  = std::unique(zip_begin, zip_end, project_first{});
+  const auto boundary  = std::unique(zip_begin, zip_end, project_first<cub::Equality>{cub::Equality{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);
@@ -275,7 +322,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works with pointers", "[device][select_uniqu
   thrust::host_vector<val_type> reference_vals = vals_in;
   const auto zip_begin = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end   = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary  = std::unique(zip_begin, zip_end, project_first{});
+  const auto boundary  = std::unique(zip_begin, zip_end, project_first<cub::Equality>{cub::Equality{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);
@@ -328,8 +375,156 @@ CUB_TEST("DeviceSelect::UniqueByKey works with a different output type", "[devic
   thrust::host_vector<val_type> reference_vals = vals_in;
   const auto zip_begin = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end   = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary  = std::unique(zip_begin, zip_end, project_first{});
+  const auto boundary  = std::unique(zip_begin, zip_end, project_first<cub::Equality>{cub::Equality{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
+
+  keys_out.resize(num_selected_out[0]);
+  vals_out.resize(num_selected_out[0]);
+  reference_keys.resize(num_selected_out[0]);
+  reference_vals.resize(num_selected_out[0]);
+  REQUIRE(reference_keys == keys_out);
+  REQUIRE(reference_vals == vals_out);
+}
+
+CUB_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
+         "[device][select_unique_by_key][vsmem]",
+         huge_types)
+{
+  using type     = std::uint32_t;
+  using val_type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 100000)));
+  thrust::device_vector<type> keys_in(num_items);
+  thrust::device_vector<type> keys_out(num_items);
+  thrust::device_vector<val_type> vals_out(num_items);
+  c2h::gen(CUB_SEED(2), keys_in, to_bound<type>(0), to_bound<type>(42));
+
+  auto vals_it =
+    thrust::make_transform_iterator(thrust::make_counting_iterator(0U), index_to_huge_type_op_t<val_type>{});
+
+  // Needs to be device accessible
+  thrust::device_vector<int> num_selected_out(1, 0);
+  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  select_unique_by_key(
+    thrust::raw_pointer_cast(keys_in.data()),
+    vals_it,
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(vals_out.data()),
+    d_first_num_selected_out,
+    num_items);
+
+  // Ensure that we create the same output as std
+  thrust::host_vector<type> reference_keys = keys_in;
+  thrust::host_vector<val_type> reference_vals(num_items);
+  thrust::copy(vals_it, vals_it + num_items, reference_vals.begin());
+
+  const auto zip_begin = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
+  const auto zip_end   = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
+  const auto boundary  = std::unique(zip_begin, zip_end, project_first<cub::Equality>{cub::Equality{}});
+  REQUIRE((boundary - zip_begin) == num_selected_out[0]);
+
+  keys_out.resize(num_selected_out[0]);
+  vals_out.resize(num_selected_out[0]);
+  reference_keys.resize(num_selected_out[0]);
+  reference_vals.resize(num_selected_out[0]);
+  REQUIRE(reference_keys == keys_out);
+  REQUIRE(reference_vals == vals_out);
+}
+
+CUB_TEST("DeviceSelect::UniqueByKey works for very large input that need 64-bit offset types",
+         "[device][select_unique_by_key]")
+{
+  using type       = std::int32_t;
+  using index_type = std::int64_t;
+
+  const std::size_t num_items = 4400000000ULL;
+  thrust::host_vector<type> reference_keys{static_cast<type>(0), static_cast<type>(1), static_cast<type>(0)};
+  thrust::host_vector<index_type> reference_values{0, 4300000000ULL, 4300000001ULL};
+
+  auto keys_in   = thrust::make_transform_iterator(thrust::make_counting_iterator(0ULL), index_to_value_t<type>{});
+  auto values_in = thrust::make_counting_iterator(0ULL);
+  thrust::device_vector<type> keys_out(reference_keys.size());
+  thrust::device_vector<index_type> values_out(reference_values.size());
+
+  // Needs to be device accessible
+  thrust::device_vector<int> num_selected_out(1, 0);
+  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  // Run test
+  select_unique_by_key(keys_in, values_in, keys_out.begin(), values_out.begin(), d_first_num_selected_out, num_items);
+
+  // Ensure that we created the correct output
+  REQUIRE(reference_keys.size() == static_cast<std::size_t>(num_selected_out[0]));
+  REQUIRE(reference_keys == keys_out);
+  REQUIRE(reference_values == values_out);
+}
+
+CUB_TEST("DeviceSelect::UniqueByKey works for very large outputs that needs 64-bit offset types",
+         "[device][select_unique_by_key]")
+{
+  using type       = std::int32_t;
+  using index_type = std::int64_t;
+
+  constexpr std::size_t num_items = 4400000000ULL;
+
+  auto keys_in   = thrust::make_counting_iterator(0ULL);
+  auto values_in = thrust::make_counting_iterator(0ULL);
+
+  // Needs to be device accessible
+  thrust::device_vector<index_type> num_selected_out(1, 0);
+  index_type* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  // Run test
+  select_unique_by_key(
+    keys_in,
+    values_in,
+    thrust::make_discard_iterator(),
+    thrust::make_discard_iterator(),
+    d_first_num_selected_out,
+    num_items);
+
+  // Ensure that we created the correct output
+  REQUIRE(num_items == static_cast<std::size_t>(num_selected_out[0]));
+}
+
+CUB_TEST("DeviceSelect::UniqueByKey works with a custom equality operator",
+         "[device][select_unique_by_key]")
+{
+  using type        = std::int32_t;
+  using custom_op_t = custom_equality_op<type>;
+  using val_type    = std::uint64_t;
+  using index_type  = std::int64_t;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  auto keys_in        = thrust::make_counting_iterator(static_cast<type>(0));
+  auto values_in      = thrust::make_counting_iterator(0ULL);
+  thrust::device_vector<type> keys_out(num_items);
+  thrust::device_vector<val_type> vals_out(num_items);
+
+  // Needs to be device accessible
+  thrust::device_vector<index_type> num_selected_out(1, 0);
+  index_type* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  // Run test
+  select_unique_by_key(
+    keys_in,
+    values_in,
+    keys_out.begin(),
+    vals_out.begin(),
+    d_first_num_selected_out,
+    num_items,
+    custom_op_t{static_cast<type>(8)});
+
+  // Ensure that we create the same output as std
+  thrust::host_vector<type> reference_keys(num_items);
+  thrust::host_vector<val_type> reference_vals(num_items);
+  thrust::copy(keys_in, keys_in + num_items, reference_keys.begin());
+  thrust::copy(values_in, values_in + num_items, reference_vals.begin());
+  const auto zip_begin = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
+  const auto zip_end   = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
+  const auto boundary  = std::unique(zip_begin, zip_end, project_first<custom_op_t>{custom_op_t{static_cast<type>(8)}});
+  REQUIRE((boundary - zip_begin) == static_cast<std::ptrdiff_t>(num_selected_out[0]));
 
   keys_out.resize(num_selected_out[0]);
   vals_out.resize(num_selected_out[0]);

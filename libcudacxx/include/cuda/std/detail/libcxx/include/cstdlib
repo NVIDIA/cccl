@@ -193,7 +193,7 @@ using ::wcstombs;
 using ::at_quick_exit;
 using ::quick_exit;
 #endif
-#if _LIBCUDACXX_STD_VER > 14 && defined(_LIBCUDACXX_HAS_C11_FEATURES)
+#if _CCCL_STD_VER > 2014 && defined(_LIBCUDACXX_HAS_C11_FEATURES)
 using ::aligned_alloc;
 #endif
 #endif // !defined(_LIBCUDACXX_COMPILER_NVRTC)

@@ -51,7 +51,9 @@ size_t strlen(const char* s);
 
 */
 
-#include <__config>
+#ifndef __cuda_std__
+#  include <__config>
+#endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -61,7 +63,9 @@ size_t strlen(const char* s);
 #  pragma system_header
 #endif // no system header
 
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
 #include_next <string.h>
+#endif // !_LIBCUDACXX_COMPILER_NVRTC && !_LIBCUDACXX_COMPILER_MSVC
 
 // MSVCRT, GNU libc and its derivates may already have the correct prototype in
 // <string.h>. This macro can be defined by users if their C library provides

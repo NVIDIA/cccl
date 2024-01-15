@@ -84,6 +84,11 @@ doxygen_aliases = [
 # more information on the format can be found at:
 #     https://www.doxygen.nl/manual/config.html#cfg_predefined
 doxygen_predefined = [
+    "_CCCL_HOST",
+    "_CCCL_DEVICE",
+    "_CCCL_HOST_DEVICE",
+    "_CCCL_FORCEINLINE",
+    "_CCCL_STD_VER",
     "CUB_DISABLE_NAMESPACE_MAGIC",
     "CUB_IGNORE_NAMESPACE_MAGIC_ERROR",
     "CUB_NAMESPACE_BEGIN=namespace cub {",
@@ -102,7 +107,7 @@ doxygen_predefined = [
     "CUB_IGNORE_DEPRECATED_CPP_DIALECT"
 ]
 
-# make sure to use ./fetch_imgs.sh 
+# make sure to use ./fetch_imgs.sh
 doxygen_conf_extra = """
   IMAGE_PATH             = ${config_root}/img
   DOXYFILE_ENCODING      = UTF-8

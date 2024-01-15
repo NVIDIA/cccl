@@ -23,7 +23,7 @@ int main(int, char**)
 {
     typedef std::bit_not<int> F;
     const F f = F();
-#if TEST_STD_VER <= 17
+#if TEST_STD_VER <= 2017
     static_assert((std::is_same<F::argument_type, int>::value), "" );
     static_assert((std::is_same<F::result_type, int>::value), "" );
 #endif

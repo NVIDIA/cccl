@@ -30,9 +30,9 @@ static_assert(equality_comparable<char const*>, "");
 static_assert(equality_comparable<char volatile*>, "");
 static_assert(equality_comparable<char const volatile*>, "");
 static_assert(equality_comparable<wchar_t&>, "");
-#if TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
 static_assert(equality_comparable<char8_t const&>, "");
-#endif // TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#endif // TEST_STD_VER > 2017 && defined(__cpp_char8_t)
 static_assert(equality_comparable<char16_t volatile&>, "");
 static_assert(equality_comparable<char32_t const volatile&>, "");
 static_assert(equality_comparable<unsigned char&&>, "");
@@ -82,7 +82,7 @@ static_assert(equality_comparable<cuda::std::array<int, 10>>, "");
 } // namespace standard_types
 
 namespace types_fit_for_purpose {
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(equality_comparable<cxx20_member_eq>, "");
 static_assert(equality_comparable<cxx20_friend_eq>, "");
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
@@ -95,7 +95,7 @@ static_assert(equality_comparable<explicit_operators>, "");
 static_assert(equality_comparable<different_return_types>, "");
 static_assert(equality_comparable<one_member_one_friend>, "");
 static_assert(equality_comparable<equality_comparable_with_ec1>, "");
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 static_assert(!equality_comparable<no_eq>, "");
 static_assert(!equality_comparable<no_neq>, "");
@@ -112,7 +112,7 @@ static_assert(equality_comparable<wrong_return_type_le>, "");
 static_assert(equality_comparable<wrong_return_type_ge>, "");
 static_assert(!equality_comparable<wrong_return_type>, "");
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(
     !equality_comparable<cxx20_member_eq_operator_with_deleted_ne>, "");
 static_assert(
@@ -138,7 +138,7 @@ static_assert(equality_comparable<ge_returns_explicit_bool>, "");
 static_assert(equality_comparable<returns_true_type>, "");
 static_assert(equality_comparable<returns_int_ptr>, "");
 #endif // TEST_HAS_NO_SPACESHIP_OPERATOR
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 } // namespace types_fit_for_purpose
 
 int main(int, char**) { return 0; }

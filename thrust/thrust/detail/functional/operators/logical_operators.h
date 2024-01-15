@@ -37,7 +37,7 @@ namespace functional
 {
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::logical_and<>>,
@@ -53,7 +53,7 @@ operator&&(const actor<T1> &_1, const T2 &_2)
 } // end operator&&()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::logical_and<>>,
@@ -69,7 +69,7 @@ operator&&(const T1 &_1, const actor<T2> &_2)
 } // end operator&&()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::logical_and<>>,
@@ -85,7 +85,7 @@ operator&&(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator&&()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::logical_or<>>,
@@ -101,7 +101,7 @@ operator||(const actor<T1> &_1, const T2 &_2)
 } // end operator&&()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::logical_or<>>,
@@ -117,7 +117,7 @@ operator||(const T1 &_1, const actor<T2> &_2)
 } // end operator&&()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::logical_or<>>,
@@ -133,7 +133,7 @@ operator||(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator&&()
 
 template<typename Eval>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_unary_operator<thrust::logical_not<>>,

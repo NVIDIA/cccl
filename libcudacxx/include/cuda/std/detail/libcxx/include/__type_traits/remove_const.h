@@ -43,7 +43,7 @@ using __remove_const_t = typename remove_const<_Tp>::type;
 
 #endif // defined(_LIBCUDACXX_REMOVE_CONST) && !defined(_LIBCUDACXX_USE_REMOVE_CONST_FALLBACK)
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using remove_const_t = __remove_const_t<_Tp>;
 #endif
 

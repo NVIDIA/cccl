@@ -20,7 +20,7 @@
 
 #include "test_iterators.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template <class ...Args>
 concept has_ranges_next = requires (Args&& ...args) {
   { cuda::std::ranges::next(cuda::std::forward<Args>(args)...) };

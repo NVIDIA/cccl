@@ -40,7 +40,7 @@ template <bool IsArray>
 void test_pointer() {
   typedef typename std::conditional<!IsArray, A, A[]>::type ValueT;
   const int expect_alive = IsArray ? 5 : 1;
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     using U1 = std::unique_ptr<ValueT>;
     using U2 = std::unique_ptr<ValueT, Deleter<ValueT> >;
@@ -93,7 +93,7 @@ void test_derived() {
   assert(B::count == 0);
 }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 struct NonDefaultDeleter {
   NonDefaultDeleter() = delete;
   void operator()(void*) const {}
@@ -106,7 +106,7 @@ struct GenericDeleter {
 
 template <class T>
 void test_sfinae() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   { // the constructor does not participate in overload resultion when
     // the deleter is a pointer type
     using U = std::unique_ptr<T, void (*)(void*)>;
@@ -126,7 +126,7 @@ void test_sfinae() {
 }
 
 static void test_sfinae_runtime() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   { // the constructor does not participate in overload resolution when
     // a base <-> derived conversion would occur.
     using UA = std::unique_ptr<A[]>;

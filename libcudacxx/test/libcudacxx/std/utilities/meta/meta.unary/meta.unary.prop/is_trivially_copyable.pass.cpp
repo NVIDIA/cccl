@@ -28,7 +28,7 @@ void test_is_trivially_copyable()
 {
     static_assert( cuda::std::is_trivially_copyable<T>::value, "");
     static_assert( cuda::std::is_trivially_copyable<const T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert( cuda::std::is_trivially_copyable_v<T>, "");
     static_assert( cuda::std::is_trivially_copyable_v<const T>, "");
 #endif
@@ -40,7 +40,7 @@ void test_is_not_trivially_copyable()
 {
     static_assert(!cuda::std::is_trivially_copyable<T>::value, "");
     static_assert(!cuda::std::is_trivially_copyable<const T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!cuda::std::is_trivially_copyable_v<T>, "");
     static_assert(!cuda::std::is_trivially_copyable_v<const T>, "");
 #endif

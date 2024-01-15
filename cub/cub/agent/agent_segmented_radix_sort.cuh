@@ -138,7 +138,7 @@ struct AgentSegmentedRadixSort
 
   DecomposerT decomposer;
 
-  __device__ __forceinline__
+  _CCCL_DEVICE _CCCL_FORCEINLINE
   AgentSegmentedRadixSort(OffsetT num_items,
                           TempStorage &temp_storage,
                           DecomposerT decomposer = {})
@@ -147,7 +147,7 @@ struct AgentSegmentedRadixSort
       , decomposer(decomposer)
   {}
 
-  __device__ __forceinline__ void ProcessSinglePass(int begin_bit,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessSinglePass(int begin_bit,
                                                     int end_bit,
                                                     const KeyT *d_keys_in,
                                                     const ValueT *d_values_in,
@@ -200,7 +200,7 @@ struct AgentSegmentedRadixSort
     }
   }
 
-  __device__ __forceinline__ void ProcessIterative(int current_bit,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessIterative(int current_bit,
                                                    int pass_bits,
                                                    const KeyT *d_keys_in,
                                                    const ValueT *d_values_in,

@@ -24,7 +24,7 @@
 #include "test_macros.h"
 #include "is_transparent.h"
 
-#if TEST_STD_VER <= 11
+#if TEST_STD_VER <= 2011
 #error "This test requires is C++14 (or later)"
 #else
 

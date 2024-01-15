@@ -26,7 +26,7 @@ int main(int, char**)
         assert(p2.first == 3);
         assert(p2.second == 4);
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         typedef std::pair<int, short> P1;
         constexpr P1 p1(3, static_cast<short>(4));

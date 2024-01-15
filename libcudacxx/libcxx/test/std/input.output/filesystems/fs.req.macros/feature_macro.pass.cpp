@@ -13,18 +13,18 @@
 #include <filesystem>
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
 #ifndef __cpp_lib_filesystem
 #error Filesystem feature test macro is not defined  (__cpp_lib_filesystem)
 #elif __cpp_lib_filesystem != 201703L
 #error Filesystem feature test macro has an incorrect value (__cpp_lib_filesystem)
 #endif
-#else // TEST_STD_VER < 17
+#else // TEST_STD_VER < 2017
 #ifdef __cpp_lib_filesystem
 #error Filesystem feature test macro should not be defined before C++17
 #endif
 #endif
 
-int main(int, char**) { 
+int main(int, char**) {
   return 0;
 }

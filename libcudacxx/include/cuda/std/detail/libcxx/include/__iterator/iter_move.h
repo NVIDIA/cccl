@@ -32,13 +32,10 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wvoid-ptr-dereference"
-#endif
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 
-
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 // [iterator.cust.move]
 
@@ -48,7 +45,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_move)
 _LIBCUDACXX_INLINE_VISIBILITY
 void iter_move();
 
-#if LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER >= 2020
 template <class _Tp>
 concept __unqualified_iter_move =
   __class_or_enum<remove_cvref_t<_Tp>> &&
@@ -73,7 +70,7 @@ concept __just_deref =
     requires (!is_lvalue_reference_v<decltype(*__t)>);
   };
 
-#else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
+#else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
 
 template <class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -108,7 +105,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 
 template<class _Tp>
 _LIBCUDACXX_CONCEPT __just_deref = _LIBCUDACXX_FRAGMENT(__just_deref_, _Tp);
-#endif // LIBCUDACXX_STD_VER < 20
+#endif // _CCCL_STD_VER <= 2017
 
 // [iterator.cust.move]
 
@@ -144,12 +141,12 @@ _LIBCUDACXX_END_NAMESPACE_RANGES
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER >= 2020
 template<__dereferenceable _Tp>
   requires requires(_Tp& __t) { { _CUDA_VRANGES::iter_move(__t) } -> __can_reference; }
 using iter_rvalue_reference_t = decltype(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Tp&>()));
 
-#else
+#else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
 
 template<class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -168,14 +165,12 @@ using __iter_rvalue_reference_t = decltype(_CUDA_VRANGES::iter_move(_CUDA_VSTD::
 template<class _Tp>
 using iter_rvalue_reference_t = enable_if_t<__can_iter_rvalue_reference_t<_Tp>,
                                             __iter_rvalue_reference_t<_Tp>>;
-#endif // LIBCUDACXX_STD_VER < 20
+#endif // _CCCL_STD_VER <= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+_CCCL_DIAG_POP
 
 #endif // _LIBCUDACXX___ITERATOR_ITER_MOVE_H

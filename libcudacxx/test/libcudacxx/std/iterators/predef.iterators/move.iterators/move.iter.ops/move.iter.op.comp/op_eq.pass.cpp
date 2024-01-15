@@ -63,7 +63,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   test_one<int*>();
   test_one<const int*>();
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   test_one<contiguous_iterator<int*>>();
 #endif
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
@@ -76,7 +76,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
   static_assert(test(), "");
 #endif
 

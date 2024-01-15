@@ -110,7 +110,7 @@ struct WarpScanSmem
      ******************************************************************************/
 
     /// Constructor
-    explicit __device__ __forceinline__ WarpScanSmem(
+    explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpScanSmem(
         TempStorage     &temp_storage)
     :
         temp_storage(temp_storage.Alias()),
@@ -133,7 +133,7 @@ struct WarpScanSmem
         bool        HAS_IDENTITY,
         int         STEP,
         typename    ScanOp>
-    __device__ __forceinline__ void ScanStep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(
         T                       &partial,
         ScanOp                  scan_op,
         Int2Type<STEP>          /*step*/)
@@ -161,7 +161,7 @@ struct WarpScanSmem
     template <
         bool        HAS_IDENTITY,
         typename    ScanOp>
-    __device__ __forceinline__ void ScanStep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(
         T                       &/*partial*/,
         ScanOp                  /*scan_op*/,
         Int2Type<STEPS>         /*step*/)
@@ -182,7 +182,7 @@ struct WarpScanSmem
      * @param[in]
      *   Marker type indicating whether T is primitive type
      */
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     InclusiveScan(T input, T &output, Sum scan_op, Int2Type<true> /*is_primitive*/)
     {
         T identity = 0;
@@ -211,7 +211,7 @@ struct WarpScanSmem
      *   Marker type indicating whether T is primitive type
      */
     template <typename ScanOp, int IS_PRIMITIVE>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     InclusiveScan(T input, T &output, ScanOp scan_op, Int2Type<IS_PRIMITIVE> /*is_primitive*/)
     {
         // Iterate scan steps
@@ -237,7 +237,7 @@ struct WarpScanSmem
      * @param[in] src_lane
      *   Which warp lane is to do the broadcasting
      */
-    __device__ __forceinline__ T Broadcast(T input, unsigned int src_lane)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Broadcast(T input, unsigned int src_lane)
     {
         if (lane_id == src_lane)
         {
@@ -267,7 +267,7 @@ struct WarpScanSmem
      *   Binary scan operator
      */
     template <typename ScanOp>
-    __device__ __forceinline__ void InclusiveScan(T input, T &inclusive_output, ScanOp scan_op)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T &inclusive_output, ScanOp scan_op)
     {
         InclusiveScan(input, inclusive_output, scan_op, Int2Type<Traits<T>::PRIMITIVE>());
     }
@@ -288,7 +288,7 @@ struct WarpScanSmem
      *   Warp-wide aggregate reduction of input items.
      */
     template <typename ScanOp>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     InclusiveScan(T input, T &inclusive_output, ScanOp scan_op, T &warp_aggregate)
     {
         InclusiveScan(input, inclusive_output, scan_op);
@@ -322,7 +322,7 @@ struct WarpScanSmem
      * @param[in] is_integer
      */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     Update(T /*input*/, T &inclusive, T &exclusive, ScanOpT /*scan_op*/, IsIntegerT /*is_integer*/)
     {
         // initial value unknown
@@ -337,7 +337,7 @@ struct WarpScanSmem
      * @brief Update inclusive and exclusive using input and inclusive (specialized for summation of
      *        integer types)
      */
-    __device__ __forceinline__ void Update(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
@@ -353,7 +353,7 @@ struct WarpScanSmem
      *        value
      */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void Update (
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       /*input*/,
         T                       &inclusive,
         T                       &exclusive,
@@ -375,7 +375,7 @@ struct WarpScanSmem
      * @brief Update inclusive and exclusive using initial value using input and inclusive
      *        (specialized for summation of integer types)
      */
-    __device__ __forceinline__ void Update (
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
@@ -391,7 +391,7 @@ struct WarpScanSmem
      * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive
      */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void Update (
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       /*input*/,
         T                       &inclusive,
         T                       &exclusive,
@@ -412,7 +412,7 @@ struct WarpScanSmem
      * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive (specialized
      *        for summation of integer types)
      */
-    __device__ __forceinline__ void Update (
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
@@ -434,7 +434,7 @@ struct WarpScanSmem
      *        value
      */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void Update (
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       /*input*/,
         T                       &inclusive,
         T                       &exclusive,

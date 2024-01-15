@@ -28,7 +28,7 @@ void test_return_type() {
     typedef typename Container::value_type value_type;
     typedef decltype(std::declval<Stack>().emplace(std::declval<value_type &>()))     stack_return_type;
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     typedef decltype(std::declval<Container>().emplace_back(std::declval<value_type>())) container_return_type;
     static_assert(std::is_same<stack_return_type, container_return_type>::value, "");
 #else
@@ -42,7 +42,7 @@ int main(int, char**)
     test_return_type<std::stack<int, std::vector<int> > > ();
 
     std::stack<Emplaceable> q;
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     typedef Emplaceable T;
     T& r1 = q.emplace(1, 2.5);
     assert(&r1 == &q.top());

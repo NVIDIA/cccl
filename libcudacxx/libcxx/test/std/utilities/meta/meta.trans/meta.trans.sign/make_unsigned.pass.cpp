@@ -16,7 +16,7 @@
 
 enum Enum {zero, one_};
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 enum BigEnum : unsigned long long // MSVC's ABI doesn't follow the Standard
 #else
 enum BigEnum
@@ -37,7 +37,7 @@ template <class T, class U>
 void test_make_unsigned()
 {
     ASSERT_SAME_TYPE(U, typename std::make_unsigned<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(U, std::make_unsigned_t<T>);
 #endif
 }

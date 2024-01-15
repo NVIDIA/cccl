@@ -56,7 +56,7 @@ int C::count = 0;
 template <class T>
 std::weak_ptr<T> source (std::shared_ptr<T> p) { return std::weak_ptr<T>(p); }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 template <class T>
 void sink (std::weak_ptr<T> &&) {}
 #endif
@@ -101,7 +101,7 @@ int main(int, char**)
     assert(B::count == 0);
     assert(A::count == 0);
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::shared_ptr<A> ps(new A);
         std::weak_ptr<A> pA = source(ps);

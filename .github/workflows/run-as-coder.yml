@@ -39,18 +39,31 @@ jobs:
         run: |
           cp -R cccl /home/coder/cccl
           chown -R coder:coder /home/coder/
+      - name: Add NVCC problem matcher
+        run: |
+          echo "::add-matcher::cccl/.github/problem-matchers/problem-matcher.json"
       - name: Configure credentials and environment variables for sccache
         uses: ./cccl/.github/actions/configure_cccl_sccache
       - name: Run command
         shell: su coder {0}
         run: |
-            set -exo pipefail
+            set -eo pipefail
             cd ~/cccl
+            echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
+            echo -e "\e[1;34m${{inputs.command}}\e[0m"
             eval "${{inputs.command}}" || exit_code=$?
             if [ ! -z "$exit_code" ]; then
-                echo "::error::Error! To checkout the corresponding code and reproduce locally, run the following commands:"
-                echo "git clone --branch $GITHUB_REF_NAME --single-branch --recurse-submodules https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
-                echo "docker run --rm -it --gpus all --pull=always --volume \$PWD:/repo --workdir /repo ${{ inputs.image }} ${{inputs.command}}"
-                exit $exit_code
+              echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
+              echo "::error:: To replicate this failure locally, follow the steps below:"
+              echo "1. Clone the repository, and navigate to the correct branch and commit:"
+              echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+              echo ""
+              echo "2. Run the failed command inside the same Docker container used by the CI:"
+              echo "   docker run --rm -it --gpus all --pull=always --volume \$PWD:/repo --workdir /repo ${{ inputs.image }} ${{inputs.command}}"
+              echo ""
+              echo "For additional information, see:"
+              echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
+              echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
+              exit $exit_code
             fi
 

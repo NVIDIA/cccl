@@ -59,7 +59,7 @@ int main(int, char**)
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(p))), "");
     }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     typedef cuda::std::pair<int, short> P;
     constexpr const P p1(3, static_cast<short>(4));

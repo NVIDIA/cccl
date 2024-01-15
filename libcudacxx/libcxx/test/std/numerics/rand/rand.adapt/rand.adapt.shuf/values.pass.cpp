@@ -34,7 +34,7 @@ test1()
 {
     typedef std::knuth_b E;
     static_assert(E::table_size == 256, "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((E::min() == 1), "");
     static_assert((E::max() == 2147483646), "");
 #else

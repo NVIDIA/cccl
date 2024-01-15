@@ -20,7 +20,7 @@
 
 int main(int, char**)
 {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::future<int> f0;
         std::future<int> f = f0; // expected-error {{call to deleted constructor of 'std::future<int>'}}

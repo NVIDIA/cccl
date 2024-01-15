@@ -152,7 +152,7 @@ do_test()
     assert((obj ^= T(0xF)) == T(8));
     assert(obj == T(8));
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     NV_DISPATCH_TARGET(
     NV_IS_HOST,(
         TEST_ALIGNAS_TYPE(A) char storage[sizeof(A)] = {23};
@@ -166,7 +166,7 @@ do_test()
         assert(zero == 0);
         zero.~A();
     ))
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 }
 
 template <class A, class T, template<typename, typename> class Selector>

@@ -53,7 +53,7 @@ int main(int, char**)
         ++i;
         assert(*i == 2);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::list<int, min_allocator<int>> l(3, 2);
         assert(l.size() == 3);

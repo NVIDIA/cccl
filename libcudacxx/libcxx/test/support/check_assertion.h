@@ -29,7 +29,7 @@
 # error "This header may only be used for libc++ tests"
 #endif
 
-#if TEST_STD_VER < 11
+#if TEST_STD_VER < 2011
 # error "C++11 or greater is required to use this header"
 #endif
 

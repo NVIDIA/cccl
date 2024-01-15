@@ -68,7 +68,7 @@ __host__ __device__ constexpr bool test() {
         __host__ __device__ ThrowingCopyNoexceptDecrement operator++(int);
         __host__ __device__ ThrowingCopyNoexceptDecrement& operator--() noexcept;
         __host__ __device__ ThrowingCopyNoexceptDecrement operator--(int) noexcept;
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
         bool operator==(const ThrowingCopyNoexceptDecrement&) const = default;
 #else
         __host__ __device__ bool operator==(const ThrowingCopyNoexceptDecrement&) const;
@@ -77,10 +77,12 @@ __host__ __device__ constexpr bool test() {
       };
       static_assert(cuda::std::bidirectional_iterator<ThrowingCopyNoexceptDecrement>);
 
+#ifndef TEST_COMPILER_ICC
       static_assert(!cuda::std::is_nothrow_copy_constructible_v<ThrowingCopyNoexceptDecrement>);
       ASSERT_NOEXCEPT(cuda::std::ranges::iter_move(--cuda::std::declval<ThrowingCopyNoexceptDecrement&>()));
       using RI = cuda::std::reverse_iterator<ThrowingCopyNoexceptDecrement>;
       ASSERT_NOT_NOEXCEPT(iter_move(cuda::std::declval<RI>()));
+#endif // TEST_COMPILER_ICC
     }
 
     {
@@ -98,7 +100,7 @@ __host__ __device__ constexpr bool test() {
         __host__ __device__ NoexceptCopyThrowingDecrement& operator--();
         __host__ __device__ NoexceptCopyThrowingDecrement operator--(int);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
         bool operator==(const NoexceptCopyThrowingDecrement&) const = default;
 #else
         __host__ __device__ bool operator==(const NoexceptCopyThrowingDecrement&) const;
@@ -108,9 +110,11 @@ __host__ __device__ constexpr bool test() {
       static_assert(cuda::std::bidirectional_iterator<NoexceptCopyThrowingDecrement>);
 
       static_assert( cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyThrowingDecrement>);
+#ifndef TEST_COMPILER_ICC
       ASSERT_NOT_NOEXCEPT(cuda::std::ranges::iter_move(--cuda::std::declval<NoexceptCopyThrowingDecrement&>()));
       using RI = cuda::std::reverse_iterator<NoexceptCopyThrowingDecrement>;
       ASSERT_NOT_NOEXCEPT(iter_move(cuda::std::declval<RI>()));
+#endif // TEST_COMPILER_ICC
     }
 
     {
@@ -128,7 +132,7 @@ __host__ __device__ constexpr bool test() {
         __host__ __device__ NoexceptCopyAndDecrement& operator--() noexcept;
         __host__ __device__ NoexceptCopyAndDecrement operator--(int) noexcept;
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
         bool operator==(const NoexceptCopyAndDecrement&) const = default;
 #else
         __host__ __device__ bool operator==(const NoexceptCopyAndDecrement&) const;

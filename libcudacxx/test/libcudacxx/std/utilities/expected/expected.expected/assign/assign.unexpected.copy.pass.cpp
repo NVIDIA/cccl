@@ -90,10 +90,12 @@ static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<true,
                                    const cuda::std::unexpected<int>&>, "");
 
 #ifndef TEST_COMPILER_MSVC_2017
+#ifndef TEST_COMPILER_ICC
 // !is_nothrow_constructible_v<E, GF> && !is_nothrow_move_constructible_v<T> &&
 // !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, MaybeNoexcept<false, false>>&,
                                     const cuda::std::unexpected<int>&>, "");
+#endif // TEST_COMPILER_ICC
 #endif // TEST_COMPILER_MSVC_2017
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
@@ -199,9 +201,9 @@ __host__ __device__ void testException() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test());
-#endif // TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   testException();
   return 0;
 }

@@ -69,7 +69,7 @@ int main(int, char**)
     }
 #endif // _LIBCUDACXX_VERSION
     {
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
 #if defined(_LIBCUDACXX_VERSION)
     //  In C++14, if POCS is set, swapping the allocator is required not to throw
         typedef std::vector<bool, some_alloc<bool>> C;
@@ -80,7 +80,7 @@ int main(int, char**)
         static_assert(!noexcept(swap(std::declval<C&>(), std::declval<C&>())), "");
 #endif
     }
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
 #if defined(_LIBCUDACXX_VERSION)
     {
         typedef std::vector<bool, some_alloc2<bool>> C;

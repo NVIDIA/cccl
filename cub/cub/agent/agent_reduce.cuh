@@ -201,7 +201,7 @@ struct AgentReduce
   // Whether or not the input is aligned with the vector type (specialized for
   // types we can vectorize)
   template <typename Iterator>
-  static __device__ __forceinline__ bool
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool
   IsAligned(Iterator d_in, Int2Type<true> /*can_vectorize*/)
   {
     return (size_t(d_in) & (sizeof(VectorT) - 1)) == 0;
@@ -210,7 +210,7 @@ struct AgentReduce
   // Whether or not the input is aligned with the vector type (specialized for
   // types we cannot vectorize)
   template <typename Iterator>
-  static __device__ __forceinline__ bool
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool
   IsAligned(Iterator /*d_in*/, Int2Type<false> /*can_vectorize*/)
   {
     return false;
@@ -226,7 +226,7 @@ struct AgentReduce
    * @param d_in Input data to reduce
    * @param reduction_op Binary reduction operator
    */
-  __device__ __forceinline__ AgentReduce(TempStorage &temp_storage,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduce(TempStorage &temp_storage,
                                          InputIteratorT d_in,
                                          ReductionOp reduction_op,
                                          TransformOp transform_op = {})
@@ -249,7 +249,7 @@ struct AgentReduce
    * @param can_vectorize Whether or not we can vectorize loads
    */
   template <int IS_FIRST_TILE>
-  __device__ __forceinline__ void ConsumeTile(AccumT &thread_aggregate,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(AccumT &thread_aggregate,
                                               OffsetT block_offset,
                                               int /*valid_items*/,
                                               Int2Type<true> /*is_full_tile*/,
@@ -276,7 +276,7 @@ struct AgentReduce
    * @param can_vectorize Whether or not we can vectorize loads
    */
   template <int IS_FIRST_TILE>
-  __device__ __forceinline__ void ConsumeTile(AccumT &thread_aggregate,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(AccumT &thread_aggregate,
                                               OffsetT block_offset,
                                               int /*valid_items*/,
                                               Int2Type<true> /*is_full_tile*/,
@@ -326,7 +326,7 @@ struct AgentReduce
    * @param can_vectorize Whether or not we can vectorize loads
    */
   template <int IS_FIRST_TILE, int CAN_VECTORIZE>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeTile(AccumT &thread_aggregate,
               OffsetT block_offset,
               int valid_items,
@@ -363,7 +363,7 @@ struct AgentReduce
    * @param can_vectorize Whether or not we can vectorize loads
    */
   template <int CAN_VECTORIZE>
-  __device__ __forceinline__ AccumT
+  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
   ConsumeRange(GridEvenShare<OffsetT> &even_share,
                Int2Type<CAN_VECTORIZE> can_vectorize)
   {
@@ -396,7 +396,7 @@ struct AgentReduce
    * @param[in] block_offset Threadblock begin offset (inclusive)
    * @param[in] block_end Threadblock end offset (exclusive)
    */
-  __device__ __forceinline__ AccumT ConsumeRange(OffsetT block_offset,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ConsumeRange(OffsetT block_offset,
                                                  OffsetT block_end)
   {
     GridEvenShare<OffsetT> even_share;
@@ -413,7 +413,7 @@ struct AgentReduce
    * Reduce a contiguous segment of input tiles
    * @param[in] even_share GridEvenShare descriptor
    */
-  __device__ __forceinline__ AccumT
+  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
   ConsumeTiles(GridEvenShare<OffsetT> &even_share)
   {
     // Initialize GRID_MAPPING_STRIP_MINE even-share descriptor for this thread block
@@ -433,7 +433,7 @@ private:
    * @param can_vectorize Whether or not we can vectorize loads
    */
   template <int CAN_VECTORIZE>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeFullTileRange(AccumT &thread_aggregate,
                        GridEvenShare<OffsetT> &even_share,
                        Int2Type<CAN_VECTORIZE> can_vectorize)

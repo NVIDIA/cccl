@@ -27,7 +27,7 @@
 #include "test_allocator.h"
 #include "min_allocator.h"
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 std::vector<int> ca_allocs;
 std::vector<int> ca_deallocs;
 
@@ -204,7 +204,7 @@ int main(int, char**)
         assert(*std::next(mo.begin()) == V(2, 1));
         assert(*std::next(mo.begin(), 2) == V(3, 1));
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::pair<const int, double> V;
         V ar[] =

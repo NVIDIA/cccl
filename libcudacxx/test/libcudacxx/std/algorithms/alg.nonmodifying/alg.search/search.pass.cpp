@@ -136,11 +136,11 @@ int main(int, char**)
 {
     test();
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     static_assert(test(), "");
-#endif // TEST_STD_VER >= 14
+#endif // TEST_STD_VER >= 2014
 
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
     {
         int searcher_called = 0;
         typedef int * RI;
@@ -150,7 +150,7 @@ int main(int, char**)
         assert(it == cuda::std::search(it, it, MySearcher{searcher_called}));
         assert(searcher_called == 1);
     }
-#endif // TEST_STD_VER >= 17
+#endif // TEST_STD_VER >= 2017
 
   return 0;
 }

@@ -71,7 +71,7 @@ int main(int, char**)
         C::iterator i;
         C::const_iterator j;
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef std::forward_list<T, min_allocator<T>> C;
@@ -120,7 +120,7 @@ int main(int, char**)
         C::const_iterator j;
     }
 #endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     { // N3644 testing
         std::forward_list<int>::iterator ii1{}, ii2{};
         std::forward_list<int>::iterator ii4 = ii1;

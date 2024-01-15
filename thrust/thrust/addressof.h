@@ -15,7 +15,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 #  include <thrust/detail/memory_wrapper.h>
 #endif
 
@@ -26,7 +26,7 @@ THRUST_NAMESPACE_BEGIN
 /*! Obtains the actual address of the object or function arg, even in presence of overloaded operator&.
  */
 template <typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 T* addressof(T& arg)
 {
   return reinterpret_cast<T*>(

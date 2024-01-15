@@ -85,7 +85,7 @@ public:
 int G::n_alive = 0;
 bool G::op_run = false;
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 
 class MoveOnly
 {
@@ -192,7 +192,7 @@ int main(int, char**)
         }
     }
 #endif
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         assert(G::n_alive == 0);
         assert(!G::op_run);

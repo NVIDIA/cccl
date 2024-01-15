@@ -62,7 +62,7 @@ int main(int, char**)
     test_all_equal({0,1,2,3,4,5,6,7,8,9,10});
     test_all_equal({0,1,2,3,4,5,6,7,8,9,10,11});
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     {
     static_assert((std::minmax({1, 2, 3}, std::greater<int>()) == std::pair<int, int>(3, 1)), "");
     static_assert((std::minmax({1, 3, 2}, std::greater<int>()) == std::pair<int, int>(3, 1)), "");

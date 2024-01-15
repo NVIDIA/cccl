@@ -227,7 +227,7 @@ struct time_util_base {
           .count();
 
 private:
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR)
   static constexpr fs_duration get_min_nsecs() {
     return duration_cast<fs_duration>(
         fs_nanoseconds(min_nsec_timespec) -

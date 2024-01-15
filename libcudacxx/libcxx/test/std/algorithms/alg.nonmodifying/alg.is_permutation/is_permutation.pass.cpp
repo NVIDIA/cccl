@@ -20,7 +20,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
     int ia[] = {0, 0, 0};
     int ib[] = {1, 1, 0};
@@ -44,7 +44,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + 0),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + 0),
                                    forward_iterator<const int*>(ib),
@@ -53,7 +53,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -71,7 +71,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -86,7 +86,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -104,7 +104,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -118,7 +118,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -132,7 +132,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -146,7 +146,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -160,7 +160,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -178,7 +178,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -192,7 +192,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -206,7 +206,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -220,7 +220,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -234,7 +234,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -248,7 +248,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -262,7 +262,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -276,7 +276,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -290,7 +290,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -304,7 +304,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -319,7 +319,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -333,7 +333,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -347,7 +347,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -361,7 +361,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -375,7 +375,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -389,7 +389,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -403,7 +403,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -417,7 +417,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -431,7 +431,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -445,7 +445,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -463,7 +463,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -477,7 +477,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -495,7 +495,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -513,7 +513,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -531,7 +531,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -549,7 +549,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -563,7 +563,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -585,7 +585,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == true);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -607,7 +607,7 @@ int main(int, char**)
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib)) == false);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
         assert(std::is_permutation(forward_iterator<const int*>(ia),
                                    forward_iterator<const int*>(ia + sa),
                                    forward_iterator<const int*>(ib),
@@ -615,7 +615,7 @@ int main(int, char**)
 #endif
     }
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

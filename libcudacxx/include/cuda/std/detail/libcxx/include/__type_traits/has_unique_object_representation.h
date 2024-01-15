@@ -28,7 +28,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11 && defined(_LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS)
+#if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS)
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS has_unique_object_representations
     : public integral_constant<bool,

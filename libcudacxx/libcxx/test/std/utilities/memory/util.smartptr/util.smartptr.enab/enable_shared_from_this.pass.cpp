@@ -96,7 +96,7 @@ int main(int, char**)
             // because it already references a non-expired shared_ptr.
             std::shared_ptr<T> s2(ptr, &nullDeleter);
         }
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
         // The enable_shared_from_this base should still be referencing
         // the original shared_ptr.
         assert(!ptr->weak_from_this().expired());
@@ -146,7 +146,7 @@ int main(int, char**)
         assert(globalMemCounter.checkOutstandingNewEq(0));
     }
     // Test weak_from_this_methods
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     {
         T* ptr = new T;
         const T* cptr = ptr;

@@ -5,6 +5,10 @@ set(files
   __algorithm/any_of.h
   __algorithm/comp_ref_type.h
   __algorithm/comp.h
+  __algorithm/copy_backward.h
+  __algorithm/copy_if.h
+  __algorithm/copy_n.h
+  __algorithm/copy.h
   __algorithm/count.h
   __algorithm/count_if.h
   __algorithm/equal.h
@@ -17,20 +21,36 @@ set(files
   __algorithm/find.h
   __algorithm/for_each_n.h
   __algorithm/for_each.h
+  __algorithm/generate_n.h
+  __algorithm/generate.h
   __algorithm/half_positive.h
   __algorithm/is_permutation.h
   __algorithm/lexicographical_compare.h
   __algorithm/mismatch.h
+  __algorithm/move_backward.h
+  __algorithm/move.h
   __algorithm/none_of.h
+  __algorithm/remove_copy_if.h
+  __algorithm/remove_copy.h
+  __algorithm/remove_if.h
+  __algorithm/remove.h
+  __algorithm/replace_copy_if.h
+  __algorithm/replace_copy.h
+  __algorithm/replace_if.h
+  __algorithm/replace.h
   __algorithm/search_n.h
   __algorithm/search.h
   __algorithm/swap_ranges.h
+  __algorithm/transform.h
   __availability
   __bit_reference
   __bsd_locale_defaults.h
   __bsd_locale_fallbacks.h
   __errc
   __cccl_config
+  __cccl/dialect.h
+  __cccl/version.h
+  __cccl/visibility.h
   __concepts/__concept_macros.h
   __concepts/_One_of.h
   __concepts/arithmetic.h
@@ -166,6 +186,8 @@ set(files
   __mutex_base
   __node_handle
   __nullptr
+  __ranges/enable_borrowed_range.h
+  __ranges/enable_view.h
   __split_buffer
   __sso_allocator
   __std_stream
@@ -327,6 +349,7 @@ set(files
   __utility/swap.h
   __utility/to_underlying.h
   __utility/unreachable.h
+  __variant/monostate.h
   __verbose_abort
   algorithm
   any
@@ -431,6 +454,7 @@ set(files
   ostream
   queue
   random
+  ranges
   ratio
   regex
   scoped_allocator

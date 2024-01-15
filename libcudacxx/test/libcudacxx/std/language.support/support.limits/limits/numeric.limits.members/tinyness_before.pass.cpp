@@ -32,7 +32,7 @@ int main(int, char**)
     test<signed char, false>();
     test<unsigned char, false>();
     test<wchar_t, false>();
-#if TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
     test<char8_t, false>();
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS

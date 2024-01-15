@@ -28,7 +28,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_const {
   typedef _LIBCUDACXX_NODEBUG_TYPE const _Tp type;
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using add_const_t = typename add_const<_Tp>::type;
 #endif
 

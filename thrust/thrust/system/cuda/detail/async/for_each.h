@@ -41,7 +41,7 @@
 #endif // no system header
 #include <thrust/detail/cpp14_required.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
@@ -66,13 +66,13 @@ struct async_for_each_fn
   ForwardIt first;
   UnaryFunction f;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   async_for_each_fn(ForwardIt&& first_, UnaryFunction&& f_)
     : first(std::move(first_)), f(std::move(f_))
   {}
 
   template <typename Index>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(Index idx)
   {
     f(thrust::raw_reference_cast(first[idx]));

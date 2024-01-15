@@ -29,7 +29,7 @@ int main(int, char**)
         std::shared_future<T> f0 = p.get_future();
         std::shared_future<T> f;
         f = f0;
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
         static_assert(noexcept(f = f0), "" );
 #endif
         assert(f0.valid());

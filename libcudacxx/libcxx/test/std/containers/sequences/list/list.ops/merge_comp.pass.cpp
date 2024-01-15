@@ -37,7 +37,7 @@ int main(int, char**)
     assert((c1 == std::list<int>(a1, a1+sizeof(a1)/sizeof(a1[0]))));
     }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     int a1[] = {10, 9, 7, 3, 1};
     int a2[] = {11, 8, 6, 5, 4, 2, 0};

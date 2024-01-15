@@ -8,15 +8,21 @@
 #ifndef SUPPORT_TYPE_ID_H
 #define SUPPORT_TYPE_ID_H
 
-#include <functional>
-#include <typeinfo>
-#include <string>
-#include <cstdio>
 #include <cuda/std/cassert>
+#include <cuda/std/functional>
 
 #include "test_macros.h"
-#include "demangle.h"
 
+#ifndef TEST_COMPILER_NVRTC
+#include <typeinfo>
+#include <string>
+
+#include "demangle.h"
+#endif // TEST_COMPILER_NVRTC
+
+#if TEST_STD_VER < 2011
+#error This header requires C++11 or greater
+#endif
 
 // TypeID - Represent a unique identifier for a type. TypeID allows equality
 // comparisons between different types.
@@ -26,13 +32,25 @@ struct TypeID {
   __host__ __device__ friend bool operator!=(TypeID const& LHS, TypeID const& RHS)
   {return LHS.m_id != RHS.m_id; }
 
+#if 0
   std::string name() const {
     return demangle(m_id);
   }
+#else
+  __host__ __device__
+  const char * name() const {
+    return m_id;
+  }
+#endif
 
+  __host__ __device__
   void dump() const {
+#if 0
     std::string s = name();
     std::printf("TypeID: %s\n", s.c_str());
+#else
+    printf("TypeID: %s\n", m_id);
+#endif
   }
 
 private:
@@ -82,14 +100,22 @@ __host__ __device__ inline  TypeID const& makeArgumentID() {
 // two typeid's are expected to be equal
 #define COMPARE_TYPEID(LHS, RHS) CompareTypeIDVerbose(#LHS, LHS, #RHS, RHS)
 
+__host__ __device__
 inline bool CompareTypeIDVerbose(const char* LHSString, TypeID const* LHS,
                                  const char* RHSString, TypeID const* RHS) {
   if (*LHS == *RHS)
     return true;
+#if 0
   std::printf("TypeID's not equal:\n");
   std::printf("%s: %s\n----------\n%s: %s\n",
               LHSString, LHS->name().c_str(),
               RHSString, RHS->name().c_str());
+#else
+  printf("TypeID's not equal:\n");
+  printf("%s: %s\n----------\n%s: %s\n",
+              LHSString, LHS->name(),
+              RHSString, RHS->name());
+#endif
   return false;
 }
 

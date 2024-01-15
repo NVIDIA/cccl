@@ -32,7 +32,7 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 #include <thrust/allocate_unique.h>
 #include <thrust/device_new.h>
@@ -45,7 +45,7 @@ THRUST_NAMESPACE_BEGIN
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename... Args>
-__host__
+_CCCL_HOST
 auto device_make_unique(Args&&... args)
   THRUST_TRAILING_RETURN(decltype(
     uninitialized_allocate_unique<T>(device_allocator<T>{})
@@ -65,4 +65,4 @@ auto device_make_unique(Args&&... args)
 
 THRUST_NAMESPACE_END
 
-#endif // THRUST_CPP_DIALECT >= 2011
+#endif // _CCCL_STD_VER >= 2011

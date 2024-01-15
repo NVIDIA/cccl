@@ -18,7 +18,7 @@ template <class T, class U>
 void test_add_const_imp()
 {
     ASSERT_SAME_TYPE(const U, typename std::add_const<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(const U,        std::add_const_t<T>);
 #endif
 }

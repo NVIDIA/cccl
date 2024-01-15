@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 // quoted is C++14 only
 
 bool is_skipws ( const std::istream *is ) {

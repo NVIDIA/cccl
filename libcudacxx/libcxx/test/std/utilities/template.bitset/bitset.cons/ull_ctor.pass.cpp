@@ -31,7 +31,7 @@ void test_val_ctor()
         for (std::size_t i = M; i < N; ++i)
             assert(v[i] == false);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         constexpr std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
         static_assert(v.size() == N, "");

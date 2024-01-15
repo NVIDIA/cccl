@@ -74,7 +74,7 @@ public:
 
 template <class _Tp> using __decay_t = typename decay<_Tp>::type;
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using decay_t = typename decay<_Tp>::type;
 #endif
 

@@ -226,7 +226,7 @@ static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT, void*, void*>);
 #endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 // Test ADL-proofing.
 struct Incomplete;
 template<class T> struct Holder { T t; };

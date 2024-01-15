@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include <thrust/device_vector.h>
-#include <thrust/execution_policy.h>
 #include <thrust/sort.h>
 
 #include "nvbench_helper.cuh"
@@ -49,12 +48,15 @@ static void basic(nvbench::state &state, nvbench::type_list<KeyT, ValueT>)
   state.add_global_memory_writes<KeyT>(elements);
   state.add_global_memory_writes<ValueT>(elements);
 
+  caching_allocator_t alloc;
+  thrust::sort_by_key(policy(alloc), keys.begin(), keys.end(), vals.begin());
+
   state.exec(nvbench::exec_tag::timer | nvbench::exec_tag::sync,
-             [&](nvbench::launch & /* launch */, auto &timer) {
+             [&](nvbench::launch & launch, auto &timer) {
                keys = in_keys;
                vals = in_vals;
                timer.start();
-               thrust::sort_by_key(keys.begin(), keys.end(), vals.begin());
+               thrust::sort_by_key(policy(alloc, launch), keys.begin(), keys.end(), vals.begin());
                timer.stop();
              });
 }

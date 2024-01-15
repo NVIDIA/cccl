@@ -527,7 +527,7 @@ struct DispatchSpmv
      * Initialize kernel dispatch configurations with the policies corresponding to the PTX assembly we will use
      */
     template <typename KernelConfig>
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     static void InitConfigs(
         int             ptx_version,
         KernelConfig    &spmv_config,
@@ -573,7 +573,7 @@ struct DispatchSpmv
         int tile_items;
 
         template <typename PolicyT>
-        CUB_RUNTIME_FUNCTION __forceinline__
+        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
         void Init()
         {
             block_threads       = PolicyT::BLOCK_THREADS;
@@ -649,7 +649,7 @@ struct DispatchSpmv
               typename SpmvKernelT,
               typename SegmentFixupKernelT,
               typename SpmvEmptyMatrixKernelT>
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              SpmvParamsT &spmv_params,
@@ -939,7 +939,7 @@ struct DispatchSpmv
               typename SegmentFixupKernelT,
               typename SpmvEmptyMatrixKernelT>
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              SpmvParamsT &spmv_params,
@@ -989,7 +989,7 @@ struct DispatchSpmv
      * @param[in] stream
      *   **[optional]** CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
      */
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(void *d_temp_storage,
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(void *d_temp_storage,
                                                                      size_t &temp_storage_bytes,
                                                                      SpmvParamsT &spmv_params,
                                                                      cudaStream_t stream = 0)
@@ -1024,7 +1024,7 @@ struct DispatchSpmv
     }
 
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              SpmvParamsT &spmv_params,

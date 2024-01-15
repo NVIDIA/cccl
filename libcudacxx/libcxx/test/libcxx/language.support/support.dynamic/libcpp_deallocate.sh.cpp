@@ -216,7 +216,7 @@ void test_allocator_and_new_match() {
   stats.reset();
 #elif defined(NO_SIZE)
   stats.reset();
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     int* x = new int(42);
     delete x;

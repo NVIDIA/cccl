@@ -53,14 +53,11 @@ static void basic(nvbench::state &state, nvbench::type_list<KeyT, ValueT>, OpT o
   thrust::sort(in_keys.begin(), in_keys.begin() + elements_in_A);
   thrust::sort(in_keys.begin() + elements_in_A, in_keys.end());
 
-  auto result_ends = op(in_keys.cbegin(),
-                        in_keys.cbegin() + elements_in_A,
-                        in_keys.cbegin() + elements_in_A,
-                        in_keys.cend(),
-                        in_vals.cbegin(),
-                        in_vals.cbegin() + elements_in_A,
-                        out_keys.begin(),
-                        out_vals.begin());
+  caching_allocator_t alloc;
+  auto result_ends =
+      op(policy(alloc), in_keys.cbegin(), in_keys.cbegin() + elements_in_A,
+         in_keys.cbegin() + elements_in_A, in_keys.cend(), in_vals.cbegin(),
+         in_vals.cbegin() + elements_in_A, out_keys.begin(), out_vals.begin());
 
   const std::size_t elements_in_AB = thrust::distance(out_keys.begin(), result_ends.first);
 
@@ -70,16 +67,14 @@ static void basic(nvbench::state &state, nvbench::type_list<KeyT, ValueT>, OpT o
   state.add_global_memory_reads<ValueT>(OpT::read_all_values ? elements : elements_in_A); 
   state.add_global_memory_writes<ValueT>(elements_in_AB);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
-    op(in_keys.cbegin(),
-       in_keys.cbegin() + elements_in_A,
-       in_keys.cbegin() + elements_in_A,
-       in_keys.cend(),
-       in_vals.cbegin(),
-       in_vals.cbegin() + elements_in_A,
-       out_keys.begin(),
-       out_vals.begin());
-  });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch) {
+               op(policy(alloc, launch), in_keys.cbegin(),
+                  in_keys.cbegin() + elements_in_A,
+                  in_keys.cbegin() + elements_in_A, in_keys.cend(),
+                  in_vals.cbegin(), in_vals.cbegin() + elements_in_A,
+                  out_keys.begin(), out_vals.begin());
+             });
 }
 
 using key_types   = nvbench::type_list<int8_t, int16_t, int32_t, int64_t>;

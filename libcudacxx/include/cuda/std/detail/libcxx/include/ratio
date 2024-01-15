@@ -468,7 +468,7 @@ struct __ratio_gcd
                   __static_lcm<_R1::den, _R2::den>::value> type;
 };
 
-#if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _R1, class _R2>
 _LIBCUDACXX_INLINE_VAR constexpr bool ratio_equal_v
     = ratio_equal<_R1, _R2>::value;

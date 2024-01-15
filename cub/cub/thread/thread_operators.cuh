@@ -66,19 +66,19 @@ struct InequalityWrapper
   EqualityOp op;
 
   /// Constructor
-  __host__ __device__ __forceinline__ InequalityWrapper(EqualityOp op)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InequalityWrapper(EqualityOp op)
       : op(op)
   {}
 
   /// Boolean inequality operator, returns `t != u`
   template <typename T, typename U>
-  __host__ __device__ __forceinline__ bool operator()(T &&t, U &&u)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T &&t, U &&u)
   {
     return !op(::cuda::std::forward<T>(t), ::cuda::std::forward<U>(u));
   }
 };
 
-#if CUB_CPP_DIALECT > 2011
+#if _CCCL_STD_VER > 2011
 using Equality = ::cuda::std::equal_to<>;
 using Inequality = ::cuda::std::not_equal_to<>;
 using Sum = ::cuda::std::plus<>;
@@ -90,7 +90,7 @@ struct Equality
 {
   /// Boolean equality operator, returns `t == u`
   template <typename T, typename U>
-  __host__ __device__ __forceinline__ bool operator()(T &&t, U &&u) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T &&t, U &&u) const
   {
     return ::cuda::std::forward<T>(t) == ::cuda::std::forward<U>(u);
   }
@@ -101,7 +101,7 @@ struct Inequality
 {
   /// Boolean inequality operator, returns `t != u`
   template <typename T, typename U>
-  __host__ __device__ __forceinline__ bool operator()(T &&t, U &&u) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T &&t, U &&u) const
   {
     return ::cuda::std::forward<T>(t) != ::cuda::std::forward<U>(u);
   }
@@ -112,7 +112,7 @@ struct Sum
 {
   /// Binary sum operator, returns `t + u`
   template <typename T, typename U>
-  __host__ __device__ __forceinline__ auto operator()(T &&t, U &&u) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(T &&t, U &&u) const
     -> decltype(::cuda::std::forward<T>(t) + ::cuda::std::forward<U>(u))
   {
     return ::cuda::std::forward<T>(t) + ::cuda::std::forward<U>(u);
@@ -124,7 +124,7 @@ struct Difference
 {
   /// Binary difference operator, returns `t - u`
   template <typename T, typename U>
-  __host__ __device__ __forceinline__ auto operator()(T &&t, U &&u) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(T &&t, U &&u) const
     -> decltype(::cuda::std::forward<T>(t) - ::cuda::std::forward<U>(u))
   {
     return ::cuda::std::forward<T>(t) - ::cuda::std::forward<U>(u);
@@ -136,7 +136,7 @@ struct Division
 {
   /// Binary division operator, returns `t / u`
   template <typename T, typename U>
-  __host__ __device__ __forceinline__ auto operator()(T &&t, U &&u) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(T &&t, U &&u) const
     -> decltype(::cuda::std::forward<T>(t) / ::cuda::std::forward<U>(u))
   {
     return ::cuda::std::forward<T>(t) / ::cuda::std::forward<U>(u);
@@ -149,7 +149,7 @@ struct Max
 {
   /// Boolean max operator, returns `(t > u) ? t : u`
   template <typename T, typename U>
-  __host__ __device__ __forceinline__
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     typename ::cuda::std::common_type<T, U>::type
     operator()(T &&t, U &&u) const
   {
@@ -164,7 +164,7 @@ struct ArgMax
   /// Boolean max operator, preferring the item having the smaller offset in
   /// case of ties
   template <typename T, typename OffsetT>
-  __host__ __device__ __forceinline__ KeyValuePair<OffsetT, T>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, T>
   operator()(const KeyValuePair<OffsetT, T> &a,
              const KeyValuePair<OffsetT, T> &b) const
   {
@@ -187,7 +187,7 @@ struct Min
 {
   /// Boolean min operator, returns `(t < u) ? t : u`
   template <typename T, typename U>
-  __host__ __device__ __forceinline__
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     typename ::cuda::std::common_type<T, U>::type
     operator()(T &&t, U &&u) const
   {
@@ -202,7 +202,7 @@ struct ArgMin
   /// Boolean min operator, preferring the item having the smaller offset in
   /// case of ties
   template <typename T, typename OffsetT>
-  __host__ __device__ __forceinline__ KeyValuePair<OffsetT, T>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, T>
   operator()(const KeyValuePair<OffsetT, T> &a,
              const KeyValuePair<OffsetT, T> &b) const
   {
@@ -253,7 +253,7 @@ struct CastOp
 {
   /// Cast operator, returns `(B) a`
   template <typename A>
-  __host__ __device__ __forceinline__ B operator()(A &&a) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE B operator()(A &&a) const
   {
     return (B)a;
   }
@@ -269,13 +269,13 @@ private:
 
 public:
   /// Constructor
-  __host__ __device__ __forceinline__ SwizzleScanOp(ScanOp scan_op)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE SwizzleScanOp(ScanOp scan_op)
       : scan_op(scan_op)
   {}
 
   /// Switch the scan arguments
   template <typename T>
-  __host__ __device__ __forceinline__ T operator()(const T &a, const T &b)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(const T &a, const T &b)
   {
     T _a(a);
     T _b(b);
@@ -308,10 +308,10 @@ struct ReduceBySegmentOp
   ReductionOpT op;
 
   /// Constructor
-  __host__ __device__ __forceinline__ ReduceBySegmentOp() {}
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceBySegmentOp() {}
 
   /// Constructor
-  __host__ __device__ __forceinline__ ReduceBySegmentOp(ReductionOpT op)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceBySegmentOp(ReductionOpT op)
       : op(op)
   {}
 
@@ -328,7 +328,7 @@ struct ReduceBySegmentOp
    *   Second partial reduction
    */
   template <typename KeyValuePairT>
-  __host__ __device__ __forceinline__ KeyValuePairT
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePairT
   operator()(const KeyValuePairT &first, const KeyValuePairT &second)
   {
     KeyValuePairT retval;
@@ -370,10 +370,10 @@ struct ReduceByKeyOp
   ReductionOpT op;
 
   /// Constructor
-  __host__ __device__ __forceinline__ ReduceByKeyOp() {}
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyOp() {}
 
   /// Constructor
-  __host__ __device__ __forceinline__ ReduceByKeyOp(ReductionOpT op)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyOp(ReductionOpT op)
       : op(op)
   {}
 
@@ -384,7 +384,7 @@ struct ReduceByKeyOp
    * @param[in] second Second partial reduction
    */
   template <typename KeyValuePairT>
-  __host__ __device__ __forceinline__ KeyValuePairT
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePairT
   operator()(const KeyValuePairT &first, const KeyValuePairT &second)
   {
     KeyValuePairT retval = second;
@@ -403,12 +403,12 @@ struct BinaryFlip
 {
   BinaryOpT binary_op;
 
-  __device__ __host__ explicit BinaryFlip(BinaryOpT binary_op)
+  _CCCL_HOST_DEVICE explicit BinaryFlip(BinaryOpT binary_op)
       : binary_op(binary_op)
   {}
 
   template <typename T, typename U>
-  __device__ auto
+  _CCCL_DEVICE auto
   operator()(T &&t, U &&u) -> decltype(binary_op(::cuda::std::forward<U>(u),
                                                  ::cuda::std::forward<T>(t)))
   {
@@ -417,7 +417,7 @@ struct BinaryFlip
 };
 
 template <typename BinaryOpT>
-__device__ __host__ BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
+_CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
 {
   return BinaryFlip<BinaryOpT>(binary_op);
 }

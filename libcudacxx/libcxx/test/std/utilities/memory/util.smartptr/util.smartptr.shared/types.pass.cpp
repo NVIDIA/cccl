@@ -25,7 +25,7 @@ struct A;  // purposefully incomplete
 int main(int, char**)
 {
     static_assert((std::is_same<std::shared_ptr<A>::element_type, A>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert((std::is_same<std::shared_ptr<A>::weak_type, std::weak_ptr<A>>::value), "");
 #endif
 

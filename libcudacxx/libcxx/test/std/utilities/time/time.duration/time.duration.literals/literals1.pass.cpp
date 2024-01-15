@@ -47,7 +47,7 @@ int main(int, char**)
     auto ns2 = 645.ns;
     assert ( ns == ns2 );
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     assert(Sunday    == weekday(0));
     assert(Monday    == weekday(1));
     assert(Tuesday   == weekday(2));

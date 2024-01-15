@@ -63,10 +63,10 @@ static_assert(CheckUnsignedIntegralQualifiers<bool>() ==
               !cuda::std::is_signed_v<bool>, "");
 static_assert(CheckUnsignedIntegralQualifiers<char>() ==
               !cuda::std::is_signed_v<char>, "");
-#if TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
 static_assert(CheckUnsignedIntegralQualifiers<char8_t>() ==
               !cuda::std::is_signed_v<char8_t>, "");
-#endif // TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#endif // TEST_STD_VER > 2017 && defined(__cpp_char8_t)
 static_assert(CheckUnsignedIntegralQualifiers<char16_t>() ==
               !cuda::std::is_signed_v<char16_t>, "");
 static_assert(CheckUnsignedIntegralQualifiers<char32_t>() ==
@@ -96,9 +96,9 @@ static_assert(!CheckUnsignedIntegralQualifiers<EmptyStruct>(), "");
 static_assert(!CheckUnsignedIntegralQualifiers<int EmptyStruct::*>(), "");
 static_assert(!CheckUnsignedIntegralQualifiers<int (EmptyStruct::*)()>(), "");
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(CheckSubsumption(0), "");
 static_assert(CheckSubsumption(0U), "");
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**) { return 0; }

@@ -101,7 +101,7 @@ int main(int, char**)
     TEST_NUMERIC_LIMITS(volatile wchar_t)
     TEST_NUMERIC_LIMITS(const volatile wchar_t)
 
-#if TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
     // char8_t
     TEST_NUMERIC_LIMITS(char8_t)
     TEST_NUMERIC_LIMITS(const char8_t)

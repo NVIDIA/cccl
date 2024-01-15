@@ -22,7 +22,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 struct NoDefaultCtr : forward_iterator<int*> {
   NoDefaultCtr() = delete;
 };
@@ -44,7 +44,7 @@ int main(int, char**) {
   test<random_access_iterator<char*> >();
   test<char*>();
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   {
     constexpr std::move_iterator<const char *> it;
     (void)it;

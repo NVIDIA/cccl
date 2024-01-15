@@ -1421,7 +1421,7 @@ struct DispatchRadixSort : SelectedPolicy
     //------------------------------------------------------------------------------
 
     /// Constructor
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     DispatchRadixSort(
         void*                   d_temp_storage,
         size_t                  &temp_storage_bytes,
@@ -1449,7 +1449,7 @@ struct DispatchRadixSort : SelectedPolicy
     {}
 
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     DispatchRadixSort(
         void*                   d_temp_storage,
         size_t                  &temp_storage_bytes,
@@ -1495,7 +1495,7 @@ struct DispatchRadixSort : SelectedPolicy
      *   Kernel function pointer to parameterization of cub::DeviceRadixSortSingleTileKernel
      */
     template <typename ActivePolicyT, typename SingleTileKernelT>
-    CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
     InvokeSingleTile(SingleTileKernelT single_tile_kernel)
     {
         cudaError error = cudaSuccess;
@@ -1560,7 +1560,7 @@ struct DispatchRadixSort : SelectedPolicy
      * Invoke a three-kernel sorting pass at the current bit.
      */
     template <typename PassConfigT>
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     cudaError_t InvokePass(
         const KeyT      *d_keys_in,
         KeyT            *d_keys_out,
@@ -1710,7 +1710,7 @@ struct DispatchRadixSort : SelectedPolicy
             typename UpsweepPolicyT,
             typename ScanPolicyT,
             typename DownsweepPolicyT>
-        CUB_RUNTIME_FUNCTION __forceinline__
+        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
         cudaError_t InitPassConfig(
             UpsweepKernelT      upsweep_kernel,
             ScanKernelT         scan_kernel,
@@ -1761,7 +1761,7 @@ struct DispatchRadixSort : SelectedPolicy
     };
 
     template <typename ActivePolicyT>
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     cudaError_t InvokeOnesweep()
     {
         typedef typename DispatchRadixSort::MaxPolicy MaxPolicyT;
@@ -2040,7 +2040,7 @@ struct DispatchRadixSort : SelectedPolicy
               typename UpsweepKernelT,
               typename ScanKernelT,
               typename DownsweepKernelT>
-    CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
     InvokePasses(UpsweepKernelT upsweep_kernel,
                  UpsweepKernelT alt_upsweep_kernel,
                  ScanKernelT scan_kernel,
@@ -2205,7 +2205,7 @@ struct DispatchRadixSort : SelectedPolicy
     //------------------------------------------------------------------------------
 
     template <typename ActivePolicyT>
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     cudaError_t InvokeManyTiles(Int2Type<false>)
     {
         // Invoke upsweep-downsweep
@@ -2219,14 +2219,14 @@ struct DispatchRadixSort : SelectedPolicy
     }
 
     template <typename ActivePolicyT>
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     cudaError_t InvokeManyTiles(Int2Type<true>)
     {
         // Invoke onesweep
         return InvokeOnesweep<ActivePolicyT>();
     }
 
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     cudaError_t InvokeCopy()
     {
         // is_overwrite_okay == false here
@@ -2291,7 +2291,7 @@ struct DispatchRadixSort : SelectedPolicy
 
     /// Invocation
     template <typename ActivePolicyT>
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     cudaError_t Invoke()
     {
         typedef typename DispatchRadixSort::MaxPolicy       MaxPolicyT;
@@ -2371,7 +2371,7 @@ struct DispatchRadixSort : SelectedPolicy
      * @param[in] stream
      *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
      */
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(void *d_temp_storage,
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(void *d_temp_storage,
                                                                      size_t &temp_storage_bytes,
                                                                      DoubleBuffer<KeyT> &d_keys,
                                                                      DoubleBuffer<ValueT> &d_values,
@@ -2420,7 +2420,7 @@ struct DispatchRadixSort : SelectedPolicy
     }
 
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              DoubleBuffer<KeyT> &d_keys,
@@ -2550,7 +2550,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
     //------------------------------------------------------------------------------
 
     /// Constructor
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     DispatchSegmentedRadixSort(void *d_temp_storage,
                                 size_t &temp_storage_bytes,
                                 DoubleBuffer<KeyT> &d_keys,
@@ -2582,7 +2582,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
     {}
 
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     DispatchSegmentedRadixSort(
         void*                   d_temp_storage,
         size_t                  &temp_storage_bytes,
@@ -2623,7 +2623,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
 
     /// Invoke a three-kernel sorting pass at the current bit.
     template <typename PassConfigT>
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     cudaError_t InvokePass(
         const KeyT      *d_keys_in,
         KeyT            *d_keys_out,
@@ -2694,7 +2694,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
 
         /// Initialize pass configuration
         template <typename SegmentedPolicyT>
-        CUB_RUNTIME_FUNCTION __forceinline__
+        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
         cudaError_t InitPassConfig(SegmentedKernelT segmented_kernel)
         {
             this->segmented_kernel  = segmented_kernel;
@@ -2722,7 +2722,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
      *   cub::DeviceSegmentedRadixSortKernel
      */
     template <typename ActivePolicyT, typename SegmentedKernelT>
-    CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
     InvokePasses(SegmentedKernelT segmented_kernel, SegmentedKernelT alt_segmented_kernel)
     {
         cudaError error = cudaSuccess;
@@ -2831,13 +2831,13 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
 
     /// Invocation
     template <typename ActivePolicyT>
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     cudaError_t Invoke()
     {
         typedef typename DispatchSegmentedRadixSort::MaxPolicy MaxPolicyT;
 
         // Return if empty problem, or if no bits to sort and double-buffering is used
-        if (num_items == 0 || (begin_bit == end_bit && is_overwrite_okay))
+        if (num_items == 0 || num_segments == 0 || (begin_bit == end_bit && is_overwrite_okay))
         {
             if (d_temp_storage == nullptr)
             {
@@ -2905,7 +2905,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
      * @param[in] stream
      *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
      */
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              DoubleBuffer<KeyT> &d_keys,
@@ -2952,7 +2952,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
     }
 
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              DoubleBuffer<KeyT> &d_keys,
@@ -2991,4 +2991,3 @@ CUB_NAMESPACE_END
 #if defined(__clang__)
 #  pragma clang diagnostic pop
 #endif
-

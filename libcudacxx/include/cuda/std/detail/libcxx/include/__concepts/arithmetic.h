@@ -32,7 +32,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 // [concepts.arithmetic], arithmetic concepts
 
@@ -54,7 +54,7 @@ _LIBCUDACXX_CONCEPT __libcpp_unsigned_integer = __libcpp_is_unsigned_integer<_Tp
 template <class _Tp>
 _LIBCUDACXX_CONCEPT __libcpp_signed_integer = __libcpp_is_signed_integer<_Tp>::value;
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

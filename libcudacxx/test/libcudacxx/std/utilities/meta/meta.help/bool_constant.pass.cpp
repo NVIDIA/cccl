@@ -17,7 +17,7 @@
 
 int main(int, char**)
 {
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     typedef cuda::std::bool_constant<true> _t;
     static_assert(_t::value, "");
     static_assert((cuda::std::is_same<_t::value_type, bool>::value), "");

@@ -33,7 +33,7 @@ int main(int, char**)
         assert(l.front() == 2);
         assert(l.back() == 3.5);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::list<double, min_allocator<double>> l(5, 2);
         l.resize(2, 3.5);

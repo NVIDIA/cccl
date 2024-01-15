@@ -110,7 +110,7 @@ int main(int, char**)
   }
 #endif // defined(_LIBCUDACXX_HAS_LIST)
 
-#if TEST_STD_VER > 11 && !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
+#if TEST_STD_VER > 2011 && !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
   {
     typedef cuda::std::reverse_iterator<const C *> RI;
     constexpr RI it1 = cuda::std::make_reverse_iterator(gC + 1);

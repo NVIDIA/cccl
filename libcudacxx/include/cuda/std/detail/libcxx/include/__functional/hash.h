@@ -647,7 +647,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash : public __enum_hash<_Tp>
 {
 };
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS hash<nullptr_t>
@@ -673,7 +673,7 @@ using __has_enabled_hash _LIBCUDACXX_NODEBUG_TYPE = integral_constant<bool,
     is_default_constructible<_Hash>::value
 >;
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _Type, class>
 using __enable_hash_helper_imp _LIBCUDACXX_NODEBUG_TYPE = _Type;
 

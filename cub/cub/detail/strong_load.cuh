@@ -54,7 +54,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-static __device__ __forceinline__ uint4 load_relaxed(uint4 const *ptr)
+static _CCCL_DEVICE _CCCL_FORCEINLINE uint4 load_relaxed(uint4 const *ptr)
 {
   uint4 retval;
   NV_IF_TARGET(NV_PROVIDES_SM_70,
@@ -69,7 +69,7 @@ static __device__ __forceinline__ uint4 load_relaxed(uint4 const *ptr)
   return retval;
 }
 
-static __device__ __forceinline__ ulonglong2 load_relaxed(ulonglong2 const *ptr)
+static _CCCL_DEVICE _CCCL_FORCEINLINE ulonglong2 load_relaxed(ulonglong2 const *ptr)
 {
   ulonglong2 retval;
   NV_IF_TARGET(NV_PROVIDES_SM_70,
@@ -84,7 +84,7 @@ static __device__ __forceinline__ ulonglong2 load_relaxed(ulonglong2 const *ptr)
   return retval;
 }
 
-static __device__ __forceinline__ ushort4 load_relaxed(ushort4 const *ptr)
+static _CCCL_DEVICE _CCCL_FORCEINLINE ushort4 load_relaxed(ushort4 const *ptr)
 {
   ushort4 retval;
   NV_IF_TARGET(NV_PROVIDES_SM_70,
@@ -99,7 +99,7 @@ static __device__ __forceinline__ ushort4 load_relaxed(ushort4 const *ptr)
   return retval;
 }
 
-static __device__ __forceinline__ uint2 load_relaxed(uint2 const *ptr)
+static _CCCL_DEVICE _CCCL_FORCEINLINE uint2 load_relaxed(uint2 const *ptr)
 {
   uint2 retval;
   NV_IF_TARGET(NV_PROVIDES_SM_70,
@@ -114,7 +114,7 @@ static __device__ __forceinline__ uint2 load_relaxed(uint2 const *ptr)
   return retval;
 }
 
-static __device__ __forceinline__ unsigned long long load_relaxed(unsigned long long const *ptr)
+static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long load_relaxed(unsigned long long const *ptr)
 {
   unsigned long long retval;
   NV_IF_TARGET(NV_PROVIDES_SM_70,
@@ -129,7 +129,7 @@ static __device__ __forceinline__ unsigned long long load_relaxed(unsigned long 
   return retval;
 }
 
-static __device__ __forceinline__ unsigned int load_relaxed(unsigned int const *ptr)
+static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int load_relaxed(unsigned int const *ptr)
 {
   unsigned int retval;
   NV_IF_TARGET(NV_PROVIDES_SM_70,
@@ -145,7 +145,7 @@ static __device__ __forceinline__ unsigned int load_relaxed(unsigned int const *
   return retval;
 }
 
-static __device__ __forceinline__ unsigned short load_relaxed(unsigned short const *ptr)
+static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned short load_relaxed(unsigned short const *ptr)
 {
   unsigned short retval;
   NV_IF_TARGET(NV_PROVIDES_SM_70,
@@ -160,7 +160,7 @@ static __device__ __forceinline__ unsigned short load_relaxed(unsigned short con
   return retval;
 }
 
-static __device__ __forceinline__ unsigned char load_relaxed(unsigned char const *ptr)
+static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned char load_relaxed(unsigned char const *ptr)
 {
   unsigned short retval;
   NV_IF_TARGET(NV_PROVIDES_SM_70,

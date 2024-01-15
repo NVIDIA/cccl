@@ -60,7 +60,7 @@ int main(int, char**)
     static_assert((std::is_same<std::allocator_traits<A<char> >::const_pointer, Ptr<const char> >::value), "");
     static_assert((std::is_same<std::allocator_traits<B<char> >::const_pointer, const char*>::value), "");
     static_assert((std::is_same<std::allocator_traits<C<char> >::const_pointer, CPtr<const char> >::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((std::is_same<std::allocator_traits<D<char> >::const_pointer, const char*>::value), "");
 #endif
 

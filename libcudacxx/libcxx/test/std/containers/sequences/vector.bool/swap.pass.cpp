@@ -62,7 +62,7 @@ int main(int, char**)
         assert(v[0] == false);
         assert(v[1] == true);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::vector<bool, min_allocator<bool>> v1(100);
         std::vector<bool, min_allocator<bool>> v2(200);

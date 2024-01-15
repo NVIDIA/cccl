@@ -33,7 +33,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 struct __not_fn_op {
     template <class... _Args>
@@ -70,7 +70,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 auto not_fn(_Fn&& __f) {
     return __not_fn_t<decay_t<_Fn>>(_CUDA_VSTD::forward<_Fn>(__f));
 }
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

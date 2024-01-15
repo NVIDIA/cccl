@@ -62,7 +62,7 @@ int main(int, char**)
     const int j = 0;
     test(j);
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     convertible_to_int_ref convi;
     test(convi);
     convertible_to_int_ref const convic;

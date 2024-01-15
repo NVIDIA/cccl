@@ -114,8 +114,6 @@ struct AgentBlockSort
   static constexpr int BLOCK_THREADS = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE = Policy::ITEMS_PER_TILE;
-  static constexpr int SHARED_MEMORY_SIZE =
-    static_cast<int>(sizeof(TempStorage));
 
   //---------------------------------------------------------------------
   // Per thread data
@@ -132,7 +130,7 @@ struct AgentBlockSort
   ValueT *items_out_raw;
   CompareOpT compare_op;
 
-  __device__ __forceinline__ AgentBlockSort(bool ping_,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentBlockSort(bool ping_,
                                             TempStorage &storage_,
                                             KeysLoadIt keys_in_,
                                             ItemsLoadIt items_in_,
@@ -155,7 +153,7 @@ struct AgentBlockSort
   {
   }
 
-  __device__ __forceinline__ void Process()
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
     auto tile_idx     = static_cast<OffsetT>(blockIdx.x);
     auto num_tiles    = static_cast<OffsetT>(gridDim.x);
@@ -173,7 +171,7 @@ struct AgentBlockSort
   }
 
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void consume_tile(OffsetT tile_base,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(OffsetT tile_base,
                                                int num_remaining)
   {
     ValueT items_local[ITEMS_PER_THREAD];
@@ -316,7 +314,7 @@ struct AgentPartition
   OffsetT target_merged_tiles_number;
   int items_per_tile;
 
-  __device__ __forceinline__ AgentPartition(bool ping,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentPartition(bool ping,
                                             KeyIteratorT keys_ping,
                                             KeyT *keys_pong,
                                             OffsetT keys_count,
@@ -336,7 +334,7 @@ struct AgentPartition
       , items_per_tile(items_per_tile)
   {}
 
-  __device__ __forceinline__ void Process()
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
     OffsetT merged_tiles_number = target_merged_tiles_number / 2;
 
@@ -428,8 +426,6 @@ struct AgentMerge
   static constexpr int BLOCK_THREADS = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE = Policy::ITEMS_PER_TILE;
-  static constexpr int SHARED_MEMORY_SIZE =
-    static_cast<int>(sizeof(TempStorage));
 
   //---------------------------------------------------------------------
   // Per thread data
@@ -465,7 +461,7 @@ struct AgentMerge
    * stores the result in output[item].
    */
   template <bool IS_FULL_TILE, class T, class It1, class It2>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   gmem_to_reg(T (&output)[ITEMS_PER_THREAD],
               It1 input1,
               It2 input2,
@@ -497,7 +493,7 @@ struct AgentMerge
 
   /// \brief Stores data in a coalesced fashion in[item] -> out[BLOCK_THREADS * item + tid]
   template <class T, class It>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   reg_to_shared(It output,
                 T (&input)[ITEMS_PER_THREAD])
   {
@@ -510,7 +506,7 @@ struct AgentMerge
   }
 
   template <bool IS_FULL_TILE>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   consume_tile(int tid, OffsetT tile_idx, OffsetT tile_base, int count)
   {
     OffsetT partition_beg = merge_partitions[tile_idx + 0];
@@ -705,7 +701,7 @@ struct AgentMerge
     }
   }
 
-  __device__ __forceinline__ AgentMerge(bool ping_,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentMerge(bool ping_,
                                         TempStorage &storage_,
                                         KeysLoadPingIt keys_in_ping_,
                                         ItemsLoadPingIt items_in_ping_,
@@ -735,7 +731,7 @@ struct AgentMerge
       , target_merged_tiles_number(target_merged_tiles_number_)
   {}
 
-  __device__ __forceinline__ void Process()
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
     int tile_idx      = static_cast<int>(blockIdx.x);
     int num_tiles     = static_cast<int>(gridDim.x);

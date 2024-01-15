@@ -36,7 +36,7 @@ namespace detail
 {
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 Integer clz(Integer x)
 {
   Integer result;
@@ -61,21 +61,21 @@ Integer clz(Integer x)
 }
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 bool is_power_of_2(Integer x)
 {
   return 0 == (x & (x - 1));
 }
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 bool is_odd(Integer x)
 {
   return 1 & x;
 }
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 Integer log2(Integer x)
 {
   Integer num_bits = 8 * sizeof(Integer);
@@ -86,7 +86,7 @@ Integer log2(Integer x)
 
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 Integer log2_ri(Integer x)
 {
   Integer result = log2(x);
@@ -101,8 +101,8 @@ Integer log2_ri(Integer x)
 // x/y rounding towards +infinity for integers
 // Used to determine # of blocks/warps etc.
 template <typename Integer0, typename Integer1>
-__host__ __device__ __thrust_forceinline__
-#if THRUST_CPP_DIALECT >= 2011
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+#if _CCCL_STD_VER >= 2011
 // FIXME: Should use common_type.
 auto divide_ri(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS((x + (y - 1)) / y)
@@ -117,8 +117,8 @@ Integer0 divide_ri(Integer0 const x, Integer1 const y)
 // x/y rounding towards zero for integers.
 // Used to determine # of blocks/warps etc.
 template <typename Integer0, typename Integer1>
-__host__ __device__ __thrust_forceinline__
-#if THRUST_CPP_DIALECT >= 2011
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+#if _CCCL_STD_VER >= 2011
 auto divide_rz(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS(x / y)
 #else
@@ -131,8 +131,8 @@ Integer0 divide_rz(Integer0 const x, Integer1 const y)
 
 // Round x towards infinity to the next multiple of y.
 template <typename Integer0, typename Integer1>
-__host__ __device__ __thrust_forceinline__
-#if THRUST_CPP_DIALECT >= 2011
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+#if _CCCL_STD_VER >= 2011
 auto round_i(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS(y * divide_ri(x, y))
 #else
@@ -144,8 +144,8 @@ Integer0 round_i(Integer0 const x, Integer1 const y)
 
 // Round x towards 0 to the next multiple of y.
 template <typename Integer0, typename Integer1>
-__host__ __device__ __thrust_forceinline__
-#if THRUST_CPP_DIALECT >= 2011
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+#if _CCCL_STD_VER >= 2011
 auto round_z(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS(y * divide_rz(x, y))
 #else

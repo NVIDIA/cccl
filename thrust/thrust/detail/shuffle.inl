@@ -27,7 +27,7 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/shuffle.h>
@@ -36,9 +36,9 @@
 
 THRUST_NAMESPACE_BEGIN
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomIterator, typename URBG>
-__host__ __device__ void shuffle(
+_CCCL_HOST_DEVICE void shuffle(
     const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
     RandomIterator first, RandomIterator last, URBG&& g) {
   using thrust::system::detail::generic::shuffle;
@@ -48,7 +48,7 @@ __host__ __device__ void shuffle(
 }
 
 template <typename RandomIterator, typename URBG>
-__host__ __device__ void shuffle(RandomIterator first, RandomIterator last,
+_CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last,
                                  URBG&& g) {
   using thrust::system::detail::generic::select_system;
 
@@ -58,10 +58,10 @@ __host__ __device__ void shuffle(RandomIterator first, RandomIterator last,
   return thrust::shuffle(select_system(system), first, last, g);
 }
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomIterator,
           typename OutputIterator, typename URBG>
-__host__ __device__ void shuffle_copy(
+_CCCL_HOST_DEVICE void shuffle_copy(
     const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
     RandomIterator first, RandomIterator last, OutputIterator result,
     URBG&& g) {
@@ -72,7 +72,7 @@ __host__ __device__ void shuffle_copy(
 }
 
 template <typename RandomIterator, typename OutputIterator, typename URBG>
-__host__ __device__ void shuffle_copy(RandomIterator first, RandomIterator last,
+_CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last,
                                       OutputIterator result, URBG&& g) {
   using thrust::system::detail::generic::select_system;
 

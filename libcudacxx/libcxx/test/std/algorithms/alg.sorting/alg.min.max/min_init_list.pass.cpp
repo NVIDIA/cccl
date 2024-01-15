@@ -33,7 +33,7 @@ int main(int, char**)
     assert(i == 1);
     i = std::min({1, 3, 2});
     assert(i == 1);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     {
     static_assert(std::min({1, 3, 2}) == 1, "");
     static_assert(std::min({2, 1, 3}) == 1, "");

@@ -22,7 +22,7 @@ struct NoDefault {
     __host__ __device__ TEST_CONSTEXPR NoDefault(int) { }
 };
 
-#if TEST_STD_VER < 11
+#if TEST_STD_VER < 2011
 struct natural_alignment {
     long t1;
     long long t2;
@@ -80,13 +80,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
     tests();
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     static_assert(tests(), "");
 #endif
 
     // Test the alignment of data()
     {
-#if TEST_STD_VER < 11
+#if TEST_STD_VER < 2011
         typedef natural_alignment T;
 #else
         typedef cuda::std::max_align_t T;

@@ -368,6 +368,7 @@ class Configuration(object):
 
             if 'icc' in self.config.available_features:
                 self.cxx.link_flags += ['-lirc']
+                self.cxx.compile_flags += ['-Xcompiler=-diag-disable=10441']
 
     def _configure_clang_cl(self, clang_path):
         def _split_env_var(var):
@@ -665,6 +666,7 @@ class Configuration(object):
         if self.cxx.type == 'clang':
             real_arch_format = '--cuda-gpu-arch=sm_{0}'
             virt_arch_format = '--cuda-gpu-arch=compute_{0}'
+            self.cxx.compile_flags += ['-O1']
         pre_sm_32 = True
         pre_sm_60 = True
         pre_sm_70 = True

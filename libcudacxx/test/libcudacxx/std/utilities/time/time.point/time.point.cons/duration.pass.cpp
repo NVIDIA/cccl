@@ -29,7 +29,7 @@ int main(int, char**)
     cuda::std::chrono::time_point<Clock, Duration> t(cuda::std::chrono::seconds(3));
     assert(t.time_since_epoch() == Duration(3000));
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr cuda::std::chrono::time_point<Clock, Duration> t(Duration(3));
     static_assert(t.time_since_epoch() == Duration(3), "");

@@ -50,7 +50,7 @@ void do_insert_const_lvalue_test()
 int main(int, char**)
 {
     do_insert_const_lvalue_test<std::unordered_multiset<double> >();
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_multiset<double, std::hash<double>,
             std::equal_to<double>, min_allocator<double>> C;

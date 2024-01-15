@@ -56,7 +56,7 @@ int main(int, char**)
     test_const(S("abcdefghij"));
     test_const(S("abcdefghijklmnopqrst"));
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test_const(S(""));
@@ -65,7 +65,7 @@ int main(int, char**)
     test_const(S("abcdefghijklmnopqrst"));
     }
 #endif
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     {
     typedef std::string S;
     S s1("");                     test_nonconst(s1);

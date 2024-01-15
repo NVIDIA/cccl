@@ -194,7 +194,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
         : first(__t1), second(__t2) {}
 
     template <
-#if _LIBCUDACXX_STD_VER > 20 // http://wg21.link/P1951
+#if _CCCL_STD_VER > 2020 // http://wg21.link/P1951
         class _U1 = _T1, class _U2 = _T2,
 #else
         class _U1, class _U2,
@@ -208,7 +208,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
         : first(_CUDA_VSTD::forward<_U1>(__u1)), second(_CUDA_VSTD::forward<_U2>(__u2)) {}
 
     template <
-#if _LIBCUDACXX_STD_VER > 20 // http://wg21.link/P1951
+#if _CCCL_STD_VER > 2020 // http://wg21.link/P1951
         class _U1 = _T1, class _U2 = _T2,
 #else
         class _U1, class _U2,
@@ -221,7 +221,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
                     is_nothrow_constructible<second_type, _U2>::value))
         : first(_CUDA_VSTD::forward<_U1>(__u1)), second(_CUDA_VSTD::forward<_U2>(__u2)) {}
 
-#if _LIBCUDACXX_STD_VER > 20
+#if _CCCL_STD_VER > 2020
     template<class _U1, class _U2, __enable_if_t<
             _CheckArgs::template __is_pair_constructible<_U1&, _U2&>::value
     >* = nullptr>
@@ -241,7 +241,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
                   is_nothrow_constructible<second_type, _U2&>::value))
         : first(__p.first), second(__p.second) {}
 #endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
-#endif // _LIBCUDACXX_STD_VER > 20
+#endif // _CCCL_STD_VER > 2020
 
     template<class _U1, class _U2, __enable_if_t<
             _CheckArgs::template __enable_explicit<_U1 const&, _U2 const&>::value
@@ -323,7 +323,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
         : first(_CUDA_VSTD::forward<_U1>(__p.first)), second(_CUDA_VSTD::forward<_U2>(__p.second)) {}
 #endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
 
-#if _LIBCUDACXX_STD_VER > 20
+#if _CCCL_STD_VER > 2020
     template<class _U1, class _U2, __enable_if_t<
             _CheckArgs::template __is_pair_constructible<const _U1&&, const _U2&&>::value
     >* = nullptr>
@@ -345,7 +345,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
                  is_nothrow_constructible<second_type, const _U2&&>::value)
         : first(_CUDA_VSTD::move(__p.first)), second(_CUDA_VSTD::move(__p.second)) {}
 #endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
-#endif // _LIBCUDACXX_STD_VER > 20
+#endif // _CCCL_STD_VER > 2020
 
     template<class _Tuple, __enable_if_t<
             _CheckTLC<_Tuple>::template __enable_explicit<_Tuple>::value
@@ -427,7 +427,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
     }
 #endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
 
-#if _LIBCUDACXX_STD_VER > 20
+#if _CCCL_STD_VER > 2020
     _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
     const pair& operator=(pair const& __p) const
       noexcept(is_nothrow_copy_assignable_v<const first_type> &&
@@ -519,7 +519,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
         return *this;
     }
 #endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
-#endif // _LIBCUDACXX_STD_VER > 20
+#endif // _CCCL_STD_VER > 2020
 
     template <class _Tuple, __enable_if_t<
             _CheckTLC<_Tuple>::template __enable_assign<_Tuple>::value
@@ -540,7 +540,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
         swap(second, __p.second);
     }
 
-#if _LIBCUDACXX_STD_VER > 20
+#if _CCCL_STD_VER > 2020
     _LIBCUDACXX_HIDE_FROM_ABI constexpr
     void swap(const pair& __p) const
         noexcept(__is_nothrow_swappable<const first_type>::value &&
@@ -550,7 +550,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair
         swap(first,  __p.first);
         swap(second, __p.second);
     }
-#endif // _LIBCUDACXX_STD_VER > 20
+#endif // _CCCL_STD_VER > 2020
 
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
     _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
@@ -566,10 +566,10 @@ private:
          __tuple_indices<_I1...>, __tuple_indices<_I2...>);
 };
 
-#if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 template<class _T1, class _T2>
 _LIBCUDACXX_HOST_DEVICE pair(_T1, _T2) -> pair<_T1, _T2>;
-#endif // _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#endif // _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 
 // [pairs.spec], specialized algorithms
 
@@ -640,7 +640,7 @@ operator<=(const pair<_T1,_T2>& __x, const pair<_T1,_T2>& __y)
 
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _T1, class _T2, class _U1, class _U2, template<class> class _TQual, template<class> class _UQual>
     requires requires { typename pair<common_reference_t<_TQual<_T1>, _UQual<_U1>>,
                                       common_reference_t<_TQual<_T2>, _UQual<_U2>>>; }
@@ -654,7 +654,7 @@ template <class _T1, class _T2, class _U1, class _U2>
 struct common_type<pair<_T1, _T2>, pair<_U1, _U2>> {
     using type = pair<common_type_t<_T1, _U1>, common_type_t<_T2, _U2>>;
 };
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
@@ -671,7 +671,7 @@ swap(pair<_T1, _T2>& __x, pair<_T1, _T2>& __y)
     __x.swap(__y);
 }
 
-#if _LIBCUDACXX_STD_VER > 20
+#if _CCCL_STD_VER > 2020
 template <class _T1, class _T2>
   requires (__is_swappable<const _T1>::value &&
             __is_swappable<const _T2>::value)
@@ -681,7 +681,7 @@ void swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
     __x.swap(__y);
 }
-#endif // _LIBCUDACXX_STD_VER > 20
+#endif // _CCCL_STD_VER > 2020
 
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
@@ -800,7 +800,7 @@ get(const pair<_T1, _T2>&& __p) noexcept
     return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
 }
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 constexpr _T1 & get(pair<_T1, _T2>& __p) noexcept
@@ -857,7 +857,7 @@ constexpr _T1 const && get(pair<_T2, _T1> const&& __p) noexcept
     return __get_pair<1>::get(_CUDA_VSTD::move(__p));
 }
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

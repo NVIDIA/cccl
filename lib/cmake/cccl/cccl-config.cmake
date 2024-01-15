@@ -87,6 +87,7 @@ foreach(component IN LISTS components)
           DEVICE_OPTION_DOC
             "Device system for CCCL::Thrust target."
           ADVANCED
+          GLOBAL
         )
         target_link_libraries(CCCL::CCCL INTERFACE CCCL::Thrust)
       endif()

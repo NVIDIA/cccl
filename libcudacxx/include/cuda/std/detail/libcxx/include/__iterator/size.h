@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Cont>
 _LIBCUDACXX_INLINE_VISIBILITY
 constexpr auto size(const _Cont& __c)
@@ -40,9 +40,9 @@ noexcept(noexcept(__c.size()))
 template <class _Tp, size_t _Sz>
 _LIBCUDACXX_INLINE_VISIBILITY
 constexpr size_t size(const _Tp (&)[_Sz]) noexcept { return _Sz; }
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Cont>
 _LIBCUDACXX_INLINE_VISIBILITY
 constexpr auto ssize(const _Cont& __c)
@@ -62,7 +62,7 @@ constexpr ptrdiff_t ssize(const _Tp (&)[_Sz]) noexcept { return _Sz; }
 # if defined(_LIBCUDACXX_COMPILER_GCC)
 #   pragma GCC diagnostic pop
 # endif // _LIBCUDACXX_COMPILER_GCC
-#endif  // _LIBCUDACXX_STD_VER > 17
+#endif  // _CCCL_STD_VER > 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

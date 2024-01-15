@@ -43,7 +43,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     assert(cuda::std::mismatch(RAI(ia), RAI(ia + sa), RAI(ib))
             == (cuda::std::pair<RAI, RAI>(RAI(ia+3), RAI(ib+3))));
 
-#if TEST_STD_VER > 11 // We have the four iteration version
+#if TEST_STD_VER > 2011 // We have the four iteration version
     assert(cuda::std::mismatch(II(ia), II(ia + sa), II(ib), II(ib+sb))
             == (cuda::std::pair<II, II>(II(ia+3), II(ib+3))));
 
@@ -61,7 +61,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
     test();
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(test(), "");
 #endif
 

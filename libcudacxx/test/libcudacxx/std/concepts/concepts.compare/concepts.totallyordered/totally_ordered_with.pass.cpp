@@ -1015,7 +1015,7 @@ static_assert(!check_totally_ordered_with<cuda::std::array<int, 10>,
 } // namespace standard_types
 
 namespace types_fit_for_purpose {
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(!check_totally_ordered_with<cxx20_member_eq, cxx20_member_eq>(), "");
 static_assert(!check_totally_ordered_with<cxx20_friend_eq, cxx20_friend_eq>(), "");
 static_assert(!check_totally_ordered_with<cxx20_member_eq, cxx20_friend_eq>(), "");
@@ -1030,24 +1030,24 @@ static_assert(!check_totally_ordered_with<member_three_way_comparable,
                                           friend_three_way_comparable>(), "");
 #endif // !__NVCC__
 #endif // TEST_HAS_NO_SPACESHIP_OPERATOR
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 static_assert(
     check_totally_ordered_with<explicit_operators, explicit_operators>(), "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC has a bug where it considers the conversion with C++17 and below
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC has a bug where it considers the conversion with C++17 and below
 static_assert(!check_totally_ordered_with<equality_comparable_with_ec1,
                                           equality_comparable_with_ec1>(), "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 static_assert(check_totally_ordered_with<different_return_types,
                                          different_return_types>(), "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC has a bug where it considers the conversion with C++17 and below
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC has a bug where it considers the conversion with C++17 and below
 static_assert(!check_totally_ordered_with<explicit_operators,
                                           equality_comparable_with_ec1>(), "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 static_assert(
     check_totally_ordered_with<explicit_operators, different_return_types>(), "");
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(!check_totally_ordered_with<one_way_eq, one_way_eq>(), "");
 static_assert(
     cuda::std::common_reference_with<one_way_eq const&, explicit_operators const&> &&
@@ -1120,7 +1120,7 @@ static_assert(
     !check_totally_ordered_with<totally_ordered_with_others,
                                 no_ge_not_totally_ordered_with>(), "");
 #endif // TEST_HAS_NO_SPACESHIP_OPERATOR
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 } // namespace types_fit_for_purpose
 
 int main(int, char**) { return 0; }

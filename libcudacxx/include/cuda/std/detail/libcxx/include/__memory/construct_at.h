@@ -44,7 +44,7 @@
 #  include <new>
 #endif // _LIBCUDACXX_COMPILER_CLANG_CUDA
 
-#if defined(__cuda_std__) && _LIBCUDACXX_STD_VER > 17 // need to backfill ::std::construct_at
+#if defined(__cuda_std__) && _CCCL_STD_VER > 2017 // need to backfill ::std::construct_at
 #  ifndef _LIBCUDACXX_COMPILER_NVRTC
 #    include <memory>
 #  endif // _LIBCUDACXX_COMPILER_NVRTC
@@ -66,7 +66,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp* construct_at(_Tp* __location, _Args
 }
 } // namespace std
 #  endif // __cpp_lib_constexpr_dynamic_alloc
-#endif // __cuda_std__ && _LIBCUDACXX_STD_VER > 17
+#endif // __cuda_std__ && _CCCL_STD_VER > 2017
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -104,9 +104,9 @@ struct __can_optimize_construct_at
 } // namespace __detail
 
 // construct_at
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
@@ -125,7 +125,7 @@ _LIBCUDACXX_INLINE_VISIBILITY
   return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
 }
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
@@ -149,39 +149,39 @@ _LIBCUDACXX_INLINE_VISIBILITY
 #  endif // !__cuda_std__
 }
 
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VISIBILITY
   _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
   __construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
-#if defined(__cuda_std__) && _LIBCUDACXX_STD_VER > 17
+#if defined(__cuda_std__) && _CCCL_STD_VER > 2017
   // Need to go through `std::construct_at` as that is the explicitly blessed function
   if (__libcpp_is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }
-#endif // __cuda_std__ && _LIBCUDACXX_STD_VER > 17
+#endif // __cuda_std__ && _CCCL_STD_VER > 2017
   return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
 }
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VISIBILITY
   _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
   __construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
-#if defined(__cuda_std__) && _LIBCUDACXX_STD_VER > 17
+#if defined(__cuda_std__) && _CCCL_STD_VER > 2017
   // Need to go through `std::construct_at` as that is the explicitly blessed function
   if (__libcpp_is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }
-#endif // __cuda_std__ && _LIBCUDACXX_STD_VER > 17
+#endif // __cuda_std__ && _CCCL_STD_VER > 2017
   *__location = _Tp{_CUDA_VSTD::forward<_Args>(__args)...};
   return __location;
 }
@@ -201,7 +201,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void __destroy_a
   __loc->~_Tp();
 }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Tp, __enable_if_t<is_array<_Tp>::value, int> = 0>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void __destroy_at(_Tp* __loc)
 {
@@ -233,7 +233,7 @@ __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
   return __last;
 }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 template <class _Tp, enable_if_t<!is_array_v<_Tp>, int> = 0>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void destroy_at(_Tp* __loc)
@@ -242,13 +242,13 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void destroy_at(
   __loc->~_Tp();
 }
 
-#  if _LIBCUDACXX_STD_VER > 17
+#  if _CCCL_STD_VER > 2017
 template <class _Tp, enable_if_t<is_array_v<_Tp>, int> = 0>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void destroy_at(_Tp* __loc)
 {
   _CUDA_VSTD::__destroy_at(__loc);
 }
-#  endif // _LIBCUDACXX_STD_VER > 17
+#  endif // _CCCL_STD_VER > 2017
 
 template <class _ForwardIterator>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void
@@ -268,7 +268,7 @@ destroy_n(_ForwardIterator __first, _Size __n)
   return __first;
 }
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -24,7 +24,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
     int ia[] = {1, 3, 6, 7};
     int ib[] = {1, 3};
@@ -52,7 +52,7 @@ int main(int, char**)
     assert(std::equal(cpp17_input_iterator<const int*>(ia),
                       cpp17_input_iterator<const int*>(ia+s),
                       cpp17_input_iterator<const int*>(ia)));
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(std::equal(cpp17_input_iterator<const int*>(ia),
                       cpp17_input_iterator<const int*>(ia+s),
                       cpp17_input_iterator<const int*>(ia),
@@ -65,7 +65,7 @@ int main(int, char**)
     assert(!std::equal(cpp17_input_iterator<const int*>(ia),
                        cpp17_input_iterator<const int*>(ia+s),
                        cpp17_input_iterator<const int*>(ib)));
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     assert(!std::equal(cpp17_input_iterator<const int*>(ia),
                        cpp17_input_iterator<const int*>(ia+s),
                        cpp17_input_iterator<const int*>(ib),
@@ -85,7 +85,7 @@ int main(int, char**)
 
 #endif
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

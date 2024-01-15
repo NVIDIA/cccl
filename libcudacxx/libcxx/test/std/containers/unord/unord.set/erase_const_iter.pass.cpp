@@ -55,7 +55,7 @@ int main(int, char**)
         assert(c.count(3) == 1);
         assert(c.count(4) == 1);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_set<int, std::hash<int>, std::equal_to<int>, min_allocator<int>> C;
         typedef int P;
@@ -81,7 +81,7 @@ int main(int, char**)
         assert(c.count(4) == 1);
     }
 #endif
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     {
     //  This is LWG #2059
         typedef TemplateConstructor T;

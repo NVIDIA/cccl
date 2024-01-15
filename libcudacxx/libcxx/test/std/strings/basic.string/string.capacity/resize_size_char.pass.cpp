@@ -69,7 +69,7 @@ int main(int, char**)
          S("12345678901234567890123456789012345678901234567890aaaaaaaaaa"));
     test(S(), S::npos, 'a', S("not going to happen"));
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(), 0, 'a', S());

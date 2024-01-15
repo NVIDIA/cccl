@@ -38,7 +38,7 @@ TEST_CONSTEXPR_CXX17 bool test()
 int main(int, char**)
 {
     test();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(test());
 #endif
 

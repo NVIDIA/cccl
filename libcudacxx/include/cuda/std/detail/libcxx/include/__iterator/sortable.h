@@ -31,14 +31,14 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 template <class _Iter, class _Comp = _CUDA_VRANGES::less, class _Proj = identity>
 concept sortable =
   permutable<_Iter> &&
   indirect_strict_weak_order<_Comp, projected<_Iter, _Proj>>;
 
-#elif _LIBCUDACXX_STD_VER > 14
+#elif _CCCL_STD_VER > 2014
 
 template <class _Iter, class _Comp, class _Proj>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -51,7 +51,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template <class _Iter, class _Comp = _CUDA_VRANGES::less, class _Proj = identity>
 _LIBCUDACXX_CONCEPT sortable = _LIBCUDACXX_FRAGMENT(__sortable_, _Iter, _Comp, _Proj);
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -50,22 +50,22 @@ THRUST_NAMESPACE_BEGIN
 // define null_type for backwards compatability
 struct null_type {};
 
-__host__ __device__ inline
+_CCCL_HOST_DEVICE inline
 bool operator==(const null_type&, const null_type&) { return true; }
 
-__host__ __device__ inline
+_CCCL_HOST_DEVICE inline
 bool operator>=(const null_type&, const null_type&) { return true; }
 
-__host__ __device__ inline
+_CCCL_HOST_DEVICE inline
 bool operator<=(const null_type&, const null_type&) { return true; }
 
-__host__ __device__ inline
+_CCCL_HOST_DEVICE inline
 bool operator!=(const null_type&, const null_type&) { return false; }
 
-__host__ __device__ inline
+_CCCL_HOST_DEVICE inline
 bool operator<(const null_type&, const null_type&) { return false; }
 
-__host__ __device__ inline
+_CCCL_HOST_DEVICE inline
 bool operator>(const null_type&, const null_type&) { return false; }
 
 /*! \addtogroup utility

@@ -25,7 +25,7 @@
 
 TEST_CONSTEXPR bool equal2 ( int i ) { return i == 2; }
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
     int ia[] = {1, 3, 5, 2, 5, 6};
 
@@ -56,7 +56,7 @@ test()
     assert(cp.count() == sa);
 }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 struct pred
 {
     bool operator()(const std::unique_ptr<int>& i) {return *i == 2;}
@@ -86,7 +86,7 @@ test1()
     assert(*ia[4] == 3);
     assert(*ia[5] == 4);
 }
-#endif // TEST_STD_VER >= 11
+#endif // TEST_STD_VER >= 2011
 
 int main(int, char**)
 {
@@ -95,14 +95,14 @@ int main(int, char**)
     test<random_access_iterator<int*> >();
     test<int*>();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test1<forward_iterator<std::unique_ptr<int>*> >();
     test1<bidirectional_iterator<std::unique_ptr<int>*> >();
     test1<random_access_iterator<std::unique_ptr<int>*> >();
     test1<std::unique_ptr<int>*>();
-#endif // TEST_STD_VER >= 11
+#endif // TEST_STD_VER >= 2011
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

@@ -47,7 +47,7 @@ public:
   __host__ __device__ constexpr void operator++(int) noexcept { ++base_; }
 
   __host__ __device__ constexpr bool operator==(iterator_wrapper const& other) const noexcept { return base_ == other.base_; }
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ constexpr bool operator!=(iterator_wrapper const& other) const noexcept { return base_ != other.base_; }
 #endif
 
@@ -62,7 +62,9 @@ __host__ __device__ constexpr void unqualified_lookup_move(It first_, It last_, 
   auto result_first = ::check_unqualified_lookup::unqualified_lookup_wrapper<It>{cuda::std::move(result_first_)};
   auto result_last = ::check_unqualified_lookup::unqualified_lookup_wrapper<It>{cuda::std::move(result_last_)};
 
+#ifndef TEST_COMPILER_ICC
   static_assert(!noexcept(cuda::std::ranges::iter_move(first)), "unqualified-lookup case not being chosen");
+#endif // TEST_COMPILER_ICC
 
   for (; first != last && result_first != result_last; (void)++first, ++result_first) {
     *result_first = cuda::std::ranges::iter_move(first);
@@ -76,8 +78,10 @@ __host__ __device__ constexpr void lvalue_move(It first_, It last_, Out result_f
   auto result_first = iterator_wrapper<It>{cuda::std::move(result_first_)};
   auto result_last = iterator_wrapper<It>{cuda::std::move(result_last_)};
 
+#ifndef TEST_COMPILER_ICC
   static_assert(!noexcept(cuda::std::ranges::iter_move(first)), "`operator*() const&` is not noexcept, and there's no hidden "
                                                           "friend iter_move.");
+#endif // TEST_COMPILER_ICC
 
   for (; first != last && result_first != result_last; (void)++first, ++result_first) {
     *result_first = cuda::std::ranges::iter_move(first);
@@ -178,7 +182,9 @@ __host__ __device__ constexpr bool test() {
 
   auto unscoped = check_unqualified_lookup::unscoped_enum::a;
   assert(cuda::std::ranges::iter_move(unscoped) == check_unqualified_lookup::unscoped_enum::a);
+#ifndef TEST_COMPILER_ICC
   assert(!noexcept(cuda::std::ranges::iter_move(unscoped)));
+#endif // TEST_COMPILER_ICC
 
   auto scoped = check_unqualified_lookup::scoped_enum::a;
   assert(cuda::std::ranges::iter_move(scoped) == nullptr);
@@ -186,6 +192,7 @@ __host__ __device__ constexpr bool test() {
 
   auto some_union = check_unqualified_lookup::some_union{0};
   assert(cuda::std::ranges::iter_move(some_union) == 0);
+#ifndef TEST_COMPILER_ICC
   assert(!noexcept(cuda::std::ranges::iter_move(some_union)));
 
   // Check noexcept-correctness
@@ -196,6 +203,7 @@ __host__ __device__ constexpr bool test() {
   static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<false>>())));
   static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<false>>())));
 #endif
+#endif // TEST_COMPILER_ICC
 
   return true;
 }
@@ -205,7 +213,7 @@ static_assert(!cuda::std::is_invocable_v<IterMoveT, int*, int*>); // too many ar
 static_assert(!cuda::std::is_invocable_v<IterMoveT, int>);
 #endif // _LIBCUDACXX_CUDACC_BELOW_11_3
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 // Test ADL-proofing.
 struct Incomplete;
 template<class T> struct Holder { T t; };

@@ -18,7 +18,7 @@
 int main(int, char**)
 {
     static_assert(std::is_error_code_enum  <std::future_errc>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(std::is_error_code_enum_v<std::future_errc>, "");
 #endif
 

@@ -49,7 +49,7 @@ int main(int, char**)
     {
         std::auto_ptr<A> ptr(new A);
         A* raw_ptr = ptr.get();
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
         std::shared_ptr<B> p(std::move(ptr));
 #else
         std::shared_ptr<B> p(ptr);
@@ -69,7 +69,7 @@ int main(int, char**)
         globalMemCounter.throw_after = 0;
         try
         {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
             std::shared_ptr<B> p(std::move(ptr));
 #else
             std::shared_ptr<B> p(ptr);
@@ -78,7 +78,7 @@ int main(int, char**)
         }
         catch (...)
         {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
             assert(A::count == 1);
             assert(B::count == 1);
             assert(ptr.get() == raw_ptr);

@@ -308,7 +308,7 @@ public:
     typedef _Reference                  reference;
 
     _LIBCUDACXX_INLINE_VISIBILITY __deque_iterator() noexcept
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
      : __m_iter_(nullptr), __ptr_(nullptr)
 #endif
      {}
@@ -1058,7 +1058,7 @@ public:
     __deque_base(__deque_base&& __c, const allocator_type& __a);
 
     void swap(__deque_base& __c)
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
         noexcept;
 #else
         noexcept(!__alloc_traits::propagate_on_container_swap::value ||
@@ -1223,7 +1223,7 @@ __deque_base<_Tp, _Allocator>::__deque_base(__deque_base&& __c, const allocator_
 template <class _Tp, class _Allocator>
 void
 __deque_base<_Tp, _Allocator>::swap(__deque_base& __c)
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
         noexcept
 #else
         noexcept(!__alloc_traits::propagate_on_container_swap::value ||
@@ -1299,7 +1299,7 @@ public:
         {}
     _LIBCUDACXX_INLINE_VISIBILITY explicit deque(const allocator_type& __a) : __base(__a) {}
     explicit deque(size_type __n);
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     explicit deque(size_type __n, const _Allocator& __a);
 #endif
     deque(size_type __n, const value_type& __v);
@@ -1417,7 +1417,7 @@ public:
     // 23.2.2.3 modifiers:
     void push_front(const value_type& __v);
     void push_back(const value_type& __v);
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     template <class... _Args> reference emplace_front(_Args&&... __args);
     template <class... _Args> reference emplace_back (_Args&&... __args);
 #else
@@ -1454,7 +1454,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(deque& __c)
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
         noexcept;
 #else
         noexcept(!__alloc_traits::propagate_on_container_swap::value ||
@@ -1600,7 +1600,7 @@ deque<_Tp, _Allocator>::deque(size_type __n)
         __append(__n);
 }
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp, class _Allocator>
 deque<_Tp, _Allocator>::deque(size_type __n, const _Allocator& __a)
     : __base(__a)
@@ -1948,7 +1948,7 @@ deque<_Tp, _Allocator>::push_back(value_type&& __v)
 
 template <class _Tp, class _Allocator>
 template <class... _Args>
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 typename deque<_Tp, _Allocator>::reference
 #else
 void
@@ -1962,7 +1962,7 @@ deque<_Tp, _Allocator>::emplace_back(_Args&&... __args)
     __alloc_traits::construct(__a, _CUDA_VSTD::addressof(*__base::end()),
                               _CUDA_VSTD::forward<_Args>(__args)...);
     ++__base::size();
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     return *--__base::end();
 #endif
 }
@@ -1983,7 +1983,7 @@ deque<_Tp, _Allocator>::push_front(value_type&& __v)
 
 template <class _Tp, class _Allocator>
 template <class... _Args>
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 typename deque<_Tp, _Allocator>::reference
 #else
 void
@@ -1997,7 +1997,7 @@ deque<_Tp, _Allocator>::emplace_front(_Args&&... __args)
     __alloc_traits::construct(__a, _CUDA_VSTD::addressof(*--__base::begin()), _CUDA_VSTD::forward<_Args>(__args)...);
     --__base::__start_;
     ++__base::size();
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     return *__base::begin();
 #endif
 }
@@ -2926,7 +2926,7 @@ template <class _Tp, class _Allocator>
 inline
 void
 deque<_Tp, _Allocator>::swap(deque& __c)
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
         noexcept
 #else
         noexcept(!__alloc_traits::propagate_on_container_swap::value ||
@@ -3002,7 +3002,7 @@ swap(deque<_Tp, _Allocator>& __x, deque<_Tp, _Allocator>& __y)
     __x.swap(__y);
 }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Tp, class _Allocator, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void erase(deque<_Tp, _Allocator>& __c, const _Up& __v)

@@ -52,7 +52,7 @@ template <class Derived,
           class T,
           class ReduceOp,
           class ProductOp>
-T __host__ __device__
+T _CCCL_HOST_DEVICE
 inner_product(execution_policy<Derived> &policy,
               InputIt1                   first1,
               InputIt1                   last1,
@@ -80,7 +80,7 @@ template <class Derived,
           class InputIt1,
           class InputIt2,
           class T>
-T __host__ __device__
+T _CCCL_HOST_DEVICE
 inner_product(execution_policy<Derived> &policy,
               InputIt1                   first1,
               InputIt1                   last1,

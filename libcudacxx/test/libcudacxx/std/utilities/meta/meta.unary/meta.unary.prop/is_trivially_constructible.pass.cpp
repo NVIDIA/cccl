@@ -19,7 +19,7 @@ __host__ __device__
 void test_is_trivially_constructible()
 {
     static_assert(( cuda::std::is_trivially_constructible<T>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(( cuda::std::is_trivially_constructible_v<T>), "");
 #endif
 }
@@ -29,7 +29,7 @@ __host__ __device__
 void test_is_trivially_constructible()
 {
     static_assert(( cuda::std::is_trivially_constructible<T, A0>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(( cuda::std::is_trivially_constructible_v<T, A0>), "");
 #endif
 }
@@ -39,7 +39,7 @@ __host__ __device__
 void test_is_not_trivially_constructible()
 {
     static_assert((!cuda::std::is_trivially_constructible<T>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((!cuda::std::is_trivially_constructible_v<T>), "");
 #endif
 }
@@ -49,7 +49,7 @@ __host__ __device__
 void test_is_not_trivially_constructible()
 {
     static_assert((!cuda::std::is_trivially_constructible<T, A0>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((!cuda::std::is_trivially_constructible_v<T, A0>), "");
 #endif
 }
@@ -59,7 +59,7 @@ __host__ __device__
 void test_is_not_trivially_constructible()
 {
     static_assert((!cuda::std::is_trivially_constructible<T, A0, A1>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((!cuda::std::is_trivially_constructible_v<T, A0, A1>), "");
 #endif
 }

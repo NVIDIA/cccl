@@ -243,7 +243,7 @@ template<typename T>
      *  <tt>device_reference<const T></tt> from <tt>device_reference<T></tt>.
      */
     template<typename OtherT>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     device_reference(const device_reference<OtherT> &other,
                      typename thrust::detail::enable_if_convertible<
                        typename device_reference<OtherT>::pointer,
@@ -281,7 +281,7 @@ template<typename T>
      *  assert(ref == 13);
      *  \endcode
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     explicit device_reference(const pointer &ptr)
       : super_t(ptr)
     {}
@@ -294,7 +294,7 @@ template<typename T>
      *  \return <tt>*this</tt>
      */
     template<typename OtherT>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     device_reference &operator=(const device_reference<OtherT> &other)
     {
       return super_t::operator=(other);
@@ -306,7 +306,7 @@ template<typename T>
      *  \param x The value to assign from.
      *  \return <tt>*this</tt>
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     device_reference &operator=(const value_type &x)
     {
       return super_t::operator=(x);
@@ -322,7 +322,7 @@ template<typename T>
      *  \return A \p device_ptr pointing to the object this
      *  \p device_reference references.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     pointer operator&(void) const;
 
     /*! Conversion operator converts this \p device_reference to T
@@ -331,13 +331,13 @@ template<typename T>
      *
      *  \return A copy of the object referenced by this \p device_reference.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     operator value_type (void) const;
 
     /*! swaps the value this \p device_reference references with another.
      *  \p other The other \p device_reference with which to swap.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void swap(device_reference &other);
 
     /*! Prefix increment operator increments the object referenced by this
@@ -969,7 +969,7 @@ template<typename T>
  *  \p y The second \p device_reference of interest.
  */
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void swap(device_reference<T>& x, device_reference<T>& y)
 {
   x.swap(y);

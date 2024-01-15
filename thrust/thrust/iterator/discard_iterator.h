@@ -119,11 +119,11 @@ template<typename System = use_default>
      *
      *  \p rhs The discard_iterator to copy.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     discard_iterator(discard_iterator const &rhs)
       : super_t(rhs.base()) {}
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
     discard_iterator & operator=(const discard_iterator &) = default;
 #endif
 
@@ -134,7 +134,7 @@ template<typename System = use_default>
      *       value returned by \c Incrementable's null constructor. For example,
      *       when <tt>Incrementable == int</tt>, \c 0.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     discard_iterator(incrementable const &i = incrementable())
       : super_t(base_iterator(i)) {}
 
@@ -142,7 +142,7 @@ template<typename System = use_default>
      */
 
   private: // Core iterator interface
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     reference dereference() const
     {
       return m_element;
@@ -164,7 +164,7 @@ template<typename System = use_default>
  *
  *  \see constant_iterator
  */
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 discard_iterator<> make_discard_iterator(discard_iterator<>::difference_type i = discard_iterator<>::difference_type(0))
 {
   return discard_iterator<>(i);

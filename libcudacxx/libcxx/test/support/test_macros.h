@@ -68,7 +68,11 @@
 #define TEST_HAS_BUILTIN_IDENTIFIER(X) 0
 #endif
 
-#if defined(__NVCOMPILER)
+#if defined(__INTEL_LLVM_COMPILER)
+#  define TEST_COMPILER_ICC_LLVM
+#elif defined(__INTEL_COMPILER)
+#  define TEST_COMPILER_ICC
+#elif defined(__NVCOMPILER)
 # define TEST_COMPILER_NVHPC
 #elif defined(__clang__)
 # define TEST_COMPILER_CLANG
@@ -104,38 +108,36 @@
 
 /* Make a nice name for the standard version */
 #ifndef TEST_STD_VER
-#  if defined(TEST_COMPILER_MSVC)
-#    if   !defined(_MSVC_LANG)
-#      define TEST_STD_VER 3
-#    elif _MSVC_LANG <= 201103L
-#      define TEST_STD_VER 11
-#    elif _MSVC_LANG <= 201402L
-#      define TEST_STD_VER 14
-#    elif _MSVC_LANG <= 201703L
-#      define TEST_STD_VER 17
-#    elif _MSVC_LANG <= 202002L
-#      define TEST_STD_VER 20
-#    else
-#      define TEST_STD_VER 99  // Greater than current standard.
-       // This is deliberately different than _LIBCUDACXX_STD_VER to discourage matching them up.
-#    endif
-#  else
-#    if   __cplusplus <= 199711L
-#      define TEST_STD_VER 3
-#    elif __cplusplus <= 201103L
-#      define TEST_STD_VER 11
-#    elif __cplusplus <= 201402L
-#      define TEST_STD_VER 14
-#    elif __cplusplus <= 201703L
-#      define TEST_STD_VER 17
-#    elif __cplusplus <= 202002L
-#      define TEST_STD_VER 20
-#    else
-#      define TEST_STD_VER 99  // Greater than current standard.
-       // This is deliberately different than _LIBCUDACXX_STD_VER to discourage matching them up.
-#    endif
-#  endif
-#endif  // TEST_STD_VER
+#if defined(TEST_COMPILER_MSVC)
+#if _MSVC_LANG <= 201103L
+#define TEST_STD_VER 2011
+#elif _MSVC_LANG <= 201402L
+#define TEST_STD_VER 2014
+#elif _MSVC_LANG <= 201703L
+#define TEST_STD_VER 2017
+#elif _MSVC_LANG <= 202002L
+#define TEST_STD_VER 2020
+#else
+#define TEST_STD_VER 2023 // current year, or date of c++2b ratification
+#endif
+#else // ^^^ TEST_STD_VER ^^^ / vvv !TEST_STD_VER vvv
+#if __cplusplus <= 199711L
+#define TEST_STD_VER 2003
+#if __cplusplus <= 201103L
+#define TEST_STD_VER 2011
+#elif __cplusplus <= 201402L
+#define TEST_STD_VER 2014
+#elif __cplusplus <= 201703L
+#define TEST_STD_VER 2017
+#elif __cplusplus <= 202002L
+#define TEST_STD_VER 2020
+#elif __cplusplus <= 202302L
+#define TEST_STD_VER 2023
+#else
+#define TEST_STD_VER 2024 // current year, or date of c++2c ratification
+#endif
+#endif // !TEST_STD_VER
+#endif // TEST_STD_VER
 
 // Attempt to deduce the GLIBC version
 #if (defined(__has_include) && __has_include(<features.h>)) || \
@@ -147,7 +149,7 @@
 #endif
 #endif
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 #define TEST_ALIGNOF(...) alignof(__VA_ARGS__)
 #define TEST_ALIGNAS(...) alignas(__VA_ARGS__)
 #define TEST_CONSTEXPR constexpr
@@ -163,22 +165,22 @@
 # define TEST_IS_CONSTANT_EVALUATED false
 #endif
 
-# if TEST_STD_VER >= 14
+# if TEST_STD_VER >= 2014
 #   define TEST_CONSTEXPR_CXX14 constexpr
 # else
 #   define TEST_CONSTEXPR_CXX14
 # endif
-# if TEST_STD_VER >= 17
+# if TEST_STD_VER >= 2017
 #   define TEST_CONSTEXPR_CXX17 constexpr
 # else
 #   define TEST_CONSTEXPR_CXX17
 # endif
-# if TEST_STD_VER >= 20
+# if TEST_STD_VER >= 2020
 #   define TEST_CONSTEXPR_CXX20 constexpr
 # else
 #   define TEST_CONSTEXPR_CXX20
 # endif
-# if TEST_STD_VER > 14
+# if TEST_STD_VER > 2014
 #   define TEST_THROW_SPEC(...)
 # else
 #   define TEST_THROW_SPEC(...) throw(__VA_ARGS__)
@@ -201,7 +203,7 @@
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
 // This is cribbed from __config; but lives here as well because we can't assume libc++
-#if __ISO_C_VISIBLE >= 2011 || TEST_STD_VER >= 11
+#if __ISO_C_VISIBLE >= 2011 || TEST_STD_VER >= 2011
 #  if defined(__FreeBSD__)
 //  Specifically, FreeBSD does NOT have timespec_get, even though they have all
 //  the rest of C11 - this is PR#38495
@@ -227,17 +229,17 @@
 #endif
 
 /* Features that were introduced in C++14 */
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
 #define TEST_HAS_EXTENDED_CONSTEXPR
 #define TEST_HAS_VARIABLE_TEMPLATES
 #endif
 
 /* Features that were introduced in C++17 */
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
 #endif
 
 /* Features that were introduced after C++17 */
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 #endif
 
 
@@ -269,7 +271,7 @@
 #endif
 
 #if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) || \
-  (!(TEST_STD_VER > 14 || \
+  (!(TEST_STD_VER > 2014 || \
     (defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606L)))
 #define TEST_HAS_NO_ALIGNED_ALLOCATION
 #endif
@@ -284,7 +286,7 @@
 #define TEST_HAS_NO_SPACESHIP_OPERATOR
 #endif
 
-#if TEST_STD_VER < 11
+#if TEST_STD_VER < 2011
 #define ASSERT_NOEXCEPT(...)
 #define ASSERT_NOT_NOEXCEPT(...)
 #else

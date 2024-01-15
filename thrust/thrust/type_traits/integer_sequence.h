@@ -33,7 +33,7 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -64,7 +64,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see integer_sequence_push_back
  *  \see <a href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::integer_sequence</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 template <typename T, T... Is>
 using integer_sequence = ::cuda::std::integer_sequence<T, Is...>;
 #else
@@ -75,7 +75,7 @@ struct integer_sequence
   using value_type = T;
   using size_type = ::cuda::std::size_t;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static constexpr size_type size() noexcept
   {
     return sizeof...(Is);
@@ -98,7 +98,7 @@ struct integer_sequence
  *  \see integer_sequence_push_back
  *  \see <a href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::index_sequence</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 template <::cuda::std::size_t... Is>
 using index_sequence = ::cuda::std::index_sequence<Is...>;
 #else
@@ -106,7 +106,7 @@ template <::cuda::std::size_t... Is>
 using index_sequence = integer_sequence<::cuda::std::size_t, Is...>;
 #endif
 
-#if THRUST_CPP_DIALECT < 2014
+#if _CCCL_STD_VER < 2014
 /*! \cond
  */
 
@@ -151,7 +151,7 @@ template <typename T, ::cuda::std::size_t N>
  *  \see make_reversed_index_sequence
  *  \see <a href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::make_integer_sequence</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 template <typename T, ::cuda::std::size_t N>
 using make_integer_sequence = ::cuda::std::make_integer_sequence<T, N>;
 #else
@@ -213,7 +213,7 @@ struct make_integer_sequence_impl<T, 1>
  *  \see make_reversed_index_sequence
  *  \see <a href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::make_index_sequence</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 template <::cuda::std::size_t N>
 using make_index_sequence = ::cuda::std::make_index_sequence<N>;
 #else
@@ -385,5 +385,5 @@ struct integer_sequence_push_back_impl<T, I0, integer_sequence<T, Is...> >
 
 THRUST_NAMESPACE_END
 
-#endif // THRUST_CPP_DIALECT >= 2011
+#endif // _CCCL_STD_VER >= 2011
 

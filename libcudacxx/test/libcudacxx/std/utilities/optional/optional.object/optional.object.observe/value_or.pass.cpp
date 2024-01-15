@@ -78,7 +78,7 @@ constexpr int test()
 int main(int, char**)
 {
     test();
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test() == 0);
 #endif
 

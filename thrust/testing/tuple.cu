@@ -491,7 +491,7 @@ void TestTupleSwap(void)
 }
 DECLARE_UNITTEST(TestTupleSwap);
 
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 void TestTupleStructuredBindings(void)
 {
   const int a = 0;

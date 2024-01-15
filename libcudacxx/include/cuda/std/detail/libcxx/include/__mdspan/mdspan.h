@@ -79,7 +79,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <
   class _ElementType,
@@ -463,7 +463,7 @@ _LIBCUDACXX_HOST_DEVICE mdspan(const typename _AccessorType::data_handle_type, c
   -> mdspan<typename _AccessorType::element_type, typename _MappingType::extents_type, typename _MappingType::layout_type, _AccessorType>;
 #endif
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

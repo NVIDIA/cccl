@@ -82,7 +82,7 @@ template<typename Alloc, typename U>
 
 // The following fields of std::allocator have been deprecated (since C++17).
 // There's no way to detect it other than explicit specialization.
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 #define THRUST_SPECIALIZE_DEPRECATED(trait_name)                               \
 template <typename T>                                                          \
 struct trait_name<std::allocator<T>> : false_type {};
@@ -192,7 +192,7 @@ template<class Alloc, class U, bool = has_rebind<Alloc, U>::value>
     typedef typename Alloc::template rebind<U>::other type;
 };
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 template<template<typename, typename...> class Alloc,
          typename T, typename... Args, typename U>
   struct rebind_alloc<Alloc<T, Args...>, U, true>
@@ -350,7 +350,7 @@ template<typename Alloc>
   // XXX rebind and rebind_traits are alias templates
   //     and so are omitted while c++11 is unavailable
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   template <typename U>
   using rebind_alloc =
     typename allocator_traits_detail::rebind_alloc<allocator_type, U>::type;
@@ -379,32 +379,32 @@ template<typename Alloc>
   typedef typename thrust::detail::pointer_traits<pointer>::reference reference;
   typedef typename thrust::detail::pointer_traits<const_pointer>::reference const_reference;
 
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   static pointer allocate(allocator_type &a, size_type n);
 
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   static pointer allocate(allocator_type &a, size_type n, const_void_pointer hint);
 
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   static void deallocate(allocator_type &a, pointer p, size_type n);
 
   // XXX should probably change T* to pointer below and then relax later
 
   template<typename T>
-  inline __host__ __device__ static void construct(allocator_type &a, T *p);
+  inline _CCCL_HOST_DEVICE static void construct(allocator_type &a, T *p);
 
   template<typename T, typename Arg1>
-  inline __host__ __device__ static void construct(allocator_type &a, T *p, const Arg1 &arg1);
+  inline _CCCL_HOST_DEVICE static void construct(allocator_type &a, T *p, const Arg1 &arg1);
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   template<typename T, typename... Args>
-  inline __host__ __device__ static void construct(allocator_type &a, T *p, Args&&... args);
+  inline _CCCL_HOST_DEVICE static void construct(allocator_type &a, T *p, Args&&... args);
 #endif
 
   template<typename T>
-  inline __host__ __device__ static void destroy(allocator_type &a, T *p);
+  inline _CCCL_HOST_DEVICE static void destroy(allocator_type &a, T *p);
 
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   static size_type max_size(const allocator_type &a);
 }; // end allocator_traits
 
@@ -438,7 +438,7 @@ template<typename Alloc>
     identity_<type>                                           // else get() needs to return a value
   >::type get_result_type;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   inline static get_result_type get(Alloc &a);
 };
 

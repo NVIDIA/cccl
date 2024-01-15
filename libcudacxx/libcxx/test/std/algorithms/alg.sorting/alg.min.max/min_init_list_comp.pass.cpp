@@ -34,7 +34,7 @@ int main(int, char**)
     assert(i == 3);
     i = std::min({1, 3, 2}, std::greater<int>());
     assert(i == 3);
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     {
     static_assert(std::min({1, 3, 2}, std::greater<int>()) == 3, "");
     static_assert(std::min({2, 1, 3}, std::greater<int>()) == 3, "");

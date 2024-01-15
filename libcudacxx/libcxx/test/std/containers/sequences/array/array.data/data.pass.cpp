@@ -21,7 +21,7 @@ struct NoDefault {
     TEST_CONSTEXPR NoDefault(int) { }
 };
 
-#if TEST_STD_VER < 11
+#if TEST_STD_VER < 2011
 struct natural_alignment {
     long t1;
     long long t2;
@@ -79,13 +79,13 @@ TEST_CONSTEXPR_CXX17 bool tests()
 int main(int, char**)
 {
     tests();
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
     static_assert(tests(), "");
 #endif
 
     // Test the alignment of data()
     {
-#if TEST_STD_VER < 11
+#if TEST_STD_VER < 2011
         typedef natural_alignment T;
 #else
         typedef std::max_align_t T;

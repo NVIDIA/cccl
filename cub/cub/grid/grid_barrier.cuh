@@ -72,7 +72,7 @@ public:
     /**
      * Synchronize
      */
-    __device__ __forceinline__ void Sync() const
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Sync() const
     {
         volatile SyncFlag *d_vol_sync = d_sync;
 

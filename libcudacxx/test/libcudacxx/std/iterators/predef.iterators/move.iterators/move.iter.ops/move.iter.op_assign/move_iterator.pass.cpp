@@ -84,7 +84,7 @@ int main(int, char**)
     test<random_access_iterator<const Base*> >(random_access_iterator<Derived*>(&d));
     test<Base*>(&d);
     test_conv_assign();
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     using BaseIter    = cuda::std::move_iterator<const Base *>;
     using DerivedIter = cuda::std::move_iterator<const Derived *>;

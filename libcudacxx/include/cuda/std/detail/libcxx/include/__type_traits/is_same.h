@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp, class _Up>
 struct _LIBCUDACXX_TEMPLATE_VIS is_same : _BoolConstant<_LIBCUDACXX_IS_SAME(_Tp, _Up)> { };
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_same_v = _LIBCUDACXX_IS_SAME(_Tp, _Up);
 #endif
@@ -54,7 +54,7 @@ using _IsNotSame = _BoolConstant<!_LIBCUDACXX_IS_SAME(_Tp, _Up)>;
 template <class _Tp, class _Up> struct _LIBCUDACXX_TEMPLATE_VIS is_same           : public false_type {};
 template <class _Tp>            struct _LIBCUDACXX_TEMPLATE_VIS is_same<_Tp, _Tp> : public true_type {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_same_v = is_same<_Tp, _Up>::value;
 #endif

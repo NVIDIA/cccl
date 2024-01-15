@@ -237,7 +237,7 @@ template <class C>
 void
 test_move()
 {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     C c;
     typedef typename C::const_iterator CI;
     {
@@ -269,11 +269,11 @@ int main(int, char**)
             for (int k = 0; k < N; ++k)
                 testN<std::deque<int> >(rng[i], rng[j], rng[k]);
     testNI<std::deque<int> >(1500, 2000, 1000);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test_move<std::deque<MoveOnly, limited_allocator<MoveOnly, 2000> > >();
 #endif
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     int rng[] = {0, 1, 2, 3, 1023, 1024, 1025, 2047, 2048, 2049};
     const int N = sizeof(rng)/sizeof(rng[0]);

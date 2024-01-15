@@ -52,7 +52,7 @@ public:
     template <class T>
     void operator,(T const &) = delete;
 };
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 static_assert(std::output_iterator<cpp17_output_iterator<int*>, int>, "");
 #endif
 
@@ -93,7 +93,7 @@ public:
     template <class T>
     void operator,(T const &) = delete;
 };
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   static_assert(std::input_or_output_iterator<cpp17_input_iterator<int*>>, "");
   static_assert(std::indirectly_readable<cpp17_input_iterator<int*>>, "");
   static_assert(std::input_iterator<cpp17_input_iterator<int*>>, "");
@@ -134,7 +134,7 @@ public:
     template <class T>
     void operator,(T const &) = delete;
 };
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   static_assert(std::forward_iterator<forward_iterator<int*>>, "");
 #endif
 
@@ -175,7 +175,7 @@ public:
     template <class T>
     void operator,(T const &) = delete;
 };
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   static_assert(std::bidirectional_iterator<bidirectional_iterator<int*>>, "");
 #endif
 
@@ -228,7 +228,7 @@ public:
     template <class T>
     void operator,(T const &) = delete;
 };
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   static_assert(std::random_access_iterator<random_access_iterator<int*>>, "");
 
 template <class It, class = std::enable_if_t<std::random_access_iterator<It>>>
@@ -428,7 +428,7 @@ public:
     void operator,(T const &) = delete;
 };
 #endif // TEST_HAS_NO_SPACESHIP_OPERATOR
-#endif // TEST_STD_VER > 11
+#endif // TEST_STD_VER > 2011
 
 template <class Iter> // ADL base() for everything else (including pointers)
 TEST_CONSTEXPR Iter base(Iter i) { return i; }
@@ -613,7 +613,7 @@ private:
     const T *current_;
 };
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 
 template <class It>
 class cpp20_input_iterator
@@ -698,7 +698,7 @@ public:
         /* else */                                                      std::output_iterator_tag
     >>>>>;
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     stride_counting_iterator() requires std::default_initializable<It> = default;
 #else
     template<class It2 = It, std::enable_if_t<std::default_initializable<It2>, int> = 0>
@@ -805,7 +805,7 @@ public:
         return It(base_) == It(other.base_);
     }
 
-  #if TEST_STD_VER < 20
+  #if TEST_STD_VER < 2020
     template<class It2 = It, std::enable_if_t<std::sentinel_for<It2, It2>, int> = 0>
     constexpr bool operator!=(stride_counting_iterator const& other) const
     {
@@ -853,7 +853,7 @@ public:
     explicit sentinel_wrapper() = default;
     constexpr explicit sentinel_wrapper(const It& it) : base_(base(it)) {}
     friend constexpr bool operator==(const sentinel_wrapper& s, const It& i) { return s.base_ == base(i); }
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
     friend constexpr bool operator==(const It& i, const sentinel_wrapper& s) { return s.base_ == base(i); }
     friend constexpr bool operator!=(const sentinel_wrapper& s, const It& i) { return s.base_ != base(i); }
     friend constexpr bool operator!=(const It& i, const sentinel_wrapper& s) { return s.base_ != base(i); }
@@ -869,7 +869,7 @@ public:
     explicit sized_sentinel() = default;
     constexpr explicit sized_sentinel(const It& it) : base_(base(it)) {}
     friend constexpr bool operator==(const sized_sentinel& s, const It& i) { return s.base_ == base(i); }
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
     friend constexpr bool operator==(const It& i, const sized_sentinel& s) { return s.base_ == base(i); }
     friend constexpr bool operator!=(const sized_sentinel& s, const It& i) { return s.base_ != base(i); }
     friend constexpr bool operator!=(const It& i, const sized_sentinel& s) { return s.base_ != base(i); }
@@ -989,7 +989,7 @@ class Iterator {
   constexpr friend bool operator>=(const Iterator& lhs, const Iterator& rhs) {
     return lhs.ptr_ >= rhs.ptr_;
   }
-#endif // TEST_STD_VER < 20
+#endif // TEST_STD_VER < 2020
 };
 
 } // namespace adl
@@ -1071,7 +1071,7 @@ TEST_NV_DIAG_DEFAULT(1805)
   // Calling swap(Proxy<T>{}, Proxy<T>{}) would fail (pass prvalues)
 
   // Compare operators are defined for the convenience of the tests
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   friend constexpr bool operator==(const Proxy&, const Proxy&)
     requires (std::equality_comparable<T> && !std::is_reference_v<T>)
   = default;
@@ -1081,7 +1081,7 @@ TEST_NV_DIAG_DEFAULT(1805)
   friend constexpr bool operator==(const Proxy& lhs, const Proxy& rhs) {
     return lhs.data == rhs.data;
   }
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
   // Helps compare e.g. `Proxy<int>` and `Proxy<int&>`. Note that the default equality comparison operator is deleted
   // when `T` is a reference type.
@@ -1156,12 +1156,12 @@ struct ProxyIterator : ProxyIteratorBase<Base> {
   using value_type       = Proxy<std::iter_value_t<Base>>;
   using difference_type  = std::iter_difference_t<Base>;
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   ProxyIterator() requires std::default_initializable<Base> = default;
 #else
   template<class B2 = Base, std::enable_if_t<std::default_initializable<B2>, int> = 0>
   constexpr ProxyIterator() noexcept {};
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
   constexpr ProxyIterator(Base base) : base_{std::move(base)} {}
 
@@ -1342,6 +1342,6 @@ template <std::ranges::input_range R>
 ProxyRange(R&&) -> ProxyRange<std::views::all_t<R&&>>;
 #endif // !defined(_LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES)
 
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
 
 #endif // SUPPORT_TEST_ITERATORS_H

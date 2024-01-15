@@ -28,7 +28,7 @@ int main(int, char**)
         assert(c.size() == 0);
 
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::vector<int, min_allocator<int>> c;
         c.push_back(1);

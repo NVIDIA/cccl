@@ -89,7 +89,7 @@ int main(int, char**)
     test(SV("123456798012345679801234567980123456798012345679801234567980"));
     test(SV("123456798012345679801234567980123456798012345679801234567980"), A(2));
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef min_allocator<char> A;
     typedef std::basic_string_view<char, std::char_traits<char> > SV;

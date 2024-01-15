@@ -164,14 +164,14 @@ public:
      * @param offset
      *   OffsetT (in items) from @p itr denoting the position of the iterator
      */
-  __host__ __device__ __forceinline__ ArgIndexInputIterator(InputIteratorT itr,
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ArgIndexInputIterator(InputIteratorT itr,
                                                             difference_type offset = 0)
       : itr(itr)
       , offset(offset)
   {}
 
   /// Postfix increment
-  __host__ __device__ __forceinline__ self_type operator++(int)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
   {
     self_type retval = *this;
     offset++;
@@ -179,14 +179,14 @@ public:
     }
 
     /// Prefix increment
-    __host__ __device__ __forceinline__ self_type operator++()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
     {
         offset++;
         return *this;
     }
 
     /// Indirection
-    __host__ __device__ __forceinline__ reference operator*() const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
     {
         value_type retval;
         retval.value = itr[offset];
@@ -196,7 +196,7 @@ public:
 
     /// Addition
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator+(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
     {
         self_type retval(itr, offset + n);
         return retval;
@@ -204,7 +204,7 @@ public:
 
     /// Addition assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator+=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
     {
         offset += n;
         return *this;
@@ -212,7 +212,7 @@ public:
 
     /// Subtraction
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator-(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
     {
         self_type retval(itr, offset - n);
         return retval;
@@ -220,46 +220,46 @@ public:
 
     /// Subtraction assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator-=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
     {
         offset -= n;
         return *this;
     }
 
     /// Distance
-    __host__ __device__ __forceinline__ difference_type operator-(self_type other) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
     {
         return offset - other.offset;
     }
 
     /// Array subscript
     template <typename Distance>
-    __host__ __device__ __forceinline__ reference operator[](Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
     {
         self_type offset = (*this) + n;
         return *offset;
     }
 
     /// Structure dereference
-    __host__ __device__ __forceinline__ pointer operator->()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
     {
         return &(*(*this));
     }
 
     /// Equal to
-    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs)
     {
         return ((itr == rhs.itr) && (offset == rhs.offset));
     }
 
     /// Not equal to
-    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs)
     {
         return ((itr != rhs.itr) || (offset != rhs.offset));
     }
 
     /// Normalize
-    __host__ __device__ __forceinline__ void normalize()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void normalize()
     {
         itr += offset;
         offset = 0;

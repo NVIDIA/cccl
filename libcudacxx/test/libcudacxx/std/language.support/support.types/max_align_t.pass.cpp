@@ -22,7 +22,7 @@ TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 int main(int, char**)
 {
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 //  P0767
     static_assert(cuda::std::is_trivial<cuda::std::max_align_t>::value,
                   "cuda::std::is_trivial<cuda::std::max_align_t>::value");

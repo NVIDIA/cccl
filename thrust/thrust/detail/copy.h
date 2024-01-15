@@ -32,7 +32,7 @@ THRUST_NAMESPACE_BEGIN
 template<typename System,
          typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy(const thrust::detail::execution_policy_base<System> &system,
                       InputIterator first,
                       InputIterator last,
@@ -42,7 +42,7 @@ template<typename System,
          typename InputIterator,
          typename Size,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy_n(const thrust::detail::execution_policy_base<System> &system,
                         InputIterator first,
                         Size n,
@@ -70,7 +70,7 @@ template<typename FromSystem,
          typename ToSystem,
          typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator two_system_copy(const thrust::execution_policy<FromSystem> &from_system,
                                  const thrust::execution_policy<ToSystem>   &two_system,
                                  InputIterator first,
@@ -83,7 +83,7 @@ template<typename FromSystem,
          typename InputIterator,
          typename Size,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator two_system_copy_n(const thrust::execution_policy<FromSystem> &from_system,
                                    const thrust::execution_policy<ToSystem>   &two_system,
                                    InputIterator first,

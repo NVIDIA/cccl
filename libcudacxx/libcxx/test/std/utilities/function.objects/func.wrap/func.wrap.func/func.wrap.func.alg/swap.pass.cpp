@@ -63,7 +63,7 @@ int main(int, char**)
     {
     std::function<int(int)> f1 = A(1);
     std::function<int(int)> f2 = A(2);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert(noexcept(swap(f1, f2)), "" );
 #endif
     assert(A::count == 2);
@@ -81,7 +81,7 @@ int main(int, char**)
     {
     std::function<int(int)> f1 = A(1);
     std::function<int(int)> f2 = g;
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert(noexcept(swap(f1, f2)), "" );
 #endif
     assert(A::count == 1);
@@ -99,7 +99,7 @@ int main(int, char**)
     {
     std::function<int(int)> f1 = g;
     std::function<int(int)> f2 = A(1);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert(noexcept(swap(f1, f2)), "" );
 #endif
     assert(A::count == 1);
@@ -117,7 +117,7 @@ int main(int, char**)
     {
     std::function<int(int)> f1 = g;
     std::function<int(int)> f2 = h;
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert(noexcept(swap(f1, f2)), "" );
 #endif
     assert(A::count == 0);

@@ -37,7 +37,7 @@ namespace generic
 {
 
 template<typename InputIterator>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::difference_type
     distance(InputIterator first, InputIterator last);
 

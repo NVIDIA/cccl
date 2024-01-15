@@ -55,9 +55,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void check_noexcept(T& c) {
 
 // gcc-7 and gcc-8 are really helpfull here
 __host__ __device__
-#if TEST_STD_VER >= 14 && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
+#if TEST_STD_VER >= 2014 && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
 TEST_CONSTEXPR_CXX14
-#endif // TEST_STD_VER >= 14 && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
+#endif // TEST_STD_VER >= 2014 && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
 bool tests()
 {
     {
@@ -74,7 +74,7 @@ bool tests()
         check_noexcept(array);
         typename C::iterator i = array.begin();
         typename C::const_iterator j = array.cbegin();
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3 // seems there are different nullptr's
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC) // seems there are different nullptr's
         assert(i == j);
 #else // ^^^ !TEST_COMPILER_CUDACC_BELOW_11_3 ^^^ / vvv TEST_COMPILER_CUDACC_BELOW_11_3 vvv
         assert(i == nullptr);
@@ -132,7 +132,7 @@ bool tests()
         assert(ib == ie);
     }
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     { // N3644 testing
         {
             typedef cuda::std::array<int, 5> C;
@@ -143,7 +143,7 @@ bool tests()
             assert(ii1 == ii4);
             static_assert(cuda::std::is_same_v<decltype(ii1), int*>, "");
             static_assert(cuda::std::is_same_v<decltype(cii), const int*>, "");
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3 // old NVCC has issues comparing int* with const int*
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC) // old NVCC has issues comparing int* with const int*
             assert(ii1 == cii);
 #else // ^^^ !TEST_COMPILER_CUDACC_BELOW_11_3 ^^^ / vvv TEST_COMPILER_CUDACC_BELOW_11_3 vvv
             assert(ii1 == nullptr);
@@ -151,7 +151,7 @@ bool tests()
 #endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
             assert(!(ii1 != ii2));
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3 // old NVCC has issues comparing int* with const int*
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC) // old NVCC has issues comparing int* with const int*
             assert(!(ii1 != cii));
 #endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
@@ -159,18 +159,18 @@ bool tests()
             check_noexcept(c);
             assert(c.begin()   == cuda::std::begin(c));
             assert(c.cbegin()  == cuda::std::cbegin(c));
-#if TEST_STD_VER < 17
+#if TEST_STD_VER < 2017
             if (!cuda::std::__libcpp_is_constant_evaluated())
-#endif // TEST_STD_VER < 17
+#endif // TEST_STD_VER < 2017
             {
                 assert(c.rbegin()  == cuda::std::rbegin(c));
                 assert(c.crbegin() == cuda::std::crbegin(c));
             }
             assert(c.end()     == cuda::std::end(c));
             assert(c.cend()    == cuda::std::cend(c));
-#if TEST_STD_VER < 17
+#if TEST_STD_VER < 2017
             if (!cuda::std::__libcpp_is_constant_evaluated())
-#endif // TEST_STD_VER < 17
+#endif // TEST_STD_VER < 2017
             {
                 assert(c.rend()    == cuda::std::rend(c));
                 assert(c.crend()   == cuda::std::crend(c));
@@ -178,9 +178,9 @@ bool tests()
 
             assert(cuda::std::begin(c)   != cuda::std::end(c));
             assert(cuda::std::cbegin(c)  != cuda::std::cend(c));
-#if TEST_STD_VER < 17
+#if TEST_STD_VER < 2017
             if (!cuda::std::__libcpp_is_constant_evaluated())
-#endif // TEST_STD_VER < 17
+#endif // TEST_STD_VER < 2017
             {
                 assert(cuda::std::rbegin(c)  != cuda::std::rend(c));
                 assert(cuda::std::crbegin(c) != cuda::std::crend(c));
@@ -223,18 +223,18 @@ bool tests()
             check_noexcept(c);
             assert(c.begin()   == cuda::std::begin(c));
             assert(c.cbegin()  == cuda::std::cbegin(c));
-#if TEST_STD_VER < 17
+#if TEST_STD_VER < 2017
             if (!cuda::std::__libcpp_is_constant_evaluated())
-#endif // TEST_STD_VER < 17
+#endif // TEST_STD_VER < 2017
             {
                 assert(c.rbegin()  == cuda::std::rbegin(c));
                 assert(c.crbegin() == cuda::std::crbegin(c));
             }
             assert(c.end()     == cuda::std::end(c));
             assert(c.cend()    == cuda::std::cend(c));
-#if TEST_STD_VER < 17
+#if TEST_STD_VER < 2017
             if (!cuda::std::__libcpp_is_constant_evaluated())
-#endif // TEST_STD_VER < 17
+#endif // TEST_STD_VER < 2017
             {
                 assert(c.rend()    == cuda::std::rend(c));
                 assert(c.crend()   == cuda::std::crend(c));
@@ -242,9 +242,9 @@ bool tests()
 
             assert(cuda::std::begin(c)   == cuda::std::end(c));
             assert(cuda::std::cbegin(c)  == cuda::std::cend(c));
-#if TEST_STD_VER < 17
+#if TEST_STD_VER < 2017
             if (!cuda::std::__libcpp_is_constant_evaluated())
-#endif // TEST_STD_VER < 17
+#endif // TEST_STD_VER < 2017
             {
                 assert(cuda::std::rbegin(c)  == cuda::std::rend(c));
                 assert(cuda::std::crbegin(c) == cuda::std::crend(c));
@@ -258,9 +258,11 @@ bool tests()
 int main(int, char**)
 {
     tests();
-#if TEST_STD_VER >= 14 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) \
+#ifndef TEST_COMPILER_ICC
+#if TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) \
  && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
     static_assert(tests(), "");
-#endif // TEST_STD_VER >= 14 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#endif // TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#endif // TEST_COMPILER_ICC
   return 0;
 }

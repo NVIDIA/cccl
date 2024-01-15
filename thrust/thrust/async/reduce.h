@@ -31,7 +31,7 @@
 #endif // no system header
 #include <thrust/detail/cpp14_required.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #include <thrust/detail/static_assert.h>
 #include <thrust/detail/select_system.h>
@@ -57,7 +57,7 @@ template <
   typename DerivedPolicy
 , typename ForwardIt, typename Sentinel, typename T, typename BinaryOp
 >
-__host__
+_CCCL_HOST
 future<DerivedPolicy, T>
 async_reduce(
   thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, T, BinaryOp
@@ -83,7 +83,7 @@ struct reduce_fn final
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel, typename T, typename BinaryOp
   >
-  __host__
+  _CCCL_HOST
   static auto call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
   , ForwardIt&& first, Sentinel&& last
@@ -104,7 +104,7 @@ struct reduce_fn final
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel, typename T
   >
-  __host__
+  _CCCL_HOST
   static auto call4(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
   , ForwardIt&& first, Sentinel&& last
@@ -125,7 +125,7 @@ struct reduce_fn final
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel
   >
-  __host__
+  _CCCL_HOST
   static auto
   call3(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
@@ -147,7 +147,7 @@ struct reduce_fn final
   )
 
   template <typename ForwardIt, typename Sentinel, typename T, typename BinaryOp>
-  __host__
+  _CCCL_HOST
   static auto call4(ForwardIt&& first, Sentinel&& last,
                     T&& init,
                     BinaryOp&& op,
@@ -164,7 +164,7 @@ struct reduce_fn final
   )
 
   template <typename ForwardIt, typename Sentinel, typename T>
-  __host__
+  _CCCL_HOST
   static auto call3(ForwardIt&& first, Sentinel&& last,
                     T&& init,
                     thrust::false_type)
@@ -183,7 +183,7 @@ struct reduce_fn final
   // if T1 is an execution_policy by using SFINAE. Switching to a static
   // dispatch pattern to prevent this.
   template <typename T1, typename T2, typename T3>
-  __host__
+  _CCCL_HOST
   static auto call(T1&& t1, T2&& t2, T3&& t3)
   THRUST_RETURNS(
     reduce_fn::call3(THRUST_FWD(t1), THRUST_FWD(t2), THRUST_FWD(t3),
@@ -191,7 +191,7 @@ struct reduce_fn final
   )
 
   template <typename T1, typename T2, typename T3, typename T4>
-  __host__
+  _CCCL_HOST
   static auto call(T1&& t1, T2&& t2, T3&& t3, T4&& t4)
   THRUST_RETURNS(
     reduce_fn::call4(THRUST_FWD(t1), THRUST_FWD(t2), THRUST_FWD(t3), THRUST_FWD(t4),
@@ -199,7 +199,7 @@ struct reduce_fn final
   )
 
   template <typename ForwardIt, typename Sentinel>
-  __host__
+  _CCCL_HOST
   static auto call(ForwardIt&& first, Sentinel&& last)
   THRUST_RETURNS(
     reduce_fn::call(
@@ -217,7 +217,7 @@ struct reduce_fn final
   )
 
   template <typename... Args>
-  THRUST_NODISCARD __host__
+  THRUST_NODISCARD _CCCL_HOST
   auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)
@@ -238,7 +238,7 @@ template <
 , typename ForwardIt, typename Sentinel, typename OutputIt
 , typename T, typename BinaryOp
 >
-__host__
+_CCCL_HOST
 event<DerivedPolicy>
 async_reduce_into(
   thrust::execution_policy<DerivedPolicy>&
@@ -266,7 +266,7 @@ struct reduce_into_fn final
   , typename ForwardIt, typename Sentinel, typename OutputIt
   , typename T, typename BinaryOp
   >
-  __host__
+  _CCCL_HOST
   static auto call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
   , ForwardIt&& first, Sentinel&& last
@@ -290,7 +290,7 @@ struct reduce_into_fn final
   , typename ForwardIt, typename Sentinel, typename OutputIt
   , typename T
   >
-  __host__
+  _CCCL_HOST
   static auto call5(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
   , ForwardIt&& first, Sentinel&& last
@@ -313,7 +313,7 @@ struct reduce_into_fn final
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel, typename OutputIt
   >
-  __host__
+  _CCCL_HOST
   static auto
   call4(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
@@ -340,7 +340,7 @@ struct reduce_into_fn final
     typename ForwardIt, typename Sentinel, typename OutputIt
   , typename T, typename BinaryOp
   >
-  __host__
+  _CCCL_HOST
   static auto call5(
     ForwardIt&& first, Sentinel&& last
   , OutputIt&& output
@@ -365,7 +365,7 @@ struct reduce_into_fn final
     typename ForwardIt, typename Sentinel, typename OutputIt
   , typename T
   >
-  __host__
+  _CCCL_HOST
   static auto call4(
     ForwardIt&& first, Sentinel&& last
   , OutputIt&& output
@@ -388,7 +388,7 @@ struct reduce_into_fn final
   template <
     typename ForwardIt, typename Sentinel, typename OutputIt
   >
-  __host__
+  _CCCL_HOST
   static auto call(
     ForwardIt&& first, Sentinel&& last
   , OutputIt&& output
@@ -414,7 +414,7 @@ struct reduce_into_fn final
   // if T1 is an execution_policy by using SFINAE. Switching to a static
   // dispatch pattern to prevent this.
   template <typename T1, typename T2, typename T3, typename T4>
-  __host__
+  _CCCL_HOST
   static auto call(T1&& t1, T2&& t2, T3&& t3, T4&& t4)
   THRUST_RETURNS(
     reduce_into_fn::call4(
@@ -423,7 +423,7 @@ struct reduce_into_fn final
   )
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  __host__
+  _CCCL_HOST
   static auto call(T1&& t1, T2&& t2, T3&& t3, T4&& t4, T5&& t5)
   THRUST_RETURNS(
     reduce_into_fn::call5(
@@ -432,7 +432,7 @@ struct reduce_into_fn final
   )
 
   template <typename... Args>
-  THRUST_NODISCARD __host__
+  THRUST_NODISCARD _CCCL_HOST
   auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)

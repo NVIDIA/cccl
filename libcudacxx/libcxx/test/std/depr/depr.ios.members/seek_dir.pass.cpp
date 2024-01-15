@@ -22,7 +22,7 @@
 
 int main(int, char**)
 {
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     std::strstream::seek_dir b = std::strstream::cur;
     assert(b == std::ios::cur);
 #endif

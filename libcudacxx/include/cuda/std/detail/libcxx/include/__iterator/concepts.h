@@ -55,7 +55,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [iterator.concept.readable]
 template<class _In>
@@ -305,7 +305,7 @@ concept indirectly_copyable_storable =
 // Note: indirectly_swappable is located in iter_swap.h to prevent a dependency cycle
 // (both iter_swap and indirectly_swappable require indirectly_readable).
 
-#elif _LIBCUDACXX_STD_VER > 14
+#elif _CCCL_STD_VER > 2014
 
 // [iterator.concept.readable]
 template<class _In>
@@ -653,7 +653,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class _Fp, class _It1, class _It2 = _It1>
 _LIBCUDACXX_CONCEPT indirect_strict_weak_order = _LIBCUDACXX_FRAGMENT(__indirect_strict_weak_order_, _Fp, _It1, _It2);
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template<class _Fp, class... _Its>
 using indirect_result_t = enable_if_t<(indirectly_readable<_Its> && ...) && invocable<_Fp, iter_reference_t<_Its>...>, invoke_result_t<_Fp, iter_reference_t<_Its>...>>;
 #else
@@ -661,7 +661,7 @@ template<class _Fp, class... _Its>
 using indirect_result_t = enable_if_t<conjunction_v<bool_constant<indirectly_readable<_Its>>...>
                                       && invocable<_Fp, iter_reference_t<_Its>...>,
                                       invoke_result_t<_Fp, iter_reference_t<_Its>...>>;
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 template<class _In, class _Out>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -728,7 +728,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __has_iter_concept = false;
 template<class _Ip>
 _LIBCUDACXX_INLINE_VAR constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

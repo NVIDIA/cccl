@@ -44,7 +44,7 @@ namespace sequential
 
 
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   T *trivial_copy_n(const T *first,
                     std::ptrdiff_t n,
                     T *result)

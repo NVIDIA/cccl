@@ -161,7 +161,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
   DifferenceOpT difference_op;
   cudaStream_t stream;
 
-  CUB_RUNTIME_FUNCTION __forceinline__
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   DispatchAdjacentDifference(void *d_temp_storage,
                              std::size_t &temp_storage_bytes,
                              InputIteratorT d_input,
@@ -179,7 +179,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
   {}
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_DEPRECATED CUB_RUNTIME_FUNCTION __forceinline__
+  CUB_DEPRECATED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   DispatchAdjacentDifference(void *d_temp_storage,
                              std::size_t &temp_storage_bytes,
                              InputIteratorT d_input,
@@ -201,7 +201,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
 
   /// Invocation
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using AdjacentDifferencePolicyT =
       typename ActivePolicyT::AdjacentDifferencePolicy;

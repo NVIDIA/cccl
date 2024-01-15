@@ -94,7 +94,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see \c device_malloc
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void uninitialized_fill(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                           ForwardIterator first,
                           ForwardIterator last,
@@ -210,7 +210,7 @@ template<typename ForwardIterator, typename T>
  *  \see \c device_malloc
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename Size, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator uninitialized_fill_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                        ForwardIterator first,
                                        Size n,

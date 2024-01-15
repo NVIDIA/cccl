@@ -47,7 +47,7 @@ void test_type() {
   test<T, 0>();
 }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 struct alignas(alignof(std::max_align_t) * 2) TestType1 {
 
 };
@@ -67,7 +67,7 @@ int main(int, char**) {
   test_type<double>();
   test_type<long double>();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   test_type<std::max_align_t>();
   test_type<TestType1>();
   test_type<TestType2>();

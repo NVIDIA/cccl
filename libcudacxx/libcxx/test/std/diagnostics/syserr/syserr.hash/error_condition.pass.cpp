@@ -26,7 +26,7 @@ test(int i)
 {
     typedef std::error_condition T;
     typedef std::hash<T> H;
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     static_assert((std::is_same<H::argument_type, T>::value), "" );
     static_assert((std::is_same<H::result_type, std::size_t>::value), "" );
 #endif
