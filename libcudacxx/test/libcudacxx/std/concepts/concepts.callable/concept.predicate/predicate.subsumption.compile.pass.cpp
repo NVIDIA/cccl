@@ -16,7 +16,7 @@
 #include <cuda/std/concepts>
 
 #include "test_macros.h"
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 
 __host__ __device__ constexpr bool check_subsumption(cuda::std::regular_invocable auto) {
   return false;
@@ -41,7 +41,7 @@ struct predicate {
 static_assert(!check_subsumption(not_predicate{}), "");
 static_assert(check_subsumption(predicate{}), "");
 
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**)
 {

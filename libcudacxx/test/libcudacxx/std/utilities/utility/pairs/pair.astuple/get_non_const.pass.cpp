@@ -22,7 +22,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 struct S {
    cuda::std::pair<int, int> a;
    int k;
@@ -45,7 +45,7 @@ int main(int, char**)
         assert(cuda::std::get<1>(p) == 6);
     }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         static_assert(S().k == 1, "");
         static_assert(cuda::std::get<1>(getP()) == 4, "");

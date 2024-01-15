@@ -88,7 +88,7 @@ struct make_unsigned {
   using type _LIBCUDACXX_NODEBUG_TYPE = __make_unsigned_t<_Tp>;
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using make_unsigned_t = __make_unsigned_t<_Tp>;
 #endif
 

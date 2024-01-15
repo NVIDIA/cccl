@@ -46,8 +46,14 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 
-#include <iostream>
-#include <iterator>
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  include <iostream>
+#  include <iterator>
+#else
+#  include <cuda/std/iterator>
+#endif
+
+#include <cuda/std/iterator>
 
 #if (THRUST_VERSION >= 100700)
     // This iterator is compatible with Thrust API 1.7 and newer
@@ -57,11 +63,6 @@
 
 
 CUB_NAMESPACE_BEGIN
-
-/**
- * @addtogroup UtilIterator
- * @{
- */
 
 /**
  * @brief A random-access input generator for dereferencing a sequence of incrementing integer values.
@@ -119,20 +120,20 @@ public:
     /// The type of a reference to an element the iterator can point to
     typedef ValueType reference;
 
-#if (THRUST_VERSION >= 100700)
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  if (THRUST_VERSION >= 100700)
     // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
-
-    /// The iterator category
-    typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
-        THRUST_NS_QUALIFIER::any_system_tag,
-        THRUST_NS_QUALIFIER::random_access_traversal_tag,
-        value_type,
-        reference
-      >::type iterator_category;
-#else
-    /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;
-#endif  // THRUST_VERSION
+    using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
+      THRUST_NS_QUALIFIER::any_system_tag,
+      THRUST_NS_QUALIFIER::random_access_traversal_tag,
+      value_type,
+      reference >::type;
+#  else // THRUST_VERSION < 100700
+    using iterator_category = std::random_access_iterator_tag;
+#  endif // THRUST_VERSION
+#else // defined(_LIBCUDACXX_COMPILER_NVRTC)
+    using iterator_category = ::cuda::std::random_access_iterator_tag;
+#endif // defined(_LIBCUDACXX_COMPILER_NVRTC)
 
 private:
 
@@ -143,12 +144,12 @@ public:
      * @param val
      *   Starting value for the iterator instance to report
      */
-    __host__ __device__ __forceinline__ CountingInputIterator(const ValueType &val)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CountingInputIterator(const ValueType &val)
         : val(val)
     {}
 
     /// Postfix increment
-    __host__ __device__ __forceinline__ self_type operator++(int)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
     {
       self_type retval = *this;
       val++;
@@ -156,21 +157,21 @@ public:
     }
 
     /// Prefix increment
-    __host__ __device__ __forceinline__ self_type operator++()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
     {
         val++;
         return *this;
     }
 
     /// Indirection
-    __host__ __device__ __forceinline__ reference operator*() const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
     {
         return val;
     }
 
     /// Addition
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator+(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
     {
         self_type retval(val + (ValueType) n);
         return retval;
@@ -178,7 +179,7 @@ public:
 
     /// Addition assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator+=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
     {
         val += (ValueType) n;
         return *this;
@@ -186,7 +187,7 @@ public:
 
     /// Subtraction
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator-(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
     {
         self_type retval(val - (ValueType) n);
         return retval;
@@ -194,54 +195,52 @@ public:
 
     /// Subtraction assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator-=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
     {
         val -= n;
         return *this;
     }
 
     /// Distance
-    __host__ __device__ __forceinline__ difference_type operator-(self_type other) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
     {
         return (difference_type) (val - other.val);
     }
 
     /// Array subscript
     template <typename Distance>
-    __host__ __device__ __forceinline__ reference operator[](Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
     {
         return val + (ValueType) n;
     }
 
     /// Structure dereference
-    __host__ __device__ __forceinline__ pointer operator->()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
     {
         return &val;
     }
 
     /// Equal to
-    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
     {
         return (val == rhs.val);
     }
 
     /// Not equal to
-    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
     {
         return (val != rhs.val);
     }
 
     /// ostream operator
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
     friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
     {
         os << "[" << itr.val << "]";
         return os;
     }
+#endif
 
 };
-
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

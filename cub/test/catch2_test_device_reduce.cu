@@ -37,17 +37,17 @@
 
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::Sum, device_sum);
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::Min, device_min);
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::Max, device_max);
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_TYPES types 0:1:2:3
 
 // List of types to test

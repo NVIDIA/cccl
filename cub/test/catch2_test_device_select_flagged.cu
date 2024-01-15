@@ -34,7 +34,7 @@
 
 #include <algorithm>
 
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
 template<class T, class FlagT>
@@ -61,9 +61,9 @@ static thrust::host_vector<T> get_reference(const thrust::device_vector<T>& in, 
   return reference;
 }
 
-DECLARE_CDP_WRAPPER(cub::DeviceSelect::Flagged, select_flagged);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Flagged, select_flagged);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 using all_types = c2h::type_list<std::uint8_t,
                                  std::uint16_t,

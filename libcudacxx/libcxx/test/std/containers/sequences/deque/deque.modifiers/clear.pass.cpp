@@ -40,7 +40,7 @@ int main(int, char**)
         c.clear();
         assert(distance(c.begin(), c.end()) == 0);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef NotConstructible T;
         typedef std::deque<T, min_allocator<T>> C;

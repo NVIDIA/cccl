@@ -50,12 +50,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * \addtogroup UtilPtx
- * @{
- */
-
-
 /******************************************************************************
  * PTX helper macros
  ******************************************************************************/
@@ -90,7 +84,7 @@ namespace detail
  * @brief Shifts @p val left by the amount specified by unsigned 32-bit value in @p num_bits. If @p
  * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
  */
-__device__ __forceinline__ uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bits)
+_CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bits)
 {
   uint32_t ret{};
   asm("shl.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
@@ -101,7 +95,7 @@ __device__ __forceinline__ uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bi
  * @brief Shifts @p val right by the amount specified by unsigned 32-bit value in @p num_bits. If @p
  * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
  */
-__device__ __forceinline__ uint32_t LogicShiftRight(uint32_t val, uint32_t num_bits)
+_CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t num_bits)
 {
   uint32_t ret{};
   asm("shr.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
@@ -112,7 +106,7 @@ __device__ __forceinline__ uint32_t LogicShiftRight(uint32_t val, uint32_t num_b
 /**
  * \brief Shift-right then add.  Returns (\p x >> \p shift) + \p addend.
  */
-__device__ __forceinline__ unsigned int SHR_ADD(
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHR_ADD(
     unsigned int x,
     unsigned int shift,
     unsigned int addend)
@@ -127,7 +121,7 @@ __device__ __forceinline__ unsigned int SHR_ADD(
 /**
  * \brief Shift-left then add.  Returns (\p x << \p shift) + \p addend.
  */
-__device__ __forceinline__ unsigned int SHL_ADD(
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHL_ADD(
     unsigned int x,
     unsigned int shift,
     unsigned int addend)
@@ -144,7 +138,7 @@ __device__ __forceinline__ unsigned int SHL_ADD(
  * Bitfield-extract.
  */
 template <typename UnsignedBits, int BYTE_LEN>
-__device__ __forceinline__ unsigned int BFE(
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
     UnsignedBits            source,
     unsigned int            bit_start,
     unsigned int            num_bits,
@@ -160,7 +154,7 @@ __device__ __forceinline__ unsigned int BFE(
  * Bitfield-extract for 64-bit types.
  */
 template <typename UnsignedBits>
-__device__ __forceinline__ unsigned int BFE(
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
     UnsignedBits            source,
     unsigned int            bit_start,
     unsigned int            num_bits,
@@ -175,7 +169,7 @@ __device__ __forceinline__ unsigned int BFE(
  * Bitfield-extract for 128-bit types.
  */
 template <typename UnsignedBits>
-__device__ __forceinline__ unsigned int BFE(
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
     UnsignedBits            source,
     unsigned int            bit_start,
     unsigned int            num_bits,
@@ -192,7 +186,7 @@ __device__ __forceinline__ unsigned int BFE(
  * \brief Bitfield-extract.  Extracts \p num_bits from \p source starting at bit-offset \p bit_start.  The input \p source may be an 8b, 16b, 32b, or 64b unsigned integer type.
  */
 template <typename UnsignedBits>
-__device__ __forceinline__ unsigned int BFE(
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
     UnsignedBits source,
     unsigned int bit_start,
     unsigned int num_bits)
@@ -204,7 +198,7 @@ __device__ __forceinline__ unsigned int BFE(
 /**
  * \brief Bitfield insert.  Inserts the \p num_bits least significant bits of \p y into \p x at bit-offset \p bit_start.
  */
-__device__ __forceinline__ void BFI(
+_CCCL_DEVICE _CCCL_FORCEINLINE void BFI(
     unsigned int &ret,
     unsigned int x,
     unsigned int y,
@@ -219,7 +213,7 @@ __device__ __forceinline__ void BFI(
 /**
  * \brief Three-operand add.  Returns \p x + \p y + \p z.
  */
-__device__ __forceinline__ unsigned int IADD3(unsigned int x, unsigned int y, unsigned int z)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int IADD3(unsigned int x, unsigned int y, unsigned int z)
 {
     asm ("vadd.u32.u32.u32.add %0, %1, %2, %3;" : "=r"(x) : "r"(x), "r"(y), "r"(z));
     return x;
@@ -252,7 +246,7 @@ __device__ __forceinline__ unsigned int IADD3(unsigned int x, unsigned int y, un
  * \endcode
  *
  */
-__device__ __forceinline__ int PRMT(unsigned int a, unsigned int b, unsigned int index)
+_CCCL_DEVICE _CCCL_FORCEINLINE int PRMT(unsigned int a, unsigned int b, unsigned int index)
 {
     int ret;
     asm ("prmt.b32 %0, %1, %2, %3;" : "=r"(ret) : "r"(a), "r"(b), "r"(index));
@@ -264,7 +258,7 @@ __device__ __forceinline__ int PRMT(unsigned int a, unsigned int b, unsigned int
 /**
  * Sync-threads barrier.
  */
-__device__ __forceinline__ void BAR(int count)
+_CCCL_DEVICE _CCCL_FORCEINLINE void BAR(int count)
 {
     asm volatile("bar.sync 1, %0;" : : "r"(count));
 }
@@ -272,7 +266,7 @@ __device__ __forceinline__ void BAR(int count)
 /**
  * CTA barrier
  */
-__device__  __forceinline__ void CTA_SYNC()
+_CCCL_DEVICE  _CCCL_FORCEINLINE void CTA_SYNC()
 {
     __syncthreads();
 }
@@ -281,7 +275,7 @@ __device__  __forceinline__ void CTA_SYNC()
 /**
  * CTA barrier with predicate
  */
-__device__  __forceinline__ int CTA_SYNC_AND(int p)
+_CCCL_DEVICE  _CCCL_FORCEINLINE int CTA_SYNC_AND(int p)
 {
     return __syncthreads_and(p);
 }
@@ -290,7 +284,7 @@ __device__  __forceinline__ int CTA_SYNC_AND(int p)
 /**
  * CTA barrier with predicate
  */
-__device__  __forceinline__ int CTA_SYNC_OR(int p)
+_CCCL_DEVICE  _CCCL_FORCEINLINE int CTA_SYNC_OR(int p)
 {
     return __syncthreads_or(p);
 }
@@ -299,7 +293,7 @@ __device__  __forceinline__ int CTA_SYNC_OR(int p)
 /**
  * Warp barrier
  */
-__device__  __forceinline__ void WARP_SYNC(unsigned int member_mask)
+_CCCL_DEVICE  _CCCL_FORCEINLINE void WARP_SYNC(unsigned int member_mask)
 {
     __syncwarp(member_mask);
 }
@@ -308,7 +302,7 @@ __device__  __forceinline__ void WARP_SYNC(unsigned int member_mask)
 /**
  * Warp any
  */
-__device__  __forceinline__ int WARP_ANY(int predicate, unsigned int member_mask)
+_CCCL_DEVICE  _CCCL_FORCEINLINE int WARP_ANY(int predicate, unsigned int member_mask)
 {
     return __any_sync(member_mask, predicate);
 }
@@ -317,7 +311,7 @@ __device__  __forceinline__ int WARP_ANY(int predicate, unsigned int member_mask
 /**
  * Warp any
  */
-__device__  __forceinline__ int WARP_ALL(int predicate, unsigned int member_mask)
+_CCCL_DEVICE  _CCCL_FORCEINLINE int WARP_ALL(int predicate, unsigned int member_mask)
 {
     return __all_sync(member_mask, predicate);
 }
@@ -326,7 +320,7 @@ __device__  __forceinline__ int WARP_ALL(int predicate, unsigned int member_mask
 /**
  * Warp ballot
  */
-__device__  __forceinline__ int WARP_BALLOT(int predicate, unsigned int member_mask)
+_CCCL_DEVICE  _CCCL_FORCEINLINE int WARP_BALLOT(int predicate, unsigned int member_mask)
 {
     return __ballot_sync(member_mask, predicate);
 }
@@ -335,7 +329,7 @@ __device__  __forceinline__ int WARP_BALLOT(int predicate, unsigned int member_m
 /**
  * Warp synchronous shfl_up
  */
-__device__ __forceinline__
+_CCCL_DEVICE _CCCL_FORCEINLINE
 unsigned int SHFL_UP_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
 {
     asm volatile("shfl.sync.up.b32 %0, %1, %2, %3, %4;"
@@ -346,7 +340,7 @@ unsigned int SHFL_UP_SYNC(unsigned int word, int src_offset, int flags, unsigned
 /**
  * Warp synchronous shfl_down
  */
-__device__ __forceinline__
+_CCCL_DEVICE _CCCL_FORCEINLINE
 unsigned int SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
 {
     asm volatile("shfl.sync.down.b32 %0, %1, %2, %3, %4;"
@@ -357,7 +351,7 @@ unsigned int SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsign
 /**
  * Warp synchronous shfl_idx
  */
-__device__ __forceinline__
+_CCCL_DEVICE _CCCL_FORCEINLINE
 unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, int flags, unsigned int member_mask)
 {
     asm volatile("shfl.sync.idx.b32 %0, %1, %2, %3, %4;"
@@ -368,7 +362,7 @@ unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, int flags, unsigned 
 /**
  * Warp synchronous shfl_idx
  */
-__device__ __forceinline__
+_CCCL_DEVICE _CCCL_FORCEINLINE
 unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, unsigned int member_mask)
 {
     return __shfl_sync(member_mask, word, src_lane);
@@ -377,7 +371,7 @@ unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, unsigned int member_
 /**
  * Floating point multiply. (Mantissa LSB rounds towards zero.)
  */
-__device__ __forceinline__ float FMUL_RZ(float a, float b)
+_CCCL_DEVICE _CCCL_FORCEINLINE float FMUL_RZ(float a, float b)
 {
     float d;
     asm ("mul.rz.f32 %0, %1, %2;" : "=f"(d) : "f"(a), "f"(b));
@@ -388,7 +382,7 @@ __device__ __forceinline__ float FMUL_RZ(float a, float b)
 /**
  * Floating point multiply-add. (Mantissa LSB rounds towards zero.)
  */
-__device__ __forceinline__ float FFMA_RZ(float a, float b, float c)
+_CCCL_DEVICE _CCCL_FORCEINLINE float FFMA_RZ(float a, float b, float c)
 {
     float d;
     asm ("fma.rz.f32 %0, %1, %2, %3;" : "=f"(d) : "f"(a), "f"(b), "f"(c));
@@ -400,7 +394,7 @@ __device__ __forceinline__ float FFMA_RZ(float a, float b, float c)
 /**
  * \brief Terminates the calling thread
  */
-__device__ __forceinline__ void ThreadExit() {
+_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadExit() {
     asm volatile("exit;");
 }
 
@@ -408,7 +402,7 @@ __device__ __forceinline__ void ThreadExit() {
 /**
  * \brief  Abort execution and generate an interrupt to the host CPU
  */
-__device__ __forceinline__ void ThreadTrap() {
+_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadTrap() {
     asm volatile("trap;");
 }
 
@@ -416,7 +410,7 @@ __device__ __forceinline__ void ThreadTrap() {
 /**
  * \brief Returns the row-major linear thread identifier for a multidimensional thread block
  */
-__device__ __forceinline__ int RowMajorTid(int block_dim_x, int block_dim_y, int block_dim_z)
+_CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y, int block_dim_z)
 {
     return ((block_dim_z == 1) ? 0 : (threadIdx.z * block_dim_x * block_dim_y)) +
             ((block_dim_y == 1) ? 0 : (threadIdx.y * block_dim_x)) +
@@ -427,7 +421,7 @@ __device__ __forceinline__ int RowMajorTid(int block_dim_x, int block_dim_y, int
 /**
  * \brief Returns the warp lane ID of the calling thread
  */
-__device__ __forceinline__ unsigned int LaneId()
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneId()
 {
     unsigned int ret;
     asm ("mov.u32 %0, %%laneid;" : "=r"(ret) );
@@ -438,7 +432,7 @@ __device__ __forceinline__ unsigned int LaneId()
 /**
  * \brief Returns the warp ID of the calling thread.  Warp ID is guaranteed to be unique among warps, but may not correspond to a zero-based ranking within the thread block.
  */
-__device__ __forceinline__ unsigned int WarpId()
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int WarpId()
 {
     unsigned int ret;
     asm ("mov.u32 %0, %%warpid;" : "=r"(ret) );
@@ -458,7 +452,7 @@ __device__ __forceinline__ unsigned int WarpId()
  * @param warp_id Id of virtual warp within architectural warp
  */
 template <int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
-__host__ __device__ __forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 unsigned int WarpMask(unsigned int warp_id)
 {
   constexpr bool is_pow_of_two = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
@@ -478,7 +472,7 @@ unsigned int WarpMask(unsigned int warp_id)
 /**
  * \brief Returns the warp lane mask of all lanes less than the calling thread
  */
-__device__ __forceinline__ unsigned int LaneMaskLt()
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLt()
 {
     unsigned int ret;
     asm ("mov.u32 %0, %%lanemask_lt;" : "=r"(ret) );
@@ -488,7 +482,7 @@ __device__ __forceinline__ unsigned int LaneMaskLt()
 /**
  * \brief Returns the warp lane mask of all lanes less than or equal to the calling thread
  */
-__device__ __forceinline__ unsigned int LaneMaskLe()
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLe()
 {
     unsigned int ret;
     asm ("mov.u32 %0, %%lanemask_le;" : "=r"(ret) );
@@ -498,7 +492,7 @@ __device__ __forceinline__ unsigned int LaneMaskLe()
 /**
  * \brief Returns the warp lane mask of all lanes greater than the calling thread
  */
-__device__ __forceinline__ unsigned int LaneMaskGt()
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGt()
 {
     unsigned int ret;
     asm ("mov.u32 %0, %%lanemask_gt;" : "=r"(ret) );
@@ -508,14 +502,12 @@ __device__ __forceinline__ unsigned int LaneMaskGt()
 /**
  * \brief Returns the warp lane mask of all lanes greater than or equal to the calling thread
  */
-__device__ __forceinline__ unsigned int LaneMaskGe()
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGe()
 {
     unsigned int ret;
     asm ("mov.u32 %0, %%lanemask_ge;" : "=r"(ret) );
     return ret;
 }
-
-/** @} */       // end group UtilPtx
 
 /**
  * @brief Shuffle-up for any data type.
@@ -523,8 +515,6 @@ __device__ __forceinline__ unsigned int LaneMaskGe()
  *        <em>warp-lane</em><sub><em>i</em>-<tt>src_offset</tt></sub>.
  *        For thread lanes @e i < src_offset, the thread's own @p input is returned to the thread.
  *        ![](shfl_up_logo.png)
- *
- * @ingroup WarpModule
  *
  * @tparam LOGICAL_WARP_THREADS
  *   The number of threads per "logical" warp. Must be a power-of-two <= 32.
@@ -569,7 +559,7 @@ __device__ __forceinline__ unsigned int LaneMaskGe()
  *   32-bit mask of participating warp lanes
  */
 template <int LOGICAL_WARP_THREADS, typename T>
-__device__ __forceinline__ T
+_CCCL_DEVICE _CCCL_FORCEINLINE T
 ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
 {
     /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
@@ -605,8 +595,6 @@ ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
  *        <em>warp-lane</em><sub><em>i</em>+<tt>src_offset</tt></sub>.
  *        For thread lanes @e i >= WARP_THREADS, the thread's own @p input is returned to the
  *        thread. ![](shfl_down_logo.png)
- *
- * @ingroup WarpModule
  *
  * @tparam LOGICAL_WARP_THREADS
  *   The number of threads per "logical" warp.  Must be a power-of-two <= 32.
@@ -652,7 +640,7 @@ ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
  *   32-bit mask of participating warp lanes
  */
 template <int LOGICAL_WARP_THREADS, typename T>
-__device__ __forceinline__ T
+_CCCL_DEVICE _CCCL_FORCEINLINE T
 ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
 {
     /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
@@ -696,8 +684,6 @@ ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
  * @tparam T
  *   <b>[inferred]</b> The input/output element type
  *
- * @ingroup WarpModule
- *
  * @par
  * - Available only for SM3.0 or newer
  *
@@ -734,7 +720,7 @@ ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
  *   32-bit mask of participating warp lanes
  */
 template <int LOGICAL_WARP_THREADS, typename T>
-__device__ __forceinline__ T ShuffleIndex(T input, int src_lane, unsigned int member_mask)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned int member_mask)
 {
     /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
     enum {
@@ -795,7 +781,7 @@ template <int LABEL_BITS, int WARP_ACTIVE_THREADS>
 struct warp_matcher_t
 {
 
-  static __device__ unsigned int match_any(unsigned int label)
+  static _CCCL_DEVICE unsigned int match_any(unsigned int label)
   {
     return warp_matcher_t<LABEL_BITS, 32>::match_any(label) & ~(~0 << WARP_ACTIVE_THREADS);
   }
@@ -808,7 +794,7 @@ struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS>
 
   // match.any.sync.b32 is slower when matching a few bits
   // using a ballot loop instead
-  static __device__ unsigned int match_any(unsigned int label)
+  static _CCCL_DEVICE unsigned int match_any(unsigned int label)
   {
       unsigned int retval;
 
@@ -843,7 +829,7 @@ struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS>
  * LABEL_BITS of \p label as the calling thread.
  */
 template <int LABEL_BITS, int WARP_ACTIVE_THREADS = CUB_PTX_WARP_THREADS>
-inline __device__ unsigned int MatchAny(unsigned int label)
+inline _CCCL_DEVICE unsigned int MatchAny(unsigned int label)
 {
   return detail::warp_matcher_t<LABEL_BITS, WARP_ACTIVE_THREADS>::match_any(label);
 }

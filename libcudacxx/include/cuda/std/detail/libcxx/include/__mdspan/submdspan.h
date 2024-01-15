@@ -77,7 +77,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 namespace __detail {
 
@@ -602,7 +602,7 @@ __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
 )
 /* clang-format: on */
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

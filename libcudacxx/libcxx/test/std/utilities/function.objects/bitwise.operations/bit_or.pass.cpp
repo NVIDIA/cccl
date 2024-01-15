@@ -22,7 +22,7 @@ int main(int, char**)
 {
     typedef std::bit_or<int> F;
     const F f = F();
-#if TEST_STD_VER <= 17
+#if TEST_STD_VER <= 2017
     static_assert((std::is_same<int, F::first_argument_type>::value), "" );
     static_assert((std::is_same<int, F::second_argument_type>::value), "" );
     static_assert((std::is_same<int, F::result_type>::value), "" );
@@ -32,7 +32,7 @@ int main(int, char**)
     assert(f(0x58D3, 0xEA95) == 0xFAD7);
     assert(f(0x58D3, 0) == 0x58D3);
     assert(f(0xFFFF, 0x58D3) == 0xFFFF);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     typedef std::bit_or<> F2;
     const F2 f2 = F2();
     assert(f2(0xEA95, 0xEA95) == 0xEA95);

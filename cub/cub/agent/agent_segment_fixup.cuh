@@ -260,7 +260,7 @@ struct AgentSegmentFixup
      * @param reduction_op
      *   ValueT reduction operator
      */
-    __device__ __forceinline__ AgentSegmentFixup(TempStorage &temp_storage,
+    _CCCL_DEVICE _CCCL_FORCEINLINE AgentSegmentFixup(TempStorage &temp_storage,
                                                  PairsInputIteratorT d_pairs_in,
                                                  AggregatesOutputIteratorT d_aggregates_out,
                                                  EqualityOpT equality_op,
@@ -298,7 +298,7 @@ struct AgentSegmentFixup
      *   Marker whether to use atomicAdd (instead of reduce-by-key)
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ void ConsumeTile(OffsetT num_remaining,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT num_remaining,
                                                 int tile_idx,
                                                 OffsetT tile_offset,
                                                 ScanTileStateT &tile_state,
@@ -351,7 +351,7 @@ struct AgentSegmentFixup
      *   Marker whether to use atomicAdd (instead of reduce-by-key)
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ void ConsumeTile(OffsetT num_remaining,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT num_remaining,
                                                 int tile_idx,
                                                 OffsetT tile_offset,
                                                 ScanTileStateT &tile_state,
@@ -439,7 +439,7 @@ struct AgentSegmentFixup
      * @param tile_state
      *   Global tile state descriptor
      */
-    __device__ __forceinline__ void ConsumeRange(OffsetT num_items,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items,
                                                  int num_tiles,
                                                  ScanTileStateT &tile_state)
     {

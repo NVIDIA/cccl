@@ -35,7 +35,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_member_object_pointer
     : public integral_constant<bool, _LIBCUDACXX_IS_MEMBER_OBJECT_POINTER(_Tp)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_member_object_pointer_v = _LIBCUDACXX_IS_MEMBER_OBJECT_POINTER(_Tp);
 #endif
@@ -46,7 +46,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_member_object_pointer
     : public integral_constant<bool, __libcpp_is_member_pointer<__remove_cv_t<_Tp> >::__is_obj >
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_member_object_pointer_v = is_member_object_pointer<_Tp>::value;
 #endif

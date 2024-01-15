@@ -96,12 +96,12 @@ CUB_NAMESPACE_BEGIN
  *
  * @param[in] d_begin_offsets
  *   Random-access input iterator to the sequence of beginning offsets of length
- *   @p num_segments, such that `d_begin_offsets[i]` is the first element of the
+ *   `num_segments`, such that `d_begin_offsets[i]` is the first element of the
  *   i-th data segment in `d_keys_*` and `d_values_*`
  *
  * @param[in] d_end_offsets
  *   Random-access input iterator to the sequence of ending offsets of length
- *   @p num_segments, such that `d_end_offsets[i]-1` is the last element of the
+ *   `num_segments`, such that `d_end_offsets[i]-1` is the last element of the
  *   i-th data segment in `d_keys_*` and `d_values_*`.
  *   If `d_end_offsets[i]-1 <= d_begin_offsets[i]`, the i-th segment is
  *   considered empty.
@@ -291,12 +291,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
  *
  * @param[in] d_begin_offsets
  *   Random-access input iterator to the sequence of beginning offsets of length
- *   @p num_segments, such that `d_begin_offsets[i]` is the first element of the
+ *   `num_segments`, such that `d_begin_offsets[i]` is the first element of the
  *   <em>i</em><sup>th</sup> data segment in `d_keys_*` and `d_values_*`
  *
  * @param[in] d_end_offsets
  *   Random-access input iterator to the sequence of ending offsets of length
- *   @p num_segments, such that `d_end_offsets[i]-1` is the last element of the
+ *   `num_segments`, such that `d_end_offsets[i]-1` is the last element of the
  *   <em>i</em><sup>th</sup> data segment in `d_keys_*` and `d_values_*`. If
  *   `d_end_offsets[i]-1 <= d_begin_offsets[i]`, the <em>i</em><sup>th</sup> is
  *   considered empty.
@@ -420,12 +420,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
  *
  * @param[in] d_begin_offsets
  *   Random-access input iterator to the sequence of beginning offsets of length
- *   @p num_segments, such that `d_begin_offsets[i]` is the first element of the
+ *   `num_segments`, such that `d_begin_offsets[i]` is the first element of the
  *   <em>i</em><sup>th</sup> data segment in `d_keys_*` and `d_values_*`
  *
  * @param[in] d_end_offsets
  *   Random-access input iterator to the sequence of ending offsets of length
- *   @p num_segments, such that `d_end_offsets[i]-1` is the last element of the
+ *   `num_segments`, such that `d_end_offsets[i]-1` is the last element of the
  *   <em>i</em><sup>th</sup> data segment in `d_keys_*` and `d_values_*`. If
  *   `d_end_offsets[i]-1 <= d_begin_offsets[i]`, the <em>i</em><sup>th</sup> is
  *   considered empty.
@@ -1104,7 +1104,7 @@ struct DispatchSegmentedSort : SelectedPolicy
     BeginOffsetIteratorT d_offset_begin{};
     EndOffsetIteratorT d_offset_end{};
 
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     LargeSegmentsSelectorT(OffsetT value,
                            BeginOffsetIteratorT d_offset_begin,
                            EndOffsetIteratorT d_offset_end)
@@ -1113,7 +1113,7 @@ struct DispatchSegmentedSort : SelectedPolicy
         , d_offset_end(d_offset_end)
     {}
 
-    __host__ __device__ __forceinline__ bool
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool
     operator()(unsigned int segment_id) const
     {
       const OffsetT segment_size = d_offset_end[segment_id] -
@@ -1128,7 +1128,7 @@ struct DispatchSegmentedSort : SelectedPolicy
     BeginOffsetIteratorT d_offset_begin{};
     EndOffsetIteratorT d_offset_end{};
 
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     SmallSegmentsSelectorT(OffsetT value,
                            BeginOffsetIteratorT d_offset_begin,
                            EndOffsetIteratorT d_offset_end)
@@ -1137,7 +1137,7 @@ struct DispatchSegmentedSort : SelectedPolicy
         , d_offset_end(d_offset_end)
     {}
 
-    __host__ __device__ __forceinline__ bool
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool
     operator()(unsigned int segment_id) const
     {
       const OffsetT segment_size = d_offset_end[segment_id] -
@@ -1151,12 +1151,12 @@ struct DispatchSegmentedSort : SelectedPolicy
 
   /**
    * Device-accessible allocation of temporary storage. When `nullptr`, the
-   * required allocation size is written to @p temp_storage_bytes and no work
+   * required allocation size is written to `temp_storage_bytes` and no work
    * is done.
    */
   void *d_temp_storage;
 
-  /// Reference to size in bytes of @p d_temp_storage allocation
+  /// Reference to size in bytes of `d_temp_storage` allocation
   std::size_t &temp_storage_bytes;
 
   /**
@@ -1179,14 +1179,14 @@ struct DispatchSegmentedSort : SelectedPolicy
 
   /**
    * Random-access input iterator to the sequence of beginning offsets of length
-   * @p num_segments, such that `d_begin_offsets[i]` is the first element of the
+   * `num_segments`, such that `d_begin_offsets[i]` is the first element of the
    * <em>i</em><sup>th</sup> data segment in `d_keys_*` and `d_values_*`
    */
   BeginOffsetIteratorT d_begin_offsets;
 
   /**
    * Random-access input iterator to the sequence of ending offsets of length
-   * @p num_segments, such that <tt>d_end_offsets[i]-1</tt> is the last element
+   * `num_segments`, such that <tt>d_end_offsets[i]-1</tt> is the last element
    * of the <em>i</em><sup>th</sup> data segment in `d_keys_*` and
    * `d_values_*`. If `d_end_offsets[i]-1 <= d_begin_offsets[i]`,
    * the <em>i</em><sup>th</sup> is considered empty.
@@ -1199,7 +1199,7 @@ struct DispatchSegmentedSort : SelectedPolicy
   /// CUDA stream to launch kernels within.
   cudaStream_t stream;
 
-  CUB_RUNTIME_FUNCTION __forceinline__
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   DispatchSegmentedSort(void *d_temp_storage,
                         std::size_t &temp_storage_bytes,
                         DoubleBuffer<KeyT> &d_keys,
@@ -1223,7 +1223,7 @@ struct DispatchSegmentedSort : SelectedPolicy
   {}
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   DispatchSegmentedSort(void *d_temp_storage,
                         std::size_t &temp_storage_bytes,
                         DoubleBuffer<KeyT> &d_keys,
@@ -1250,7 +1250,7 @@ struct DispatchSegmentedSort : SelectedPolicy
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using MaxPolicyT = typename DispatchSegmentedSort::MaxPolicy;
     using LargeSegmentPolicyT = typename ActivePolicyT::LargeSegmentPolicy;
@@ -1491,7 +1491,7 @@ struct DispatchSegmentedSort : SelectedPolicy
     return error;
   }
 
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            std::size_t &temp_storage_bytes,
            DoubleBuffer<KeyT> &d_keys,
@@ -1541,7 +1541,7 @@ struct DispatchSegmentedSort : SelectedPolicy
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            std::size_t &temp_storage_bytes,
            DoubleBuffer<KeyT> &d_keys,
@@ -1569,7 +1569,7 @@ struct DispatchSegmentedSort : SelectedPolicy
   }
 
 private:
-  CUB_RUNTIME_FUNCTION __forceinline__
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   int GetNumPasses(int radix_bits)
   {
     constexpr int byte_size = 8;
@@ -1578,7 +1578,7 @@ private:
     return num_passes;
   }
 
-  CUB_RUNTIME_FUNCTION __forceinline__
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   int GetFinalSelector(int selector, int radix_bits)
   {
     // Sorted data always ends up in the other vector
@@ -1591,7 +1591,7 @@ private:
   }
 
   template <typename T>
-  CUB_RUNTIME_FUNCTION __forceinline__
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   T* GetFinalOutput(int radix_bits,
                     DoubleBuffer<T> &buffer)
   {
@@ -1603,7 +1603,7 @@ private:
             typename SmallAndMediumPolicyT,
             typename LargeKernelT,
             typename SmallKernelT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   SortWithPartitioning(
     LargeKernelT large_kernel,
     SmallKernelT small_kernel,
@@ -1740,7 +1740,7 @@ private:
 
   template <typename LargeSegmentPolicyT,
             typename FallbackKernelT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t SortWithoutPartitioning(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t SortWithoutPartitioning(
     FallbackKernelT fallback_kernel,
     cub::detail::device_double_buffer<KeyT> &d_keys_double_buffer,
     cub::detail::device_double_buffer<ValueT> &d_values_double_buffer)

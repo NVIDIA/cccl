@@ -41,7 +41,7 @@ int main(int, char**)
         assert(i == 0);
         assert(j == 0);
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         constexpr auto t1 = std::make_tuple(0, 1, 3.14);
         constexpr int i1 = std::get<1>(t1);

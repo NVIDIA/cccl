@@ -1,4 +1,4 @@
-Running CUB Benchmarks
+CUB Benchmarks
 *************************************
 
 This file contains instrutions on how to run all CUB benchmarks using CUB tuning infrastructure.

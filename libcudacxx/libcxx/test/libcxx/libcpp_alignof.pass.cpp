@@ -20,7 +20,7 @@ template <class T>
 void test() {
   static_assert(_LIBCUDACXX_ALIGNOF(T) == std::alignment_of<T>::value, "");
   static_assert(_LIBCUDACXX_ALIGNOF(T) == TEST_ALIGNOF(T), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   static_assert(_LIBCUDACXX_ALIGNOF(T) == alignof(T), "");
 #endif
 #ifdef TEST_COMPILER_CLANG

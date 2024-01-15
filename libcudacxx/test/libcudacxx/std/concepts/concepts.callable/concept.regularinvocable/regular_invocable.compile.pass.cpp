@@ -350,18 +350,18 @@ static_assert(!regular_invocable<lvalue_qualified, S volatile&&>, "");
 static_assert(!regular_invocable<lvalue_qualified, S const volatile&&>, "");
 #endif // !defined(TEST_COMPILER_MSVC_2017) && !defined(TEST_COMPILER_MSVC_2019)
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(check_member_is_invocable<int (S::*)() const&, S>(), "");
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 using lvalue_const_qualified = void (S::*)() const&;
 static_assert(regular_invocable<lvalue_const_qualified, S&>, "");
 static_assert(regular_invocable<lvalue_const_qualified, S const&>, "");
 static_assert(!regular_invocable<lvalue_const_qualified, S volatile&>, "");
 static_assert(!regular_invocable<lvalue_const_qualified, S const volatile&>, "");
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(regular_invocable<lvalue_const_qualified, S&&>, "");
 static_assert(regular_invocable<lvalue_const_qualified, S const&&>, "");
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 static_assert(!regular_invocable<lvalue_const_qualified, S volatile&&>, "");
 static_assert(!regular_invocable<lvalue_const_qualified, S const volatile&&>, "");
 
@@ -441,7 +441,7 @@ static_assert(regular_invocable<rvalue_cv_unqualified, S const volatile&&>, "");
 } // namespace pointer_to_member_functions
 
 // Check the concept with closure types (and also check for subsumption)
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template<class F, class... Args>
 __host__ __device__ constexpr bool is_regular_invocable(F, Args&&...) {
   return false;
@@ -463,10 +463,10 @@ template<class F, class... Args>
 __host__ __device__ constexpr bool is_regular_invocable(F, Args&&...) {
   return regular_invocable<F, Args...>;
 }
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 // execution space annotations on lambda require --extended-lambda flag with nvrtc
-#if TEST_STD_VER > 14 && !defined(TEST_COMPILER_NVRTC)
+#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_NVRTC)
 static_assert(is_regular_invocable([] {}), "");
 static_assert(is_regular_invocable([](int) {}, 0), "");
 static_assert(is_regular_invocable([](int) {}, 0L), "");
@@ -474,6 +474,6 @@ static_assert(!is_regular_invocable([](int) {}, nullptr), "");
 
 int i = 0;
 static_assert(is_regular_invocable([](int&) {}, i), "");
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
 
 int main(int, char**) { return 0; }

@@ -192,7 +192,7 @@ accumulate(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOpe
     return __init;
 }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _InputIterator, class _Tp, class _BinaryOp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 _Tp
@@ -242,7 +242,7 @@ inner_product(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2
     return __init;
 }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _InputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 _Tp
@@ -314,7 +314,7 @@ partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __res
     return __result;
 }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 _OutputIterator
@@ -476,7 +476,7 @@ iota(_ForwardIterator __first, _ForwardIterator __last, _Tp __value_)
 
 
 #ifndef __cuda_std__
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <typename _Result, typename _Source, bool _IsSigned = is_signed<_Source>::value> struct __ct_abs;
 
 template <typename _Result, typename _Source>
@@ -539,9 +539,9 @@ lcm(_Tp __m, _Up __n)
     return __val1 * __val2;
 }
 
-#endif /* _LIBCUDACXX_STD_VER > 14 */
+#endif /* _CCCL_STD_VER > 2014 */
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr
 enable_if_t<is_integral_v<_Tp> && !is_same_v<bool, _Tp> && !is_null_pointer_v<_Tp>, _Tp>
@@ -597,12 +597,12 @@ midpoint(_Fp __a, _Fp __b) noexcept
       __a/2 + __b/2;                                         // otherwise correctly rounded
 }
 
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 #endif // __cuda_std__
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _LIBCUDACXX_STD_VER >= 17
+#if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _CCCL_STD_VER >= 2017
 #   include <__pstl_numeric>
 #endif
 

@@ -45,7 +45,7 @@ _LIBCUDACXX_INLINE_VISIBILITY false_type __and_helper(...);
 template <class... _Pred>
 using _And _LIBCUDACXX_NODEBUG_TYPE = decltype(__and_helper<_Pred...>(0));
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <class...>
 struct conjunction : true_type {};
@@ -59,7 +59,7 @@ struct conjunction<_Arg, _Args...> : conditional_t<!bool(_Arg::value), _Arg, con
 template <class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool conjunction_v = conjunction<_Args...>::value;
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

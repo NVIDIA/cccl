@@ -63,7 +63,7 @@ int main(int, char**)
         Alloc a;
         assert(std::allocator_traits<Alloc>::select_on_container_copy_construction(a).id == 0);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         B<int> b;
         assert(std::allocator_traits<B<int> >::select_on_container_copy_construction(b).id == 100);

@@ -54,7 +54,7 @@ int main(int, char**)
     static_assert(noexcept(std::get<1>(std::move(p))), "");
     }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     typedef std::pair<int, short> P;
     constexpr const P p1(3, static_cast<short>(4));

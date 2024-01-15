@@ -114,7 +114,7 @@ struct incrementable_with_difference_type {
   __host__ __device__ incrementable_with_difference_type operator++(int);
 
   __host__ __device__ bool operator==(incrementable_with_difference_type const&) const;
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ bool operator!=(incrementable_with_difference_type const&) const;
 #endif
 };
@@ -124,7 +124,7 @@ struct incrementable_without_difference_type {
   __host__ __device__ incrementable_without_difference_type operator++(int);
 
   __host__ __device__ bool operator==(incrementable_without_difference_type const&) const;
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ bool operator!=(incrementable_without_difference_type const&) const;
 #endif
 
@@ -138,7 +138,7 @@ struct difference_type_and_void_minus {
   __host__ __device__ difference_type_and_void_minus operator++(int);
 
   __host__ __device__ bool operator==(difference_type_and_void_minus const&) const;
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ bool operator!=(difference_type_and_void_minus const&) const;
 #endif
 
@@ -159,7 +159,7 @@ struct noncopyable_with_difference_type {
   __host__ __device__ noncopyable_with_difference_type operator++(int);
 
   __host__ __device__ bool operator==(noncopyable_with_difference_type const&) const;
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ bool operator!=(noncopyable_with_difference_type const&) const;
 #endif
 };
@@ -178,7 +178,7 @@ struct noncopyable_without_difference_type {
   __host__ __device__ int operator-(noncopyable_without_difference_type const&) const;
 
   __host__ __device__ bool operator==(noncopyable_without_difference_type const&) const;
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ bool operator!=(noncopyable_without_difference_type const&) const;
 #endif
 };
@@ -199,7 +199,7 @@ struct noncopyable_with_difference_type_and_minus {
   __host__ __device__ int operator-(noncopyable_with_difference_type_and_minus const&) const;
 
   __host__ __device__ bool operator==(noncopyable_with_difference_type_and_minus const&) const;
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ bool operator!=(noncopyable_with_difference_type_and_minus const&) const;
 #endif
 };

@@ -23,7 +23,7 @@ struct NonMovable {
   NonMovable(NonMovable&&) = delete;
 };
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 
 template <class Opt, class F>
 concept has_or_else = requires(Opt&& opt, F&& f) {
@@ -54,7 +54,7 @@ static_assert(has_or_else<cuda::std::optional<MoveOnly>&&, decltype(return_optio
 // The following cases appear to be causing GCC, specifically GCC <= 9, to instantiate too much and fail to sfinae in the "concept" above,
 // but only in C++14. This appears to be a compiler bug present specifically in this version, but since it's failing to sfinae on an error,
 // it appears that it is correctly rejecting those cases, so we are fine.
-#if !(defined(TEST_COMPILER_GCC) && __GNUC__ <= 9 && TEST_STD_VER == 14)
+#if !(defined(TEST_COMPILER_GCC) && __GNUC__ <= 9 && TEST_STD_VER == 2014)
 static_assert(!has_or_else<cuda::std::optional<NonMovable>&, decltype(return_optional<NonMovable>)>, "");
 static_assert(!has_or_else<cuda::std::optional<NonMovable>&&, decltype(return_optional<NonMovable>)>, "");
 #endif
@@ -130,14 +130,14 @@ int main(int, char**) {
   test_nontrivial();
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   // GCC <9 incorrectly trips on the assertions in this, so disable it there
-#if TEST_STD_VER > 14 && (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
+#if TEST_STD_VER > 2014 && (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
   static_assert(test(), "");
-#endif // TEST_STD_VER > 14 && (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
-#if TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2014 && (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
+#if TEST_STD_VER > 2017
 #if defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test_nontrivial());
 #endif // defined(_LIBCUDACXX_ADDRESSOF)
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   return 0;
 }

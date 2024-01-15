@@ -116,7 +116,7 @@ int main(int, char**) {
     assert(&fr == &f);
     assert(*f.target<int(*)(int, int, int)>() == g3);
   }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   assert(globalMemCounter.checkOutstandingNewEq(0));
   {
     std::function<int(int)> f = A();

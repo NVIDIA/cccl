@@ -48,7 +48,7 @@ int main(int, char**)
     typedef std::list<int> L;
     L c(a1, a1+4);
     Predicate cp(g);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 	ASSERT_SAME_TYPE(L::size_type, decltype(c.remove_if(std::ref(cp))));
     assert(c.remove_if(std::ref(cp)) == 2);
 #else
@@ -63,7 +63,7 @@ int main(int, char**)
     int a2[] = {1, 3};
     std::list<int> c(a1, a1+4);
     Predicate cp(even);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     assert(c.remove_if(std::ref(cp)) == 2);
 #else
     c.remove_if(std::ref(cp));
@@ -84,13 +84,13 @@ int main(int, char**)
     }
     }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     int a1[] = {1, 2, 3, 4};
     int a2[] = {3, 4};
     std::list<int, min_allocator<int>> c(a1, a1+4);
     Predicate cp(g);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     assert(c.remove_if(std::ref(cp)) == 2);
 #else
     c.remove_if(std::ref(cp));

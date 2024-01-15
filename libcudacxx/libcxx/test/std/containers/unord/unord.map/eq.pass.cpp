@@ -91,7 +91,7 @@ int main(int, char**)
         assert( (c1 == c2));
         assert(!(c1 != c2));
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_map<int, std::string, std::hash<int>, std::equal_to<int>,
                             min_allocator<std::pair<const int, std::string>>> C;

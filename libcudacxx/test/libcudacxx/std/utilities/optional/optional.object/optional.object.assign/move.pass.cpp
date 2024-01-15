@@ -188,6 +188,7 @@ int main(int, char**)
         static_assert(cuda::std::is_nothrow_move_assignable<optional<Y>>::value, "");
     }
     {
+#ifndef TEST_COMPILER_ICC
         struct ThrowsMove {
             __host__ __device__
             ThrowsMove() noexcept {}
@@ -214,6 +215,7 @@ int main(int, char**)
             ThrowsMoveAssign& operator=(ThrowsMoveAssign &&) noexcept(false) { return *this; }
         };
         static_assert(!cuda::std::is_nothrow_move_assignable<optional<ThrowsMoveAssign>>::value, "");
+#endif // TEST_COMPILER_ICC
         struct NoThrowMove {
             __host__ __device__
             NoThrowMove() noexcept(false) {}

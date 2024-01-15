@@ -17,7 +17,7 @@
 #include "test_macros.h"
 #include "demangle.h"
 
-#if TEST_STD_VER < 11
+#if TEST_STD_VER < 2011
 #error This header requires C++11 or greater
 #endif
 

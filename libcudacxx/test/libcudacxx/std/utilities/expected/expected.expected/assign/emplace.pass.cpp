@@ -52,8 +52,10 @@ struct CtorFromInt {
 
 static_assert(CanEmplace<cuda::std::expected<CtorFromInt<true>, int>, int>, "");
 static_assert(CanEmplace<cuda::std::expected<CtorFromInt<true>, int>, int, int>, "");
+#ifndef TEST_COMPILER_ICC
 static_assert(!CanEmplace<cuda::std::expected<CtorFromInt<false>, int>, int>, "");
 static_assert(!CanEmplace<cuda::std::expected<CtorFromInt<false>, int>, int, int>, "");
+#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // has_value
@@ -88,8 +90,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test());
-#endif // TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   return 0;
 }

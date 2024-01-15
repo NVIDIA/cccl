@@ -32,7 +32,7 @@ int main(int, char**)
     test<signed char, cuda::std::denorm_absent>();
     test<unsigned char, cuda::std::denorm_absent>();
     test<wchar_t, cuda::std::denorm_absent>();
-#if TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
     test<char8_t, cuda::std::denorm_absent>();
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS

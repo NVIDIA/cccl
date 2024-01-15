@@ -47,7 +47,7 @@ struct A {
     A& operator=(const A&) = delete;
 };
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 constexpr bool test_constexpr_move() {
     int y = 42;
     const int cy = y;
@@ -97,14 +97,14 @@ int main(int, char**)
         test(std::move(mo));
         test(source());
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         constexpr int y = 42;
         static_assert(std::move(y) == 42, "");
         static_assert(test_constexpr_move(), "");
     }
 #endif
-#if TEST_STD_VER == 11 && defined(_LIBCUDACXX_VERSION)
+#if TEST_STD_VER == 2011 && defined(_LIBCUDACXX_VERSION)
     // Test that std::forward is constexpr in C++11. This is an extension
     // provided by both libc++ and libstdc++.
     {

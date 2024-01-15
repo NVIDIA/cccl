@@ -37,7 +37,7 @@ int main(int, char**)
     test(random_access_iterator<const char*>(s+5), 5, random_access_iterator<const char*>(s));
     test(s+5, 5, s);
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     {
     constexpr const char *p = "123456789";
     constexpr auto it1 = std::make_move_iterator(p);

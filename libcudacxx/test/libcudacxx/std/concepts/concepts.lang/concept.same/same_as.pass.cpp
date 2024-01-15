@@ -160,7 +160,7 @@ __host__ __device__ void CheckNotSameAs() {
                               typename Modifier2<C6<int&&> >::type>, "");
 }
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 // Checks subsumption works as intended
 _LIBCUDACXX_TEMPLATE(class T, class U)
   _LIBCUDACXX_REQUIRES( same_as<T, U>)

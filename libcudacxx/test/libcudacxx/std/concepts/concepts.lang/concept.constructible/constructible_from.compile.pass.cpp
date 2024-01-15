@@ -113,11 +113,11 @@ __host__ __device__ void test() {
   test<void (Empty::*)(const int&)&, void (Empty::*)(const int&) &&>();
   test<void (Empty::*)(const int&) &&>();
   test<void (Empty::*)(const int&)&&, void (Empty::*)(const int&)>();
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   test<void (Empty::*)(const int&) throw()>();
   test<void (Empty::*)(const int&) throw(),
        void(Empty::*)(const int&) noexcept(true)>();
-#endif // TEST_STD_VER < 20
+#endif // TEST_STD_VER < 2020
   test<void (Empty::*)(const int&) noexcept>();
   test<void (Empty::*)(const int&) noexcept(true)>();
   test<void (Empty::*)(const int&) noexcept(true),

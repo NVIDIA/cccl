@@ -19,7 +19,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
     int ia[] = {0, 1, 2, 2, 0, 1, 2, 3};
     int ib[] = {1, 2, 3, 4, 5, 6};
@@ -40,7 +40,7 @@ int main(int, char**)
     assert(std::count(cpp17_input_iterator<const int*>(ia),
                       cpp17_input_iterator<const int*>(ia), 2) == 0);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

@@ -46,7 +46,7 @@ namespace generic
 template<typename DerivedPolicy,
          typename InputIterator,
          typename UnaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator for_each(thrust::execution_policy<DerivedPolicy> &,
                        InputIterator first,
                        InputIterator ,
@@ -64,7 +64,7 @@ template<typename DerivedPolicy,
          typename InputIterator,
          typename Size,
          typename UnaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator for_each_n(thrust::execution_policy<DerivedPolicy> &,
                          InputIterator first,
                          Size ,

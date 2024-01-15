@@ -26,7 +26,7 @@ struct test1
     }
 };
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
     int ia[] = {2, 4, 6, 8};
     int ib[] = {2, 4, 5, 8};
@@ -55,7 +55,7 @@ int main(int, char**)
                            cpp17_input_iterator<const int*>(ia), test1()) == true);
     }
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

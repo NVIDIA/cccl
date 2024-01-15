@@ -27,7 +27,7 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 #include <tuple>
 
@@ -42,7 +42,7 @@ template<template<typename> class ExecutionPolicyCRTPBase>
 struct dependencies_aware_execution_policy
 {
     template<typename ...Dependencies>
-    __host__
+    _CCCL_HOST
     thrust::detail::execute_with_dependencies<
         ExecutionPolicyCRTPBase,
         Dependencies...
@@ -53,7 +53,7 @@ struct dependencies_aware_execution_policy
     }
 
     template<typename ...Dependencies>
-    __host__
+    _CCCL_HOST
     thrust::detail::execute_with_dependencies<
         ExecutionPolicyCRTPBase,
         Dependencies...
@@ -63,7 +63,7 @@ struct dependencies_aware_execution_policy
         return { capture_as_dependency(dependencies) };
     }
     template<typename ...Dependencies>
-    __host__
+    _CCCL_HOST
     thrust::detail::execute_with_dependencies<
         ExecutionPolicyCRTPBase,
         Dependencies...
@@ -74,7 +74,7 @@ struct dependencies_aware_execution_policy
     }
 
     template<typename ...Dependencies>
-    __host__
+    _CCCL_HOST
     thrust::detail::execute_with_dependencies<
         ExecutionPolicyCRTPBase,
         Dependencies...
@@ -85,7 +85,7 @@ struct dependencies_aware_execution_policy
     }
 
     template<typename ...Dependencies>
-    __host__
+    _CCCL_HOST
     thrust::detail::execute_with_dependencies<
         ExecutionPolicyCRTPBase,
         Dependencies...
@@ -95,7 +95,7 @@ struct dependencies_aware_execution_policy
         return { capture_as_dependency(dependencies) };
     }
     template<typename ...Dependencies>
-    __host__
+    _CCCL_HOST
     thrust::detail::execute_with_dependencies<
         ExecutionPolicyCRTPBase,
         Dependencies...
@@ -110,5 +110,5 @@ struct dependencies_aware_execution_policy
 
 THRUST_NAMESPACE_END
 
-#endif // THRUST_CPP_DIALECT >= 2011
+#endif // _CCCL_STD_VER >= 2011
 

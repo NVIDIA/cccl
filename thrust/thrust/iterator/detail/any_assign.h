@@ -34,15 +34,15 @@ namespace detail
 // a type which may be assigned any other type
 struct any_assign
 {
-  inline __host__ __device__ any_assign()
+  inline _CCCL_HOST_DEVICE any_assign()
   {}
 
   template<typename T>
-  inline __host__ __device__ any_assign(T)
+  inline _CCCL_HOST_DEVICE any_assign(T)
   {}
 
   template<typename T>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   any_assign &operator=(T)
   {
     if(0)

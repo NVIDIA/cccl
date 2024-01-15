@@ -86,7 +86,7 @@ void test_is_constructible()
     // use it, so waive it.
     static_assert((cuda::std::__libcpp_is_constructible<T>::type::value), "");
 #endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert( cuda::std::is_constructible_v<T>, "");
 #endif
 }
@@ -101,7 +101,7 @@ void test_is_constructible()
     // use it, so waive it.
     static_assert((cuda::std::__libcpp_is_constructible<T, A0>::type::value), "");
 #endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(( cuda::std::is_constructible_v<T, A0>), "");
 #endif
 }
@@ -116,7 +116,7 @@ void test_is_constructible()
     // use it, so waive it.
     static_assert((cuda::std::__libcpp_is_constructible<T, A0, A1>::type::value), "");
 #endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(( cuda::std::is_constructible_v<T, A0, A1>), "");
 #endif
 }
@@ -131,7 +131,7 @@ void test_is_constructible()
     // use it, so waive it.
     static_assert((cuda::std::__libcpp_is_constructible<T, A0, A1, A2>::type::value), "");
 #endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(( cuda::std::is_constructible_v<T, A0, A1, A2>), "");
 #endif
 }
@@ -146,7 +146,7 @@ void test_is_not_constructible()
     // use it, so waive it.
     static_assert((!cuda::std::__libcpp_is_constructible<T>::type::value), "");
 #endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((!cuda::std::is_constructible_v<T>), "");
 #endif
 }
@@ -162,7 +162,7 @@ void test_is_not_constructible()
     // use it, so waive it.
     static_assert((!cuda::std::__libcpp_is_constructible<T, A0>::type::value), "");
 #endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((!cuda::std::is_constructible_v<T, A0>), "");
 #endif
 }
@@ -242,18 +242,18 @@ int main(int, char**)
 
     test_is_constructible<Base, Derived>();
     test_is_constructible<Base&, Derived&>();
-#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 20
+#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 2020
     test_is_not_constructible<Derived&, Base&>();
 #endif
     test_is_constructible<Base const&, Derived const&>();
-#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 20
+#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 2020
     test_is_not_constructible<Derived const&, Base const&>();
     test_is_not_constructible<Derived const&, Base>();
 #endif
 
     test_is_constructible<Base&&, Derived>();
     test_is_constructible<Base&&, Derived&&>();
-#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 20
+#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 2020
     test_is_not_constructible<Derived&&, Base&&>();
     test_is_not_constructible<Derived&&, Base>();
 #endif

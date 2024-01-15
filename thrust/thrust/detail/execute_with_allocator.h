@@ -43,7 +43,7 @@ template <
   , typename Allocator
   , template <typename> class BaseSystem
 >
-__host__
+_CCCL_HOST
 thrust::pair<T*, std::ptrdiff_t>
 get_temporary_buffer(
     thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system
@@ -71,7 +71,7 @@ template <
   , typename Allocator
   , template <typename> class BaseSystem
 >
-__host__
+_CCCL_HOST
 void
 return_temporary_buffer(
     thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system
@@ -92,7 +92,7 @@ return_temporary_buffer(
   alloc_traits::deallocate(system.get_allocator(), to_ptr, num_elements);
 }
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 template <
     typename T,
@@ -100,7 +100,7 @@ template <
     typename Allocator,
     typename ...Dependencies
 >
-__host__
+_CCCL_HOST
 thrust::pair<T*, std::ptrdiff_t>
 get_temporary_buffer(
     thrust::detail::execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>& system,
@@ -129,7 +129,7 @@ template <
     typename Allocator,
     typename ...Dependencies
 >
-__host__
+_CCCL_HOST
 void
 return_temporary_buffer(
     thrust::detail::execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>& system,

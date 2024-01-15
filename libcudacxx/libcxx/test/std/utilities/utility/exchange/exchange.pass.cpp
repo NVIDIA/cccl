@@ -21,7 +21,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
     int v = 12;
 
@@ -77,7 +77,7 @@ int main(int, char**)
     assert ( s3.size () == 0 );
     }
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

@@ -28,7 +28,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [concept.convertible]
 
@@ -39,7 +39,7 @@ concept convertible_to =
     static_cast<_To>(_CUDA_VSTD::declval<_From>());
   };
 
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
 _LIBCUDACXX_NV_DIAG_SUPPRESS(1211) // nonstandard cast to array type ignored
@@ -71,7 +71,7 @@ _LIBCUDACXX_CONCEPT convertible_to = _LIBCUDACXX_FRAGMENT(__convertible_to_, _Fr
 _LIBCUDACXX_NV_DIAG_DEFAULT(1211) // nonstandard cast to array type ignored
 #endif // _LIBCUDACXX_COMPILER_MSVC
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

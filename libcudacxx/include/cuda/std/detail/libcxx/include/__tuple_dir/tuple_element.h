@@ -122,7 +122,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, __tuple_types<_Types...> >
   typedef _LIBCUDACXX_NODEBUG_TYPE __type_pack_element<_Ip, _Types...> type;
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <size_t _Ip, class... _Tp>
 using tuple_element_t _LIBCUDACXX_NODEBUG_TYPE = typename tuple_element<_Ip, _Tp...>::type;
 #endif

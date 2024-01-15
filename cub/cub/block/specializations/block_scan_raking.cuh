@@ -159,7 +159,7 @@ struct BlockScanRaking
      *   Prefix to seed reduction with
      */
     template <int ITERATION, typename ScanOp>
-    __device__ __forceinline__ T GuardedReduce(T *raking_ptr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE T GuardedReduce(T *raking_ptr,
                                                ScanOp scan_op,
                                                T raking_partial,
                                                Int2Type<ITERATION> /*iteration*/)
@@ -186,7 +186,7 @@ struct BlockScanRaking
      *   Prefix to seed reduction with
      */
     template <typename ScanOp>
-    __device__ __forceinline__ T GuardedReduce(T * /*raking_ptr*/,
+    _CCCL_DEVICE _CCCL_FORCEINLINE T GuardedReduce(T * /*raking_ptr*/,
                                                ScanOp /*scan_op*/,
                                                T raking_partial,
                                                Int2Type<SEGMENT_LENGTH> /*iteration*/)
@@ -204,7 +204,7 @@ struct BlockScanRaking
      *   [in] Input array
      */
     template <int ITERATION>
-    __device__ __forceinline__ void CopySegment(T *out, T *in, Int2Type<ITERATION> /*iteration*/)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void CopySegment(T *out, T *in, Int2Type<ITERATION> /*iteration*/)
     {
         out[ITERATION] = in[ITERATION];
         CopySegment(out, in, Int2Type<ITERATION + 1>());
@@ -219,14 +219,14 @@ struct BlockScanRaking
      * @param[in] in
      *   Input array
      */
-    __device__ __forceinline__ void CopySegment(T * /*out*/,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void CopySegment(T * /*out*/,
                                                 T * /*in*/,
                                                 Int2Type<SEGMENT_LENGTH> /*iteration*/)
     {}
 
     /// Performs upsweep raking reduction, returning the aggregate
     template <typename ScanOp>
-    __device__ __forceinline__ T Upsweep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Upsweep(
         ScanOp scan_op)
     {
         T *smem_raking_ptr = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
@@ -242,7 +242,7 @@ struct BlockScanRaking
 
     /// Performs exclusive downsweep raking scan
     template <typename ScanOp>
-    __device__ __forceinline__ void ExclusiveDownsweep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveDownsweep(
         ScanOp          scan_op,
         T               raking_partial,
         bool            apply_prefix = true)
@@ -264,7 +264,7 @@ struct BlockScanRaking
 
     /// Performs inclusive downsweep raking scan
     template <typename ScanOp>
-    __device__ __forceinline__ void InclusiveDownsweep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveDownsweep(
         ScanOp          scan_op,
         T               raking_partial,
         bool            apply_prefix = true)
@@ -289,7 +289,7 @@ struct BlockScanRaking
     //---------------------------------------------------------------------
 
     /// Constructor
-    __device__ __forceinline__ BlockScanRaking(
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockScanRaking(
         TempStorage &temp_storage)
     :
         temp_storage(temp_storage.Alias()),
@@ -316,7 +316,7 @@ struct BlockScanRaking
      *   Binary scan operator
      */
     template <typename ScanOp>
-    __device__ __forceinline__ void ExclusiveScan(T input, T &exclusive_output, ScanOp scan_op)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T &exclusive_output, ScanOp scan_op)
     {
         if (WARP_SYNCHRONOUS)
         {
@@ -369,7 +369,7 @@ struct BlockScanRaking
      *   Binary scan operator
      */
     template <typename ScanOp>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     ExclusiveScan(T input, T &output, const T &initial_value, ScanOp scan_op)
     {
         if (WARP_SYNCHRONOUS)
@@ -425,7 +425,7 @@ struct BlockScanRaking
      *   Threadblock-wide aggregate reduction of input items
      */
     template <typename ScanOp>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     ExclusiveScan(T input, T &output, ScanOp scan_op, T &block_aggregate)
     {
         if (WARP_SYNCHRONOUS)
@@ -491,7 +491,7 @@ struct BlockScanRaking
      *   Threadblock-wide aggregate reduction of input items
      */
     template <typename ScanOp>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     ExclusiveScan(T input, T &output, const T &initial_value, ScanOp scan_op, T &block_aggregate)
     {
         if (WARP_SYNCHRONOUS)
@@ -557,7 +557,7 @@ struct BlockScanRaking
      *   block-wide prefix to be applied to all inputs.
      */
     template <typename ScanOp, typename BlockPrefixCallbackOp>
-    __device__ __forceinline__ void ExclusiveScan(T input,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input,
                                                   T &output,
                                                   ScanOp scan_op,
                                                   BlockPrefixCallbackOp &block_prefix_callback_op)
@@ -636,7 +636,7 @@ struct BlockScanRaking
      *   Binary scan operator
      */
     template <typename ScanOp>
-    __device__ __forceinline__ void InclusiveScan(T input, T &output, ScanOp scan_op)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T &output, ScanOp scan_op)
     {
         if (WARP_SYNCHRONOUS)
         {
@@ -690,7 +690,7 @@ struct BlockScanRaking
      *   Threadblock-wide aggregate reduction of input items
      */
     template <typename ScanOp>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     InclusiveScan(T input, T &output, ScanOp scan_op, T &block_aggregate)
     {
         if (WARP_SYNCHRONOUS)
@@ -757,7 +757,7 @@ struct BlockScanRaking
      *   block-wide prefix to be applied to all inputs.
      */
     template <typename ScanOp, typename BlockPrefixCallbackOp>
-    __device__ __forceinline__ void InclusiveScan(T input,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input,
                                                   T &output,
                                                   ScanOp scan_op,
                                                   BlockPrefixCallbackOp &block_prefix_callback_op)

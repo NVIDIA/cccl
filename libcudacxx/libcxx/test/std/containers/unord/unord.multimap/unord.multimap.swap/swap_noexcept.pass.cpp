@@ -52,7 +52,7 @@ struct some_comp2
     bool operator()(const T&, const T&) const { return false; }
 };
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
 template <typename T>
 void swap(some_comp2<T>&, some_comp2<T>&) noexcept {}
 #endif
@@ -75,7 +75,7 @@ struct some_hash2
     std::size_t operator()(T const&) const;
 };
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
 template <typename T>
 void swap(some_hash2<T>&, some_hash2<T>&) noexcept {}
 #endif
@@ -147,7 +147,7 @@ int main(int, char**)
         static_assert(!noexcept(swap(std::declval<C&>(), std::declval<C&>())), "");
     }
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     { // POCS allocator, throwable swap for hash, throwable swap for comp
     typedef std::unordered_multimap<MoveOnly, MoveOnly, some_hash<MoveOnly>, some_comp <MoveOnly>, some_alloc <V>> C;
     static_assert(!noexcept(swap(std::declval<C&>(), std::declval<C&>())), "");

@@ -80,7 +80,7 @@ TEST_CONSTEXPR_CXX20 bool tests()
         C0 l = {};
         C0 r = {};
         l.swap(r);
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
         static_assert(noexcept(l.swap(r)), "");
 #endif
     }
@@ -91,7 +91,7 @@ TEST_CONSTEXPR_CXX20 bool tests()
 int main(int, char**)
 {
     tests();
-#if TEST_STD_VER >= 20
+#if TEST_STD_VER >= 2020
     static_assert(tests(), "");
 #endif
   return 0;

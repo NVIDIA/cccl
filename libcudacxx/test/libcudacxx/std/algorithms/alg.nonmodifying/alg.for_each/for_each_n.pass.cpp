@@ -19,7 +19,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 struct add_two {
     __host__ __device__ constexpr void operator()(int& a) const noexcept { a += 2; }
 };
@@ -78,7 +78,7 @@ int main(int, char**)
         assert(ia[i] == static_cast<int>(i+2));
     }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(test_constexpr(), "");
 #endif
 

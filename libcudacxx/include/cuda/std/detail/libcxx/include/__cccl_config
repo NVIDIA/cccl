@@ -12,7 +12,11 @@
 #define __CCCL_CONFIG
 
 // Determine the host compiler
-#if defined(__NVCOMPILER)
+#if defined(__INTEL_LLVM_COMPILER)
+#  define _CCCL_COMPILER_ICC_LLVM
+#elif defined(__INTEL_COMPILER)
+#  define _CCCL_COMPILER_ICC
+#elif defined(__NVCOMPILER)
 #  define _CCCL_COMPILER_NVHPC
 #elif defined(__clang__)
 #  define _CCCL_COMPILER_CLANG
@@ -22,10 +26,6 @@
 #  define _CCCL_COMPILER_MSVC
 #elif defined(__IBMCPP__)
 #  define _CCCL_COMPILER_IBM
-#elif defined(__INTEL_LLVM_COMPILER)
-#  define _CCCL_COMPILER_ICC_LLVM
-#elif defined(__INTEL_COMPILER)
-#  define _CCCL_COMPILER_ICC
 #elif defined(__CUDACC_RTC__)
 #  define _CCCL_COMPILER_NVRTC
 #endif
@@ -131,7 +131,7 @@
 #endif // !_CCCL_COMPILER_CLANG && !_CCCL_COMPILER_GCC
 
 // Enable us to selectively silence cuda compiler warnings
-#if defined(__CUDACC__)
+#if defined(__CUDACC__) || defined(_NVHPC_CUDA)
 #  if !defined(_CCCL_CUDA_COMPILER_CLANG)
 #    define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
 #    define _CCCL_NV_DIAG_DEFAULT(_WARNING)
@@ -160,11 +160,13 @@
 #      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _Pragma(_CCCL_TOSTRING(diag_default _WARNING))
 #    endif // !_CCCL_COMPILER_MSVC
 #  endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
-#else // ^^^ __CUDACC__ ^^^ / vvv !__CUDACC__ vvv
+#else // ^^^ __CUDACC__ || _NVHPC_CUDA ^^^ / vvv !__CUDACC__ && !_NVHPC_CUDA vvv
 #  define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
 #  define _CCCL_NV_DIAG_DEFAULT(_WARNING)
 #endif // other compilers
 
+#include "__cccl/dialect.h"
+#include "__cccl/execution_space.h"
 #include "__cccl/visibility.h"
 
 #endif // __CCCL_CONFIG

@@ -43,7 +43,7 @@ public:
   typedef typename iterator_traits<iterator_type>::pointer pointer;
   typedef typename iterator_traits<iterator_type>::reference reference;
   typedef typename iterator_traits<iterator_type>::iterator_category iterator_category;
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
   typedef contiguous_iterator_tag iterator_concept;
 #endif
 
@@ -307,7 +307,7 @@ operator+(typename __wrap_iter<_Iter1>::difference_type __n, __wrap_iter<_Iter1>
   return __x;
 }
 
-#if _LIBCUDACXX_STD_VER <= 17
+#if _CCCL_STD_VER <= 2017
 template <class _It>
 struct __is_cpp17_contiguous_iterator<__wrap_iter<_It> > : true_type
 {};

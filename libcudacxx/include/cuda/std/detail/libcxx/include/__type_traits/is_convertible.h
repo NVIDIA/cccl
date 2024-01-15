@@ -38,7 +38,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _T1, class _T2> struct _LIBCUDACXX_TEMPLATE_VIS is_convertible
     : public integral_constant<bool, _LIBCUDACXX_IS_CONVERTIBLE_TO(_T1, _T2)> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _T1, class _T2>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v = _LIBCUDACXX_IS_CONVERTIBLE_TO(_T1, _T2);
 #endif
@@ -139,7 +139,7 @@ template <class _T1, class _T2> struct _LIBCUDACXX_TEMPLATE_VIS is_convertible
     static const size_t __complete_check2 = __is_convertible_check<_T2>::__v;
 };
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _From, class _To>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v = is_convertible<_From, _To>::value;
 #endif

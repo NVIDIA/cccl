@@ -22,7 +22,7 @@ template <class T, class Allocator>
 void
 test3(unsigned n, Allocator const &alloc = Allocator())
 {
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     typedef std::list<T, Allocator> C;
     {
     C d(n, alloc);
@@ -62,7 +62,7 @@ int main(int, char**)
         ++i;
         assert(*i == 0);
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         typedef std::list<int, min_allocator<int> > C;
         C l(3, min_allocator<int> ());
@@ -77,7 +77,7 @@ int main(int, char**)
         test3<int, min_allocator<int>> (3);
     }
 #endif
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::list<DefaultOnly> l(3);
         assert(l.size() == 3);

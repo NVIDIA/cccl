@@ -2,6 +2,8 @@
 
 source "$(dirname "$0")/build_common.sh"
 
+print_environment_details
+
 # CUB benchmarks require at least CUDA nvcc 11.5 for int128
 # Returns "true" if the first version is greater than or equal to the second
 version_compare() {
@@ -27,6 +29,10 @@ else
     echo "nvcc version is not determined (likely using a non-NVCC compiler). Not building CUB benchmarks."
 fi
 
+if [[ "$HOST_COMPILER" == *icpc* ]]; then
+    ENABLE_CUB_BENCHMARKS="false"
+fi
+
 PRESET="cub-cpp$CXX_STANDARD"
 
 CMAKE_OPTIONS="
@@ -35,3 +41,5 @@ CMAKE_OPTIONS="
 "
 
 configure_and_build_preset "CUB" "$PRESET" "$CMAKE_OPTIONS"
+
+print_time_summary

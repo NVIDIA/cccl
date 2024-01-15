@@ -18,7 +18,7 @@ __host__ __device__
 void test_class_imp()
 {
     static_assert(!cuda::std::is_void<T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!cuda::std::is_null_pointer<T>::value, "");
 #endif
     static_assert(!cuda::std::is_integral<T>::value, "");

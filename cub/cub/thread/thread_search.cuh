@@ -60,7 +60,7 @@ template <
     typename BIteratorT,
     typename OffsetT,
     typename CoordinateT>
-__host__ __device__ __forceinline__ void MergePathSearch(
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
     OffsetT         diagonal,
     AIteratorT      a,
     BIteratorT      b,
@@ -107,7 +107,7 @@ __host__ __device__ __forceinline__ void MergePathSearch(
  *   Search key
  */
 template <typename InputIteratorT, typename OffsetT, typename T>
-__device__ __forceinline__ OffsetT LowerBound(InputIteratorT input, OffsetT num_items, T val)
+_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT num_items, T val)
 {
     OffsetT retval = 0;
     while (num_items > 0)
@@ -141,7 +141,7 @@ __device__ __forceinline__ OffsetT LowerBound(InputIteratorT input, OffsetT num_
  *   Search key
  */
 template <typename InputIteratorT, typename OffsetT, typename T>
-__device__ __forceinline__ OffsetT UpperBound(InputIteratorT input, OffsetT num_items, T val)
+_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, T val)
 {
     OffsetT retval = 0;
     while (num_items > 0)
@@ -174,7 +174,7 @@ __device__ __forceinline__ OffsetT UpperBound(InputIteratorT input, OffsetT num_
  *   Search key
  */
 template <typename InputIteratorT, typename OffsetT>
-__device__ __forceinline__ OffsetT UpperBound(InputIteratorT input, OffsetT num_items, __half val)
+_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, __half val)
 {
     OffsetT retval = 0;
     while (num_items > 0)

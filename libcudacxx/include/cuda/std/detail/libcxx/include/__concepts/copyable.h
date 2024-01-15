@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [concepts.object]
 
@@ -41,7 +41,7 @@ concept copyable =
   assignable_from<_Tp&, const _Tp&> &&
   assignable_from<_Tp&, const _Tp>;
 
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 
 template<class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -57,7 +57,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class _Tp>
 _LIBCUDACXX_CONCEPT copyable = _LIBCUDACXX_FRAGMENT(__copyable_,_Tp);
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

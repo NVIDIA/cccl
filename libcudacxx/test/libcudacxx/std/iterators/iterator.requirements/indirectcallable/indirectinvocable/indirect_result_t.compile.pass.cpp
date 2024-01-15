@@ -23,7 +23,7 @@ static_assert(cuda::std::same_as<cuda::std::indirect_result_t<long S::*, S*>, lo
 static_assert(cuda::std::same_as<cuda::std::indirect_result_t<S && (S::*)(), S*>, S&&>);
 static_assert(cuda::std::same_as<cuda::std::indirect_result_t<int S::* (S::*)(int) const, S*, int*>, int S::*>);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template <class F, class... Is>
 constexpr bool has_indirect_result = requires {
   typename cuda::std::indirect_result_t<F, Is...>;

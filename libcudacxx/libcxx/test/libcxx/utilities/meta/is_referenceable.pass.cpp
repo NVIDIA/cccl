@@ -33,7 +33,7 @@ static_assert(( std::__libcpp_is_referenceable<Foo>::value), "");
 static_assert(( std::__libcpp_is_referenceable<const Foo>::value), "");
 static_assert(( std::__libcpp_is_referenceable<Foo &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<const Foo &>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert(( std::__libcpp_is_referenceable<Foo &&>::value), "");
 static_assert(( std::__libcpp_is_referenceable<const Foo &&>::value), "");
 #endif
@@ -45,7 +45,7 @@ static_assert(( std::__libcpp_is_referenceable<const float __attribute__((__vect
 
 // Functions without cv-qualifiers are referenceable
 static_assert(( std::__libcpp_is_referenceable<void ()>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert((!std::__libcpp_is_referenceable<void () const>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void () &>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void () const &>::value), "");
@@ -54,7 +54,7 @@ static_assert((!std::__libcpp_is_referenceable<void () const &&>::value), "");
 #endif
 
 static_assert(( std::__libcpp_is_referenceable<void (int)>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert((!std::__libcpp_is_referenceable<void (int) const>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (int) &>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (int) const &>::value), "");
@@ -63,7 +63,7 @@ static_assert((!std::__libcpp_is_referenceable<void (int) const &&>::value), "")
 #endif
 
 static_assert(( std::__libcpp_is_referenceable<void (int, float)>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert((!std::__libcpp_is_referenceable<void (int, float) const>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (int, float) &>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (int, float) const &>::value), "");
@@ -72,7 +72,7 @@ static_assert((!std::__libcpp_is_referenceable<void (int, float) const &&>::valu
 #endif
 
 static_assert(( std::__libcpp_is_referenceable<void (int, float, Foo &)>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert((!std::__libcpp_is_referenceable<void (int, float, Foo &) const>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (int, float, Foo &) &>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (int, float, Foo &) const &>::value), "");
@@ -81,7 +81,7 @@ static_assert((!std::__libcpp_is_referenceable<void (int, float, Foo &) const &&
 #endif
 
 static_assert(( std::__libcpp_is_referenceable<void (...)>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert((!std::__libcpp_is_referenceable<void (...) const>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (...) &>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (...) const &>::value), "");
@@ -90,7 +90,7 @@ static_assert((!std::__libcpp_is_referenceable<void (...) const &&>::value), "")
 #endif
 
 static_assert(( std::__libcpp_is_referenceable<void (int, ...)>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert((!std::__libcpp_is_referenceable<void (int, ...) const>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (int, ...) &>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (int, ...) const &>::value), "");
@@ -99,7 +99,7 @@ static_assert((!std::__libcpp_is_referenceable<void (int, ...) const &&>::value)
 #endif
 
 static_assert(( std::__libcpp_is_referenceable<void (int, float, ...)>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert((!std::__libcpp_is_referenceable<void (int, float, ...) const>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (int, float, ...) &>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (int, float, ...) const &>::value), "");
@@ -108,7 +108,7 @@ static_assert((!std::__libcpp_is_referenceable<void (int, float, ...) const &&>:
 #endif
 
 static_assert(( std::__libcpp_is_referenceable<void (int, float, Foo &, ...)>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert((!std::__libcpp_is_referenceable<void (int, float, Foo &, ...) const>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (int, float, Foo &, ...) &>::value), "");
 static_assert((!std::__libcpp_is_referenceable<void (int, float, Foo &, ...) const &>::value), "");
@@ -119,7 +119,7 @@ static_assert((!std::__libcpp_is_referenceable<void (int, float, Foo &, ...) con
 // member functions with or without cv-qualifiers are referenceable
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)()>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)() const>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)() &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)() const &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)() &&>::value), "");
@@ -128,7 +128,7 @@ static_assert(( std::__libcpp_is_referenceable<void (Foo::*)() const &&>::value)
 
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int)>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int) const>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int) &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int) const &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int) &&>::value), "");
@@ -137,7 +137,7 @@ static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int) const &&>::val
 
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float)>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float) const>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float) &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float) const &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float) &&>::value), "");
@@ -146,7 +146,7 @@ static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float) const &
 
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, Foo &)>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, Foo &) const>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, Foo &) &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, Foo &) const &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, Foo &) &&>::value), "");
@@ -155,7 +155,7 @@ static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, Foo &) 
 
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(...)>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(...) const>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(...) &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(...) const &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(...) &&>::value), "");
@@ -164,7 +164,7 @@ static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(...) const &&>::val
 
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, ...)>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, ...) const>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, ...) &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, ...) const &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, ...) &&>::value), "");
@@ -173,7 +173,7 @@ static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, ...) const &&>
 
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, ...)>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, ...) const>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, ...) &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, ...) const &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, ...) &&>::value), "");
@@ -182,7 +182,7 @@ static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, ...) co
 
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, Foo &, ...)>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, Foo &, ...) const>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, Foo &, ...) &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, Foo &, ...) const &>::value), "");
 static_assert(( std::__libcpp_is_referenceable<void (Foo::*)(int, float, Foo &, ...) &&>::value), "");

@@ -41,13 +41,13 @@ namespace sequential
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy_if(sequential::execution_policy<DerivedPolicy> &,
                          InputIterator1 first,
                          InputIterator1 last,

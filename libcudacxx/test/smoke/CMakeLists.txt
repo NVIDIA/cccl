@@ -10,7 +10,7 @@ else()
     set(cpp_std_versions 11 14 17 20)
 endif()
 
-set(cpp_11_exclusions "cuda/annotated_ptr" "cuda/std/mdspan")
+set(cpp_11_exclusions "cuda/annotated_ptr" "cuda/std/mdspan" "cuda/std/variant")
 set(cpp_14_exclusions "cuda/annotated_ptr" "cuda/std/mdspan")
 set(cpp_17_exclusions "cuda/annotated_ptr" "cuda/std/mdspan")
 set(cpp_20_exclusions "cuda/annotated_ptr")

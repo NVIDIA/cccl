@@ -22,7 +22,7 @@ template <bool IsArray>
 void test_reset_pointer() {
   typedef typename std::conditional<IsArray, A[], A>::type VT;
   const int expect_alive = IsArray ? 3 : 1;
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     using U = std::unique_ptr<VT>;
     U u; ((void)u);
@@ -59,7 +59,7 @@ template <bool IsArray>
 void test_reset_nullptr() {
   typedef typename std::conditional<IsArray, A[], A>::type VT;
   const int expect_alive = IsArray ? 3 : 1;
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     using U = std::unique_ptr<VT>;
     U u; ((void)u);
@@ -83,7 +83,7 @@ template <bool IsArray>
 void test_reset_no_arg() {
   typedef typename std::conditional<IsArray, A[], A>::type VT;
   const int expect_alive = IsArray ? 3 : 1;
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     using U = std::unique_ptr<VT>;
     U u; ((void)u);

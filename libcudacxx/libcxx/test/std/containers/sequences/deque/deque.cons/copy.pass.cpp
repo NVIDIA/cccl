@@ -38,7 +38,7 @@ int main(int, char**)
         assert(v2 == v);
         assert(v2.get_allocator() == v.get_allocator());
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::deque<int, other_allocator<int> > v(3, 2, other_allocator<int>(5));
         std::deque<int, other_allocator<int> > v2 = v;

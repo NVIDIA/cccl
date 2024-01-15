@@ -36,7 +36,7 @@ namespace generic
 {
 
 template<typename InputIterator, typename Distance>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void advance(InputIterator& i, Distance n);
 
 } // end namespace generic

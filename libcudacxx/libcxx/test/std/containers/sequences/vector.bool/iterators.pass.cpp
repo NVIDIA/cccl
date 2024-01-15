@@ -58,7 +58,7 @@ int main(int, char**)
         C::iterator i;
         C::const_iterator j;
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef bool T;
         typedef std::vector<T, min_allocator<T>> C;
@@ -94,7 +94,7 @@ int main(int, char**)
         C::const_iterator j;
     }
 #endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     { // N3644 testing
         std::vector<bool>::iterator ii1{}, ii2{};
         std::vector<bool>::iterator ii4 = ii1;

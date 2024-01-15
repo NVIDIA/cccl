@@ -18,7 +18,7 @@
 // In C++03 the copy assignment operator is not deleted when the implicitly
 // generated operator would be ill-formed; like in the case of a struct with a
 // const member.
-#if TEST_STD_VER < 11
+#if TEST_STD_VER < 2011
 #   define TEST_NOT_COPY_ASSIGNABLE(T) ((void)0)
 #else
 #   define TEST_NOT_COPY_ASSIGNABLE(T) static_assert(!std::is_copy_assignable<T>::value, "")
@@ -112,7 +112,7 @@ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
     tests();
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     static_assert(tests(), "");
 #endif
     return 0;

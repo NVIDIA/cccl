@@ -339,11 +339,11 @@ struct DeviceBatchMemcpyPolicy
 };
 
 /**
- * @tparam InputBufferIt <b>[inferred]</b> Random-access input iterator type providing the pointers
+ * @tparam InputBufferIt **[inferred]** Random-access input iterator type providing the pointers
  * to the source memory buffers
- * @tparam OutputBufferIt <b>[inferred]</b> Random-access input iterator type providing the pointers
+ * @tparam OutputBufferIt **[inferred]** Random-access input iterator type providing the pointers
  * to the destination memory buffers
- * @tparam BufferSizeIteratorT <b>[inferred]</b> Random-access input iterator type providing the
+ * @tparam BufferSizeIteratorT **[inferred]** Random-access input iterator type providing the
  * number of bytes to be copied for each pair of buffers
  * @tparam BufferOffsetT Integer type large enough to hold any offset in [0, num_buffers)
  * @tparam BlockOffsetT Integer type large enough to hold any offset in [0,
@@ -386,7 +386,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
   //------------------------------------------------------------------------------
   // Constructor
   //------------------------------------------------------------------------------
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchBatchMemcpy(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchBatchMemcpy(void *d_temp_storage,
                                                            size_t &temp_storage_bytes,
                                                            InputBufferIt input_buffer_it,
                                                            OutputBufferIt output_buffer_it,
@@ -411,7 +411,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
    * policy only.
    */
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using MaxPolicyT = typename DispatchBatchMemcpy::MaxPolicy;
 
@@ -723,7 +723,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
   /**
    * Internal dispatch routine
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(void *d_temp_storage,
                                                                    size_t &temp_storage_bytes,
                                                                    InputBufferIt input_buffer_it,
                                                                    OutputBufferIt output_buffer_it,

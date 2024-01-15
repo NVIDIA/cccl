@@ -68,25 +68,25 @@ public:
    * @param d_alternate
    *   Alternate storage buffer of the same size as @p d_current
    */
-  __host__ __device__ __forceinline__ device_double_buffer(T *current,
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE device_double_buffer(T *current,
                                                            T *alternate)
       : m_current_buffer(current)
       , m_alternate_buffer(alternate)
   {}
 
   /// \brief Return pointer to the currently valid buffer
-  __host__ __device__ __forceinline__ T *current() const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T *current() const
   {
     return m_current_buffer;
   }
 
   /// \brief Return pointer to the currently invalid buffer
-  __host__ __device__ __forceinline__ T *alternate() const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T *alternate() const
   {
     return m_alternate_buffer;
   }
 
-  __host__ __device__ void swap()
+  _CCCL_HOST_DEVICE void swap()
   {
     T *tmp             = m_current_buffer;
     m_current_buffer   = m_alternate_buffer;

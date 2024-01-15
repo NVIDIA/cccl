@@ -133,7 +133,7 @@ int main(int, char**)
         for (; j < 105; ++j)
             assert(v[j] == 0);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef std::vector<int, min_allocator<int> > V;
         V v(100);

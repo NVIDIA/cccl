@@ -7,7 +7,7 @@
 #endif // NVCC version check
 #endif // MSVC + NVCC check
 
-#if THRUST_CPP_DIALECT >= 2014 && !defined(THRUST_BUG_1098_ACTIVE)
+#if _CCCL_STD_VER >= 2014 && !defined(THRUST_BUG_1098_ACTIVE)
 
 #include <unittest/unittest.h>
 
@@ -110,21 +110,21 @@ DEFINE_SORT_OP_INVOKER(
   sort_invoker_less,        thrust::less
 );
 DEFINE_SORT_OP_INVOKER(
-  sort_invoker_less_device, thrust::less, thrust::device 
+  sort_invoker_less_device, thrust::less, thrust::device
 );
 
 DEFINE_SORT_OP_INVOKER(
   sort_invoker_greater,        thrust::greater
 );
 DEFINE_SORT_OP_INVOKER(
-  sort_invoker_greater_device, thrust::greater, thrust::device 
+  sort_invoker_greater_device, thrust::greater, thrust::device
 );
 
 DEFINE_SORT_OP_INVOKER(
   sort_invoker_custom_greater,        custom_greater
 );
 DEFINE_SORT_OP_INVOKER(
-  sort_invoker_custom_greater_device, custom_greater, thrust::device 
+  sort_invoker_custom_greater_device, custom_greater, thrust::device
 );
 
 #undef DEFINE_SORT_INVOKER

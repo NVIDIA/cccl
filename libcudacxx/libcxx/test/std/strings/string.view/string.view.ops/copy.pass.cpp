@@ -88,7 +88,7 @@ int main(int, char**) {
     test ( L"a" );
     test ( L"" );
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test ( u"ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE" );
     test ( u"ABCDE" );
     test ( u"a" );

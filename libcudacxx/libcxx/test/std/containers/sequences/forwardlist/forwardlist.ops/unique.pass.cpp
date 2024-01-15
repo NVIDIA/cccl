@@ -22,7 +22,7 @@ template <class L>
 void do_unique(L &l, typename L::size_type expected)
 {
     typename L::size_type old_size = std::distance(l.begin(), l.end());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     ASSERT_SAME_TYPE(decltype(l.unique()), typename L::size_type);
     assert(l.unique() == expected);
 #else
@@ -82,7 +82,7 @@ int main(int, char**)
         do_unique(c1, 2);
         assert(c1 == c2);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef std::forward_list<T, min_allocator<T>> C;

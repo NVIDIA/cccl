@@ -50,7 +50,7 @@ int main(int, char**)
     assert(*next(m.begin(), 7) == 3);
     assert(*next(m.begin(), 8) == 3);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef int V;
     V ar[] =

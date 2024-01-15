@@ -84,7 +84,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS uses_allocator
 {
 };
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _Tp, class _Alloc>
 _LIBCUDACXX_INLINE_VAR constexpr size_t uses_allocator_v = uses_allocator<_Tp, _Alloc>::value;
 #endif

@@ -47,7 +47,7 @@ template <bool _Bp, class _If, class _Then>
 template <class _If, class _Then>
     struct _LIBCUDACXX_TEMPLATE_VIS conditional<false, _If, _Then> {typedef _Then type;};
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <bool _Bp, class _IfRes, class _ElseRes>
 using conditional_t = typename conditional<_Bp, _IfRes, _ElseRes>::type;
 #endif

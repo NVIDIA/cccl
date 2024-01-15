@@ -47,7 +47,7 @@
 #include "../../test/test_util.h"
 
 // Some implementation details rely on c++14
-#if CUB_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 using namespace cub;
 
@@ -86,7 +86,7 @@ __global__ void BlockReduceKernel(
 
     // shared memory byte-array
     extern __shared__ __align__(alignof(ShmemLayout)) char smem[];
-    
+
     // cast to lvalue reference of expected type
     auto& temp_storage = reinterpret_cast<TempStorageT&>(smem);
 

@@ -27,7 +27,7 @@
 #pragma warning(disable: 4018) // signed/unsigned mismatch
 #endif // TEST_COMPILER_MSVC
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
     int ia[] = {1, 3, 6, 7};
     int ib[] = {1, 3};
@@ -78,7 +78,7 @@ int main(int, char**)
     assert(std::mismatch(RAI(ia), RAI(ia + sa), RAI(ib))
             == (std::pair<RAI, RAI>(RAI(ia+3), RAI(ib+3))));
 
-#if TEST_STD_VER > 11 // We have the four iteration version
+#if TEST_STD_VER > 2011 // We have the four iteration version
     assert(std::mismatch(II(ia), II(ia + sa), II(ib), II(ib+sb))
             == (std::pair<II, II>(II(ia+3), II(ib+3))));
 
@@ -90,7 +90,7 @@ int main(int, char**)
             == (std::pair<II, II>(II(ia+2), II(ib+2))));
 #endif
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

@@ -65,7 +65,7 @@ int main(int, char**)
     test(S("gfsmthlkon"), 'e', S::npos);
     test(S("laenfsbridchgotmkqpj"), 'e', 2);
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(""), 'e', 0, S::npos);

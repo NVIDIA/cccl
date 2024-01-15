@@ -16,7 +16,7 @@ template <class Rat1, class Rat2, bool result>
 void test()
 {
     static_assert((result == std::ratio_less<Rat1, Rat2>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert((result == std::ratio_less_v<Rat1, Rat2>), "");
 #endif
 }

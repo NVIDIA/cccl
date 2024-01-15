@@ -52,7 +52,7 @@ struct HasType : cuda::std::false_type {};
 template <class T>
 struct HasType<T, typename Voider<typename T::type>::type> : cuda::std::true_type {};
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 template <typename T, typename U>
 struct test_invoke_result;
 
@@ -74,12 +74,12 @@ __host__ __device__
 void test_result_of()
 {
     ASSERT_SAME_TYPE(U, typename cuda::std::result_of<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     test_invoke_result<T, U>::call();
 #endif
 }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 template <typename T>
 struct test_invoke_no_result;
 
@@ -100,7 +100,7 @@ __host__ __device__
 void test_no_result()
 {
     static_assert((!HasType<cuda::std::result_of<T> >::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     test_invoke_no_result<T>::call();
 #endif
 }
@@ -112,7 +112,7 @@ void test_lambda(Fn &&)
 {
     ASSERT_SAME_TYPE(Ret, typename cuda::std::result_of<Fn()>::type);
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn>::type);
 #endif
 }

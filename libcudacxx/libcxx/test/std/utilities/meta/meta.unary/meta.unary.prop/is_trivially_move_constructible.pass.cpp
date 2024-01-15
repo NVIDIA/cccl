@@ -17,7 +17,7 @@ template <class T>
 void test_is_trivially_move_constructible()
 {
     static_assert( std::is_trivially_move_constructible<T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_trivially_move_constructible_v<T>, "");
 #endif
 }
@@ -26,7 +26,7 @@ template <class T>
 void test_has_not_trivial_move_constructor()
 {
     static_assert(!std::is_trivially_move_constructible<T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_trivially_move_constructible_v<T>, "");
 #endif
 }
@@ -59,7 +59,7 @@ struct A
     A(const A&);
 };
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 
 struct MoveOnly1
 {
@@ -88,7 +88,7 @@ int main(int, char**)
     test_is_trivially_move_constructible<const int*>();
     test_is_trivially_move_constructible<bit_zero>();
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert(!std::is_trivially_move_constructible<MoveOnly1>::value, "");
     static_assert( std::is_trivially_move_constructible<MoveOnly2>::value, "");
 #endif

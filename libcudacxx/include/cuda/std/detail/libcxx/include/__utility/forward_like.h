@@ -30,7 +30,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 20
+#if _CCCL_STD_VER > 2020
 
 template <class _Ap, class _Bp>
 using _CopyConst = _If<is_const_v<_Ap>, const _Bp, _Bp>;
@@ -47,7 +47,7 @@ constexpr auto forward_like(_Up&& __ux) noexcept -> _ForwardLike<_Tp, _Up> {
   return static_cast<_ForwardLike<_Tp, _Up>>(__ux);
 }
 
-#endif // _LIBCUDACXX_STD_VER > 20
+#endif // _CCCL_STD_VER > 2020
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -17,7 +17,7 @@ template <class T, class U>
 void test_is_nothrow_assignable()
 {
     static_assert(( std::is_nothrow_assignable<T, U>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(( std::is_nothrow_assignable_v<T, U>), "");
 #endif
 }
@@ -26,7 +26,7 @@ template <class T, class U>
 void test_is_not_nothrow_assignable()
 {
     static_assert((!std::is_nothrow_assignable<T, U>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert((!std::is_nothrow_assignable_v<T, U>), "");
 #endif
 }
@@ -49,7 +49,7 @@ int main(int, char**)
 {
     test_is_nothrow_assignable<int&, int&> ();
     test_is_nothrow_assignable<int&, int> ();
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test_is_nothrow_assignable<int&, double> ();
 #endif
 

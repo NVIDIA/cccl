@@ -156,7 +156,7 @@ int main(int, char**)
         test_pair_const<ExplicitTypes::ConvertingType, ExplicitTypes::ConvertingType&, true, false>();
         test_pair_const<ExplicitTypes::ConvertingType, ExplicitTypes::ConvertingType&&, true, false>();
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         typedef cuda::std::pair<int, int> P1;
         typedef cuda::std::pair<double, long> P2;

@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [concept.derived]
 
@@ -38,7 +38,7 @@ concept derived_from =
   is_base_of_v<_Bp, _Dp> &&
   is_convertible_v<const volatile _Dp*, const volatile _Bp*>;
 
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 
 template<class _Dp, class _Bp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -51,7 +51,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class _Dp, class _Bp>
 _LIBCUDACXX_CONCEPT derived_from = _LIBCUDACXX_FRAGMENT(__derived_from_, _Dp, _Bp);
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

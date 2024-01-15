@@ -64,10 +64,10 @@ template <class... _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<__tuple_types<_Tp...> > : public integral_constant<size_t, sizeof...(_Tp)>
 {};
 
-#if _LIBCUDACXX_STD_VER >= 17
+#if _CCCL_STD_VER >= 2017
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr size_t tuple_size_v = tuple_size<_Tp>::value;
-#endif // _LIBCUDACXX_STD_VER >= 17
+#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

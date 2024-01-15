@@ -38,12 +38,12 @@
 #include <limits>
 #include <numeric>
 
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, run_length_encode);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, run_length_encode);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 using all_types = c2h::type_list<std::uint8_t,
                                  std::uint64_t,
@@ -319,9 +319,8 @@ struct CustomDeviceRunLengthEncode
   }
 };
 
-DECLARE_CDP_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<true>, run_length_encode_293_true);
-DECLARE_CDP_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<false>,
-                    run_length_encode_293_false);
+DECLARE_LAUNCH_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<true>, run_length_encode_293_true);
+DECLARE_LAUNCH_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<false>, run_length_encode_293_false);
 
 using time_slicing = c2h::type_list<std::true_type, std::false_type>;
 

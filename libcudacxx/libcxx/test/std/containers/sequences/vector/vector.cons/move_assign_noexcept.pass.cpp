@@ -75,14 +75,14 @@ int main(int, char**)
     {
         typedef std::vector<MoveOnly, some_alloc<MoveOnly>> C;
     //  In C++17, move assignment for allocators are not allowed to throw
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
         static_assert( std::is_nothrow_move_assignable<C>::value, "");
 #else
         static_assert(!std::is_nothrow_move_assignable<C>::value, "");
 #endif
     }
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     {  // POCMA false, is_always_equal true
         typedef std::vector<MoveOnly, some_alloc2<MoveOnly>> C;
         static_assert( std::is_nothrow_move_assignable<C>::value, "");

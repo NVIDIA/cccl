@@ -113,7 +113,7 @@ template<typename RealType = double>
      *  \param mean The mean (expected value) of the distribution. Defaults to \c 0.0.
      *  \param stddev The standard deviation of the distribution. Defaults to \c 1.0.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     explicit normal_distribution(RealType mean = 0.0, RealType stddev = 1.0);
 
     /*! This constructor creates a new \p normal_distribution from a \p param_type object
@@ -121,14 +121,14 @@ template<typename RealType = double>
      *
      *  \param parm A \p param_type object encapsulating the parameters (i.e., the mean and standard deviation) of the distribution.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     explicit normal_distribution(const param_type &parm);
 
     /*! Calling this member function guarantees that subsequent uses of this
      *  \p normal_distribution do not depend on values produced by any random
      *  number generator prior to invoking this function.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void reset(void);
 
     // generating functions
@@ -139,7 +139,7 @@ template<typename RealType = double>
      *  \param urng The \p UniformRandomNumberGenerator to use as a source of randomness.
      */
     template<typename UniformRandomNumberGenerator>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     result_type operator()(UniformRandomNumberGenerator &urng);
 
     /*! This method produces a new Normal random integer as if by creating a new \p normal_distribution
@@ -151,7 +151,7 @@ template<typename RealType = double>
      *              to draw from.
      */
     template<typename UniformRandomNumberGenerator>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     result_type operator()(UniformRandomNumberGenerator &urng, const param_type &parm);
 
     // property functions
@@ -161,7 +161,7 @@ template<typename RealType = double>
      *
      *  \return The mean (expected value) of this \p normal_distribution's output.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     result_type mean(void) const;
 
     /*! This method returns the value of the parameter with which this \p normal_distribution
@@ -169,7 +169,7 @@ template<typename RealType = double>
      *
      *  \return The standard deviation of this \p uniform_real_distribution's output.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     result_type stddev(void) const;
 
     /*! This method returns a \p param_type object encapsulating the parameters with which this
@@ -177,7 +177,7 @@ template<typename RealType = double>
      *
      *  \return A \p param_type object encapsulating the parameters (i.e., the mean and standard deviation) of this \p normal_distribution.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     param_type param(void) const;
 
     /*! This method changes the parameters of this \p normal_distribution using the values encapsulated
@@ -185,21 +185,21 @@ template<typename RealType = double>
      *
      *  \param parm A \p param_type object encapsulating the new parameters (i.e., the mean and variance) of this \p normal_distribution.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void param(const param_type &parm);
 
     /*! This method returns the smallest floating point number this \p normal_distribution can potentially produce.
      *
      *  \return The lower bound of this \p normal_distribution's half-open interval.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     result_type min THRUST_PREVENT_MACRO_SUBSTITUTION (void) const;
 
     /*! This method returns the smallest number larger than largest floating point number this \p uniform_real_distribution can potentially produce.
      *
      *  \return The upper bound of this \p normal_distribution's half-open interval.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     result_type max THRUST_PREVENT_MACRO_SUBSTITUTION (void) const;
 
     /*! \cond
@@ -209,7 +209,7 @@ template<typename RealType = double>
 
     friend struct thrust::random::detail::random_core_access;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     bool equal(const normal_distribution &rhs) const;
 
     template<typename CharT, typename Traits>
@@ -228,7 +228,7 @@ template<typename RealType = double>
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
 template<typename RealType>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator==(const normal_distribution<RealType> &lhs,
                 const normal_distribution<RealType> &rhs);
 
@@ -239,7 +239,7 @@ bool operator==(const normal_distribution<RealType> &lhs,
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
 template<typename RealType>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator!=(const normal_distribution<RealType> &lhs,
                 const normal_distribution<RealType> &rhs);
 

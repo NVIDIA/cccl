@@ -74,14 +74,14 @@ int main(int, char**)
     }
     {
         typedef std::basic_string<char, std::char_traits<char>, some_alloc<char>> C;
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     //  if the allocators are always equal, then the move assignment can be noexcept
         static_assert( std::is_nothrow_move_assignable<C>::value, "");
 #else
         static_assert(!std::is_nothrow_move_assignable<C>::value, "");
 #endif
     }
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     {
     //  POCMA is false, always equal
         typedef std::basic_string<char, std::char_traits<char>, some_alloc2<char>> C;

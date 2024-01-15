@@ -35,13 +35,13 @@
 #include <numeric>
 
 #include "c2h/custom_type.cuh"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeft, adjacent_difference_subtract_left);
-DECLARE_CDP_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeftCopy, adjacent_difference_subtract_left_copy);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeft, adjacent_difference_subtract_left);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeftCopy, adjacent_difference_subtract_left_copy);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 using all_types = c2h::type_list<std::uint8_t,
                                  std::uint64_t,
@@ -61,7 +61,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft can run with empty input", "[de
   thrust::device_vector<type> in(num_items);
 
   adjacent_difference_subtract_left(in.begin(),
-                                    num_items);
+                                    num_items,
+                                    cub::Difference{});
 }
 
 CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy can run with empty input", "[device][adjacent_difference]", types)
@@ -74,7 +75,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy can run with empty input", 
 
   adjacent_difference_subtract_left_copy(in.begin(),
                                          out.begin(),
-                                         num_items);
+                                         num_items,
+                                         cub::Difference{});
 }
 
 CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy does not change the input", "[device][adjacent_difference]", types)
@@ -88,7 +90,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy does not change the input",
   thrust::device_vector<type> reference = in;
   adjacent_difference_subtract_left_copy(in.begin(),
                                          thrust::discard_iterator<>(),
-                                         num_items);
+                                         num_items,
+                                         cub::Difference{});
 
   REQUIRE(reference == in);
 }
@@ -106,7 +109,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft works with iterators", "[device
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
   adjacent_difference_subtract_left(in.begin(),
-                                    num_items);
+                                    num_items,
+                                    cub::Difference{});
 
   REQUIRE(reference == in);
 }
@@ -126,7 +130,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with iterators", "[de
 
   adjacent_difference_subtract_left_copy(in.begin(),
                                          out.begin(),
-                                         num_items);
+                                         num_items,
+                                         cub::Difference{});
 
   REQUIRE(reference == out);
 }
@@ -144,7 +149,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft works with pointers", "[device]
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
   adjacent_difference_subtract_left(thrust::raw_pointer_cast(in.data()),
-                                    num_items);
+                                    num_items,
+                                    cub::Difference{});
 
   REQUIRE(reference == in);
 }
@@ -164,7 +170,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with pointers", "[dev
 
   adjacent_difference_subtract_left_copy(thrust::raw_pointer_cast(in.data()),
                                          thrust::raw_pointer_cast(out.data()),
-                                         num_items);
+                                         num_items,
+                                         cub::Difference{});
 
   REQUIRE(reference == out);
 }

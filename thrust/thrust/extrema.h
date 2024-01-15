@@ -77,7 +77,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see max
  */
 template<typename T, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   T min THRUST_PREVENT_MACRO_SUBSTITUTION (const T &lhs, const T &rhs, BinaryPredicate comp);
 
 
@@ -106,7 +106,7 @@ __host__ __device__
  *  \see max
  */
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   T min THRUST_PREVENT_MACRO_SUBSTITUTION (const T &lhs, const T &rhs);
 
 
@@ -153,7 +153,7 @@ __host__ __device__
  *  \see min
  */
 template<typename T, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   T max THRUST_PREVENT_MACRO_SUBSTITUTION (const T &lhs, const T &rhs, BinaryPredicate comp);
 
 
@@ -182,7 +182,7 @@ __host__ __device__
  *  \see min
  */
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   T max THRUST_PREVENT_MACRO_SUBSTITUTION (const T &lhs, const T &rhs);
 
 
@@ -231,7 +231,7 @@ __host__ __device__
  *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
  */
 template<typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator min_element(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, ForwardIterator first, ForwardIterator last);
 
 
@@ -334,7 +334,7 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
  *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator min_element(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
 
@@ -436,7 +436,7 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last,
  *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
  */
 template<typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator max_element(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, ForwardIterator first, ForwardIterator last);
 
 
@@ -538,7 +538,7 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
  *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator max_element(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
 
@@ -638,7 +638,7 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last,
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
  */
 template<typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<ForwardIterator,ForwardIterator> minmax_element(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, ForwardIterator first, ForwardIterator last);
 
 
@@ -737,7 +737,7 @@ thrust::pair<ForwardIterator,ForwardIterator> minmax_element(ForwardIterator fir
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<ForwardIterator,ForwardIterator> minmax_element(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
 

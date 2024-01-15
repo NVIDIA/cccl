@@ -54,7 +54,7 @@ constexpr bool CheckCommonWith() noexcept {
 
 template <class T, class U>
 __host__ __device__ constexpr bool HasValidCommonType() noexcept {
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   return requires { typename cuda::std::common_type_t<T, U>; }
 #else
 return cuda::std::_Common_type_exists<T, U>
@@ -92,43 +92,43 @@ static_assert(CheckCommonWith<const volatile int*, volatile int*>(), "");
 static_assert(CheckCommonWith<const volatile int*, const volatile int*>(), "");
 
 static_assert(CheckCommonWith<int (*)(), int (*)()>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (*)(), int (*)() noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 #ifdef INVESTIGATE_COMPILER_BUG
 static_assert(CheckCommonWith<int (&)(), int (&)()>(), "");
 #endif // INVESTIGATE_COMPILER_BUG
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(CheckCommonWith<int (&)(), int (&)() noexcept>(), "");
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 static_assert(CheckCommonWith<int (&)(), int (*)()>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (&)(), int (*)() noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 
 struct S {};
 static_assert(CheckCommonWith<int S::*, int S::*>(), "");
 static_assert(CheckCommonWith<int S::*, const int S::*>(), "");
 static_assert(CheckCommonWith<int (S::*)(), int (S::*)()>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (S::*)(), int (S::*)() noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (S::*)() const, int (S::*)() const>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(
     CheckCommonWith<int (S::*)() const, int (S::*)() const noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (S::*)() volatile, int (S::*)() volatile>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(
     CheckCommonWith<int (S::*)() volatile, int (S::*)() volatile noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (S::*)() const volatile,
                               int (S::*)() const volatile>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonWith<int (S::*)() const volatile,
                               int (S::*)() const volatile noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 
 // nonsense
 static_assert(!CheckCommonWith<double, float*>(), "");
@@ -300,7 +300,7 @@ struct common_type<int, BadBasicCommonType> {
 };
 } // namespace std
 } // namespace cuda
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(requires {
   typename cuda::std::common_type_t<BadBasicCommonType, int>;
 });
@@ -334,7 +334,7 @@ struct common_type<int, T1> {
 };
 } // namespace std
 } // namespace cuda
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(requires {
   typename cuda::std::common_type_t<BadBasicCommonType, int>;
 });
@@ -350,7 +350,7 @@ static_assert(cuda::std::same_as<cuda::std::common_type_t<int, T1>, DullCommonTy
 static_assert(HasValidCommonType<T1, int>(), "");
 static_assert(!CheckCommonWith<T1, int>(), "");
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 struct CommonTypeImplicitlyConstructibleFromInt {
   __host__ __device__ explicit(false) CommonTypeImplicitlyConstructibleFromInt(int);
 };
@@ -452,7 +452,7 @@ struct common_type<int, T5> {
 } // namespace cuda
 static_assert(HasValidCommonType<T5, int>(), "");
 static_assert(!CheckCommonWith<T5, int>(), "");
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 struct T6 {};
 struct CommonTypeNoCommonReference {
@@ -572,7 +572,7 @@ struct common_type<const volatile int&, const volatile T6&> {};
 
 template <typename T, typename U>
 __host__ __device__ constexpr bool HasCommonReference() noexcept {
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   return requires { typename cuda::std::common_reference_t<T, U>; };
 #else
   return cuda::std::_Common_reference_exists<T, U>;
@@ -765,11 +765,11 @@ struct common_type<const volatile int&, const volatile T7&> {
 static_assert(HasValidCommonType<T7, int>(), "");
 static_assert(HasValidCommonType<const T7&, const int&>(), "");
 static_assert(HasCommonReference<const T7&, const int&>(), "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // Unspecified MSVC bug
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // Unspecified MSVC bug
 static_assert(
     !HasCommonReference<cuda::std::common_type_t<T7, int>&,
                         cuda::std::common_reference_t<const T7&, const int&> >(), "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 static_assert(!CheckCommonWith<T7, int>(), "");
 
 struct CommonWithInt {

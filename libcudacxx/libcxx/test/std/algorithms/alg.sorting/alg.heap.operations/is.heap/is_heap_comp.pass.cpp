@@ -20,7 +20,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
     int ia[] = {0, 0, 1, 1, 1};
     int ib[] = {1, 0, 4, 1, 0};
@@ -535,7 +535,7 @@ int main(int, char**)
 {
     test();
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

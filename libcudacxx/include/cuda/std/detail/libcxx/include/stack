@@ -202,7 +202,7 @@ public:
 
     template <class... _Args>
         _LIBCUDACXX_INLINE_VISIBILITY
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
         decltype(auto) emplace(_Args&&... __args)
         { return c.emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);}
 #else

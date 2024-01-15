@@ -6,7 +6,7 @@
 #include <thrust/scan.h>
 #include <thrust/detail/config.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 #include <thrust/random.h>
 #include <thrust/shuffle.h>
 
@@ -50,7 +50,7 @@
 
 // We don't use THRUST_NOEXCEPT because it's new, and we want this benchmark to
 // be backwards-compatible to older versions of Thrust.
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
   #define NOEXCEPT noexcept
 #else
   #define NOEXCEPT throw()
@@ -699,7 +699,7 @@ struct copy_trial_base : trial_base<TrialKind>
   }
 };
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 template <typename Container, typename TrialKind = regular_trial>
 struct shuffle_trial_base : trial_base<TrialKind>
 {
@@ -909,7 +909,7 @@ struct copy_tester
   #endif
 };
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 template <typename T>
 struct shuffle_tester
 {

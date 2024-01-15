@@ -29,7 +29,7 @@ struct count_equal
         {++count; return x == y;}
 };
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 constexpr bool test_constexpr() {
     int ia[] = {0, 1, 2};
     int ib[] = {4, 5, 6};
@@ -104,7 +104,7 @@ int main(int, char**)
     test<random_access_iterator<const int*>, bidirectional_iterator<const int*> >();
     test<random_access_iterator<const int*>, random_access_iterator<const int*> >();
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

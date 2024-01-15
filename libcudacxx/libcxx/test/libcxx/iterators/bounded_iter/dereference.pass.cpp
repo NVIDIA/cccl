@@ -72,11 +72,11 @@ void test_death() {
 int main(int, char**) {
   tests<Foo*>();
   test_death<Foo*>();
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
   static_assert(tests<Foo*>(), "");
 #endif
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   tests<contiguous_iterator<Foo*> >();
   test_death<contiguous_iterator<Foo*> >();
   static_assert(tests<contiguous_iterator<Foo*> >(), "");

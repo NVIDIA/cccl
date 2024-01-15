@@ -29,7 +29,7 @@ int main(int, char**)
     m.clear();
     assert(m.empty());
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     typedef std::set<int, std::less<int>, min_allocator<int>> M;
     M m;

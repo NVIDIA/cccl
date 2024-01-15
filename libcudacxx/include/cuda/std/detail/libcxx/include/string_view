@@ -234,7 +234,7 @@ public:
     basic_string_view(const _CharT* __s, size_type __len) noexcept
         : __data(__s), __size(__len)
     {
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     _LIBCUDACXX_ASSERT(__len == 0 || __s != nullptr, "string_view::string_view(_CharT *, size_t): received nullptr");
 #endif
     }
@@ -580,7 +580,7 @@ public:
             (data(), size(), __s, __pos, traits_type::length(__s));
     }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool starts_with(basic_string_view __s) const noexcept
     { return size() >= __s.size() && compare(0, __s.size(), __s) == 0; }
@@ -799,7 +799,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<basic_string_view<_CharT, char_traits<_Char
 };
 
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 inline namespace literals
 {
   inline namespace string_view_literals

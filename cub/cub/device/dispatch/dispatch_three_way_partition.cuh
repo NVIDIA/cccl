@@ -189,7 +189,7 @@ struct DispatchThreeWayPartitionIf
   OffsetT num_items;
   cudaStream_t stream;
 
-  CUB_RUNTIME_FUNCTION __forceinline__
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   DispatchThreeWayPartitionIf(void *d_temp_storage,
                               std::size_t &temp_storage_bytes,
                               InputIteratorT d_in,
@@ -219,7 +219,7 @@ struct DispatchThreeWayPartitionIf
    ****************************************************************************/
 
   template <typename ActivePolicyT, typename ScanInitKernelPtrT, typename SelectIfKernelPtrT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   Invoke(ScanInitKernelPtrT three_way_partition_init_kernel,
          SelectIfKernelPtrT three_way_partition_kernel)
   {
@@ -394,7 +394,7 @@ struct DispatchThreeWayPartitionIf
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   Invoke()
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
@@ -415,7 +415,7 @@ struct DispatchThreeWayPartitionIf
   /**
    * Internal dispatch routine
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            std::size_t &temp_storage_bytes,
            InputIteratorT d_in,
@@ -466,7 +466,7 @@ struct DispatchThreeWayPartitionIf
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            std::size_t &temp_storage_bytes,
            InputIteratorT d_in,

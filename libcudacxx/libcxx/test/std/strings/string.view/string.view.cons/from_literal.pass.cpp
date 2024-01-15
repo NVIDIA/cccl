@@ -49,7 +49,7 @@ int main(int, char**) {
     test ( L"A" );
     test ( L"" );
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     test ( u"QBCDE" );
     test ( u"A" );
     test ( u"" );
@@ -59,7 +59,7 @@ int main(int, char**) {
     test ( U"" );
 #endif
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr std::basic_string_view<char, constexpr_char_traits<char>> sv1 ( "ABCDE" );
     static_assert ( sv1.size() == 5, "");

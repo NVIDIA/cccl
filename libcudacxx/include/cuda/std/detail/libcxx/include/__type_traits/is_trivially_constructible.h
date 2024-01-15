@@ -34,7 +34,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible
     : public integral_constant<bool, _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_constructible_v =
     _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...);
@@ -75,7 +75,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp, _Tp&>
 {
 };
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_constructible_v
     = is_trivially_constructible<_Tp, _Args...>::value;

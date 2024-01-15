@@ -28,7 +28,7 @@
 #include "test_iterators.h"
 #include "counting_predicates.h"
 
-// #if TEST_STD_VER > 17
+// #if TEST_STD_VER > 2017
 // TEST_CONSTEXPR bool test_constexpr() {
 //           int ia[]       = {0, 1, 2, 3, 4};
 //           int ib[]       = {2, 4, 6, 8};
@@ -252,7 +252,7 @@ int main(int, char**)
     test<const int*, const int*, random_access_iterator<int*> >();
     test<const int*, const int*, int*>();
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 //  Not yet - waiting on std::copy
 //     static_assert(test_constexpr());
 #endif

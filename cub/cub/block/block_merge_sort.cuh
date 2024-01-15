@@ -43,6 +43,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -56,7 +57,7 @@ template <typename KeyT,
           typename KeyIteratorT,
           typename OffsetT,
           typename BinaryPred>
-__device__ __forceinline__ OffsetT MergePath(KeyIteratorT keys1,
+_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT MergePath(KeyIteratorT keys1,
                                              KeyIteratorT keys2,
                                              OffsetT keys1_count,
                                              OffsetT keys2_count,
@@ -86,7 +87,7 @@ __device__ __forceinline__ OffsetT MergePath(KeyIteratorT keys1,
 }
 
 template <typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
-__device__ __forceinline__ void SerialMerge(KeyT *keys_shared,
+_CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(KeyT *keys_shared,
                                             int keys1_beg,
                                             int keys2_beg,
                                             int keys1_count,
@@ -189,7 +190,7 @@ private:
   static constexpr int ITEMS_PER_TILE = ITEMS_PER_THREAD * NUM_THREADS;
 
   // Whether or not there are values to be trucked along with keys
-  static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
 
   /// Shared memory type required by this thread block
   union _TempStorage
@@ -202,7 +203,7 @@ private:
   _TempStorage &temp_storage;
 
   /// Internal storage allocator
-  __device__ __forceinline__ _TempStorage& PrivateStorage()
+  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -215,19 +216,19 @@ public:
   struct TempStorage : Uninitialized<_TempStorage> {};
 
   BlockMergeSortStrategy() = delete;
-  explicit __device__ __forceinline__
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE
   BlockMergeSortStrategy(unsigned int linear_tid)
       : temp_storage(PrivateStorage())
       , linear_tid(linear_tid)
   {}
 
-  __device__ __forceinline__ BlockMergeSortStrategy(TempStorage &temp_storage,
+  _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(TempStorage &temp_storage,
                                                     unsigned int linear_tid)
       : temp_storage(temp_storage.Alias())
       , linear_tid(linear_tid)
   {}
 
-  __device__ __forceinline__ unsigned int get_linear_tid() const
+  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int get_linear_tid() const
   {
     return linear_tid;
   }
@@ -255,7 +256,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  __device__ __forceinline__ void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
                                        CompareOp compare_op)
   {
     ValueT items[ITEMS_PER_THREAD];
@@ -297,7 +298,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  __device__ __forceinline__ void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
                                        CompareOp compare_op,
                                        int valid_items,
                                        KeyT oob_default)
@@ -331,7 +332,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  __device__ __forceinline__ void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
                                        ValueT (&items)[ITEMS_PER_THREAD],
                                        CompareOp compare_op)
   {
@@ -380,7 +381,7 @@ public:
    */
   template <typename CompareOp,
             bool IS_LAST_TILE = true>
-  __device__ __forceinline__ void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
                                        ValueT (&items)[ITEMS_PER_THREAD],
                                        CompareOp compare_op,
                                        int valid_items,
@@ -529,7 +530,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  __device__ __forceinline__ void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
                                              CompareOp compare_op)
   {
     Sort(keys, compare_op);
@@ -562,7 +563,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  __device__ __forceinline__ void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
                                              ValueT (&items)[ITEMS_PER_THREAD],
                                              CompareOp compare_op)
   {
@@ -606,7 +607,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  __device__ __forceinline__ void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
                                              CompareOp compare_op,
                                              int valid_items,
                                              KeyT oob_default)
@@ -657,7 +658,7 @@ public:
    */
   template <typename CompareOp,
             bool IS_LAST_TILE = true>
-  __device__ __forceinline__ void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
                                              ValueT (&items)[ITEMS_PER_THREAD],
                                              CompareOp compare_op,
                                              int valid_items,
@@ -671,7 +672,7 @@ public:
   }
 
 private:
-  __device__ __forceinline__ void Sync() const
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sync() const
   {
     static_cast<const SynchronizationPolicy*>(this)->SyncImplementation();
   }
@@ -681,7 +682,6 @@ private:
 /**
  * @brief The BlockMergeSort class provides methods for sorting items
  *        partitioned across a CUDA thread block using a merge sorting method.
- * @ingroup BlockModule
  *
  * @tparam KeyT
  *   KeyT type
@@ -789,12 +789,12 @@ private:
                            BlockMergeSort>;
 
 public:
-  __device__ __forceinline__ BlockMergeSort()
+  _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSort()
       : BlockMergeSortStrategyT(
           RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
   {}
 
-  __device__ __forceinline__ explicit BlockMergeSort(
+  _CCCL_DEVICE _CCCL_FORCEINLINE explicit BlockMergeSort(
     typename BlockMergeSortStrategyT::TempStorage &temp_storage)
       : BlockMergeSortStrategyT(
           temp_storage,
@@ -802,7 +802,7 @@ public:
   {}
 
 private:
-  __device__ __forceinline__ void SyncImplementation() const
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const
   {
     CTA_SYNC();
   }

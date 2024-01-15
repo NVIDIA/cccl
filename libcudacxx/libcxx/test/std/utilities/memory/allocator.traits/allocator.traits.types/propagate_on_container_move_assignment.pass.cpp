@@ -48,7 +48,7 @@ int main(int, char**)
 {
     static_assert((std::is_same<std::allocator_traits<A<char> >::propagate_on_container_move_assignment, std::true_type>::value), "");
     static_assert((std::is_same<std::allocator_traits<B<char> >::propagate_on_container_move_assignment, std::false_type>::value), "");
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     static_assert((std::is_same<std::allocator_traits<C<char> >::propagate_on_container_move_assignment, std::false_type>::value), "");
 #endif
 

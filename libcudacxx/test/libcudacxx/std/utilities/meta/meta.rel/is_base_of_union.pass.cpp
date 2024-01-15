@@ -31,7 +31,7 @@ void test_is_base_of()
     static_assert((cuda::std::is_base_of<const T, U>::value), "");
     static_assert((cuda::std::is_base_of<T, const U>::value), "");
     static_assert((cuda::std::is_base_of<const T, const U>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((cuda::std::is_base_of_v<T, U>), "");
     static_assert((cuda::std::is_base_of_v<const T, U>), "");
     static_assert((cuda::std::is_base_of_v<T, const U>), "");

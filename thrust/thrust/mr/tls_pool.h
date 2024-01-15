@@ -31,7 +31,7 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if _CCCL_STD_VER >= 2011
 
 #include <thrust/mr/pool.h>
 
@@ -51,7 +51,7 @@ namespace mr
  *  \param upstream the argument to the constructor, if invoked
  */
 template<typename Upstream, typename Bookkeeper>
-__host__
+_CCCL_HOST
 thrust::mr::unsynchronized_pool_resource<Upstream> & tls_pool(Upstream * upstream = NULL)
 {
     static thread_local auto adaptor = [&]{
@@ -68,5 +68,5 @@ thrust::mr::unsynchronized_pool_resource<Upstream> & tls_pool(Upstream * upstrea
 } // end mr
 THRUST_NAMESPACE_END
 
-#endif // THRUST_CPP_DIALECT >= 2011
+#endif // _CCCL_STD_VER >= 2011
 

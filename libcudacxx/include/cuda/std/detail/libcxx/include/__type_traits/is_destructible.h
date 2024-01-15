@@ -36,7 +36,7 @@ template<class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_destructible
    : public integral_constant<bool, _LIBCUDACXX_IS_DESTRUCTIBLE(_Tp)> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_destructible_v = _LIBCUDACXX_IS_DESTRUCTIBLE(_Tp);
 #endif
@@ -96,7 +96,7 @@ struct is_destructible<_Tp[]> : public false_type {};
 template <>
 struct is_destructible<void> : public false_type {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_destructible_v = is_destructible<_Tp>::value;
 #endif

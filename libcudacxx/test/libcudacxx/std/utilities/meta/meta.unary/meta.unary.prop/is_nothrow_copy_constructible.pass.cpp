@@ -19,7 +19,7 @@ void test_is_nothrow_copy_constructible()
 {
     static_assert( cuda::std::is_nothrow_copy_constructible<T>::value, "");
     static_assert( cuda::std::is_nothrow_copy_constructible<const T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert( cuda::std::is_nothrow_copy_constructible_v<T>, "");
     static_assert( cuda::std::is_nothrow_copy_constructible_v<const T>, "");
 #endif
@@ -33,7 +33,7 @@ void test_has_not_nothrow_copy_constructor()
     static_assert(!cuda::std::is_nothrow_copy_constructible<const T>::value, "");
     static_assert(!cuda::std::is_nothrow_copy_constructible<volatile T>::value, "");
     static_assert(!cuda::std::is_nothrow_copy_constructible<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!cuda::std::is_nothrow_copy_constructible_v<T>, "");
     static_assert(!cuda::std::is_nothrow_copy_constructible_v<const T>, "");
     static_assert(!cuda::std::is_nothrow_copy_constructible_v<volatile T>, "");
@@ -61,9 +61,9 @@ struct A
 int main(int, char**)
 {
     test_has_not_nothrow_copy_constructor<void>();
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
     test_has_not_nothrow_copy_constructor<A>();
-#endif // TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 
     test_is_nothrow_copy_constructible<int&>();
     test_is_nothrow_copy_constructible<Union>();

@@ -43,14 +43,14 @@ using __remove_cvref_t _LIBCUDACXX_NODEBUG_TYPE = __remove_cv_t<__libcpp_remove_
 template <class _Tp, class _Up>
 struct __is_same_uncvref : _IsSame<__remove_cvref_t<_Tp>, __remove_cvref_t<_Up> > {};
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp>
 struct remove_cvref {
     using type _LIBCUDACXX_NODEBUG_TYPE = __remove_cvref_t<_Tp>;
 };
 
 template <class _Tp> using remove_cvref_t = __remove_cvref_t<_Tp>;
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -53,7 +53,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-static __device__ __forceinline__ void store_relaxed(uint4 *ptr, uint4 val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint4 *ptr, uint4 val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.relaxed.gpu.v4.u32 [%0], {%1, %2, %3, %4};"
@@ -66,7 +66,7 @@ static __device__ __forceinline__ void store_relaxed(uint4 *ptr, uint4 val)
                              : "memory");));
 }
 
-static __device__ __forceinline__ void store_relaxed(ulonglong2 *ptr, ulonglong2 val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(ulonglong2 *ptr, ulonglong2 val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.relaxed.gpu.v2.u64 [%0], {%1, %2};"
@@ -79,7 +79,7 @@ static __device__ __forceinline__ void store_relaxed(ulonglong2 *ptr, ulonglong2
                              : "memory");));
 }
 
-static __device__ __forceinline__ void store_relaxed(ushort4 *ptr, ushort4 val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(ushort4 *ptr, ushort4 val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.relaxed.gpu.v4.u16 [%0], {%1, %2, %3, %4};"
@@ -92,7 +92,7 @@ static __device__ __forceinline__ void store_relaxed(ushort4 *ptr, ushort4 val)
                              : "memory");));
 }
 
-static __device__ __forceinline__ void store_relaxed(uint2 *ptr, uint2 val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint2 *ptr, uint2 val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.relaxed.gpu.v2.u32 [%0], {%1, %2};"
@@ -105,7 +105,7 @@ static __device__ __forceinline__ void store_relaxed(uint2 *ptr, uint2 val)
                              : "memory");));
 }
 
-static __device__ __forceinline__ void store_relaxed(unsigned long long *ptr,
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned long long *ptr,
                                                      unsigned long long val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
@@ -119,7 +119,7 @@ static __device__ __forceinline__ void store_relaxed(unsigned long long *ptr,
                              : "memory");));
 }
 
-static __device__ __forceinline__ void store_relaxed(unsigned int *ptr, unsigned int val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned int *ptr, unsigned int val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.relaxed.gpu.u32 [%0], %1;"
@@ -132,7 +132,7 @@ static __device__ __forceinline__ void store_relaxed(unsigned int *ptr, unsigned
                              : "memory");));
 }
 
-static __device__ __forceinline__ void store_relaxed(unsigned short *ptr, unsigned short val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned short *ptr, unsigned short val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.relaxed.gpu.u16 [%0], %1;"
@@ -145,7 +145,7 @@ static __device__ __forceinline__ void store_relaxed(unsigned short *ptr, unsign
                              : "memory");));
 }
 
-static __device__ __forceinline__ void store_relaxed(unsigned char *ptr, unsigned char val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned char *ptr, unsigned char val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("{"
@@ -166,7 +166,7 @@ static __device__ __forceinline__ void store_relaxed(unsigned char *ptr, unsigne
                              : "memory");));
 }
 
-__device__ __forceinline__ void store_release(uint4 *ptr, uint4 val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(uint4 *ptr, uint4 val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.release.gpu.v4.u32 [%0], {%1, %2, %3, %4};"
@@ -180,7 +180,7 @@ __device__ __forceinline__ void store_release(uint4 *ptr, uint4 val)
                              : "memory");));
 }
 
-__device__ __forceinline__ void store_release(ulonglong2 *ptr, ulonglong2 val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(ulonglong2 *ptr, ulonglong2 val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.release.gpu.v2.u64 [%0], {%1, %2};"
@@ -193,7 +193,7 @@ __device__ __forceinline__ void store_release(ulonglong2 *ptr, ulonglong2 val)
                                               : "memory");));
 }
 
-__device__ __forceinline__ void store_release(ushort4 *ptr, ushort4 val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(ushort4 *ptr, ushort4 val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.release.gpu.v4.u16 [%0], {%1, %2, %3, %4};"
@@ -207,7 +207,7 @@ __device__ __forceinline__ void store_release(ushort4 *ptr, ushort4 val)
                              : "memory");));
 }
 
-__device__ __forceinline__ void store_release(uint2 *ptr, uint2 val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(uint2 *ptr, uint2 val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.release.gpu.v2.u32 [%0], {%1, %2};"
@@ -220,7 +220,7 @@ __device__ __forceinline__ void store_release(uint2 *ptr, uint2 val)
                                               : "memory");));
 }
 
-__device__ __forceinline__ void store_release(unsigned long long *ptr, unsigned long long val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned long long *ptr, unsigned long long val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.release.gpu.u64 [%0], %1;"
@@ -233,7 +233,7 @@ __device__ __forceinline__ void store_release(unsigned long long *ptr, unsigned 
                                               : "memory");));
 }
 
-__device__ __forceinline__ void store_release(unsigned int *ptr, unsigned int val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned int *ptr, unsigned int val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.release.gpu.u32 [%0], %1;"
@@ -246,7 +246,7 @@ __device__ __forceinline__ void store_release(unsigned int *ptr, unsigned int va
                                               : "memory");));
 }
 
-__device__ __forceinline__ void store_release(unsigned short *ptr, unsigned short val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned short *ptr, unsigned short val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("st.release.gpu.u16 [%0], %1;"
@@ -259,7 +259,7 @@ __device__ __forceinline__ void store_release(unsigned short *ptr, unsigned shor
                                               : "memory");));
 }
 
-__device__ __forceinline__ void store_release(unsigned char *ptr, unsigned char val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned char *ptr, unsigned char val)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (asm volatile("{"

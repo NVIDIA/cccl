@@ -33,11 +33,11 @@
 
 THRUST_NAMESPACE_BEGIN
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator,
          typename UnaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   InputIterator for_each(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                          InputIterator first,
                          InputIterator last,
@@ -62,9 +62,9 @@ InputIterator for_each(InputIterator first,
   return thrust::for_each(select_system(system), first, last, f);
 } // end for_each()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename Size, typename UnaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   InputIterator for_each_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                            InputIterator first,
                            Size n,

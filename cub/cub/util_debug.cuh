@@ -48,11 +48,6 @@
 
 #include <nv/target>
 
-#include <cstdio>
-
-CUB_NAMESPACE_BEGIN
-
-
 #ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:
 
 /**
@@ -98,12 +93,6 @@ CUB_NAMESPACE_BEGIN
 #define CUB_DEBUG_ALL
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
-
-/**
- * \addtogroup UtilMgmt
- * @{
- */
-
 
 // `CUB_DETAIL_DEBUG_LEVEL_*`: Implementation details, internal use only:
 
@@ -179,6 +168,12 @@ CUB_NAMESPACE_BEGIN
     #define CUB_STDERR
 #endif
 
+#if defined(CUB_STDERR) || defined(CUB_DETAIL_DEBUG_ENABLE_LOG)
+#include <cstdio>
+#endif
+
+CUB_NAMESPACE_BEGIN
+
 /**
  * \brief %If \p CUB_STDERR is defined and \p error is not \p cudaSuccess, the
  * corresponding error message is printed to \p stderr (or \p stdout in device
@@ -186,8 +181,7 @@ CUB_NAMESPACE_BEGIN
  *
  * \return The CUDA error.
  */
-__host__ __device__
-__forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 cudaError_t Debug(cudaError_t error, const char *filename, int line)
 {
   // Clear the global CUDA error state which may have been set by the last
@@ -296,8 +290,9 @@ cudaError_t Debug(cudaError_t error, const char *filename, int line)
 //     so we silence them :)
 #pragma clang diagnostic ignored "-Wc++11-extensions"
 #pragma clang diagnostic ignored "-Wunnamed-type-template-args"
+#ifdef CUB_STDERR
 template <class... Args>
-inline __host__ __device__ void va_printf(char const *format,
+inline _CCCL_HOST_DEVICE void va_printf(char const *format,
                                           Args const &...args)
 {
 #ifdef __CUDA_ARCH__
@@ -313,6 +308,12 @@ inline __host__ __device__ void va_printf(char const *format,
   printf(format, args...);
 #endif
 }
+#else // !defined(CUB_STDERR)
+template <class... Args>
+inline _CCCL_HOST_DEVICE void va_printf(char const*, Args const&...)
+{}
+#endif // !defined(CUB_STDERR)
+
 #ifndef __CUDA_ARCH__
 #define _CubLog(format, ...) CUB_NS_QUALIFIER::va_printf(format, __VA_ARGS__);
 #else
@@ -323,7 +324,5 @@ inline __host__ __device__ void va_printf(char const *format,
 #endif
 #endif
 #endif
-
-/** @} */       // end group UtilMgmt
 
 CUB_NAMESPACE_END

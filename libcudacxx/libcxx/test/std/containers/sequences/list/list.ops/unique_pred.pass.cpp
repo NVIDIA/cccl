@@ -38,7 +38,7 @@ int main(int, char**)
     int a2[] = {2, 1, 4, 3};
     typedef std::list<int> L;
     L c(a1, a1+sizeof(a1)/sizeof(a1[0]));
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 	ASSERT_SAME_TYPE(L::size_type, decltype(c.unique(g)));
     assert(c.unique(g) == 5);
 #else
@@ -52,7 +52,7 @@ int main(int, char**)
     int a1[] = {1, 1, 1, 2, 3, 5, 5, 2, 11};
     int a2[] = {1,       2, 3, 5,    2, 11};
     std::list<PredLWG526> c(a1, a1 + 9);
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     assert(c.unique(std::ref(c.front())) == 3);
 #else
     c.unique(std::ref(c.front()));
@@ -65,12 +65,12 @@ int main(int, char**)
     }
     }
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
     int a1[] = {2, 1, 1, 4, 4, 4, 4, 3, 3};
     int a2[] = {2, 1, 4, 3};
     std::list<int, min_allocator<int>> c(a1, a1+sizeof(a1)/sizeof(a1[0]));
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     assert(c.unique(g) == 5);
 #else
     c.unique(g);

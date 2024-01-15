@@ -47,7 +47,7 @@ template <class Derived,
           class ItemsIt,
           class MapIt,
           class ResultIt>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 scatter(execution_policy<Derived>& policy,
         ItemsIt                    first,
         ItemsIt                    last,
@@ -67,7 +67,7 @@ template <class Derived,
           class StencilIt,
           class ResultIt,
           class Predicate>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 scatter_if(execution_policy<Derived>& policy,
            ItemsIt                    first,
            ItemsIt                    last,
@@ -91,7 +91,7 @@ template <class Derived,
           class StencilIt,
           class ResultIt,
           class Predicate>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 scatter_if(execution_policy<Derived>& policy,
            ItemsIt                    first,
            ItemsIt                    last,

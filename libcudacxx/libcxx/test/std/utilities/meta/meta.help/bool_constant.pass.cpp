@@ -17,7 +17,7 @@
 
 int main(int, char**)
 {
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     typedef std::bool_constant<true> _t;
     static_assert(_t::value, "");
     static_assert((std::is_same<_t::value_type, bool>::value), "");

@@ -20,7 +20,7 @@ void test_is_unsigned()
     static_assert( std::is_unsigned<const T>::value, "");
     static_assert( std::is_unsigned<volatile T>::value, "");
     static_assert( std::is_unsigned<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_unsigned_v<T>, "");
     static_assert( std::is_unsigned_v<const T>, "");
     static_assert( std::is_unsigned_v<volatile T>, "");
@@ -35,7 +35,7 @@ void test_is_not_unsigned()
     static_assert(!std::is_unsigned<const T>::value, "");
     static_assert(!std::is_unsigned<volatile T>::value, "");
     static_assert(!std::is_unsigned<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_unsigned_v<T>, "");
     static_assert(!std::is_unsigned_v<const T>, "");
     static_assert(!std::is_unsigned_v<volatile T>, "");

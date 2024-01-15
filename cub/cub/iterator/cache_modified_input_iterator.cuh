@@ -43,8 +43,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <iterator>
-#include <iostream>
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  include <iostream>
+#  include <iterator>
+#else
+#  include <cuda/std/iterator>
+#endif
 
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
@@ -57,13 +61,6 @@
 
 
 CUB_NAMESPACE_BEGIN
-
-
-
-/**
- * @addtogroup UtilIterator
- * @{
- */
 
 /**
  * @brief A random-access input wrapper for dereferencing array values using a PTX cache load
@@ -134,37 +131,36 @@ public:
     /// The type of a reference to an element the iterator can point to
     typedef ValueType reference;
 
-#if (THRUST_VERSION >= 100700)
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  if (THRUST_VERSION >= 100700)
     // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
+    using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
+      THRUST_NS_QUALIFIER::device_system_tag,
+      THRUST_NS_QUALIFIER::random_access_traversal_tag,
+      value_type,
+      reference>::type;
+#  else // THRUST_VERSION < 100700
+    using iterator_category = std::random_access_iterator_tag;
+#  endif // THRUST_VERSION
+#else // defined(_LIBCUDACXX_COMPILER_NVRTC)
+    using iterator_category = ::cuda::std::random_access_iterator_tag;
+#endif // defined(_LIBCUDACXX_COMPILER_NVRTC)
 
-    /// The iterator category
-    typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
-        THRUST_NS_QUALIFIER::device_system_tag,
-        THRUST_NS_QUALIFIER::random_access_traversal_tag,
-        value_type,
-        reference
-      >::type iterator_category;
-#else
-    /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;
-#endif  // THRUST_VERSION
-
-
-public:
+  public:
 
     /// Wrapped native pointer
     ValueType* ptr;
 
     /// Constructor
     template <typename QualifiedValueType>
-    __host__ __device__ __forceinline__ CacheModifiedInputIterator(
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CacheModifiedInputIterator(
         QualifiedValueType* ptr)     ///< Native pointer to wrap
     :
-        ptr(const_cast<typename std::remove_cv<QualifiedValueType>::type *>(ptr))
+        ptr(const_cast<typename ::cuda::std::remove_cv<QualifiedValueType>::type *>(ptr))
     {}
 
     /// Postfix increment
-    __host__ __device__ __forceinline__ self_type operator++(int)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
     {
         self_type retval = *this;
         ptr++;
@@ -172,21 +168,21 @@ public:
     }
 
     /// Prefix increment
-    __host__ __device__ __forceinline__ self_type operator++()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
     {
         ptr++;
         return *this;
     }
 
     /// Indirection
-    __device__ __forceinline__ reference operator*() const
+    _CCCL_DEVICE _CCCL_FORCEINLINE reference operator*() const
     {
         return ThreadLoad<MODIFIER>(ptr);
     }
 
     /// Addition
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator+(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
     {
         self_type retval(ptr + n);
         return retval;
@@ -194,7 +190,7 @@ public:
 
     /// Addition assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator+=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
     {
         ptr += n;
         return *this;
@@ -202,7 +198,7 @@ public:
 
     /// Subtraction
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator-(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
     {
         self_type retval(ptr - n);
         return retval;
@@ -210,52 +206,50 @@ public:
 
     /// Subtraction assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator-=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
     {
         ptr -= n;
         return *this;
     }
 
     /// Distance
-    __host__ __device__ __forceinline__ difference_type operator-(self_type other) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
     {
         return ptr - other.ptr;
     }
 
     /// Array subscript
     template <typename Distance>
-    __device__ __forceinline__ reference operator[](Distance n) const
+    _CCCL_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
     {
         return ThreadLoad<MODIFIER>(ptr + n);
     }
 
     /// Structure dereference
-    __device__ __forceinline__ pointer operator->()
+    _CCCL_DEVICE _CCCL_FORCEINLINE pointer operator->()
     {
         return &ThreadLoad<MODIFIER>(ptr);
     }
 
     /// Equal to
-    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
     {
         return (ptr == rhs.ptr);
     }
 
     /// Not equal to
-    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
     {
         return (ptr != rhs.ptr);
     }
 
     /// ostream operator
+#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
     friend std::ostream& operator<<(std::ostream& os, const self_type& /*itr*/)
     {
         return os;
     }
+#endif
 };
-
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

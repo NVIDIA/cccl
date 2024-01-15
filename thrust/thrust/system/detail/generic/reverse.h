@@ -38,7 +38,7 @@ namespace generic
 
 
 template<typename DerivedPolicy, typename BidirectionalIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void reverse(thrust::execution_policy<DerivedPolicy> &exec,
                BidirectionalIterator first,
                BidirectionalIterator last);
@@ -47,7 +47,7 @@ __host__ __device__
 template<typename DerivedPolicy,
          typename BidirectionalIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator reverse_copy(thrust::execution_policy<DerivedPolicy> &exec,
                               BidirectionalIterator first,
                               BidirectionalIterator last,

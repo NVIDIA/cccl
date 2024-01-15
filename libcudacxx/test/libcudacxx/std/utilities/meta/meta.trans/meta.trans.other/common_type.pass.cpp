@@ -219,7 +219,7 @@ void test_bullet_three_three() {
 //       denote the type decay_t<COND-RES(CREF(D1), CREF(D2))>.
 __host__ __device__
 void test_bullet_three_four() {
-#if TEST_STD_VER >= 20
+#if TEST_STD_VER >= 2020
   static_assert(cuda::std::is_same_v<cuda::std::common_type_t<int, bad_reference_wrapper<int>>, int>, "");
   static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, double>, double>, "");
   static_assert(cuda::std::is_same_v<cuda::std::common_type_t<const bad_reference_wrapper<double>, double>, double>, "");
@@ -252,7 +252,7 @@ void test_bullet_four() {
   }
 }
 
-#if TEST_STD_VER > 20
+#if TEST_STD_VER > 2020
 struct A {};
 struct B {};
 struct C : B {};
@@ -266,7 +266,7 @@ int main(int, char**)
 {
     static_assert((cuda::std::is_same<cuda::std::common_type<int>::type, int>::value), "");
     static_assert((cuda::std::is_same<cuda::std::common_type<char>::type, char>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((cuda::std::is_same<cuda::std::common_type_t<int>,   int>::value), "");
     static_assert((cuda::std::is_same<cuda::std::common_type_t<char>, char>::value), "");
 #endif
@@ -287,14 +287,14 @@ int main(int, char**)
 
     static_assert((cuda::std::is_same<cuda::std::common_type<double, char>::type, double>::value), "");
     static_assert((cuda::std::is_same<cuda::std::common_type<short, char>::type, int>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((cuda::std::is_same<cuda::std::common_type_t<double, char>, double>::value), "");
     static_assert((cuda::std::is_same<cuda::std::common_type_t<short, char>, int>::value), "");
 #endif
 
     static_assert((cuda::std::is_same<cuda::std::common_type<double, char, long long>::type, double>::value), "");
     static_assert((cuda::std::is_same<cuda::std::common_type<unsigned, char, long long>::type, long long>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((cuda::std::is_same<cuda::std::common_type_t<double, char, long long>, double>::value), "");
     static_assert((cuda::std::is_same<cuda::std::common_type_t<unsigned, char, long long>, long long>::value), "");
 #endif
@@ -339,7 +339,7 @@ int main(int, char**)
     // Test that we're really variadic in C++11
     static_assert(cuda::std::is_same<cuda::std::common_type<int, int, int, int, int, int, int, int>::type, int>::value, "");
 
-#if 0 // TEST_STD_VER > 20 Not Implemented
+#if 0 // TEST_STD_VER > 2020 Not Implemented
     // P2321
     static_assert(cuda::std::is_same_v<cuda::std::common_type_t<cuda::std::tuple<int>>, cuda::std::tuple<int>>);
     static_assert(cuda::std::is_same_v<cuda::std::common_type_t<cuda::std::tuple<int>, cuda::std::tuple<long>>, cuda::std::tuple<long>>);

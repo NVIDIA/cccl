@@ -31,7 +31,7 @@ int main(int, char**)
         assert(cuda::std::get<1>(p) == 4);
     }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         typedef cuda::std::pair<int, short> P;
         constexpr P p1(3, static_cast<short>(4));

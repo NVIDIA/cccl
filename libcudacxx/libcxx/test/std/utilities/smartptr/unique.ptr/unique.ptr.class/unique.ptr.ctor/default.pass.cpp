@@ -30,12 +30,12 @@
 #include "deleter_types.h"
 #include "unique_ptr_test_helper.h"
 
-#if defined(_LIBCUDACXX_VERSION) && TEST_STD_VER >= 11
+#if defined(_LIBCUDACXX_VERSION) && TEST_STD_VER >= 2011
 _LIBCUDACXX_SAFE_STATIC std::unique_ptr<int> global_static_unique_ptr_single;
 _LIBCUDACXX_SAFE_STATIC std::unique_ptr<int[]> global_static_unique_ptr_runtime;
 #endif
 
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
 struct NonDefaultDeleter {
   NonDefaultDeleter() = delete;
   void operator()(void*) const {}
@@ -44,7 +44,7 @@ struct NonDefaultDeleter {
 
 template <class ElemType>
 void test_sfinae() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   { // the constructor does not participate in overload resolution when
     // the deleter is a pointer type
     using U = std::unique_ptr<ElemType, void (*)(void*)>;
@@ -65,7 +65,7 @@ void test_sfinae() {
 
 template <class ElemType>
 void test_basic() {
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
   {
     using U1 = std::unique_ptr<ElemType>;
     using U2 = std::unique_ptr<ElemType, Deleter<ElemType> >;

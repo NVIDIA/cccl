@@ -612,7 +612,7 @@ function(cxx_add_warning_flags target)
       -Wno-literal-suffix
       -Wno-c++14-compat
       -Wno-noexcept-type)
-  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "IntelLLVM")
+  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "IntelLLVM" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     target_add_compile_flags_if_supported(${target} PRIVATE
       -fno-fast-math)
   endif()

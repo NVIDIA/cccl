@@ -397,7 +397,7 @@ __global__ void __cluster_dims__(8, 1, 1) kernel()
   // Print received values:
   if (threadIdx.x == 0) {
     printf(
-      "[block %d] receive_buffer = {%d, %d, %d, %d}\n",
+      "[block %d] receive_buffer = { %d, %d, %d, %d }\n",
       cluster.block_rank(),
       receive_buffer[0], receive_buffer[1], receive_buffer[2], receive_buffer[3]
     );
@@ -597,7 +597,7 @@ __device__ static inline void red_async(
 template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_min_t,
-  uint32_t* dest,
+  int32_t* dest,
   const int32_t& value,
   uint64_t* remote_bar);
 
@@ -607,7 +607,7 @@ __device__ static inline void red_async(
 template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_max_t,
-  uint32_t* dest,
+  int32_t* dest,
   const int32_t& value,
   uint64_t* remote_bar);
 
@@ -617,7 +617,7 @@ __device__ static inline void red_async(
 template <typename=void>
 __device__ static inline void red_async(
   cuda::ptx::op_add_t,
-  uint32_t* dest,
+  int32_t* dest,
   const int32_t& value,
   uint64_t* remote_bar);
 
@@ -673,18 +673,18 @@ __device__ static inline void red_async(
 
 ### [9.7.12.15. Parallel Synchronization and Communication Instructions: mbarrier](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier)
 
-| Instruction                              | Available in libcu++ |
-|------------------------------------------|----------------------|
-| [`mbarrier.init`]                        | No                   |
-| [`mbarrier.inval`]                       | No                   |
-| [`mbarrier.expect_tx`]                   | No                   |
-| [`mbarrier.complete_tx`]                 | No                   |
+| Instruction                              | Available in libcu++    |
+|------------------------------------------|-------------------------|
+| [`mbarrier.init`]                        | No                      |
+| [`mbarrier.inval`]                       | No                      |
+| [`mbarrier.expect_tx`]                   | No                      |
+| [`mbarrier.complete_tx`]                 | No                      |
 | [`mbarrier.arrive`]                      | CTK-FUTURE, CCCL v2.3.0 |
-| [`mbarrier.arrive_drop`]                 | No                   |
-| [`cp.async.mbarrier.arrive`]             | No                   |
-| [`mbarrier.test_wait/mbarrier.try_wait`] | No                   |
-| [`mbarrier.pending_count`]               | No                   |
-| [`tensormap.cp_fenceproxy`]              | No                   |
+| [`mbarrier.arrive_drop`]                 | No                      |
+| [`cp.async.mbarrier.arrive`]             | No                      |
+| [`mbarrier.test_wait/mbarrier.try_wait`] | CTK-FUTURE, CCCL v2.3.0 |
+| [`mbarrier.pending_count`]               | No                      |
+| [`tensormap.cp_fenceproxy`]              | No                      |
 
 [`mbarrier.init`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init
 [`mbarrier.inval`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-inval
@@ -693,14 +693,15 @@ __device__ static inline void red_async(
 [`mbarrier.arrive`]: #mbarrierarrive
 [`mbarrier.arrive_drop`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive-drop
 [`cp.async.mbarrier.arrive`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-cp-async-mbarrier-arrive
-[`mbarrier.test_wait/mbarrier.try_wait`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-mbarrier-try-wait
+[`mbarrier.test_wait/mbarrier.try_wait`]: #mbarriertest_waitmbarriertry_wait
 [`mbarrier.pending_count`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-pending-count
 [`tensormap.cp_fenceproxy`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-tensormap-cp-fenceproxy
 
 
+
 #### `mbarrier.arrive`
 
--  PTX ISA: [mbarrier.arrive](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive)
+-  PTX ISA: [`mbarrier.arrive`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive)
 
 ```cuda
 // mbarrier.arrive.shared.b64                                  state,  [addr];           // 1.  PTX ISA 70, SM_80
@@ -834,6 +835,123 @@ __global__ void kernel() {
     )
 }
 ```
+
+#### `mbarrier.test_wait/mbarrier.try_wait`
+
+- PTX ISA: [`mbarrier.test_wait/mbarrier.try_wait`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-mbarrier-try-wait)
+
+**mbarrier_test_wait**:
+```cuda
+// mbarrier.test_wait.shared.b64 waitComplete, [addr], state;                                                  // 1.  PTX ISA 70, SM_80
+template <typename=void>
+__device__ static inline bool mbarrier_test_wait(
+  uint64_t* addr,
+  const uint64_t& state);
+
+// mbarrier.test_wait{.sem}{.scope}.shared::cta.b64        waitComplete, [addr], state;                        // 2.   PTX ISA 80, SM_90
+// .sem       = { .acquire }
+// .scope     = { .cta, .cluster }
+template <cuda::ptx::dot_scope Scope>
+__device__ static inline bool mbarrier_test_wait(
+  cuda::ptx::sem_acquire_t,
+  cuda::ptx::scope_t<Scope> scope,
+  uint64_t* addr,
+  const uint64_t& state);
+```
+
+**mbarrier_test_wait_parity**:
+```cuda
+// mbarrier.test_wait.parity.shared.b64 waitComplete, [addr], phaseParity;                                     // 3.  PTX ISA 71, SM_80
+template <typename=void>
+__device__ static inline bool mbarrier_test_wait_parity(
+  uint64_t* addr,
+  const uint32_t& phaseParity);
+
+// mbarrier.test_wait.parity{.sem}{.scope}.shared::cta.b64 waitComplete, [addr], phaseParity;                  // 4.  PTX ISA 80, SM_90
+// .sem       = { .acquire }
+// .scope     = { .cta, .cluster }
+template <cuda::ptx::dot_scope Scope>
+__device__ static inline bool mbarrier_test_wait_parity(
+  cuda::ptx::sem_acquire_t,
+  cuda::ptx::scope_t<Scope> scope,
+  uint64_t* addr,
+  const uint32_t& phaseParity);
+```
+
+**mbarrier_try_wait**:
+```cuda
+// mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state;                                      // 5a.  PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline bool mbarrier_try_wait(
+  uint64_t* addr,
+  const uint64_t& state);
+
+// mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state, suspendTimeHint;                    // 5b.  PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline bool mbarrier_try_wait(
+  uint64_t* addr,
+  const uint64_t& state,
+  const uint32_t& suspendTimeHint);
+
+// mbarrier.try_wait{.sem}{.scope}.shared::cta.b64         waitComplete, [addr], state;                        // 6a.  PTX ISA 80, SM_90
+// .sem       = { .acquire }
+// .scope     = { .cta, .cluster }
+template <cuda::ptx::dot_scope Scope>
+__device__ static inline bool mbarrier_try_wait(
+  cuda::ptx::sem_acquire_t,
+  cuda::ptx::scope_t<Scope> scope,
+  uint64_t* addr,
+  const uint64_t& state);
+
+// mbarrier.try_wait{.sem}{.scope}.shared::cta.b64         waitComplete, [addr], state , suspendTimeHint;      // 6b.  PTX ISA 80, SM_90
+// .sem       = { .acquire }
+// .scope     = { .cta, .cluster }
+template <cuda::ptx::dot_scope Scope>
+__device__ static inline bool mbarrier_try_wait(
+  cuda::ptx::sem_acquire_t,
+  cuda::ptx::scope_t<Scope> scope,
+  uint64_t* addr,
+  const uint64_t& state,
+  const uint32_t& suspendTimeHint);
+```
+
+**mbarrier_try_wait_parity**:
+```cuda
+// mbarrier.try_wait.parity.shared::cta.b64  waitComplete, [addr], phaseParity;                                // 7a.  PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline bool mbarrier_try_wait_parity(
+  uint64_t* addr,
+  const uint32_t& phaseParity);
+
+// mbarrier.try_wait.parity.shared::cta.b64  waitComplete, [addr], phaseParity, suspendTimeHint;               // 7b.  PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline bool mbarrier_try_wait_parity(
+  uint64_t* addr,
+  const uint32_t& phaseParity,
+  const uint32_t& suspendTimeHint);
+
+// mbarrier.try_wait.parity{.sem}{.scope}.shared::cta.b64  waitComplete, [addr], phaseParity;                  // 8a.  PTX ISA 80, SM_90
+// .sem       = { .acquire }
+// .scope     = { .cta, .cluster }
+template <cuda::ptx::dot_scope Scope>
+__device__ static inline bool mbarrier_try_wait_parity(
+  cuda::ptx::sem_acquire_t,
+  cuda::ptx::scope_t<Scope> scope,
+  uint64_t* addr,
+  const uint32_t& phaseParity);
+
+// mbarrier.try_wait.parity{.sem}{.scope}.shared::cta.b64  waitComplete, [addr], phaseParity, suspendTimeHint; // 8b.  PTX ISA 80, SM_90
+// .sem       = { .acquire }
+// .scope     = { .cta, .cluster }
+template <cuda::ptx::dot_scope Scope>
+__device__ static inline bool mbarrier_try_wait_parity(
+  cuda::ptx::sem_acquire_t,
+  cuda::ptx::scope_t<Scope> scope,
+  uint64_t* addr,
+  const uint32_t& phaseParity,
+  const uint32_t& suspendTimeHint);
+```
+
 ### [9.7.13. Warp Level Matrix Multiply-Accumulate Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-multiply-accumulate-instructions)
 
 | Instruction                              | Available in libcu++ |

@@ -28,7 +28,7 @@ void test_is_empty()
     static_assert( std::is_empty<const T>::value, "");
     static_assert( std::is_empty<volatile T>::value, "");
     static_assert( std::is_empty<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_empty_v<T>, "");
     static_assert( std::is_empty_v<const T>, "");
     static_assert( std::is_empty_v<volatile T>, "");
@@ -43,7 +43,7 @@ void test_is_not_empty()
     static_assert(!std::is_empty<const T>::value, "");
     static_assert(!std::is_empty<volatile T>::value, "");
     static_assert(!std::is_empty<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_empty_v<T>, "");
     static_assert(!std::is_empty_v<const T>, "");
     static_assert(!std::is_empty_v<volatile T>, "");

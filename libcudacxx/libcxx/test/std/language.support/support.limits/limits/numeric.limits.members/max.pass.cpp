@@ -39,7 +39,7 @@ int main(int, char**)
     test<signed char>(SCHAR_MAX);
     test<unsigned char>(UCHAR_MAX);
     test<wchar_t>(WCHAR_MAX);
-#if TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
     test<char8_t>(UCHAR_MAX); // ??
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS

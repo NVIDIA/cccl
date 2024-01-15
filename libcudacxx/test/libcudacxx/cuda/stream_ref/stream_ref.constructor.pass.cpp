@@ -22,7 +22,7 @@ static_assert(!cuda::std::is_constructible<cuda::stream_ref, cuda::std::nullptr_
 template <class...>
 using void_t = void;
 
-#if TEST_STD_VER < 14
+#if TEST_STD_VER < 2014
 template <class T, class = void>
 struct has_value_type : cuda::std::false_type {};
 template <class T>

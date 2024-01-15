@@ -43,7 +43,7 @@ int main(int, char**)
         assert(v.data() == std::addressof(v.front()));
         assert(is_contiguous_container_asan_correct(v));
     }
-#if TEST_STD_VER >= 11
+#if TEST_STD_VER >= 2011
     {
         std::vector<int, min_allocator<int>> v;
         assert(v.data() == 0);

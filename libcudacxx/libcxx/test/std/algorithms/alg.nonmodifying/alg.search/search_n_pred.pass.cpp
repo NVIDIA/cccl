@@ -20,7 +20,7 @@
 #include "test_iterators.h"
 #include "user_defined_integral.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool eq(int a, int b) { return a == b; }
 
 TEST_CONSTEXPR bool test_constexpr() {
@@ -164,7 +164,7 @@ int main(int, char**)
     test<bidirectional_iterator<const int*> >();
     test<random_access_iterator<const int*> >();
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

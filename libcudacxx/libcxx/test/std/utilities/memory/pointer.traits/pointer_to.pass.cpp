@@ -19,7 +19,7 @@
 #include <cassert>
 #include "test_macros.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 constexpr
 #endif
 bool check() {
@@ -37,7 +37,7 @@ bool check() {
 
 int main(int, char**) {
     check();
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(check(), "");
 #endif
 

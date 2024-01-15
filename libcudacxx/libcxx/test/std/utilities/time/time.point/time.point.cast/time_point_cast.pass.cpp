@@ -36,7 +36,7 @@ test(const FromDuration& df, const ToDuration& d)
     }
 }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 
 template<class FromDuration, long long From, class ToDuration, long long To>
 void test_constexpr ()
@@ -66,7 +66,7 @@ int main(int, char**)
          std::chrono::duration<double, std::ratio<3600> >(7265./3600));
     test(std::chrono::duration<int, std::ratio<2, 3> >(9),
          std::chrono::duration<int, std::ratio<3, 5> >(10));
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     test_constexpr<std::chrono::milliseconds, 7265000, std::chrono::hours,    2> ();
     test_constexpr<std::chrono::milliseconds, 7265000, std::chrono::minutes,121> ();

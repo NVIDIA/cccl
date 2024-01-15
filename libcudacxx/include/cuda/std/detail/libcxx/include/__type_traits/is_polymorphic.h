@@ -33,7 +33,7 @@ template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_polymorphic
     : public integral_constant<bool, _LIBCUDACXX_IS_POLYMORPHIC(_Tp)> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_polymorphic_v = _LIBCUDACXX_IS_POLYMORPHIC(_Tp);
 #endif
@@ -47,7 +47,7 @@ template<typename _Tp> __two &__is_polymorphic_impl(...);
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_polymorphic
     : public integral_constant<bool, sizeof(__is_polymorphic_impl<_Tp>(0)) == 1> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_polymorphic_v = is_polymorphic<_Tp>::value;
 #endif

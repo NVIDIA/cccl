@@ -28,7 +28,7 @@
 
 #include <thrust/detail/config/cpp_dialect.h>
 
-#include <cstddef>
+#include <cuda/std/cstddef>
 
 #ifndef __has_cpp_attribute
 #  define __has_cpp_attribute(X) 0
@@ -42,13 +42,13 @@
 #  define THRUST_TRAILING_RETURN(...) -> __VA_ARGS__
 #endif
 
-#if THRUST_CPP_DIALECT >= 2014 && __has_cpp_attribute(nodiscard)
+#if _CCCL_STD_VER >= 2014 && __has_cpp_attribute(nodiscard)
 #  define THRUST_NODISCARD [[nodiscard]]
 #else
 #  define THRUST_NODISCARD
 #endif
 
-#if THRUST_CPP_DIALECT >= 2017 && __cpp_if_constexpr
+#if _CCCL_STD_VER >= 2017 && __cpp_if_constexpr
 #  define THRUST_IF_CONSTEXPR if constexpr
 #else
 #  define THRUST_IF_CONSTEXPR if
@@ -59,22 +59,22 @@
 // supports `constexpr` globals in host and device code.
 #if defined(__CUDA_ARCH__) || defined(_NVHPC_CUDA)
 // FIXME: Add this when NVCC supports inline variables.
-//#  if   THRUST_CPP_DIALECT >= 2017
+//#  if   _CCCL_STD_VER >= 2017
 //#    define THRUST_INLINE_CONSTANT                 inline constexpr
 //#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
-#  if THRUST_CPP_DIALECT >= 2011
-#    define THRUST_INLINE_CONSTANT                 static const __device__
+#  if _CCCL_STD_VER >= 2011
+#    define THRUST_INLINE_CONSTANT                 static const _CCCL_DEVICE
 #    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
 #  else
-#    define THRUST_INLINE_CONSTANT                 static const __device__
+#    define THRUST_INLINE_CONSTANT                 static const _CCCL_DEVICE
 #    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static const
 #  endif
 #else
 // FIXME: Add this when NVCC supports inline variables.
-//#  if   THRUST_CPP_DIALECT >= 2017
+//#  if   _CCCL_STD_VER >= 2017
 //#    define THRUST_INLINE_CONSTANT                 inline constexpr
 //#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
-#  if THRUST_CPP_DIALECT >= 2011
+#  if _CCCL_STD_VER >= 2011
 #    define THRUST_INLINE_CONSTANT                 static constexpr
 #    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
 #  else

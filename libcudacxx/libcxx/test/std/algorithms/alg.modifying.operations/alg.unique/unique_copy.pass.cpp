@@ -22,7 +22,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
           int ia[]       = {0, 1, 2, 2, 4};
           int ib[]       = {0, 0, 0, 0, 0};
@@ -137,7 +137,7 @@ int main(int, char**)
     test<const int*, random_access_iterator<int*> >();
     test<const int*, int*>();
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

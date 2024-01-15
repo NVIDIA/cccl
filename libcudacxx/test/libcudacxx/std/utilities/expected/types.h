@@ -151,7 +151,7 @@ struct TestError {
     friend constexpr bool operator==(const TestError& lhs, const TestError& rhs) noexcept {
         return lhs.err_ == rhs.err_;
     }
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
     __host__ __device__
     friend constexpr bool operator!=(const TestError& lhs, const TestError& rhs) noexcept {
         return lhs.err_ != rhs.err_;

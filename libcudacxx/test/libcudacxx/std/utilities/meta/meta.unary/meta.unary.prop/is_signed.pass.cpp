@@ -21,7 +21,7 @@ void test_is_signed()
     static_assert( cuda::std::is_signed<const T>::value, "");
     static_assert( cuda::std::is_signed<volatile T>::value, "");
     static_assert( cuda::std::is_signed<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert( cuda::std::is_signed_v<T>, "");
     static_assert( cuda::std::is_signed_v<const T>, "");
     static_assert( cuda::std::is_signed_v<volatile T>, "");
@@ -37,7 +37,7 @@ void test_is_not_signed()
     static_assert(!cuda::std::is_signed<const T>::value, "");
     static_assert(!cuda::std::is_signed<volatile T>::value, "");
     static_assert(!cuda::std::is_signed<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!cuda::std::is_signed_v<T>, "");
     static_assert(!cuda::std::is_signed_v<const T>, "");
     static_assert(!cuda::std::is_signed_v<volatile T>, "");

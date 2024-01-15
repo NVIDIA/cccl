@@ -242,7 +242,7 @@ struct AgentScan
   /**
    * Exclusive scan specialization (first tile)
    */
-  __device__ __forceinline__ void ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
                                            AccumT init_value,
                                            ScanOpT scan_op,
                                            AccumT &block_aggregate,
@@ -256,7 +256,7 @@ struct AgentScan
   /**
    * Inclusive scan specialization (first tile)
    */
-  __device__ __forceinline__ void ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
                                            InitValueT /*init_value*/,
                                            ScanOpT scan_op,
                                            AccumT &block_aggregate,
@@ -270,7 +270,7 @@ struct AgentScan
    * Exclusive scan specialization (subsequent tiles)
    */
   template <typename PrefixCallback>
-  __device__ __forceinline__ void ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
                                            ScanOpT scan_op,
                                            PrefixCallback &prefix_op,
                                            Int2Type<false> /*is_inclusive*/)
@@ -283,7 +283,7 @@ struct AgentScan
    * Inclusive scan specialization (subsequent tiles)
    */
   template <typename PrefixCallback>
-  __device__ __forceinline__ void ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
                                            ScanOpT scan_op,
                                            PrefixCallback &prefix_op,
                                            Int2Type<true> /*is_inclusive*/)
@@ -312,7 +312,7 @@ struct AgentScan
    * @param init_value
    *   Initial value to seed the exclusive scan
    */
-  __device__ __forceinline__ AgentScan(TempStorage &temp_storage,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentScan(TempStorage &temp_storage,
                                        InputIteratorT d_in,
                                        OutputIteratorT d_out,
                                        ScanOpT scan_op,
@@ -346,7 +346,7 @@ struct AgentScan
    *   Global tile state descriptor
    */
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void ConsumeTile(OffsetT num_remaining,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT num_remaining,
                                               int tile_idx,
                                               OffsetT tile_offset,
                                               ScanTileStateT &tile_state)
@@ -420,7 +420,7 @@ struct AgentScan
    * @param start_tile
    *   The starting tile for the current grid
    */
-  __device__ __forceinline__ void ConsumeRange(OffsetT num_items,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items,
                                                ScanTileStateT &tile_state,
                                                int start_tile)
   {
@@ -465,7 +465,7 @@ struct AgentScan
    *   Number of valid items in the tile
    */
   template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
-  __device__ __forceinline__ void ConsumeTile(OffsetT tile_offset,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT tile_offset,
                                               RunningPrefixCallbackOp &prefix_op,
                                               int valid_items = TILE_ITEMS)
   {
@@ -525,7 +525,7 @@ struct AgentScan
    * @param[in] range_end
    *   Threadblock end offset (exclusive)
    */
-  __device__ __forceinline__ void ConsumeRange(OffsetT range_offset,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT range_offset,
                                                OffsetT range_end)
   {
     BlockScanRunningPrefixOp<AccumT, ScanOpT> prefix_op(scan_op);
@@ -570,7 +570,7 @@ struct AgentScan
    * @param[in] prefix
    *   The prefix to apply to the scan segment
    */
-  __device__ __forceinline__ void ConsumeRange(OffsetT range_offset,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT range_offset,
                                                OffsetT range_end,
                                                AccumT prefix)
   {

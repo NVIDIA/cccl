@@ -37,7 +37,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [readable.traits]
 template<class> struct __cond_value_type {};
@@ -96,7 +96,7 @@ using iter_value_t = typename conditional_t<__is_primary_template<iterator_trait
                                             indirectly_readable_traits<remove_cvref_t<_Ip> >,
                                             iterator_traits<remove_cvref_t<_Ip> > >::value_type;
 
-#elif _LIBCUDACXX_STD_VER > 14
+#elif _CCCL_STD_VER > 2014
 
 // [readable.traits]
 template<class, class = void> struct __cond_value_type {};
@@ -156,7 +156,7 @@ using iter_value_t = typename conditional_t<__is_primary_template<iterator_trait
                                             indirectly_readable_traits<remove_cvref_t<_Ip> >,
                                             iterator_traits<remove_cvref_t<_Ip> > >::value_type;
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

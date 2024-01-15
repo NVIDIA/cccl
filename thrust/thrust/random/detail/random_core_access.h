@@ -50,7 +50,7 @@ static IStream &stream_in(IStream &is, EngineOrDistribution &x)
 }
 
 template<typename EngineOrDistribution>
-__host__ __device__
+_CCCL_HOST_DEVICE
 static bool equal(const EngineOrDistribution &lhs, const EngineOrDistribution &rhs)
 {
   return lhs.equal(rhs);
