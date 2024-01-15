@@ -308,8 +308,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
   pair(piecewise_construct_t __pc, tuple<_Args1...> __first_args, tuple<_Args2...> __second_args) noexcept(
     (is_nothrow_constructible<_T1, _Args1...>::value && is_nothrow_constructible<_T2, _Args2...>::value))
       : __base(__pc,
-               _CUDA_VSTD::move(__first_args),
-               _CUDA_VSTD::move(__second_args),
+               __first_args,
+               __second_args,
                __make_tuple_indices_t<sizeof...(_Args1)>(),
                __make_tuple_indices_t<sizeof...(_Args2)>())
   {}
