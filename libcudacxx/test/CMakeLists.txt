@@ -5,7 +5,7 @@ add_subdirectory(libcudacxx)
 add_subdirectory(internal_headers)
 
 # Libcudacxx auto-generated include/smoke tests
-add_subdirectory(smoke)
+add_subdirectory(public_headers)
 
 # Enable building the nvrtcc project if NVRTC is enabled
 if (LIBCUDACXX_TEST_WITH_NVRTC)
