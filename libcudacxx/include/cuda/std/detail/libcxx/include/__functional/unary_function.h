@@ -45,6 +45,7 @@ template <class _Arg, class _Result> struct __unary_function_keep_layout_base {
 _LIBCUDACXX_DIAGNOSTIC_PUSH
 _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
 _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
+_LIBCUDACXX_MSVC_DIAGNOSTIC_IGNORED(4996)
 template <class _Arg, class _Result>
 using __unary_function = unary_function<_Arg, _Result>;
 _LIBCUDACXX_DIAGNOSTIC_POP

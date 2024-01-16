@@ -41,11 +41,16 @@ public:
         {return __f_(__x);}
 };
 
+_LIBCUDACXX_DIAGNOSTIC_PUSH
+_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
+_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
+_LIBCUDACXX_MSVC_DIAGNOSTIC_IGNORED(4996)
 template <class _Arg, class _Result>
 _LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_INLINE_VISIBILITY
 pointer_to_unary_function<_Arg,_Result>
 ptr_fun(_Result (*__f)(_Arg))
     {return pointer_to_unary_function<_Arg,_Result>(__f);}
+_LIBCUDACXX_DIAGNOSTIC_POP
 
 #endif // _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 

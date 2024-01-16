@@ -50,11 +50,16 @@ public:
             {return op(value, __x);}
 };
 
+_LIBCUDACXX_DIAGNOSTIC_PUSH
+_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
+_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
+_LIBCUDACXX_MSVC_DIAGNOSTIC_IGNORED(4996)
 template <class __Operation, class _Tp>
 _LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_INLINE_VISIBILITY
 binder1st<__Operation>
 bind1st(const __Operation& __op, const _Tp& __x)
     {return binder1st<__Operation>(__op, __x);}
+_LIBCUDACXX_DIAGNOSTIC_POP
 
 #endif // _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 

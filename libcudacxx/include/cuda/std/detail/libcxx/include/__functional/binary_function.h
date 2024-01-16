@@ -48,6 +48,7 @@ template <class _Arg1, class _Arg2, class _Result> struct __binary_function_keep
 _LIBCUDACXX_DIAGNOSTIC_PUSH
 _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
 _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
+_LIBCUDACXX_MSVC_DIAGNOSTIC_IGNORED(4996)
 template <class _Arg1, class _Arg2, class _Result>
 using __binary_function = binary_function<_Arg1, _Arg2, _Result>;
 _LIBCUDACXX_DIAGNOSTIC_POP
