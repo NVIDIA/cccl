@@ -39,7 +39,7 @@ protected:
   bad_expected_access(bad_expected_access&&)                 = default;
   bad_expected_access& operator=(const bad_expected_access&) = default;
   bad_expected_access& operator=(bad_expected_access&&)      = default;
-  ~bad_expected_access() override                            = default;
+  ~bad_expected_access() noexcept override                   = default;
 
 public:
   // The way this has been designed (by using a class template below) means that we'll already

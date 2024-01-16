@@ -42,23 +42,18 @@ struct is_nothrow_destructible
 
 #elif !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
 
-template <bool, class _Tp> struct __libcpp_is_nothrow_destructible;
+template <class _Tp, bool = is_destructible<_Tp>::value>
+struct __libcpp_is_nothrow_destructible : false_type {};
 
 template <class _Tp>
-struct __libcpp_is_nothrow_destructible<false, _Tp>
-    : public false_type
-{
-};
-
-template <class _Tp>
-struct __libcpp_is_nothrow_destructible<true, _Tp>
+struct __libcpp_is_nothrow_destructible<_Tp, true>
     : public integral_constant<bool, noexcept(_CUDA_VSTD::declval<_Tp>().~_Tp()) >
 {
 };
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_destructible
-    : public __libcpp_is_nothrow_destructible<is_destructible<_Tp>::value, _Tp>
+    : public __libcpp_is_nothrow_destructible<_Tp>
 {
 };
 

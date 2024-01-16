@@ -15,6 +15,8 @@
 #endif // __cuda_std__
 
 #include "../__type_traits/integral_constant.h"
+#include "../__type_traits/is_class.h"
+#include "../__utility/declval.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -44,17 +46,18 @@ namespace __is_base_of_imp
 template <class _Tp>
 struct _Dst
 {
-    _Dst(const volatile _Tp &);
+    _LIBCUDACXX_INLINE_VISIBILITY _Dst(const volatile _Tp &);
 };
 template <class _Tp>
 struct _Src
 {
-    operator const volatile _Tp &();
-    template <class _Up> operator const _Dst<_Up> &();
+    _LIBCUDACXX_INLINE_VISIBILITY operator const volatile _Tp &();
+    template <class _Up>
+    _LIBCUDACXX_INLINE_VISIBILITY operator const _Dst<_Up> &();
 };
 template <size_t> struct __one { typedef char type; };
-template <class _Bp, class _Dp> typename __one<sizeof(_Dst<_Bp>(declval<_Src<_Dp> >()))>::type __test(int);
-template <class _Bp, class _Dp> __two __test(...);
+template <class _Bp, class _Dp> _LIBCUDACXX_HOST_DEVICE typename __one<sizeof(_Dst<_Bp>(_CUDA_VSTD::declval<_Src<_Dp> >()))>::type __test(int);
+template <class _Bp, class _Dp> _LIBCUDACXX_HOST_DEVICE __two __test(...);
 }
 
 template <class _Bp, class _Dp>

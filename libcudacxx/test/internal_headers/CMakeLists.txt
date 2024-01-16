@@ -1,0 +1,61 @@
+# For every private internal header build a TU that directly includes it
+# without anything else to verify whether its properly modular.
+# We also want to check whether all potential fallbacks are actually valid,
+# even if we never exercise them in the current support matrix
+add_custom_target(libcudacxx.test.internal_headers)
+
+# Grep all internal headers
+file(GLOB_RECURSE internal_headers
+  RELATIVE "${libcudacxx_SOURCE_DIR}/include/cuda/std/detail/libcxx/include"
+  CONFIGURE_DEPENDS
+  ${libcudacxx_SOURCE_DIR}/include/cuda/std/detail/libcxx/include/__*/*.h
+)
+
+# headers in `__cuda` are meant to come after the related "cuda" headers so they do not compile on their own
+list(FILTER internal_headers EXCLUDE REGEX "__cuda/*")
+
+function(libcudacxx_create_internal_header_test header_name, headertest_src, fallback)
+  if(fallback)
+    set(header_name "${header_name}_fallback")
+  endif()
+
+  set(headertest_${header_name} verify_${header_name})
+  add_library(headertest_${header_name} OBJECT ${headertest_src})
+  target_include_directories(headertest_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
+  if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
+    target_compile_options(headertest_${header_name} PRIVATE -Wall -Werror all-warnings)
+  elseif("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
+    target_compile_options(headertest_${header_name} PRIVATE
+      -Wall -Werror -Wno-unknown-cuda-version -Xclang=-fcuda-allow-variadic-functions)
+  else()
+    target_compile_options(headertest_${header_name} PRIVATE -Wall -Werror)
+  endif()
+
+  if(fallback)
+    target_compile_definitions(headertest_${header_name} PRIVATE "-D${fallback}")
+  endif()
+  add_dependencies(libcudacxx.test.internal_headers headertest_${header_name})
+endfunction()
+
+function(libcudacxx_add_internal_header_test header)
+  # ${header} contains the "/" from the subfolder, replace by "_" for actual names
+  string(REPLACE "/" "_" header_name "${header}")
+
+  # Create the source file for the header target from the template and add the file to the global project
+  set(headertest_src "headers/${header_name}.cu")
+  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/header_test.cpp.in" "${headertest_src}")
+
+  # Create the default target for that file
+  libcudacxx_create_internal_header_test(${header_name}, ${headertest_src}, "")
+
+  # Seach the file for a fallback definition
+  file(READ ${libcudacxx_SOURCE_DIR}/include/cuda/std/detail/libcxx/include/${header} header_file)
+  string(REGEX MATCH "_LIBCUDACXX_[A-Z_]*_FALLBACK" fallback "${header_file}")
+  if(fallback)
+    libcudacxx_create_internal_header_test(${header_name}, ${headertest_src}, ${fallback})
+  endif()
+endfunction()
+
+foreach(header IN LISTS internal_headers)
+  libcudacxx_add_internal_header_test(${header})
+endforeach()
