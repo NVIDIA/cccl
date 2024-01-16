@@ -1,5 +1,6 @@
 /*
- *  Copyright 2008-2023 NVIDIA Corporation
+ *  Copyright 2008-2019 NVIDIA Corporation
+ *  Copyright 2013 Filipe RNC Maia
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -29,13 +30,37 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
 
-#include <cuda/std/complex>
-#include <cuda/std/type_traits>
+#include <cmath>
+#include <complex>
+#include <sstream>
+#include <thrust/detail/type_traits.h>
+
+#if THRUST_CPP_DIALECT >= 2011
+#  define THRUST_STD_COMPLEX_REAL(z) \
+    reinterpret_cast< \
+      const typename thrust::detail::remove_reference<decltype(z)>::type::value_type (&)[2] \
+    >(z)[0]
+#  define THRUST_STD_COMPLEX_IMAG(z) \
+    reinterpret_cast< \
+      const typename thrust::detail::remove_reference<decltype(z)>::type::value_type (&)[2] \
+    >(z)[1]
+#  define THRUST_STD_COMPLEX_DEVICE __device__
+#else
+#  define THRUST_STD_COMPLEX_REAL(z) (z).real()
+#  define THRUST_STD_COMPLEX_IMAG(z) (z).imag()
+#  define THRUST_STD_COMPLEX_DEVICE
+#endif
 
 THRUST_NAMESPACE_BEGIN
+
+/*
+ *  Calls to the standard math library from inside the thrust namespace
+ *  with real arguments require explicit scope otherwise they will fail
+ *  to resolve as it will find the equivalent complex function but then
+ *  fail to match the template, and give up looking for other scopes.
+ */
+
 
 /*! \addtogroup numerics
  *  \{
@@ -43,6 +68,86 @@ THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup complex_numbers Complex Numbers
  *  \{
+ */
+
+/*! \cond
+ */
+
+namespace detail
+{
+
+template <typename T, std::size_t Align>
+struct complex_storage;
+
+#if THRUST_CPP_DIALECT >= 2011                                                    \
+  && (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                       \
+  && (THRUST_GCC_VERSION >= 40800)
+  // C++11 implementation, excluding GCC 4.7, which doesn't have `alignas`.
+  template <typename T, std::size_t Align>
+  struct complex_storage
+  {
+    struct alignas(Align) type { T x; T y; };
+  };
+#elif  (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC)                    \
+    || (   (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                 \
+        && (THRUST_GCC_VERSION < 40600))
+  // C++03 implementation for MSVC and GCC <= 4.5.
+  //
+  // We have to implement `aligned_type` with specializations for MSVC
+  // and GCC 4.2 and older because they require literals as arguments to
+  // their alignment attribute.
+
+  #if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC)
+    // MSVC implementation.
+    #define THRUST_DEFINE_COMPLEX_STORAGE_SPECIALIZATION(X)                   \
+      template <typename T>                                                   \
+      struct complex_storage<T, X>                                            \
+      {                                                                       \
+        __declspec(align(X)) struct type { T x; T y; };                       \
+      };                                                                      \
+      /**/
+  #else
+    // GCC <= 4.2 implementation.
+    #define THRUST_DEFINE_COMPLEX_STORAGE_SPECIALIZATION(X)                   \
+      template <typename T>                                                   \
+      struct complex_storage<T, X>                                            \
+      {                                                                       \
+        struct type { T x; T y; } __attribute__((aligned(X)));                \
+      };                                                                      \
+      /**/
+  #endif
+
+  // The primary template is a fallback, which doesn't specify any alignment.
+  // It's only used when T is very large and we're using an older compilers
+  // which we have to fully specialize each alignment case.
+  template <typename T, std::size_t Align>
+  struct complex_storage
+  {
+    T x; T y;
+  };
+
+  THRUST_DEFINE_COMPLEX_STORAGE_SPECIALIZATION(1);
+  THRUST_DEFINE_COMPLEX_STORAGE_SPECIALIZATION(2);
+  THRUST_DEFINE_COMPLEX_STORAGE_SPECIALIZATION(4);
+  THRUST_DEFINE_COMPLEX_STORAGE_SPECIALIZATION(8);
+  THRUST_DEFINE_COMPLEX_STORAGE_SPECIALIZATION(16);
+  THRUST_DEFINE_COMPLEX_STORAGE_SPECIALIZATION(32);
+  THRUST_DEFINE_COMPLEX_STORAGE_SPECIALIZATION(64);
+  THRUST_DEFINE_COMPLEX_STORAGE_SPECIALIZATION(128);
+
+  #undef THRUST_DEFINE_COMPLEX_STORAGE_SPECIALIZATION
+#else
+  // C++03 implementation for GCC > 4.5, Clang, PGI, ICPC, and xlC.
+  template <typename T, std::size_t Align>
+  struct complex_storage
+  {
+    struct type { T x; T y; } __attribute__((aligned(Align)));
+  };
+#endif
+
+} // end namespace detail
+
+/*! \endcond
  */
 
 /*! \p complex is the Thrust equivalent to <tt>std::complex</tt>. It is
@@ -53,211 +158,374 @@ THRUST_NAMESPACE_BEGIN
  *  <tt>float</tt> or <tt>double</tt>. Others types are not supported.
  *
  */
-
-template <class T>
-struct complex : public ::cuda::std::complex<T>
+template <typename T>
+struct complex
 {
-  using base = ::cuda::std::complex<T>;
-  using base::base;         // inherit constructors
-  using base::operator=;    // inherit assignment operators
+public:
 
+  /*! \p value_type is the type of \p complex's real and imaginary parts.
+   */
+  typedef T value_type;
+
+
+
+  /* --- Constructors --- */
+
+  /*! Construct a complex number with an imaginary part of 0.
+   *
+   *  \param re The real part of the number.
+   */
+  __host__ __device__
+  complex(const T& re);
+
+  /*! Construct a complex number from its real and imaginary parts.
+   *
+   *  \param re The real part of the number.
+   *  \param im The imaginary part of the number.
+   */
+  __host__ __device__
+  complex(const T& re, const T& im);
+
+#if THRUST_CPP_DIALECT >= 2011
+  /*! Default construct a complex number.
+   */
   complex() = default;
 
-  __host__ __device__ complex(const base& rhs) : base(rhs) {}
-  __host__ __device__ complex(base&& rhs) : base(::cuda::std::move(rhs)) {}
-
-  template <class U, typename = typename detail::enable_if<!detail::is_same<T, U>::value>::type,
-                     typename = typename detail::enable_if<detail::has_promoted_numerical_type<T, U>::value>::type>
-  __host__ __device__
-   complex &operator=(const complex<U> &rhs)
-  {
-    this->real(static_cast<T>(rhs.real()));
-    this->imag(static_cast<T>(rhs.imag()));
-    return *this;
-  }
-
-
-  template <class U, typename = typename detail::enable_if<!detail::is_same<T, U>::value>::type,
-                     typename = typename detail::enable_if<detail::has_promoted_numerical_type<T, U>::value>::type>
-  __host__ __device__
-  complex &operator=(const U &rhs)
-  {
-    this->operator=(static_cast<T>(rhs));
-    return *this;
-  }
-
-  /*! Cast this \p complex to a <tt>std::complex</tt>
+  /*! This copy constructor copies from a \p complex with a type that is
+   *  convertible to this \p complex's \c value_type.
+   *
+   *  \param z The \p complex to copy from.
    */
-  __host__ operator ::std::complex<T>() const { return ::std::complex<T>(this->real(), this->imag()); }
+  complex(const complex<T>& z) = default;
+#else
+  /*! Default construct a complex number.
+   */
+  __host__ __device__
+  complex();
+
+  /*! This copy constructor copies from a \p complex with a type that is
+   *  convertible to this \p complex's \c value_type.
+   *
+   *  \param z The \p complex to copy from.
+   */
+  __host__ __device__
+  complex(const complex<T>& z);
+#endif
+
+  /*! This converting copy constructor copies from a \p complex with a type
+   *  that is convertible to this \p complex's \c value_type.
+   *
+   *  \param z The \p complex to copy from.
+   *
+   *  \tparam U is convertible to \c value_type.
+   */
+  template <typename U>
+  __host__ __device__
+  complex(const complex<U>& z);
+
+  /*! This converting copy constructor copies from a <tt>std::complex</tt> with
+   *  a type that is convertible to this \p complex's \c value_type.
+   *
+   *  \param z The \p complex to copy from.
+   */
+  __host__ THRUST_STD_COMPLEX_DEVICE
+  complex(const std::complex<T>& z);
+
+  /*! This converting copy constructor copies from a <tt>std::complex</tt> with
+   *  a type that is convertible to this \p complex's \c value_type.
+   *
+   *  \param z The \p complex to copy from.
+   *
+   *  \tparam U is convertible to \c value_type.
+   */
+  template <typename U>
+  __host__ THRUST_STD_COMPLEX_DEVICE
+  complex(const std::complex<U>& z);
+
+
+
+  /* --- Assignment Operators --- */
+
+  /*! Assign `re` to the real part of this \p complex and set the imaginary part
+   *  to 0.
+   *
+   *  \param re The real part of the number.
+   */
+  __host__ __device__
+  complex& operator=(const T& re);
+
+#if THRUST_CPP_DIALECT >= 2011
+  /*! Assign `z.real()` and `z.imag()` to the real and imaginary parts of this
+   *  \p complex respectively.
+   *
+   *  \param z The \p complex to copy from.
+   */
+  complex& operator=(const complex<T>& z) = default;
+#else
+  /*! Assign `z.real()` and `z.imag()` to the real and imaginary parts of this
+   *  \p complex respectively.
+   *
+   *  \param z The \p complex to copy from.
+   */
+  __host__ __device__
+  complex& operator=(const complex<T>& z);
+#endif
+
+  /*! Assign `z.real()` and `z.imag()` to the real and imaginary parts of this
+   *  \p complex respectively.
+   *
+   *  \param z The \p complex to copy from.
+   *
+   *  \tparam U is convertible to \c value_type.
+   */
+  template <typename U>
+  __host__ __device__
+  complex& operator=(const complex<U>& z);
+
+  /*! Assign `z.real()` and `z.imag()` to the real and imaginary parts of this
+   *  \p complex respectively.
+   *
+   *  \param z The \p complex to copy from.
+   */
+  __host__ THRUST_STD_COMPLEX_DEVICE
+  complex& operator=(const std::complex<T>& z);
+
+  /*! Assign `z.real()` and `z.imag()` to the real and imaginary parts of this
+   *  \p complex respectively.
+   *
+   *  \param z The \p complex to copy from.
+   *
+   *  \tparam U is convertible to \c value_type.
+   */
+  template <typename U>
+  __host__ THRUST_STD_COMPLEX_DEVICE
+  complex& operator=(const std::complex<U>& z);
+
+
+  /* --- Compound Assignment Operators --- */
+
+  /*! Adds a \p complex to this \p complex and assigns the result to this
+   *  \p complex.
+   *
+   *  \param z The \p complex to be added.
+   *
+   *  \tparam U is convertible to \c value_type.
+   */
+  template <typename U>
+  __host__ __device__
+  complex<T>& operator+=(const complex<U>& z);
+
+  /*! Subtracts a \p complex from this \p complex and assigns the result to
+   *  this \p complex.
+   *
+   *  \param z The \p complex to be subtracted.
+   *
+   *  \tparam U is convertible to \c value_type.
+   */
+  template <typename U>
+  __host__ __device__
+  complex<T>& operator-=(const complex<U>& z);
+
+  /*! Multiplies this \p complex by another \p complex and assigns the result
+   *  to this \p complex.
+   *
+   *  \param z The \p complex to be multiplied.
+   *
+   *  \tparam U is convertible to \c value_type.
+   */
+  template <typename U>
+  __host__ __device__
+  complex<T>& operator*=(const complex<U>& z);
+
+  /*! Divides this \p complex by another \p complex and assigns the result to
+   *  this \p complex.
+   *
+   *  \param z The \p complex to be divided.
+   *
+   *  \tparam U is convertible to \c value_type.
+   */
+  template <typename U>
+  __host__ __device__
+  complex<T>& operator/=(const complex<U>& z);
+
+  /*! Adds a scalar to this \p complex and assigns the result to this
+   *  \p complex.
+   *
+   *  \param z The \p complex to be added.
+   *
+   *  \tparam U is convertible to \c value_type.
+   */
+  template <typename U>
+  __host__ __device__
+  complex<T>& operator+=(const U& z);
+
+  /*! Subtracts a scalar from this \p complex and assigns the result to
+   *  this \p complex.
+   *
+   *  \param z The scalar to be subtracted.
+   *
+   *  \tparam U is convertible to \c value_type.
+   */
+  template <typename U>
+  __host__ __device__
+  complex<T>& operator-=(const U& z);
+
+  /*! Multiplies this \p complex by a scalar and assigns the result
+   *  to this \p complex.
+   *
+   *  \param z The scalar to be multiplied.
+   *
+   *  \tparam U is convertible to \c value_type.
+   */
+  template <typename U>
+  __host__ __device__
+  complex<T>& operator*=(const U& z);
+
+  /*! Divides this \p complex by a scalar and assigns the result to
+   *  this \p complex.
+   *
+   *  \param z The scalar to be divided.
+   *
+   *  \tparam U is convertible to \c value_type.
+   */
+  template <typename U>
+  __host__ __device__
+  complex<T>& operator/=(const U& z);
+
+
+
+  /* --- Getter functions ---
+   * The volatile ones are there to help for example
+   * with certain reductions optimizations
+   */
+
+  /*! Returns the real part of this \p complex.
+   */
+  __host__ __device__
+  T real() const volatile { return data.x; }
+
+  /*! Returns the imaginary part of this \p complex.
+   */
+  __host__ __device__
+  T imag() const volatile { return data.y; }
+
+  /*! Returns the real part of this \p complex.
+   */
+  __host__ __device__
+  T real() const { return data.x; }
+
+  /*! Returns the imaginary part of this \p complex.
+   */
+  __host__ __device__
+  T imag() const { return data.y; }
+
+
+
+  /* --- Setter functions ---
+   * The volatile ones are there to help for example
+   * with certain reductions optimizations
+   */
+
+  /*! Sets the real part of this \p complex.
+   *
+   *  \param re The new real part of this \p complex.
+   */
+  __host__ __device__
+  void real(T re) volatile { data.x = re; }
+
+  /*! Sets the imaginary part of this \p complex.
+   *
+   *  \param im The new imaginary part of this \p complex.e
+   */
+  __host__ __device__
+  void imag(T im) volatile { data.y = im; }
+
+  /*! Sets the real part of this \p complex.
+   *
+   *  \param re The new real part of this \p complex.
+   */
+  __host__ __device__
+  void real(T re) { data.x = re; }
+
+  /*! Sets the imaginary part of this \p complex.
+   *
+   *  \param im The new imaginary part of this \p complex.
+   */
+  __host__ __device__
+  void imag(T im) { data.y = im; }
+
+
+
+  /* --- Casting functions --- */
+
+  /*! Casts this \p complex to a <tt>std::complex</tt> of the same type.
+   */
+  __host__
+  operator std::complex<T>() const { return std::complex<T>(real(), imag()); }
+
+private:
+  typename detail::complex_storage<T, sizeof(T) * 2>::type data;
 };
 
-/* --- Equality Operators --- */
 
-/*! Returns true if two \p complex numbers with different underlying type
- * are equal and false otherwise.
+/* --- General Functions --- */
+
+/*! Returns the magnitude (also known as absolute value) of a \p complex.
  *
- *  \param x The first \p complex.
- *  \param y The second \p complex.
- *
- *  \tparam \c T0 is convertible to \c T1.
+ *  \param z The \p complex from which to calculate the absolute value.
  */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator==(const complex<T0> &x, const complex<T1> &y)
-{
-  return x.real() == y.real() && x.imag() == y.imag();
-}
+template<typename T>
+__host__ __device__
+T abs(const complex<T>& z);
 
-/*! Returns true if two \p complex numbers with different underlying type
- * are equal and false otherwise.
+/*! Returns the phase angle (also known as argument) in radians of a \p complex.
  *
- *  \param x The first \p thrust::complex.
- *  \param y The second \p cuda::std::complex.
- *
- *  \tparam \c T0 is convertible to \c T1.
+ *  \param z The \p complex from which to calculate the phase angle.
  */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator==(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
-{
-  return x.real() == y.real() && x.imag() == y.imag();
-}
+template <typename T>
+__host__ __device__
+T arg(const complex<T>& z);
 
-/*! Returns true if two \p complex numbers with different underlying type
- * are equal and false otherwise.
+/*! Returns the square of the magnitude of a \p complex.
  *
- *  \param x The first \p cuda::std::complex.
- *  \param y The second \p thrust::complex.
- *
- *  \tparam \c T0 is convertible to \c T1.
+ *  \param z The \p complex from which to calculate the norm.
  */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator==(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
-{
-  return x.real() == y.real() && x.imag() == y.imag();
-}
+template <typename T>
+__host__ __device__
+T norm(const complex<T>& z);
 
-/*! Returns true if the imaginary part of the \p complex number is zero and
- *  the real part is equal to the scalar. Returns false otherwise.
+/*! Returns the complex conjugate of a \p complex.
  *
- *  \param x The \p complex.
- *  \param y The scalar.
- *
- *  \tparam \c T0 is convertible to \c T1.
+ *  \param z The \p complex from which to calculate the complex conjugate.
  */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
-          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ bool operator==(const T0 &x, const complex<T1> &y)
-{
-  return x == y.real() && T0() == y.imag();
-}
+template <typename T>
+__host__ __device__
+complex<T> conj(const complex<T>& z);
 
-/*! Returns true if the imaginary part of the \p complex number is zero and
- *  the real part is equal to the scalar. Returns false otherwise.
+/*! Returns a \p complex with the specified magnitude and phase.
  *
- *  \param x The \p complex.
- *  \param y The scalar.
- *
- *  \tparam \c T0 is convertible to \c T1.
+ *  \param m The magnitude of the returned \p complex.
+ *  \param theta The phase of the returned \p complex in radians.
  */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
-          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ bool operator==(const complex<T0> &x, const T1 &y)
-{
-  return x.real() == y && x.imag() == T1();
-}
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+polar(const T0& m, const T1& theta = T1());
 
-/*! Returns true if two \p complex numbers with different underlying type
- * are different and false otherwise.
+/*! Returns the projection of a \p complex on the Riemann sphere.
+ *  For all finite \p complex it returns the argument. For \p complexs
+ *  with a non finite part returns (INFINITY,+/-0) where the sign of
+ *  the zero matches the sign of the imaginary part of the argument.
  *
- *  \param x The first \p complex.
- *  \param y The second \p complex.
- *
- *  \tparam \c T0 is convertible to \c T1.
+ *  \param z The \p complex argument.
  */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator!=(const complex<T0> &x, const complex<T1> &y)
-{
-  return !(x == y);
-}
+template <typename T>
+__host__ __device__
+complex<T> proj(const T& z);
 
-/*! Returns true if two \p complex numbers with different underlying type
- * are different and false otherwise.
- *
- *  \param x The first \p thrust::complex.
- *  \param y The second \p cuda::std::complex.
- *
- *  \tparam \c T0 is convertible to \c T1.
- */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
-{
-  return !(x == y);
-}
 
-/*! Returns true if two \p complex numbers with different underlying type
- * are different and false otherwise.
- *
- *  \param x The second \p cuda::std::complex.
- *  \param y The first \p thrust::complex.
- *
- *  \tparam \c T0 is convertible to \c T1.
- */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator!=(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
-{
-  return !(x == y);
-}
 
-/*! Returns true if two \p complex numbers with different underlying type
- * are different and false otherwise.
- *
- *  \param x The scalar.
- *  \param y The \p complex.
- *
- *  \tparam \c T0 is convertible to \c T1.
- */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
-          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ bool operator!=(const T0 &x, const complex<T1> &y)
-{
-  return !(x == y);
-}
-
-/*! Returns true if two \p complex numbers with different underlying type
- * are different and false otherwise.
- *
- *  \param x The \p complex.
- *  \param y The scalar.
- *
- *  \tparam \c T0 is convertible to \c T1.
- */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
-          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ bool operator!=(const complex<T0> &x, const T1 &y)
-{
-  return !(x == y);
-}
-
-/* --- Add Operator --- */
+/* --- Binary Arithmetic operators --- */
 
 /*! Adds two \p complex numbers.
  *
@@ -266,18 +534,11 @@ __host__ __device__ bool operator!=(const complex<T0> &x, const T1 &y)
  *
  *  \param x The first \p complex.
  *  \param y The second \p complex.
- *
- *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator+(const complex<T0> &x, const complex<T1> &y)
-{
-  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
-  return complex<T>(x.real() + y.real(), x.imag() + y.imag());
-}
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator+(const complex<T0>& x, const complex<T1>& y);
 
 /*! Adds a scalar to a \p complex number.
  *
@@ -286,19 +547,11 @@ operator+(const complex<T0> &x, const complex<T1> &y)
  *
  *  \param x The \p complex.
  *  \param y The scalar.
- *
- *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
-          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator+(const complex<T0> &x, const T1 &y)
-{
-  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
-  return complex<T>(x.real() + y, T(x.imag()));
-}
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator+(const complex<T0>& x, const T1& y);
 
 /*! Adds a \p complex number to a scalar.
  *
@@ -307,21 +560,11 @@ operator+(const complex<T0> &x, const T1 &y)
  *
  *  \param x The scalar.
  *  \param y The \p complex.
- *
- *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
-          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator+(const T0 &x, const complex<T1> &y)
-{
-  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
-  return complex<T>(x + y.real(), T(y.imag()));
-}
-
-/* --- Substraction Operator --- */
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator+(const T0& x, const complex<T1>& y);
 
 /*! Subtracts two \p complex numbers.
  *
@@ -330,18 +573,11 @@ operator+(const T0 &x, const complex<T1> &y)
  *
  *  \param x The first \p complex (minuend).
  *  \param y The second \p complex (subtrahend).
- *
- *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator-(const complex<T0> &x, const complex<T1> &y)
-{
-  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
-  return complex<T>(x.real() - y.real(), x.imag() - y.imag());
-}
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator-(const complex<T0>& x, const complex<T1>& y);
 
 /*! Subtracts a scalar from a \p complex number.
  *
@@ -350,19 +586,11 @@ operator-(const complex<T0> &x, const complex<T1> &y)
  *
  *  \param x The \p complex (minuend).
  *  \param y The scalar (subtrahend).
- *
- *  \tparam \c T0 is convertible to \c T1.
  */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
-          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator-(const complex<T0> &x, const T1 &y)
-{
-  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
-  return complex<T>(x.real() - y, T(x.imag()));
-}
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator-(const complex<T0>& x, const T1& y);
 
 /*! Subtracts a \p complex number from a scalar.
  *
@@ -371,243 +599,457 @@ operator-(const complex<T0> &x, const T1 &y)
  *
  *  \param x The scalar (minuend).
  *  \param y The \p complex (subtrahend).
+ */
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator-(const T0& x, const complex<T1>& y);
+
+/*! Multiplies two \p complex numbers.
  *
- *  \tparam \c T0 is convertible to \c T1.
+ *  The value types of the two \p complex types should be compatible and the
+ *  type of the returned \p complex is the promoted type of the two arguments.
+ *
+ *  \param x The first \p complex.
+ *  \param y The second \p complex.
  */
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
-          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator-(const T0 &x, const complex<T1> &y)
-{
-  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
-  return complex<T>(x - y.real(), -T(y.imag()));
-}
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator*(const complex<T0>& x, const complex<T1>& y);
 
-/* --- Multiplication Operator --- */
+/*! Multiplies a \p complex number by a scalar.
+ *
+ *  \param x The \p complex.
+ *  \param y The scalar.
+ */
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator*(const complex<T0>& x, const T1& y);
 
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator*(const complex<T0> &x, const complex<T1> &y)
-{
-  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
-  // fall back to std implementation of multiplication
-  return ::cuda::std::complex<T>(x) * ::cuda::std::complex<T>(y);
-}
+/*! Multiplies a scalar by a \p complex number.
+ *
+ *  The value type of the \p complex should be compatible with the scalar and
+ *  the type of the returned \p complex is the promoted type of the two arguments.
+ *
+ *  \param x The scalar.
+ *  \param y The \p complex.
+ */
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator*(const T0& x, const complex<T1>& y);
 
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
-          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator*(const complex<T0> &x, const T1 &y)
-{
-  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
-  // fall back to std implementation of multiplication
-  return ::cuda::std::complex<T>(x) * ::cuda::std::complex<T>(y);
-}
+/*! Divides two \p complex numbers.
+ *
+ *  The value types of the two \p complex types should be compatible and the
+ *  type of the returned \p complex is the promoted type of the two arguments.
+ *
+ *  \param x The numerator (dividend).
+ *  \param y The denomimator (divisor).
+ */
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator/(const complex<T0>& x, const complex<T1>& y);
 
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
-          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator*(const T0 &x, const complex<T1> &y)
-{
-  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
-  // fall back to std implementation of multiplication
-  return ::cuda::std::complex<T>(x) * ::cuda::std::complex<T>(y);
-}
+/*! Divides a \p complex number by a scalar.
+ *
+ *  The value type of the \p complex should be compatible with the scalar and
+ *  the type of the returned \p complex is the promoted type of the two arguments.
+ *
+ *  \param x The complex numerator (dividend).
+ *  \param y The scalar denomimator (divisor).
+ */
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator/(const complex<T0>& x, const T1& y);
 
-/* --- Division Operator --- */
+/*! Divides a scalar by a \p complex number.
+ *
+ *  The value type of the \p complex should be compatible with the scalar and
+ *  the type of the returned \p complex is the promoted type of the two arguments.
+ *
+ *  \param x The scalar numerator (dividend).
+ *  \param y The complex denomimator (divisor).
+ */
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+operator/(const T0& x, const complex<T1>& y);
 
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator/(const complex<T0> &x, const complex<T1> &y)
-{
-  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
-  // fall back to std implementation of division
-  return ::cuda::std::complex<T>(x) / ::cuda::std::complex<T>(y);
-}
 
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
-          typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator/(const complex<T0> &x, const T1 &y)
-{
-  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
-  // fall back to std implementation of division
-  return ::cuda::std::complex<T>(x) / ::cuda::std::complex<T>(y);
-}
 
-template <typename T0,
-          typename T1,
-          typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
-          typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator/(const T0 &x, const complex<T1> &y)
-{
-  typedef typename detail::promoted_numerical_type<T0, T1>::type T;
-  // fall back to std implementation of division
-  return ::cuda::std::complex<T>(x) / ::cuda::std::complex<T>(y);
-}
+/* --- Unary Arithmetic operators --- */
 
-// The using declarations allows imports all necessary functions for thurst::complex.
-// However, they also lead to thrust::abs(1.0F) being valid code after include <thurst/complex.h>.
-// We are importing those for the plain value taking overloads and specialize for those taking
-// or returning a `thrust::complex` below
-using ::cuda::std::abs;
-using ::cuda::std::arg;
-using ::cuda::std::conj;
-using ::cuda::std::norm;
-// polar only takes a T but returns a complex<T> so we cannot pull that one in.
-// using ::cuda::std::polar;
-using ::cuda::std::proj;
-
-using ::cuda::std::exp;
-using ::cuda::std::log;
-using ::cuda::std::log10;
-// pow always returns a complex.
-// using ::cuda::std::pow;
-using ::cuda::std::sqrt;
-
-using ::cuda::std::acos;
-using ::cuda::std::acosh;
-using ::cuda::std::asin;
-using ::cuda::std::asinh;
-using ::cuda::std::atan;
-using ::cuda::std::atanh;
-using ::cuda::std::cos;
-using ::cuda::std::cosh;
-using ::cuda::std::sin;
-using ::cuda::std::sinh;
-using ::cuda::std::tan;
-using ::cuda::std::tanh;
-
-// Those functions return `cuda::std::complex<T>` so we must provide an explicit overload that returns `thrust::complex<T>`
-template<class T>
-__host__ __device__ complex<T> conj(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::conj(c));
-}
-template<class T>
-__host__ __device__ complex<T> polar(const T& rho, const T& theta = T{}) {
-  return static_cast<complex<T>>(::cuda::std::polar(rho, theta));
-}
-template<class T>
-__host__ __device__ complex<T> proj(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::proj(c));
-}
-
-template<class T>
-__host__ __device__ complex<T> exp(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::exp(c));
-}
-template<class T>
-__host__ __device__ complex<T> log(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::log(c));
-}
-template<class T>
-__host__ __device__ complex<T> log10(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::log10(c));
-}
-template<class T0, class T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-pow(const complex<T0>& x, const complex<T1>& y) {
-  return static_cast<complex<typename detail::promoted_numerical_type<T0, T1>::type>>(::cuda::std::pow(x, y));
-}
-template<class T0, class T1, ::cuda::std::__enable_if_t<::cuda::std::is_arithmetic<T1>::value, int> = 0>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-pow(const complex<T0>& x, const T1& y) {
-  return static_cast<complex<typename detail::promoted_numerical_type<T0, T1>::type>>(::cuda::std::pow(x, y));
-}
-template<class T0, class T1, ::cuda::std::__enable_if_t<::cuda::std::is_arithmetic<T0>::value, int> = 0>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-pow(const T0& x, const complex<T1>& y) {
-  return static_cast<complex<typename detail::promoted_numerical_type<T0, T1>::type>>(::cuda::std::pow(x, y));
-}
-template<class T>
-__host__ __device__ complex<T> sqrt(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::sqrt(c));
-}
-template<class T>
-__host__ __device__ complex<T> acos(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::acos(c));
-}
-template<class T>
-__host__ __device__ complex<T> acosh(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::acosh(c));
-}
-template<class T>
-__host__ __device__ complex<T> asin(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::asin(c));
-}
-template<class T>
-__host__ __device__ complex<T> asinh(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::asinh(c));
-}
-template<class T>
-__host__ __device__ complex<T> atan(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::atan(c));
-}
-template<class T>
-__host__ __device__ complex<T> atanh(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::atanh(c));
-}
-template<class T>
-__host__ __device__ complex<T> cos(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::cos(c));
-}
-template<class T>
-__host__ __device__ complex<T> cosh(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::cosh(c));
-}
-template<class T>
-__host__ __device__ complex<T> sin(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::sin(c));
-}
-template<class T>
-__host__ __device__ complex<T> sinh(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::sinh(c));
-}
-template<class T>
-__host__ __device__ complex<T> tan(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::tan(c));
-}
-template<class T>
-__host__ __device__ complex<T> tanh(const complex<T>& c) {
-  return static_cast<complex<T>>(::cuda::std::tanh(c));
-}
-
-template <typename T>
-struct proclaim_trivially_relocatable<complex<T>> : thrust::true_type
-{};
-
-/*! Is of `true_type` when \c T is either a thrust::complex, std::complex, or cuda::std::complex.
+/*! Unary plus, returns its \p complex argument.
+ *
+ *  \param y The \p complex argument.
  */
 template <typename T>
-struct is_complex : public thrust::false_type
-{};
+__host__ __device__
+complex<T>
+operator+(const complex<T>& y);
+
+/*! Unary minus, returns the additive inverse (negation) of its \p complex
+ * argument.
+ *
+ *  \param y The \p complex argument.
+ */
 template <typename T>
-struct is_complex<complex<T>> : public thrust::true_type
-{};
+__host__ __device__
+complex<T>
+operator-(const complex<T>& y);
+
+
+
+/* --- Exponential Functions --- */
+
+/*! Returns the complex exponential of a \p complex number.
+ *
+ *  \param z The \p complex argument.
+ */
 template <typename T>
-struct is_complex<::cuda::std::complex<T>> : public thrust::true_type
-{};
+__host__ __device__
+complex<T> exp(const complex<T>& z);
+
+/*! Returns the complex natural logarithm of a \p complex number.
+ *
+ *  \param z The \p complex argument.
+ */
 template <typename T>
-struct is_complex<::std::complex<T>> : public thrust::true_type
-{};
+__host__ __device__
+complex<T> log(const complex<T>& z);
+
+/*! Returns the complex base 10 logarithm of a \p complex number.
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> log10(const complex<T>& z);
+
+
+
+/* --- Power Functions --- */
+
+/*! Returns a \p complex number raised to another.
+ *
+ *  The value types of the two \p complex types should be compatible and the
+ *  type of the returned \p complex is the promoted type of the two arguments.
+ *
+ *  \param x The base.
+ *  \param y The exponent.
+ */
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+pow(const complex<T0>& x, const complex<T1>& y);
+
+/*! Returns a \p complex number raised to a scalar.
+ *
+ *  The value type of the \p complex should be compatible with the scalar and
+ *  the type of the returned \p complex is the promoted type of the two arguments.
+ *
+ *  \param x The base.
+ *  \param y The exponent.
+ */
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+pow(const complex<T0>& x, const T1& y);
+
+/*! Returns a scalar raised to a \p complex number.
+ *
+ *  The value type of the \p complex should be compatible with the scalar and
+ *  the type of the returned \p complex is the promoted type of the two arguments.
+ *
+ *  \param x The base.
+ *  \param y The exponent.
+ */
+template <typename T0, typename T1>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
+pow(const T0& x, const complex<T1>& y);
+
+/*! Returns the complex square root of a \p complex number.
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> sqrt(const complex<T>& z);
+
+
+/* --- Trigonometric Functions --- */
+
+/*! Returns the complex cosine of a \p complex number.
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> cos(const complex<T>& z);
+
+/*! Returns the complex sine of a \p complex number.
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> sin(const complex<T>& z);
+
+/*! Returns the complex tangent of a \p complex number.
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> tan(const complex<T>& z);
+
+
+
+/* --- Hyperbolic Functions --- */
+
+/*! Returns the complex hyperbolic cosine of a \p complex number.
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> cosh(const complex<T>& z);
+
+/*! Returns the complex hyperbolic sine of a \p complex number.
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> sinh(const complex<T>& z);
+
+/*! Returns the complex hyperbolic tangent of a \p complex number.
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> tanh(const complex<T>& z);
+
+
+
+/* --- Inverse Trigonometric Functions --- */
+
+/*! Returns the complex arc cosine of a \p complex number.
+ *
+ *  The range of the real part of the result is [0, Pi] and
+ *  the range of the imaginary part is [-inf, +inf]
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> acos(const complex<T>& z);
+
+/*! Returns the complex arc sine of a \p complex number.
+ *
+ *  The range of the real part of the result is [-Pi/2, Pi/2] and
+ *  the range of the imaginary part is [-inf, +inf]
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> asin(const complex<T>& z);
+
+/*! Returns the complex arc tangent of a \p complex number.
+ *
+ *  The range of the real part of the result is [-Pi/2, Pi/2] and
+ *  the range of the imaginary part is [-inf, +inf]
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> atan(const complex<T>& z);
+
+
+
+/* --- Inverse Hyperbolic Functions --- */
+
+/*! Returns the complex inverse hyperbolic cosine of a \p complex number.
+ *
+ *  The range of the real part of the result is [0, +inf] and
+ *  the range of the imaginary part is [-Pi, Pi]
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> acosh(const complex<T>& z);
+
+/*! Returns the complex inverse hyperbolic sine of a \p complex number.
+ *
+ *  The range of the real part of the result is [-inf, +inf] and
+ *  the range of the imaginary part is [-Pi/2, Pi/2]
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> asinh(const complex<T>& z);
+
+/*! Returns the complex inverse hyperbolic tangent of a \p complex number.
+ *
+ *  The range of the real part of the result is [-inf, +inf] and
+ *  the range of the imaginary part is [-Pi/2, Pi/2]
+ *
+ *  \param z The \p complex argument.
+ */
+template <typename T>
+__host__ __device__
+complex<T> atanh(const complex<T>& z);
+
+
+
+/* --- Stream Operators --- */
+
+/*! Writes to an output stream a \p complex number in the form (real, imaginary).
+ *
+ *  \param os The output stream.
+ *  \param z The \p complex number to output.
+ */
+template <typename T, typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>&
+operator<<(std::basic_ostream<CharT, Traits>& os, const complex<T>& z);
+
+/*! Reads a \p complex number from an input stream.
+ *
+ *  The recognized formats are:
+ * - real
+ * - (real)
+ * - (real, imaginary)
+ *
+ * The values read must be convertible to the \p complex's \c value_type
+ *
+ *  \param is The input stream.
+ *  \param z The \p complex number to set.
+ */
+template <typename T, typename CharT, typename Traits>
+__host__
+std::basic_istream<CharT, Traits>&
+operator>>(std::basic_istream<CharT, Traits>& is, complex<T>& z);
+
+
+
+/* --- Equality Operators --- */
+
+/*! Returns true if two \p complex numbers are equal and false otherwise.
+ *
+ *  \param x The first \p complex.
+ *  \param y The second \p complex.
+ */
+template <typename T0, typename T1>
+__host__ __device__
+bool operator==(const complex<T0>& x, const complex<T1>& y);
+
+/*! Returns true if two \p complex numbers are equal and false otherwise.
+ *
+ *  \param x The first \p complex.
+ *  \param y The second \p complex.
+ */
+template <typename T0, typename T1>
+__host__ THRUST_STD_COMPLEX_DEVICE
+bool operator==(const complex<T0>& x, const std::complex<T1>& y);
+
+/*! Returns true if two \p complex numbers are equal and false otherwise.
+ *
+ *  \param x The first \p complex.
+ *  \param y The second \p complex.
+ */
+template <typename T0, typename T1>
+__host__ THRUST_STD_COMPLEX_DEVICE
+bool operator==(const std::complex<T0>& x, const complex<T1>& y);
+
+/*! Returns true if the imaginary part of the \p complex number is zero and
+ *  the real part is equal to the scalar. Returns false otherwise.
+ *
+ *  \param x The scalar.
+ *  \param y The \p complex.
+ */
+template <typename T0, typename T1>
+__host__ __device__
+bool operator==(const T0& x, const complex<T1>& y);
+
+/*! Returns true if the imaginary part of the \p complex number is zero and
+ *  the real part is equal to the scalar. Returns false otherwise.
+ *
+ *  \param x The \p complex.
+ *  \param y The scalar.
+ */
+template <typename T0, typename T1>
+__host__ __device__
+bool operator==(const complex<T0>& x, const T1& y);
+
+/*! Returns true if two \p complex numbers are different and false otherwise.
+ *
+ *  \param x The first \p complex.
+ *  \param y The second \p complex.
+ */
+template <typename T0, typename T1>
+__host__ __device__
+bool operator!=(const complex<T0>& x, const complex<T1>& y);
+
+/*! Returns true if two \p complex numbers are different and false otherwise.
+ *
+ *  \param x The first \p complex.
+ *  \param y The second \p complex.
+ */
+template <typename T0, typename T1>
+__host__ THRUST_STD_COMPLEX_DEVICE
+bool operator!=(const complex<T0>& x, const std::complex<T1>& y);
+
+/*! Returns true if two \p complex numbers are different and false otherwise.
+ *
+ *  \param x The first \p complex.
+ *  \param y The second \p complex.
+ */
+template <typename T0, typename T1>
+__host__ THRUST_STD_COMPLEX_DEVICE
+bool operator!=(const std::complex<T0>& x, const complex<T1>& y);
+
+/*! Returns true if the imaginary part of the \p complex number is not zero or
+ *  the real part is different from the scalar. Returns false otherwise.
+ *
+ *  \param x The scalar.
+ *  \param y The \p complex.
+ */
+template <typename T0, typename T1>
+__host__ __device__
+bool operator!=(const T0& x, const complex<T1>& y);
+
+/*! Returns true if the imaginary part of the \p complex number is not zero or
+ *  the real part is different from the scalar. Returns false otherwise.
+ *
+ *  \param x The \p complex.
+ *  \param y The scalar.
+ */
+template <typename T0, typename T1>
+__host__ __device__
+bool operator!=(const complex<T0>& x, const T1& y);
 
 THRUST_NAMESPACE_END
+
+#include <thrust/detail/complex/complex.inl>
+
+#undef THRUST_STD_COMPLEX_REAL
+#undef THRUST_STD_COMPLEX_IMAG
+#undef THRUST_STD_COMPLEX_DEVICE
 
 /*! \} // complex_numbers
  */
 
 /*! \} // numerics
  */
+
