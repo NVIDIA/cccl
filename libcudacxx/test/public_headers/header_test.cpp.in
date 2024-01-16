@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if defined(_MSC_VER)
+# define NOMINMAX
+#endif
+
 // This file tests that the respective header is includable on its own without
 #include <${header}>
-int main(int, char**) { return 0; }

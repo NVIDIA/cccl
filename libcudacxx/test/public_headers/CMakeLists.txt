@@ -29,21 +29,18 @@ function(libcudacxx_add_public_header_test header)
   string(REPLACE "/" "_" header_name "${header}")
 
   # Create the source file for the header target from the template and add the file to the global project
-  set(headertest_src "headers/${header_name}.cu")
-  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/header_test.cpp.in" "${headertest_src}")
+  set(headertest_src "headers/${header_name}")
+  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/header_test.cpp.in" "${headertest_src}.cu")
+  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/header_test.cpp.in" "${headertest_src}.cpp")
 
   # Create the default target for that file
   set(headertest_${header_name} verify_${header_name})
-  add_library(headertest_${header_name} OBJECT ${headertest_src})
+  add_library(headertest_${header_name} SHARED "${headertest_src}.cu" "${headertest_src}.cpp")
   target_include_directories(headertest_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
-  if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
-    target_compile_options(headertest_${header_name} PRIVATE -Wall -Werror all-warnings)
-  elseif("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
-    target_compile_options(headertest_${header_name} PRIVATE
-      -Wall -Werror -Wno-unknown-cuda-version -Xclang=-fcuda-allow-variadic-functions)
-  else()
-    target_compile_options(headertest_${header_name} PRIVATE -Wall -Werror)
-  endif()
+  target_compile_options(headertest_${header_name}
+    PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:${headertest_warning_levels_device}>
+    $<$<COMPILE_LANGUAGE:CXX>:${headertest_warning_levels_host}>)
 
   # Ensure that if this is an atomic header, we only include the right architectures
   string(REGEX MATCH "atomic|barrier|latch|semaphore|annotated_ptr|pipeline" match "${header}")
