@@ -26,12 +26,14 @@
 #if !defined(_CCCL_EXEC_CHECK_DISABLE)
 #  if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDA_COMPILER_NVHPC) || defined(_CCCL_CUDA_COMPILER_CLANG)
 #    define _CCCL_EXEC_CHECK_DISABLE
-#  else // defined(_CCCL_CUDA_COMPILER_NVCC)
+#  elif defined(_CCCL_COMPILER_NVCC) // defined(_CCCL_CUDA_COMPILER_NVCC)
 #    if defined(_CCCL_COMPILER_MSVC)
 #      define _CCCL_EXEC_CHECK_DISABLE __pragma("nv_exec_check_disable")
 #    else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 #      define _CCCL_EXEC_CHECK_DISABLE _Pragma("nv_exec_check_disable")
 #    endif // !_CCCL_COMPILER_MSVC
+#  else
+#    define _CCCL_EXEC_CHECK_DISABLE
 #  endif // _CCCL_CUDA_COMPILER_NVCC
 #endif // !_CCCL_EXEC_CHECK_DISABLE
 
