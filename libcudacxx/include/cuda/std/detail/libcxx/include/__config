@@ -399,7 +399,7 @@ extern "C++" {
 #  define _LIBCUDACXX_NO_CFI
 #endif
 
-#if __ISO_C_VISIBLE >= 2011 || __cplusplus >= 201103L
+#if (defined(__ISO_C_VISIBLE) && __ISO_C_VISIBLE >= 2011) || __cplusplus >= 201103L
 #  if defined(__FreeBSD__)
 #    define _LIBCUDACXX_HAS_QUICK_EXIT
 #    define _LIBCUDACXX_HAS_C11_FEATURES
@@ -1752,24 +1752,34 @@ typedef unsigned int   char32_t;
 #  define _LIBCUDACXX_NODISCARD_FRIEND _LIBCUDACXX_NODISCARD_ATTRIBUTE friend
 #endif // !_LIBCUDACXX_CUDACC_BELOW_11_3 && !_LIBCUDACXX_COMPILER_CLANG
 
-#  ifdef _LIBCUDACXX_COMPILER_CLANG
+#  if defined(_LIBCUDACXX_COMPILER_CLANG)
 #    define _LIBCUDACXX_DIAGNOSTIC_PUSH _Pragma("clang diagnostic push")
 #    define _LIBCUDACXX_DIAGNOSTIC_POP _Pragma("clang diagnostic pop")
 #    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str) _Pragma(_LIBCUDACXX_TOSTRING(clang diagnostic ignored str))
 #    define _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED(str)
 #    define _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(str)
+#    define _LIBCUDACXX_MSVC_DIAGNOSTIC_IGNORED(str)
 #  elif defined(_LIBCUDACXX_COMPILER_GCC)
 #    define _LIBCUDACXX_DIAGNOSTIC_PUSH _Pragma("GCC diagnostic push")
 #    define _LIBCUDACXX_DIAGNOSTIC_POP _Pragma("GCC diagnostic pop")
 #    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str)
 #    define _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED(str) _Pragma(_LIBCUDACXX_TOSTRING(GCC diagnostic ignored str))
 #    define _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(str)
+#    define _LIBCUDACXX_MSVC_DIAGNOSTIC_IGNORED(str)
 #  elif defined(_LIBCUDACXX_COMPILER_NVHPC)
 #    define _LIBCUDACXX_DIAGNOSTIC_PUSH _Pragma("diagnostic push")
 #    define _LIBCUDACXX_DIAGNOSTIC_POP _Pragma("diagnostic pop")
 #    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str)
 #    define _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED(str)
 #    define _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(str) _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress str))
+#    define _LIBCUDACXX_MSVC_DIAGNOSTIC_IGNORED(str)
+#  elif defined(_LIBCUDACXX_COMPILER_MSVC)
+#    define _LIBCUDACXX_DIAGNOSTIC_PUSH __pragma(warning(push))
+#    define _LIBCUDACXX_DIAGNOSTIC_POP  __pragma(warning(pop))
+#    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str)
+#    define _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED(str)
+#    define _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(str)
+#    define _LIBCUDACXX_MSVC_DIAGNOSTIC_IGNORED(str) __pragma(warning(disable: str))
 #  else
 #    define _LIBCUDACXX_DIAGNOSTIC_PUSH
 #    define _LIBCUDACXX_DIAGNOSTIC_POP
