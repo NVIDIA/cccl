@@ -30,8 +30,11 @@ endif()
 # Libcudacxx auto-generated internal header tests
 add_subdirectory(internal_headers)
 
-# Libcudacxx auto-generated include/smoke tests
+# Libcudacxx auto-generated public header tests
 add_subdirectory(public_headers)
+
+# Libcudacxx auto-generated public header as std tests
+add_subdirectory(std_headers)
 
 # Enable building the nvrtcc project if NVRTC is enabled
 if (LIBCUDACXX_TEST_WITH_NVRTC)

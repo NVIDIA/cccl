@@ -125,6 +125,7 @@ message(STATUS "libcudacxx_LIT_FLAGS: ${libcudacxx_LIT_FLAGS}")
 if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
   # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
   # Only executed if explicitly requested.
+  # TODO add libcudacxx.test.std_headers once it compiles again
   add_custom_target(libcudacxx.test.lit.precompile
     DEPENDS libcudacxx.test.public_headers libcudacxx.test.internal_headers
     COMMAND "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
