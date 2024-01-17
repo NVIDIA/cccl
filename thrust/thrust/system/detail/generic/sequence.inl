@@ -25,11 +25,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/system/detail/generic/sequence.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/tabulate.h>
-
-#include <cuda/std/complex>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -86,20 +85,6 @@ struct compute_sequence_value<T, typename std::enable_if<std::is_arithmetic<T>::
   __thrust_exec_check_disable__
   __host__ __device__
   T operator()(std::size_t i) const
-  {
-    return init + step * static_cast<T>(i);
-  }
-};
-
-template <typename T>
-struct compute_sequence_value<::cuda::std::complex<T>, ::cuda::std::__enable_if_t<::cuda::std::is_arithmetic<T>::value>>
-{
-  ::cuda::std::complex<T> init;
-  ::cuda::std::complex<T> step;
-
-  __thrust_exec_check_disable__
-  __host__ __device__
-  ::cuda::std::complex<T> operator()(std::size_t i) const
   {
     return init + step * static_cast<T>(i);
   }
