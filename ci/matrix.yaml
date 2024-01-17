@@ -18,7 +18,7 @@ gcc9: &gcc9 { name: 'gcc', version: '9', exe: 'g++' }
 gcc10: &gcc10 { name: 'gcc', version: '10', exe: 'g++' }
 gcc11: &gcc11 { name: 'gcc', version: '11', exe: 'g++' }
 gcc12: &gcc12 { name: 'gcc', version: '12', exe: 'g++' }
-gcc12: &gcc13 { name: 'gcc', version: '13', exe: 'g++' }
+gcc13: &gcc13 { name: 'gcc', version: '13', exe: 'g++' }
 gcc-oldest: &gcc-oldest { name: 'gcc', version: '6', exe: 'g++' }
 gcc-newest: &gcc-newest { name: 'gcc', version: '13', exe: 'g++' }
 
