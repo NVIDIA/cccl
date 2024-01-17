@@ -3210,6 +3210,7 @@ constexpr hours make24(const hours& __h, bool __is_pm) noexcept
 _LIBCUDACXX_DIAGNOSTIC_PUSH
 _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wliteral-suffix")
 _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wuser-defined-literals")
+_LIBCUDACXX_MSVC_DIAGNOSTIC_IGNORED(4455)
 // Suffixes for duration literals [time.duration.literals]
 inline namespace literals
 {
