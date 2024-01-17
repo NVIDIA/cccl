@@ -47,7 +47,7 @@ public:
   // of work to do. So it is not worth hiding the <void> specialization in the dylib, given that
   // it adds deployment target restrictions.
   _LIBCUDACXX_INLINE_VISIBILITY
-  const char* what() const noexcept override { return "bad access to _CUDA_VSTD::expected"; }
+  const char* what() const noexcept override { return "bad access to std::expected"; }
 };
 
 template <class _Err>

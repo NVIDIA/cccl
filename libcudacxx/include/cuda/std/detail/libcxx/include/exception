@@ -116,6 +116,11 @@ public:
     _LIBCUDACXX_HOST_DEVICE virtual ~bad_exception() noexcept;
     _LIBCUDACXX_HOST_DEVICE virtual const char* what() const noexcept;
 };
+#else // ^^^ !_LIBCUDACXX_ABI_VCRUNTIME ^^^ / vvv _LIBCUDACXX_ABI_VCRUNTIME vvv
+// pull in the exception definition from vcruntime, which lives in namespace std
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+using ::std::exception;
+#endif // _LIBCUDACXX_COMPILER_MSVC
 #endif // !_LIBCUDACXX_ABI_VCRUNTIME
 
 #if _CCCL_STD_VER <= 2014 \
