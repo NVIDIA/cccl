@@ -17,6 +17,7 @@
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_class.h"
 #include "../__utility/declval.h"
+#include "../cstddef"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

@@ -15,6 +15,7 @@
 #endif // __cuda_std__
 
 #include "../__type_traits/is_integral.h"
+#include "../cstddef"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
