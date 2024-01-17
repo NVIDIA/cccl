@@ -11,8 +11,9 @@ file(GLOB public_headers
   "${libcudacxx_SOURCE_DIR}/include/cuda/std/*"
 )
 
-# annotated_ptr does not work with 11.8 currently due to __nv_associate_access_property
-if ("${CMAKE_CUDA_COMPILER_VERSION}" MATCHES "11\.*\.*")
+# annotated_ptr does not work with nvcc 11.1 or clang cuda due to __nv_associate_access_property
+if ("${CMAKE_CUDA_COMPILER_VERSION}" MATCHES "11\.*\.*" OR
+    "${CMAKE_CUDA_COMPILER_ID}" MATCHES "Clang")
   list(FILTER public_headers EXCLUDE REGEX "annotated_ptr")
 endif()
 
