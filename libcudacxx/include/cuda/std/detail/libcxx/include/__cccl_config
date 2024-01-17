@@ -50,6 +50,12 @@
 #  define _CCCL_CUDA_COMPILER_CLANG
 #endif
 
+// Shorthand to check whether there is a cuda compiler available
+#if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_CUDA_COMPILER_NVHPC) || defined(_CCCL_CUDA_COMPILER_CLANG) \
+  || defined(_CCCL_COMPILER_NVRTC)
+#  define _CCCL_CUDA_COMPILER
+#endif // cuda compiler available
+
 // Enforce that cccl headers are treated as system headers
 #if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_NVHPC) || defined(_CCCL_COMPILER_ICC) \
   || defined(_CCCL_COMPILER_ICC_LLVM)
@@ -113,7 +119,7 @@
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str)
 #  define _CCCL_DIAG_SUPPRESS_GCC(str)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
-#  define _CCCL_DIAG_SUPPRESS_MSVC(str) __pragma(warning(disable: str))
+#  define _CCCL_DIAG_SUPPRESS_MSVC(str) __pragma(warning(disable : str))
 #else
 #  define _CCCL_DIAG_PUSH
 #  define _CCCL_DIAG_POP

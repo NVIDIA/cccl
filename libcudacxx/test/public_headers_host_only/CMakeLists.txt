@@ -1,11 +1,11 @@
 # For every public header build a TU that directly includes it
 # without anything else but also pretents to be a std header
-add_custom_target(libcudacxx.test.std_headers)
+add_custom_target(libcudacxx.test.public_headers_host_only)
 
 # Grep all public headers
-file(GLOB std_headers
+file(GLOB public_headers_host_only
   LIST_DIRECTORIES false
-  RELATIVE "${libcudacxx_SOURCE_DIR}/include/cuda/std"
+  RELATIVE "${libcudacxx_SOURCE_DIR}/include/"
   CONFIGURE_DEPENDS
   "${libcudacxx_SOURCE_DIR}/include/cuda/std/*"
 )
@@ -19,15 +19,14 @@ function(libcudacxx_add_std_header_test header)
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/header_test.cpp.in" "${headertest_src}.cpp")
 
   # Create the default target for that file
-  set(headertest_${header_name} verify_${header_name})
-  add_library(headertest_${header_name} SHARED "${headertest_src}.cpp")
-  target_include_directories(headertest_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
-  target_include_directories(headertest_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include/cuda/std/detail/libcxx/include")
-  target_compile_options(headertest_${header_name} PRIVATE ${headertest_warning_levels_host})
+  set(headertest_std_${header_name} verify_${header_name})
+  add_library(headertest_std_${header_name} SHARED "${headertest_src}.cpp")
+  target_include_directories(headertest_std_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
+  target_compile_options(headertest_std_${header_name} PRIVATE ${headertest_warning_levels_host})
 
-  add_dependencies(libcudacxx.test.std_headers headertest_${header_name})
+  add_dependencies(libcudacxx.test.public_headers_host_only headertest_std_${header_name})
 endfunction()
 
-foreach(header IN LISTS std_headers)
+foreach(header IN LISTS public_headers_host_only)
   libcudacxx_add_std_header_test(${header})
 endforeach()
