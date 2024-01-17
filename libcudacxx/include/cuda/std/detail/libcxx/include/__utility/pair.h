@@ -87,12 +87,12 @@ struct __pair_constraints
     !__implicit_default_constructible && _LIBCUDACXX_TRAIT(is_default_constructible, _T1)
     && _LIBCUDACXX_TRAIT(is_default_constructible, _T2);
 
-  static constexpr bool __explicit_copy_constructible_from_elements =
+  static constexpr bool __explicit_constructible_from_elements =
     _LIBCUDACXX_TRAIT(is_copy_constructible, _T1) && _LIBCUDACXX_TRAIT(is_copy_constructible, _T2)
     && (!_LIBCUDACXX_TRAIT(is_convertible, __make_const_lvalue_ref<_T1>, _T1)
         || !_LIBCUDACXX_TRAIT(is_convertible, __make_const_lvalue_ref<_T2>, _T2));
 
-  static constexpr bool __implicit_copy_constructible_from_elements =
+  static constexpr bool __implicit_constructible_from_elements =
     _LIBCUDACXX_TRAIT(is_copy_constructible, _T1) && _LIBCUDACXX_TRAIT(is_copy_constructible, _T2)
     && _LIBCUDACXX_TRAIT(is_convertible, __make_const_lvalue_ref<_T1>, _T1)
     && _LIBCUDACXX_TRAIT(is_convertible, __make_const_lvalue_ref<_T2>, _T2);
@@ -272,14 +272,14 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
 
   // element wise constructors
   template <class _Constraints                                                     = __pair_constraints<_T1, _T2>,
-            __enable_if_t<_Constraints::__explicit_copy_constructible_from_elements, int> = 0>
+            __enable_if_t<_Constraints::__explicit_constructible_from_elements, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _T1) && _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _T2))
       : __base(__t1, __t2)
   {}
 
   template <class _Constraints                                                     = __pair_constraints<_T1, _T2>,
-            __enable_if_t<_Constraints::__implicit_copy_constructible_from_elements, int> = 0>
+            __enable_if_t<_Constraints::__implicit_constructible_from_elements, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _T1) && _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _T2))
       : __base(__t1, __t2)
