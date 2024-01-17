@@ -189,26 +189,28 @@
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
 // This is cribbed from __config; but lives here as well because we can't assume libc++
-#if defined(__FreeBSD__)
-// Specifically, FreeBSD does NOT have timespec_get, even though they have all
-// the rest of C11 - this is PR#38495
-#  define TEST_HAS_C11_FEATURES
-#elif defined(__Fuchsia__) || defined(__wasi__)
-#  define TEST_HAS_C11_FEATURES
-#  define TEST_HAS_TIMESPEC_GET
-#elif defined(__linux__)
-//This block preserves the old behavior used by include/__config:
-//_LIBCUDACXX_GLIBC_PREREQ would be defined to 0 if __GLIBC_PREREQ was not
-//available. The configuration here may be too vague though, as Bionic, uClibc,
-//newlib, etc may all support these features but need to be configured.
-#  if defined(TEST_GLIBC_PREREQ)
-#    if TEST_GLIBC_PREREQ(2, 17)
-#      define TEST_HAS_TIMESPEC_GET
-#      define TEST_HAS_C11_FEATURES
-#    endif
-#  elif defined(_LIBCUDACXX_HAS_MUSL_LIBC)
+#if __ISO_C_VISIBLE >= 2011 || TEST_STD_VER >= 2011
+#  if defined(__FreeBSD__)
+//  Specifically, FreeBSD does NOT have timespec_get, even though they have all
+//  the rest of C11 - this is PR#38495
+#    define TEST_HAS_C11_FEATURES
+#  elif defined(__Fuchsia__) || defined(__wasi__)
 #    define TEST_HAS_C11_FEATURES
 #    define TEST_HAS_TIMESPEC_GET
+#  elif defined(__linux__)
+// This block preserves the old behavior used by include/__config:
+// _LIBCUDACXX_GLIBC_PREREQ would be defined to 0 if __GLIBC_PREREQ was not
+// available. The configuration here may be too vague though, as Bionic, uClibc,
+// newlib, etc may all support these features but need to be configured.
+#    if defined(TEST_GLIBC_PREREQ)
+#      if TEST_GLIBC_PREREQ(2, 17)
+#        define TEST_HAS_TIMESPEC_GET
+#        define TEST_HAS_C11_FEATURES
+#      endif
+#    elif defined(_LIBCUDACXX_HAS_MUSL_LIBC)
+#      define TEST_HAS_C11_FEATURES
+#      define TEST_HAS_TIMESPEC_GET
+#    endif
 #  endif
 #endif
 
@@ -269,7 +271,6 @@
 #if defined(_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR)
 #define TEST_HAS_NO_SPACESHIP_OPERATOR
 #endif
-
 
 #define ASSERT_NOEXCEPT(...) \
     static_assert(noexcept(__VA_ARGS__), "Operation must be noexcept")

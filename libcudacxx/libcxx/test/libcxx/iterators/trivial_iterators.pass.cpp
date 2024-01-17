@@ -64,7 +64,7 @@ public:
         {return !(x == y);}
 
     template <class T>
-    void operator,(T const &) delete;
+    void operator,(T const &) = delete;
 };
 
 template <class T, class U>

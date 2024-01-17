@@ -147,8 +147,6 @@ int main(int, char**)
 
     test_is_not_constructible<A> ();
     test_is_not_constructible<A, char> ();
-#else
-    test_is_constructible<A, char> ();
     test_is_not_constructible<A, void> ();
     test_is_not_constructible<int, void()>();
     test_is_not_constructible<int, void(&)()>();
