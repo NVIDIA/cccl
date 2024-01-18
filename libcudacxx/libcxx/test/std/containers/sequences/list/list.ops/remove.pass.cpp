@@ -87,7 +87,6 @@ int main(int, char**) {
 #endif
     assert(c == List(a2, a2 + 3, Alloc::create()));
   }
-#if TEST_STD_VER >= 2011
   {
     int a1[] = {1, 2, 3, 4};
     int a2[] = {1, 2, 4};
@@ -99,7 +98,6 @@ int main(int, char**) {
 #endif
     assert((c == std::list<int, min_allocator<int>>(a2, a2 + 3)));
   }
-#endif
 
   return 0;
 }

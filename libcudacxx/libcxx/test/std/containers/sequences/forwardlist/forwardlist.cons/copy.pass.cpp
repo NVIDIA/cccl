@@ -34,7 +34,6 @@ int main(int, char**)
         assert(c == c0);
         assert(c.get_allocator() == A(10));
     }
-#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef other_allocator<int> A;
@@ -63,7 +62,6 @@ int main(int, char**)
         assert(c == c0);
         assert(c.get_allocator() == A());
     }
-#endif
 
   return 0;
 }

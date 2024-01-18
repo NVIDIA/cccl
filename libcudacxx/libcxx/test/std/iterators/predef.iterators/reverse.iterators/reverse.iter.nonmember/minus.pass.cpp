@@ -50,10 +50,8 @@ TEST_CONSTEXPR_CXX17 bool tests() {
     // Test non-subtractable base iterator types
     static_assert( HasMinus<std::reverse_iterator<int*>, std::reverse_iterator<int*> >::value, "");
     static_assert( HasMinus<std::reverse_iterator<int*>, std::reverse_iterator<const int*> >::value, "");
-#if TEST_STD_VER >= 2011
     static_assert(!HasMinus<std::reverse_iterator<int*>, std::reverse_iterator<char*> >::value, "");
     static_assert(!HasMinus<std::reverse_iterator<bidirectional_iterator<int*> >, std::reverse_iterator<bidirectional_iterator<int*> > >::value, "");
-#endif
 
     return true;
 }

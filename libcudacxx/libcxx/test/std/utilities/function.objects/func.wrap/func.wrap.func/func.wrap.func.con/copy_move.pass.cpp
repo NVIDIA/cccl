@@ -100,7 +100,6 @@ int main(int, char**)
     assert(g.target<A>() == 0);
     assert(!g);
     }
-#if TEST_STD_VER >= 2011
     assert(globalMemCounter.checkOutstandingNewEq(0));
     { // Test rvalue references
         std::function<int(int)> f = A();
@@ -160,7 +159,6 @@ int main(int, char**)
         assert(f2.target<Ptr>());
         LIBCPP_ASSERT(f.target<Ptr>()); // f is unchanged because the target is small
     }
-#endif  // TEST_STD_VER >= 2011
 
   return 0;
 }

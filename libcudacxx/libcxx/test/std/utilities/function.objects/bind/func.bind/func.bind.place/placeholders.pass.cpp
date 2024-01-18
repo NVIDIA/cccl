@@ -31,7 +31,6 @@ test(const T& t)
     static_assert(std::is_nothrow_move_constructible<T>::value, "");
 }
 
-#if TEST_STD_VER >= 2011
 constexpr decltype(std::placeholders::_1)  default1{};
 constexpr decltype(std::placeholders::_2)  default2{};
 constexpr decltype(std::placeholders::_3)  default3{};
@@ -53,10 +52,8 @@ constexpr decltype(std::placeholders::_7)  cp7 = std::placeholders::_7;
 constexpr decltype(std::placeholders::_8)  cp8 = std::placeholders::_8;
 constexpr decltype(std::placeholders::_9)  cp9 = std::placeholders::_9;
 constexpr decltype(std::placeholders::_10) cp10 = std::placeholders::_10;
-#endif // TEST_STD_VER >= 2011
 
 void use_placeholders_to_prevent_unused_warning() {
-#if TEST_STD_VER >= 2011
   ((void)cp1);
   ((void)cp2);
   ((void)cp3);
@@ -77,7 +74,6 @@ void use_placeholders_to_prevent_unused_warning() {
   ((void)default8);
   ((void)default9);
   ((void)default10);
-#endif
 }
 
 int main(int, char**)

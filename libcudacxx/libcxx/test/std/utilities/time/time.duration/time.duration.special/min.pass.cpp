@@ -31,13 +31,11 @@ void test()
     Rep min_rep = std::chrono::duration_values<Rep>::min();
     assert(D::min().count() == min_rep);
     }
-#if TEST_STD_VER >= 2011
     {
     typedef typename D::rep Rep;
     constexpr Rep min_rep = std::chrono::duration_values<Rep>::min();
     static_assert(D::min().count() == min_rep, "");
     }
-#endif
 }
 
 int main(int, char**)

@@ -60,9 +60,7 @@ int main(int, char**)
     static_assert((std::is_same<std::pointer_traits<C<int> >::element_type, int>::value), "");
     static_assert((std::is_same<std::pointer_traits<D<double, int> >::element_type, double>::value), "");
     static_assert((std::is_same<std::pointer_traits<E<double, int> >::element_type, double>::value), "");
-#if TEST_STD_VER >= 2011
     static_assert((std::is_same<std::pointer_traits<F<double>>::element_type, double>::value), "");
-#endif
 
 
   return 0;

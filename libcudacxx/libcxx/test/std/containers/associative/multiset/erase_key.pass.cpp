@@ -72,7 +72,6 @@ int main(int, char**)
         assert(m.size() == 0);
         assert(i == 3);
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::multiset<int, std::less<int>, min_allocator<int>> M;
         typedef int V;
@@ -125,7 +124,6 @@ int main(int, char**)
         assert(m.size() == 0);
         assert(i == 3);
     }
-#endif
 
   return 0;
 }

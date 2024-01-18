@@ -50,7 +50,6 @@ int main(int, char**)
         assert(distance(l1.cbegin(), l1.cend()) == 0);
         assert(i == l1.begin());
     }
-#if TEST_STD_VER >= 2011
     {
         std::vector<bool, min_allocator<bool>> l1(a1, a1+3);
         std::vector<bool, min_allocator<bool>>::iterator i = l1.erase(l1.cbegin(), l1.cbegin());
@@ -81,7 +80,6 @@ int main(int, char**)
         assert(distance(l1.cbegin(), l1.cend()) == 0);
         assert(i == l1.begin());
     }
-#endif
 
   return 0;
 }

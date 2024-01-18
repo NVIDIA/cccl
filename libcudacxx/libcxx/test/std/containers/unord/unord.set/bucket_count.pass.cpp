@@ -44,7 +44,6 @@ int main(int, char**)
         const C c(std::begin(a), std::end(a));
         assert(c.bucket_count() >= 8);
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_set<int, std::hash<int>, std::equal_to<int>, min_allocator<int>> C;
         const C c;
@@ -67,7 +66,6 @@ int main(int, char**)
         const C c(std::begin(a), std::end(a));
         assert(c.bucket_count() >= 8);
     }
-#endif
 
   return 0;
 }

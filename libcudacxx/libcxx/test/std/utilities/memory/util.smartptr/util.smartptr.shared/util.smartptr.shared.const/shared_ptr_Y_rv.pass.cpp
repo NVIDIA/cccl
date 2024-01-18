@@ -69,24 +69,13 @@ int main(int, char**)
             std::shared_ptr<B> pB(std::move(pA));
             assert(B::count == 1);
             assert(A::count == 1);
-#if TEST_STD_VER >= 2011
             assert(pB.use_count() == 1);
             assert(pA.use_count() == 0);
-#else
-            assert(pB.use_count() == 2);
-            assert(pA.use_count() == 2);
-#endif
             assert(p == pB.get());
         }
-#if TEST_STD_VER >= 2011
         assert(pA.use_count() == 0);
         assert(B::count == 0);
         assert(A::count == 0);
-#else
-        assert(pA.use_count() == 1);
-        assert(B::count == 1);
-        assert(A::count == 1);
-#endif
     }
     assert(B::count == 0);
     assert(A::count == 0);

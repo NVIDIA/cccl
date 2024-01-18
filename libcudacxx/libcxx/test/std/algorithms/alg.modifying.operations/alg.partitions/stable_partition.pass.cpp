@@ -281,7 +281,6 @@ test()
     }
 }
 
-#if TEST_STD_VER >= 2011
 
 struct is_null
 {
@@ -299,7 +298,6 @@ test1()
     assert(r == Iter(array+size));
 }
 
-#endif  // TEST_STD_VER >= 2011
 
 int main(int, char**)
 {
@@ -307,9 +305,7 @@ int main(int, char**)
     test<random_access_iterator<std::pair<int,int>*> >();
     test<std::pair<int,int>*>();
 
-#if TEST_STD_VER >= 2011
     test1<bidirectional_iterator<std::unique_ptr<int>*> >();
-#endif
 
   return 0;
 }

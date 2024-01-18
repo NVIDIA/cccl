@@ -149,7 +149,6 @@
 #endif
 #endif
 
-#if TEST_STD_VER >= 2011
 #define TEST_ALIGNOF(...) alignof(__VA_ARGS__)
 #define TEST_ALIGNAS(...) alignas(__VA_ARGS__)
 #define TEST_CONSTEXPR constexpr
@@ -165,40 +164,27 @@
 # define TEST_IS_CONSTANT_EVALUATED false
 #endif
 
-# if TEST_STD_VER >= 2014
-#   define TEST_CONSTEXPR_CXX14 constexpr
-# else
-#   define TEST_CONSTEXPR_CXX14
-# endif
-# if TEST_STD_VER >= 2017
-#   define TEST_CONSTEXPR_CXX17 constexpr
-# else
-#   define TEST_CONSTEXPR_CXX17
-# endif
-# if TEST_STD_VER >= 2020
-#   define TEST_CONSTEXPR_CXX20 constexpr
-# else
-#   define TEST_CONSTEXPR_CXX20
-# endif
-# if TEST_STD_VER > 2014
-#   define TEST_THROW_SPEC(...)
-# else
-#   define TEST_THROW_SPEC(...) throw(__VA_ARGS__)
-# endif
+#if TEST_STD_VER >= 2014
+#  define TEST_CONSTEXPR_CXX14 constexpr
 #else
-#if defined(TEST_COMPILER_CLANG)
-# define TEST_ALIGNOF(...) _Alignof(__VA_ARGS__)
+#  define TEST_CONSTEXPR_CXX14
+#endif
+#if TEST_STD_VER >= 2017
+#  define TEST_CONSTEXPR_CXX17 constexpr
 #else
-# define TEST_ALIGNOF(...) __alignof(__VA_ARGS__)
+#  define TEST_CONSTEXPR_CXX17
 #endif
-#define TEST_ALIGNAS(...) __attribute__((__aligned__(__VA_ARGS__)))
-#define TEST_CONSTEXPR
-#define TEST_CONSTEXPR_CXX14
-#define TEST_NOEXCEPT throw()
-#define TEST_NOEXCEPT_FALSE
-#define TEST_NOEXCEPT_COND(...)
-#define TEST_THROW_SPEC(...) throw(__VA_ARGS__)
+#if TEST_STD_VER >= 2020
+#  define TEST_CONSTEXPR_CXX20 constexpr
+#else
+#  define TEST_CONSTEXPR_CXX20
 #endif
+#if TEST_STD_VER > 2014
+#  define TEST_THROW_SPEC(...)
+#else
+#  define TEST_THROW_SPEC(...) throw(__VA_ARGS__)
+#endif
+
 
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
@@ -286,16 +272,11 @@
 #define TEST_HAS_NO_SPACESHIP_OPERATOR
 #endif
 
-#if TEST_STD_VER < 2011
-#define ASSERT_NOEXCEPT(...)
-#define ASSERT_NOT_NOEXCEPT(...)
-#else
 #define ASSERT_NOEXCEPT(...) \
     static_assert(noexcept(__VA_ARGS__), "Operation must be noexcept")
 
 #define ASSERT_NOT_NOEXCEPT(...) \
     static_assert(!noexcept(__VA_ARGS__), "Operation must NOT be noexcept")
-#endif
 
 /* Macros for testing libc++ specific behavior and extensions */
 #if defined(_LIBCUDACXX_VERSION)

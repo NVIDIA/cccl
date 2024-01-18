@@ -49,7 +49,6 @@ int main(int, char**)
         assert(std::distance(r.first, r.second) == 1);
         assert(*r.first == 50);
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_set<int, std::hash<int>, std::equal_to<int>, min_allocator<int>> C;
         typedef C::const_iterator I;
@@ -77,7 +76,6 @@ int main(int, char**)
         assert(std::distance(r.first, r.second) == 1);
         assert(*r.first == 50);
     }
-#endif
 
   return 0;
 }

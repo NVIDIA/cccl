@@ -28,12 +28,10 @@ void test0(typename S::value_type lhs, const S& rhs, const S& x) {
   assert(lhs + rhs == x);
 }
 
-#if TEST_STD_VER >= 2011
 template <class S>
 void test1(typename S::value_type lhs, S&& rhs, const S& x) {
   assert(lhs + std::move(rhs) == x);
 }
-#endif
 
 int main(int, char**) {
   {
@@ -43,7 +41,6 @@ int main(int, char**) {
     test0('a', S("1234567890"), S("a1234567890"));
     test0('a', S("12345678901234567890"), S("a12345678901234567890"));
   }
-#if TEST_STD_VER >= 2011
   {
     typedef std::string S;
     test1('a', S(""), S("a"));
@@ -65,7 +62,6 @@ int main(int, char**) {
     test1('a', S("1234567890"), S("a1234567890"));
     test1('a', S("12345678901234567890"), S("a12345678901234567890"));
   }
-#endif
 
   return 0;
 }

@@ -42,13 +42,11 @@ int main(int, char**)
     static_assert(tests(), "");
 #endif
 
-#if TEST_STD_VER >= 2011
     // Sanity check for constexpr in C++11
     {
         constexpr std::array<int, 3> array = {};
         static_assert(!array.empty(), "");
     }
-#endif
 
     return 0;
 }

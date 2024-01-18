@@ -116,7 +116,6 @@ int main(int, char**)
         i = l2.begin();
         assert(*i == 4);
     }
-#if TEST_STD_VER >= 2011
     {
         std::list<int, min_allocator<int>> l1(a1, a1+3);
         l1.splice(l1.begin(), l1, next(l1.begin()), next(l1.begin()));
@@ -213,7 +212,6 @@ int main(int, char**)
         i = l2.begin();
         assert(*i == 4);
     }
-#endif
 
   return 0;
 }

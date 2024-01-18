@@ -21,7 +21,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 2011
 #include <memory>
 
 struct indirect_less
@@ -53,7 +52,6 @@ struct S {
     };
 
 
-#endif  // TEST_STD_VER >= 2011
 
 #include "test_iterators.h"
 #include "counting_predicates.h"
@@ -141,7 +139,6 @@ int main(int, char**)
     test<random_access_iterator<int*> >();
     test<int*>();
 
-#if TEST_STD_VER >= 2011
     test<bidirectional_iterator<S*> >();
     test<random_access_iterator<S*> >();
     test<S*>();
@@ -164,7 +161,6 @@ int main(int, char**)
     }
     delete [] ia;
     }
-#endif  // TEST_STD_VER >= 2011
 
     test_PR31166();
 

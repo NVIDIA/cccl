@@ -54,7 +54,6 @@ __host__ __device__ void test_type() {
   test<T, 0>();
 }
 
-#if TEST_STD_VER >= 2011
 struct alignas(alignof(cuda::std::max_align_t) * 2) TestType1 {
 
 };
@@ -66,7 +65,6 @@ struct alignas(alignof(cuda::std::max_align_t) * 2) TestType2 {
 struct alignas(alignof(cuda::std::max_align_t)) TestType3 {
   char data[1000];
 };
-#endif
 
 int main(int, char**) {
   test_type<char>();
@@ -74,12 +72,10 @@ int main(int, char**) {
   test_type<double>();
   test_type<long double>();
 
-#if TEST_STD_VER >= 2011
   test_type<cuda::std::max_align_t>();
   test_type<TestType1>();
   test_type<TestType2>();
   test_type<TestType3>();
-#endif
 
   return 0;
 }

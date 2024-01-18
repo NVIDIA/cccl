@@ -113,7 +113,6 @@ int main(int, char**)
     assert(c1.empty());
     }
 
-#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef std::forward_list<T, min_allocator<T>> C;
@@ -162,7 +161,6 @@ int main(int, char**)
         do_unique(c1, g, 2);
         assert(c1 == c2);
     }
-#endif
 
   return 0;
 }

@@ -52,7 +52,6 @@ int A::count = 0;
 
 int g(int) {return 0;}
 
-#if TEST_STD_VER >= 2011
 struct RValueCallable {
     template <class ...Args>
     void operator()(Args&&...) && {}
@@ -61,7 +60,6 @@ struct LValueCallable {
     template <class ...Args>
     void operator()(Args&&...) & {}
 };
-#endif
 
 int main(int, char**)
 {
@@ -106,7 +104,6 @@ int main(int, char**)
     assert(f.target<int(*)(int)>() != 0);
     f(1);
     }
-#if TEST_STD_VER >= 2011
     {
         using Fn = std::function<void(int, int, int)>;
         static_assert(std::is_assignable<Fn&, LValueCallable&>::value, "");
@@ -114,7 +111,6 @@ int main(int, char**)
         static_assert(!std::is_assignable<Fn&, RValueCallable&>::value, "");
         static_assert(!std::is_assignable<Fn&, RValueCallable>::value, "");
     }
-#endif
 
   return 0;
 }

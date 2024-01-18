@@ -18,12 +18,6 @@
 #include "test_macros.h"
 #include "count_new.h"
 
-#if TEST_STD_VER >= 2011
-#define DELETE_FUNCTION = delete
-#else
-#define DELETE_FUNCTION
-#endif
-
 struct A
 {
     static int count;
@@ -37,7 +31,7 @@ struct A
     int get_int() const {return int_;}
     char get_char() const {return char_;}
 
-    A* operator& () DELETE_FUNCTION;
+    A* operator& () = delete;
 
 private:
     int int_;
@@ -95,7 +89,6 @@ int main(int, char**)
 
     test_pointer_to_function();
 
-#if TEST_STD_VER >= 2011
     nc = globalMemCounter.outstanding_new;
     {
     char c = 'e';
@@ -105,7 +98,6 @@ int main(int, char**)
     assert(p->get_int() == 67);
     assert(p->get_char() == 'e');
     }
-#endif
     assert(A::count == 0);
 
   return 0;

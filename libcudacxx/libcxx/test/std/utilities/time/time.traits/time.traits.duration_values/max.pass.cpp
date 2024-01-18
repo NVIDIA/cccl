@@ -25,14 +25,12 @@ int main(int, char**)
            std::numeric_limits<double>::max());
     assert(std::chrono::duration_values<Rep>::max() ==
            std::numeric_limits<Rep>::max());
-#if TEST_STD_VER >= 2011
     static_assert(std::chrono::duration_values<int>::max() ==
            std::numeric_limits<int>::max(), "");
     static_assert(std::chrono::duration_values<double>::max() ==
            std::numeric_limits<double>::max(), "");
     static_assert(std::chrono::duration_values<Rep>::max() ==
            std::numeric_limits<Rep>::max(), "");
-#endif
 
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<int>::max());
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<double>::max());

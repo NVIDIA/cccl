@@ -55,7 +55,6 @@ struct B
 
 int main(int, char**)
 {
-#if TEST_STD_VER >= 2011
   {
     A<int> a;
     assert(std::allocator_traits<A<int> >::allocate(a, 10, nullptr) == reinterpret_cast<int*>(static_cast<std::uintptr_t>(0xDEADBEEF)));
@@ -66,7 +65,6 @@ int main(int, char**)
     Alloc a;
     assert(std::allocator_traits<Alloc >::allocate(a, 10, nullptr) == reinterpret_cast<VT*>(static_cast<std::uintptr_t>(0xDEADBEEF)));
   }
-#endif
   {
     B<int> b;
     assert(std::allocator_traits<B<int> >::allocate(b, 11, nullptr) == reinterpret_cast<int*>(static_cast<std::uintptr_t>(0xFEADBEEF)));

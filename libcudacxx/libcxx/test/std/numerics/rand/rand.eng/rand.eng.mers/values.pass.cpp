@@ -61,13 +61,8 @@ test1()
     static_assert((E::tempering_c == 0xefc60000), "");
     static_assert((E::tempering_l == 18), "");
     static_assert((E::initialization_multiplier == 1812433253), "");
-#if TEST_STD_VER >= 2011
     static_assert((E::min() == 0), "");
     static_assert((E::max() == 0xFFFFFFFF), "");
-#else
-    assert((E::min() == 0));
-    assert((E::max() == 0xFFFFFFFF));
-#endif
     static_assert((E::default_seed == 5489u), "");
     where(E::word_size);
     where(E::state_size);
@@ -102,13 +97,8 @@ test2()
     static_assert((E::tempering_c == 0xfff7eee000000000ull), "");
     static_assert((E::tempering_l == 43), "");
     static_assert((E::initialization_multiplier == 6364136223846793005ull), "");
-#if TEST_STD_VER >= 2011
     static_assert((E::min() == 0), "");
     static_assert((E::max() == 0xFFFFFFFFFFFFFFFFull), "");
-#else
-    assert((E::min() == 0));
-    assert((E::max() == 0xFFFFFFFFFFFFFFFFull));
-#endif
     static_assert((E::default_seed == 5489u), "");
     where(E::word_size);
     where(E::state_size);

@@ -88,7 +88,6 @@ int main(int, char**) {
     test2 ( u8"", 0 );
 #endif
 
-#if TEST_STD_VER >= 2011
     test2 ( u"ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE", 105 );
     test2 ( u"ABCDE", 5 );
     test2 ( u"a", 1 );
@@ -98,7 +97,6 @@ int main(int, char**) {
     test2 ( U"ABCDE", 5 );
     test2 ( U"a", 1 );
     test2 ( U"", 0 );
-#endif
 
   return 0;
 }

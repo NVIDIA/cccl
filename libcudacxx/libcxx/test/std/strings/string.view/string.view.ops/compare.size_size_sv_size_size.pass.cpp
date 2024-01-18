@@ -5819,7 +5819,6 @@ int main(int, char**) {
     test(L"ABCde", 2, 4, L"abcde", 2, 4, -1);
     }
 
-#if TEST_STD_VER >= 2011
     {
     test(u"abcde", 5, 1, u"", 0, 0, 0);
     test(u"abcde", 2, 4, u"", 0, 0, 3);
@@ -5833,7 +5832,6 @@ int main(int, char**) {
     test(U"abcde", 2, 4, U"abcde", 3, 4, -2);
     test(U"ABCde", 2, 4, U"abcde", 2, 4, -1);
     }
-#endif
 
 #if TEST_STD_VER > 2011
     {

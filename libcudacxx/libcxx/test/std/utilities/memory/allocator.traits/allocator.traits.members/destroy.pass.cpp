@@ -72,7 +72,6 @@ int main(int, char**)
       std::aligned_storage<sizeof(VT)>::type store;
       std::allocator_traits<Alloc>::destroy(a, (VT*)&store);
     }
-#if defined(_LIBCUDACXX_VERSION) || TEST_STD_VER >= 2011
     {
         A0::count = 0;
         b_destroy = 0;
@@ -85,7 +84,6 @@ int main(int, char**)
         assert(A0::count == 1);
         assert(b_destroy == 1);
     }
-#endif
 
   return 0;
 }

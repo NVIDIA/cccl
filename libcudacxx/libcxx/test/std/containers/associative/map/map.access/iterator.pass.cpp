@@ -120,7 +120,6 @@ int main(int, char**)
             assert(i->second == 1);
         }
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::pair<const int, double> V;
         V ar[] =
@@ -207,7 +206,6 @@ int main(int, char**)
             assert(i->second == 1);
         }
     }
-#endif
 #if TEST_STD_VER > 2011
     { // N3644 testing
         typedef std::map<int, double> C;

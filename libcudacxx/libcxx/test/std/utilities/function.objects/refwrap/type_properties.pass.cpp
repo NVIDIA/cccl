@@ -19,7 +19,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 2011
 class MoveOnly
 {
     MoveOnly(const MoveOnly&);
@@ -35,7 +34,6 @@ public:
 
     int get() const {return data_;}
 };
-#endif
 
 
 template <class T>
@@ -54,9 +52,7 @@ int main(int, char**)
     test<int>();
     test<double>();
     test<std::string>();
-#if TEST_STD_VER >= 2011
     test<MoveOnly>();
-#endif
 
   return 0;
 }

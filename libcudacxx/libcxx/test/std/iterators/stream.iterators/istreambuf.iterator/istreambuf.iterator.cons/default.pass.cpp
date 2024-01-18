@@ -27,19 +27,15 @@ int main(int, char**)
         typedef std::istreambuf_iterator<char> T;
         T it;
         assert(it == T());
-#if TEST_STD_VER >= 2011
         constexpr T it2;
         (void)it2;
-#endif
     }
     {
         typedef std::istreambuf_iterator<wchar_t> T;
         T it;
         assert(it == T());
-#if TEST_STD_VER >= 2011
         constexpr T it2;
         (void)it2;
-#endif
     }
 
   return 0;

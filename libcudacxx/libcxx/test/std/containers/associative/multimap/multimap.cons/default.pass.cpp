@@ -25,7 +25,6 @@ int main(int, char**)
     assert(m.empty());
     assert(m.begin() == m.end());
     }
-#if TEST_STD_VER >= 2011
     {
     std::multimap<int, double, std::less<int>, min_allocator<std::pair<const int, double>>> m;
     assert(m.empty());
@@ -50,7 +49,6 @@ int main(int, char**)
     assert(m.empty());
     assert(m.begin() == m.end());
     }
-#endif
 
   return 0;
 }

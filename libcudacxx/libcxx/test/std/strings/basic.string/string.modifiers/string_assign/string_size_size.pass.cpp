@@ -102,7 +102,6 @@ int main(int, char**)
     test(S("12345678901234567890"), S("12345678901234567890"), 5, 10,
          S("6789012345"));
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(), S(), 0, 0, S());
@@ -127,7 +126,6 @@ int main(int, char**)
     test(S("12345678901234567890"), S("12345678901234567890"), 5, 10,
          S("6789012345"));
     }
-#endif
     {
     typedef std::string S;
     test_npos(S(), S(), 0, S());

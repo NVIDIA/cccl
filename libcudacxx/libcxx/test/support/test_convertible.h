@@ -18,10 +18,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER < 2011
-#error test_convertible.h requires C++11 or newer
-#endif
-
 namespace detail {
     template <class Tp> void eat_type(Tp);
 

@@ -30,7 +30,6 @@ int main(int, char**)
         static_assert(std::is_copy_constructible<P>::value, "");
         static_assert(std::is_trivially_copy_constructible<P>::value, "");
     }
-#if TEST_STD_VER >= 2011
     {
         static_assert(std::is_move_constructible<P>::value, "");
         static_assert(std::is_trivially_move_constructible<P>::value, "");
@@ -42,7 +41,6 @@ int main(int, char**)
         static_assert(std::is_move_constructible<P1>::value, "");
         static_assert(std::is_trivially_move_constructible<P1>::value, "");
     }
-#endif
 
   return 0;
 }

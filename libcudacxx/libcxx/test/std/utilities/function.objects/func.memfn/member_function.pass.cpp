@@ -70,9 +70,7 @@ int main(int, char**)
     test0(std::mem_fn(&A::test0));
     test1(std::mem_fn(&A::test1));
     test2(std::mem_fn(&A::test2));
-#if TEST_STD_VER >= 2011
     static_assert((noexcept(std::mem_fn(&A::test0))), ""); // LWG#2489
-#endif
 
   return 0;
 }

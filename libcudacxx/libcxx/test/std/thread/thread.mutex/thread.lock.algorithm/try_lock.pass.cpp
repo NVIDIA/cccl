@@ -125,7 +125,6 @@ int main(int, char**)
         }
     }
 #endif
-#if TEST_STD_VER >= 2011
     {
         L0 l0;
         L0 l1;
@@ -521,7 +520,6 @@ int main(int, char**)
         assert(!l2.locked());
         assert(!l3.locked());
     }
-#endif  // TEST_STD_VER >= 2011
 
   return 0;
 }

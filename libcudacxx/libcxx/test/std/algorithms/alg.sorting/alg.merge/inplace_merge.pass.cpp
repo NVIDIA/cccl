@@ -21,7 +21,6 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-#if TEST_STD_VER >= 2011
 struct S {
     S() : i_(0) {}
     S(int i) : i_(i) {}
@@ -41,7 +40,6 @@ struct S {
 
     int i_;
     };
-#endif
 
 std::mt19937 randomness;
 
@@ -103,11 +101,9 @@ int main(int, char**)
     test<random_access_iterator<int*> >();
     test<int*>();
 
-#if TEST_STD_VER >= 2011
     test<bidirectional_iterator<S*> >();
     test<random_access_iterator<S*> >();
     test<S*>();
-#endif  // TEST_STD_VER >= 2011
 
   return 0;
 }

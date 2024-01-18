@@ -30,7 +30,6 @@ void do_exit() {
 
 int main(int, char**)
 {
-#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef std::vector<T, min_allocator<T>> C;
@@ -40,7 +39,6 @@ int main(int, char**)
         volatile T foo = c[c.size()];    // bad, but not caught by ASAN
         ((void)foo);
     }
-#endif
 
     {
         typedef cpp17_input_iterator<int*> MyInputIter;

@@ -49,9 +49,7 @@ int main(int, char**)
 {
     test_is_nothrow_assignable<int&, int&> ();
     test_is_nothrow_assignable<int&, int> ();
-#if TEST_STD_VER >= 2011
     test_is_nothrow_assignable<int&, double> ();
-#endif
 
     test_is_not_nothrow_assignable<int, int&> ();
     test_is_not_nothrow_assignable<int, int> ();

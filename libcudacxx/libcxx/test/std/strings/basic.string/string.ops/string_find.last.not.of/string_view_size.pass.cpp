@@ -148,14 +148,12 @@ int main(int, char**)
     test0<S, SV>();
     test1<S, SV>();
     }
-#if TEST_STD_VER >= 2011
     {
 //     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
 //     typedef std::string_view SV;
 //     test0<S, SV>();
 //     test1<S, SV>();
     }
-#endif
 
   return 0;
 }

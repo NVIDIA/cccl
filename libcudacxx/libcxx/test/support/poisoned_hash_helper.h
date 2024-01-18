@@ -18,10 +18,6 @@
 #include "test_macros.h"
 #include "test_workarounds.h"
 
-#if TEST_STD_VER < 2011
-#error this header may only be used in C++11 or newer
-#endif
-
 template <class ...Args> struct TypeList;
 
 // Test that the specified Hash meets the requirements of an enabled hash

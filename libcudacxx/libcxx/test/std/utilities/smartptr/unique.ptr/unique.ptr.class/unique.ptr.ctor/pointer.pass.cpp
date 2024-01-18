@@ -40,7 +40,6 @@ template <bool IsArray>
 void test_pointer() {
   typedef typename std::conditional<!IsArray, A, A[]>::type ValueT;
   const int expect_alive = IsArray ? 5 : 1;
-#if TEST_STD_VER >= 2011
   {
     using U1 = std::unique_ptr<ValueT>;
     using U2 = std::unique_ptr<ValueT, Deleter<ValueT> >;
@@ -53,7 +52,6 @@ void test_pointer() {
     static_assert(!std::is_convertible<A*, U1>::value, "");
     static_assert(!std::is_convertible<A*, U2>::value, "");
   }
-#endif
   {
     A* p = newValue<ValueT>(expect_alive);
     assert(A::count == expect_alive);
@@ -93,7 +91,6 @@ void test_derived() {
   assert(B::count == 0);
 }
 
-#if TEST_STD_VER >= 2011
 struct NonDefaultDeleter {
   NonDefaultDeleter() = delete;
   void operator()(void*) const {}
@@ -102,11 +99,9 @@ struct NonDefaultDeleter {
 struct GenericDeleter {
   void operator()(void*) const;
 };
-#endif
 
 template <class T>
 void test_sfinae() {
-#if TEST_STD_VER >= 2011
   { // the constructor does not participate in overload resultion when
     // the deleter is a pointer type
     using U = std::unique_ptr<T, void (*)(void*)>;
@@ -122,11 +117,9 @@ void test_sfinae() {
     static_assert(!std::is_constructible<U2, T*>::value, "");
     static_assert(!std::is_constructible<U3, T*>::value, "");
   }
-#endif
 }
 
 static void test_sfinae_runtime() {
-#if TEST_STD_VER >= 2011
   { // the constructor does not participate in overload resolution when
     // a base <-> derived conversion would occur.
     using UA = std::unique_ptr<A[]>;
@@ -143,7 +136,6 @@ static void test_sfinae_runtime() {
     static_assert(!std::is_constructible<UAC, const B*>::value, "");
     static_assert(!std::is_constructible<UBC, const A*>::value, "");
   }
-#endif
 }
 
 DEFINE_AND_RUN_IS_INCOMPLETE_TEST({

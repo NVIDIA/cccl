@@ -42,7 +42,6 @@ void test_basic() {
     static_assert((std::is_same<typename P::pointer, Deleter::pointer>::value),
                   "");
   }
-#if TEST_STD_VER >= 2011
   {
     typedef std::unique_ptr<VT, D2> P;
     static_assert(std::is_same<typename P::pointer, int*>::value, "");
@@ -51,7 +50,6 @@ void test_basic() {
     typedef std::unique_ptr<VT, D3> P;
     static_assert(std::is_same<typename P::pointer, int*>::value, "");
   }
-#endif
 }
 
 int main(int, char**) {

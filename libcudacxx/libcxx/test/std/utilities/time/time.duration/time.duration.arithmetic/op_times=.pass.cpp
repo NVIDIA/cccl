@@ -39,14 +39,12 @@ int main(int, char**)
     static_assert(test_constexpr(), "");
 #endif
 
-#if TEST_STD_VER >= 2011
     { // This is PR#41130
     std::chrono::nanoseconds d(5);
     NotARep n;
     d *= n;
     assert(d.count() == 5);
     }
-#endif
 
   return 0;
 }

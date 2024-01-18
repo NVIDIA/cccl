@@ -33,7 +33,6 @@ int main(int, char**)
     j = c.cbegin();
     assert(i == j);
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::deque<int, min_allocator<int>> C;
     C c;
@@ -43,7 +42,6 @@ int main(int, char**)
     j = c.cbegin();
     assert(i == j);
     }
-#endif
 #if TEST_STD_VER > 2011
     { // N3644 testing
         std::deque<int>::iterator ii1{}, ii2{};

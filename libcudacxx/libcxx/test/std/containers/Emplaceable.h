@@ -12,8 +12,6 @@
 #include <functional>
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 2011
-
 class Emplaceable
 {
     Emplaceable(const Emplaceable&);
@@ -53,5 +51,4 @@ struct hash<Emplaceable>
 
 }
 
-#endif  // TEST_STD_VER >= 2011
 #endif  // EMPLACEABLE_H

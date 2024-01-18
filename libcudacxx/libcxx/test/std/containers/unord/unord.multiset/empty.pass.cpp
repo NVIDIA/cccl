@@ -30,7 +30,6 @@ int main(int, char**)
     m.clear();
     assert(m.empty());
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::unordered_multiset<int, std::hash<int>, std::equal_to<int>, min_allocator<int>> M;
     M m;
@@ -41,7 +40,6 @@ int main(int, char**)
     m.clear();
     assert(m.empty());
     }
-#endif
 
   return 0;
 }

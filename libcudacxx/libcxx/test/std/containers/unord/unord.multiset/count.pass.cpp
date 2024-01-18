@@ -43,7 +43,6 @@ int main(int, char**)
         assert(c.count(50) == 3);
         assert(c.count(5) == 0);
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_multiset<int, std::hash<int>,
                                       std::equal_to<int>, min_allocator<int>> C;
@@ -66,7 +65,6 @@ int main(int, char**)
         assert(c.count(50) == 3);
         assert(c.count(5) == 0);
     }
-#endif
 
   return 0;
 }

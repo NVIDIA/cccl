@@ -31,14 +31,12 @@ int main(int, char**)
         assert(l2 == l);
         assert(l2.get_allocator() == other_allocator<int>(3));
     }
-#if TEST_STD_VER >= 2011
     {
         std::list<int, min_allocator<int> > l(3, 2, min_allocator<int>());
         std::list<int, min_allocator<int> > l2(l, min_allocator<int>());
         assert(l2 == l);
         assert(l2.get_allocator() == min_allocator<int>());
     }
-#endif
 
   return 0;
 }

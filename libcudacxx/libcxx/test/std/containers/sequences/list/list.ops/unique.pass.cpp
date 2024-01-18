@@ -33,7 +33,6 @@ int main(int, char**)
 #endif
     assert(c == std::list<int>(a2, a2+4));
     }
-#if TEST_STD_VER >= 2011
     {
     int a1[] = {2, 1, 1, 4, 4, 4, 4, 3, 3};
     int a2[] = {2, 1, 4, 3};
@@ -45,7 +44,6 @@ int main(int, char**)
 #endif
     assert((c == std::list<int, min_allocator<int>>(a2, a2+4)));
     }
-#endif
 
   return 0;
 }

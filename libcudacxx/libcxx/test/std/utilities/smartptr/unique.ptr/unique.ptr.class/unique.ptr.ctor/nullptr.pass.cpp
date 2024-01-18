@@ -19,22 +19,19 @@
 #include "unique_ptr_test_helper.h"
 
 
-#if defined(_LIBCUDACXX_VERSION) && TEST_STD_VER >= 2011
+#if defined(_LIBCUDACXX_VERSION)
 _LIBCUDACXX_SAFE_STATIC std::unique_ptr<int> global_static_unique_ptr_single(nullptr);
 _LIBCUDACXX_SAFE_STATIC std::unique_ptr<int[]> global_static_unique_ptr_runtime(nullptr);
 #endif
 
 
-#if TEST_STD_VER >= 2011
 struct NonDefaultDeleter {
   NonDefaultDeleter() = delete;
   void operator()(void*) const {}
 };
-#endif
 
 template <class VT>
 void test_basic() {
-#if TEST_STD_VER >= 2011
   {
     using U1 = std::unique_ptr<VT>;
     using U2 = std::unique_ptr<VT, Deleter<VT> >;
@@ -43,7 +40,6 @@ void test_basic() {
     static_assert(std::is_nothrow_constructible<U2, decltype(nullptr)>::value,
                   "");
   }
-#endif
   {
     std::unique_ptr<VT> p(nullptr);
     assert(p.get() == 0);
@@ -57,7 +53,6 @@ void test_basic() {
 
 template <class VT>
 void test_sfinae() {
-#if TEST_STD_VER >= 2011
   { // the constructor does not participate in overload resultion when
     // the deleter is a pointer type
     using U = std::unique_ptr<VT, void (*)(void*)>;
@@ -73,7 +68,6 @@ void test_sfinae() {
     static_assert(!std::is_constructible<U2, decltype(nullptr)>::value, "");
     static_assert(!std::is_constructible<U3, decltype(nullptr)>::value, "");
   }
-#endif
 }
 
 DEFINE_AND_RUN_IS_INCOMPLETE_TEST({

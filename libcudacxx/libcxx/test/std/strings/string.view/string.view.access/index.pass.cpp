@@ -36,13 +36,11 @@ int main(int, char**) {
     test ( L"ABCDE", 5 );
     test ( L"a", 1 );
 
-#if TEST_STD_VER >= 2011
     test ( u"ABCDE", 5 );
     test ( u"a", 1 );
 
     test ( U"ABCDE", 5 );
     test ( U"a", 1 );
-#endif
 
 #if TEST_STD_VER > 2011
     {
