@@ -1,0 +1,27 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#if defined(_MSC_VER)
+# define NOMINMAX
+#endif
+
+// ignore deprecation warnings
+#if defined(__clang__)
+#  pragma clang diagnostic ignored "-Wdeprecated"
+#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#  pragma warning (disable: 4996)
+#else
+#  pragma GCC diagnostic ignored "-Wdeprecated"
+#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
+// This file tests that the respective header is includable on its own and be compiled with a host compiler
+#include <${header}>

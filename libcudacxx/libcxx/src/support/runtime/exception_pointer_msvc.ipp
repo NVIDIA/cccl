@@ -56,7 +56,7 @@ void swap(exception_ptr& lhs, exception_ptr& rhs) noexcept {
   __ExceptionPtrSwap(&rhs, &lhs);
 }
 
-exception_ptr __copy_exception_ptr(void* __except, const void* __ptr) {
+exception_ptr __copy_exception_ptr(void* __except_, const void* __ptr) {
   exception_ptr __ret = nullptr;
   if (__ptr)
     __ExceptionPtrCopyException(&__ret, __except, __ptr);
