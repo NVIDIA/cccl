@@ -14,6 +14,7 @@
 #  include <__config>
 #endif // __cuda_std__
 
+#include "../__algorithm/comp.h"
 #include "../__iterator/iterator_traits.h"
 #include "../__type_traits/add_lvalue_reference.h"
 

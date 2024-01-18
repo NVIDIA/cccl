@@ -15,6 +15,8 @@
 #include <__config>
 #endif // __cuda_std__
 
+#include "../__concepts/same_as.h"
+#include "../__iterator/incrementable_traits.h"
 #include "../__type_traits/is_primary_template.h"
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/enable_if.h"

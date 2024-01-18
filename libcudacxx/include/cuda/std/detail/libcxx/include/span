@@ -317,18 +317,17 @@ public:
         return {data() + size() - __count, __count};
     }
 
+    template <size_t _Offset, size_t _Count>
+    using __subspan_t = span<element_type, _Count != dynamic_extent ? _Count : _Extent - _Offset>;
+
     template <size_t _Offset, size_t _Count = dynamic_extent>
     _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr auto subspan() const noexcept
-        -> span<element_type, _Count != dynamic_extent ? _Count : _Extent - _Offset>
+    constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
     {
         static_assert(_Offset <= _Extent, "span<T, N>::subspan<Offset, Count>(): Offset out of range");
         static_assert(_Count == dynamic_extent || _Count <= _Extent - _Offset, "span<T, N>::subspan<Offset, Count>(): Offset + Count out of range");
-
-        using _ReturnType = span<element_type, _Count != dynamic_extent ? _Count : _Extent - _Offset>;
-        return _ReturnType{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
+        return __subspan_t<_Offset, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
     }
-
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 span<element_type, dynamic_extent>
@@ -478,13 +477,16 @@ public:
         return {data() + size() - __count, __count};
     }
 
+    template <size_t _Offset, size_t _Count>
+    using __subspan_t = span<element_type, _Count>;
+
     template <size_t _Offset, size_t _Count = dynamic_extent>
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 span<element_type, _Count> subspan() const noexcept
+    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __subspan_t<_Offset, _Count> subspan() const noexcept
     {
         _LIBCUDACXX_ASSERT(_Offset <= size(), "span<T>::subspan<Offset, Count>(): Offset out of range");
         _LIBCUDACXX_ASSERT(_Count == dynamic_extent || _Count <= size() - _Offset, "span<T>::subspan<Offset, Count>(): Offset + Count out of range");
-        return span<element_type, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
+        return __subspan_t<_Offset, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
     }
 
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 span<element_type, dynamic_extent>

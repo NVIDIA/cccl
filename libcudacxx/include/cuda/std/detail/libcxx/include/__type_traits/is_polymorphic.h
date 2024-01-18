@@ -16,6 +16,8 @@
 
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/integral_constant.h"
+#include "../__type_traits/is_class.h" // __two
+#include "../__utility/declval.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -40,9 +42,10 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_polymorphic_v = _LIBCUDACXX_IS_POLYMORP
 
 #else
 
-template<typename _Tp> char &__is_polymorphic_impl(
-    __enable_if_t<sizeof((_Tp*)dynamic_cast<const volatile void*>(_CUDA_VSTD::declval<_Tp*>())) != 0, int>);
-template<typename _Tp> __two &__is_polymorphic_impl(...);
+template<typename _Tp>
+_LIBCUDACXX_HOST_DEVICE char &__is_polymorphic_impl(__enable_if_t<sizeof((_Tp*)dynamic_cast<const volatile void*>(_CUDA_VSTD::declval<_Tp*>())) != 0, int>);
+template<typename _Tp>
+_LIBCUDACXX_HOST_DEVICE __two &__is_polymorphic_impl(...);
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_polymorphic
     : public integral_constant<bool, sizeof(__is_polymorphic_impl<_Tp>(0)) == 1> {};

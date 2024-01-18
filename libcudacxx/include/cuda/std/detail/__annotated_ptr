@@ -63,7 +63,9 @@ namespace __detail_ap {
       _LIBCUDACXX_ASSERT(__b, "");
 #if !defined(_LIBCUDACXX_CUDACC_BELOW_11_2)
       __builtin_assume(__b);
-#endif // !defined(_LIBCUDACXX_CUDACC_BELOW_11_2)
+#else // ^^^ !_LIBCUDACXX_CUDACC_BELOW_11_2 ^^^ / vvv _LIBCUDACXX_CUDACC_BELOW_11_2 vvv
+      (void)__b;
+#endif // _LIBCUDACXX_CUDACC_BELOW_11_2
     } else if (std::is_same<_Property, access_property::global>::value == true ||
                std::is_same<_Property, access_property::normal>::value == true ||
                std::is_same<_Property, access_property::persisting>::value == true ||
@@ -73,7 +75,9 @@ namespace __detail_ap {
       _LIBCUDACXX_ASSERT(__b, "");
 #if !defined(_LIBCUDACXX_CUDACC_BELOW_11_2)
       __builtin_assume(__b);
-#endif // !defined(_LIBCUDACXX_CUDACC_BELOW_11_2)
+#else // ^^^ !_LIBCUDACXX_CUDACC_BELOW_11_2 ^^^ / vvv _LIBCUDACXX_CUDACC_BELOW_11_2 vvv
+      (void)__b;
+#endif // _LIBCUDACXX_CUDACC_BELOW_11_2
     }
 
     return __ptr;
