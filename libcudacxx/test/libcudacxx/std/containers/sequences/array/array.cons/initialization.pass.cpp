@@ -41,7 +41,6 @@ struct test_nondefault_initialization {
     __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()() const
     {
         // Check direct-list-initialization syntax (introduced in C++11)
-    #if TEST_STD_VER >= 2011
         {
             {
                 cuda::std::array<T, 0> a0_0{}; unused(a0_0);
@@ -64,7 +63,6 @@ struct test_nondefault_initialization {
 
             cuda::std::array<NoDefault, 0> nodefault{}; unused(nodefault);
         }
-    #endif
 
         // Check copy-list-initialization syntax
         {

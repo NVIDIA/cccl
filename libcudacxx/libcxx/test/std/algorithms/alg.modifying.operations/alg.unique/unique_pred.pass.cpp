@@ -121,7 +121,6 @@ test()
     assert(count_equal::count == si-1);
 }
 
-#if TEST_STD_VER >= 2011
 
 struct do_nothing
 {
@@ -221,7 +220,6 @@ test1()
     assert(*ii[2] == 2);
     assert(count_equal::count == si-1);
 }
-#endif // TEST_STD_VER >= 2011
 
 int main(int, char**)
 {
@@ -230,12 +228,10 @@ int main(int, char**)
     test<random_access_iterator<int*> >();
     test<int*>();
 
-#if TEST_STD_VER >= 2011
     test1<forward_iterator<Ptr*> >();
     test1<bidirectional_iterator<Ptr*> >();
     test1<random_access_iterator<Ptr*> >();
     test1<Ptr*>();
-#endif
 
 #if TEST_STD_VER > 2017
     static_assert(test_constexpr());

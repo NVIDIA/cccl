@@ -46,9 +46,7 @@ int main(int, char**)
     test<int, std::allocator<int> >(4096, 1165);
     test<int, std::allocator<int> >(4097, 157);
     LIBCPP_ONLY(test<int, limited_allocator<int, 4096> >(4095, 90));
-#if TEST_STD_VER >= 2011
     test<int, min_allocator<int> >(4095, 90);
-#endif
 
   return 0;
 }

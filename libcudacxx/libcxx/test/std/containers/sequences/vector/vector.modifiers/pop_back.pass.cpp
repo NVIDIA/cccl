@@ -28,7 +28,6 @@ int main(int, char**)
         assert(c.size() == 0);
 
     }
-#if TEST_STD_VER >= 2011
     {
         std::vector<int, min_allocator<int>> c;
         c.push_back(1);
@@ -36,7 +35,6 @@ int main(int, char**)
         c.pop_back();
         assert(c.size() == 0);
     }
-#endif
 
     { // LWG 526
         int arr[] = {0, 1, 2, 3, 4};

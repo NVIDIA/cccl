@@ -72,7 +72,6 @@ int main(int, char**)
     test(L"abcdefghijklmnopqrst", L"abcdefghijklmnopqrst", 0);
     }
 
-#if TEST_STD_VER >= 2011
     {
     test(U"", U"", 0);
     test(U"", U"abcde", -5);
@@ -110,7 +109,6 @@ int main(int, char**)
     test(u"abcdefghijklmnopqrst", u"abcdefghij", 10);
     test(u"abcdefghijklmnopqrst", u"abcdefghijklmnopqrst", 0);
     }
-#endif
 
 #if TEST_STD_VER > 2011
     {

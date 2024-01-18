@@ -61,7 +61,7 @@
 #  define _LIBCUDACXX_COMPILER_CLANG_CUDA
 #endif
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(_NVHPC_CUDA)
 #  define _LIBCUDACXX_CUDACC
 #  define _LIBCUDACXX_CUDACC_VER_MAJOR __CUDACC_VER_MAJOR__
 #  define _LIBCUDACXX_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
@@ -184,16 +184,6 @@ extern "C++" {
 // conflict with the dllexport-emitted copy, so we disable it.
 #    define _LIBCUDACXX_DEPRECATED_ABI_LEGACY_LIBRARY_DEFINITIONS_FOR_INLINE_FUNCTIONS
 #  endif
-// Feature macros for disabling pre ABI v1 features. All of these options
-// are deprecated.
-#  if defined(__FreeBSD__)
-#    define _LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR
-#  endif
-#endif
-
-#ifdef _LIBCUDACXX_TRIVIAL_PAIR_COPY_CTOR
-#error "_LIBCUDACXX_TRIVIAL_PAIR_COPY_CTOR" is no longer supported. \
-       use _LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR instead
 #endif
 
 #ifndef __has_attribute
@@ -399,7 +389,7 @@ extern "C++" {
 #  define _LIBCUDACXX_NO_CFI
 #endif
 
-#if __ISO_C_VISIBLE >= 2011 || __cplusplus >= 201103L
+#if (defined(__ISO_C_VISIBLE) && __ISO_C_VISIBLE >= 2011) || __cplusplus >= 201103L
 #  if defined(__FreeBSD__)
 #    define _LIBCUDACXX_HAS_QUICK_EXIT
 #    define _LIBCUDACXX_HAS_C11_FEATURES
@@ -582,9 +572,11 @@ extern "C++" {
 
 // TODO: Clang incorrectly reports that __is_array is true for T[0].
 //       Re-enable the branch once https://llvm.org/PR54705 is fixed.
+#ifndef _LIBCUDACXX_USE_IS_ARRAY_FALLBACK
 #if defined(_LIBCUDACXX_COMPILER_CLANG)
 #define _LIBCUDACXX_USE_IS_ARRAY_FALLBACK
 #endif // _LIBCUDACXX_COMPILER_CLANG
+#endif // !_LIBCUDACXX_USE_IS_ARRAY_FALLBACK
 
 #if __check_builtin(is_assignable)     \
  || defined(_LIBCUDACXX_COMPILER_MSVC)
@@ -660,9 +652,11 @@ extern "C++" {
 #define _LIBCUDACXX_IS_LVALUE_REFERENCE(...) __is_lvalue_reference(__VA_ARGS__)
 #endif // __check_builtin(is_lvalue_reference)
 
+#ifndef _LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK
 #endif // nvcc < 11.3
+#endif // !_LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK
 
 #if __check_builtin(is_nothrow_assignable) \
  || defined(_LIBCUDACXX_COMPILER_MSVC)     \
@@ -686,9 +680,11 @@ extern "C++" {
 #define _LIBCUDACXX_IS_OBJECT(...) __is_object(__VA_ARGS__)
 #endif // __check_builtin(is_object)
 
+#ifndef _LIBCUDACXX_USE_IS_OBJECT_FALLBACK
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_OBJECT_FALLBACK
 #endif // nvcc < 11.3
+#endif // !_LIBCUDACXX_USE_IS_OBJECT_FALLBACK
 
 #if __check_builtin(is_pod)                                  \
  || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
@@ -788,9 +784,11 @@ extern "C++" {
 #define _LIBCUDACXX_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
 #endif // __check_builtin(is_unsigned)
 
+#ifndef _LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK
 #endif // nvcc < 11.3
+#endif // !_LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK
 
 // libstdc++ defines this as a function, breaking functionality
 #if 0 // __check_builtin(is_void)
@@ -964,11 +962,12 @@ typedef __char32_t char32_t;
 
 #elif defined(_LIBCUDACXX_COMPILER_GCC)
 
+#ifndef _LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK
 // FIXME: GCC 8.0 supports this trait, but it has a bug.
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91592
 // https://godbolt.org/z/IljfIw
 #define _LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK
-
+#endif // _LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK
 
 // Determine if GCC supports relaxed constexpr
 #if !defined(__cpp_constexpr) || __cpp_constexpr < 201304L
@@ -1751,32 +1750,6 @@ typedef unsigned int   char32_t;
 #else // ^^^ _LIBCUDACXX_CUDACC_BELOW_11_3 ^^^ / vvv !_LIBCUDACXX_CUDACC_BELOW_11_3 vvv
 #  define _LIBCUDACXX_NODISCARD_FRIEND _LIBCUDACXX_NODISCARD_ATTRIBUTE friend
 #endif // !_LIBCUDACXX_CUDACC_BELOW_11_3 && !_LIBCUDACXX_COMPILER_CLANG
-
-#  ifdef _LIBCUDACXX_COMPILER_CLANG
-#    define _LIBCUDACXX_DIAGNOSTIC_PUSH _Pragma("clang diagnostic push")
-#    define _LIBCUDACXX_DIAGNOSTIC_POP _Pragma("clang diagnostic pop")
-#    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str) _Pragma(_LIBCUDACXX_TOSTRING(clang diagnostic ignored str))
-#    define _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED(str)
-#    define _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(str)
-#  elif defined(_LIBCUDACXX_COMPILER_GCC)
-#    define _LIBCUDACXX_DIAGNOSTIC_PUSH _Pragma("GCC diagnostic push")
-#    define _LIBCUDACXX_DIAGNOSTIC_POP _Pragma("GCC diagnostic pop")
-#    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str)
-#    define _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED(str) _Pragma(_LIBCUDACXX_TOSTRING(GCC diagnostic ignored str))
-#    define _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(str)
-#  elif defined(_LIBCUDACXX_COMPILER_NVHPC)
-#    define _LIBCUDACXX_DIAGNOSTIC_PUSH _Pragma("diagnostic push")
-#    define _LIBCUDACXX_DIAGNOSTIC_POP _Pragma("diagnostic pop")
-#    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str)
-#    define _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED(str)
-#    define _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(str) _Pragma(_LIBCUDACXX_TOSTRING(diag_suppress str))
-#  else
-#    define _LIBCUDACXX_DIAGNOSTIC_PUSH
-#    define _LIBCUDACXX_DIAGNOSTIC_POP
-#    define _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED(str)
-#    define _LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED(str)
-#    define _LIBCUDACXX_NVHPC_DIAGNOSTIC_IGNORED(str)
-#  endif
 
 // _LIBCUDACXX_NODISCARD_EXT may be used to apply [[nodiscard]] to entities not
 // specified as such as an extension.

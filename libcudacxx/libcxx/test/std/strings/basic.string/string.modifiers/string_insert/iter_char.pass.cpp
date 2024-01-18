@@ -52,7 +52,6 @@ int main(int, char**)
     test(s, s.begin()+5, 'B', S("a567AB1432dcb"));
     test(s, s.begin()+6, 'C', S("a567ABC1432dcb"));
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     S s;
@@ -71,7 +70,6 @@ int main(int, char**)
     test(s, s.begin()+5, 'B', S("a567AB1432dcb"));
     test(s, s.begin()+6, 'C', S("a567ABC1432dcb"));
     }
-#endif
 
   return 0;
 }

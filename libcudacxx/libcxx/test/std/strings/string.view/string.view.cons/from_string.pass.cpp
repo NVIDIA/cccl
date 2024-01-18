@@ -47,7 +47,6 @@ int main(int, char**) {
     test ( std::u8string{} );
 #endif
 
-#if TEST_STD_VER >= 2011
     test ( std::u16string{u"QBCDE"} );
     test ( std::u16string{u""} );
     test ( std::u16string{} );
@@ -55,7 +54,6 @@ int main(int, char**) {
     test ( std::u32string{U"QBCDE"} );
     test ( std::u32string{U""} );
     test ( std::u32string{} );
-#endif
 
     test ( std::basic_string<char, dummy_char_traits>("QBCDE") );
     test ( std::basic_string<char, dummy_char_traits>("") );

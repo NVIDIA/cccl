@@ -8,10 +8,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER < 2011
-#error
-#else
-
 // <iterator>
 // template <class C> auto begin(C& c) -> decltype(c.begin());
 // template <class C> auto begin(const C& c) -> decltype(c.begin());
@@ -49,4 +45,3 @@ int main(int, char**) {
 
   return 0;
 }
-#endif

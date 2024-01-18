@@ -58,10 +58,8 @@ int main(int, char**)
 #if defined(__cpp_lib_char8_t) && __cpp_lib_char8_t >= 201811L
     test(u8string_view{u8"123"});
 #endif
-#if TEST_STD_VER >= 2011
     test(u16string_view{u"123"});
     test(u32string_view{U"123"});
-#endif
 
 #if TEST_STD_VER > 2011
     {

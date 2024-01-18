@@ -128,7 +128,6 @@ int main(int, char**)
     assert(c.empty());
     }
 
-#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef unary_counting_predicate<bool(*)(T), T> Predicate;
@@ -191,7 +190,6 @@ int main(int, char**)
         assert(c1 == c2);
         assert(cp.count() == static_cast<std::size_t>(std::distance(std::begin(t1), std::end(t1))));
     }
-#endif
 
   return 0;
 }

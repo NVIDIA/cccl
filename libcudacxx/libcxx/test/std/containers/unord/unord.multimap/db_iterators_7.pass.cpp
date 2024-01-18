@@ -36,7 +36,6 @@ int main(int, char**)
     ++i;
     assert(false);
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::unordered_multimap<int, std::string, std::hash<int>, std::equal_to<int>,
                         min_allocator<std::pair<const int, std::string>>> C;
@@ -48,7 +47,6 @@ int main(int, char**)
     ++i;
     assert(false);
     }
-#endif
 }
 
 #else

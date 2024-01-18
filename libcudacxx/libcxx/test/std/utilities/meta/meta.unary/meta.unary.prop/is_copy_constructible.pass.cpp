@@ -90,9 +90,7 @@ int main(int, char**)
     test_is_not_copy_constructible<void>();
     test_is_not_copy_constructible<Abstract>();
     test_is_not_copy_constructible<C>();
-#if TEST_STD_VER >= 2011
     test_is_not_copy_constructible<B>();
-#endif
 
   return 0;
 }

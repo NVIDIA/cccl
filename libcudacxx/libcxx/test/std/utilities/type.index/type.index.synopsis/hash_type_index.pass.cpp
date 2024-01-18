@@ -20,9 +20,7 @@
 #include <type_traits>
 
 #include "test_macros.h"
-#if TEST_STD_VER >= 2011
 #include "poisoned_hash_helper.h"
-#endif
 
 int main(int, char**)
 {
@@ -33,11 +31,9 @@ int main(int, char**)
     static_assert((std::is_same<typename H::result_type, std::size_t>::value), "" );
 #endif
   }
-#if TEST_STD_VER >= 2011
   {
     test_hash_enabled_for_type<std::type_index>(std::type_index(typeid(int)));
   }
-#endif
 
   return 0;
 }

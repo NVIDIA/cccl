@@ -33,7 +33,6 @@ int main(int, char**)
         for (unsigned i = 50; i < 200; ++i)
             assert(v[i] == 1);
     }
-#if TEST_STD_VER >= 2011
     {
         std::vector<bool, min_allocator<bool>> v(100);
         v.resize(50, 1);
@@ -48,7 +47,6 @@ int main(int, char**)
         for (unsigned i = 50; i < 200; ++i)
             assert(v[i] == 1);
     }
-#endif
 
   return 0;
 }

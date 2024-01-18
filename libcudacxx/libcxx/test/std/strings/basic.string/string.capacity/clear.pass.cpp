@@ -39,7 +39,6 @@ int main(int, char**)
     s.erase(50);
     test(s);
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     S s;
@@ -53,7 +52,6 @@ int main(int, char**)
     s.erase(50);
     test(s);
     }
-#endif
 
   return 0;
 }

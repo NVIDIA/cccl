@@ -47,7 +47,6 @@ int main(int, char**)
         assert(c.load_factor() == 0);
         assert(c.max_load_factor() == 1);
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_multiset<NotConstructible,
                                    test_hash<NotConstructible>,
@@ -68,7 +67,6 @@ int main(int, char**)
         assert(c.load_factor() == 0);
         assert(c.max_load_factor() == 1);
     }
-#endif
 
   return 0;
 }

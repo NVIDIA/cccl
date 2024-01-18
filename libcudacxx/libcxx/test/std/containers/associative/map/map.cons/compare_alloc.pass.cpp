@@ -31,7 +31,6 @@ int main(int, char**)
     assert(m.key_comp() == C(4));
     assert(m.get_allocator() == A(5));
     }
-#if TEST_STD_VER >= 2011
     {
     typedef test_less<int> C;
     typedef min_allocator<std::pair<const int, double> > A;
@@ -50,7 +49,6 @@ int main(int, char**)
     assert(m.key_comp() == C(4));
     assert(m.get_allocator() == A{});
     }
-#endif
 
   return 0;
 }

@@ -48,7 +48,6 @@ int main(int, char**)
         static_assert((std::is_same<C::size_type, std::size_t>::value), "");
         static_assert((std::is_same<C::difference_type, std::ptrdiff_t>::value), "");
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_set<short, std::hash<short>,
                                   std::equal_to<short>, min_allocator<short>> C;
@@ -65,7 +64,6 @@ int main(int, char**)
         static_assert((std::is_same<C::size_type, std::make_unsigned<C::difference_type>::type>::value), "");
         static_assert((std::is_same<C::difference_type, std::ptrdiff_t>::value), "");
     }
-#endif
 
   return 0;
 }

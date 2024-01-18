@@ -41,11 +41,9 @@ struct test
         : base(comp, a) {}
     test(const value_compare& comp, const container_type& c,
         const test_allocator<int>& a) : base(comp, c, a) {}
-#if TEST_STD_VER >= 2011 // testing rvalue constructor
     test(const value_compare& comp, container_type&& c,
          const test_allocator<int>& a) : base(comp, std::move(c), a) {}
     test(test&& q, const test_allocator<int>& a) : base(std::move(q), a) {}
-#endif
     test_allocator<int> get_allocator() {return c.get_allocator();}
 
     using base::c;

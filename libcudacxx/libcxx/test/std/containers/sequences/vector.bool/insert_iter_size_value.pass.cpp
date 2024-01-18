@@ -64,7 +64,6 @@ int main(int, char**)
         for (++j; j < v.size(); ++j)
             assert(v[j] == 0);
     }
-#if TEST_STD_VER >= 2011
     {
         std::vector<bool, min_allocator<bool>> v(100);
         std::vector<bool, min_allocator<bool>>::iterator i = v.insert(v.cbegin() + 10, 5, 1);
@@ -78,7 +77,6 @@ int main(int, char**)
         for (++j; j < v.size(); ++j)
             assert(v[j] == 0);
     }
-#endif
 
   return 0;
 }

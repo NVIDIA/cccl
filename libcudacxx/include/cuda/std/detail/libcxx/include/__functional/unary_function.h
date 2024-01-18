@@ -42,12 +42,12 @@ template <class _Arg, class _Result> struct __unary_function_keep_layout_base {
 };
 
 #if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
-_LIBCUDACXX_DIAGNOSTIC_PUSH
-_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
-_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
+
+_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
 template <class _Arg, class _Result>
 using __unary_function = unary_function<_Arg, _Result>;
-_LIBCUDACXX_DIAGNOSTIC_POP
+_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
+
 #else
 template <class _Arg, class _Result>
 using __unary_function = __unary_function_keep_layout_base<_Arg, _Result>;

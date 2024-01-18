@@ -27,14 +27,12 @@ int main(int, char**)
         const C c;
         assert(c.max_bucket_count() > 0);
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_multiset<int, std::hash<int>,
                                       std::equal_to<int>, min_allocator<int>> C;
         const C c;
         assert(c.max_bucket_count() > 0);
     }
-#endif
 
   return 0;
 }

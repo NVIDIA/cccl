@@ -59,7 +59,6 @@ int main(int, char**)
         assert(next(m.begin(), 8)->first == 3);
         assert(next(m.begin(), 8)->second == 2);
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::multimap<int, double, std::less<int>, min_allocator<std::pair<const int, double>>> M;
         typedef std::pair<int, double> P;
@@ -97,7 +96,6 @@ int main(int, char**)
         assert(next(m.begin(), 8)->first == 3);
         assert(next(m.begin(), 8)->second == 2);
     }
-#endif
 
   return 0;
 }

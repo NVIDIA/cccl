@@ -64,13 +64,8 @@ class Abstract
     virtual ~Abstract() = 0;
 };
 
-#if TEST_STD_VER >= 2011
 class Final final {
 };
-#else
-class Final {
-};
-#endif
 
 int main(int, char**)
 {

@@ -41,7 +41,7 @@ int main(int, char**)
     typedef std::basic_string<char, std::char_traits<char>, A> S;
 #if TEST_STD_VER > 2014
     static_assert((noexcept(S{})), "" );
-#elif TEST_STD_VER >= 2011
+#else
     static_assert((noexcept(S()) == std::is_nothrow_move_constructible<A>::value), "" );
 #endif
     test(S(), A(3));
@@ -55,7 +55,7 @@ int main(int, char**)
     typedef std::basic_string<char, std::char_traits<char>, A> S;
 #if TEST_STD_VER > 2014
     static_assert((noexcept(S{})), "" );
-#elif TEST_STD_VER >= 2011
+#else
     static_assert((noexcept(S()) == std::is_nothrow_move_constructible<A>::value), "" );
 #endif
     S s1 ( "Twas brillig, and the slivy toves did gyre and gymbal in the wabe" );
@@ -67,7 +67,7 @@ int main(int, char**)
     typedef std::basic_string<char, std::char_traits<char>, A> S;
 #if TEST_STD_VER > 2014
     static_assert((noexcept(S{})), "" );
-#elif TEST_STD_VER >= 2011
+#else
     static_assert((noexcept(S()) == std::is_nothrow_move_constructible<A>::value), "" );
 #endif
     test(S(), A());

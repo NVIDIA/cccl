@@ -42,7 +42,6 @@ int main(int, char**)
     assert(*next(m.begin()) == V(2, 1));
     assert(*next(m.begin(), 2) == V(3, 1));
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::pair<const int, double> V;
     V ar[] =
@@ -64,7 +63,6 @@ int main(int, char**)
     assert(*next(m.begin()) == V(2, 1));
     assert(*next(m.begin(), 2) == V(3, 1));
     }
-#endif
 
   return 0;
 }

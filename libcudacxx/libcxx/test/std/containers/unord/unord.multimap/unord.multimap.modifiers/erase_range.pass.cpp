@@ -93,7 +93,6 @@ int main(int, char**)
         assert(c.size() == 0);
         assert(k == c.end());
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_multimap<int, std::string, std::hash<int>, std::equal_to<int>,
                             min_allocator<std::pair<const int, std::string>>> C;
@@ -162,7 +161,6 @@ int main(int, char**)
         assert(c.size() == 0);
         assert(k == c.end());
     }
-#endif
 
   return 0;
 }

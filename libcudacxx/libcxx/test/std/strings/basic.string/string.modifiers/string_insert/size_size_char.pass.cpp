@@ -138,7 +138,6 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), 21, 10, '1', S("can't happen"));
     test(S("abcdefghijklmnopqrst"), 21, 20, '1', S("can't happen"));
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(""), 0, 0, '1', S(""));
@@ -222,7 +221,6 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), 21, 10, '1', S("can't happen"));
     test(S("abcdefghijklmnopqrst"), 21, 20, '1', S("can't happen"));
     }
-#endif
 
   return 0;
 }

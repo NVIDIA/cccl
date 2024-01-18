@@ -31,7 +31,6 @@ int main(int, char**)
         assert(v.capacity() > 101);
         assert(is_contiguous_container_asan_correct(v));
     }
-#if TEST_STD_VER >= 2011
     {
         std::vector<int, min_allocator<int>> v;
         assert(v.capacity() == 0);
@@ -44,7 +43,6 @@ int main(int, char**)
         assert(v.capacity() > 101);
         assert(is_contiguous_container_asan_correct(v));
     }
-#endif
 
   return 0;
 }

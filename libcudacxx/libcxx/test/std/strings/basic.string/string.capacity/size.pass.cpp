@@ -31,14 +31,12 @@ int main(int, char**)
     test(S("123"), 3);
     test(S("12345678901234567890123456789012345678901234567890"), 50);
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(), 0);
     test(S("123"), 3);
     test(S("12345678901234567890123456789012345678901234567890"), 50);
     }
-#endif
 
   return 0;
 }

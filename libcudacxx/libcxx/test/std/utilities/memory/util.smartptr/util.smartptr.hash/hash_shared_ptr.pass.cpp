@@ -19,13 +19,11 @@
 #include <memory>
 #include <cassert>
 
-#if TEST_STD_VER >= 2011
 #include "poisoned_hash_helper.h"
 
 #include "test_macros.h"
 
 struct A {};
-#endif
 
 int main(int, char**)
 {
@@ -36,12 +34,10 @@ int main(int, char**)
     std::size_t h = f(p);
     assert(h == std::hash<int*>()(ptr));
   }
-#if TEST_STD_VER >= 2011
   {
     test_hash_enabled_for_type<std::shared_ptr<int>>();
     test_hash_enabled_for_type<std::shared_ptr<A>>();
   }
-#endif
 
   return 0;
 }

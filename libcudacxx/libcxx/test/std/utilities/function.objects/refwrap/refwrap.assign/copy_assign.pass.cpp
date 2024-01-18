@@ -62,7 +62,6 @@ int main(int, char**)
     const int j = 0;
     test(j);
 
-#if TEST_STD_VER >= 2011
     convertible_to_int_ref convi;
     test(convi);
     convertible_to_int_ref const convic;
@@ -74,7 +73,6 @@ int main(int, char**)
     static_assert((!std::is_assignable<Ref&, int>::value), "");
     static_assert((!std::is_assignable<Ref&, int&&>::value), "");
     }
-#endif
 
   return 0;
 }

@@ -20,7 +20,6 @@
 #include "test_macros.h"
 
 
-#if TEST_STD_VER >= 2011
 struct CopyOnly {
     CopyOnly() {}
     CopyOnly(CopyOnly const&) noexcept {}
@@ -51,7 +50,6 @@ template <class Tp>
 constexpr bool can_swap() {
     return std::is_same<decltype(can_swap_test<Tp>(0)), void>::value;
 }
-#endif
 
 #if TEST_STD_VER > 2017
 constexpr bool test_swap_constexpr()
@@ -81,7 +79,6 @@ int main(int, char**)
         assert(j[1] == 2);
         assert(j[2] == 3);
     }
-#if TEST_STD_VER >= 2011
     {
         std::unique_ptr<int> i[3];
         for (int k = 0; k < 3; ++k)
@@ -110,7 +107,6 @@ int main(int, char**)
         static_assert(!noexcept(std::swap(ca, ca)), "");
         static_assert(noexcept(std::swap(ma, ma)), "");
     }
-#endif
 
 #if TEST_STD_VER > 2017
     static_assert(test_swap_constexpr());

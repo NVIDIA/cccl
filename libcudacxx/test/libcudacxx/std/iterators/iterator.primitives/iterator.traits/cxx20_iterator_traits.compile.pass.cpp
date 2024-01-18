@@ -9,9 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11, c++14
 
-// This test uses iterator types from cuda::std::filesystem, which were introduced in macOS 10.15.
-// XFAIL: use_system_cxx_lib && target={{.+}}-apple-macosx10.{{9|10|11|12|13|14}}
-
 // template<class T>
 // struct iterator_traits;
 

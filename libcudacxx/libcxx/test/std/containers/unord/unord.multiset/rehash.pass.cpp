@@ -67,7 +67,6 @@ int main(int, char**)
         LIBCPP_ASSERT(c.bucket_count() == 31);
         test(c);
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::unordered_multiset<int, std::hash<int>,
                                       std::equal_to<int>, min_allocator<int>> C;
@@ -98,7 +97,6 @@ int main(int, char**)
         LIBCPP_ASSERT(c.bucket_count() == 31);
         test(c);
     }
-#endif
 
   return 0;
 }

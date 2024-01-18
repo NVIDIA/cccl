@@ -77,7 +77,6 @@ int main(int, char**)
         C::iterator i;
         C::const_iterator j;
     }
-#if TEST_STD_VER >= 2011
     {
         typedef int T;
         typedef std::list<T, min_allocator<T>> C;
@@ -134,7 +133,6 @@ int main(int, char**)
         C::const_iterator j = i;
         assert(j->first == 3);
     }
-#endif
 #if TEST_STD_VER > 2011
     {
         std::list<int>::iterator ii1{}, ii2{};

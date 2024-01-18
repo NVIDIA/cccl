@@ -50,7 +50,7 @@ if (MSVC)
 endif()
 
 # Intel OneAPI compiler has fast math enabled by default which breaks almost all floating point tests
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM")
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
   set(LIBCUDACXX_TEST_COMPILER_FLAGS
     "${LIBCUDACXX_TEST_COMPILER_FLAGS} \
     --compiler-options=-fno-fast-math")
@@ -126,6 +126,7 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
   # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
   # Only executed if explicitly requested.
   add_custom_target(libcudacxx.test.lit.precompile
+    DEPENDS libcudacxx.test.public_headers libcudacxx.test.internal_headers libcudacxx.test.public_headers_host_only
     COMMAND "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
     "${libcudacxx_LIT}" -vv --no-progress-bar ${libcudacxx_LIT_FLAGS} "-Dexecutor=\"NoopExecutor()\"" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
   )

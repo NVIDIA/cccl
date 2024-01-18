@@ -39,12 +39,10 @@ void test_basic() {
     static_assert((std::is_constructible<bool, U>::value), "");
     static_assert((std::is_constructible<bool, U const&>::value), "");
   }
-#if TEST_STD_VER >= 2011
   {
     static_assert(!std::is_convertible<U, bool>::value, "");
     static_assert(!std::is_convertible<U const&, bool>::value, "");
   }
-#endif
   {
     U p(newValue<VT>(1));
     U const& cp = p;

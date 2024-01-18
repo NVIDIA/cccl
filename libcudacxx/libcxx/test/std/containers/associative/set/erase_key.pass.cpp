@@ -109,7 +109,6 @@ int main(int, char**)
         assert(m.size() == 0);
         assert(i == 1);
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::set<int, std::less<int>, min_allocator<int>> M;
         typedef int V;
@@ -199,7 +198,6 @@ int main(int, char**)
         assert(m.size() == 0);
         assert(i == 1);
     }
-#endif
 
   return 0;
 }

@@ -143,7 +143,6 @@ int main(int, char**)
                 testN<std::deque<int> >(rng[i], rng[j], rng[k]);
     self_reference_test<std::deque<int> >();
     }
-#if TEST_STD_VER >= 2011
     {
     int rng[] = {0, 1, 2, 3, 1023, 1024, 1025, 2047, 2048, 2049};
     const int N = sizeof(rng)/sizeof(rng[0]);
@@ -153,7 +152,6 @@ int main(int, char**)
                 testN<std::deque<int, min_allocator<int>> >(rng[i], rng[j], rng[k]);
     self_reference_test<std::deque<int, min_allocator<int>> >();
     }
-#endif
 
   return 0;
 }

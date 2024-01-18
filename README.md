@@ -44,6 +44,7 @@ It then shows how the same reduction can be done using Thrust's `reduce` algorit
 [Try it live on Godbolt!](https://godbolt.org/z/x4G73af9a)
 
 ```cpp
+#include <thrust/execution_policy.h>
 #include <thrust/device_vector.h>
 #include <cub/block/block_reduce.cuh>
 #include <cuda/atomic>
@@ -90,11 +91,13 @@ int main() {
     return -1;
   }
 
+  int const custom_result = kernel_result[0];
+
   // Compute the same sum reduction using Thrust
   int const thrust_result = thrust::reduce(thrust::device, data.begin(), data.end(), 0);
 
   // Ensure the two solutions are identical
-  std::printf("Custom kernel sum: %d\n", kernel_result[0]);
+  std::printf("Custom kernel sum: %d\n", custom_result);
   std::printf("Thrust reduce sum: %d\n", thrust_result);
   assert(kernel_result[0] == thrust_result);
   return 0;
@@ -318,7 +321,9 @@ For example, adding a new data member to a struct is an ABI Breaking Change as i
 In CCCL, the guarantees about ABI are as follows:
 
 - Symbols in the `thrust::` and `cub::` namespaces may break ABI at any time without warning.
-- The ABI of `cub::` symbols includes the CUDA architectures used for compilation. Therefore, a single `cub::` symbol may have a different ABI if compiled with different architectures.
+- The ABI of `thrust::` and `cub::` [symbols includes the CUDA architectures used for compilation](https://nvidia.github.io/cccl/cub/developer_overview.html#symbols-visibility). Therefore, a `thrust::` or `cub::` symbol may have a different ABI if:
+    - compiled with different architectures
+    - compiled as a CUDA source file (`-x cu`) vs C++ source (`-x cpp`)
 - Symbols in the `cuda::` namespace may also break ABI at any time. However, `cuda::` symbols embed an ABI version number that is incremented whenever an ABI break occurs. Multiple ABI versions may be supported concurrently, and therefore users have the option to revert to a prior ABI version. For more information, see [here](libcudacxx/docs/releases/versioning.md).
 
 **Who should care about ABI?**

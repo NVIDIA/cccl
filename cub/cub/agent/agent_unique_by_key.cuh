@@ -302,6 +302,9 @@ struct AgentUniqueByKey
 
         CTA_SYNC();
 
+        // Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
+        // types
+        #pragma unroll(1)
         for (int item = threadIdx.x;
              item < num_tile_selections;
              item += BLOCK_THREADS)
@@ -626,7 +629,9 @@ struct AgentUniqueByKey
     {
         // Blocks are launched in increasing order, so just assign one tile per block
         int     tile_idx        = (blockIdx.x * gridDim.y) + blockIdx.y;    // Current tile index
-        OffsetT tile_offset     = tile_idx * ITEMS_PER_TILE;                // Global offset for the current tile
+
+        // Global offset for the current tile
+        OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(ITEMS_PER_TILE);
 
         if (tile_idx < num_tiles - 1)
         {

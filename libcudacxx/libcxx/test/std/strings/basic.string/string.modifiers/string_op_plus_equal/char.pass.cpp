@@ -34,7 +34,6 @@ int main(int, char**)
     test(S("1234567890"), 'a', S("1234567890a"));
     test(S("12345678901234567890"), 'a', S("12345678901234567890a"));
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(), 'a', S("a"));
@@ -42,7 +41,6 @@ int main(int, char**)
     test(S("1234567890"), 'a', S("1234567890a"));
     test(S("12345678901234567890"), 'a', S("12345678901234567890a"));
     }
-#endif
 
   return 0;
 }

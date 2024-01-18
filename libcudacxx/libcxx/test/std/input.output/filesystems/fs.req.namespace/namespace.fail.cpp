@@ -17,11 +17,7 @@
 
 using namespace std::filesystem;
 
-#if TEST_STD_VER >= 2011
 // expected-error@-3 {{no namespace named 'filesystem' in namespace 'std';}}
-#else
-// expected-error@-5 {{expected namespace name}}
-#endif
 
 int main(int, char**) {
 

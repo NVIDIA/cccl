@@ -13,18 +13,21 @@ def elapsed_time_looks_good(x):
   return False
 
 
-def problem_size_looks_large_enough(elements):
+def get_largest_problem_size(rt_values):
   # Small problem sizes do not utilize entire GPU.
   # Benchmarking small problem sizes in environments where we do not control
   # distributions comparison, e.g. CI, is not useful because of stability issues.
-  return elements.isdigit() and int(elements) > 20
-
+  elements = []
+  for element in rt_values:
+    if element.isdigit():
+      elements.append(int(element))
+  return [str(max(elements))]
 
 def filter_runtime_workloads_for_ci(rt_values):
   for subbench in rt_values:
     for axis in rt_values[subbench]:
       if axis.startswith('Elements') and axis.endswith('[pow2]'):
-        rt_values[subbench][axis] = list(filter(problem_size_looks_large_enough, rt_values[subbench][axis]))
+        rt_values[subbench][axis] = get_largest_problem_size(rt_values[subbench][axis])
 
   return rt_values
 

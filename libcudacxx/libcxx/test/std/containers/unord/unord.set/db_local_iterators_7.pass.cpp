@@ -34,7 +34,6 @@ int main(int, char**)
     ++i;
     assert(false);
     }
-#if TEST_STD_VER >= 2011
     {
     typedef int T;
     typedef std::unordered_set<T, std::hash<T>, std::equal_to<T>, min_allocator<T>> C;
@@ -44,7 +43,6 @@ int main(int, char**)
     ++i;
     assert(false);
     }
-#endif
 
 }
 

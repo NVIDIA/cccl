@@ -29,7 +29,10 @@
 
 #include "../cstdlib"                // _LIBCUDACXX_UNREACHABLE
 #include "../__type_traits/void_t.h" // _CUDA_VSTD::__void_t
+
+#if defined(_CCCL_CUDA_COMPILER)
 #include "../__cuda/ptx.h"           // cuda::ptx::*
+#endif // _CCCL_CUDA_COMPILER
 
 #if defined(_LIBCUDACXX_COMPILER_NVRTC)
 #define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type *)0)->member))
@@ -567,6 +570,7 @@ inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> 
     return reinterpret_cast<_CUDA_VSTD::uint64_t *>(&b.__barrier);
 }
 
+#if defined(_CCCL_CUDA_COMPILER)
 
 // Hide arrive_tx when CUDA architecture is insufficient. Note the
 // (!defined(__CUDA_MINIMUM_ARCH__)). This is required to make sure the function
@@ -686,8 +690,11 @@ void barrier_expect_tx(
         : "memory");
 }
 #endif // __CUDA_MINIMUM_ARCH__
+#endif // _CCCL_CUDA_COMPILER
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+
+#if defined(_CCCL_CUDA_COMPILER)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -1217,5 +1224,7 @@ async_contract_fulfillment memcpy_async(void * __destination, void const * __sou
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif // _CCCL_CUDA_COMPILER
 
 #endif // _LIBCUDACXX___CUDA_BARRIER_H

@@ -26,20 +26,13 @@
 
 #include "test_macros.h"
 
-#if defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
-#error Non-trivial ctor ABI macro defined
-#endif
-
 template <class T>
 struct HasTrivialABI : std::integral_constant<bool,
     std::is_trivially_destructible<T>::value
     && (!std::is_copy_constructible<T>::value || std::is_trivially_copy_constructible<T>::value)
-#if TEST_STD_VER >= 2011
-   && (!std::is_move_constructible<T>::value || std::is_trivially_move_constructible<T>::value)
-#endif
+    && (!std::is_move_constructible<T>::value || std::is_trivially_move_constructible<T>::value)
 > {};
 
-#if TEST_STD_VER >= 2011
 struct NonTrivialDtor {
     NonTrivialDtor(NonTrivialDtor const&) = default;
     ~NonTrivialDtor();
@@ -75,7 +68,6 @@ struct Trivial {
     Trivial(Trivial const&) = default;
 };
 static_assert(HasTrivialABI<Trivial>::value, "");
-#endif
 
 
 void test_trivial()
@@ -85,7 +77,6 @@ void test_trivial()
         static_assert(std::is_copy_constructible<P>::value, "");
         static_assert(HasTrivialABI<P>::value, "");
     }
-#if TEST_STD_VER >= 2011
     {
         typedef std::pair<int, short> P;
         static_assert(std::is_move_constructible<P>::value, "");
@@ -140,7 +131,6 @@ void test_trivial()
         static_assert(std::is_trivially_move_constructible<P>::value, "");
         static_assert(HasTrivialABI<P>::value, "");
     }
-#endif
 }
 
 void test_layout() {

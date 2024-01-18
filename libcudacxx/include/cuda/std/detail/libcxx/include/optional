@@ -184,6 +184,7 @@ template<class T>
 #include "__type_traits/is_trivially_move_constructible.h"
 #include "__type_traits/is_object.h"
 #include "__type_traits/negation.h"
+#include "__type_traits/remove_cv.h"
 #include "__utility/declval.h"
 #include "__utility/forward.h"
 #include "__utility/in_place.h"
@@ -266,7 +267,7 @@ struct __optional_destruct_base<_Tp, false>
     union
     {
         char __null_state_;
-        value_type __val_;
+        __remove_cv_t<value_type> __val_;
     };
     bool __engaged_;
 
@@ -313,7 +314,7 @@ struct __optional_destruct_base<_Tp, true>
     union
     {
         char __null_state_;
-        value_type __val_;
+        __remove_cv_t<value_type> __val_;
     };
     bool __engaged_;
 

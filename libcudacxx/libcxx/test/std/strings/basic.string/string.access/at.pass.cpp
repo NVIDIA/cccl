@@ -69,7 +69,6 @@ int main(int, char**)
     test(S("123"), 2);
     test(S("123"), 3);
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(), 0);
@@ -78,7 +77,6 @@ int main(int, char**)
     test(S("123"), 2);
     test(S("123"), 3);
     }
-#endif
 
   return 0;
 }

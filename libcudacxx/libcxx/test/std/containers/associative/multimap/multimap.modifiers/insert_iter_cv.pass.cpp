@@ -57,12 +57,10 @@ void do_insert_hint_test()
 int main(int, char**)
 {
     do_insert_hint_test<std::multimap<int, double> >();
-#if TEST_STD_VER >= 2011
     {
         typedef std::multimap<int, double, std::less<int>, min_allocator<std::pair<const int, double>>> M;
         do_insert_hint_test<M>();
     }
-#endif
 
   return 0;
 }

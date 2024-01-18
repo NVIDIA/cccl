@@ -46,7 +46,6 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), S("abcdefghij"), false);
     test(S("abcdefghijklmnopqrst"), S("abcdefghijklmnopqrst"), true);
     }
-#if TEST_STD_VER >= 2011
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(""), S(""), true);
@@ -66,7 +65,6 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), S("abcdefghij"), false);
     test(S("abcdefghijklmnopqrst"), S("abcdefghijklmnopqrst"), true);
     }
-#endif
 
   return 0;
 }

@@ -91,7 +91,6 @@ int main(int, char**)
         for (; j < v.size(); ++j)
             assert(v[j] == 0);
     }
-#if TEST_STD_VER >= 2011
     {
         std::vector<bool, min_allocator<bool>> v(100);
         bool a[] = {1, 0, 0, 1, 1};
@@ -124,7 +123,6 @@ int main(int, char**)
         for (; j < v.size(); ++j)
             assert(v[j] == 0);
     }
-#endif
 
   return 0;
 }

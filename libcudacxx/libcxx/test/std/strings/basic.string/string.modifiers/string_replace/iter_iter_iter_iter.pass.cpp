@@ -1073,9 +1073,7 @@ void test() {
 int main(int, char**)
 {
   test<std::string>();
-#if TEST_STD_VER >= 2011
   test<std::basic_string<char, std::char_traits<char>, min_allocator<char>>>();
-#endif
 
   return 0;
 }

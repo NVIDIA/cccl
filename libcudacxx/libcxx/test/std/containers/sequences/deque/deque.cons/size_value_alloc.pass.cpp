@@ -48,7 +48,6 @@ int main(int, char**)
     test(4096, 1165, a);
     test(4097, 157, a);
     }
-#if TEST_STD_VER >= 2011
     {
     min_allocator<int> a;
     test(0, 5, a);
@@ -64,7 +63,6 @@ int main(int, char**)
     test(4096, 1165, a);
     test(4097, 157, a);
     }
-#endif
 
   return 0;
 }

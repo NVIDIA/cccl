@@ -20,10 +20,8 @@
 int main(int, char**)
 {
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-#if TEST_STD_VER >= 2011
     assert(std::char_traits<char16_t>::to_int_type(u'a') == u'a');
     assert(std::char_traits<char16_t>::to_int_type(u'A') == u'A');
-#endif
     assert(std::char_traits<char16_t>::to_int_type(0) == 0);
 #endif  // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 

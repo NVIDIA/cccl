@@ -40,7 +40,6 @@ void test0(const S& lhs, const S& rhs, const S& x) {
   assert(lhs + rhs == x);
 }
 
-#if TEST_STD_VER >= 2011
 template <class S>
 void test1(S&& lhs, const S& rhs, const S& x) {
   assert(std::move(lhs) + rhs == x);
@@ -56,7 +55,6 @@ void test3(S&& lhs, S&& rhs, const S& x) {
   assert(std::move(lhs) + std::move(rhs) == x);
 }
 
-#endif
 
 int main(int, char**) {
   {
@@ -83,7 +81,6 @@ int main(int, char**) {
     test0(S("abcdefghijklmnopqrst"), S("12345678901234567890"),
           S("abcdefghijklmnopqrst12345678901234567890"));
   }
-#if TEST_STD_VER >= 2011
   {
     typedef std::string S;
     test1(S(""), S(""), S(""));
@@ -244,7 +241,6 @@ int main(int, char**) {
     test3(S("abcdefghijklmnopqrst"), S("12345678901234567890"),
           S("abcdefghijklmnopqrst12345678901234567890"));
   }
-#endif // TEST_STD_VER >= 2011
 
   return 0;
 }

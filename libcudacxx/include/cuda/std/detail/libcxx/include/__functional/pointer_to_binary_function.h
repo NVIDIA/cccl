@@ -29,6 +29,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
+_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
+
 template <class _Arg1, class _Arg2, class _Result>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 pointer_to_binary_function
     : public __binary_function<_Arg1, _Arg2, _Result>
@@ -47,7 +49,9 @@ pointer_to_binary_function<_Arg1,_Arg2,_Result>
 ptr_fun(_Result (*__f)(_Arg1,_Arg2))
     {return pointer_to_binary_function<_Arg1,_Arg2,_Result>(__f);}
 
-#endif
+_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
+
+#endif // _CCCL_STD_VER <= 2014 || _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
