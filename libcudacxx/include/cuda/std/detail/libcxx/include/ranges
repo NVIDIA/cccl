@@ -315,6 +315,7 @@ namespace std {
 #include "__ranges/enable_borrowed_range.h"
 #include "__ranges/enable_view.h"
 #include "__ranges/rbegin.h"
+#include "__ranges/rend.h"
 
 // standard-mandated includes
 #include "version"
