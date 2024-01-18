@@ -207,6 +207,7 @@ int main(int, char**)
         test_throwing_ctor();
     }
     {
+#ifndef TEST_COMPILER_ICC
         struct ThrowsMove {
           __host__ __device__
           ThrowsMove() noexcept(false) {}
@@ -216,6 +217,7 @@ int main(int, char**)
           ThrowsMove(ThrowsMove &&) noexcept(false) {}
         };
         static_assert(!cuda::std::is_nothrow_move_constructible<optional<ThrowsMove>>::value, "");
+#endif // TEST_COMPILER_ICC
         struct NoThrowMove {
           __host__ __device__
           NoThrowMove() noexcept(false) {}

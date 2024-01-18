@@ -47,19 +47,43 @@ def parse_arguments():
                         type=str, help="Parameter in the format `Param=Value`.")
     parser.add_argument(
         '--list-benches', action=argparse.BooleanOptionalAction, help="Show available benchmarks.")
+    parser.add_argument('--num-shards', type=int, default=1, help='Split benchmarks into M pieces and only run one')
+    parser.add_argument('--run-shard', type=int, default=0, help='Run shard N / M of benchmarks')
+    parser.add_argument('-P0', action=argparse.BooleanOptionalAction, help="Run P0 benchmarks")
     return parser.parse_args()
 
 
-def run_benches(benchmarks, sub_space, regex, seeker):
-    pattern = re.compile(regex)
-
-    for algname in benchmarks:
-        if pattern.match(algname):
+def run_benches(algnames, sub_space, seeker):
+    for algname in algnames:
+        try:
             bench = BaseBench(algname)
             ct_space = bench.ct_workload_space(sub_space)
             rt_values = bench.rt_axes_values(sub_space)
             seeker(algname, ct_space, rt_values)
+        except Exception as e:
+            print("#### ERROR exception occured while running {}: '{}'".format(algname, e))
 
+
+def filter_benchmarks_by_regex(benchmarks, R):
+    pattern = re.compile(R)
+    return list(filter(lambda x: pattern.match(x), benchmarks))
+
+
+def filter_benchmarks(benchmarks, args):
+    if args.run_shard >= args.num_shards:
+        raise ValueError('run-shard must be less than num-shards')
+    
+    algnames = filter_benchmarks_by_regex(benchmarks.keys(), args.R)
+    if args.P0:
+        algnames = filter_benchmarks_by_regex(algnames, '^(?!.*segmented).*(scan|reduce|select|sort).*')
+    algnames.sort()
+
+    if args.num_shards > 1:
+        algnames = np.array_split(algnames, args.num_shards)[args.run_shard].tolist()
+        return algnames
+    
+    return algnames
+    
 
 def search(seeker):
     args = parse_arguments()
@@ -79,8 +103,8 @@ def search(seeker):
     if args.list_benches:
         list_benches()
         return
-
-    run_benches(config.benchmarks, workload_sub_space, args.R, seeker)
+    
+    run_benches(filter_benchmarks(config.benchmarks, args), workload_sub_space, seeker)
 
 
 class MedianCenterEstimator:

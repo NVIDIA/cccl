@@ -660,13 +660,6 @@ template<typename T1, typename T2>
   typedef T1 type;
   };
 
-template<typename T1, typename T2, typename = void>
-struct has_promoted_numerical_type : public false_type {};
-
-template<typename T1, typename T2>
-struct has_promoted_numerical_type<T1, T2, ::cuda::std::__void_t<typename promoted_numerical_type<T1, T2>::type>>
-  : public true_type {};
-
 template<typename T>
   struct is_empty_helper : public T
   {

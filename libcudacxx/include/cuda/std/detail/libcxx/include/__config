@@ -20,7 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(__NVCOMPILER)
+#if defined(__INTEL_LLVM_COMPILER)
+#  define _LIBCUDACXX_COMPILER_ICC_LLVM
+#elif defined(__INTEL_COMPILER)
+#  define _LIBCUDACXX_COMPILER_ICC
+#elif defined(__NVCOMPILER)
 #  define _LIBCUDACXX_COMPILER_NVHPC
 #elif defined(__clang__)
 #  define _LIBCUDACXX_COMPILER_CLANG
@@ -522,7 +526,7 @@ extern "C++" {
 
 #if __check_builtin(builtin_is_constant_evaluated)           \
  || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 900) \
- || (defined(_LIBCUDACXX_COMPILER_MSVC) && _MSC_VER  > 1924)
+ || (defined(_LIBCUDACXX_COMPILER_MSVC) && _MSC_VER  > 1924 && !defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
 #define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // __check_builtin(builtin_is_constant_evaluated)
 
@@ -1825,7 +1829,7 @@ typedef unsigned int   char32_t;
 #if defined(_LIBCUDACXX_DEBUG) || defined(_LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR)
 #define _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 #else
-#define _LIBCUDACXX_CONSTEXPR_IF_NODEBUG constexpr
+#define _LIBCUDACXX_CONSTEXPR_IF_NODEBUG _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 #endif
 #endif
 
@@ -1987,9 +1991,11 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 // TODO: Support C11 Atomics?
 // #if __has_feature(cxx_atomic) || __has_extension(c_atomic) || __has_keyword(_Atomic)
 // #  define _LIBCUDACXX_HAS_C_ATOMIC_IMP
-#if defined(_LIBCUDACXX_COMPILER_CLANG)
+#if defined(_LIBCUDACXX_COMPILER_ICC)
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#elif defined(_LIBCUDACXX_COMPILER_GCC) || defined(_LIBCUDACXX_COMPILER_NVHPC)
+#elif defined(_LIBCUDACXX_COMPILER_CLANG)
+#  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
+#elif defined(_LIBCUDACXX_COMPILER_GCC)
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
 #elif defined(_LIBCUDACXX_COMPILER_NVHPC)
 #  define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP

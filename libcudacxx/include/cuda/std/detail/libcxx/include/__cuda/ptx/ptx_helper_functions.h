@@ -46,7 +46,9 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
 template <typename _Tp>
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
 {
+#if _LIBCUDACXX_STD_VER >= 17 && !defined(_LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR)
   static_assert(sizeof(_Tp) == 4, "");
+#endif // _LIBCUDACXX_STD_VER >= 17  && !_LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR
   // Consider using std::bitcast
   return *reinterpret_cast<_CUDA_VSTD::uint32_t*>(&__val);
 }
@@ -54,7 +56,9 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
 template <typename _Tp>
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val)
 {
+#if _LIBCUDACXX_STD_VER >= 17 && !defined(_LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR)
   static_assert(sizeof(_Tp) == 8, "");
+#endif // _LIBCUDACXX_STD_VER >= 17 && !_LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR
   // Consider using std::bitcast
   return *reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__val);
 }

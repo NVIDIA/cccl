@@ -83,9 +83,9 @@ int main(int, char**)
     static_assert( is_param_pack_cons_avail_v< cuda::std::dextents<int,1>, my_int_non_convertible           > == false, "" );
 
     // Constraint: nonthrow-constructibility
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
     static_assert( is_param_pack_cons_avail_v< cuda::std::dextents<int,1>, my_int_non_nothrow_constructible > == false, "" );
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 
     return 0;
 }

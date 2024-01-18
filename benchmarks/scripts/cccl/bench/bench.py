@@ -635,6 +635,14 @@ class Bench:
                 cmd.append("--min-samples")
                 cmd.append("70")
 
+            # Unlike noise, minimal benchmarking time is not directly related to variance.
+            # Default minimal time is 0.5 seconds. For CI we want to reduce it to 0.1 seconds, 
+            # becuse we have limited time budget. Having smaller minimal time doesn't affect 
+            # stability of sample distribution median in a deterministic way. For small problem sizes, 
+            # 0.1s leads to smaller variation than 0.5s. For other workloads, 0.5 leads to smaller variance. 
+            cmd.append("--min-time")
+            cmd.append("0.1")
+
             # NVBench is currently broken for multiple GPUs, use `CUDA_VISIBLE_DEVICES`
             cmd.append("-d")
             cmd.append("0")
