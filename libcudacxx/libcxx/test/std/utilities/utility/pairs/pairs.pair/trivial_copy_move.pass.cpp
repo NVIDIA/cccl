@@ -28,24 +28,18 @@ int main(int, char**)
     typedef std::pair<int, short> P;
     {
         static_assert(std::is_copy_constructible<P>::value, "");
-#if !defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
         static_assert(std::is_trivially_copy_constructible<P>::value, "");
-#endif
     }
     {
         static_assert(std::is_move_constructible<P>::value, "");
-#if !defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
         static_assert(std::is_trivially_move_constructible<P>::value, "");
-#endif
     }
     {
         using P1 = std::pair<Dummy, int>;
         static_assert(!std::is_copy_constructible<P1>::value, "");
         static_assert(!std::is_trivially_copy_constructible<P1>::value, "");
         static_assert(std::is_move_constructible<P1>::value, "");
-#if !defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
         static_assert(std::is_trivially_move_constructible<P1>::value, "");
-#endif
     }
 
   return 0;

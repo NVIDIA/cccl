@@ -26,10 +26,6 @@
 
 #include "test_macros.h"
 
-#if defined(_LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR)
-#error Non-trivial ctor ABI macro defined
-#endif
-
 template <class T>
 struct HasTrivialABI : std::integral_constant<bool,
     std::is_trivially_destructible<T>::value

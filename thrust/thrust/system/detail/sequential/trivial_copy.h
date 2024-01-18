@@ -49,6 +49,13 @@ _CCCL_HOST_DEVICE
                     std::ptrdiff_t n,
                     T *result)
 {
+  if (n == 0)
+  {
+    // If `first` or `result` is an invalid pointer, 
+    // the behavior of `std::memmove` is undefined, even if `n` is zero. 
+    return result;
+  }
+
   T* return_value = NULL;
 
   NV_IF_TARGET(NV_IS_HOST, (

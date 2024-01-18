@@ -1327,16 +1327,17 @@ template <class... _Tp, class _Alloc>
 struct _LIBCUDACXX_TEMPLATE_VIS uses_allocator<tuple<_Tp...>, _Alloc>
     : true_type {};
 
-template <class _T1, class _T2>
+template <class _T1, class _T2, bool _IsRef>
 template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-pair<_T1, _T2>::pair(piecewise_construct_t, tuple<_Args1...> &__first_args,
-                     tuple<_Args2...> &__second_args, __tuple_indices<_I1...>,
-                     __tuple_indices<_I2...>)
-    : first(_CUDA_VSTD::forward<_Args1>(_CUDA_VSTD::get<_I1>(__first_args))...),
-      second(
-          _CUDA_VSTD::forward<_Args2>(_CUDA_VSTD::get<_I2>(__second_args))...) {
-}
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 __pair_base<_T1, _T2, _IsRef>::__pair_base(
+  piecewise_construct_t,
+  tuple<_Args1...>& __first_args,
+  tuple<_Args2...>& __second_args,
+  __tuple_indices<_I1...>,
+  __tuple_indices<_I2...>)
+    : first(_CUDA_VSTD::forward<_Args1>(_CUDA_VSTD::get<_I1>(__first_args))...)
+    , second(_CUDA_VSTD::forward<_Args2>(_CUDA_VSTD::get<_I2>(__second_args))...)
+{}
 
 #if _CCCL_STD_VER > 2014
 #define _LIBCUDACXX_NOEXCEPT_RETURN(...)                                       \

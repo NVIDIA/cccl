@@ -311,6 +311,7 @@ namespace std {
 #endif // __cuda_std__
 
 #include "__assert" // all public C++ headers provide the assertion handler
+#include "__ranges/access.h"
 #include "__ranges/enable_borrowed_range.h"
 #include "__ranges/enable_view.h"
 

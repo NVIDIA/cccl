@@ -173,6 +173,11 @@ _CCCL_HOST_DEVICE
                                    ForwardIterator last,
                                    Predicate pred)
 {
+  if (first == last)
+  {
+    return first;
+  }
+
   // wrap pred
   thrust::detail::wrapped_function<
     Predicate,
