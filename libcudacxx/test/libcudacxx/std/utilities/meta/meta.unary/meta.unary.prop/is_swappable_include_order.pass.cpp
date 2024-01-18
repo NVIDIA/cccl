@@ -10,9 +10,6 @@
 
 // is_swappable
 
-// XFAIL: nvcc && (!c++20) && (!clang-16) && (!gcc-12)
-// XFAIL: nvrtcc && (!c++20)
-
 // If we're just building the test and not executing it, it should pass.
 // UNSUPPORTED: no_execute
 
