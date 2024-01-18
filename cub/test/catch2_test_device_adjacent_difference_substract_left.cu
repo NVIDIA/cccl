@@ -262,11 +262,18 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with a different outp
   REQUIRE(reference == out);
 }
 
-struct check_difference {
+struct check_difference 
+{
+  int *d_error;
+
   template<class T>
-  __device__ T operator()(const T& lhs, const T& rhs) const noexcept {
+  __device__ T operator()(const T& lhs, const T& rhs) const noexcept 
+  {
     const T result = lhs - rhs;
-    assert(result == 1);
+    if (result != 1) 
+    {
+      atomicAdd(d_error, 1);
+    }
     return result;
   }
 };
@@ -274,10 +281,12 @@ struct check_difference {
 CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with large indexes", "[device][adjacent_difference]")
 {
   constexpr cuda::std::size_t num_items = 1ll << 33;
+  thrust::device_vector<int> error(1);
+  int *d_error = thrust::raw_pointer_cast(error.data());
   adjacent_difference_subtract_left_copy(thrust::counting_iterator<cuda::std::size_t>{0},
                                          thrust::discard_iterator<>{},
                                          num_items,
-                                         check_difference{});
+                                         check_difference{d_error});
 }
 
 struct invocation_counter {

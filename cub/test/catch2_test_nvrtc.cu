@@ -249,10 +249,10 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   REQUIRE(NVRTC_SUCCESS == nvrtcGetCUBIN(prog, code.get()));
   REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&prog));
 
-  CUcontext context;
-  CUdevice device;
-  CUmodule module;
-  CUfunction kernel;
+  CUcontext context{};
+  CUdevice device{};
+  CUmodule module{};
+  CUfunction kernel{};
 
   REQUIRE(CUDA_SUCCESS == cuInit(0));
   REQUIRE(CUDA_SUCCESS == cuDeviceGet(&device, 0));
@@ -265,10 +265,10 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   constexpr int items_per_thread = 4;
   constexpr int tile_size = threads_in_block * items_per_thread;
 
-  CUdeviceptr d_ptr;
+  CUdeviceptr d_ptr{};
   REQUIRE(CUDA_SUCCESS == cuMemAlloc(&d_ptr, tile_size * sizeof(int)));
 
-  CUdeviceptr d_err;
+  CUdeviceptr d_err{};
   REQUIRE(CUDA_SUCCESS == cuMemAlloc(&d_err, sizeof(int)));
 
   int h_ptr[tile_size];
