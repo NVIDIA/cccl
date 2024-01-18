@@ -1,6 +1,6 @@
 ## memory_resource
 
-The `<cuda::memory_resource>` header provides multiple features:
+The `<cuda/memory_resource>` header provides multiple features:
 
 1. the [`cuda::get_property`] infrastructure to tag a user defined type with a given property;
 2. the [`cuda::mr::{async}_resource` and `cuda::mr::{async}_resource_with`] concepts that provide proper constraints for arbitrary memory resources;
