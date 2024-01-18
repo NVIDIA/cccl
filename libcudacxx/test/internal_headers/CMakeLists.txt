@@ -50,6 +50,11 @@ function(libcudacxx_add_internal_header_test header)
   # Create the default target for that file
   libcudacxx_create_internal_header_test(${header_name}, ${headertest_src}, "")
 
+  # MSVC cannot handle the is_base_of fallback and ICEs
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND "${header}" MATCHES "is_base_of")
+    return()
+  endif()
+
   # Seach the file for a fallback definition
   file(READ ${libcudacxx_SOURCE_DIR}/include/cuda/std/detail/libcxx/include/${header} header_file)
   string(REGEX MATCH "_LIBCUDACXX_[A-Z_]*_FALLBACK" fallback "${header_file}")
