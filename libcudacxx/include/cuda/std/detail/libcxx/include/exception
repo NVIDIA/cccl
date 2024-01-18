@@ -305,14 +305,10 @@ throw_with_nested(_Tp&& __t)
 
 template <class _From, class _To>
 struct __can_dynamic_cast : public
-#ifdef _LIBCUDACXX_NO_EXCEPTIONS
-              false_type
-#else
-_LIBCUDACXX_BOOL_CONSTANT(
+    _LIBCUDACXX_BOOL_CONSTANT(
               is_polymorphic<_From>::value &&
                  (!is_base_of<_To, _From>::value ||
                    is_convertible<const _From*, const _To*>::value))
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
 {};
 
 template <class _Ep>
@@ -321,9 +317,11 @@ void
 rethrow_if_nested(const _Ep& __e,
                   typename enable_if< __can_dynamic_cast<_Ep, nested_exception>::value>::type* = 0)
 {
+#if !defined(_LIBCUDACXX_COMPILER_MSVC)
     const nested_exception* __nep = dynamic_cast<const nested_exception*>(_CUDA_VSTD::addressof(__e));
     if (__nep)
         __nep->rethrow_nested();
+#endif // _LIBCUDACXX_COMPILER_MSVC
 }
 
 template <class _Ep>
