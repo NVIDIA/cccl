@@ -9,9 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11
 
-// UNSUPPORTED: nvrtc
-// see nvbug4263883
-
 // <cuda/std/optional>
 
 // The following special member functions should propagate the triviality of
