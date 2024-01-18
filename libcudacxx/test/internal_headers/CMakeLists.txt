@@ -50,9 +50,13 @@ function(libcudacxx_add_internal_header_test header)
   # Create the default target for that file
   libcudacxx_create_internal_header_test(${header_name}, ${headertest_src}, "")
 
-  # MSVC cannot handle the is_base_of fallback and ICEs
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND "${header}" MATCHES "is_base_of")
-    return()
+  # MSVC cannot handle some of the fallbacks
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    if("${header}" MATCHES "is_base_of" OR
+       "${header}" MATCHES "is_nothrow_destructible" OR
+       "${header}" MATCHES "is_polymorphic")
+      return()
+    endif()
   endif()
 
   # Seach the file for a fallback definition
