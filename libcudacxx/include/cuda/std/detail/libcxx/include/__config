@@ -582,9 +582,11 @@ extern "C++" {
 
 // TODO: Clang incorrectly reports that __is_array is true for T[0].
 //       Re-enable the branch once https://llvm.org/PR54705 is fixed.
+#ifndef _LIBCUDACXX_USE_IS_ARRAY_FALLBACK
 #if defined(_LIBCUDACXX_COMPILER_CLANG)
 #define _LIBCUDACXX_USE_IS_ARRAY_FALLBACK
 #endif // _LIBCUDACXX_COMPILER_CLANG
+#endif // !_LIBCUDACXX_USE_IS_ARRAY_FALLBACK
 
 #if __check_builtin(is_assignable)     \
  || defined(_LIBCUDACXX_COMPILER_MSVC)
@@ -660,9 +662,11 @@ extern "C++" {
 #define _LIBCUDACXX_IS_LVALUE_REFERENCE(...) __is_lvalue_reference(__VA_ARGS__)
 #endif // __check_builtin(is_lvalue_reference)
 
+#ifndef _LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK
 #endif // nvcc < 11.3
+#endif // !_LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK
 
 #if __check_builtin(is_nothrow_assignable) \
  || defined(_LIBCUDACXX_COMPILER_MSVC)     \
@@ -686,9 +690,11 @@ extern "C++" {
 #define _LIBCUDACXX_IS_OBJECT(...) __is_object(__VA_ARGS__)
 #endif // __check_builtin(is_object)
 
+#ifndef _LIBCUDACXX_USE_IS_OBJECT_FALLBACK
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_OBJECT_FALLBACK
 #endif // nvcc < 11.3
+#endif // !_LIBCUDACXX_USE_IS_OBJECT_FALLBACK
 
 #if __check_builtin(is_pod)                                  \
  || (defined(_LIBCUDACXX_COMPILER_GCC)  && _GNUC_VER >= 403) \
@@ -788,9 +794,11 @@ extern "C++" {
 #define _LIBCUDACXX_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
 #endif // __check_builtin(is_unsigned)
 
+#ifndef _LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK
 #endif // nvcc < 11.3
+#endif // !_LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK
 
 // libstdc++ defines this as a function, breaking functionality
 #if 0 // __check_builtin(is_void)
@@ -964,11 +972,12 @@ typedef __char32_t char32_t;
 
 #elif defined(_LIBCUDACXX_COMPILER_GCC)
 
+#ifndef _LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK
 // FIXME: GCC 8.0 supports this trait, but it has a bug.
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91592
 // https://godbolt.org/z/IljfIw
 #define _LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK
-
+#endif // _LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK
 
 // Determine if GCC supports relaxed constexpr
 #if !defined(__cpp_constexpr) || __cpp_constexpr < 201304L
