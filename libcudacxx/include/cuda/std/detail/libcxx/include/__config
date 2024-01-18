@@ -184,16 +184,6 @@ extern "C++" {
 // conflict with the dllexport-emitted copy, so we disable it.
 #    define _LIBCUDACXX_DEPRECATED_ABI_LEGACY_LIBRARY_DEFINITIONS_FOR_INLINE_FUNCTIONS
 #  endif
-// Feature macros for disabling pre ABI v1 features. All of these options
-// are deprecated.
-#  if defined(__FreeBSD__)
-#    define _LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR
-#  endif
-#endif
-
-#ifdef _LIBCUDACXX_TRIVIAL_PAIR_COPY_CTOR
-#error "_LIBCUDACXX_TRIVIAL_PAIR_COPY_CTOR" is no longer supported. \
-       use _LIBCUDACXX_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR instead
 #endif
 
 #ifndef __has_attribute
