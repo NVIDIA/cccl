@@ -215,6 +215,12 @@ def iterate_case_dfs(args, callable):
 
     pattern = re.compile(args.R)
 
+    exact_values = {}
+    if args.args:
+        for value in args.args:
+            name, val = value.split('=')
+            exact_values[name] = val
+
     for algname in algnames:
         if not pattern.match(algname):
             continue
@@ -238,6 +244,10 @@ def iterate_case_dfs(args, callable):
                         target_df = ctk_cub_df[ctk_cub_df['gpu'] == gpu]
                         target_df = target_df.drop(columns=['ctk', 'cccl', 'gpu'])
                         target_df = compute_speedup(target_df)
+
+                        for key in exact_values:
+                            if key in target_df.columns:
+                                target_df = target_df[target_df[key] == exact_values[key]]
 
                         for ct_point in ct_space(target_df):
                             point_str = ", ".join(["{}={}".format(k, ct_point[k]) for k in ct_point])
@@ -742,6 +752,8 @@ def parse_arguments():
         '--variants-pdf', type=str, help="Show matching variants data.")
     parser.add_argument(
         '--variants-ratio', type=str, help="Show matching variants data.")
+    parser.add_argument('-a', '--args', action='append',
+                        type=str, help="Parameter in the format `Param=Value`.")
     return parser.parse_args()
 
 
